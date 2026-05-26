@@ -2776,8 +2776,8 @@ const ledgerTrendingProjects = computed(() => {
 });
 const ledgerChainRows = computed(() => [
   { label: 'Token', value: tokenSymbol.value },
-  { label: 'Payment mode', value: runtimeConfig.value?.payment_mode || 'not loaded' },
-  { label: 'Repo provider', value: runtimeConfig.value?.repo_provider || 'not loaded' },
+  { label: 'Payment mode', value: paymentModeLabel(runtimeConfig.value?.payment_mode) },
+  { label: 'Repo provider', value: repoProviderLabel(runtimeConfig.value?.repo_provider) },
 ]);
 const ledgerFooterStats = computed(() => [
   { value: formatLedgerMRGFromCents(publicVerifiedFundingCents.value), label: 'Verified funding' },
@@ -3874,6 +3874,24 @@ function toTitleLabel(value = '') {
       return `${lower.charAt(0).toUpperCase()}${lower.slice(1)}`;
     })
     .join(' ');
+}
+
+function paymentModeLabel(value = '') {
+  const normalized = String(value || '').trim().toLowerCase();
+  return {
+    'live-adapters': 'Live payment adapters',
+    'local-dev-verifier': 'MergeOS verifier',
+    'not-configured': 'Not configured',
+    '': 'Not loaded',
+  }[normalized] || toTitleLabel(value);
+}
+
+function repoProviderLabel(value = '') {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (!normalized) return 'Not loaded';
+  if (normalized.startsWith('github-private:')) return 'GitHub private repos';
+  if (normalized === 'local-git') return 'MergeOS repositories';
+  return toTitleLabel(value);
 }
 
 function formatMarketplaceDate(value) {

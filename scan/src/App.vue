@@ -275,6 +275,7 @@ import {
   ledgerTypeMeta,
   normalizeExplorerPath,
   parseExplorerRoute,
+  paymentModeLabel,
   shortHash,
   sortLedgerEntries,
   tokenAmountFromCents,
@@ -303,7 +304,7 @@ const typeFilter = ref('all');
 const route = ref(parseRoute());
 
 const tokenSymbol = computed(() => config.value?.token_symbol || marketplace.value?.stats?.token_symbol || 'MRG');
-const paymentMode = computed(() => config.value?.payment_mode || 'not configured');
+const paymentMode = computed(() => paymentModeLabel(config.value?.payment_mode));
 const githubOAuthReady = computed(() => Boolean(config.value?.github_oauth_ready && config.value?.github_oauth_client_id));
 const networkLabel = computed(() => config.value?.environment === 'production' ? 'MergeOS main ledger' : 'MergeOS ledger');
 const linkedGitHubUsername = computed(() => cleanGitHubUsername(

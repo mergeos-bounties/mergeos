@@ -56,6 +56,16 @@ export function toTitleLabel(value = '') {
     .join(' ');
 }
 
+export function paymentModeLabel(value = '') {
+  const normalized = String(value || '').trim().toLowerCase();
+  return {
+    'live-adapters': 'Live payment adapters',
+    'local-dev-verifier': 'MergeOS verifier',
+    'not-configured': 'Not configured',
+    '': 'Not configured',
+  }[normalized] || toTitleLabel(value);
+}
+
 export function ledgerTypeMeta(type = '') {
   const normalized = String(type || '').toLowerCase();
   const fallback = { label: toTitleLabel(normalized || 'Ledger Entry'), tone: 'neutral', direction: 'neutral' };

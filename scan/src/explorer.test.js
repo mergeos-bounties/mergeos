@@ -10,6 +10,7 @@ import {
   githubUsernameFromAccount,
   normalizeExplorerPath,
   parseExplorerRoute,
+  paymentModeLabel,
   tokenAmountFromCents,
   verifyLedgerChain,
 } from './explorer.js';
@@ -74,6 +75,12 @@ test('treats github aliases as short public addresses', () => {
   assert.equal(githubUsernameFromAccount('worker:github:hummusonrails'), 'hummusonrails');
   assert.equal(githubProfileURL('github:hummusonrails'), 'https://github.com/hummusonrails');
   assert.equal(accountRole('github:hummusonrails'), 'GitHub Contributor');
+});
+
+test('shows production-friendly payment mode labels', () => {
+  assert.equal(paymentModeLabel('local-dev-verifier'), 'MergeOS verifier');
+  assert.equal(paymentModeLabel('live-adapters'), 'Live payment adapters');
+  assert.equal(paymentModeLabel(''), 'Not configured');
 });
 
 test('parses history routes and legacy hash routes', () => {
