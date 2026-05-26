@@ -3,6 +3,7 @@
 - Claim Token comment:
 - Bounty amount:
 - Bounty type: bug bounty / feature bounty
+- Bounty size: small / medium / large / extra-large
 
 ## Description
 

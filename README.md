@@ -6,6 +6,12 @@ This repository is the current MergeOS MVP: Go backend, Vue SSR frontend, projec
 
 `scan/` is the public MergeOS Scan explorer for `scan.mergeos.shop`. It reads the public ledger API and presents MRG token mints, escrow movements, task reserves, payouts, addresses, transaction hashes, and hash-chain proof in a BscScan-style interface.
 
+## README Index
+
+- [README-INDEX.md](README-INDEX.md): docs map and current bounty intake index.
+- [BOUNTY-POLICY.md](BOUNTY-POLICY.md): bounty rules, reward scale, evidence requirements, star requirement, and payout policy.
+- [Claim Token issue #1](https://github.com/mergeos-bounties/mergeos/issues/1): public intake queue for new bug bounty claims.
+
 ## New Workflow
 
 1. The customer registers or logs in.
@@ -35,6 +41,17 @@ Do not open a separate issue for a new bounty bug unless a maintainer asks for i
 - A PR must link back to the exact claim comment.
 - Token payout is only eligible after the PR is reviewed, evidence is accepted, tests pass, and the PR is merged.
 - Do not paste secrets, private keys, customer data, or exploitable production details into public comments. Describe the impact and ask a maintainer to move sensitive validation private.
+
+### Bounty Reward Scale
+
+| Bounty scope | Reward |
+| --- | ---: |
+| Bug fix or small feature | 25 MRG |
+| Medium feature | 50 MRG |
+| Large feature | 100 MRG |
+| Extra-large feature or system-level work | 200 MRG |
+
+See [BOUNTY-POLICY.md](BOUNTY-POLICY.md) for full bounty rules and [README-INDEX.md](README-INDEX.md) for the current bounty intake list.
 
 ### Claim Comment Template
 
@@ -73,6 +90,7 @@ Every bounty PR must include:
 
 - Link to the Claim Token issue comment.
 - Bounty type: bug bounty or feature bounty.
+- Bounty size: small, medium, large, or extra-large.
 - The PR author must have starred this repository.
 - Summary of the bug and the fix.
 - Evidence before and after the fix. Screenshots or GIFs are preferred for UI bugs. Logs, request/response examples, or test output are acceptable for backend bugs.
