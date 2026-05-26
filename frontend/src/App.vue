@@ -281,6 +281,118 @@
               </div>
             </section>
 
+            <section class="wizard-section full ai-pricing-section">
+              <div class="ai-pricing-card">
+                <div class="ai-pricing-header">
+                  <Sparkles class="sparkle-icon animated-sparkle" :size="18" />
+                  <div>
+                    <strong>AI Price Suggestion Engine</strong>
+                    <small>Let our AI evaluate your scope, tech stack, and deliverables to suggest a fair budget range.</small>
+                  </div>
+                </div>
+                
+                <div class="ai-pricing-inputs">
+                  <div class="wizard-field">
+                    <span>Project Complexity</span>
+                    <div class="complexity-selector">
+                      <button 
+                        v-for="lvl in ['Low', 'Medium', 'High']" 
+                        :key="lvl"
+                        :class="{ selected: projectSetupForm.complexity === lvl }"
+                        type="button"
+                        class="complexity-btn"
+                        @click="projectSetupForm.complexity = lvl"
+                      >
+                        {{ lvl }}
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <label class="wizard-field">
+                    <span>Project Constraints & Compliance (Optional)</span>
+                    <input 
+                      v-model="projectSetupForm.constraints" 
+                      type="text" 
+                      placeholder="e.g. HIPAA compliance, offline-first, tight deadlines..." 
+                    />
+                  </label>
+                </div>
+
+                <div class="ai-pricing-action">
+                  <button 
+                    class="primary-button compact ai-evaluate-btn" 
+                    type="button"
+                    :disabled="aiEvaluationLoading"
+                    @click="triggerAiEvaluation"
+                  >
+                    <RefreshCw v-if="aiEvaluationLoading" class="loading-spin" :size="15" />
+                    <Sparkles v-else :size="15" />
+                    {{ aiEvaluationLoading ? 'Evaluating scope...' : 'Get AI price recommendation' }}
+                  </button>
+                </div>
+
+                <div v-if="aiEvaluationError" class="ai-evaluation-error">
+                  <Bug :size="16" />
+                  <span>{{ aiEvaluationError }}</span>
+                </div>
+
+                <div v-if="aiEvaluationResult" class="ai-evaluation-results-box">
+                  <div class="suggestion-hero">
+                    <div class="hero-range">
+                      <small>Suggested budget range</small>
+                      <strong>{{ formatMoney(aiEvaluationResult.suggested_low) }} - {{ formatMoney(aiEvaluationResult.suggested_high) }}</strong>
+                      <span class="confidence-badge">Confidence: {{ Math.round(aiEvaluationResult.confidence_level * 100) }}%</span>
+                    </div>
+                    <button 
+                      class="secondary-button compact apply-suggestion-btn" 
+                      type="button"
+                      @click="applyAiSuggestedPrice"
+                    >
+                      <CheckCircle2 :size="14" />
+                      Use Suggested Budget
+                    </button>
+                  </div>
+
+                  <div class="results-details-grid">
+                    <div class="results-col">
+                      <h4>Task Breakdown</h4>
+                      <ul class="breakdown-list">
+                        <li v-for="(amount, task) in aiEvaluationResult.task_breakdown" :key="task">
+                          <span class="task-name">{{ task }}</span>
+                          <span class="task-price">{{ formatMoney(amount) }}</span>
+                        </li>
+                      </ul>
+                    </div>
+
+                    <div class="results-col">
+                      <h4>Rationale</h4>
+                      <p class="rationale-text">{{ aiEvaluationResult.rationale }}</p>
+                    </div>
+                  </div>
+
+                  <div class="results-details-grid extra-meta">
+                    <div class="results-col">
+                      <h4>Assumptions</h4>
+                      <ul class="meta-bullets">
+                        <li v-for="(assumption, i) in aiEvaluationResult.assumptions" :key="i">
+                          {{ assumption }}
+                        </li>
+                      </ul>
+                    </div>
+
+                    <div class="results-col">
+                      <h4>Identified Risks</h4>
+                      <ul class="meta-bullets risks">
+                        <li v-for="(risk, i) in aiEvaluationResult.risks" :key="i">
+                          {{ risk }}
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
             <section class="wizard-section full timeline-box">
               <div class="wizard-section-title">
                 <strong>Timeline</strong>
@@ -2143,7 +2255,13 @@ const projectSetupForm = reactive({
   visibility: 'Public',
   allowAgents: true,
   skills: '',
+  complexity: 'Medium',
+  constraints: '',
 });
+
+const aiEvaluationResult = ref(null);
+const aiEvaluationLoading = ref(false);
+const aiEvaluationError = ref('');
 
 const projectDeliverables = ref([
   'User authentication system',
@@ -2283,8 +2401,18 @@ const visibleDeliverables = computed(() => {
   return items.length ? items : ['Project scope and implementation'];
 });
 const projectBudgetAmount = computed(() => Math.max(0, Number(projectSetupForm.budgetAmount) || 0));
-const projectBudgetLow = computed(() => Math.round(projectBudgetAmount.value * 0.8));
-const projectBudgetHigh = computed(() => Math.round(projectBudgetAmount.value * 1.2));
+const projectBudgetLow = computed(() => {
+  if (aiEvaluationResult.value && projectSetupForm.budgetAmount === Math.round((aiEvaluationResult.value.suggested_low + aiEvaluationResult.value.suggested_high) / 2)) {
+    return aiEvaluationResult.value.suggested_low;
+  }
+  return Math.round(projectBudgetAmount.value * 0.85);
+});
+const projectBudgetHigh = computed(() => {
+  if (aiEvaluationResult.value && projectSetupForm.budgetAmount === Math.round((aiEvaluationResult.value.suggested_low + aiEvaluationResult.value.suggested_high) / 2)) {
+    return aiEvaluationResult.value.suggested_high;
+  }
+  return Math.round(projectBudgetAmount.value * 1.25);
+});
 const projectPlatformFeeLow = computed(() => Math.round(projectBudgetLow.value * 0.08));
 const projectPlatformFeeHigh = computed(() => Math.round(projectBudgetHigh.value * 0.08));
 const projectEscrowFeeLow = computed(() => Math.round(projectBudgetLow.value * 0.02));
@@ -3321,6 +3449,46 @@ function removeDeliverable(index) {
   }
 
   projectDeliverables.value.splice(index, 1);
+}
+
+async function triggerAiEvaluation() {
+  aiEvaluationLoading.value = true;
+  aiEvaluationError.value = '';
+  aiEvaluationResult.value = null;
+  try {
+    const payload = {
+      description: projectSetupForm.overview || projectSetupForm.shortDescription || '',
+      requirements: projectSetupForm.requirements
+        ? projectSetupForm.requirements.split('\n').map(r => r.trim()).filter(Boolean)
+        : [],
+      deliverables: visibleDeliverables.value,
+      timeline: projectTimelineLabel.value,
+      tech_stack: projectSetupForm.techStack || '',
+      complexity: projectSetupForm.complexity || 'Medium',
+      constraints: projectSetupForm.constraints || '',
+      reference_budget: Math.max(0, Number(projectSetupForm.budgetAmount) || 0)
+    };
+    
+    const response = await api('/api/projects/evaluate', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+    
+    aiEvaluationResult.value = response;
+  } catch (err) {
+    console.error('AI evaluation failed:', err);
+    aiEvaluationError.value = err.message || 'AI evaluation failed. Please try again.';
+  } finally {
+    aiEvaluationLoading.value = false;
+  }
+}
+
+function applyAiSuggestedPrice() {
+  if (aiEvaluationResult.value) {
+    const avg = Math.round((aiEvaluationResult.value.suggested_low + aiEvaluationResult.value.suggested_high) / 2);
+    projectSetupForm.budgetAmount = avg;
+    showToast(`Applied AI suggested budget: ${formatMoney(avg)}`);
+  }
 }
 
 function formatMoney(value) {

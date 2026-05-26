@@ -373,3 +373,24 @@ type SSLReviewStatus struct {
 	Error         string     `json:"error,omitempty"`
 	CheckedBy     string     `json:"checked_by,omitempty"`
 }
+
+type EvaluateProjectRequest struct {
+	Description     string   `json:"description"`
+	Requirements    []string `json:"requirements"`
+	Deliverables    []string `json:"deliverables"`
+	Timeline        string   `json:"timeline"`
+	TechStack       string   `json:"tech_stack"`
+	Complexity      string   `json:"complexity"`
+	Constraints     string   `json:"constraints"`
+	ReferenceBudget int64    `json:"reference_budget,omitempty"` // in USD
+}
+
+type EvaluateProjectResponse struct {
+	SuggestedLow    int64             `json:"suggested_low"`
+	SuggestedHigh   int64             `json:"suggested_high"`
+	ConfidenceLevel float64           `json:"confidence_level"`
+	TaskBreakdown   map[string]int64  `json:"task_breakdown"`
+	Assumptions     []string          `json:"assumptions"`
+	Risks           []string          `json:"risks"`
+	Rationale       string            `json:"rationale"`
+}
