@@ -55,6 +55,7 @@ type Config struct {
 	GitHubOwner     string
 	GitHubOwnerType string
 
+	GitHubAppID             string
 	GitHubOAuthClientID     string
 	GitHubOAuthClientSecret string
 
@@ -95,6 +96,22 @@ func LoadConfig() Config {
 	if env == "production" {
 		payPalDefaultEnv = "live"
 	}
+	githubOAuthClientID := firstEnv(
+		"GITHUB_APP_CLIENT_ID",
+		"GITHUB_OAUTH_CLIENT_ID",
+		"GITHUB_CLIENT_ID",
+		"MERGEOS_GITHUB_APP_CLIENT_ID",
+		"MERGEOS_GITHUB_OAUTH_CLIENT_ID",
+	)
+	githubOAuthClientSecret := firstEnv(
+		"GITHUB_APP_CLIENT_SECRET",
+		"GITHUB_OAUTH_CLIENT_SECRET",
+		"GITHUB_CLIENT_SECRET",
+		"MERGEOS_GITHUB_APP_CLIENT_SECRET",
+		"MERGEOS_GITHUB_OAUTH_CLIENT_SECRET",
+	)
+	googleClientID := firstEnv("GOOGLE_CLIENT_ID", "MERGEOS_GOOGLE_CLIENT_ID")
+	googleClientSecret := firstEnv("GOOGLE_CLIENT_SECRET", "MERGEOS_GOOGLE_CLIENT_SECRET")
 
 	return Config{
 		Environment:              env,
@@ -133,8 +150,9 @@ func LoadConfig() Config {
 		GitHubOwner:     getenv("GITHUB_OWNER", defaultGitHubOwner),
 		GitHubOwnerType: strings.ToLower(getenv("GITHUB_OWNER_TYPE", "org")),
 
-		GitHubOAuthClientID:     os.Getenv("GITHUB_OAUTH_CLIENT_ID"),
-		GitHubOAuthClientSecret: os.Getenv("GITHUB_OAUTH_CLIENT_SECRET"),
+		GitHubAppID:             firstEnv("GITHUB_APP_ID", "MERGEOS_GITHUB_APP_ID"),
+		GitHubOAuthClientID:     githubOAuthClientID,
+		GitHubOAuthClientSecret: githubOAuthClientSecret,
 
 		BountyRoot: bountyRoot,
 		UploadRoot: uploadRoot,
@@ -145,10 +163,10 @@ func LoadConfig() Config {
 		SMTPPassword: os.Getenv("SMTP_PASSWORD"),
 		SMTPFrom:     getenv("SMTP_FROM", "noreply@mergeos.local"),
 
-		GoogleClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
-		GoogleClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
-		GitHubClientID:     os.Getenv("GITHUB_CLIENT_ID"),
-		GitHubClientSecret: os.Getenv("GITHUB_CLIENT_SECRET"),
+		GoogleClientID:     googleClientID,
+		GoogleClientSecret: googleClientSecret,
+		GitHubClientID:     githubOAuthClientID,
+		GitHubClientSecret: githubOAuthClientSecret,
 	}
 }
 
@@ -232,6 +250,16 @@ func getenv(key, fallback string) string {
 		return fallback
 	}
 	return value
+}
+
+func firstEnv(keys ...string) string {
+	for _, key := range keys {
+		value := strings.TrimSpace(os.Getenv(key))
+		if value != "" {
+			return value
+		}
+	}
+	return ""
 }
 
 func getenvBool(key string, fallback bool) bool {

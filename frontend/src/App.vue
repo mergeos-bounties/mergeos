@@ -2012,7 +2012,7 @@
               </button>
               <button type="button" :disabled="authBusy || !githubOAuthReady" @click="startGitHubLogin">
                 <span class="github-mark" aria-hidden="true">GH</span>
-                {{ githubOAuthReady ? 'Continue with GitHub' : 'Configure GitHub OAuth' }}
+                {{ githubOAuthReady ? 'Continue with GitHub' : 'Configure GitHub App' }}
               </button>
             </div>
 
@@ -3291,7 +3291,7 @@ async function startGitHubLogin() {
   errorMessage.value = '';
   const cfg = await loadRuntimeConfig();
   if (!cfg.github_oauth_ready || !cfg.github_oauth_client_id) {
-    errorMessage.value = 'GitHub OAuth is not configured yet.';
+    errorMessage.value = 'GitHub App login is not configured yet.';
     showToast(errorMessage.value);
     return;
   }
@@ -3303,7 +3303,6 @@ async function startGitHubLogin() {
   const params = new URLSearchParams({
     client_id: cfg.github_oauth_client_id,
     redirect_uri: redirectURI,
-    scope: 'read:user user:email',
     state,
   });
   window.location.href = `https://github.com/login/oauth/authorize?${params.toString()}`;
@@ -3752,7 +3751,6 @@ function applyAiSuggestedPrice() {
     projectSetupForm.budgetAmount = avg;
     showToast(`Applied AI suggested budget: ${formatMoney(avg)}`);
   }
-}
 }
 
 function formatMoney(value) {

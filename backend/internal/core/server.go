@@ -32,7 +32,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("POST /api/auth/logout", s.logout)
 	mux.HandleFunc("GET /api/auth/google/login", s.googleLogin)
 	mux.HandleFunc("GET /api/auth/google/callback", s.googleCallback)
-	mux.HandleFunc("GET /api/auth/github/login", s.githubLogin)
+	mux.HandleFunc("GET /api/auth/github/login", s.githubBrowserLogin)
 	mux.HandleFunc("GET /api/auth/github/callback", s.githubCallback)
 	mux.HandleFunc("POST /api/wallets", s.createWallet)
 	mux.HandleFunc("GET /api/wallets/{address}", s.wallet)
@@ -153,7 +153,7 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) githubLogin(w http.ResponseWriter, r *http.Request) {
 	if !s.cfg.GitHubOAuthReady() {
-		writeError(w, http.StatusBadRequest, "github oauth is not configured")
+		writeError(w, http.StatusBadRequest, "github app login is not configured")
 		return
 	}
 	var req GitHubAuthRequest

@@ -39,8 +39,22 @@ var configEnvKeys = []string{
 	"GITHUB_TOKEN",
 	"GITHUB_OWNER",
 	"GITHUB_OWNER_TYPE",
+	"GITHUB_APP_ID",
+	"GITHUB_APP_CLIENT_ID",
+	"GITHUB_APP_CLIENT_SECRET",
 	"GITHUB_OAUTH_CLIENT_ID",
 	"GITHUB_OAUTH_CLIENT_SECRET",
+	"GITHUB_CLIENT_ID",
+	"GITHUB_CLIENT_SECRET",
+	"GOOGLE_CLIENT_ID",
+	"GOOGLE_CLIENT_SECRET",
+	"MERGEOS_GOOGLE_CLIENT_ID",
+	"MERGEOS_GOOGLE_CLIENT_SECRET",
+	"MERGEOS_GITHUB_APP_ID",
+	"MERGEOS_GITHUB_APP_CLIENT_ID",
+	"MERGEOS_GITHUB_APP_CLIENT_SECRET",
+	"MERGEOS_GITHUB_OAUTH_CLIENT_ID",
+	"MERGEOS_GITHUB_OAUTH_CLIENT_SECRET",
 	"BOUNTY_ROOT",
 	"UPLOAD_ROOT",
 	"SMTP_HOST",
@@ -127,6 +141,47 @@ func TestLoadConfigRealEnvWinsOverEnvFiles(t *testing.T) {
 	cfg := LoadConfig()
 	if cfg.TokenSymbol != "REAL" {
 		t.Fatalf("token symbol = %q", cfg.TokenSymbol)
+	}
+}
+
+func TestLoadConfigUsesGitHubAppCredentialsForOAuth(t *testing.T) {
+	withTempConfigDir(t)
+	clearConfigEnv(t)
+
+	t.Setenv("GITHUB_APP_ID", "12345")
+	t.Setenv("GITHUB_APP_CLIENT_ID", "app-client")
+	t.Setenv("GITHUB_APP_CLIENT_SECRET", "app-secret")
+	t.Setenv("GITHUB_OAUTH_CLIENT_ID", "legacy-client")
+	t.Setenv("GITHUB_OAUTH_CLIENT_SECRET", "legacy-secret")
+
+	cfg := LoadConfig()
+	if cfg.GitHubAppID != "12345" {
+		t.Fatalf("github app id = %q", cfg.GitHubAppID)
+	}
+	if cfg.GitHubOAuthClientID != "app-client" {
+		t.Fatalf("github oauth client id = %q", cfg.GitHubOAuthClientID)
+	}
+	if cfg.GitHubOAuthClientSecret != "app-secret" {
+		t.Fatalf("github oauth client secret = %q", cfg.GitHubOAuthClientSecret)
+	}
+	if cfg.GitHubClientID != cfg.GitHubOAuthClientID || cfg.GitHubClientSecret != cfg.GitHubOAuthClientSecret {
+		t.Fatal("legacy github client fields should use the same GitHub App credentials")
+	}
+}
+
+func TestLoadConfigUsesMergeOSGoogleCredentials(t *testing.T) {
+	withTempConfigDir(t)
+	clearConfigEnv(t)
+
+	t.Setenv("MERGEOS_GOOGLE_CLIENT_ID", "google-client")
+	t.Setenv("MERGEOS_GOOGLE_CLIENT_SECRET", "google-secret")
+
+	cfg := LoadConfig()
+	if cfg.GoogleClientID != "google-client" {
+		t.Fatalf("google client id = %q", cfg.GoogleClientID)
+	}
+	if cfg.GoogleClientSecret != "google-secret" {
+		t.Fatalf("google client secret = %q", cfg.GoogleClientSecret)
 	}
 }
 

@@ -316,7 +316,7 @@ const githubAccountLabel = computed(() => (githubLinked.value ? `github:${linked
 const githubActionTitle = computed(() => {
   if (githubLinked.value) return `Linked as github:${linkedGitHubUsername.value}`;
   if (!localWalletAddress.value) return 'Create a wallet first';
-  if (!githubOAuthReady.value) return 'GitHub OAuth is not configured yet';
+  if (!githubOAuthReady.value) return 'GitHub App login is not configured yet';
   return 'Connect GitHub to wallet';
 });
 const entries = computed(() => sortLedgerEntries(rawEntries.value));
@@ -442,7 +442,7 @@ async function startGitHubWalletLink() {
     }
   }
   if (!githubOAuthReady.value) {
-    walletError.value = 'GitHub OAuth is not configured yet.';
+    walletError.value = 'GitHub App login is not configured yet.';
     return;
   }
   const state = randomOAuthState();
@@ -455,7 +455,6 @@ async function startGitHubWalletLink() {
   const params = new URLSearchParams({
     client_id: config.value.github_oauth_client_id,
     redirect_uri: redirectURI,
-    scope: 'read:user user:email',
     state,
   });
   window.location.href = `https://github.com/login/oauth/authorize?${params.toString()}`;

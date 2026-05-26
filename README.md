@@ -27,7 +27,7 @@ This repository is the current MergeOS MVP: Go backend, Vue SSR frontend, projec
 MergeOS currently supports:
 
 - Customer auth with email/password bearer sessions.
-- GitHub OAuth login that creates or links a MergeOS account to an MRG wallet.
+- GitHub App login that creates or links a MergeOS account to an MRG wallet.
 - Guest MRG wallet creation with BSC-style `0x...` addresses from MergeOS Scan.
 - Two environment modes: `local` and `production`.
 - Project creation with budget, payment method, attachments, and escrow status.
@@ -119,18 +119,29 @@ Compose storage:
 
 The backend runs in `MERGEOS_ENV=local`, sets `DATABASE_URL=postgres://mergeos:mergeos@postgres:5432/mergeos_local?sslmode=disable`, disables SSL review calls for local tests, and runs the embedded PostgreSQL migrations automatically on startup.
 
-GitHub OAuth for local testing is optional. To enable "Continue with GitHub" and wallet linking, create a GitHub OAuth app and set these before starting Compose:
+GitHub App user authorization for local testing is optional. To enable "Continue with GitHub" and wallet linking, create a GitHub App, enable user authorization, and set these before starting Compose:
 
 ```powershell
-$env:MERGEOS_GITHUB_OAUTH_CLIENT_ID='your-client-id'
-$env:MERGEOS_GITHUB_OAUTH_CLIENT_SECRET='your-client-secret'
+$env:MERGEOS_GITHUB_APP_ID='your-app-id'
+$env:MERGEOS_GITHUB_APP_CLIENT_ID='your-github-app-client-id'
+$env:MERGEOS_GITHUB_APP_CLIENT_SECRET='your-github-app-client-secret'
 docker compose up --build
 ```
 
-For local callbacks, add these authorization callback URLs to the GitHub OAuth app as needed:
+For local callbacks, add these authorization callback URLs to the GitHub App as needed:
 
 - `http://127.0.0.1:5173/`
 - `http://127.0.0.1:5175/`
+
+Google login is also optional. To enable "Continue with Google", create a Google OAuth client and set these before starting Compose:
+
+```powershell
+$env:MERGEOS_GOOGLE_CLIENT_ID='your-google-client-id'
+$env:MERGEOS_GOOGLE_CLIENT_SECRET='your-google-client-secret'
+docker compose up --build
+```
+
+For local Google callbacks, add `http://127.0.0.1:5173/api/auth/google/callback`.
 
 ## Manual Service Development
 
@@ -254,8 +265,11 @@ Important backend variables:
 - `CRYPTO_RPC_URL`, `CRYPTO_RECEIVER`, `CRYPTO_ASSET`, `CRYPTO_TOKEN_CONTRACT`: crypto verifier
 - `GITHUB_TOKEN`, `GITHUB_OWNER`, `GITHUB_OWNER_TYPE`: backend runtime values for GitHub bounty repo creation and admin PR merge actions
 - `MERGEOS_GITHUB_TOKEN`: Docker Compose and GitHub Actions secret name that maps into backend `GITHUB_TOKEN`; use a personal access token with repo write access, not the automatic GitHub Actions token
-- `GITHUB_OAUTH_CLIENT_ID`, `GITHUB_OAUTH_CLIENT_SECRET`: backend runtime values for GitHub login and MRG wallet linking
-- `MERGEOS_GITHUB_OAUTH_CLIENT_ID`, `MERGEOS_GITHUB_OAUTH_CLIENT_SECRET`: Docker Compose and GitHub Actions secret names that map into the backend runtime values
+- `GITHUB_APP_ID`, `GITHUB_APP_CLIENT_ID`, `GITHUB_APP_CLIENT_SECRET`: backend runtime values for GitHub App user authorization, login, and MRG wallet linking
+- `MERGEOS_GITHUB_APP_ID`, `MERGEOS_GITHUB_APP_CLIENT_ID`, `MERGEOS_GITHUB_APP_CLIENT_SECRET`: Docker Compose and GitHub Actions secret names that map into the backend runtime values
+- `GITHUB_OAUTH_CLIENT_ID`, `GITHUB_OAUTH_CLIENT_SECRET`: legacy backend aliases still accepted for older OAuth configuration
+- `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`: backend runtime values for Google login
+- `MERGEOS_GOOGLE_CLIENT_ID`, `MERGEOS_GOOGLE_CLIENT_SECRET`: Docker Compose and GitHub Actions secret names that map into Google login runtime values
 - `BOUNTY_ROOT`: local child bounty repo root
 - `UPLOAD_ROOT`: attachment storage root
 - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_FROM`: email notifications

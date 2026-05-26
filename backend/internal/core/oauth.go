@@ -69,7 +69,7 @@ func (s *Server) googleCallback(w http.ResponseWriter, r *http.Request) {
 		// Real Token Exchange
 		redirectURI := s.getFrontRedirectBase(r) + "/api/auth/google/callback"
 		tokenURL := "https://oauth2.googleapis.com/token"
-		
+
 		data := url.Values{}
 		data.Set("code", code)
 		data.Set("client_id", s.cfg.GoogleClientID)
@@ -138,7 +138,7 @@ func (s *Server) googleCallback(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, frontendRedirectURL, http.StatusTemporaryRedirect)
 }
 
-func (s *Server) githubLogin(w http.ResponseWriter, r *http.Request) {
+func (s *Server) githubBrowserLogin(w http.ResponseWriter, r *http.Request) {
 	state := generateState()
 	http.SetCookie(w, &http.Cookie{
 		Name:     "github_oauth_state",
@@ -148,7 +148,7 @@ func (s *Server) githubLogin(w http.ResponseWriter, r *http.Request) {
 		HttpOnly: true,
 	})
 
-	clientID := s.cfg.GitHubClientID
+	clientID := s.cfg.GitHubOAuthClientID
 	if clientID == "" {
 		// Mock Flow Redirect
 		redirectURL := fmt.Sprintf("/api/auth/github/callback?code=mock_github_code_123&state=%s", state)
@@ -157,7 +157,7 @@ func (s *Server) githubLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	redirectURI := s.getFrontRedirectBase(r) + "/api/auth/github/callback"
-	authURL := fmt.Sprintf("https://github.com/login/oauth/authorize?client_id=%s&redirect_uri=%s&scope=user:email&state=%s",
+	authURL := fmt.Sprintf("https://github.com/login/oauth/authorize?client_id=%s&redirect_uri=%s&state=%s",
 		url.QueryEscape(clientID),
 		url.QueryEscape(redirectURI),
 		url.QueryEscape(state),
@@ -190,8 +190,8 @@ func (s *Server) githubCallback(w http.ResponseWriter, r *http.Request) {
 
 		data := url.Values{}
 		data.Set("code", code)
-		data.Set("client_id", s.cfg.GitHubClientID)
-		data.Set("client_secret", s.cfg.GitHubClientSecret)
+		data.Set("client_id", s.cfg.GitHubOAuthClientID)
+		data.Set("client_secret", s.cfg.GitHubOAuthClientSecret)
 		data.Set("redirect_uri", redirectURI)
 
 		req, _ := http.NewRequest("POST", tokenURL, strings.NewReader(data.Encode()))
