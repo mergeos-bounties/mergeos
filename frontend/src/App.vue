@@ -1044,9 +1044,9 @@
         </nav>
 
         <div class="dash-top-actions">
-          <button class="dash-icon-button" aria-label="Notifications" type="button" @click="showToast('Opening notifications...')">
+          <button class="dash-icon-button" aria-label="Notifications" type="button" @click="dashboardView = 'notifications'">
             <Bell :size="18" />
-            <span>{{ dashboardNotificationCount }}</span>
+            <span v-if="dashboardNotificationBadge">{{ dashboardNotificationBadge }}</span>
           </button>
           <button class="primary-button compact" type="button" @click="openProjectWizard">
             <Plus :size="16" />
@@ -1065,6 +1065,55 @@
 
       <main class="dash-content">
         <section class="dash-main">
+
+          <!-- === Notifications View === -->
+          <template v-if="dashboardView === 'notifications'">
+            <div class="dash-breadcrumb">
+              <Home :size="14" />
+              <span>Dashboard</span>
+              <ChevronDown :size="13" />
+              <strong>Notifications</strong>
+            </div>
+
+            <div v-if="dashboardNotificationBadge" style="margin: 20px 0; display: flex; gap: 8px; align-items: center;">
+              <button class="secondary-button compact" type="button" @click="dashboardNotifications.forEach(n => n.read_at = n.read_at || new Date().toISOString())">
+                <CheckCheck :size="14" />
+                Mark all read
+              </button>
+            </div>
+
+            <section v-if="dashboardLoading" class="dash-empty-state" style="margin-top: 30px;">
+              <strong>Loading notifications...</strong>
+              <p>Syncing with the ledger.</p>
+            </section>
+
+            <section v-else-if="!dashboardNotifications.length" class="dash-empty-state" style="margin-top: 30px;">
+              <Bell :size="40" />
+              <strong>No notifications yet</strong>
+              <p>Notifications about project funding, payments, and ledger activity will appear here.</p>
+            </section>
+
+            <section v-else class="dash-card" style="padding: 0; overflow: hidden;">
+              <div class="dash-pr-list" style="border: 0;">
+                <article
+                  v-for="notification in dashboardNotifications"
+                  :key="notification.id"
+                  class="dash-pr-row"
+                  style="padding: 12px 16px; border-bottom: 1px solid var(--line); cursor: pointer;"
+                  :style="{ background: notification.read_at ? 'transparent' : '#f0fdf6' }"
+                  @click="notification.read_at = notification.read_at || new Date().toISOString()"
+                >
+                  <span style="font-size: 20px; width: 36px; text-align: center;">{{ notification.icon }}</span>
+                  <div class="dash-pr-main">
+                    <strong style="font-size: 13px;">{{ notification.title }}</strong>
+                    <p v-if="notification.body" style="margin: 2px 0 0; color: #6b7280; font-size: 12px;">{{ notification.body }}</p>
+                    <small style="color: #9aa3af; font-size: 10px;">{{ formatDashboardDate(notification.created_at) }}</small>
+                  </div>
+                  <span v-if="!notification.read_at" style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #10b981; flex: 0 0 auto;"></span>
+                </article>
+              </div>
+            </section>
+          </template>
 
           <!-- === Payment History View === -->
           <template v-if="dashboardView === 'payments'">
@@ -4352,6 +4401,16 @@ async function loadDashboardData(options = {}) {
     dashboardProjects.value = Array.isArray(projects) ? projects : [];
     dashboardTasks.value = Array.isArray(tasks) ? tasks : [];
     dashboardLedgerEntries.value = Array.isArray(entries) ? entries : [];
+    dashboardNotifications.value = dashboardLedgerEntries.value.slice().reverse().slice(0, 20).map((entry) => ({
+      id: entry.id || entry.key || Math.random().toString(36),
+      title: entry.title || entry.description || 'Ledger update',
+      body: entry.ref ? `Reference: ${entry.ref}` : '',
+      project_id: entry.project_id,
+      created_at: entry.created_at,
+      type: entry.type === 'funding' ? 'funding' : entry.type === 'task_payment' ? 'payment' : 'update',
+      read_at: entry.read_at || null,
+      icon: entry.type === 'funding' ? '💰' : entry.type === 'task_payment' ? '💳' : '📋',
+    }));
     const requestedProjectID = options.selectProjectID || selectedDashboardProjectID.value;
     const selectedExists = dashboardProjects.value.some((project) => project.id === requestedProjectID);
     selectedDashboardProjectID.value = selectedExists
