@@ -4,6 +4,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import {
+  createMergeOSServer,
   createRuntimeConfig,
   loadEnvFiles,
   normalizeMode,
@@ -62,4 +63,55 @@ test('creates runtime config for production defaults', () => {
   assert.equal(config.production, true);
   assert.equal(config.port, 8081);
   assert.equal(config.apiTarget, 'https://api.example.com');
+});
+
+test('production server injects SSR HTML into the app shell', async (t) => {
+  const cwd = await fs.mkdtemp(path.join(os.tmpdir(), 'mergeos-frontend-ssr-'));
+  const clientDist = path.join(cwd, 'client');
+  const serverDir = path.join(cwd, 'server');
+  const serverEntry = path.join(serverDir, 'entry-server.mjs');
+  await fs.mkdir(clientDist, { recursive: true });
+  await fs.mkdir(serverDir, { recursive: true });
+  await fs.writeFile(
+    path.join(clientDist, 'index.html'),
+    '<!doctype html><html><body><div id="app"><!--ssr-outlet--></div></body></html>',
+  );
+  await fs.writeFile(
+    serverEntry,
+    "export async function render(url) { return `<main id=\"ssr-proof\">${url}</main>`; }\n",
+  );
+
+  const server = await createMergeOSServer({
+    mode: 'production',
+    production: true,
+    cwd,
+    host: '127.0.0.1',
+    port: 0,
+    hmrPort: 0,
+    apiTarget: 'http://127.0.0.1:65535',
+    clientDist,
+    serverEntry,
+  });
+  t.after(() => server.close());
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+
+  const address = server.address();
+  const response = await fetch(`http://127.0.0.1:${address.port}/admin`);
+  const html = await response.text();
+
+  assert.equal(response.status, 200);
+  assert.match(html, /id="ssr-proof"/);
+  assert.match(html, />\/admin</);
+  assert.doesNotMatch(html, /ssr-outlet/);
+  assert.doesNotMatch(html, /<div id="app"><\/div>/);
+});
+
+test('shared Vue entry leaves browser mounting to the client hydration entry', async () => {
+  const main = await fs.readFile(new URL('./src/main.js', import.meta.url), 'utf-8');
+  const client = await fs.readFile(new URL('./src/entry-client.js', import.meta.url), 'utf-8');
+
+  assert.match(main, /createSSRApp/);
+  assert.doesNotMatch(main, /\.mount\(/);
+  assert.doesNotMatch(main, /typeof document|createClientApp/);
+  assert.match(client, /createApp\(\)\.mount\('#app'\)/);
 });
