@@ -4325,6 +4325,15 @@ function clearSession() {
   dashboardError.value = '';
   selectedDashboardProjectID.value = '';
   removeStoredToken();
+  // Navigate back to the public homepage so the user is not stuck on a
+  // hidden dashboard shell after logout.
+  projectWizardVisible.value = false;
+  publicModeVisible.value = true;
+  publicPage.value = 'home';
+  if (hasWindow) {
+    window.history.pushState({ publicPage: 'home' }, '', '/');
+    window.requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
+  }
 }
 
 async function submitAuth() {
