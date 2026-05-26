@@ -10,5 +10,9 @@ bounties/
 .env
 .env.*
 !backend/.env.example
+!backend/.env.local.example
+!backend/.env.production.example
+!frontend/.env.local.example
+!frontend/.env.production.example
 .codex/
 .DS_Store

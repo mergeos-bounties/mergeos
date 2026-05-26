@@ -61,6 +61,9 @@ func (f LocalRepoFactory) CreateProjectRepo(_ context.Context, project *Project,
 	if err := os.MkdirAll(filepath.Join(repoPath, "tasks"), 0755); err != nil {
 		return nil, err
 	}
+	if err := os.MkdirAll(filepath.Join(repoPath, "attachments"), 0755); err != nil {
+		return nil, err
+	}
 	if err := os.MkdirAll(filepath.Join(repoPath, ".mergeos"), 0755); err != nil {
 		return nil, err
 	}
@@ -72,6 +75,16 @@ func (f LocalRepoFactory) CreateProjectRepo(_ context.Context, project *Project,
 		fileName := fmt.Sprintf("%03d-%s.md", task.IssueNumber, slug(task.Title))
 		taskPath := filepath.Join(repoPath, "tasks", fileName)
 		if err := os.WriteFile(taskPath, []byte(renderTaskMarkdown(project, task)), 0644); err != nil {
+			return nil, err
+		}
+	}
+	for _, attachment := range project.Attachments {
+		if attachment.StoredPath == "" {
+			continue
+		}
+		attachmentName := attachmentRepoName(attachment)
+		targetPath := filepath.Join(repoPath, "attachments", attachmentName)
+		if err := copyFile(attachment.StoredPath, targetPath); err != nil {
 			return nil, err
 		}
 	}
@@ -160,6 +173,23 @@ func (f *GitHubRepoFactory) CreateProjectRepo(ctx context.Context, project *Proj
 	if err := f.githubJSON(ctx, http.MethodPut, contentsURL, readmePayload, nil); err != nil {
 		return nil, err
 	}
+	for _, attachment := range project.Attachments {
+		if attachment.StoredPath == "" {
+			continue
+		}
+		data, err := os.ReadFile(attachment.StoredPath)
+		if err != nil {
+			return nil, err
+		}
+		attachmentPayload := map[string]any{
+			"message": "Add client attachment " + attachment.OriginalName,
+			"content": base64.StdEncoding.EncodeToString(data),
+		}
+		attachmentURL := "https://api.github.com/repos/" + created.FullName + "/contents/attachments/" + attachmentRepoName(attachment)
+		if err := f.githubJSON(ctx, http.MethodPut, attachmentURL, attachmentPayload, nil); err != nil {
+			return nil, err
+		}
+	}
 
 	issues := map[string]RepoIssue{}
 	for _, task := range tasks {
@@ -241,6 +271,13 @@ func renderRepoReadme(project *Project, tasks []*Task) string {
 	builder.WriteString("Budget: " + centsToPayPalValue(project.BudgetCents) + " USD\n\n")
 	builder.WriteString("## Brief\n\n")
 	builder.WriteString(project.Brief + "\n\n")
+	if len(project.Attachments) > 0 {
+		builder.WriteString("## Client Attachments\n\n")
+		for _, attachment := range project.Attachments {
+			builder.WriteString(fmt.Sprintf("- [%s](attachments/%s) - %s - %d bytes\n", attachment.OriginalName, attachmentRepoName(attachment), attachment.ContentType, attachment.SizeBytes))
+		}
+		builder.WriteString("\n")
+	}
 	builder.WriteString("## Bounty Tasks\n\n")
 	for _, task := range tasks {
 		builder.WriteString(fmt.Sprintf("- #%d %s - %s - %s MERGE\n", task.IssueNumber, task.Title, task.RequiredWorkerKind, centsToPayPalValue(task.RewardCents)))
@@ -257,6 +294,9 @@ func renderTaskMarkdown(project *Project, task *Task) string {
 	if task.SuggestedAgentType != "" {
 		builder.WriteString("Suggested agent type: `" + task.SuggestedAgentType + "`\n\n")
 	}
+	if len(project.Attachments) > 0 {
+		builder.WriteString("Client attachments are available in the repo `attachments/` directory and should be used as visual/content references.\n\n")
+	}
 	builder.WriteString("Reward: " + centsToPayPalValue(task.RewardCents) + " MERGE\n\n")
 	builder.WriteString("A paid submission must include a worker manifest with worker kind, worker id, and agent type when the work is agent or hybrid.\n")
 	return builder.String()
@@ -264,3 +304,23 @@ func renderTaskMarkdown(project *Project, task *Task) string {
 
 var _ RepoFactory = LocalRepoFactory{}
 var _ RepoFactory = (*GitHubRepoFactory)(nil)
+
+func attachmentRepoName(attachment *Attachment) string {
+	name := slug(strings.TrimSuffix(attachment.OriginalName, filepath.Ext(attachment.OriginalName)))
+	if name == "" {
+		name = attachment.ID
+	}
+	ext := strings.ToLower(filepath.Ext(attachment.OriginalName))
+	if ext == "" {
+		ext = filepath.Ext(attachment.StoredName)
+	}
+	return attachment.ID + "-" + name + ext
+}
+
+func copyFile(sourcePath, targetPath string) error {
+	data, err := os.ReadFile(sourcePath)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(targetPath, data, 0644)
+}

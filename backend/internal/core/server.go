@@ -25,6 +25,17 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/auth/me", s.me)
 	mux.HandleFunc("POST /api/auth/logout", s.logout)
 	mux.HandleFunc("POST /api/payments/paypal/orders", s.createPayPalOrder)
+	mux.HandleFunc("POST /api/uploads", s.uploadAttachment)
+	mux.HandleFunc("GET /api/uploads/", s.downloadAttachment)
+	mux.HandleFunc("GET /api/admin/summary", s.adminSummary)
+	mux.HandleFunc("GET /api/admin/users", s.adminUsers)
+	mux.HandleFunc("GET /api/admin/projects", s.adminProjects)
+	mux.HandleFunc("GET /api/admin/tasks", s.adminTasks)
+	mux.HandleFunc("GET /api/admin/notifications", s.adminNotifications)
+	mux.HandleFunc("GET /api/admin/attachments", s.adminAttachments)
+	mux.HandleFunc("GET /api/admin/ledger", s.adminLedger)
+	mux.HandleFunc("GET /api/admin/ssl", s.adminSSLReviews)
+	mux.HandleFunc("POST /api/admin/ssl/review", s.reviewAdminSSL)
 	mux.HandleFunc("GET /api/projects", s.projects)
 	mux.HandleFunc("POST /api/projects", s.createProject)
 	mux.HandleFunc("GET /api/tasks", s.tasks)
@@ -38,6 +49,7 @@ func (s *Server) health(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, StatusResponse{
 		Service:      "MergeOS API",
 		Version:      "0.3.0",
+		Environment:  s.cfg.Environment,
 		TokenSymbol:  s.cfg.TokenSymbol,
 		PaymentMode:  paymentMode(s.cfg),
 		RepoProvider: repoProvider(s.cfg),
@@ -46,6 +58,7 @@ func (s *Server) health(w http.ResponseWriter, _ *http.Request) {
 
 func (s *Server) config(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, RuntimeConfigResponse{
+		Environment:       s.cfg.Environment,
 		TokenSymbol:       s.cfg.TokenSymbol,
 		PaymentMode:       paymentMode(s.cfg),
 		RepoProvider:      repoProvider(s.cfg),
@@ -59,6 +72,11 @@ func (s *Server) config(w http.ResponseWriter, _ *http.Request) {
 		CryptoAsset:       s.cfg.CryptoAsset,
 		CryptoToken:       s.cfg.CryptoTokenContract,
 		BountyRoot:        s.cfg.BountyRoot,
+		UploadRoot:        s.cfg.UploadRoot,
+		AdminBootstrap:    s.cfg.AdminAutoPromote || strings.TrimSpace(s.cfg.AdminEmail) != "",
+		PrimaryDomain:     s.cfg.PrimaryDomain,
+		AdminDomain:       s.cfg.AdminDomain,
+		SSLReviewDomains:  s.cfg.SSLReviewDomains,
 	})
 }
 
@@ -108,7 +126,11 @@ func (s *Server) projects(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	writeJSON(w, http.StatusOK, s.store.ListProjects(user.ID))
+	userID := user.ID
+	if normalizeRole(user.Role) == RoleAdmin {
+		userID = ""
+	}
+	writeJSON(w, http.StatusOK, s.store.ListProjects(userID))
 }
 
 func (s *Server) tasks(w http.ResponseWriter, r *http.Request) {
@@ -116,7 +138,11 @@ func (s *Server) tasks(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	writeJSON(w, http.StatusOK, s.store.ListTasks(user.ID))
+	userID := user.ID
+	if normalizeRole(user.Role) == RoleAdmin {
+		userID = ""
+	}
+	writeJSON(w, http.StatusOK, s.store.ListTasks(userID))
 }
 
 func (s *Server) notifications(w http.ResponseWriter, r *http.Request) {
@@ -124,11 +150,148 @@ func (s *Server) notifications(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	writeJSON(w, http.StatusOK, s.store.ListNotifications(user.ID))
+	userID := user.ID
+	if normalizeRole(user.Role) == RoleAdmin {
+		userID = ""
+	}
+	writeJSON(w, http.StatusOK, s.store.ListNotifications(userID))
 }
 
-func (s *Server) ledger(w http.ResponseWriter, _ *http.Request) {
+func (s *Server) adminSummary(w http.ResponseWriter, r *http.Request) {
+	if _, ok := s.requireAdmin(w, r); !ok {
+		return
+	}
+	writeJSON(w, http.StatusOK, s.store.AdminSummary())
+}
+
+func (s *Server) adminUsers(w http.ResponseWriter, r *http.Request) {
+	if _, ok := s.requireAdmin(w, r); !ok {
+		return
+	}
+	writeJSON(w, http.StatusOK, s.store.ListUsers())
+}
+
+func (s *Server) adminProjects(w http.ResponseWriter, r *http.Request) {
+	if _, ok := s.requireAdmin(w, r); !ok {
+		return
+	}
+	writeJSON(w, http.StatusOK, s.store.ListProjects(""))
+}
+
+func (s *Server) adminTasks(w http.ResponseWriter, r *http.Request) {
+	if _, ok := s.requireAdmin(w, r); !ok {
+		return
+	}
+	writeJSON(w, http.StatusOK, s.store.ListTasks(""))
+}
+
+func (s *Server) adminNotifications(w http.ResponseWriter, r *http.Request) {
+	if _, ok := s.requireAdmin(w, r); !ok {
+		return
+	}
+	writeJSON(w, http.StatusOK, s.store.ListNotifications(""))
+}
+
+func (s *Server) adminAttachments(w http.ResponseWriter, r *http.Request) {
+	if _, ok := s.requireAdmin(w, r); !ok {
+		return
+	}
+	writeJSON(w, http.StatusOK, s.store.ListAttachments(""))
+}
+
+func (s *Server) adminLedger(w http.ResponseWriter, r *http.Request) {
+	if _, ok := s.requireAdmin(w, r); !ok {
+		return
+	}
 	writeJSON(w, http.StatusOK, s.store.ListLedger())
+}
+
+func (s *Server) adminSSLReviews(w http.ResponseWriter, r *http.Request) {
+	if _, ok := s.requireAdmin(w, r); !ok {
+		return
+	}
+	writeJSON(w, http.StatusOK, s.store.ListSSLReviews())
+}
+
+func (s *Server) reviewAdminSSL(w http.ResponseWriter, r *http.Request) {
+	if _, ok := s.requireAdmin(w, r); !ok {
+		return
+	}
+	reviews, err := s.store.ReviewSSLNow(r.Context(), "manual")
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, reviews)
+}
+
+func (s *Server) uploadAttachment(w http.ResponseWriter, r *http.Request) {
+	user, ok := s.requireUser(w, r)
+	if !ok {
+		return
+	}
+	if err := r.ParseMultipartForm(maxUploadBytes * 3); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid multipart upload")
+		return
+	}
+	files := r.MultipartForm.File["files"]
+	if len(files) == 0 {
+		if file, header, err := r.FormFile("file"); err == nil {
+			_ = file.Close()
+			files = append(files, header)
+		}
+	}
+	if len(files) == 0 {
+		writeError(w, http.StatusBadRequest, "at least one file is required")
+		return
+	}
+	attachments := make([]*Attachment, 0, len(files))
+	for _, header := range files {
+		attachment, err := s.store.SaveAttachment(user.ID, header)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		attachments = append(attachments, attachment)
+	}
+	writeJSON(w, http.StatusCreated, attachments)
+}
+
+func (s *Server) downloadAttachment(w http.ResponseWriter, r *http.Request) {
+	user, ok := s.requireUser(w, r)
+	if !ok {
+		return
+	}
+	path := strings.TrimPrefix(r.URL.Path, "/api/uploads/")
+	id := strings.TrimSuffix(path, "/download")
+	if id == "" || id == path {
+		writeError(w, http.StatusNotFound, "route not found")
+		return
+	}
+	attachment, ok := s.store.AttachmentForDownload(id)
+	if !ok {
+		writeError(w, http.StatusNotFound, "attachment not found")
+		return
+	}
+	if normalizeRole(user.Role) != RoleAdmin && attachment.UserID != user.ID {
+		writeError(w, http.StatusForbidden, "admin access is required")
+		return
+	}
+	w.Header().Set("Content-Type", attachment.ContentType)
+	w.Header().Set("Content-Disposition", "inline; filename=\""+strings.ReplaceAll(attachment.OriginalName, "\"", "")+"\"")
+	http.ServeFile(w, r, attachment.StoredPath)
+}
+
+func (s *Server) ledger(w http.ResponseWriter, r *http.Request) {
+	user, ok := s.requireUser(w, r)
+	if !ok {
+		return
+	}
+	if normalizeRole(user.Role) == RoleAdmin {
+		writeJSON(w, http.StatusOK, s.store.ListLedger())
+		return
+	}
+	writeJSON(w, http.StatusOK, s.store.ListLedgerForUser(user.ID))
 }
 
 func (s *Server) createProject(w http.ResponseWriter, r *http.Request) {
@@ -167,10 +330,18 @@ func (s *Server) createPayPalOrder(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) acceptTask(w http.ResponseWriter, r *http.Request) {
+	user, ok := s.requireUser(w, r)
+	if !ok {
+		return
+	}
 	path := strings.TrimPrefix(r.URL.Path, "/api/tasks/")
 	taskID := strings.TrimSuffix(path, "/accept")
 	if taskID == "" || taskID == path {
 		writeError(w, http.StatusNotFound, "route not found")
+		return
+	}
+	if !s.store.CanAccessTask(user.ID, user.Role, taskID) {
+		writeError(w, http.StatusForbidden, "admin access is required")
 		return
 	}
 
@@ -191,6 +362,18 @@ func (s *Server) requireUser(w http.ResponseWriter, r *http.Request) (*User, boo
 	user, ok := s.store.UserByToken(r.Header.Get("Authorization"))
 	if !ok {
 		writeError(w, http.StatusUnauthorized, "login is required")
+		return nil, false
+	}
+	return user, true
+}
+
+func (s *Server) requireAdmin(w http.ResponseWriter, r *http.Request) (*User, bool) {
+	user, ok := s.requireUser(w, r)
+	if !ok {
+		return nil, false
+	}
+	if normalizeRole(user.Role) != RoleAdmin {
+		writeError(w, http.StatusForbidden, "admin access is required")
 		return nil, false
 	}
 	return user, true

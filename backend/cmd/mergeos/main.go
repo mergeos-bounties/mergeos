@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"os"
@@ -23,6 +24,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	store.StartSSLReviewJob(context.Background())
 	server := core.NewServer(cfg, store, payments)
 
 	httpServer := &http.Server{

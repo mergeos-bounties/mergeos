@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -30,17 +31,21 @@ type Store struct {
 	users         map[string]*User
 	sessions      map[string]*Session
 	notifications map[string]*Notification
+	attachments   map[string]*Attachment
+	sslReviews    map[string]*SSLReviewStatus
 	ledger        []LedgerEntry
 }
 
 type persistedState struct {
-	NextID        int             `json:"next_id"`
-	Projects      []*Project      `json:"projects"`
-	Tasks         []*Task         `json:"tasks"`
-	Users         []*User         `json:"users"`
-	Sessions      []*Session      `json:"sessions"`
-	Notifications []*Notification `json:"notifications"`
-	Ledger        []LedgerEntry   `json:"ledger"`
+	NextID        int                `json:"next_id"`
+	Projects      []*Project         `json:"projects"`
+	Tasks         []*Task            `json:"tasks"`
+	Users         []*User            `json:"users"`
+	Sessions      []*Session         `json:"sessions"`
+	Notifications []*Notification    `json:"notifications"`
+	Attachments   []*Attachment      `json:"attachments"`
+	SSLReviews    []*SSLReviewStatus `json:"ssl_reviews"`
+	Ledger        []LedgerEntry      `json:"ledger"`
 }
 
 func NewStore(cfg Config, payments *PaymentManager, repos RepoFactory, emailer *EmailSender) (*Store, error) {
@@ -55,9 +60,14 @@ func NewStore(cfg Config, payments *PaymentManager, repos RepoFactory, emailer *
 		users:         map[string]*User{},
 		sessions:      map[string]*Session{},
 		notifications: map[string]*Notification{},
+		attachments:   map[string]*Attachment{},
+		sslReviews:    map[string]*SSLReviewStatus{},
 		ledger:        []LedgerEntry{},
 	}
 	if err := store.load(); err != nil {
+		return nil, err
+	}
+	if err := store.ensureAdmin(); err != nil {
 		return nil, err
 	}
 	return store, nil
@@ -83,11 +93,16 @@ func (s *Store) Register(req RegisterRequest) (*AuthResponse, error) {
 		return nil, errors.New("email is already registered")
 	}
 	now := time.Now().UTC()
+	role := RoleClient
+	if s.cfg.AdminAutoPromote && !s.hasAdminLocked() && len(s.users) == 0 {
+		role = RoleAdmin
+	}
 	user := &User{
 		ID:           s.newID("usr"),
 		Name:         name,
 		CompanyName:  strings.TrimSpace(req.CompanyName),
 		Email:        email,
+		Role:         role,
 		PasswordSalt: salt,
 		PasswordHash: hash,
 		CreatedAt:    now,
@@ -170,6 +185,119 @@ func (s *Store) Logout(token string) {
 	_ = s.saveLocked()
 }
 
+func (s *Store) ensureAdmin() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	changed := false
+	for _, user := range s.users {
+		role := normalizeRole(user.Role)
+		if user.Role != role {
+			user.Role = role
+			changed = true
+		}
+	}
+
+	if strings.TrimSpace(s.cfg.AdminEmail) != "" {
+		adminChanged, err := s.ensureConfiguredAdminLocked()
+		if err != nil {
+			return err
+		}
+		changed = changed || adminChanged
+	}
+
+	if !s.hasAdminLocked() && s.cfg.AdminAutoPromote {
+		var first *User
+		for _, user := range s.users {
+			if first == nil || user.CreatedAt.Before(first.CreatedAt) || (user.CreatedAt.Equal(first.CreatedAt) && user.ID < first.ID) {
+				first = user
+			}
+		}
+		if first != nil {
+			first.Role = RoleAdmin
+			changed = true
+		}
+	}
+
+	if changed {
+		return s.saveLocked()
+	}
+	return nil
+}
+
+func (s *Store) ensureConfiguredAdminLocked() (bool, error) {
+	email, err := normalizeEmail(s.cfg.AdminEmail)
+	if err != nil {
+		return false, fmt.Errorf("ADMIN_EMAIL is invalid: %w", err)
+	}
+	name := strings.TrimSpace(s.cfg.AdminName)
+	if name == "" {
+		name = "MergeOS Admin"
+	}
+	companyName := strings.TrimSpace(s.cfg.AdminCompanyName)
+	if companyName == "" {
+		companyName = "MergeOS"
+	}
+
+	if user := s.userByEmailLocked(email); user != nil {
+		changed := false
+		if user.Role != RoleAdmin {
+			user.Role = RoleAdmin
+			changed = true
+		}
+		if user.Name == "" {
+			user.Name = name
+			changed = true
+		}
+		if user.CompanyName == "" {
+			user.CompanyName = companyName
+			changed = true
+		}
+		password := strings.TrimSpace(s.cfg.AdminPassword)
+		if password != "" && !verifyPassword(password, user.PasswordSalt, user.PasswordHash) {
+			salt, hash, err := hashPassword(password)
+			if err != nil {
+				return false, err
+			}
+			user.PasswordSalt = salt
+			user.PasswordHash = hash
+			changed = true
+		}
+		return changed, nil
+	}
+
+	if strings.TrimSpace(s.cfg.AdminPassword) == "" {
+		return false, errors.New("ADMIN_PASSWORD is required when ADMIN_EMAIL does not match an existing user")
+	}
+	salt, hash, err := hashPassword(s.cfg.AdminPassword)
+	if err != nil {
+		return false, err
+	}
+	now := time.Now().UTC()
+	admin := &User{
+		ID:           s.newID("usr"),
+		Name:         name,
+		CompanyName:  companyName,
+		Email:        email,
+		Role:         RoleAdmin,
+		PasswordSalt: salt,
+		PasswordHash: hash,
+		CreatedAt:    now,
+	}
+	s.users[admin.ID] = admin
+	s.addNotificationLocked(admin.ID, "", "email", "MergeOS admin enabled", "Your admin workspace can manage customers, funded projects, task payouts, ledger entries and delivery notifications.", "logged:admin-bootstrap")
+	return true, nil
+}
+
+func (s *Store) hasAdminLocked() bool {
+	for _, user := range s.users {
+		if normalizeRole(user.Role) == RoleAdmin {
+			return true
+		}
+	}
+	return false
+}
+
 func (s *Store) CreateProject(ctx context.Context, userID string, req CreateProjectRequest) (*Project, error) {
 	if strings.TrimSpace(userID) == "" {
 		return nil, errors.New("login is required")
@@ -241,6 +369,20 @@ func (s *Store) CreateProject(ctx context.Context, userID string, req CreateProj
 		Status:           ProjectFunded,
 		CreatedAt:        now,
 	}
+	for _, attachmentID := range req.AttachmentIDs {
+		attachment, ok := s.attachments[attachmentID]
+		if !ok {
+			return nil, fmt.Errorf("attachment %s not found", attachmentID)
+		}
+		if attachment.UserID != user.ID {
+			return nil, fmt.Errorf("attachment %s does not belong to this user", attachmentID)
+		}
+		if attachment.ProjectID != "" {
+			return nil, fmt.Errorf("attachment %s is already attached to a project", attachmentID)
+		}
+		attachment.ProjectID = project.ID
+		project.Attachments = append(project.Attachments, cloneAttachment(attachment))
+	}
 	project.Tasks = s.splitProjectTasks(project)
 
 	repo, err := s.repos.CreateProjectRepo(ctx, project, project.Tasks)
@@ -273,7 +415,7 @@ func (s *Store) CreateProject(ctx context.Context, userID string, req CreateProj
 		s.addLedger("task_reserve", "reserve:project:"+projectID, "reserve:task:"+task.ID, task.RewardCents, reference)
 	}
 	subject := "MergeOS project funded: " + project.Title
-	body := fmt.Sprintf("Hi %s,\n\nYour project %q is funded. MergeOS created bounty repo %s and split it into %d payable tasks.\n\nBudget: %s USD\nWork pool: %s MERGE\n\nWe will notify you as tasks are accepted.", project.ClientName, project.Title, project.BountyRepoName, len(project.Tasks), centsToPayPalValue(project.BudgetCents), centsToPayPalValue(project.WorkPoolCents))
+	body := fmt.Sprintf("Hi %s,\n\nYour project %q is funded. MergeOS created bounty repo %s and split it into %d payable tasks.\n\nBudget: %s USD\nWork pool: %s MERGE\nAttachments: %d\n\nWe will notify you as tasks are accepted.", project.ClientName, project.Title, project.BountyRepoName, len(project.Tasks), centsToPayPalValue(project.BudgetCents), centsToPayPalValue(project.WorkPoolCents), len(project.Attachments))
 	status := s.emailer.Send(project.ClientEmail, subject, body)
 	s.addNotificationLocked(user.ID, project.ID, "email", subject, body, status)
 	if err := s.saveLocked(); err != nil {
@@ -337,6 +479,122 @@ func (s *Store) ListLedger() []LedgerEntry {
 	entries := make([]LedgerEntry, len(s.ledger))
 	copy(entries, s.ledger)
 	return entries
+}
+
+func (s *Store) ListLedgerForUser(userID string) []LedgerEntry {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	projectIDs := map[string]bool{}
+	taskIDs := map[string]bool{}
+	for _, project := range s.projects {
+		if project.ClientUserID != userID {
+			continue
+		}
+		projectIDs[project.ID] = true
+		for _, task := range project.Tasks {
+			taskIDs[task.ID] = true
+		}
+	}
+
+	entries := make([]LedgerEntry, 0, len(s.ledger))
+	for _, entry := range s.ledger {
+		if ledgerEntryMatches(entry, projectIDs, taskIDs) {
+			entries = append(entries, entry)
+		}
+	}
+	return entries
+}
+
+func (s *Store) ListUsers() []AdminUser {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	rows := make([]AdminUser, 0, len(s.users))
+	byID := map[string]int{}
+	for _, user := range s.users {
+		row := AdminUser{PublicUser: publicUser(user)}
+		byID[user.ID] = len(rows)
+		rows = append(rows, row)
+	}
+	for _, project := range s.projects {
+		index, ok := byID[project.ClientUserID]
+		if !ok {
+			continue
+		}
+		rows[index].ProjectCount++
+		rows[index].TotalBudgetCents += project.BudgetCents
+		if rows[index].LastProjectAt == nil || project.CreatedAt.After(*rows[index].LastProjectAt) {
+			createdAt := project.CreatedAt
+			rows[index].LastProjectAt = &createdAt
+		}
+	}
+	sort.Slice(rows, func(i, j int) bool {
+		if rows[i].Role != rows[j].Role {
+			return rows[i].Role == RoleAdmin
+		}
+		return rows[i].CreatedAt.After(rows[j].CreatedAt)
+	})
+	return rows
+}
+
+func (s *Store) AdminSummary() AdminSummary {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	summary := AdminSummary{
+		TokenSymbol:       s.cfg.TokenSymbol,
+		PaymentMode:       paymentMode(s.cfg),
+		RepoProvider:      repoProvider(s.cfg),
+		PayPalReady:       s.cfg.PayPalReady(),
+		CryptoReady:       s.cfg.CryptoReady(),
+		GitHubReady:       s.cfg.GitHubReady(),
+		SMTPReady:         s.cfg.SMTPReady(),
+		DevPaymentEnabled: s.cfg.DevPaymentEnabled,
+		BountyRoot:        s.cfg.BountyRoot,
+		UploadRoot:        s.cfg.UploadRoot,
+		SSLReviews:        s.sslReviewRowsLocked(),
+		ProjectCount:      len(s.projects),
+		NotificationCount: len(s.notifications),
+		AttachmentCount:   len(s.attachments),
+	}
+	for _, user := range s.users {
+		summary.UserCount++
+		if normalizeRole(user.Role) == RoleAdmin {
+			summary.AdminCount++
+		} else {
+			summary.ClientCount++
+		}
+	}
+	for _, project := range s.projects {
+		summary.TotalBudgetCents += project.BudgetCents
+		summary.WorkPoolCents += project.WorkPoolCents
+		summary.PlatformFeeCents += project.FeeCents
+	}
+	for _, task := range s.tasks {
+		if task.Status == TaskAccepted {
+			summary.AcceptedTaskCount++
+			summary.PaidTaskCents += task.RewardCents
+			continue
+		}
+		summary.OpenTaskCount++
+	}
+	return summary
+}
+
+func (s *Store) CanAccessTask(userID string, role UserRole, taskID string) bool {
+	if normalizeRole(role) == RoleAdmin {
+		return true
+	}
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	task, ok := s.tasks[taskID]
+	if !ok {
+		return false
+	}
+	project, ok := s.projects[task.ProjectID]
+	return ok && project.ClientUserID == userID
 }
 
 func (s *Store) AcceptTask(taskID string, req AcceptTaskRequest) (*Task, error) {
@@ -526,6 +784,19 @@ func (s *Store) load() error {
 	for _, notification := range state.Notifications {
 		s.notifications[notification.ID] = notification
 	}
+	for _, attachment := range state.Attachments {
+		if attachment.URL == "" {
+			attachment.URL = "/api/uploads/" + attachment.ID + "/download"
+		}
+		s.attachments[attachment.ID] = attachment
+	}
+	for _, review := range state.SSLReviews {
+		if review == nil || review.Domain == "" {
+			continue
+		}
+		review.Domain = cleanDomain(review.Domain)
+		s.sslReviews[review.Domain] = cloneSSLReview(review)
+	}
 	return nil
 }
 
@@ -543,6 +814,8 @@ func (s *Store) saveLocked() error {
 		Users:         make([]*User, 0, len(s.users)),
 		Sessions:      make([]*Session, 0, len(s.sessions)),
 		Notifications: make([]*Notification, 0, len(s.notifications)),
+		Attachments:   make([]*Attachment, 0, len(s.attachments)),
+		SSLReviews:    make([]*SSLReviewStatus, 0, len(s.sslReviews)),
 		Ledger:        s.ledger,
 	}
 	for _, project := range s.projects {
@@ -564,6 +837,13 @@ func (s *Store) saveLocked() error {
 	for _, notification := range s.notifications {
 		noteCopy := *notification
 		state.Notifications = append(state.Notifications, &noteCopy)
+	}
+	for _, attachment := range s.attachments {
+		attachmentCopy := *attachment
+		state.Attachments = append(state.Attachments, &attachmentCopy)
+	}
+	for _, review := range s.sslReviewRowsLocked() {
+		state.SSLReviews = append(state.SSLReviews, review)
 	}
 	data, err := json.MarshalIndent(state, "", "  ")
 	if err != nil {
@@ -597,5 +877,24 @@ func cloneProject(project *Project) *Project {
 		taskCopy := *task
 		copyProject.Tasks = append(copyProject.Tasks, &taskCopy)
 	}
+	copyProject.Attachments = make([]*Attachment, 0, len(project.Attachments))
+	for _, attachment := range project.Attachments {
+		copyProject.Attachments = append(copyProject.Attachments, cloneAttachment(attachment))
+	}
 	return &copyProject
+}
+
+func ledgerEntryMatches(entry LedgerEntry, projectIDs, taskIDs map[string]bool) bool {
+	haystack := strings.Join([]string{entry.FromAccount, entry.ToAccount, entry.Reference}, "|")
+	for projectID := range projectIDs {
+		if strings.Contains(haystack, projectID) {
+			return true
+		}
+	}
+	for taskID := range taskIDs {
+		if strings.Contains(haystack, taskID) {
+			return true
+		}
+	}
+	return false
 }

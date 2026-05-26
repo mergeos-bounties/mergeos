@@ -22,9 +22,17 @@ func publicUser(user *User) PublicUser {
 		Name:        user.Name,
 		CompanyName: user.CompanyName,
 		Email:       user.Email,
+		Role:        normalizeRole(user.Role),
 		CreatedAt:   user.CreatedAt,
 		LastLoginAt: user.LastLoginAt,
 	}
+}
+
+func normalizeRole(role UserRole) UserRole {
+	if role == RoleAdmin {
+		return RoleAdmin
+	}
+	return RoleClient
 }
 
 func normalizeEmail(email string) (string, error) {

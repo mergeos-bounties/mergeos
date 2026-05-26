@@ -12,12 +12,29 @@ MergeOS is a private main platform for customer-funded website delivery. A clien
 - Payment adapters: PayPal Orders v2, EVM native/ERC20 receipt verifier, local dev verifier
 - Email: SMTP when configured, persisted email log otherwise
 
+## Environments
+
+MergeOS has two explicit run modes:
+
+- `local`: loads `.env.local`, enables the local payment verifier by default, and can auto-promote the first user/admin bootstrap.
+- `production`: loads `.env.production`, disables dev payment by default, requires explicit admin credentials, and defaults PayPal to `live`.
+
+Real environment variables always win over env file values. Mode-specific files are loaded first, then `.env` only fills missing values.
+
+Example files:
+
+- `backend/.env.local.example`
+- `backend/.env.production.example`
+- `frontend/.env.local.example`
+- `frontend/.env.production.example`
+
 ## Run Local
 
 Terminal 1:
 
 ```powershell
 cd backend
+Copy-Item .env.local.example .env.local
 go run ./cmd/mergeos
 ```
 
@@ -25,11 +42,39 @@ Terminal 2:
 
 ```powershell
 cd frontend
+Copy-Item .env.local.example .env.local
 npm install
-npm run dev
+npm run local
 ```
 
 Open `http://127.0.0.1:5173`.
+
+## Run Production
+
+Build the SSR frontend:
+
+```powershell
+cd frontend
+Copy-Item .env.production.example .env.production
+npm install
+npm run build:production
+```
+
+Start the backend and SSR frontend with production env files:
+
+```powershell
+cd backend
+Copy-Item .env.production.example .env.production
+$env:MERGEOS_ENV='production'
+go run ./cmd/mergeos
+```
+
+```powershell
+cd frontend
+npm run production
+```
+
+Before real deployment, set real production values in `backend/.env.production`: `ADMIN_PASSWORD`, PayPal, crypto, GitHub, SMTP, and any receiver addresses.
 
 ## Local Flow
 
@@ -82,3 +127,10 @@ Email:
 - `POST /api/tasks/{id}/accept`
 - `GET /api/notifications`
 - `GET /api/ledger`
+- `GET /api/admin/summary`
+- `GET /api/admin/users`
+- `GET /api/admin/projects`
+- `GET /api/admin/tasks`
+- `GET /api/admin/notifications`
+- `GET /api/admin/attachments`
+- `GET /api/admin/ledger`

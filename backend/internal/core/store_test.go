@@ -2,6 +2,8 @@ package core
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
@@ -83,5 +85,64 @@ func TestCreateProjectCreatesLocalBountyRepoAndPersistsLedger(t *testing.T) {
 	}
 	if len(reloaded.ListLedger()) != 11 {
 		t.Fatalf("reloaded ledger entries = %d", len(reloaded.ListLedger()))
+	}
+}
+
+func TestAdminAutoPromoteAndRoutes(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:       defaultTokenSymbol,
+		StatePath:         filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:    1000,
+		DevPaymentEnabled: true,
+		DevPaymentCode:    defaultDevPaymentCode,
+		GitHubOwner:       defaultGitHubOwner,
+		BountyRoot:        filepath.Join(tempDir, "bounties"),
+		SMTPFrom:          "noreply@mergeos.local",
+		AdminAutoPromote:  true,
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	adminAuth, err := store.Register(RegisterRequest{
+		Name:     "Admin User",
+		Email:    "admin@example.com",
+		Password: "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if adminAuth.User.Role != RoleAdmin {
+		t.Fatalf("first user role = %q", adminAuth.User.Role)
+	}
+	clientAuth, err := store.Register(RegisterRequest{
+		Name:     "Client User",
+		Email:    "client-two@example.com",
+		Password: "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if clientAuth.User.Role != RoleClient {
+		t.Fatalf("second user role = %q", clientAuth.User.Role)
+	}
+
+	server := NewServer(cfg, store, payments)
+	clientReq := httptest.NewRequest(http.MethodGet, "/api/admin/summary", nil)
+	clientReq.Header.Set("Authorization", "Bearer "+clientAuth.Token)
+	clientResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(clientResp, clientReq)
+	if clientResp.Code != http.StatusForbidden {
+		t.Fatalf("client admin summary status = %d", clientResp.Code)
+	}
+
+	adminReq := httptest.NewRequest(http.MethodGet, "/api/admin/summary", nil)
+	adminReq.Header.Set("Authorization", "Bearer "+adminAuth.Token)
+	adminResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(adminResp, adminReq)
+	if adminResp.Code != http.StatusOK {
+		t.Fatalf("admin summary status = %d, body = %s", adminResp.Code, adminResp.Body.String())
 	}
 }

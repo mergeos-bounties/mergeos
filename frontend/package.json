@@ -4,12 +4,18 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --host 127.0.0.1",
-    "build": "vite build",
-    "preview": "vite preview --host 127.0.0.1"
+    "dev": "npm run local",
+    "local": "node server.js --mode local",
+    "production": "node server.js --mode production --prod",
+    "build": "npm run build:production",
+    "build:local": "vite build --mode development --outDir dist/client --ssrManifest && vite build --mode development --ssr src/entry-server.js --outDir dist/server",
+    "build:production": "vite build --mode production --outDir dist/client --ssrManifest && vite build --mode production --ssr src/entry-server.js --outDir dist/server",
+    "preview": "npm run production",
+    "test": "node --test server.test.js"
   },
   "dependencies": {
     "@lucide/vue": "latest",
+    "@vue/server-renderer": "latest",
     "vue": "latest"
   },
   "devDependencies": {

@@ -11,14 +11,28 @@ const (
 	defaultDevPaymentCode = "LOCAL-PAID"
 	defaultTokenSymbol    = "MERGE"
 	defaultGitHubOwner    = "mergeos-bounties"
+	defaultPrimaryDomain  = "mergeos.shop"
+	defaultAdminDomain    = "uta.mergeos.shop"
 )
 
 type Config struct {
-	TokenSymbol       string
-	StatePath         string
-	PlatformFeeBps    int64
-	DevPaymentEnabled bool
-	DevPaymentCode    string
+	Environment              string
+	TokenSymbol              string
+	StatePath                string
+	PlatformFeeBps           int64
+	DevPaymentEnabled        bool
+	DevPaymentCode           string
+	AdminEmail               string
+	AdminPassword            string
+	AdminName                string
+	AdminCompanyName         string
+	AdminAutoPromote         bool
+	PrimaryDomain            string
+	AdminDomain              string
+	SSLReviewEnabled         bool
+	SSLReviewDomains         []string
+	SSLReviewIntervalMinutes int64
+	SSLExpiryWarnDays        int64
 
 	PayPalEnvironment  string
 	PayPalClientID     string
@@ -37,6 +51,7 @@ type Config struct {
 	GitHubOwnerType string
 
 	BountyRoot string
+	UploadRoot string
 
 	SMTPHost     string
 	SMTPPort     string
@@ -46,17 +61,41 @@ type Config struct {
 }
 
 func LoadConfig() Config {
+	env := normalizeEnvironment(os.Getenv("MERGEOS_ENV"))
+	loadEnvironmentFiles(env)
+
 	statePath := getenv("MERGEOS_STATE_PATH", filepath.Join("data", "mergeos-state.json"))
 	bountyRoot := getenv("BOUNTY_ROOT", filepath.Join("..", "bounties"))
+	uploadRoot := getenv("UPLOAD_ROOT", filepath.Join("data", "uploads"))
+	primaryDomain := cleanDomain(getenv("PRIMARY_DOMAIN", defaultPrimaryDomain))
+	adminDomain := cleanDomain(getenv("ADMIN_DOMAIN", defaultAdminDomain))
+	devPaymentDefault := env != "production"
+	adminAutoPromoteDefault := env != "production"
+	payPalDefaultEnv := "sandbox"
+	if env == "production" {
+		payPalDefaultEnv = "live"
+	}
 
 	return Config{
-		TokenSymbol:       getenv("TOKEN_SYMBOL", defaultTokenSymbol),
-		StatePath:         statePath,
-		PlatformFeeBps:    getenvInt64("PLATFORM_FEE_BPS", 1000),
-		DevPaymentEnabled: getenvBool("DEV_PAYMENT_ENABLED", true),
-		DevPaymentCode:    getenv("DEV_PAYMENT_CODE", defaultDevPaymentCode),
+		Environment:              env,
+		TokenSymbol:              getenv("TOKEN_SYMBOL", defaultTokenSymbol),
+		StatePath:                statePath,
+		PlatformFeeBps:           getenvInt64("PLATFORM_FEE_BPS", 1000),
+		DevPaymentEnabled:        getenvBool("DEV_PAYMENT_ENABLED", devPaymentDefault),
+		DevPaymentCode:           getenv("DEV_PAYMENT_CODE", defaultDevPaymentCode),
+		AdminEmail:               os.Getenv("ADMIN_EMAIL"),
+		AdminPassword:            os.Getenv("ADMIN_PASSWORD"),
+		AdminName:                getenv("ADMIN_NAME", "MergeOS Admin"),
+		AdminCompanyName:         getenv("ADMIN_COMPANY_NAME", "MergeOS"),
+		AdminAutoPromote:         getenvBool("ADMIN_AUTO_PROMOTE_FIRST_USER", adminAutoPromoteDefault),
+		PrimaryDomain:            primaryDomain,
+		AdminDomain:              adminDomain,
+		SSLReviewEnabled:         getenvBool("SSL_REVIEW_ENABLED", true),
+		SSLReviewDomains:         sslReviewDomains(primaryDomain, adminDomain),
+		SSLReviewIntervalMinutes: getenvInt64("SSL_REVIEW_INTERVAL_MINUTES", 360),
+		SSLExpiryWarnDays:        getenvInt64("SSL_EXPIRY_WARN_DAYS", 14),
 
-		PayPalEnvironment:  strings.ToLower(getenv("PAYPAL_ENV", "sandbox")),
+		PayPalEnvironment:  strings.ToLower(getenv("PAYPAL_ENV", payPalDefaultEnv)),
 		PayPalClientID:     os.Getenv("PAYPAL_CLIENT_ID"),
 		PayPalClientSecret: os.Getenv("PAYPAL_CLIENT_SECRET"),
 
@@ -73,6 +112,7 @@ func LoadConfig() Config {
 		GitHubOwnerType: strings.ToLower(getenv("GITHUB_OWNER_TYPE", "org")),
 
 		BountyRoot: bountyRoot,
+		UploadRoot: uploadRoot,
 
 		SMTPHost:     os.Getenv("SMTP_HOST"),
 		SMTPPort:     getenv("SMTP_PORT", "587"),
@@ -80,6 +120,54 @@ func LoadConfig() Config {
 		SMTPPassword: os.Getenv("SMTP_PASSWORD"),
 		SMTPFrom:     getenv("SMTP_FROM", "noreply@mergeos.local"),
 	}
+}
+
+func sslReviewDomains(primaryDomain, adminDomain string) []string {
+	raw := strings.TrimSpace(os.Getenv("SSL_REVIEW_DOMAINS"))
+	if raw == "" {
+		raw = primaryDomain + "," + adminDomain
+	}
+	seen := map[string]bool{}
+	domains := []string{}
+	for _, item := range strings.Split(raw, ",") {
+		domain := cleanDomain(item)
+		if domain == "" || seen[domain] {
+			continue
+		}
+		seen[domain] = true
+		domains = append(domains, domain)
+	}
+	return domains
+}
+
+func cleanDomain(value string) string {
+	value = strings.ToLower(strings.TrimSpace(value))
+	value = strings.TrimPrefix(value, "https://")
+	value = strings.TrimPrefix(value, "http://")
+	value = strings.Trim(value, "/")
+	if host, _, ok := strings.Cut(value, ":"); ok {
+		value = host
+	}
+	if host, _, ok := strings.Cut(value, "/"); ok {
+		value = host
+	}
+	return strings.TrimSpace(value)
+}
+
+func normalizeEnvironment(value string) string {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "prod", "production":
+		return "production"
+	case "dev", "development", "local", "":
+		return "local"
+	default:
+		return "local"
+	}
+}
+
+func loadEnvironmentFiles(env string) {
+	loadDotEnv(".env." + normalizeEnvironment(env))
+	loadDotEnv(".env")
 }
 
 func (c Config) PayPalReady() bool {
@@ -122,6 +210,30 @@ func getenvBool(key string, fallback bool) bool {
 		return fallback
 	}
 	return parsed
+}
+
+func loadDotEnv(path string) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return
+	}
+	for _, line := range strings.Split(string(data), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		key, value, ok := strings.Cut(line, "=")
+		if !ok {
+			continue
+		}
+		key = strings.TrimSpace(key)
+		if key == "" || os.Getenv(key) != "" {
+			continue
+		}
+		value = strings.TrimSpace(value)
+		value = strings.Trim(value, `"'`)
+		_ = os.Setenv(key, value)
+	}
 }
 
 func getenvInt64(key string, fallback int64) int64 {

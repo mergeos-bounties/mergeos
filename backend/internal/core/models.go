@@ -17,6 +17,13 @@ const (
 	WorkerHybrid WorkerKind = "hybrid"
 )
 
+type UserRole string
+
+const (
+	RoleClient UserRole = "client"
+	RoleAdmin  UserRole = "admin"
+)
+
 type ProjectStatus string
 
 const (
@@ -35,6 +42,7 @@ type User struct {
 	Name         string     `json:"name"`
 	CompanyName  string     `json:"company_name"`
 	Email        string     `json:"email"`
+	Role         UserRole   `json:"role"`
 	PasswordSalt string     `json:"-"`
 	PasswordHash string     `json:"-"`
 	CreatedAt    time.Time  `json:"created_at"`
@@ -46,6 +54,7 @@ type PublicUser struct {
 	Name        string     `json:"name"`
 	CompanyName string     `json:"company_name"`
 	Email       string     `json:"email"`
+	Role        UserRole   `json:"role"`
 	CreatedAt   time.Time  `json:"created_at"`
 	LastLoginAt *time.Time `json:"last_login_at,omitempty"`
 }
@@ -66,6 +75,20 @@ type Notification struct {
 	Body      string    `json:"body"`
 	Status    string    `json:"status"`
 	CreatedAt time.Time `json:"created_at"`
+}
+
+type Attachment struct {
+	ID           string    `json:"id"`
+	UserID       string    `json:"user_id,omitempty"`
+	ProjectID    string    `json:"project_id,omitempty"`
+	OriginalName string    `json:"original_name"`
+	StoredName   string    `json:"stored_name"`
+	ContentType  string    `json:"content_type"`
+	SizeBytes    int64     `json:"size_bytes"`
+	URL          string    `json:"url"`
+	StoredPath   string    `json:"-"`
+	IsImage      bool      `json:"is_image"`
+	CreatedAt    time.Time `json:"created_at"`
 }
 
 type Project struct {
@@ -95,6 +118,7 @@ type Project struct {
 	Status           ProjectStatus `json:"status"`
 	CreatedAt        time.Time     `json:"created_at"`
 	Tasks            []*Task       `json:"tasks"`
+	Attachments      []*Attachment `json:"attachments"`
 }
 
 type Task struct {
@@ -158,6 +182,7 @@ type CreateProjectRequest struct {
 	BudgetCents      int64         `json:"budget_cents"`
 	PaymentMethod    PaymentMethod `json:"payment_method"`
 	PaymentReference string        `json:"payment_reference"`
+	AttachmentIDs    []string      `json:"attachment_ids"`
 }
 
 type AcceptTaskRequest struct {
@@ -169,25 +194,32 @@ type AcceptTaskRequest struct {
 type StatusResponse struct {
 	Service      string `json:"service"`
 	Version      string `json:"version"`
+	Environment  string `json:"environment"`
 	TokenSymbol  string `json:"token_symbol"`
 	PaymentMode  string `json:"payment_mode"`
 	RepoProvider string `json:"repo_provider"`
 }
 
 type RuntimeConfigResponse struct {
-	TokenSymbol       string `json:"token_symbol"`
-	PaymentMode       string `json:"payment_mode"`
-	RepoProvider      string `json:"repo_provider"`
-	PayPalReady       bool   `json:"paypal_ready"`
-	CryptoReady       bool   `json:"crypto_ready"`
-	GitHubReady       bool   `json:"github_ready"`
-	SMTPReady         bool   `json:"smtp_ready"`
-	DevPaymentEnabled bool   `json:"dev_payment_enabled"`
-	DevPaymentCode    string `json:"dev_payment_code,omitempty"`
-	CryptoReceiver    string `json:"crypto_receiver,omitempty"`
-	CryptoAsset       string `json:"crypto_asset,omitempty"`
-	CryptoToken       string `json:"crypto_token,omitempty"`
-	BountyRoot        string `json:"bounty_root,omitempty"`
+	Environment       string   `json:"environment"`
+	TokenSymbol       string   `json:"token_symbol"`
+	PaymentMode       string   `json:"payment_mode"`
+	RepoProvider      string   `json:"repo_provider"`
+	PayPalReady       bool     `json:"paypal_ready"`
+	CryptoReady       bool     `json:"crypto_ready"`
+	GitHubReady       bool     `json:"github_ready"`
+	SMTPReady         bool     `json:"smtp_ready"`
+	DevPaymentEnabled bool     `json:"dev_payment_enabled"`
+	DevPaymentCode    string   `json:"dev_payment_code,omitempty"`
+	CryptoReceiver    string   `json:"crypto_receiver,omitempty"`
+	CryptoAsset       string   `json:"crypto_asset,omitempty"`
+	CryptoToken       string   `json:"crypto_token,omitempty"`
+	BountyRoot        string   `json:"bounty_root,omitempty"`
+	UploadRoot        string   `json:"upload_root,omitempty"`
+	AdminBootstrap    bool     `json:"admin_bootstrap"`
+	PrimaryDomain     string   `json:"primary_domain,omitempty"`
+	AdminDomain       string   `json:"admin_domain,omitempty"`
+	SSLReviewDomains  []string `json:"ssl_review_domains,omitempty"`
 }
 
 type CreatePayPalOrderRequest struct {
@@ -201,4 +233,54 @@ type CreatePayPalOrderResponse struct {
 	OrderID     string `json:"order_id"`
 	ApprovalURL string `json:"approval_url"`
 	Status      string `json:"status"`
+}
+
+type AdminSummary struct {
+	UserCount         int                `json:"user_count"`
+	AdminCount        int                `json:"admin_count"`
+	ClientCount       int                `json:"client_count"`
+	ProjectCount      int                `json:"project_count"`
+	OpenTaskCount     int                `json:"open_task_count"`
+	AcceptedTaskCount int                `json:"accepted_task_count"`
+	NotificationCount int                `json:"notification_count"`
+	AttachmentCount   int                `json:"attachment_count"`
+	TotalBudgetCents  int64              `json:"total_budget_cents"`
+	WorkPoolCents     int64              `json:"work_pool_cents"`
+	PlatformFeeCents  int64              `json:"platform_fee_cents"`
+	PaidTaskCents     int64              `json:"paid_task_cents"`
+	TokenSymbol       string             `json:"token_symbol"`
+	PaymentMode       string             `json:"payment_mode"`
+	RepoProvider      string             `json:"repo_provider"`
+	PayPalReady       bool               `json:"paypal_ready"`
+	CryptoReady       bool               `json:"crypto_ready"`
+	GitHubReady       bool               `json:"github_ready"`
+	SMTPReady         bool               `json:"smtp_ready"`
+	DevPaymentEnabled bool               `json:"dev_payment_enabled"`
+	BountyRoot        string             `json:"bounty_root,omitempty"`
+	UploadRoot        string             `json:"upload_root,omitempty"`
+	SSLReviews        []*SSLReviewStatus `json:"ssl_reviews,omitempty"`
+}
+
+type AdminUser struct {
+	PublicUser
+	ProjectCount     int        `json:"project_count"`
+	TotalBudgetCents int64      `json:"total_budget_cents"`
+	LastProjectAt    *time.Time `json:"last_project_at,omitempty"`
+}
+
+type SSLReviewStatus struct {
+	Domain        string     `json:"domain"`
+	Port          string     `json:"port"`
+	Status        string     `json:"status"`
+	Issuer        string     `json:"issuer,omitempty"`
+	Subject       string     `json:"subject,omitempty"`
+	SerialNumber  string     `json:"serial_number,omitempty"`
+	DNSNames      []string   `json:"dns_names,omitempty"`
+	NotBefore     *time.Time `json:"not_before,omitempty"`
+	NotAfter      *time.Time `json:"not_after,omitempty"`
+	DaysRemaining int        `json:"days_remaining"`
+	LastCheckedAt *time.Time `json:"last_checked_at,omitempty"`
+	NextCheckAt   *time.Time `json:"next_check_at,omitempty"`
+	Error         string     `json:"error,omitempty"`
+	CheckedBy     string     `json:"checked_by,omitempty"`
 }
