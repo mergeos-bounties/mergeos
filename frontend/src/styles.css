@@ -8054,3 +8054,88 @@ svg {
     gap: 10px;
   }
 }
+
+/* ===== Project view responsive fixes (Bounty #17) ===== */
+
+/* Fix project title grid overflow on mobile */
+@media (max-width: 760px) {
+  .dash-project-title {
+    grid-template-columns: 44px minmax(0, 1fr);
+    gap: 10px;
+  }
+  
+  .dash-project-title h1 {
+    font-size: 20px;
+  }
+  
+  .dash-project-title p {
+    font-size: 11px;
+    margin-top: 4px;
+  }
+  
+  /* Fix metrics grid overflow */
+  .dash-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  
+  .dash-metrics article {
+    padding: 10px;
+  }
+  
+  .dash-metrics strong {
+    font-size: 16px;
+  }
+  
+  /* Fix overview grid cards */
+  .dash-overview-grid {
+    gap: 12px;
+  }
+  
+  .progress-card-body {
+    gap: 14px;
+  }
+  
+  .progress-ring.large {
+    width: 80px;
+    height: 80px;
+  }
+  
+  /* Fix task list rows */
+  .dash-pr-row {
+    grid-template-columns: 30px minmax(0, 1fr) auto;
+    gap: 8px;
+    padding: 10px 12px;
+  }
+  
+  .contributor-avatar {
+    width: 30px;
+    height: 30px;
+    font-size: 11px;
+  }
+  
+  .dash-pr-main strong {
+    font-size: 13px;
+  }
+  
+  .dash-pr-main small {
+    font-size: 11px;
+  }
+}
+
+/* Fix project view on very small screens (360px) */
+@media (max-width: 400px) {
+  .dash-metrics {
+    grid-template-columns: 1fr;
+  }
+  
+  .dash-breadcrumb {
+    font-size: 12px;
+    gap: 6px;
+  }
+  
+  .dash-project-actions button {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+}
