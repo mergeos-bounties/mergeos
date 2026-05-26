@@ -38,7 +38,9 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: frontend/package-lock.json
+          cache-dependency-path: |
+            frontend/package-lock.json
+            admin/package-lock.json
 
       - name: Install frontend dependencies
         working-directory: frontend
@@ -48,11 +50,21 @@ jobs:
         working-directory: frontend
         run: npm run build
 
+      - name: Install admin dependencies
+        working-directory: admin
+        run: npm ci
+
+      - name: Build admin
+        working-directory: admin
+        run: npm run build
+
       - name: Package release
         run: |
           mkdir -p release/frontend/dist
+          mkdir -p release/admin/dist
           cp backend/dist/mergeos release/mergeos
           cp -R frontend/dist/. release/frontend/dist/
+          cp -R admin/dist/. release/admin/dist/
           cp frontend/server.js frontend/package.json frontend/package-lock.json release/frontend/
           tar -czf mergeos-release.tar.gz -C release .
 
@@ -124,6 +136,7 @@ jobs:
             APP_DIR="${DEPLOY_PATH:-$HOME/mergeos}"
             cd "$APP_DIR"
             rm -rf frontend
+            rm -rf admin
             tar -xzf mergeos-release.tar.gz
             chmod +x mergeos
             DATABASE_URL_VALUE=""
@@ -257,7 +270,7 @@ jobs:
             server {
               listen 80;
               listen [::]:80;
-              server_name mergeos.shop uta.mergeos.shop _;
+              server_name mergeos.shop _;
               root $APP_DIR/frontend/dist/client;
               index index.html;
               client_max_body_size 30m;
@@ -284,6 +297,34 @@ jobs:
                 proxy_set_header X-Real-IP \$remote_addr;
                 proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
                 proxy_set_header X-Forwarded-Proto \$scheme;
+              }
+            }
+
+            server {
+              listen 80;
+              listen [::]:80;
+              server_name uta.mergeos.shop;
+              root $APP_DIR/admin/dist;
+              index index.html;
+              client_max_body_size 30m;
+
+              location /api/ {
+                proxy_pass http://127.0.0.1:8080;
+                proxy_http_version 1.1;
+                proxy_set_header Host \$host;
+                proxy_set_header X-Real-IP \$remote_addr;
+                proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto \$scheme;
+              }
+
+              location /assets/ {
+                try_files \$uri =404;
+                access_log off;
+                expires 1h;
+              }
+
+              location / {
+                try_files \$uri \$uri/ /index.html;
               }
             }
             NGINX

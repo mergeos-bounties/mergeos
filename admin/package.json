@@ -1,0 +1,20 @@
+{
+  "name": "mergeos-admin",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "npm run local",
+    "local": "vite --host 127.0.0.1 --port 5174",
+    "build": "vite build --mode production",
+    "preview": "vite preview --host 127.0.0.1 --port 4174"
+  },
+  "dependencies": {
+    "@lucide/vue": "latest",
+    "vue": "latest"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "latest",
+    "vite": "latest"
+  }
+}

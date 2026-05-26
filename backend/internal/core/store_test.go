@@ -195,6 +195,97 @@ func TestPublicMarketplaceRouteReturnsSanitizedLiveData(t *testing.T) {
 	}
 }
 
+func TestPublicLedgerRouteReturnsSanitizedLiveData(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:       defaultTokenSymbol,
+		StatePath:         filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:    1000,
+		DevPaymentEnabled: true,
+		DevPaymentCode:    defaultDevPaymentCode,
+		GitHubOwner:       defaultGitHubOwner,
+		BountyRoot:        filepath.Join(tempDir, "bounties"),
+		SMTPFrom:          "noreply@mergeos.local",
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	auth, err := store.Register(RegisterRequest{
+		Name:        "Ledger Client",
+		CompanyName: "Ledger Co",
+		Email:       "ledger@example.com",
+		Password:    "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	project, err := store.CreateProject(context.Background(), auth.User.ID, CreateProjectRequest{
+		Title:            "Public proof ledger",
+		ClientName:       "Private Ledger Client",
+		CompanyName:      "Ledger Co",
+		ClientEmail:      "ledger@example.com",
+		Phone:            "+1 555 0199",
+		Brief:            "Create ledger entries that should be public without exposing customer data.",
+		BudgetCents:      150000,
+		PaymentMethod:    PaymentPayPal,
+		PaymentReference: defaultDevPaymentCode,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.AcceptTask(project.Tasks[0].ID, AcceptTaskRequest{
+		WorkerKind: WorkerHuman,
+		WorkerID:   "github:private-worker",
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	server := NewServer(cfg, store, payments)
+	req := httptest.NewRequest(http.MethodGet, "/api/public/ledger", nil)
+	resp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(resp, req)
+	if resp.Code != http.StatusOK {
+		t.Fatalf("public ledger status = %d, body = %s", resp.Code, resp.Body.String())
+	}
+
+	body := resp.Body.String()
+	privateValues := []string{
+		"ledger@example.com",
+		"+1 555 0199",
+		auth.User.ID,
+		tempDir,
+		"github:private-worker",
+		defaultDevPaymentCode,
+	}
+	for _, value := range privateValues {
+		if strings.Contains(body, value) {
+			t.Fatalf("public ledger leaked private value %q: %s", value, body)
+		}
+	}
+
+	var payload []LedgerEntry
+	if err := json.Unmarshal(resp.Body.Bytes(), &payload); err != nil {
+		t.Fatal(err)
+	}
+	if len(payload) == 0 {
+		t.Fatal("public ledger returned no entries")
+	}
+	foundProjectReference := false
+	for _, entry := range payload {
+		if strings.Contains(entry.FromAccount, "client:") || strings.Contains(entry.ToAccount, "client:") {
+			t.Fatalf("public ledger leaked client account: %#v", entry)
+		}
+		if strings.Contains(entry.Reference, project.ID) {
+			foundProjectReference = true
+		}
+	}
+	if !foundProjectReference {
+		t.Fatalf("public ledger did not preserve project reference: %#v", payload)
+	}
+}
+
 func TestAdminAutoPromoteAndRoutes(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := Config{

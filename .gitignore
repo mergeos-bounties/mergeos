@@ -2,6 +2,8 @@ backend/mergeos.exe
 backend/data/
 frontend/node_modules/
 frontend/dist/
+admin/node_modules/
+admin/dist/
 backend.log
 backend.err.log
 frontend.log
@@ -14,5 +16,7 @@ bounties/
 !backend/.env.production.example
 !frontend/.env.local.example
 !frontend/.env.production.example
+!admin/.env.local.example
+!admin/.env.production.example
 .codex/
 .DS_Store

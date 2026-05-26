@@ -21,6 +21,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/health", s.health)
 	mux.HandleFunc("GET /api/config", s.config)
 	mux.HandleFunc("GET /api/public/marketplace", s.marketplace)
+	mux.HandleFunc("GET /api/public/ledger", s.publicLedger)
 	mux.HandleFunc("POST /api/public/repo/issues", s.importRepoIssues)
 	mux.HandleFunc("POST /api/auth/register", s.register)
 	mux.HandleFunc("POST /api/auth/login", s.login)
@@ -98,6 +99,10 @@ func (s *Server) importRepoIssues(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) marketplace(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, s.store.Marketplace())
+}
+
+func (s *Server) publicLedger(w http.ResponseWriter, _ *http.Request) {
+	writeJSON(w, http.StatusOK, s.store.ListPublicLedger())
 }
 
 func (s *Server) register(w http.ResponseWriter, r *http.Request) {

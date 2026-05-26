@@ -123,7 +123,17 @@ npm install
 npm run local
 ```
 
+Admin:
+
+```powershell
+cd admin
+Copy-Item .env.local.example .env.local
+npm install
+npm run local
+```
+
 Open `http://127.0.0.1:5173`.
+Open admin at `http://127.0.0.1:5174`.
 
 Local payment reference:
 
@@ -140,6 +150,15 @@ cd frontend
 Copy-Item .env.production.example .env.production
 npm install
 npm run build:production
+```
+
+Build the admin frontend:
+
+```powershell
+cd admin
+Copy-Item .env.production.example .env.production
+npm install
+npm run build
 ```
 
 Start the backend:
@@ -173,6 +192,11 @@ Frontend examples:
 - `frontend/.env.local.example`
 - `frontend/.env.production.example`
 
+Admin examples:
+
+- `admin/.env.local.example`
+- `admin/.env.production.example`
+
 Important backend variables:
 
 - `MERGEOS_ENV`: `local` or `production`
@@ -194,6 +218,8 @@ Public:
 
 - `GET /api/health`
 - `GET /api/config`
+- `GET /api/public/ledger`
+- `GET /api/public/marketplace`
 - `POST /api/public/repo/issues`
 
 Auth:

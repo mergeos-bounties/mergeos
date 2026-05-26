@@ -506,6 +506,31 @@ func (s *Store) ListLedger() []LedgerEntry {
 	return entries
 }
 
+func (s *Store) ListPublicLedger() []LedgerEntry {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	projectIDs := map[string]bool{}
+	taskProjectIDs := map[string]string{}
+	for _, project := range s.projects {
+		projectIDs[project.ID] = true
+		for _, task := range project.Tasks {
+			taskProjectIDs[task.ID] = project.ID
+		}
+	}
+
+	entries := make([]LedgerEntry, 0, len(s.ledger))
+	for _, entry := range s.ledger {
+		projectID, taskID := publicLedgerScope(entry, projectIDs, taskProjectIDs)
+		publicEntry := entry
+		publicEntry.FromAccount = publicLedgerAccount(entry.FromAccount, projectID, taskID)
+		publicEntry.ToAccount = publicLedgerAccount(entry.ToAccount, projectID, taskID)
+		publicEntry.Reference = publicLedgerReference(projectID, taskID, entry.Sequence)
+		entries = append(entries, publicEntry)
+	}
+	return entries
+}
+
 func (s *Store) ListLedgerForUser(userID string) []LedgerEntry {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -1220,4 +1245,60 @@ func ledgerEntryMatches(entry LedgerEntry, projectIDs, taskIDs map[string]bool) 
 		}
 	}
 	return false
+}
+
+func publicLedgerScope(entry LedgerEntry, projectIDs map[string]bool, taskProjectIDs map[string]string) (string, string) {
+	haystack := strings.Join([]string{entry.FromAccount, entry.ToAccount, entry.Reference}, "|")
+	for projectID := range projectIDs {
+		if strings.Contains(haystack, projectID) {
+			return projectID, ""
+		}
+	}
+	for taskID, projectID := range taskProjectIDs {
+		if strings.Contains(haystack, taskID) {
+			return projectID, taskID
+		}
+	}
+	return "", ""
+}
+
+func publicLedgerAccount(account, projectID, taskID string) string {
+	account = strings.TrimSpace(account)
+	if account == "" {
+		return ""
+	}
+	switch {
+	case strings.HasPrefix(account, "payment:"):
+		return account
+	case strings.HasPrefix(account, "issuer:"):
+		return "issuer:mergeos"
+	case strings.HasPrefix(account, "treasury:"):
+		return "treasury:mergeos"
+	case strings.HasPrefix(account, "worker:"):
+		return "worker:contributor"
+	case strings.Contains(account, "reserve:task:"):
+		if taskID != "" {
+			return "reserve:task:" + taskID
+		}
+		return "reserve:task"
+	case strings.Contains(account, "reserve:project:"):
+		if projectID != "" {
+			return "reserve:project:" + projectID
+		}
+		return "reserve:project"
+	case projectID != "":
+		return "project:" + projectID
+	default:
+		return "ledger:public"
+	}
+}
+
+func publicLedgerReference(projectID, taskID string, sequence int) string {
+	if projectID == "" {
+		return fmt.Sprintf("ledger:%d", sequence)
+	}
+	if taskID != "" {
+		return fmt.Sprintf("project:%s;task:%s", projectID, taskID)
+	}
+	return "project:" + projectID
 }
