@@ -28,7 +28,7 @@ Use this index as the fast public map for MergeOS bounty docs and current bounty
 | [#3 AI project evaluation](https://github.com/mergeos-bounties/mergeos/issues/3) | Feature bounty | 50 MRG | [@hummusonrails](https://github.com/hummusonrails), [PR #4](https://github.com/mergeos-bounties/mergeos/pull/4) | Open PR, evidence provided, awaiting repository star |
 | [#11 Frontend homepage responsive QA](https://github.com/mergeos-bounties/mergeos/issues/11) | Bug bounty | 2000 MRG | Unclaimed | Open issue, needs responsive QA evidence |
 | [#12 Create-project flow for new projects and bug fixes](https://github.com/mergeos-bounties/mergeos/issues/12) | Feature bounty | 3000 MRG | Unclaimed | Open issue, needs UX implementation evidence |
-| [#13 Login/logout modal responsive QA](https://github.com/mergeos-bounties/mergeos/issues/13) | Bug bounty | 500 MRG | [@campersurfer](https://github.com/campersurfer), [claim comment](https://github.com/mergeos-bounties/mergeos/issues/13#issuecomment-4543976591) | Claimed, local auth redirect fix and evidence in progress |
+| [#13 Login/logout modal responsive QA](https://github.com/mergeos-bounties/mergeos/issues/13) | Bug bounty | 500 MRG | [@campersurfer](https://github.com/campersurfer), [claim comment](https://github.com/mergeos-bounties/mergeos/issues/13#issuecomment-4543976591), [PR #22](https://github.com/mergeos-bounties/mergeos/pull/22) | Open PR, evidence provided |
 
 ## Awarded Bounties
 
