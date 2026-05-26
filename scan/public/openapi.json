@@ -1,14 +1,14 @@
 {
   "openapi": "3.0.3",
   "info": {
-    "title": "MergeOS API",
-    "description": "Public, wallet, project, payment, user, and admin API for MergeOS and MergeOS Scan.",
-    "version": "0.3.0"
+    "title": "MergeOS Scan API",
+    "version": "0.1.0",
+    "description": "Public API surface used by scan.mergeos.shop for explorer data, runtime status, guest wallets, and GitHub wallet linking."
   },
   "servers": [
     {
       "url": "/",
-      "description": "Current host"
+      "description": "Current Scan origin"
     },
     {
       "url": "https://scan.mergeos.shop",
@@ -16,29 +16,41 @@
     }
   ],
   "tags": [
-    { "name": "Status" },
-    { "name": "Public" },
-    { "name": "Auth" },
-    { "name": "Wallets" },
-    { "name": "Projects" },
-    { "name": "Tasks" },
-    { "name": "Payments" },
-    { "name": "Uploads" },
-    { "name": "User" },
-    { "name": "Admin" }
+    {
+      "name": "Scan status",
+      "description": "Runtime metadata used by the Scan header and explorer."
+    },
+    {
+      "name": "Explorer data",
+      "description": "Public ledger and marketplace data rendered by Scan."
+    },
+    {
+      "name": "Scan wallet",
+      "description": "Guest wallet and GitHub linking flows available from the Scan header."
+    }
   ],
   "paths": {
     "/api/health": {
       "get": {
-        "tags": ["Status"],
-        "summary": "API health and runtime status",
-        "operationId": "getHealth",
+        "tags": ["Scan status"],
+        "summary": "Read Scan backend health",
+        "operationId": "getScanHealth",
         "responses": {
           "200": {
-            "description": "MergeOS API status",
+            "description": "Backend is reachable.",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/StatusResponse" }
+                "schema": {
+                  "$ref": "#/components/schemas/StatusResponse"
+                },
+                "example": {
+                  "service": "MergeOS API",
+                  "version": "0.3.0",
+                  "environment": "production",
+                  "token_symbol": "MRG",
+                  "payment_mode": "live-adapters",
+                  "repo_provider": "github-private:mergeos-bounties"
+                }
               }
             }
           }
@@ -47,32 +59,17 @@
     },
     "/api/config": {
       "get": {
-        "tags": ["Status"],
-        "summary": "Public runtime configuration",
-        "operationId": "getRuntimeConfig",
+        "tags": ["Scan status"],
+        "summary": "Read public runtime config for Scan",
+        "operationId": "getScanConfig",
         "responses": {
           "200": {
-            "description": "Runtime feature flags and public configuration",
+            "description": "Public runtime config consumed by the Scan client.",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/RuntimeConfigResponse" }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/public/marketplace": {
-      "get": {
-        "tags": ["Public"],
-        "summary": "Public marketplace snapshot",
-        "operationId": "getPublicMarketplace",
-        "responses": {
-          "200": {
-            "description": "Marketplace stats, projects, contributors, and agent summary",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/MarketplaceResponse" }
+                "schema": {
+                  "$ref": "#/components/schemas/RuntimeConfigResponse"
+                }
               }
             }
           }
@@ -81,17 +78,19 @@
     },
     "/api/public/ledger": {
       "get": {
-        "tags": ["Public"],
-        "summary": "Public ledger entries",
-        "operationId": "getPublicLedger",
+        "tags": ["Explorer data"],
+        "summary": "List sanitized public MRG ledger entries",
+        "operationId": "listPublicLedger",
         "responses": {
           "200": {
-            "description": "Public MRG ledger entries",
+            "description": "Public ledger entries ordered by sequence.",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "array",
-                  "items": { "$ref": "#/components/schemas/LedgerEntry" }
+                  "items": {
+                    "$ref": "#/components/schemas/LedgerEntry"
+                  }
                 }
               }
             }
@@ -99,1593 +98,645 @@
         }
       }
     },
-    "/api/public/repo/issues": {
-      "post": {
-        "tags": ["Public"],
-        "summary": "Import and score GitHub repository issues",
-        "operationId": "importRepoIssues",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": { "$ref": "#/components/schemas/ImportRepoIssuesRequest" }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Imported issues with estimates",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/ImportRepoIssuesResponse" }
-              }
-            }
-          },
-          "400": { "$ref": "#/components/responses/Error" }
-        }
-      }
-    },
-    "/api/auth/register": {
-      "post": {
-        "tags": ["Auth"],
-        "summary": "Register a client user",
-        "operationId": "register",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": { "$ref": "#/components/schemas/RegisterRequest" }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Session token and user profile",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/AuthResponse" }
-              }
-            }
-          },
-          "400": { "$ref": "#/components/responses/Error" }
-        }
-      }
-    },
-    "/api/auth/login": {
-      "post": {
-        "tags": ["Auth"],
-        "summary": "Log in with email and password",
-        "operationId": "login",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": { "$ref": "#/components/schemas/LoginRequest" }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Session token and user profile",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/AuthResponse" }
-              }
-            }
-          },
-          "401": { "$ref": "#/components/responses/Error" }
-        }
-      }
-    },
-    "/api/auth/github": {
-      "post": {
-        "tags": ["Auth"],
-        "summary": "Exchange GitHub OAuth code and optionally link a wallet",
-        "operationId": "githubAuth",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": { "$ref": "#/components/schemas/GitHubAuthRequest" }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Session token and GitHub-linked user profile",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/AuthResponse" }
-              }
-            }
-          },
-          "400": { "$ref": "#/components/responses/Error" }
-        }
-      }
-    },
-    "/api/auth/me": {
+    "/api/public/marketplace": {
       "get": {
-        "tags": ["Auth"],
-        "summary": "Current authenticated user",
-        "operationId": "getMe",
-        "security": [{ "BearerAuth": [] }],
+        "tags": ["Explorer data"],
+        "summary": "Read public marketplace summary for Scan stats",
+        "operationId": "getPublicMarketplace",
         "responses": {
           "200": {
-            "description": "Authenticated user profile",
+            "description": "Aggregated public marketplace data.",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/PublicUser" }
-              }
-            }
-          },
-          "401": { "$ref": "#/components/responses/Error" }
-        }
-      }
-    },
-    "/api/auth/logout": {
-      "post": {
-        "tags": ["Auth"],
-        "summary": "Log out current session",
-        "operationId": "logout",
-        "security": [{ "BearerAuth": [] }],
-        "responses": {
-          "200": {
-            "description": "Logout result",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/OkResponse" }
+                "schema": {
+                  "$ref": "#/components/schemas/MarketplaceResponse"
+                }
               }
             }
           }
-        }
-      }
-    },
-    "/api/auth/google/login": {
-      "get": {
-        "tags": ["Auth"],
-        "summary": "Start browser Google OAuth flow",
-        "operationId": "googleLogin",
-        "responses": {
-          "307": { "description": "Redirect to Google OAuth or mock callback" }
-        }
-      }
-    },
-    "/api/auth/google/callback": {
-      "get": {
-        "tags": ["Auth"],
-        "summary": "Google OAuth callback",
-        "operationId": "googleCallback",
-        "parameters": [
-          { "$ref": "#/components/parameters/OAuthCode" },
-          { "$ref": "#/components/parameters/OAuthState" }
-        ],
-        "responses": {
-          "307": { "description": "Redirect to frontend with session token" },
-          "400": { "$ref": "#/components/responses/Error" },
-          "403": { "$ref": "#/components/responses/Error" }
-        }
-      }
-    },
-    "/api/auth/github/login": {
-      "get": {
-        "tags": ["Auth"],
-        "summary": "Start browser GitHub OAuth flow",
-        "operationId": "githubLogin",
-        "responses": {
-          "307": { "description": "Redirect to GitHub OAuth or mock callback" }
-        }
-      }
-    },
-    "/api/auth/github/callback": {
-      "get": {
-        "tags": ["Auth"],
-        "summary": "GitHub OAuth callback",
-        "operationId": "githubCallback",
-        "parameters": [
-          { "$ref": "#/components/parameters/OAuthCode" },
-          { "$ref": "#/components/parameters/OAuthState" }
-        ],
-        "responses": {
-          "307": { "description": "Redirect to frontend with session token" },
-          "400": { "$ref": "#/components/responses/Error" },
-          "403": { "$ref": "#/components/responses/Error" }
         }
       }
     },
     "/api/wallets": {
       "post": {
-        "tags": ["Wallets"],
-        "summary": "Create a guest MRG wallet",
-        "operationId": "createWallet",
+        "tags": ["Scan wallet"],
+        "summary": "Create a guest MRG wallet from Scan",
+        "operationId": "createScanWallet",
         "requestBody": {
           "required": false,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/CreateWalletRequest" }
+              "schema": {
+                "$ref": "#/components/schemas/CreateWalletRequest"
+              },
+              "example": {
+                "label": "scan guest"
+              }
             }
           }
         },
         "responses": {
           "201": {
-            "description": "Created wallet and recovery code",
+            "description": "Guest wallet created.",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/CreateWalletResponse" }
+                "schema": {
+                  "$ref": "#/components/schemas/CreateWalletResponse"
+                }
               }
             }
           },
-          "400": { "$ref": "#/components/responses/Error" }
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
         }
       }
     },
     "/api/wallets/{address}": {
       "get": {
-        "tags": ["Wallets"],
-        "summary": "Get wallet summary by address",
-        "operationId": "getWallet",
+        "tags": ["Scan wallet"],
+        "summary": "Read a Scan wallet summary",
+        "operationId": "getScanWallet",
         "parameters": [
-          { "$ref": "#/components/parameters/WalletAddress" }
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "description": "MRG wallet address such as 0x...",
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "responses": {
           "200": {
-            "description": "Wallet balance and linked account summary",
+            "description": "Wallet summary with ledger totals and linked accounts.",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/WalletSummary" }
+                "schema": {
+                  "$ref": "#/components/schemas/WalletSummary"
+                }
               }
             }
           },
-          "404": { "$ref": "#/components/responses/Error" }
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
         }
       }
     },
-    "/api/wallets/link": {
+    "/api/auth/github": {
       "post": {
-        "tags": ["Wallets"],
-        "summary": "Link a wallet to the authenticated user",
-        "operationId": "linkWallet",
-        "security": [{ "BearerAuth": [] }],
+        "tags": ["Scan wallet"],
+        "summary": "Complete GitHub OAuth and link it to a Scan wallet",
+        "operationId": "completeScanGitHubLink",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/LinkWalletRequest" }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Updated wallet summary",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/WalletSummary" }
-              }
-            }
-          },
-          "400": { "$ref": "#/components/responses/Error" },
-          "401": { "$ref": "#/components/responses/Error" }
-        }
-      }
-    },
-    "/api/payments/paypal/orders": {
-      "post": {
-        "tags": ["Payments"],
-        "summary": "Create a PayPal checkout order",
-        "operationId": "createPayPalOrder",
-        "security": [{ "BearerAuth": [] }],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": { "$ref": "#/components/schemas/CreatePayPalOrderRequest" }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "PayPal order and approval URL",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/CreatePayPalOrderResponse" }
-              }
-            }
-          },
-          "400": { "$ref": "#/components/responses/Error" },
-          "401": { "$ref": "#/components/responses/Error" }
-        }
-      }
-    },
-    "/api/uploads": {
-      "post": {
-        "tags": ["Uploads"],
-        "summary": "Upload one or more project attachments",
-        "operationId": "uploadAttachments",
-        "security": [{ "BearerAuth": [] }],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "multipart/form-data": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "files": {
-                    "type": "array",
-                    "items": { "type": "string", "format": "binary" }
-                  },
-                  "file": { "type": "string", "format": "binary" }
-                }
+                "$ref": "#/components/schemas/GitHubAuthRequest"
               }
             }
           }
         },
         "responses": {
-          "201": {
-            "description": "Uploaded attachment records",
+          "200": {
+            "description": "GitHub account authenticated and optionally linked to the provided wallet.",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": { "$ref": "#/components/schemas/Attachment" }
+                  "$ref": "#/components/schemas/AuthResponse"
                 }
               }
             }
           },
-          "400": { "$ref": "#/components/responses/Error" },
-          "401": { "$ref": "#/components/responses/Error" }
-        }
-      }
-    },
-    "/api/uploads/{id}/download": {
-      "get": {
-        "tags": ["Uploads"],
-        "summary": "Download an attachment",
-        "operationId": "downloadAttachment",
-        "security": [{ "BearerAuth": [] }],
-        "parameters": [
-          { "$ref": "#/components/parameters/AttachmentID" }
-        ],
-        "responses": {
-          "200": {
-            "description": "Attachment bytes",
-            "content": {
-              "application/octet-stream": {
-                "schema": { "type": "string", "format": "binary" }
-              }
-            }
-          },
-          "401": { "$ref": "#/components/responses/Error" },
-          "403": { "$ref": "#/components/responses/Error" },
-          "404": { "$ref": "#/components/responses/Error" }
-        }
-      }
-    },
-    "/api/projects": {
-      "get": {
-        "tags": ["Projects"],
-        "summary": "List projects visible to the authenticated user",
-        "operationId": "listProjects",
-        "security": [{ "BearerAuth": [] }],
-        "responses": {
-          "200": {
-            "description": "Projects",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": { "$ref": "#/components/schemas/Project" }
-                }
-              }
-            }
-          },
-          "401": { "$ref": "#/components/responses/Error" }
-        }
-      },
-      "post": {
-        "tags": ["Projects"],
-        "summary": "Create a funded project",
-        "operationId": "createProject",
-        "security": [{ "BearerAuth": [] }],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": { "$ref": "#/components/schemas/CreateProjectRequest" }
-            }
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
           }
-        },
-        "responses": {
-          "201": {
-            "description": "Created project",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/Project" }
-              }
-            }
-          },
-          "400": { "$ref": "#/components/responses/Error" },
-          "401": { "$ref": "#/components/responses/Error" }
-        }
-      }
-    },
-    "/api/projects/evaluate": {
-      "post": {
-        "tags": ["Projects"],
-        "summary": "Estimate project scope and price range",
-        "operationId": "evaluateProject",
-        "security": [{ "BearerAuth": [] }],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": { "$ref": "#/components/schemas/EvaluateProjectRequest" }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Project evaluation",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/EvaluateProjectResponse" }
-              }
-            }
-          },
-          "400": { "$ref": "#/components/responses/Error" },
-          "401": { "$ref": "#/components/responses/Error" }
-        }
-      }
-    },
-    "/api/projects/evaluate-price": {
-      "post": {
-        "tags": ["Projects"],
-        "summary": "Generate detailed project price evaluation",
-        "operationId": "evaluateProjectPrice",
-        "security": [{ "BearerAuth": [] }],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": { "$ref": "#/components/schemas/ProjectPriceEvaluationRequest" }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Detailed price evaluation",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/ProjectPriceEvaluationResponse" }
-              }
-            }
-          },
-          "400": { "$ref": "#/components/responses/Error" },
-          "401": { "$ref": "#/components/responses/Error" }
-        }
-      }
-    },
-    "/api/tasks": {
-      "get": {
-        "tags": ["Tasks"],
-        "summary": "List tasks visible to the authenticated user",
-        "operationId": "listTasks",
-        "security": [{ "BearerAuth": [] }],
-        "responses": {
-          "200": {
-            "description": "Tasks",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": { "$ref": "#/components/schemas/Task" }
-                }
-              }
-            }
-          },
-          "401": { "$ref": "#/components/responses/Error" }
-        }
-      }
-    },
-    "/api/tasks/{id}/accept": {
-      "post": {
-        "tags": ["Tasks"],
-        "summary": "Accept a project task",
-        "operationId": "acceptTask",
-        "security": [{ "BearerAuth": [] }],
-        "parameters": [
-          { "$ref": "#/components/parameters/TaskID" }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": { "$ref": "#/components/schemas/AcceptTaskRequest" }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Accepted task",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/Task" }
-              }
-            }
-          },
-          "400": { "$ref": "#/components/responses/Error" },
-          "401": { "$ref": "#/components/responses/Error" },
-          "403": { "$ref": "#/components/responses/Error" },
-          "404": { "$ref": "#/components/responses/Error" }
-        }
-      }
-    },
-    "/api/notifications": {
-      "get": {
-        "tags": ["User"],
-        "summary": "List notifications visible to the authenticated user",
-        "operationId": "listNotifications",
-        "security": [{ "BearerAuth": [] }],
-        "responses": {
-          "200": {
-            "description": "Notifications",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": { "$ref": "#/components/schemas/Notification" }
-                }
-              }
-            }
-          },
-          "401": { "$ref": "#/components/responses/Error" }
-        }
-      }
-    },
-    "/api/ledger": {
-      "get": {
-        "tags": ["User"],
-        "summary": "List ledger entries visible to the authenticated user",
-        "operationId": "listUserLedger",
-        "security": [{ "BearerAuth": [] }],
-        "responses": {
-          "200": {
-            "description": "Ledger entries",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": { "$ref": "#/components/schemas/LedgerEntry" }
-                }
-              }
-            }
-          },
-          "401": { "$ref": "#/components/responses/Error" }
-        }
-      }
-    },
-    "/api/admin/summary": {
-      "get": {
-        "tags": ["Admin"],
-        "summary": "Admin dashboard summary",
-        "operationId": "adminSummary",
-        "security": [{ "BearerAuth": [] }],
-        "responses": {
-          "200": {
-            "description": "Admin summary",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/AdminSummary" }
-              }
-            }
-          },
-          "401": { "$ref": "#/components/responses/Error" },
-          "403": { "$ref": "#/components/responses/Error" }
-        }
-      }
-    },
-    "/api/admin/users": {
-      "get": {
-        "tags": ["Admin"],
-        "summary": "List all users",
-        "operationId": "adminUsers",
-        "security": [{ "BearerAuth": [] }],
-        "responses": {
-          "200": {
-            "description": "Users",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": { "$ref": "#/components/schemas/AdminUser" }
-                }
-              }
-            }
-          },
-          "401": { "$ref": "#/components/responses/Error" },
-          "403": { "$ref": "#/components/responses/Error" }
-        }
-      }
-    },
-    "/api/admin/users/{id}": {
-      "patch": {
-        "tags": ["Admin"],
-        "summary": "Update a user",
-        "operationId": "adminUpdateUser",
-        "security": [{ "BearerAuth": [] }],
-        "parameters": [
-          { "$ref": "#/components/parameters/UserID" }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": { "$ref": "#/components/schemas/AdminUpdateUserRequest" }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Updated user",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/PublicUser" }
-              }
-            }
-          },
-          "400": { "$ref": "#/components/responses/Error" },
-          "401": { "$ref": "#/components/responses/Error" },
-          "403": { "$ref": "#/components/responses/Error" }
-        }
-      }
-    },
-    "/api/admin/projects": {
-      "get": {
-        "tags": ["Admin"],
-        "summary": "List all projects",
-        "operationId": "adminProjects",
-        "security": [{ "BearerAuth": [] }],
-        "responses": {
-          "200": {
-            "description": "Projects",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": { "$ref": "#/components/schemas/Project" }
-                }
-              }
-            }
-          },
-          "401": { "$ref": "#/components/responses/Error" },
-          "403": { "$ref": "#/components/responses/Error" }
-        }
-      }
-    },
-    "/api/admin/tasks": {
-      "get": {
-        "tags": ["Admin"],
-        "summary": "List all tasks",
-        "operationId": "adminTasks",
-        "security": [{ "BearerAuth": [] }],
-        "responses": {
-          "200": {
-            "description": "Tasks",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": { "$ref": "#/components/schemas/Task" }
-                }
-              }
-            }
-          },
-          "401": { "$ref": "#/components/responses/Error" },
-          "403": { "$ref": "#/components/responses/Error" }
-        }
-      }
-    },
-    "/api/admin/tasks/{id}/pulls": {
-      "get": {
-        "tags": ["Admin"],
-        "summary": "List GitHub pull requests for a task",
-        "operationId": "adminTaskPullRequests",
-        "security": [{ "BearerAuth": [] }],
-        "parameters": [
-          { "$ref": "#/components/parameters/TaskID" }
-        ],
-        "responses": {
-          "200": {
-            "description": "Pull requests for task",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/AdminTaskPullRequestsResponse" }
-              }
-            }
-          },
-          "401": { "$ref": "#/components/responses/Error" },
-          "403": { "$ref": "#/components/responses/Error" }
-        }
-      }
-    },
-    "/api/admin/tasks/{id}/pulls/{number}/merge": {
-      "post": {
-        "tags": ["Admin"],
-        "summary": "Merge a task pull request and credit MRG",
-        "operationId": "adminMergeTaskPullRequest",
-        "security": [{ "BearerAuth": [] }],
-        "parameters": [
-          { "$ref": "#/components/parameters/TaskID" },
-          { "$ref": "#/components/parameters/PullRequestNumber" }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": { "$ref": "#/components/schemas/AdminMergeTaskPullRequestRequest" }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Merged pull request and updated task",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/AdminMergeTaskPullRequestResponse" }
-              }
-            }
-          },
-          "400": { "$ref": "#/components/responses/Error" },
-          "401": { "$ref": "#/components/responses/Error" },
-          "403": { "$ref": "#/components/responses/Error" }
-        }
-      }
-    },
-    "/api/admin/notifications": {
-      "get": {
-        "tags": ["Admin"],
-        "summary": "List all notifications",
-        "operationId": "adminNotifications",
-        "security": [{ "BearerAuth": [] }],
-        "responses": {
-          "200": {
-            "description": "Notifications",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": { "$ref": "#/components/schemas/Notification" }
-                }
-              }
-            }
-          },
-          "401": { "$ref": "#/components/responses/Error" },
-          "403": { "$ref": "#/components/responses/Error" }
-        }
-      }
-    },
-    "/api/admin/attachments": {
-      "get": {
-        "tags": ["Admin"],
-        "summary": "List all attachments",
-        "operationId": "adminAttachments",
-        "security": [{ "BearerAuth": [] }],
-        "responses": {
-          "200": {
-            "description": "Attachments",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": { "$ref": "#/components/schemas/Attachment" }
-                }
-              }
-            }
-          },
-          "401": { "$ref": "#/components/responses/Error" },
-          "403": { "$ref": "#/components/responses/Error" }
-        }
-      }
-    },
-    "/api/admin/ledger": {
-      "get": {
-        "tags": ["Admin"],
-        "summary": "List full ledger",
-        "operationId": "adminLedger",
-        "security": [{ "BearerAuth": [] }],
-        "responses": {
-          "200": {
-            "description": "All ledger entries",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": { "$ref": "#/components/schemas/LedgerEntry" }
-                }
-              }
-            }
-          },
-          "401": { "$ref": "#/components/responses/Error" },
-          "403": { "$ref": "#/components/responses/Error" }
-        }
-      }
-    },
-    "/api/admin/ssl": {
-      "get": {
-        "tags": ["Admin"],
-        "summary": "List SSL review status",
-        "operationId": "adminSSLReviews",
-        "security": [{ "BearerAuth": [] }],
-        "responses": {
-          "200": {
-            "description": "SSL review statuses",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": { "$ref": "#/components/schemas/SSLReviewStatus" }
-                }
-              }
-            }
-          },
-          "401": { "$ref": "#/components/responses/Error" },
-          "403": { "$ref": "#/components/responses/Error" }
-        }
-      }
-    },
-    "/api/admin/ssl/review": {
-      "post": {
-        "tags": ["Admin"],
-        "summary": "Run SSL review immediately",
-        "operationId": "adminReviewSSL",
-        "security": [{ "BearerAuth": [] }],
-        "responses": {
-          "200": {
-            "description": "Updated SSL review statuses",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": { "$ref": "#/components/schemas/SSLReviewStatus" }
-                }
-              }
-            }
-          },
-          "401": { "$ref": "#/components/responses/Error" },
-          "403": { "$ref": "#/components/responses/Error" },
-          "500": { "$ref": "#/components/responses/Error" }
         }
       }
     }
   },
   "components": {
-    "securitySchemes": {
-      "BearerAuth": {
-        "type": "http",
-        "scheme": "bearer",
-        "bearerFormat": "session token"
-      }
-    },
-    "parameters": {
-      "AttachmentID": {
-        "name": "id",
-        "in": "path",
-        "required": true,
-        "schema": { "type": "string" }
-      },
-      "OAuthCode": {
-        "name": "code",
-        "in": "query",
-        "required": true,
-        "schema": { "type": "string" }
-      },
-      "OAuthState": {
-        "name": "state",
-        "in": "query",
-        "required": true,
-        "schema": { "type": "string" }
-      },
-      "PullRequestNumber": {
-        "name": "number",
-        "in": "path",
-        "required": true,
-        "schema": { "type": "integer", "minimum": 1 }
-      },
-      "TaskID": {
-        "name": "id",
-        "in": "path",
-        "required": true,
-        "schema": { "type": "string" }
-      },
-      "UserID": {
-        "name": "id",
-        "in": "path",
-        "required": true,
-        "schema": { "type": "string" }
-      },
-      "WalletAddress": {
-        "name": "address",
-        "in": "path",
-        "required": true,
-        "schema": { "type": "string", "example": "wallet:0x1234567890abcdef1234567890abcdef12345678" }
-      }
-    },
     "responses": {
-      "Error": {
-        "description": "JSON error response",
+      "BadRequest": {
+        "description": "Request is invalid or the backend rejected the operation.",
         "content": {
           "application/json": {
-            "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Resource was not found.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
           }
         }
       }
     },
     "schemas": {
-      "AcceptTaskRequest": {
-        "type": "object",
-        "properties": {
-          "worker_kind": { "$ref": "#/components/schemas/WorkerKind" },
-          "worker_id": { "type": "string" },
-          "agent_type": { "type": "string" }
-        }
-      },
-      "AdminMergeTaskPullRequestRequest": {
-        "type": "object",
-        "properties": {
-          "reward_mrg": { "type": "integer", "format": "int64" },
-          "reward_cents": { "type": "integer", "format": "int64" },
-          "bounty_type": { "type": "string" }
-        }
-      },
-      "AdminMergeTaskPullRequestResponse": {
-        "type": "object",
-        "properties": {
-          "task": { "$ref": "#/components/schemas/Task" },
-          "pull_request": { "$ref": "#/components/schemas/AdminTaskPullRequest" },
-          "worker_id": { "type": "string" },
-          "reward_mrg": { "type": "integer", "format": "int64" },
-          "bounty_type": { "type": "string" },
-          "admin_url": { "type": "string", "format": "uri" },
-          "credit_url": { "type": "string", "format": "uri" },
-          "comment_url": { "type": "string", "format": "uri" },
-          "comment_error": { "type": "string" }
-        }
-      },
-      "AdminSummary": {
-        "type": "object",
-        "properties": {
-          "user_count": { "type": "integer" },
-          "admin_count": { "type": "integer" },
-          "client_count": { "type": "integer" },
-          "wallet_count": { "type": "integer" },
-          "project_count": { "type": "integer" },
-          "open_task_count": { "type": "integer" },
-          "accepted_task_count": { "type": "integer" },
-          "notification_count": { "type": "integer" },
-          "attachment_count": { "type": "integer" },
-          "total_budget_cents": { "type": "integer", "format": "int64" },
-          "work_pool_cents": { "type": "integer", "format": "int64" },
-          "platform_fee_cents": { "type": "integer", "format": "int64" },
-          "paid_task_cents": { "type": "integer", "format": "int64" },
-          "token_symbol": { "type": "string" },
-          "payment_mode": { "type": "string" },
-          "repo_provider": { "type": "string" },
-          "paypal_ready": { "type": "boolean" },
-          "crypto_ready": { "type": "boolean" },
-          "github_ready": { "type": "boolean" },
-          "smtp_ready": { "type": "boolean" },
-          "dev_payment_enabled": { "type": "boolean" },
-          "bounty_root": { "type": "string" },
-          "upload_root": { "type": "string" },
-          "ssl_reviews": {
-            "type": "array",
-            "items": { "$ref": "#/components/schemas/SSLReviewStatus" }
-          }
-        }
-      },
-      "AdminTaskPullRequest": {
-        "type": "object",
-        "properties": {
-          "number": { "type": "integer" },
-          "title": { "type": "string" },
-          "state": { "type": "string" },
-          "html_url": { "type": "string", "format": "uri" },
-          "merge_url": { "type": "string", "format": "uri" },
-          "author": { "type": "string" },
-          "draft": { "type": "boolean" },
-          "merged": { "type": "boolean" },
-          "mergeable_state": { "type": "string" },
-          "base_ref": { "type": "string" },
-          "head_ref": { "type": "string" },
-          "created_at": { "type": "string", "format": "date-time" },
-          "updated_at": { "type": "string", "format": "date-time" },
-          "merged_at": { "type": "string", "format": "date-time", "nullable": true }
-        }
-      },
-      "AdminTaskPullRequestsResponse": {
-        "type": "object",
-        "properties": {
-          "task_id": { "type": "string" },
-          "issue_number": { "type": "integer" },
-          "issue_url": { "type": "string", "format": "uri" },
-          "repository": { "type": "string" },
-          "pull_requests": {
-            "type": "array",
-            "items": { "$ref": "#/components/schemas/AdminTaskPullRequest" }
-          }
-        }
-      },
-      "AdminUpdateUserRequest": {
-        "type": "object",
-        "properties": {
-          "name": { "type": "string" },
-          "company_name": { "type": "string" },
-          "email": { "type": "string", "format": "email" },
-          "role": { "$ref": "#/components/schemas/UserRole" },
-          "password": { "type": "string", "format": "password" }
-        }
-      },
-      "AdminUser": {
-        "allOf": [
-          { "$ref": "#/components/schemas/PublicUser" },
-          {
-            "type": "object",
-            "properties": {
-              "project_count": { "type": "integer" },
-              "total_budget_cents": { "type": "integer", "format": "int64" },
-              "last_project_at": { "type": "string", "format": "date-time", "nullable": true }
-            }
-          }
-        ]
-      },
-      "Attachment": {
-        "type": "object",
-        "properties": {
-          "id": { "type": "string" },
-          "user_id": { "type": "string" },
-          "project_id": { "type": "string" },
-          "original_name": { "type": "string" },
-          "stored_name": { "type": "string" },
-          "content_type": { "type": "string" },
-          "size_bytes": { "type": "integer", "format": "int64" },
-          "url": { "type": "string" },
-          "is_image": { "type": "boolean" },
-          "created_at": { "type": "string", "format": "date-time" }
-        }
-      },
-      "AuthResponse": {
-        "type": "object",
-        "required": ["token", "user"],
-        "properties": {
-          "token": { "type": "string" },
-          "user": { "$ref": "#/components/schemas/PublicUser" }
-        }
-      },
-      "CreatePayPalOrderRequest": {
-        "type": "object",
-        "required": ["amount_cents"],
-        "properties": {
-          "amount_cents": { "type": "integer", "format": "int64" },
-          "description": { "type": "string" },
-          "return_url": { "type": "string", "format": "uri" },
-          "cancel_url": { "type": "string", "format": "uri" }
-        }
-      },
-      "CreatePayPalOrderResponse": {
-        "type": "object",
-        "properties": {
-          "order_id": { "type": "string" },
-          "approval_url": { "type": "string", "format": "uri" },
-          "status": { "type": "string" }
-        }
-      },
-      "CreateProjectRequest": {
-        "type": "object",
-        "required": ["title", "client_name", "client_email", "brief", "budget_cents", "payment_method"],
-        "properties": {
-          "title": { "type": "string" },
-          "client_name": { "type": "string" },
-          "company_name": { "type": "string" },
-          "client_email": { "type": "string", "format": "email" },
-          "phone": { "type": "string" },
-          "site_type": { "type": "string" },
-          "package_tier": { "type": "string" },
-          "timeline": { "type": "string" },
-          "brief": { "type": "string" },
-          "budget_cents": { "type": "integer", "format": "int64" },
-          "payment_method": { "$ref": "#/components/schemas/PaymentMethod" },
-          "payment_reference": { "type": "string" },
-          "attachment_ids": {
-            "type": "array",
-            "items": { "type": "string" }
-          },
-          "source_repo_url": { "type": "string", "format": "uri" }
-        }
-      },
-      "CreateWalletRequest": {
-        "type": "object",
-        "properties": {
-          "label": { "type": "string" }
-        }
-      },
-      "CreateWalletResponse": {
-        "type": "object",
-        "properties": {
-          "address": { "type": "string" },
-          "recovery_code": { "type": "string" },
-          "wallet": { "$ref": "#/components/schemas/WalletSummary" }
-        }
-      },
       "ErrorResponse": {
         "type": "object",
         "required": ["error"],
         "properties": {
-          "error": { "type": "string" }
-        }
-      },
-      "EvaluateProjectRequest": {
-        "type": "object",
-        "properties": {
-          "description": { "type": "string" },
-          "requirements": {
-            "type": "array",
-            "items": { "type": "string" }
-          },
-          "deliverables": {
-            "type": "array",
-            "items": { "type": "string" }
-          },
-          "timeline": { "type": "string" },
-          "tech_stack": { "type": "string" },
-          "complexity": { "type": "string" },
-          "constraints": { "type": "string" },
-          "reference_budget": { "type": "integer", "format": "int64", "description": "USD amount" }
-        }
-      },
-      "EvaluateProjectResponse": {
-        "type": "object",
-        "properties": {
-          "suggested_low": { "type": "integer", "format": "int64" },
-          "suggested_high": { "type": "integer", "format": "int64" },
-          "confidence_level": { "type": "number", "format": "double" },
-          "task_breakdown": {
-            "type": "object",
-            "additionalProperties": { "type": "integer", "format": "int64" }
-          },
-          "assumptions": {
-            "type": "array",
-            "items": { "type": "string" }
-          },
-          "risks": {
-            "type": "array",
-            "items": { "type": "string" }
-          },
-          "rationale": { "type": "string" }
-        }
-      },
-      "GitHubAuthRequest": {
-        "type": "object",
-        "required": ["code", "redirect_uri"],
-        "properties": {
-          "code": { "type": "string" },
-          "redirect_uri": { "type": "string", "format": "uri" },
-          "wallet_address": { "type": "string" },
-          "recovery_code": { "type": "string" }
-        }
-      },
-      "ImportRepoIssuesRequest": {
-        "type": "object",
-        "required": ["repo_url"],
-        "properties": {
-          "repo_url": { "type": "string", "format": "uri" }
-        }
-      },
-      "ImportRepoIssuesResponse": {
-        "type": "object",
-        "properties": {
-          "owner": { "type": "string" },
-          "name": { "type": "string" },
-          "repo_url": { "type": "string", "format": "uri" },
-          "issue_count": { "type": "integer" },
-          "total_estimated_cents": { "type": "integer", "format": "int64" },
-          "issues": {
-            "type": "array",
-            "items": { "$ref": "#/components/schemas/ImportedRepoIssue" }
+          "error": {
+            "type": "string"
           }
         }
       },
-      "ImportedRepoIssue": {
+      "StatusResponse": {
         "type": "object",
+        "required": ["service", "version", "environment", "token_symbol", "payment_mode", "repo_provider"],
         "properties": {
-          "number": { "type": "integer" },
-          "title": { "type": "string" },
-          "state": { "type": "string" },
-          "url": { "type": "string", "format": "uri" },
-          "labels": {
-            "type": "array",
-            "items": { "type": "string" }
+          "service": {
+            "type": "string"
           },
-          "comments": { "type": "integer" },
-          "score": { "type": "integer" },
-          "complexity": { "type": "string" },
-          "estimated_cents": { "type": "integer", "format": "int64" },
-          "required_worker_kind": { "$ref": "#/components/schemas/WorkerKind" },
-          "suggested_agent_type": { "type": "string" },
-          "reasons": {
-            "type": "array",
-            "items": { "type": "string" }
+          "version": {
+            "type": "string"
           },
-          "created_at": { "type": "string", "format": "date-time" },
-          "updated_at": { "type": "string", "format": "date-time" }
+          "environment": {
+            "type": "string"
+          },
+          "token_symbol": {
+            "type": "string",
+            "example": "MRG"
+          },
+          "payment_mode": {
+            "type": "string"
+          },
+          "repo_provider": {
+            "type": "string"
+          }
+        }
+      },
+      "RuntimeConfigResponse": {
+        "type": "object",
+        "required": [
+          "environment",
+          "token_symbol",
+          "payment_mode",
+          "repo_provider",
+          "github_oauth_ready",
+          "paypal_ready",
+          "crypto_ready",
+          "github_ready",
+          "smtp_ready",
+          "dev_payment_enabled",
+          "admin_bootstrap"
+        ],
+        "properties": {
+          "environment": {
+            "type": "string"
+          },
+          "token_symbol": {
+            "type": "string",
+            "example": "MRG"
+          },
+          "payment_mode": {
+            "type": "string"
+          },
+          "repo_provider": {
+            "type": "string"
+          },
+          "github_oauth_ready": {
+            "type": "boolean"
+          },
+          "github_oauth_client_id": {
+            "type": "string"
+          },
+          "paypal_ready": {
+            "type": "boolean"
+          },
+          "crypto_ready": {
+            "type": "boolean"
+          },
+          "github_ready": {
+            "type": "boolean"
+          },
+          "smtp_ready": {
+            "type": "boolean"
+          },
+          "dev_payment_enabled": {
+            "type": "boolean"
+          },
+          "dev_payment_code": {
+            "type": "string"
+          },
+          "crypto_receiver": {
+            "type": "string"
+          },
+          "crypto_asset": {
+            "type": "string"
+          },
+          "crypto_token": {
+            "type": "string"
+          },
+          "bounty_root": {
+            "type": "string"
+          },
+          "upload_root": {
+            "type": "string"
+          },
+          "admin_bootstrap": {
+            "type": "boolean"
+          },
+          "primary_domain": {
+            "type": "string"
+          },
+          "admin_domain": {
+            "type": "string"
+          },
+          "scan_domain": {
+            "type": "string"
+          },
+          "ssl_review_domains": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
         }
       },
       "LedgerEntry": {
         "type": "object",
+        "required": [
+          "sequence",
+          "type",
+          "amount_cents",
+          "reference",
+          "previous_hash",
+          "entry_hash",
+          "created_at"
+        ],
         "properties": {
-          "sequence": { "type": "integer" },
-          "type": { "type": "string", "example": "payment_verified" },
-          "from_account": { "type": "string" },
-          "to_account": { "type": "string" },
-          "amount_cents": { "type": "integer", "format": "int64" },
-          "reference": { "type": "string" },
-          "previous_hash": { "type": "string" },
-          "entry_hash": { "type": "string" },
-          "created_at": { "type": "string", "format": "date-time" }
-        }
-      },
-      "LinkWalletRequest": {
-        "type": "object",
-        "required": ["address"],
-        "properties": {
-          "address": { "type": "string" },
-          "recovery_code": { "type": "string" }
-        }
-      },
-      "LoginRequest": {
-        "type": "object",
-        "required": ["email", "password"],
-        "properties": {
-          "email": { "type": "string", "format": "email" },
-          "password": { "type": "string", "format": "password" }
-        }
-      },
-      "MarketplaceAgent": {
-        "type": "object",
-        "properties": {
-          "type": { "type": "string" },
-          "title": { "type": "string" },
-          "worker_kind": { "$ref": "#/components/schemas/WorkerKind" },
-          "task_count": { "type": "integer" },
-          "open_task_count": { "type": "integer" },
-          "budget_cents": { "type": "integer", "format": "int64" }
-        }
-      },
-      "MarketplaceContributor": {
-        "type": "object",
-        "properties": {
-          "worker_id": { "type": "string" },
-          "name": { "type": "string" },
-          "kind": { "$ref": "#/components/schemas/WorkerKind" },
-          "agent_type": { "type": "string" },
-          "task_count": { "type": "integer" },
-          "earned_cents": { "type": "integer", "format": "int64" },
-          "last_paid_at": { "type": "string", "format": "date-time" }
-        }
-      },
-      "MarketplaceProject": {
-        "type": "object",
-        "properties": {
-          "id": { "type": "string" },
-          "title": { "type": "string" },
-          "brief": { "type": "string" },
-          "site_type": { "type": "string" },
-          "package_tier": { "type": "string" },
-          "timeline": { "type": "string" },
-          "status": { "$ref": "#/components/schemas/ProjectStatus" },
-          "client_display_name": { "type": "string" },
-          "bounty_repo_name": { "type": "string" },
-          "repo_provider": { "type": "string" },
-          "repo_url": { "type": "string", "format": "uri" },
-          "budget_cents": { "type": "integer", "format": "int64" },
-          "work_pool_cents": { "type": "integer", "format": "int64" },
-          "task_count": { "type": "integer" },
-          "open_task_count": { "type": "integer" },
-          "accepted_task_count": { "type": "integer" },
-          "tags": {
-            "type": "array",
-            "items": { "type": "string" }
+          "sequence": {
+            "type": "integer"
           },
-          "created_at": { "type": "string", "format": "date-time" }
+          "type": {
+            "type": "string",
+            "example": "token_mint"
+          },
+          "from_account": {
+            "type": "string"
+          },
+          "to_account": {
+            "type": "string"
+          },
+          "amount_cents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "reference": {
+            "type": "string"
+          },
+          "previous_hash": {
+            "type": "string"
+          },
+          "entry_hash": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
         }
       },
       "MarketplaceResponse": {
         "type": "object",
+        "required": ["stats", "projects", "contributors", "agents"],
         "properties": {
-          "stats": { "$ref": "#/components/schemas/MarketplaceStats" },
+          "stats": {
+            "$ref": "#/components/schemas/MarketplaceStats"
+          },
           "projects": {
             "type": "array",
-            "items": { "$ref": "#/components/schemas/MarketplaceProject" }
+            "items": {
+              "$ref": "#/components/schemas/MarketplaceProject"
+            }
           },
           "contributors": {
             "type": "array",
-            "items": { "$ref": "#/components/schemas/MarketplaceContributor" }
+            "items": {
+              "$ref": "#/components/schemas/MarketplaceContributor"
+            }
           },
           "agents": {
             "type": "array",
-            "items": { "$ref": "#/components/schemas/MarketplaceAgent" }
+            "items": {
+              "$ref": "#/components/schemas/MarketplaceAgent"
+            }
           }
         }
       },
       "MarketplaceStats": {
         "type": "object",
         "properties": {
-          "project_count": { "type": "integer" },
-          "open_task_count": { "type": "integer" },
-          "accepted_task_count": { "type": "integer" },
-          "ledger_entry_count": { "type": "integer" },
-          "total_budget_cents": { "type": "integer", "format": "int64" },
-          "work_pool_cents": { "type": "integer", "format": "int64" },
-          "token_symbol": { "type": "string" },
-          "updated_at": { "type": "string", "format": "date-time", "nullable": true }
-        }
-      },
-      "Notification": {
-        "type": "object",
-        "properties": {
-          "id": { "type": "string" },
-          "user_id": { "type": "string" },
-          "project_id": { "type": "string" },
-          "channel": { "type": "string" },
-          "subject": { "type": "string" },
-          "body": { "type": "string" },
-          "status": { "type": "string" },
-          "created_at": { "type": "string", "format": "date-time" }
-        }
-      },
-      "OkResponse": {
-        "type": "object",
-        "properties": {
-          "ok": { "type": "boolean" }
-        }
-      },
-      "PaymentMethod": {
-        "type": "string",
-        "enum": ["paypal", "crypto"]
-      },
-      "PriceBreakdownItem": {
-        "type": "object",
-        "properties": {
-          "category": { "type": "string" },
-          "amount_cents": { "type": "integer", "format": "int64" },
-          "reason": { "type": "string" }
-        }
-      },
-      "PriceRange": {
-        "type": "object",
-        "properties": {
-          "low_cents": { "type": "integer", "format": "int64" },
-          "high_cents": { "type": "integer", "format": "int64" }
-        }
-      },
-      "Project": {
-        "type": "object",
-        "properties": {
-          "id": { "type": "string" },
-          "client_user_id": { "type": "string" },
-          "title": { "type": "string" },
-          "client_name": { "type": "string" },
-          "company_name": { "type": "string" },
-          "client_email": { "type": "string", "format": "email" },
-          "phone": { "type": "string" },
-          "site_type": { "type": "string" },
-          "package_tier": { "type": "string" },
-          "timeline": { "type": "string" },
-          "brief": { "type": "string" },
-          "payment_method": { "$ref": "#/components/schemas/PaymentMethod" },
-          "payment_status": { "type": "string" },
-          "payment_provider": { "type": "string" },
-          "payment_reference": { "type": "string" },
-          "bounty_repo_name": { "type": "string" },
-          "repo_visibility": { "type": "string" },
-          "repo_provider": { "type": "string" },
-          "repo_url": { "type": "string", "format": "uri" },
-          "repo_local_path": { "type": "string" },
-          "budget_cents": { "type": "integer", "format": "int64" },
-          "fee_cents": { "type": "integer", "format": "int64" },
-          "work_pool_cents": { "type": "integer", "format": "int64" },
-          "status": { "$ref": "#/components/schemas/ProjectStatus" },
-          "created_at": { "type": "string", "format": "date-time" },
-          "tasks": {
-            "type": "array",
-            "items": { "$ref": "#/components/schemas/Task" }
+          "project_count": {
+            "type": "integer"
           },
-          "attachments": {
-            "type": "array",
-            "items": { "$ref": "#/components/schemas/Attachment" }
+          "open_task_count": {
+            "type": "integer"
+          },
+          "accepted_task_count": {
+            "type": "integer"
+          },
+          "ledger_entry_count": {
+            "type": "integer"
+          },
+          "total_budget_cents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "work_pool_cents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "token_symbol": {
+            "type": "string",
+            "example": "MRG"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },
-      "ProjectPriceEvaluationRequest": {
+      "MarketplaceProject": {
         "type": "object",
         "properties": {
-          "title": { "type": "string" },
-          "description": { "type": "string" },
-          "project_type": { "type": "string" },
-          "requirements": { "type": "string" },
-          "deliverables": {
-            "type": "array",
-            "items": { "type": "string" }
+          "id": {
+            "type": "string"
           },
-          "timeline": { "type": "string" },
-          "tech_stack": { "type": "string" },
-          "complexity": { "type": "string" },
-          "constraints": { "type": "string" },
-          "reference_budget_cents": { "type": "integer", "format": "int64" }
-        }
-      },
-      "ProjectPriceEvaluationResponse": {
-        "type": "object",
-        "properties": {
-          "suggested_price_cents": { "type": "integer", "format": "int64" },
-          "suggested_range": { "$ref": "#/components/schemas/PriceRange" },
-          "confidence": { "type": "string" },
-          "breakdown": {
-            "type": "array",
-            "items": { "$ref": "#/components/schemas/PriceBreakdownItem" }
+          "title": {
+            "type": "string"
           },
-          "assumptions": {
-            "type": "array",
-            "items": { "type": "string" }
+          "brief": {
+            "type": "string"
           },
-          "risks": {
-            "type": "array",
-            "items": { "type": "string" }
+          "site_type": {
+            "type": "string"
           },
-          "editable": { "type": "boolean" }
-        }
-      },
-      "ProjectStatus": {
-        "type": "string",
-        "enum": ["funded"]
-      },
-      "PublicUser": {
-        "type": "object",
-        "properties": {
-          "id": { "type": "string" },
-          "name": { "type": "string" },
-          "company_name": { "type": "string" },
-          "email": { "type": "string", "format": "email" },
-          "role": { "$ref": "#/components/schemas/UserRole" },
-          "wallet_address": { "type": "string" },
-          "github_username": { "type": "string" },
-          "github_avatar_url": { "type": "string", "format": "uri" },
-          "created_at": { "type": "string", "format": "date-time" },
-          "last_login_at": { "type": "string", "format": "date-time", "nullable": true }
-        }
-      },
-      "RegisterRequest": {
-        "type": "object",
-        "required": ["name", "email", "password"],
-        "properties": {
-          "name": { "type": "string" },
-          "company_name": { "type": "string" },
-          "email": { "type": "string", "format": "email" },
-          "password": { "type": "string", "format": "password" }
-        }
-      },
-      "RuntimeConfigResponse": {
-        "type": "object",
-        "properties": {
-          "environment": { "type": "string" },
-          "token_symbol": { "type": "string" },
-          "payment_mode": { "type": "string" },
-          "repo_provider": { "type": "string" },
-          "github_oauth_ready": { "type": "boolean" },
-          "github_oauth_client_id": { "type": "string" },
-          "paypal_ready": { "type": "boolean" },
-          "crypto_ready": { "type": "boolean" },
-          "github_ready": { "type": "boolean" },
-          "smtp_ready": { "type": "boolean" },
-          "dev_payment_enabled": { "type": "boolean" },
-          "dev_payment_code": { "type": "string" },
-          "crypto_receiver": { "type": "string" },
-          "crypto_asset": { "type": "string" },
-          "crypto_token": { "type": "string" },
-          "bounty_root": { "type": "string" },
-          "upload_root": { "type": "string" },
-          "admin_bootstrap": { "type": "boolean" },
-          "primary_domain": { "type": "string" },
-          "admin_domain": { "type": "string" },
-          "scan_domain": { "type": "string" },
-          "ssl_review_domains": {
+          "package_tier": {
+            "type": "string"
+          },
+          "timeline": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "client_display_name": {
+            "type": "string"
+          },
+          "bounty_repo_name": {
+            "type": "string"
+          },
+          "repo_provider": {
+            "type": "string"
+          },
+          "repo_url": {
+            "type": "string"
+          },
+          "budget_cents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "work_pool_cents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "task_count": {
+            "type": "integer"
+          },
+          "open_task_count": {
+            "type": "integer"
+          },
+          "accepted_task_count": {
+            "type": "integer"
+          },
+          "tags": {
             "type": "array",
-            "items": { "type": "string" }
+            "items": {
+              "type": "string"
+            }
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },
-      "SSLReviewStatus": {
+      "MarketplaceContributor": {
         "type": "object",
         "properties": {
-          "domain": { "type": "string" },
-          "port": { "type": "string" },
-          "status": { "type": "string" },
-          "issuer": { "type": "string" },
-          "subject": { "type": "string" },
-          "serial_number": { "type": "string" },
-          "dns_names": {
-            "type": "array",
-            "items": { "type": "string" }
+          "worker_id": {
+            "type": "string"
           },
-          "not_before": { "type": "string", "format": "date-time", "nullable": true },
-          "not_after": { "type": "string", "format": "date-time", "nullable": true },
-          "days_remaining": { "type": "integer" },
-          "last_checked_at": { "type": "string", "format": "date-time", "nullable": true },
-          "next_check_at": { "type": "string", "format": "date-time", "nullable": true },
-          "error": { "type": "string" },
-          "checked_by": { "type": "string" }
+          "name": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "agent_type": {
+            "type": "string"
+          },
+          "task_count": {
+            "type": "integer"
+          },
+          "earned_cents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "last_paid_at": {
+            "type": "string",
+            "format": "date-time"
+          }
         }
       },
-      "StatusResponse": {
+      "MarketplaceAgent": {
         "type": "object",
         "properties": {
-          "service": { "type": "string" },
-          "version": { "type": "string" },
-          "environment": { "type": "string" },
-          "token_symbol": { "type": "string" },
-          "payment_mode": { "type": "string" },
-          "repo_provider": { "type": "string" }
+          "type": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "worker_kind": {
+            "type": "string"
+          },
+          "task_count": {
+            "type": "integer"
+          },
+          "open_task_count": {
+            "type": "integer"
+          },
+          "budget_cents": {
+            "type": "integer",
+            "format": "int64"
+          }
         }
       },
-      "Task": {
+      "CreateWalletRequest": {
         "type": "object",
         "properties": {
-          "id": { "type": "string" },
-          "project_id": { "type": "string" },
-          "issue_number": { "type": "integer" },
-          "title": { "type": "string" },
-          "acceptance": { "type": "string" },
-          "reward_cents": { "type": "integer", "format": "int64" },
-          "required_worker_kind": { "$ref": "#/components/schemas/WorkerKind" },
-          "suggested_agent_type": { "type": "string" },
-          "bounty_type": { "type": "string" },
-          "status": { "$ref": "#/components/schemas/TaskStatus" },
-          "worker_kind": { "$ref": "#/components/schemas/WorkerKind" },
-          "worker_id": { "type": "string" },
-          "agent_type": { "type": "string" },
-          "proof_hash": { "type": "string" },
-          "issue_url": { "type": "string", "format": "uri" },
-          "created_at": { "type": "string", "format": "date-time" },
-          "accepted_at": { "type": "string", "format": "date-time", "nullable": true }
+          "label": {
+            "type": "string"
+          }
         }
       },
-      "TaskStatus": {
-        "type": "string",
-        "enum": ["open", "accepted"]
-      },
-      "UserRole": {
-        "type": "string",
-        "enum": ["client", "admin"]
+      "CreateWalletResponse": {
+        "type": "object",
+        "required": ["address", "recovery_code", "wallet"],
+        "properties": {
+          "address": {
+            "type": "string"
+          },
+          "recovery_code": {
+            "type": "string"
+          },
+          "wallet": {
+            "$ref": "#/components/schemas/WalletSummary"
+          }
+        }
       },
       "WalletSummary": {
         "type": "object",
+        "required": [
+          "address",
+          "account",
+          "balance_cents",
+          "received_cents",
+          "sent_cents",
+          "transaction_count",
+          "linked_accounts",
+          "owner_linked",
+          "created_at"
+        ],
         "properties": {
-          "address": { "type": "string" },
-          "account": { "type": "string" },
-          "balance_cents": { "type": "integer", "format": "int64" },
-          "received_cents": { "type": "integer", "format": "int64" },
-          "sent_cents": { "type": "integer", "format": "int64" },
-          "transaction_count": { "type": "integer" },
+          "address": {
+            "type": "string"
+          },
+          "account": {
+            "type": "string",
+            "example": "wallet:0x1234..."
+          },
+          "balance_cents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "received_cents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "sent_cents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "transaction_count": {
+            "type": "integer"
+          },
           "linked_accounts": {
             "type": "array",
-            "items": { "type": "string" }
+            "items": {
+              "type": "string"
+            }
           },
-          "github_username": { "type": "string" },
-          "owner_linked": { "type": "boolean" },
-          "created_at": { "type": "string", "format": "date-time" },
-          "linked_at": { "type": "string", "format": "date-time", "nullable": true }
+          "github_username": {
+            "type": "string"
+          },
+          "owner_linked": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "linked_at": {
+            "type": "string",
+            "format": "date-time"
+          }
         }
       },
-      "WorkerKind": {
-        "type": "string",
-        "enum": ["human", "agent", "hybrid"]
+      "GitHubAuthRequest": {
+        "type": "object",
+        "required": ["code", "redirect_uri"],
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "OAuth code returned by GitHub."
+          },
+          "redirect_uri": {
+            "type": "string",
+            "format": "uri"
+          },
+          "wallet_address": {
+            "type": "string"
+          },
+          "recovery_code": {
+            "type": "string"
+          }
+        }
+      },
+      "AuthResponse": {
+        "type": "object",
+        "required": ["token", "user"],
+        "properties": {
+          "token": {
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/PublicUser"
+          }
+        }
+      },
+      "PublicUser": {
+        "type": "object",
+        "required": ["id", "name", "company_name", "email", "role", "created_at"],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "company_name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "role": {
+            "type": "string"
+          },
+          "wallet_address": {
+            "type": "string"
+          },
+          "github_username": {
+            "type": "string"
+          },
+          "github_avatar_url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "last_login_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
       }
     }
   }

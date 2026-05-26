@@ -2,8 +2,8 @@
   <section class="api-docs-shell">
     <div class="api-docs-head">
       <div>
-        <p>MergeOS API</p>
-        <h1>Swagger API Reference</h1>
+        <p>MergeOS Scan API</p>
+        <h1>Scan API Reference</h1>
       </div>
       <div class="api-docs-actions">
         <a class="compact-button" href="/openapi.json" target="_blank" rel="noreferrer">
@@ -22,7 +22,7 @@
       <span>{{ loadError }}</span>
     </section>
 
-    <div ref="swaggerRoot" class="swagger-frame" aria-label="MergeOS Swagger API documentation" />
+    <div ref="swaggerRoot" class="swagger-frame" aria-label="MergeOS Scan API documentation" />
   </section>
 </template>
 
