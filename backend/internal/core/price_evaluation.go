@@ -1,9 +1,16 @@
 package core
 
 import (
+	"bytes"
+	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"math"
+	"net/http"
+	"net/url"
 	"strings"
+	"time"
 )
 
 type priceFactor struct {
@@ -173,4 +180,138 @@ func priceRisks(req ProjectPriceEvaluationRequest, confidence string) []string {
 		risks = append(risks, "Major scope changes after publishing can move the price range.")
 	}
 	return risks
+}
+
+func (s *Store) EvaluateProjectPrice(ctx context.Context, req ProjectPriceEvaluationRequest) (*ProjectPriceEvaluationResponse, error) {
+	if !s.HasRunnableGeminiAPIKey() {
+		return EvaluateProjectPrice(req)
+	}
+
+	candidates := s.GeminiAPIKeyCandidates()
+	if len(candidates) == 0 {
+		return EvaluateProjectPrice(req)
+	}
+	candidate := candidates[0]
+
+	// 1. Build prompt for Gemini
+	deliverablesStr := strings.Join(req.Deliverables, ", ")
+	prompt := fmt.Sprintf(`Analyze the following software project details and suggest a reasonable price in cents (USD).
+You must return ONLY a valid JSON object matching this schema:
+{
+  "suggested_price_cents": 150000,
+  "suggested_range": {
+    "low_cents": 120000,
+    "high_cents": 180000
+  },
+  "confidence": "high",
+  "breakdown": [
+    {
+      "category": "Core Features & Logic",
+      "amount_cents": 100000,
+      "reason": "Implementation of core algorithms."
+    }
+  ],
+  "assumptions": ["List of assumptions used by the AI"],
+  "risks": ["List of risks or factors that may change the price"],
+  "editable": true
+}
+
+Project details:
+- Title: %s
+- Description: %s
+- Project Type: %s
+- Requirements: %s
+- Tech Stack: %s
+- Complexity: %s
+- Timeline: %s
+- Constraints: %s
+- Deliverables: %s
+- Reference Budget (cents): %d`,
+		req.Title, req.Description, req.ProjectType, req.Requirements,
+		req.TechStack, req.Complexity, req.Timeline, req.Constraints,
+		deliverablesStr, req.ReferenceBudgetCents,
+	)
+
+	// 2. Call Gemini
+	model := strings.Trim(strings.TrimSpace(s.cfg.GeminiReviewModel), "/")
+	if model == "" {
+		model = "gemini-2.5-flash"
+	}
+	model = strings.TrimPrefix(model, "models/")
+	apiURL := "https://generativelanguage.googleapis.com/v1beta/models/" + url.PathEscape(model) + ":generateContent?key=" + url.QueryEscape(candidate.KeyValue)
+
+	client := &http.Client{Timeout: 30 * time.Second}
+	geminiBody := map[string]any{
+		"contents": []map[string]any{
+			{
+				"parts": []map[string]any{
+					{"text": prompt},
+				},
+			},
+		},
+		"generationConfig": map[string]any{
+			"responseMimeType": "application/json",
+		},
+	}
+
+	bodyBytes, err := json.Marshal(geminiBody)
+	if err != nil {
+		return EvaluateProjectPrice(req)
+	}
+
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, apiURL, bytes.NewReader(bodyBytes))
+	if err != nil {
+		return EvaluateProjectPrice(req)
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(httpReq)
+	if err != nil {
+		return EvaluateProjectPrice(req)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return EvaluateProjectPrice(req)
+	}
+
+	var geminiResponse struct {
+		Candidates []struct {
+			Content struct {
+				Parts []struct {
+					Text string `json:"text"`
+				} `json:"parts"`
+			} `json:"content"`
+		} `json:"candidates"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&geminiResponse); err != nil {
+		return EvaluateProjectPrice(req)
+	}
+
+	if len(geminiResponse.Candidates) == 0 || len(geminiResponse.Candidates[0].Content.Parts) == 0 {
+		return EvaluateProjectPrice(req)
+	}
+
+	responseText := geminiResponse.Candidates[0].Content.Parts[0].Text
+	responseText = strings.TrimSpace(responseText)
+
+	// Clean Markdown code blocks if any
+	if strings.HasPrefix(responseText, "```") {
+		lines := strings.Split(responseText, "\n")
+		var cleanLines []string
+		for _, line := range lines {
+			if !strings.HasPrefix(line, "```") {
+				cleanLines = append(cleanLines, line)
+			}
+		}
+		responseText = strings.Join(cleanLines, "\n")
+	}
+
+	var result ProjectPriceEvaluationResponse
+	if err := json.Unmarshal([]byte(responseText), &result); err != nil {
+		return EvaluateProjectPrice(req)
+	}
+
+	return &result, nil
 }

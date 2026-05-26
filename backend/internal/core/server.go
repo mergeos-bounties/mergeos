@@ -492,7 +492,7 @@ func (s *Server) evaluateProjectPrice(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid JSON body")
 		return
 	}
-	result, err := EvaluateProjectPrice(req)
+	result, err := s.store.EvaluateProjectPrice(r.Context(), req)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
