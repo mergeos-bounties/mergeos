@@ -2132,7 +2132,7 @@ const authForm = reactive({
   name: 'MergeOS Admin',
   company_name: 'MergeOS',
   email: 'admin@gmail.com',
-  password: 'GoldOne123',
+  password: 'Admin123',
   confirm_password: '',
 });
 
@@ -2140,7 +2140,7 @@ const defaultLoginAuth = {
   name: 'MergeOS Admin',
   company_name: 'MergeOS',
   email: 'admin@gmail.com',
-  password: 'GoldOne123',
+  password: 'Admin123',
   confirm_password: '',
 };
 

@@ -14,7 +14,7 @@ const (
 	defaultPrimaryDomain      = "mergeos.shop"
 	defaultAdminDomain        = "uta.mergeos.shop"
 	defaultLocalAdminEmail    = "admin@gmail.com"
-	defaultLocalAdminPassword = "GoldOne123"
+	defaultLocalAdminPassword = "Admin123"
 )
 
 type Config struct {
