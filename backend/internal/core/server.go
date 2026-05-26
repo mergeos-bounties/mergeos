@@ -2,6 +2,7 @@ package core
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -49,6 +50,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("POST /api/admin/ssl/review", s.reviewAdminSSL)
 	mux.HandleFunc("GET /api/projects", s.projects)
 	mux.HandleFunc("POST /api/projects", s.createProject)
+	mux.HandleFunc("POST /api/projects/evaluate", s.evaluateProject)
 	mux.HandleFunc("POST /api/projects/evaluate-price", s.evaluateProjectPrice)
 	mux.HandleFunc("GET /api/tasks", s.tasks)
 	mux.HandleFunc("POST /api/tasks/", s.acceptTask)
@@ -559,4 +561,99 @@ func (s *Server) devPaymentCode() string {
 		return ""
 	}
 	return s.cfg.DevPaymentCode
+}
+
+func (s *Server) evaluateProject(w http.ResponseWriter, r *http.Request) {
+	_, ok := s.requireUser(w, r)
+	if !ok {
+		return
+	}
+
+	var req EvaluateProjectRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+
+	var basePrice int64 = 1000
+
+	tech := strings.ToLower(req.TechStack)
+	if strings.Contains(tech, "react") || strings.Contains(tech, "vue") || strings.Contains(tech, "next") {
+		basePrice += 300
+	}
+	if strings.Contains(tech, "go") || strings.Contains(tech, "rust") || strings.Contains(tech, "fastapi") {
+		basePrice += 400
+	}
+	if strings.Contains(tech, "ai") || strings.Contains(tech, "llm") || strings.Contains(tech, "machine learning") {
+		basePrice += 800
+	}
+	if strings.Contains(tech, "kubernetes") || strings.Contains(tech, "docker") || strings.Contains(tech, "devops") {
+		basePrice += 500
+	}
+
+	basePrice += int64(len(req.Deliverables) * 150)
+	basePrice += int64(len(req.Requirements) * 100)
+
+	complexity := strings.ToLower(req.Complexity)
+	if complexity == "high" {
+		basePrice = int64(float64(basePrice) * 1.6)
+	} else if complexity == "low" {
+		basePrice = int64(float64(basePrice) * 0.8)
+	}
+
+	if req.ReferenceBudget > 0 {
+		basePrice = (basePrice + req.ReferenceBudget) / 2
+	}
+
+	if basePrice < 150 {
+		basePrice = 150
+	}
+
+	low := int64(float64(basePrice) * 0.85)
+	high := int64(float64(basePrice) * 1.25)
+
+	low = (low / 50) * 50
+	high = (high / 50) * 50
+
+	breakdown := map[string]int64{
+		"Core Features & Logic": int64(float64(basePrice) * 0.50),
+		"Frontend Integration":  int64(float64(basePrice) * 0.25),
+		"Testing & CI/CD":       int64(float64(basePrice) * 0.15),
+		"Project Management":    int64(float64(basePrice) * 0.10),
+	}
+
+	assumptions := []string{
+		"The project has well-defined interfaces and clean design docs.",
+		"Development will be conducted in a sandbox or staging environment.",
+	}
+	if len(req.Deliverables) > 0 {
+		assumptions = append(assumptions, fmt.Sprintf("All %d listed deliverables are independent and testable.", len(req.Deliverables)))
+	}
+	if strings.Contains(tech, "go") {
+		assumptions = append(assumptions, "The project relies on native Go modules and clean standard library conventions.")
+	}
+
+	risks := []string{
+		"Scope creep due to changing or ambiguous deliverables.",
+	}
+	if strings.Contains(tech, "ai") || strings.Contains(tech, "llm") {
+		risks = append(risks, "AI model non-determinism and API latency/rate limits.")
+	}
+	if strings.Contains(tech, "kubernetes") || strings.Contains(tech, "devops") {
+		risks = append(risks, "Configuration drifts and target environment deployment discrepancies.")
+	}
+
+	rationale := fmt.Sprintf("Based on the tech stack (%s), the estimated effort is %s complexity. The price range represents core development, frontend binding, and automated testing.", req.TechStack, req.Complexity)
+
+	resp := EvaluateProjectResponse{
+		SuggestedLow:    low,
+		SuggestedHigh:   high,
+		ConfidenceLevel: 0.90,
+		TaskBreakdown:   breakdown,
+		Assumptions:     assumptions,
+		Risks:           risks,
+		Rationale:       rationale,
+	}
+
+	writeJSON(w, http.StatusOK, resp)
 }
