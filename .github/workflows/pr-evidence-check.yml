@@ -1,0 +1,388 @@
+name: PR readiness check
+
+on:
+  pull_request_target:
+    types:
+      - opened
+      - edited
+      - reopened
+      - synchronize
+      - ready_for_review
+  issue_comment:
+    types:
+      - created
+      - edited
+  workflow_dispatch:
+    inputs:
+      pull_number:
+        description: Pull request number to check
+        required: true
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  readiness:
+    if: >
+      github.event_name == 'pull_request_target' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issue_comment' && github.event.issue.pull_request)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check bounty readiness
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const marker = '<!-- mergeos-pr-readiness-check -->';
+            const legacyMarker = '<!-- mergeos-pr-evidence-check -->';
+            const missingEvidenceLabel = 'evidence: missing';
+            const providedEvidenceLabel = 'evidence: provided';
+            const missingStarLabel = 'star: missing';
+            const verifiedStarLabel = 'star: verified';
+            const bugBountyLabel = 'bounty: bug';
+            const featureBountyLabel = 'bounty: feature';
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const issue_number =
+              context.eventName === 'workflow_dispatch'
+                ? Number(context.payload.inputs.pull_number)
+                : context.eventName === 'pull_request_target'
+                  ? context.payload.pull_request.number
+                  : context.payload.issue.number;
+
+            if (!Number.isInteger(issue_number) || issue_number < 1) {
+              core.setFailed('A valid pull request number is required.');
+              return;
+            }
+
+            const { data: pullRequest } = await github.rest.pulls.get({
+              owner,
+              repo,
+              pull_number: issue_number,
+            });
+
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner,
+              repo,
+              issue_number,
+              per_page: 100,
+            });
+
+            const botComment = comments.find((comment) =>
+              comment.body?.includes(marker) || comment.body?.includes(legacyMarker),
+            );
+            const reviewerText = [
+              pullRequest.body || '',
+              ...comments
+                .filter(
+                  (comment) =>
+                    !comment.body?.includes(marker) &&
+                    !comment.body?.includes(legacyMarker),
+                )
+                .map((comment) => comment.body || ''),
+            ].join('\n\n');
+
+            const visualEvidencePatterns = [
+              /!\[[^\]]*\]\([^)]+\)/i,
+              /https?:\/\/github\.com\/user-attachments\/assets\/[a-z0-9-]+/i,
+              /https?:\/\/private-user-images\.githubusercontent\.com\/[^\s)]+/i,
+              /https?:\/\/[^\s)]+\.(png|jpe?g|gif|webp|mp4|mov|webm)(\?[^\s)]*)?/i,
+              /https?:\/\/(?:www\.)?(loom\.com|youtu\.be|youtube\.com|drive\.google\.com|figma\.com)\/[^\s)]+/i,
+            ];
+
+            const hasVisualEvidence = visualEvidencePatterns.some((pattern) =>
+              pattern.test(reviewerText),
+            );
+            const author = pullRequest.user?.login;
+
+            async function getReferencedIssues() {
+              const issueNumbers = [
+                ...new Set(
+                  `${pullRequest.title || ''}\n${pullRequest.body || ''}`
+                    .match(/#\d+/g)
+                    ?.map((reference) => Number(reference.slice(1)))
+                    .filter((number) => Number.isInteger(number) && number > 0) || [],
+                ),
+              ];
+              const issues = [];
+
+              for (const number of issueNumbers) {
+                try {
+                  const { data: issue } = await github.rest.issues.get({
+                    owner,
+                    repo,
+                    issue_number: number,
+                  });
+
+                  if (!issue.pull_request) {
+                    issues.push(issue);
+                  }
+                } catch (error) {
+                  if (error.status !== 404) {
+                    throw error;
+                  }
+                }
+              }
+
+              return issues;
+            }
+
+            function detectBountyType(referencedIssues) {
+              const issueLabelText = referencedIssues
+                .flatMap((issue) => issue.labels || [])
+                .map((label) =>
+                  typeof label === 'string' ? label : `${label.name || ''} ${label.description || ''}`,
+                )
+                .join('\n')
+                .toLowerCase();
+              const issueText = referencedIssues
+                .map((issue) => `${issue.title || ''}\n${issue.body || ''}`)
+                .join('\n')
+                .toLowerCase();
+              const prText = `${pullRequest.title || ''}\n${pullRequest.body || ''}`.toLowerCase();
+
+              if (/\bbug\b|bug bounty|defect|regression|crash|broken|error|failure/.test(issueLabelText)) {
+                return 'bug';
+              }
+
+              if (/enhancement|feature|feature bounty/.test(issueLabelText)) {
+                return 'feature';
+              }
+
+              if (/\b(type|scope)\s*:\s*(feature|enhancement)|feature\s*\/\s*enhancement|feature bounty/.test(issueText)) {
+                return 'feature';
+              }
+
+              if (/\b(type|scope)\s*:\s*(bug|defect)|bug bounty|steps to reproduce|expected result|actual result|regression|crash/.test(issueText)) {
+                return 'bug';
+              }
+
+              if (/^feat(\(.+\))?:|feature bounty|enhancement|new feature|implement|add support|build /.test(prText)) {
+                return 'feature';
+              }
+
+              if (/^fix(\(.+\))?:|bug bounty|\bbug\b|regression|crash|fixes?\s+#\d+/.test(prText)) {
+                return 'bug';
+              }
+
+              return null;
+            }
+
+            const referencedIssues = await getReferencedIssues();
+            const bountyType = detectBountyType(referencedIssues);
+
+            async function hasStarredRepo(username) {
+              if (!username) {
+                return false;
+              }
+
+              if (pullRequest.user?.type === 'Bot') {
+                return true;
+              }
+
+              try {
+                await github.request('GET /users/{username}/starred/{owner}/{repo}', {
+                  username,
+                  owner,
+                  repo,
+                });
+                return true;
+              } catch (error) {
+                if (error.status === 404) {
+                  return false;
+                }
+
+                if (error.status === 403) {
+                  core.warning(
+                    `Could not verify whether @${username} starred this repository because the GitHub API returned 403.`,
+                  );
+                  return false;
+                }
+
+                throw error;
+              }
+            }
+
+            const hasRepoStar = await hasStarredRepo(author);
+
+            async function ensureLabel(name, color, description) {
+              try {
+                await github.rest.issues.getLabel({
+                  owner,
+                  repo,
+                  name,
+                });
+              } catch (error) {
+                if (error.status !== 404) {
+                  throw error;
+                }
+
+                await github.rest.issues.createLabel({
+                  owner,
+                  repo,
+                  name,
+                  color,
+                  description,
+                });
+              }
+            }
+
+            async function removeLabelIfPresent(name) {
+              try {
+                await github.rest.issues.removeLabel({
+                  owner,
+                  repo,
+                  issue_number,
+                  name,
+                });
+              } catch (error) {
+                if (error.status !== 404) {
+                  throw error;
+                }
+              }
+            }
+
+            async function setOneOfLabels(labelToAdd, labelToRemove) {
+              try {
+                await ensureLabel(
+                  missingEvidenceLabel,
+                  'D93F0B',
+                  'PR needs screenshot, GIF, video, or visual evidence.',
+                );
+                await ensureLabel(
+                  providedEvidenceLabel,
+                  '0E8A16',
+                  'PR includes screenshot, GIF, video, or visual evidence.',
+                );
+                await ensureLabel(
+                  missingStarLabel,
+                  'B60205',
+                  'PR author must star this repository before bounty review.',
+                );
+                await ensureLabel(
+                  verifiedStarLabel,
+                  '0E8A16',
+                  'PR author has starred this repository.',
+                );
+                await ensureLabel(
+                  bugBountyLabel,
+                  'D73A4A',
+                  'Bug-fix bounty work.',
+                );
+                await ensureLabel(
+                  featureBountyLabel,
+                  'A2EEEF',
+                  'Feature or enhancement bounty work.',
+                );
+
+                await removeLabelIfPresent(labelToRemove);
+                await github.rest.issues.addLabels({
+                  owner,
+                  repo,
+                  issue_number,
+                  labels: [labelToAdd],
+                });
+              } catch (error) {
+                if (error.status === 403) {
+                  core.warning(
+                    'Could not update readiness labels. Make sure this workflow has issues: write and the repository allows GitHub Actions read/write permissions.',
+                  );
+                  return;
+                }
+
+                throw error;
+              }
+            }
+
+            async function writeComment(body) {
+              try {
+                if (botComment) {
+                  await github.rest.issues.updateComment({
+                    owner,
+                    repo,
+                    comment_id: botComment.id,
+                    body,
+                  });
+                } else {
+                  await github.rest.issues.createComment({
+                    owner,
+                    repo,
+                    issue_number,
+                    body,
+                  });
+                }
+              } catch (error) {
+                if (error.status === 403) {
+                  core.warning(
+                    'Could not write the readiness reminder comment. Make sure this workflow has pull-requests: write and the repository allows GitHub Actions read/write permissions.',
+                  );
+                  return;
+                }
+
+                throw error;
+              }
+            }
+
+            if (hasVisualEvidence) {
+              await setOneOfLabels(providedEvidenceLabel, missingEvidenceLabel);
+            } else {
+              await setOneOfLabels(missingEvidenceLabel, providedEvidenceLabel);
+            }
+
+            if (hasRepoStar) {
+              await setOneOfLabels(verifiedStarLabel, missingStarLabel);
+            } else {
+              await setOneOfLabels(missingStarLabel, verifiedStarLabel);
+            }
+
+            if (bountyType === 'bug') {
+              await setOneOfLabels(bugBountyLabel, featureBountyLabel);
+            } else if (bountyType === 'feature') {
+              await setOneOfLabels(featureBountyLabel, bugBountyLabel);
+            }
+
+            const failures = [];
+
+            if (!hasVisualEvidence) {
+              failures.push('Missing visual evidence');
+            }
+
+            if (!hasRepoStar) {
+              failures.push(`@${author} has not starred this repository`);
+            }
+
+            if (!bountyType) {
+              failures.push('Bounty type was not detected');
+            }
+
+            const reminder = [
+              marker,
+              'PR readiness check.',
+              '',
+              hasVisualEvidence
+                ? '- Evidence: provided.'
+                : '- Evidence: missing. Add before/after screenshots, a short video/GIF, or an uploaded image/video link.',
+              hasRepoStar
+                ? `- Repository star: verified for @${author}.`
+                : `- Repository star: missing for @${author}. Please star this repository before claiming or continuing bounty work.`,
+              bountyType
+                ? `- Bounty type: ${bountyType} bounty.`
+                : '- Bounty type: not detected. Add `Bounty type: bug bounty` or `Bounty type: feature bounty` to the PR description.',
+              '',
+              failures.length
+                ? 'After updating the PR, rerun this check or add a PR comment so it can recheck.'
+                : 'All bounty readiness checks currently pass.',
+            ].join('\n');
+
+            if (failures.length) {
+              await writeComment(reminder);
+              core.setFailed(failures.join('; '));
+              return;
+            }
+
+            if (botComment) {
+              await writeComment(reminder);
+            }
+
+            core.notice('PR readiness checks passed.');

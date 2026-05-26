@@ -4,6 +4,7 @@ import App from './App.vue';
 
 const root = document.getElementById('app');
 const hasSSRMarkup = Boolean(root?.firstElementChild);
-const app = hasSSRMarkup ? createHydratedApp() : createClientApp(App);
+const initialPath = window.location.pathname;
+const app = hasSSRMarkup ? createHydratedApp(initialPath) : createClientApp(App, { initialPath });
 
 app.mount('#app');

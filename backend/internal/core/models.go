@@ -164,6 +164,14 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
+type AdminUpdateUserRequest struct {
+	Name        string   `json:"name"`
+	CompanyName string   `json:"company_name"`
+	Email       string   `json:"email"`
+	Role        UserRole `json:"role"`
+	Password    string   `json:"password,omitempty"`
+}
+
 type AuthResponse struct {
 	Token string     `json:"token"`
 	User  PublicUser `json:"user"`
@@ -183,6 +191,7 @@ type CreateProjectRequest struct {
 	PaymentMethod    PaymentMethod `json:"payment_method"`
 	PaymentReference string        `json:"payment_reference"`
 	AttachmentIDs    []string      `json:"attachment_ids"`
+	SourceRepoURL    string        `json:"source_repo_url,omitempty"`
 }
 
 type ProjectPriceEvaluationRequest struct {
@@ -253,6 +262,7 @@ type RuntimeConfigResponse struct {
 	AdminBootstrap    bool     `json:"admin_bootstrap"`
 	PrimaryDomain     string   `json:"primary_domain,omitempty"`
 	AdminDomain       string   `json:"admin_domain,omitempty"`
+	ScanDomain        string   `json:"scan_domain,omitempty"`
 	SSLReviewDomains  []string `json:"ssl_review_domains,omitempty"`
 }
 

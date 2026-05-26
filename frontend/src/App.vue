@@ -169,14 +169,38 @@
             </label>
 
             <section class="wizard-section full attach-repo">
-              <div>
-                <strong>Attach repository <small>(optional)</small></strong>
-                <p>This helps developers understand your project better.</p>
+              <div class="attach-repo-head">
+                <div>
+                  <strong>Attach repository <small>(optional)</small></strong>
+                  <p>Load open issues and turn them into scored fix tasks.</p>
+                </div>
+                <button class="secondary-button compact" :disabled="repoImportBusy" type="button" @click="loadRepoIssues">
+                  <RefreshCw :size="15" />
+                  {{ repoImportBusy ? 'Loading issues' : 'Load issues' }}
+                </button>
               </div>
-              <button class="secondary-button compact" type="button" @click="showToast('GitHub connection coming soon.')">
-                <GitBranch :size="15" />
-                Connect GitHub
-              </button>
+              <label class="wizard-field full repo-url-field">
+                <span>GitHub repository</span>
+                <input
+                  v-model.trim="projectSetupForm.repoUrl"
+                  placeholder="https://github.com/owner/repo"
+                  @keyup.enter="loadRepoIssues"
+                />
+              </label>
+              <p v-if="repoImportError" class="modal-error repo-import-error">{{ repoImportError }}</p>
+              <div v-if="repoImportedIssues.length" class="repo-issue-panel">
+                <div class="repo-issue-summary">
+                  <strong>{{ repoImportResult.owner }}/{{ repoImportResult.name }}</strong>
+                  <span>{{ repoImportedIssues.length }} issues · {{ formatMoneyFromCents(repoImportedEstimateCents) }} scored</span>
+                </div>
+                <article v-for="issue in repoImportedIssues.slice(0, 4)" :key="issue.number" class="repo-issue-row">
+                  <span>#{{ issue.number }}</span>
+                  <div>
+                    <strong>{{ issue.title }}</strong>
+                    <small>Score {{ issue.score }} · {{ issue.complexity }} · {{ formatMoneyFromCents(issue.estimated_cents) }}</small>
+                  </div>
+                </article>
+              </div>
             </section>
           </div>
 
@@ -515,7 +539,7 @@
             <div class="token-receipt">
               <span>You will receive</span>
               <strong>{{ projectTokenAmount }} tokens</strong>
-              <small>1 USD = 0.175 tokens</small>
+              <small>1 USD = {{ TOKEN_RATE_PER_USD }} {{ tokenSymbol }}</small>
             </div>
           </section>
 
@@ -1338,6 +1362,7 @@
       <div class="home-container ledger-shell">
         <section class="ledger-hero">
           <div class="ledger-hero-copy">
+            <span class="marketplace-eyebrow">LEDGER LOGS</span>
             <div class="ledger-title-row">
               <h1>Ledger Logs</h1>
               <span class="ledger-public-badge">
@@ -1414,7 +1439,6 @@
                     <th>Time (UTC)</th>
                     <th>Type</th>
                     <th>Project</th>
-                    <th>Description</th>
                     <th>Amount</th>
                     <th>Status</th>
                     <th>Tx / Ref</th>
@@ -1422,13 +1446,13 @@
                 </thead>
                 <tbody>
                   <tr v-if="ledgerLoading">
-                    <td class="ledger-state-cell" colspan="7">Loading real ledger entries...</td>
+                    <td class="ledger-state-cell" colspan="6">Loading real ledger entries...</td>
                   </tr>
                   <tr v-else-if="ledgerError">
-                    <td class="ledger-state-cell error" colspan="7">{{ ledgerError }}</td>
+                    <td class="ledger-state-cell error" colspan="6">{{ ledgerError }}</td>
                   </tr>
                   <tr v-else-if="ledgerEvents.length === 0">
-                    <td class="ledger-state-cell" colspan="7">No ledger entries yet. Fund a project to mint tokens and create the first logs.</td>
+                    <td class="ledger-state-cell" colspan="6">No ledger entries yet. Fund a project to mint tokens and create the first logs.</td>
                   </tr>
                   <template v-else>
                     <tr v-for="event in ledgerEvents" :key="event.key">
@@ -1451,7 +1475,6 @@
                           </div>
                         </div>
                       </td>
-                      <td>{{ event.description }}</td>
                       <td>
                         <strong :class="['ledger-amount', event.amountTone]">{{ event.amount }}</strong>
                         <span v-if="event.secondaryAmount">{{ event.secondaryAmount }}</span>
@@ -1492,7 +1515,7 @@
                     </div>
                     <small>Real projects will appear after payment.</small>
                     <p>
-                      <b>$0 Escrow</b>
+                      <b>0 {{ tokenSymbol }} Escrow</b>
                       <span>0 Contributors</span>
                       <span>0 PRs</span>
                     </p>
@@ -2013,7 +2036,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, onUnmounted, reactive, ref } from 'vue';
 import {
   ArrowLeft,
   ArrowRight,
@@ -2021,6 +2044,7 @@ import {
   Bell,
   Bot,
   Box,
+  Bug,
   Calculator,
   CheckCircle2,
   ChevronDown,
@@ -2066,6 +2090,41 @@ import {
 } from '@lucide/vue';
 
 const hasWindow = typeof window !== 'undefined';
+const TOKEN_RATE_PER_USD = 100;
+const DASHBOARD_REFRESH_MS = 5000;
+const publicPagePaths = {
+  home: '/',
+  product: '/product',
+  solutions: '/solutions',
+  marketplace: '/marketplace',
+  'how-it-works': '/how-it-works',
+  ledger: '/ledger',
+};
+const publicPageNames = new Set(Object.keys(publicPagePaths));
+
+const props = defineProps({
+  initialPath: { type: String, default: '' },
+});
+
+function normalizeRoutePath(path = '/') {
+  const pathname = String(path || '/').split('?')[0].split('#')[0] || '/';
+  const normalized = pathname.replace(/\/+$/, '') || '/';
+  return normalized.startsWith('/') ? normalized : `/${normalized}`;
+}
+
+function normalizePublicPage(page = 'home') {
+  return publicPageNames.has(page) ? page : 'home';
+}
+
+function publicPageFromPath(path = '/') {
+  const normalizedPath = normalizeRoutePath(path);
+  const match = Object.entries(publicPagePaths).find(([, routePath]) => routePath === normalizedPath);
+  return match?.[0] || 'home';
+}
+
+function publicPathForPage(page = 'home') {
+  return publicPagePaths[normalizePublicPage(page)] || '/';
+}
 
 function getBrowserStorage() {
   if (!hasWindow || !('localStorage' in window)) {
@@ -2117,8 +2176,9 @@ const showConfirmPassword = ref(false);
 const toastMessage = ref('');
 let toastTimer = 0;
 
-const publicPage = ref('home');
-const publicModeVisible = ref(false);
+const initialPublicPage = publicPageFromPath(props.initialPath || (hasWindow ? window.location.pathname : '/'));
+const publicPage = ref(initialPublicPage);
+const publicModeVisible = ref(initialPublicPage !== 'home');
 
 const projectWizardVisible = ref(false);
 const projectWizardStage = ref('setup');
@@ -2155,12 +2215,17 @@ const selectedDashboardProjectID = ref('');
 const priceEvaluation = ref(null);
 const priceEvaluationBusy = ref(false);
 const priceEvaluationError = ref('');
+const repoImportBusy = ref(false);
+const repoImportError = ref('');
+const repoImportResult = ref(null);
+let dashboardRefreshTimer = 0;
 
 const projectSetupForm = reactive({
   title: 'AI-Powered SaaS Dashboard',
   shortDescription: 'Build a modern SaaS dashboard with analytics, real-time data, and AI insights.',
   projectType: 'Web Development',
   techStack: 'Next.js, TypeScript, Tailwind CSS, PostgreSQL',
+  repoUrl: '',
   overview: '',
   requirements: '',
   currency: 'USD',
@@ -2221,6 +2286,7 @@ const projectSetupSteps = [
 
 const projectTypeOptions = [
   { label: 'Web Development', caption: 'Web apps', icon: Globe2 },
+  { label: 'Repo Issue Fix', caption: 'Existing repo', icon: Bug },
   { label: 'Mobile Development', caption: 'iOS and Android', icon: Compass },
   { label: 'AI / ML', caption: 'Agents and models', icon: Bot },
   { label: 'Smart Contract', caption: 'Web3', icon: Link2 },
@@ -2241,10 +2307,10 @@ const fundingMethodOptions = [
 ];
 
 const fundingAmountOptions = [
-  { amount: 500, tokens: 80 },
-  { amount: 1000, tokens: 170 },
-  { amount: 2000, tokens: 350, popular: true },
-  { amount: 5000, tokens: 900 },
+  { amount: 500, tokens: 50000 },
+  { amount: 1000, tokens: 100000 },
+  { amount: 2000, tokens: 200000, popular: true },
+  { amount: 5000, tokens: 500000 },
 ];
 
 const paymentMethodOptions = [
@@ -2311,6 +2377,10 @@ const visibleDeliverables = computed(() => {
   const items = projectDeliverables.value.map((item) => item.trim()).filter(Boolean);
   return items.length ? items : ['Project scope and implementation'];
 });
+const repoImportedIssues = computed(() => Array.isArray(repoImportResult.value?.issues) ? repoImportResult.value.issues : []);
+const repoImportedEstimateCents = computed(() =>
+  repoImportedIssues.value.reduce((total, issue) => total + (Number(issue.estimated_cents) || 0), 0),
+);
 const projectBudgetAmount = computed(() => Math.max(0, Number(projectSetupForm.budgetAmount) || 0));
 const projectBudgetLow = computed(() => Math.round(projectBudgetAmount.value * 0.8));
 const projectBudgetHigh = computed(() => Math.round(projectBudgetAmount.value * 1.2));
@@ -2323,7 +2393,7 @@ const projectEstimatedHigh = computed(() => projectBudgetHigh.value + projectPla
 const projectEstimatedTotal = computed(() => Math.round(projectBudgetAmount.value * 1.1));
 const projectFundingPlatformFee = computed(() => Math.round((Number(projectFundingAmount.value) || 0) * 0.08));
 const projectFundingEscrowFee = computed(() => Math.round((Number(projectFundingAmount.value) || 0) * 0.02));
-const projectTokenAmount = computed(() => Math.round((Number(projectFundingAmount.value) || 0) * 0.175));
+const projectTokenAmount = computed(() => Math.round((Number(projectFundingAmount.value) || 0) * TOKEN_RATE_PER_USD));
 const projectInitial = computed(() => (projectSetupForm.title.trim().charAt(0) || 'M').toUpperCase());
 const projectTimelineLabel = computed(() => 'May 26 - Jun 25, 2026 (30 days)');
 const wizardIntroCopy = computed(() => {
@@ -2366,27 +2436,27 @@ const projectFooterSteps = computed(() =>
 );
 
 const authForm = reactive({
-  name: 'MergeOS Admin',
-  company_name: 'MergeOS',
-  email: 'admin@gmail.com',
-  password: 'Admin123',
+  name: '',
+  company_name: '',
+  email: '',
+  password: '',
   confirm_password: '',
 });
 
 const defaultLoginAuth = {
-  name: 'MergeOS Admin',
-  company_name: 'MergeOS',
-  email: 'admin@gmail.com',
-  password: 'Admin123',
+  name: '',
+  company_name: '',
+  email: '',
+  password: '',
   confirm_password: '',
 };
 
 const defaultRegisterAuth = {
-  name: 'Maintenance Client',
-  company_name: 'MergeOS Customer',
-  email: 'client@mergeos.local',
-  password: 'mergeos123',
-  confirm_password: 'mergeos123',
+  name: '',
+  company_name: '',
+  email: '',
+  password: '',
+  confirm_password: '',
 };
 
 const authBenefits = [
@@ -2492,6 +2562,15 @@ const ledgerVerifiedFundingCents = computed(() =>
     .filter((entry) => entry.type === 'payment_verified')
     .reduce((total, entry) => total + (Number(entry.amount_cents) || 0), 0),
 );
+const publicVerifiedFundingCents = computed(() => {
+  const ledgerFunding = ledgerVerifiedFundingCents.value;
+  if (ledgerFunding > 0) return ledgerFunding;
+  return Number(marketplaceStats.value.total_budget_cents) || 0;
+});
+const publicMintedTokenTotal = computed(() => {
+  if (ledgerMintedTokenTotal.value > 0) return ledgerMintedTokenTotal.value;
+  return tokenAmountFromCents(publicVerifiedFundingCents.value);
+});
 const ledgerProjectCount = computed(() => {
   const ids = new Set();
   for (const entry of ledgerRawEntries.value) {
@@ -2500,10 +2579,17 @@ const ledgerProjectCount = computed(() => {
   }
   return ids.size;
 });
+const publicProjectCount = computed(() =>
+  ledgerProjectCount.value
+  || Number(marketplaceStats.value.project_count)
+  || ledgerProjects.value.length
+  || marketplaceData.value.projects.length
+  || 0,
+);
 const ledgerLiveStats = computed(() => [
   { value: String(ledgerRawEntries.value.length), label: 'Ledger entries' },
-  { value: `${formatCompactNumber(ledgerMintedTokenTotal.value)} ${tokenSymbol.value}`, label: 'Tokens minted' },
-  { value: formatMoneyFromCents(ledgerVerifiedFundingCents.value), label: 'Verified funding' },
+  { value: formatPublicTokenAmount(publicMintedTokenTotal.value), label: 'Tokens minted' },
+  { value: formatLedgerMRGFromCents(publicVerifiedFundingCents.value), label: 'Verified funding' },
   { value: String(ledgerRawEntries.value.filter((entry) => entry.type === 'task_payment').length), label: 'Payments released' },
 ]);
 const ledgerTrendingProjects = computed(() => {
@@ -2534,7 +2620,7 @@ const ledgerTrendingProjects = computed(() => {
   }
   return Array.from(grouped.values()).slice(0, 4).map((project) => ({
     ...project,
-    escrow: `${formatMoneyFromCents(project.escrowCents)} Escrow`,
+    escrow: `${formatLedgerMRGFromCents(project.escrowCents)} Escrow`,
   }));
 });
 const ledgerChainRows = computed(() => [
@@ -2543,9 +2629,9 @@ const ledgerChainRows = computed(() => [
   { label: 'Repo provider', value: runtimeConfig.value?.repo_provider || 'not loaded' },
 ]);
 const ledgerFooterStats = computed(() => [
-  { value: formatMoneyFromCents(ledgerVerifiedFundingCents.value), label: 'Verified funding' },
-  { value: String(ledgerProjectCount.value), label: 'Funded projects' },
-  { value: `${formatCompactNumber(ledgerMintedTokenTotal.value)} ${tokenSymbol.value}`, label: 'Tokens minted' },
+  { value: formatLedgerMRGFromCents(publicVerifiedFundingCents.value), label: 'Verified funding' },
+  { value: String(publicProjectCount.value), label: 'Funded projects' },
+  { value: formatPublicTokenAmount(publicMintedTokenTotal.value), label: 'Tokens minted' },
   { value: String(ledgerRawEntries.value.length), label: 'Ledger entries' },
 ]);
 
@@ -2569,7 +2655,7 @@ const emptyMarketplaceProject = {
   body: 'Post and fund a project to publish a real marketplace listing.',
   tags: ['Escrow', 'Tasks', 'Ledger'],
   extra: 0,
-  budget: '$0',
+  budget: '0 MRG',
   timeline: 'Waiting for first project',
   client: 'MergeOS',
   clientInitials: 'M',
@@ -2585,7 +2671,7 @@ const marketplaceTrustItems = computed(() => [
   {
     icon: ShieldCheck,
     tone: 'green',
-    title: formatMoneyFromCents(marketplaceStats.value.total_budget_cents),
+    title: formatPublicMRGFromCents(marketplaceStats.value.total_budget_cents),
     body: 'Verified escrow',
   },
   {
@@ -2605,8 +2691,8 @@ const marketplaceTrustItems = computed(() => [
 const homeLiveStats = computed(() => [
   { value: String(Number(marketplaceStats.value.project_count) || marketplaceData.value.projects.length || 0), label: 'Funded projects' },
   { value: String(Number(marketplaceStats.value.open_task_count) || 0), label: 'Open tasks' },
-  { value: formatMoneyFromCents(marketplaceStats.value.total_budget_cents), label: 'Verified escrow' },
-  { value: `${formatCompactNumber(ledgerMintedTokenTotal.value)} ${tokenSymbol.value}`, label: 'Tokens minted' },
+  { value: formatPublicMRGFromCents(marketplaceStats.value.total_budget_cents), label: 'Verified escrow' },
+  { value: formatPublicTokenAmount(publicMintedTokenTotal.value), label: 'Tokens minted' },
 ]);
 
 const homeWorkflowCards = [
@@ -2740,7 +2826,7 @@ const marketplaceSummaryLabel = computed(() => {
   const stats = marketplaceStats.value;
   const projects = Number(stats.project_count) || marketplaceData.value.projects?.length || 0;
   const tasks = Number(stats.open_task_count) || 0;
-  return `${projects} live projects · ${tasks} open tasks · ${formatMoneyFromCents(stats.total_budget_cents)} verified`;
+  return `${projects} live projects · ${tasks} open tasks · ${formatPublicMRGFromCents(stats.total_budget_cents)} verified`;
 });
 const marketplaceHeroProject = computed(() => marketplaceProjectsView.value[0] || emptyMarketplaceProject);
 const marketplaceContributorsView = computed(() =>
@@ -2750,7 +2836,7 @@ const marketplaceContributorsView = computed(() =>
     initials: initialsFor(contributor.name || contributor.worker_id || 'FW'),
     name: contributor.name || contributor.worker_id || 'Contributor',
     role: contributor.agent_type ? toTitleLabel(contributor.agent_type) : toTitleLabel(contributor.kind || 'human contributor'),
-    earned: formatMoneyFromCents(contributor.earned_cents),
+    earned: formatPublicMRGFromCents(contributor.earned_cents),
     tone: marketplaceAvatarTones[index % marketplaceAvatarTones.length],
   })),
 );
@@ -2759,7 +2845,7 @@ const marketplaceAgentsView = computed(() =>
     type: agent.type || `agent-${index}`,
     icon: marketplaceAgentIcon(agent.type),
     title: agent.title || toTitleLabel(agent.type || 'AI Agent'),
-    body: `${Number(agent.open_task_count) || 0} open tasks · ${formatMoneyFromCents(agent.budget_cents)} pool`,
+    body: `${Number(agent.open_task_count) || 0} open tasks · ${formatPublicMRGFromCents(agent.budget_cents)} pool`,
     tone: ['green', 'blue', 'yellow', 'red'][index % 4],
   })),
 );
@@ -2979,7 +3065,7 @@ const workflowCards = [
   {
     number: '05',
     visual: 'ship',
-    amount: '$2,450',
+    amount: '245,000 MRG',
     title: 'Ship & Get Paid',
     body: 'Once approved, we ship to production. Escrow releases payment securely. You own full ownership.',
     footer: 'Secure escrow payment',
@@ -3127,7 +3213,7 @@ const stats = [
   { value: '2,435+', label: 'Active Projects' },
   { value: '18,640+', label: 'Tasks Completed' },
   { value: '7,320+', label: 'Developers & Agents' },
-  { value: '$12.6M+', label: 'Paid to Builders' },
+  { value: '1.26B MRG+', label: 'Paid to Builders' },
   { value: '99.2%', label: 'Success Rate' },
 ];
 
@@ -3159,19 +3245,47 @@ function scrollToSection(id) {
   }
 }
 
-function openPublicPage(page) {
-  publicModeVisible.value = true;
-  const nextPage = ['home', 'product', 'solutions', 'marketplace', 'how-it-works', 'ledger'].includes(page) ? page : 'home';
-  publicPage.value = nextPage;
-  if (nextPage === 'ledger') {
+function loadPublicPageData(page) {
+  if (page === 'ledger') {
     void loadLedgerData();
-  } else if (nextPage === 'marketplace' || nextPage === 'home') {
-    void loadMarketplaceData({ silent: true });
+    return;
   }
+  if (page === 'marketplace' || page === 'home') {
+    void loadMarketplaceData({ silent: true });
+    void loadLedgerData({ silent: true });
+  }
+}
+
+function updatePublicBrowserPath(page, replace = false) {
   if (!hasWindow) return;
+  const targetPath = publicPathForPage(page);
+  const currentPath = normalizeRoutePath(window.location.pathname);
+  if (currentPath === targetPath && !window.location.search && !window.location.hash) {
+    return;
+  }
+  const method = replace ? 'replaceState' : 'pushState';
+  window.history[method]({ publicPage: page }, '', targetPath);
+}
+
+function openPublicPage(page, options = {}) {
+  publicModeVisible.value = true;
+  const nextPage = normalizePublicPage(page);
+  publicPage.value = nextPage;
+  loadPublicPageData(nextPage);
+  updatePublicBrowserPath(nextPage, Boolean(options.replace));
+  if (!hasWindow) return;
+  if (options.scroll === false) return;
   window.requestAnimationFrame(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
+}
+
+function syncPublicPageFromBrowserPath() {
+  if (!hasWindow) return;
+  publicModeVisible.value = true;
+  const nextPage = publicPageFromPath(window.location.pathname);
+  publicPage.value = nextPage;
+  loadPublicPageData(nextPage);
 }
 
 function handlePublicAction(action = {}) {
@@ -3212,6 +3326,8 @@ function handleDashboardNav(item) {
 function openMarketplaceSection(id) {
   publicModeVisible.value = true;
   publicPage.value = 'marketplace';
+  updatePublicBrowserPath('marketplace');
+  loadPublicPageData('marketplace');
   if (!hasWindow) return;
   window.requestAnimationFrame(() => scrollToSection(id));
 }
@@ -3242,6 +3358,43 @@ function closeProjectWizard() {
   projectWizardStep.value = 1;
 }
 
+async function loadRepoIssues() {
+  const repoURL = projectSetupForm.repoUrl.trim();
+  repoImportError.value = '';
+  if (!repoURL) {
+    repoImportError.value = 'Enter a GitHub repo URL first.';
+    return;
+  }
+
+  repoImportBusy.value = true;
+  try {
+    const result = await publicApi('/api/public/repo/issues', {
+      method: 'POST',
+      body: JSON.stringify({ repo_url: repoURL }),
+    });
+    repoImportResult.value = result;
+    projectSetupForm.repoUrl = result.repo_url || repoURL;
+    if (repoImportedIssues.value.length) {
+      projectSetupForm.projectType = 'Repo Issue Fix';
+      projectSetupForm.title = `Fix all issues in ${result.owner}/${result.name}`;
+      projectSetupForm.shortDescription = `Fix ${repoImportedIssues.value.length} open GitHub issues in ${result.owner}/${result.name}.`;
+      projectSetupForm.overview = repoImportedIssues.value
+        .map((issue) => `#${issue.number} ${issue.title} - score ${issue.score}, ${issue.complexity}`)
+        .join('\n');
+      projectDeliverables.value = repoImportedIssues.value.map((issue) => `Fix #${issue.number}: ${issue.title}`);
+      showToast(`${repoImportedIssues.value.length} issues loaded and scored.`);
+    } else {
+      showToast('No open issues found.');
+    }
+  } catch (error) {
+    repoImportResult.value = null;
+    repoImportError.value = error.message || 'Could not load repo issues.';
+    showToast(repoImportError.value);
+  } finally {
+    repoImportBusy.value = false;
+  }
+}
+
 function openAuthFromProjectWizard(mode = 'login') {
   closeProjectWizard();
   openAuth(mode);
@@ -3260,6 +3413,7 @@ function nextProjectStep() {
     return;
   }
 
+  projectFundingAmount.value = Math.max(100, projectBudgetAmount.value || projectFundingAmount.value);
   projectWizardStage.value = 'funding';
   scrollProjectFlowTop();
   showToast('Project published. Add funds to start receiving proposals.');
@@ -3415,6 +3569,18 @@ function formatMoneyFromCents(cents = 0) {
   }).format((Number(cents) || 0) / 100);
 }
 
+function formatLedgerMRGFromCents(cents = 0) {
+  return `${formatCompactNumber(tokenAmountFromCents(cents))} ${tokenSymbol.value}`;
+}
+
+function formatPublicMRGFromCents(cents = 0) {
+  return `${formatCompactNumber(tokenAmountFromCents(cents))} ${tokenSymbol.value}`;
+}
+
+function formatPublicTokenAmount(amount = 0) {
+  return `${formatCompactNumber(amount)} ${tokenSymbol.value}`;
+}
+
 function formatCompactNumber(value = 0) {
   return new Intl.NumberFormat('en-US', {
     maximumFractionDigits: value >= 100 ? 0 : 1,
@@ -3422,7 +3588,7 @@ function formatCompactNumber(value = 0) {
 }
 
 function tokenAmountFromCents(cents = 0) {
-  return Math.round(((Number(cents) || 0) / 100) * 0.175);
+  return Math.round(((Number(cents) || 0) / 100) * TOKEN_RATE_PER_USD);
 }
 
 function toTitleLabel(value = '') {
@@ -3494,7 +3660,7 @@ function mapMarketplaceProject(project = {}, index = 0) {
     body: trimMarketplaceText(project.brief),
     tags: tags.slice(0, 3),
     extra: Math.max(0, tags.length - 3),
-    budget: formatMoneyFromCents(project.budget_cents),
+    budget: formatPublicMRGFromCents(project.budget_cents),
     timeline: project.timeline || formatMarketplaceDate(project.created_at),
     client,
     clientInitials: initialsFor(client),
@@ -3639,7 +3805,6 @@ function mapLedgerEntry(entry) {
   const tokenAmount = tokenAmountFromCents(entry.amount_cents);
   const projectTitle = project?.title || (projectID ? `Project ${projectID.slice(-6)}` : 'MergeOS ledger');
   const company = project?.company_name || project?.client_name || 'MergeOS';
-  const isTokenMint = entry.type === 'token_mint';
   const isFeeOrPayout = entry.type === 'platform_fee' || entry.type === 'task_payment';
   return {
     key: `${entry.sequence}-${entry.entry_hash || entry.reference}`,
@@ -3652,36 +3817,11 @@ function mapLedgerEntry(entry) {
     projectTone: projectToneFor(projectID || projectTitle),
     project: projectTitle,
     company,
-    description: ledgerDescription(entry, projectTitle, tokenAmount),
-    amount: isTokenMint
-      ? `+ ${formatCompactNumber(tokenAmount)} ${tokenSymbol.value}`
-      : `${isFeeOrPayout ? '-' : '+'} ${formatMoneyFromCents(entry.amount_cents)}`,
-    secondaryAmount: isTokenMint ? `${formatMoneyFromCents(entry.amount_cents)} verified` : entry.type === 'payment_verified' ? `${formatCompactNumber(tokenAmount)} ${tokenSymbol.value} minted` : '',
+    amount: `${isFeeOrPayout ? '-' : '+'} ${formatCompactNumber(tokenAmount)} ${tokenSymbol.value}`,
+    secondaryAmount: entry.type === 'payment_verified' ? 'funding verified' : entry.type === 'token_mint' ? 'mint log' : '',
     amountTone: meta.amountTone,
     ref: shortLedgerReference(entry.reference || entry.entry_hash || `#${entry.sequence}`),
   };
-}
-
-function ledgerDescription(entry, projectTitle, tokenAmount) {
-  if (entry.type === 'token_mint') {
-    return `${formatCompactNumber(tokenAmount)} ${tokenSymbol.value} minted for payer on ${projectTitle}`;
-  }
-  if (entry.type === 'payment_verified') {
-    return `Payment verified and attached to ${projectTitle}`;
-  }
-  if (entry.type === 'platform_fee') {
-    return `Platform fee recorded for ${projectTitle}`;
-  }
-  if (entry.type === 'project_reserve') {
-    return `Escrow reserve opened for ${projectTitle}`;
-  }
-  if (entry.type === 'task_reserve') {
-    return `Task budget reserved from project escrow`;
-  }
-  if (entry.type === 'task_payment') {
-    return `Task payout released from escrow`;
-  }
-  return `Ledger entry ${entry.type}`;
 }
 
 function shortLedgerReference(value = '') {
@@ -3717,13 +3857,16 @@ function buildCreateProjectPayload() {
     payment_method: paymentMethodForProject(),
     payment_reference: paymentReferenceForProject(),
     attachment_ids: [],
+    source_repo_url: projectSetupForm.repoUrl || '',
   };
 }
 
 function buildProjectBrief() {
   return [
+    projectSetupForm.repoUrl && `Source repository: ${projectSetupForm.repoUrl}`,
     projectSetupForm.shortDescription,
     projectSetupForm.overview && `Overview:\n${projectSetupForm.overview}`,
+    repoImportedIssues.value.length && `Imported issues:\n${repoImportedIssues.value.map((issue) => `- #${issue.number} ${issue.title} (score ${issue.score}, ${issue.complexity})`).join('\n')}`,
     visibleDeliverables.value.length && `Deliverables:\n${visibleDeliverables.value.map((item) => `- ${item}`).join('\n')}`,
     projectSetupForm.requirements && `Requirements:\n${projectSetupForm.requirements}`,
     projectSetupForm.techStack && `Tech stack: ${projectSetupForm.techStack}`,
@@ -3875,6 +4018,21 @@ async function loadDashboardData(options = {}) {
   }
 }
 
+function startDashboardRealtime() {
+  if (!hasWindow || dashboardRefreshTimer) return;
+  dashboardRefreshTimer = window.setInterval(() => {
+    if (!token.value || !user.value) return;
+    if (document.visibilityState === 'hidden') return;
+    void loadDashboardData({ silent: true });
+  }, DASHBOARD_REFRESH_MS);
+}
+
+function stopDashboardRealtime() {
+  if (!hasWindow || !dashboardRefreshTimer) return;
+  window.clearInterval(dashboardRefreshTimer);
+  dashboardRefreshTimer = 0;
+}
+
 function openAuth(mode = 'login') {
   setAuthMode(mode);
   authVisible.value = true;
@@ -3909,9 +4067,11 @@ function setSession(auth) {
     void loadLedgerData({ silent: true });
   }
   void loadDashboardData({ silent: true });
+  startDashboardRealtime();
 }
 
 function clearSession() {
+  stopDashboardRealtime();
   token.value = '';
   user.value = null;
   authVisible.value = false;
@@ -3963,6 +4123,7 @@ async function restoreSession() {
   try {
     user.value = await api('/api/auth/me');
     await loadDashboardData({ silent: true });
+    startDashboardRealtime();
     if (publicPage.value === 'ledger') {
       void loadLedgerData({ silent: true });
     }
@@ -3981,11 +4142,23 @@ async function logout() {
 }
 
 onMounted(async () => {
+  if (hasWindow) {
+    window.addEventListener('popstate', syncPublicPageFromBrowserPath);
+    updatePublicBrowserPath(publicPage.value, true);
+  }
   const runtimePromise = loadRuntimeConfig().catch((error) => showToast(error.message));
   await Promise.all([
     runtimePromise,
     restoreSession(),
     loadMarketplaceData({ silent: true }),
+    loadLedgerData({ silent: true }),
   ]);
+});
+
+onUnmounted(() => {
+  if (hasWindow) {
+    window.removeEventListener('popstate', syncPublicPageFromBrowserPath);
+  }
+  stopDashboardRealtime();
 });
 </script>

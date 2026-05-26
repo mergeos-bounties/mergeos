@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="MergeOS Admin">
+  <rect width="64" height="64" rx="14" fill="#0f172a"/>
+  <path fill="#0f9f78" d="M16 18h14v14H16zM34 18h14v14H34zM16 36h14v14H16zM34 36h14v14H34z"/>
+  <path fill="#ffffff" d="M21 23h4v4h-4zM39 23h4v4h-4zM21 41h4v4h-4zM39 41h4v4h-4z"/>
+</svg>

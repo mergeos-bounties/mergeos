@@ -106,6 +106,70 @@ func TestCreateProjectCreatesLocalBountyRepoAndPersistsLedger(t *testing.T) {
 	}
 }
 
+func TestImportedRepoIssuesBecomeFundedTasks(t *testing.T) {
+	store := &Store{nextID: 1}
+	project := &Project{
+		ID:            "prj_0001",
+		Title:         "Fix repo issues",
+		WorkPoolCents: 90000,
+	}
+	issues := []*ImportedRepoIssue{
+		{
+			Number:             3,
+			Title:              "AI project evaluation for price suggestion",
+			URL:                "https://github.com/mergeos-bounties/mergeos/issues/3",
+			Score:              80,
+			Complexity:         "high",
+			EstimatedCents:     42000,
+			RequiredWorkerKind: WorkerAgent,
+			SuggestedAgentType: "backend-agent",
+			Reasons:            []string{"open GitHub issue", "backend surface"},
+		},
+		{
+			Number:             2,
+			Title:              "Implement social login",
+			URL:                "https://github.com/mergeos-bounties/mergeos/issues/2",
+			Score:              60,
+			Complexity:         "medium",
+			EstimatedCents:     30000,
+			RequiredWorkerKind: WorkerHybrid,
+			SuggestedAgentType: "security-review-agent",
+			Reasons:            []string{"open GitHub issue", "auth risk"},
+		},
+		{
+			Number:             1,
+			Title:              "Claim MRG Tokens for Bug Bounty Reports",
+			URL:                "https://github.com/mergeos-bounties/mergeos/issues/1",
+			Score:              30,
+			Complexity:         "low",
+			EstimatedCents:     18000,
+			RequiredWorkerKind: WorkerHuman,
+			Reasons:            []string{"open GitHub issue"},
+		},
+	}
+
+	tasks := store.tasksFromImportedIssues(project, issues)
+	if len(tasks) != len(issues) {
+		t.Fatalf("tasks = %d", len(tasks))
+	}
+	if tasks[0].IssueNumber != 3 || tasks[0].IssueURL != issues[0].URL || !strings.Contains(tasks[0].Title, "Fix #3") {
+		t.Fatalf("first task did not preserve source issue: %#v", tasks[0])
+	}
+	var total int64
+	for _, task := range tasks {
+		total += task.RewardCents
+		if !strings.Contains(task.Acceptance, "Source issue: https://github.com/mergeos-bounties/mergeos/issues/") {
+			t.Fatalf("task acceptance missing source issue: %#v", task)
+		}
+	}
+	if total != project.WorkPoolCents {
+		t.Fatalf("task rewards = %d, want %d", total, project.WorkPoolCents)
+	}
+	if tokenAmountFromCents(100000) != 100000 {
+		t.Fatalf("token amount = %d, want 100000", tokenAmountFromCents(100000))
+	}
+}
+
 func TestPublicMarketplaceRouteReturnsSanitizedLiveData(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := Config{
@@ -376,6 +440,103 @@ func TestConfiguredAdminBootstrapCanLogin(t *testing.T) {
 	}
 	if auth.User.Role != RoleAdmin {
 		t.Fatalf("configured admin role = %q", auth.User.Role)
+	}
+}
+
+func TestAdminCanUpdateUserAndPassword(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:       defaultTokenSymbol,
+		StatePath:         filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:    1000,
+		DevPaymentEnabled: true,
+		DevPaymentCode:    defaultDevPaymentCode,
+		GitHubOwner:       defaultGitHubOwner,
+		BountyRoot:        filepath.Join(tempDir, "bounties"),
+		SMTPFrom:          "noreply@mergeos.local",
+		AdminEmail:        defaultLocalAdminEmail,
+		AdminPassword:     defaultLocalAdminPassword,
+		AdminName:         "MergeOS Admin",
+		AdminCompanyName:  "MergeOS",
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	clientAuth, err := store.Register(RegisterRequest{
+		Name:        "Client User",
+		CompanyName: "Old Co",
+		Email:       "client@example.com",
+		Password:    "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	adminAuth, err := store.Login(LoginRequest{Email: defaultLocalAdminEmail, Password: defaultLocalAdminPassword})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	server := NewServer(cfg, store, payments)
+	body := strings.NewReader(`{"name":"Updated Client","company_name":"New Co","email":"updated@example.com","role":"client","password":"newpass123"}`)
+	req := httptest.NewRequest(http.MethodPatch, "/api/admin/users/"+clientAuth.User.ID, body)
+	req.Header.Set("Authorization", "Bearer "+adminAuth.Token)
+	req.Header.Set("Content-Type", "application/json")
+	resp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(resp, req)
+	if resp.Code != http.StatusOK {
+		t.Fatalf("update user status = %d, body = %s", resp.Code, resp.Body.String())
+	}
+	var updated AdminUser
+	if err := json.NewDecoder(resp.Body).Decode(&updated); err != nil {
+		t.Fatal(err)
+	}
+	if updated.Name != "Updated Client" || updated.Email != "updated@example.com" || updated.CompanyName != "New Co" {
+		t.Fatalf("updated user = %#v", updated)
+	}
+	if _, err := store.Login(LoginRequest{Email: "updated@example.com", Password: "password123"}); err == nil {
+		t.Fatal("old password still works")
+	}
+	if _, err := store.Login(LoginRequest{Email: "updated@example.com", Password: "newpass123"}); err != nil {
+		t.Fatalf("new password login failed: %v", err)
+	}
+}
+
+func TestCannotDemoteOnlyAdmin(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:       defaultTokenSymbol,
+		StatePath:         filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:    1000,
+		DevPaymentEnabled: true,
+		DevPaymentCode:    defaultDevPaymentCode,
+		GitHubOwner:       defaultGitHubOwner,
+		BountyRoot:        filepath.Join(tempDir, "bounties"),
+		SMTPFrom:          "noreply@mergeos.local",
+		AdminEmail:        defaultLocalAdminEmail,
+		AdminPassword:     defaultLocalAdminPassword,
+		AdminName:         "MergeOS Admin",
+		AdminCompanyName:  "MergeOS",
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	adminAuth, err := store.Login(LoginRequest{Email: defaultLocalAdminEmail, Password: defaultLocalAdminPassword})
+	if err != nil {
+		t.Fatal(err)
+	}
+	server := NewServer(cfg, store, payments)
+	body := strings.NewReader(`{"name":"MergeOS Admin","company_name":"MergeOS","email":"admin@gmail.com","role":"client"}`)
+	req := httptest.NewRequest(http.MethodPatch, "/api/admin/users/"+adminAuth.User.ID, body)
+	req.Header.Set("Authorization", "Bearer "+adminAuth.Token)
+	req.Header.Set("Content-Type", "application/json")
+	resp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(resp, req)
+	if resp.Code != http.StatusBadRequest {
+		t.Fatalf("only admin demotion status = %d, body = %s", resp.Code, resp.Body.String())
 	}
 }
 

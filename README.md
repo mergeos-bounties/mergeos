@@ -4,6 +4,14 @@ MergeOS is an AI-assisted software maintenance and bounty operating system. A cu
 
 This repository is the current MergeOS MVP: Go backend, Vue SSR frontend, project funding flow, bounty workspace generation, GitHub issue import, evidence attachments, notifications, admin review, and proof ledger.
 
+`scan/` is the public MergeOS Scan explorer for `scan.mergeos.shop`. It reads the public ledger API and presents MRG token mints, escrow movements, task reserves, payouts, addresses, transaction hashes, and hash-chain proof in a BscScan-style interface.
+
+## Repository Documents
+
+- [README-INDEX.md](README-INDEX.md): docs map and bounty tracking index.
+- [BOUNTY-POLICY.md](BOUNTY-POLICY.md): bounty policy and reward rules.
+- [Claim Token issue #1](https://github.com/mergeos-bounties/mergeos/issues/1): public bounty claim intake.
+
 ## New Workflow
 
 1. The customer registers or logs in.
@@ -11,70 +19,8 @@ This repository is the current MergeOS MVP: Go backend, Vue SSR frontend, projec
 3. The customer funds escrow through PayPal, crypto, or the local development verifier.
 4. MergeOS records the funded project, mints internal `MRG` token credit, and creates a bounty workspace.
 5. The system splits the project into tasks with reward pools, worker type, agent suggestion, and acceptance criteria.
-6. Contributors who want token rewards for new bugs must comment in the Claim Token issue before starting work.
-7. The contributor opens a PR after the fix, including screenshots/log evidence and a clear description.
-8. Maintainers review the PR, verify the evidence, merge valid work, and release the token reward.
-
-## Claim Token Bounty Program
-
-All new bounty bugs must start from this issue:
-
-[Claim MRG Tokens for Bug Bounty Reports - Comment New Bugs Here Before Opening a PR](https://github.com/mergeos-bounties/mergeos/issues/1)
-
-Do not open a separate issue for a new bounty bug unless a maintainer asks for it. Comment in the Claim Token issue first so the project has one clear intake queue for token claims.
-
-### Claim Rules
-
-- One bug equals one claim comment.
-- A claim must include impact, steps to reproduce, expected result, actual result, and evidence.
-- A maintainer must confirm the claim before the contributor starts bounty work.
-- Duplicates, vague reports, missing reproduction steps, or reports without evidence are not eligible yet.
-- A PR must link back to the exact claim comment.
-- Token payout is only eligible after the PR is reviewed, evidence is accepted, tests pass, and the PR is merged.
-- Do not paste secrets, private keys, customer data, or exploitable production details into public comments. Describe the impact and ask a maintainer to move sensitive validation private.
-
-### Claim Comment Template
-
-```markdown
-### Bug title
-Short name for the bug.
-
-### Impact
-Who is affected, where it happens, and severity.
-
-### Steps to reproduce
-1. ...
-2. ...
-3. ...
-
-### Expected result
-What should happen.
-
-### Actual result
-What happens now.
-
-### Evidence
-Attach screenshot, GIF, video, log, request/response, or failing test output.
-
-### Proposed fix
-Optional fix direction.
-
-### Claim info
-GitHub handle:
-Wallet/token receiver:
-```
-
-## Pull Request Requirements
-
-Every bounty PR must include:
-
-- Link to the Claim Token issue comment.
-- Summary of the bug and the fix.
-- Evidence before and after the fix. Screenshots or GIFs are preferred for UI bugs. Logs, request/response examples, or test output are acceptable for backend bugs.
-- Test commands that were run and their result.
-- Any risk, migration, environment variable, or deployment note.
-
-PRs without evidence are not ready for bounty review.
+6. Contributors claim available work and open PRs with implementation evidence.
+7. Maintainers review the PR, verify the work, merge valid changes, and release the token reward.
 
 ## Product Scope
 
@@ -100,11 +46,77 @@ Roadmap items include full AI codebase scanning, task dependency DAGs, automated
 - Backend: Go `net/http`
 - Storage: PostgreSQL when `DATABASE_URL` is set, with legacy JSON state fallback for local development
 - Frontend: Vue 3 + Vite SSR
+- Admin: Vue 3 + Vite static admin console
+- Scan: Vue 3 + Vite static explorer served from `scan.mergeos.shop`
 - Token symbol: `MRG` by default through `TOKEN_SYMBOL`
 - Bounty repos: local git under `BOUNTY_ROOT`, or GitHub private repos with `GITHUB_TOKEN`
 - Payments: local verifier, PayPal, EVM native/ERC-20 verifier
 
-## Run Local
+## Run Local With Docker Compose
+
+This is the recommended local test path. It starts PostgreSQL, the Go API, the Vue SSR frontend, the admin console, and the Scan explorer together.
+
+Prerequisites:
+
+- Docker Desktop or Docker Engine with the Compose plugin.
+- Local ports `5432`, `8080`, `5173`, `5174`, and `5175` available.
+
+Start everything:
+
+```powershell
+docker compose up --build
+```
+
+Open:
+
+- Frontend: `http://127.0.0.1:5173`
+- Admin: `http://127.0.0.1:5174`
+- Scan explorer: `http://127.0.0.1:5175`
+- API health: `http://127.0.0.1:8080/api/health`
+- PostgreSQL: `127.0.0.1:5432`, database `mergeos_local`, user `mergeos`, password `mergeos`
+
+Local test credentials:
+
+- Admin email: `admin@gmail.com`
+- Admin password: `Admin123`
+- Local payment reference: `LOCAL-PAID`
+
+Useful Docker commands:
+
+```powershell
+# Stop containers but keep local Postgres and uploaded/bounty data volumes.
+docker compose down
+
+# Reset all local Docker data and start from an empty PostgreSQL database.
+docker compose down -v
+docker compose up --build
+
+# Rebuild one service after changing its source.
+docker compose up --build backend
+docker compose up --build frontend
+docker compose up --build admin
+docker compose up --build scan
+```
+
+If a host port is already busy, override only the published host port and keep the container port unchanged:
+
+```powershell
+$env:MERGEOS_BACKEND_PORT='18080'
+$env:MERGEOS_FRONTEND_PORT='15173'
+$env:MERGEOS_ADMIN_PORT='15174'
+$env:MERGEOS_SCAN_PORT='15175'
+$env:MERGEOS_POSTGRES_PORT='15432'
+docker compose up --build
+```
+
+Compose storage:
+
+- `postgres-data`: PostgreSQL data.
+- `backend-data`: uploaded files, generated bounty repos, and optional legacy JSON import/export path.
+
+The backend runs in `MERGEOS_ENV=local`, sets `DATABASE_URL=postgres://mergeos:mergeos@postgres:5432/mergeos_local?sslmode=disable`, disables SSL review calls for local tests, and runs the embedded PostgreSQL migrations automatically on startup.
+
+## Run Local Manually
 
 Backend:
 
@@ -132,8 +144,18 @@ npm install
 npm run local
 ```
 
+Scan:
+
+```powershell
+cd scan
+Copy-Item .env.local.example .env.local
+npm install
+npm run dev
+```
+
 Open `http://127.0.0.1:5173`.
 Open admin at `http://127.0.0.1:5174`.
+Open scan at `http://127.0.0.1:5175`.
 
 Local payment reference:
 
@@ -161,6 +183,15 @@ npm install
 npm run build
 ```
 
+Build the scan explorer:
+
+```powershell
+cd scan
+Copy-Item .env.production.example .env.production
+npm install
+npm run build
+```
+
 Start the backend:
 
 ```powershell
@@ -177,7 +208,7 @@ cd frontend
 npm run production
 ```
 
-Before real deployment, set production values in `backend/.env.production`: `ADMIN_PASSWORD`, PayPal credentials, crypto verifier settings, GitHub repo settings, SMTP settings, receiver addresses, and SSL review domains.
+Before real deployment, set production values in `backend/.env.production`: `ADMIN_PASSWORD`, PayPal credentials, crypto verifier settings, GitHub repo settings, SMTP settings, receiver addresses, and SSL review domains. The GitHub deploy workflow builds `scan/`, serves it statically from nginx, proxies `/api/` to the MergeOS backend, and requests certificates for `mergeos.shop`, `uta.mergeos.shop`, and `scan.mergeos.shop`.
 
 ## Environment Reference
 
@@ -197,12 +228,18 @@ Admin examples:
 - `admin/.env.local.example`
 - `admin/.env.production.example`
 
+Scan examples:
+
+- `scan/.env.local.example`
+- `scan/.env.production.example`
+
 Important backend variables:
 
 - `MERGEOS_ENV`: `local` or `production`
 - `DATABASE_URL`: PostgreSQL connection string
 - `MERGEOS_STATE_PATH`: legacy JSON state path or import source
 - `TOKEN_SYMBOL`: token label shown by the app, default `MRG`
+- `PRIMARY_DOMAIN`, `ADMIN_DOMAIN`, `SCAN_DOMAIN`: production hostnames, defaulting to `mergeos.shop`, `uta.mergeos.shop`, and `scan.mergeos.shop`
 - `PLATFORM_FEE_BPS`: platform fee basis points
 - `DEV_PAYMENT_ENABLED` and `DEV_PAYMENT_CODE`: local verifier
 - `PAYPAL_ENV`, `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`: PayPal Orders v2
@@ -252,15 +289,3 @@ Admin:
 - `GET /api/admin/ledger`
 - `GET /api/admin/ssl`
 - `POST /api/admin/ssl/review`
-
-## Maintainer Bounty Checklist
-
-For every token claim:
-
-1. Confirm the bug is reproducible and not a duplicate.
-2. Assign priority, bounty amount, and claimant in the Claim Token issue.
-3. Require the PR to link the exact claim comment.
-4. Verify screenshots, GIFs, logs, or test output.
-5. Run or review the relevant tests.
-6. Merge only after the fix and evidence match the accepted claim.
-7. Record token release in the ledger or payout process.

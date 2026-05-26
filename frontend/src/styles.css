@@ -27,6 +27,8 @@
 
 html {
   scroll-behavior: smooth;
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
 }
 
 body {
@@ -150,6 +152,7 @@ svg {
 
 .nav-links button,
 .locale-button {
+  min-height: 40px;
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -180,7 +183,7 @@ svg {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: -14px;
+  bottom: -8px;
   height: 2px;
   border-radius: 999px;
   background: var(--green);
@@ -771,18 +774,76 @@ svg {
 }
 
 .attach-repo {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  display: grid;
   gap: 16px;
   border-top: 1px solid #eef0f2;
   padding-top: 4px;
+}
+
+.attach-repo-head,
+.repo-issue-summary,
+.repo-issue-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
 }
 
 .attach-repo p {
   margin: 4px 0 0;
   color: #6b7280;
   font-size: 12px;
+}
+
+.repo-url-field {
+  margin: 0;
+}
+
+.repo-import-error {
+  margin: 0;
+}
+
+.repo-issue-panel {
+  display: grid;
+  gap: 8px;
+  border: 1px solid #dfe5ec;
+  border-radius: 8px;
+  padding: 10px;
+  background: #fbfdfc;
+}
+
+.repo-issue-summary span,
+.repo-issue-row small {
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.repo-issue-row {
+  align-items: flex-start;
+  justify-content: flex-start;
+  border-top: 1px solid #edf2f0;
+  padding-top: 8px;
+}
+
+.repo-issue-row > span {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  padding: 4px 8px;
+  background: #e8f6ef;
+  color: #08734f;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.repo-issue-row > div {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.repo-issue-row strong {
+  overflow-wrap: anywhere;
+  font-size: 13px;
 }
 
 .rich-editor {
@@ -2487,7 +2548,9 @@ svg {
 }
 
 .public-home-page,
-.public-info-page {
+.public-info-page,
+.marketplace-page,
+.ledger-page {
   padding: 34px 0 42px;
 }
 
@@ -2732,16 +2795,12 @@ svg {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.marketplace-page {
-  padding: 24px 0 34px;
-}
-
 .home-container.marketplace-layout {
-  width: min(1440px, 100%);
+  width: min(1220px, 100%);
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 286px;
+  grid-template-columns: minmax(0, 1fr) 270px;
   align-items: start;
-  gap: 24px;
+  gap: 28px;
 }
 
 .marketplace-main,
@@ -2751,14 +2810,14 @@ svg {
 
 .marketplace-hero {
   display: grid;
-  grid-template-columns: minmax(330px, 0.92fr) minmax(440px, 1.08fr);
-  align-items: center;
-  gap: 28px;
+  grid-template-columns: minmax(320px, 0.92fr) minmax(400px, 1.08fr);
+  align-items: stretch;
+  gap: 26px;
 }
 
 .marketplace-copy {
   min-width: 0;
-  padding-top: 12px;
+  padding: 34px 0 18px;
 }
 
 .marketplace-eyebrow {
@@ -2770,8 +2829,8 @@ svg {
 }
 
 .marketplace-copy h1 {
-  max-width: 600px;
-  margin: 26px 0 0;
+  max-width: 760px;
+  margin: 22px 0 0;
   color: #0f172a;
   font-size: 48px;
   line-height: 1.08;
@@ -2784,11 +2843,11 @@ svg {
 }
 
 .marketplace-copy p {
-  max-width: 560px;
+  max-width: 680px;
   margin: 18px 0 0;
-  color: #4b5563;
-  font-size: 16px;
-  line-height: 1.55;
+  color: #475569;
+  font-size: 17px;
+  line-height: 1.58;
   font-weight: 650;
 }
 
@@ -2878,9 +2937,10 @@ svg {
 
 .marketplace-visual {
   position: relative;
-  min-height: 330px;
+  min-height: 340px;
   overflow: hidden;
   border: 1px solid #eef1ed;
+  border-radius: 8px;
   background:
     linear-gradient(135deg, rgba(236, 253, 245, 0.84), rgba(248, 250, 252, 0.92) 56%, rgba(255, 251, 235, 0.56)),
     #f8fbfa;
@@ -2897,10 +2957,10 @@ svg {
 }
 
 .talent-preview-card {
-  left: 30px;
-  top: 42px;
-  width: 204px;
-  padding: 16px;
+  left: 24px;
+  top: 52px;
+  width: clamp(184px, 43%, 204px);
+  padding: 14px;
   transform: rotate(5deg);
 }
 
@@ -3020,9 +3080,9 @@ svg {
 }
 
 .market-code-card {
-  right: 30px;
-  top: 26px;
-  width: 198px;
+  right: 24px;
+  top: 28px;
+  width: clamp(172px, 38%, 198px);
   background: #0b1220;
   border-color: #0b1220;
   padding: 18px;
@@ -3297,8 +3357,8 @@ svg {
 
 .marketplace-project-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 18px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
 }
 
 .marketplace-project-card {
@@ -6283,24 +6343,18 @@ svg {
   }
 }
 
-.ledger-page {
-  padding-top: 30px;
-  padding-bottom: 28px;
-}
-
 .ledger-shell {
   display: grid;
-  gap: 20px;
+  gap: 28px;
 }
 
 .ledger-hero {
   display: grid;
-  grid-template-columns: minmax(0, 1.28fr) minmax(360px, 0.82fr);
-  gap: 22px;
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 420px);
+  gap: 26px;
   align-items: stretch;
 }
 
-.ledger-hero-copy,
 .ledger-live-card,
 .ledger-main-card,
 .ledger-side-card,
@@ -6313,21 +6367,10 @@ svg {
 
 .ledger-hero-copy {
   position: relative;
-  overflow: hidden;
-  min-height: 178px;
-  padding: 28px;
-}
-
-.ledger-hero-copy::after {
-  content: "";
-  position: absolute;
-  inset: 0 0 auto auto;
-  width: 340px;
-  height: 178px;
-  background:
-    linear-gradient(135deg, transparent 0 36%, rgba(15, 159, 120, 0.1) 36% 37%, transparent 37% 54%, rgba(37, 99, 235, 0.08) 54% 55%, transparent 55%),
-    linear-gradient(160deg, rgba(15, 159, 120, 0.05), transparent 72%);
-  pointer-events: none;
+  min-width: 0;
+  overflow: visible;
+  min-height: 0;
+  padding: 34px 0 18px;
 }
 
 .ledger-title-row,
@@ -6344,13 +6387,14 @@ svg {
 .ledger-title-row {
   gap: 12px;
   flex-wrap: wrap;
+  margin-top: 22px;
 }
 
 .ledger-title-row h1 {
   margin: 0;
   color: #111827;
-  font-size: 31px;
-  line-height: 1.12;
+  font-size: 48px;
+  line-height: 1.08;
   font-weight: 930;
   letter-spacing: 0;
 }
@@ -6369,11 +6413,11 @@ svg {
 }
 
 .ledger-hero-copy > p {
-  max-width: 650px;
-  margin: 10px 0 0;
-  color: #4b5563;
-  font-size: 13px;
-  line-height: 1.55;
+  max-width: 680px;
+  margin: 18px 0 0;
+  color: #475569;
+  font-size: 17px;
+  line-height: 1.58;
   font-weight: 650;
 }
 
@@ -6435,7 +6479,10 @@ svg {
 
 .ledger-live-card {
   min-width: 0;
-  padding: 22px 22px 20px;
+  border-color: #dfe7ef;
+  background: #ffffff;
+  box-shadow: 0 18px 46px rgba(15, 23, 42, 0.08);
+  padding: 22px;
 }
 
 .ledger-card-head {
@@ -7063,11 +7110,16 @@ svg {
 
   .wizard-card-heading,
   .funding-heading,
-  .attach-repo,
+  .attach-repo-head,
+  .repo-issue-summary,
   .funding-actions,
   .project-step-actions {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .attach-repo-head .secondary-button {
+    width: 100%;
   }
 
   .project-step-actions > div,
@@ -7203,7 +7255,6 @@ svg {
 
   .marketplace-copy h1 {
     max-width: 720px;
-    font-size: 44px;
   }
 
   .marketplace-visual {
@@ -7230,25 +7281,17 @@ svg {
 
 @media (max-width: 760px) {
   .public-home-copy h1,
-  .public-info-hero h1 {
+  .public-info-hero h1,
+  .marketplace-copy h1,
+  .ledger-title-row h1 {
     font-size: 40px;
   }
 
   .public-home-copy,
-  .public-info-hero > div {
+  .public-info-hero > div,
+  .marketplace-copy,
+  .ledger-hero-copy {
     padding-top: 14px;
-  }
-
-  .marketplace-page {
-    padding-top: 18px;
-  }
-
-  .marketplace-copy h1 {
-    font-size: 38px;
-  }
-
-  .marketplace-copy p {
-    font-size: 15px;
   }
 
   .marketplace-actions .primary-button,
@@ -7298,10 +7341,6 @@ svg {
   .public-home-panel,
   .public-info-summary {
     padding: 16px;
-  }
-
-  .marketplace-copy h1 {
-    font-size: 33px;
   }
 
   .marketplace-visual {
@@ -7435,18 +7474,9 @@ svg {
 }
 
 @media (max-width: 760px) {
-  .ledger-page {
-    padding-top: 18px;
-  }
-
-  .ledger-hero-copy,
   .ledger-live-card,
   .ledger-side-card {
     padding: 16px;
-  }
-
-  .ledger-title-row h1 {
-    font-size: 27px;
   }
 
   .ledger-table-actions {

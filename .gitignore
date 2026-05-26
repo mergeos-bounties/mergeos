@@ -4,10 +4,16 @@ frontend/node_modules/
 frontend/dist/
 admin/node_modules/
 admin/dist/
+scan/node_modules/
+scan/dist/
+*.log
 backend.log
 backend.err.log
+backend-scan-qa*.log
 frontend.log
 frontend.err.log
+scan.log
+scan.err.log
 bounties/
 .env
 .env.*
@@ -18,5 +24,8 @@ bounties/
 !frontend/.env.production.example
 !admin/.env.local.example
 !admin/.env.production.example
+!scan/.env.local.example
+!scan/.env.production.example
 .codex/
 .DS_Store
+.idea
