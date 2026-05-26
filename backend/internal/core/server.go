@@ -300,14 +300,7 @@ func (s *Server) adminTasks(w http.ResponseWriter, r *http.Request) {
 	if _, ok := s.requireAdmin(w, r); !ok {
 		return
 	}
-	tasks := s.store.ListTasks("")
-	reviewTasks := make([]*Task, 0, len(tasks))
-	for _, task := range tasks {
-		if task.Status != TaskAccepted {
-			reviewTasks = append(reviewTasks, task)
-		}
-	}
-	writeJSON(w, http.StatusOK, reviewTasks)
+	writeJSON(w, http.StatusOK, s.store.ListTasks(""))
 }
 
 func (s *Server) adminNotifications(w http.ResponseWriter, r *http.Request) {

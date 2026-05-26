@@ -261,29 +261,29 @@
         <header class="task-review-header">
           <div>
             <span class="eyebrow">REVIEW QUEUE</span>
-            <h2>Tasks awaiting merge</h2>
-            <p>Paid tasks are removed from this queue after merge and credit are recorded.</p>
+            <h2>Task review board</h2>
+            <p>Tasks stay visible for audit; merged PRs are hidden after credit is recorded.</p>
           </div>
           <div class="task-review-stats" aria-label="Task queue summary">
             <article>
               <strong>{{ number(filteredTasks.length) }}</strong>
-              <small>Visible</small>
+              <small>Tasks visible</small>
             </article>
             <article>
-              <strong>{{ number(reviewTasks.length) }}</strong>
-              <small>Ready</small>
+              <strong>{{ number(summary.open_task_count) }}</strong>
+              <small>Open tasks</small>
             </article>
             <article>
-              <strong>{{ number(hiddenAcceptedTaskCount) }}</strong>
-              <small>Paid hidden</small>
+              <strong>{{ number(hiddenMergedPullCount) }}</strong>
+              <small>Merged PRs hidden</small>
             </article>
           </div>
         </header>
 
         <div v-if="!filteredTasks.length" class="task-empty-state">
           <span class="metric-icon green"><CheckCircle2 :size="19" /></span>
-          <strong>No tasks waiting for review</strong>
-          <small>Accepted and merged tasks are hidden here. Use Ledger for paid history.</small>
+          <strong>No tasks found</strong>
+          <small>Clear the search to see the full task audit board.</small>
         </div>
 
         <div v-else class="task-review-list">
@@ -315,12 +315,12 @@
                   <GitPullRequest :size="14" />
                   {{ taskPullsLoading[task.id] ? 'Checking...' : 'Refresh PRs' }}
                 </button>
-                <small>{{ pullsForTask(task).length ? `${pullsForTask(task).length} linked PRs` : 'No PR loaded' }}</small>
+                <small>{{ taskPullSummary(task) }}</small>
               </div>
               <p v-if="taskPullsError[task.id]" class="inline-error">{{ taskPullsError[task.id] }}</p>
-              <p v-else-if="taskPullsLoaded[task.id] && !pullsForTask(task).length" class="muted-inline">No linked PRs yet.</p>
+              <p v-else-if="taskPullsLoaded[task.id] && !actionablePullsForTask(task).length" class="muted-inline">{{ emptyPullMessage(task) }}</p>
               <div v-else class="task-pr-list">
-                <article v-for="pull in pullsForTask(task)" :key="pull.number" class="task-pr-row">
+                <article v-for="pull in actionablePullsForTask(task)" :key="pull.number" class="task-pr-row">
                   <div class="task-pr-main">
                     <span :class="['metric-icon', pull.merged ? 'green' : pull.draft ? 'amber' : 'blue']">
                       <GitPullRequest :size="16" />
@@ -666,8 +666,6 @@ const filteredProjects = computed(() => {
   return projects.value.filter((project) => haystack(project).includes(query.value));
 });
 
-const reviewTasks = computed(() => tasks.value.filter((task) => task.status !== 'accepted'));
-const hiddenAcceptedTaskCount = computed(() => Number(summary.value.accepted_task_count) || tasks.value.length - reviewTasks.value.length);
 const projectLookup = computed(() => {
   const rows = {};
   for (const project of projects.value) {
@@ -677,8 +675,8 @@ const projectLookup = computed(() => {
 });
 
 const filteredTasks = computed(() => {
-  if (!query.value) return reviewTasks.value;
-  return reviewTasks.value.filter((task) => haystack(task).includes(query.value));
+  if (!query.value) return tasks.value;
+  return tasks.value.filter((task) => haystack(task).includes(query.value));
 });
 
 const filteredUsers = computed(() => {
@@ -945,6 +943,31 @@ async function reviewSSLNow() {
 
 function pullsForTask(task) {
   return taskPulls.value[task.id] || [];
+}
+
+function actionablePullsForTask(task) {
+  return pullsForTask(task).filter((pull) => !pull.merged);
+}
+
+function hiddenMergedPullsForTask(task) {
+  return pullsForTask(task).filter((pull) => pull.merged);
+}
+
+const hiddenMergedPullCount = computed(() =>
+  Object.values(taskPulls.value).reduce((count, pulls) => count + (Array.isArray(pulls) ? pulls.filter((pull) => pull.merged).length : 0), 0),
+);
+
+function taskPullSummary(task) {
+  const actionable = actionablePullsForTask(task).length;
+  const hidden = hiddenMergedPullsForTask(task).length;
+  if (!actionable && !hidden) return taskPullsLoaded.value[task.id] ? 'No linked PRs yet' : 'No PR loaded';
+  if (actionable && hidden) return `${actionable} active / ${hidden} merged hidden`;
+  if (hidden) return `${hidden} merged PR${hidden === 1 ? '' : 's'} hidden`;
+  return `${actionable} active PR${actionable === 1 ? '' : 's'}`;
+}
+
+function emptyPullMessage(task) {
+  return hiddenMergedPullsForTask(task).length ? 'All linked PRs are already merged and hidden.' : 'No linked PRs yet.';
 }
 
 function taskProjectTitle(task = {}) {

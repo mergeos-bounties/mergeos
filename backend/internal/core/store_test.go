@@ -503,7 +503,7 @@ func TestAdminAutoPromoteAndRoutes(t *testing.T) {
 	}
 }
 
-func TestAdminTasksRouteHidesAcceptedTasks(t *testing.T) {
+func TestAdminTasksRouteIncludesAcceptedTasksForAudit(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := Config{
 		TokenSymbol:       defaultTokenSymbol,
@@ -533,7 +533,7 @@ func TestAdminTasksRouteHidesAcceptedTasks(t *testing.T) {
 		Title:            "Review queue",
 		ClientName:       "Admin User",
 		ClientEmail:      "review-admin@example.com",
-		Brief:            "Create tasks and hide paid work from the admin review queue.",
+		Brief:            "Create tasks and keep paid work visible in the admin audit board.",
 		BudgetCents:      120000,
 		PaymentMethod:    PaymentPayPal,
 		PaymentReference: defaultDevPaymentCode,
@@ -561,13 +561,18 @@ func TestAdminTasksRouteHidesAcceptedTasks(t *testing.T) {
 	if err := json.Unmarshal(adminResp.Body.Bytes(), &payload); err != nil {
 		t.Fatal(err)
 	}
+	foundAccepted := false
 	for _, task := range payload {
-		if task.ID == project.Tasks[0].ID || task.Status == TaskAccepted {
-			t.Fatalf("accepted task leaked into review queue: %#v", task)
+		if task.ID == project.Tasks[0].ID && task.Status == TaskAccepted {
+			foundAccepted = true
+			break
 		}
 	}
-	if len(payload) != len(project.Tasks)-1 {
-		t.Fatalf("review queue length = %d, want %d", len(payload), len(project.Tasks)-1)
+	if !foundAccepted {
+		t.Fatalf("accepted task missing from admin task audit board: %#v", payload)
+	}
+	if len(payload) != len(project.Tasks) {
+		t.Fatalf("admin task count = %d, want %d", len(payload), len(project.Tasks))
 	}
 }
 
