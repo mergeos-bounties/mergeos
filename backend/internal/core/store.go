@@ -976,6 +976,24 @@ func (s *Store) AcceptTaskWithReview(taskID string, req AcceptTaskRequest, rewar
 	return &copyTask, nil
 }
 
+func (s *Store) TaskPayoutAccount(taskID string) (string, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	reference := "task:" + strings.TrimSpace(taskID)
+	for index := len(s.ledger) - 1; index >= 0; index-- {
+		entry := s.ledger[index]
+		if entry.Type == "task_payment" && entry.Reference == reference {
+			return entry.ToAccount, true
+		}
+	}
+	task, ok := s.tasks[taskID]
+	if !ok || strings.TrimSpace(task.WorkerID) == "" {
+		return "", false
+	}
+	return s.payoutAccountForWorkerLocked(task.WorkerID), true
+}
+
 func (s *Store) userByEmailLocked(email string) *User {
 	for _, user := range s.users {
 		if user.Email == email {
@@ -1511,6 +1529,8 @@ func publicLedgerAccount(account, projectID, taskID string) string {
 		return "treasury:mergeos"
 	case strings.HasPrefix(account, "wallet:"):
 		return walletAccount(account)
+	case strings.HasPrefix(account, "worker:github:"):
+		return "worker:github:" + normalizeGitHubUsername(strings.TrimPrefix(account, "worker:"))
 	case strings.HasPrefix(account, "worker:"):
 		return "worker:contributor"
 	case strings.Contains(account, "reserve:task:"):

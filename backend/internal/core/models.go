@@ -335,6 +335,7 @@ type AdminMergeTaskPullRequestResponse struct {
 	RewardMRG    int64                `json:"reward_mrg"`
 	BountyType   string               `json:"bounty_type"`
 	AdminURL     string               `json:"admin_url"`
+	CreditURL    string               `json:"credit_url,omitempty"`
 	CommentURL   string               `json:"comment_url,omitempty"`
 	CommentError string               `json:"comment_error,omitempty"`
 }

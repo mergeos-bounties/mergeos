@@ -190,7 +190,7 @@ func TestGitHubAuthLinksMRGWalletAndRoutesPayouts(t *testing.T) {
 		t.Fatalf("public ledger did not expose wallet address: %s", publicBody)
 	}
 	if strings.Contains(string(publicBody), "github:octo-builder") {
-		t.Fatalf("public ledger leaked github alias: %s", publicBody)
+		t.Fatalf("public ledger should expose wallet instead of github alias for linked wallets: %s", publicBody)
 	}
 }
 
@@ -408,7 +408,6 @@ func TestPublicLedgerRouteReturnsSanitizedLiveData(t *testing.T) {
 		"+1 555 0199",
 		auth.User.ID,
 		tempDir,
-		"github:private-worker",
 		defaultDevPaymentCode,
 	}
 	for _, value := range privateValues {
@@ -425,6 +424,7 @@ func TestPublicLedgerRouteReturnsSanitizedLiveData(t *testing.T) {
 		t.Fatal("public ledger returned no entries")
 	}
 	foundProjectReference := false
+	foundGitHubWorker := false
 	for _, entry := range payload {
 		if strings.Contains(entry.FromAccount, "client:") || strings.Contains(entry.ToAccount, "client:") {
 			t.Fatalf("public ledger leaked client account: %#v", entry)
@@ -432,9 +432,15 @@ func TestPublicLedgerRouteReturnsSanitizedLiveData(t *testing.T) {
 		if strings.Contains(entry.Reference, project.ID) {
 			foundProjectReference = true
 		}
+		if entry.ToAccount == "worker:github:private-worker" {
+			foundGitHubWorker = true
+		}
 	}
 	if !foundProjectReference {
 		t.Fatalf("public ledger did not preserve project reference: %#v", payload)
+	}
+	if !foundGitHubWorker {
+		t.Fatalf("public ledger did not expose github worker account: %#v", payload)
 	}
 }
 

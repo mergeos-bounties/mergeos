@@ -157,7 +157,9 @@ func (s *Server) mergeAdminTaskPullRequest(w http.ResponseWriter, r *http.Reques
 		pull.MergeURL = githubCommitURL(target, mergeSHA)
 	}
 	adminURL := adminTasksURL(s.cfg)
-	commentURL, commentErr := client.commentPullRequest(r.Context(), target, pullNumber, renderMergeOSPullComment(accepted, pull, req.WorkerID, rewardMRG, bountyType, adminURL))
+	creditAccount, _ := s.store.TaskPayoutAccount(accepted.ID)
+	creditURL := scanAccountURL(s.cfg, creditAccount)
+	commentURL, commentErr := client.commentPullRequest(r.Context(), target, pullNumber, renderMergeOSPullComment(accepted, pull, req.WorkerID, rewardMRG, bountyType, creditURL))
 	commentError := ""
 	if commentErr != nil {
 		commentError = commentErr.Error()
@@ -169,6 +171,7 @@ func (s *Server) mergeAdminTaskPullRequest(w http.ResponseWriter, r *http.Reques
 		RewardMRG:    rewardMRG,
 		BountyType:   bountyType,
 		AdminURL:     adminURL,
+		CreditURL:    creditURL,
 		CommentURL:   commentURL,
 		CommentError: commentError,
 	})
@@ -218,11 +221,34 @@ func adminTasksURL(cfg Config) string {
 	return "https://" + domain + "/tasks"
 }
 
-func renderMergeOSPullComment(task *Task, pull AdminTaskPullRequest, workerID string, rewardMRG int64, bountyType string, adminURL string) string {
-	mergeURL := pull.MergeURL
-	if mergeURL == "" {
-		mergeURL = pull.HTMLURL
+func scanBaseURL(cfg Config) string {
+	domain := strings.TrimSpace(cfg.ScanDomain)
+	if domain == "" {
+		return "https://scan.mergeos.shop"
 	}
+	domain = strings.TrimPrefix(strings.TrimPrefix(domain, "https://"), "http://")
+	domain = strings.Trim(domain, "/")
+	return "https://" + domain
+}
+
+func scanAccountURL(cfg Config, account string) string {
+	account = strings.TrimSpace(account)
+	if account == "" {
+		return scanBaseURL(cfg) + "/"
+	}
+	return scanBaseURL(cfg) + "/address/" + url.PathEscape(account)
+}
+
+func httpURLOrFallback(value, fallback string) string {
+	value = strings.TrimSpace(value)
+	if strings.HasPrefix(value, "https://") || strings.HasPrefix(value, "http://") {
+		return value
+	}
+	return strings.TrimSpace(fallback)
+}
+
+func renderMergeOSPullComment(task *Task, pull AdminTaskPullRequest, workerID string, rewardMRG int64, bountyType string, creditURL string) string {
+	mergeURL := httpURLOrFallback(pull.MergeURL, pull.HTMLURL)
 	return fmt.Sprintf(`MergeOS approved and merged this PR.
 
 - Merge URL: %s
@@ -231,7 +257,7 @@ func renderMergeOSPullComment(task *Task, pull AdminTaskPullRequest, workerID st
 - Bounty type: %s
 - MRG credited: %d MRG
 - Proof hash: %s
-`, mergeURL, adminURL, workerID, adminBountyTitle(bountyType), rewardMRG, task.ProofHash)
+`, mergeURL, creditURL, workerID, adminBountyTitle(bountyType), rewardMRG, task.ProofHash)
 }
 
 func writeGitHubAdminError(w http.ResponseWriter, err error, fallbackStatus int) {

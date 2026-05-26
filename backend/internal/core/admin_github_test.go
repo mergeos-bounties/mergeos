@@ -1,6 +1,9 @@
 package core
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestParseGitHubIssueURL(t *testing.T) {
 	target, err := parseGitHubIssueURL("https://github.com/mergeos-bounties/mergeos/issues/42")
@@ -76,5 +79,28 @@ func TestNormalizeAdminBountyType(t *testing.T) {
 	}
 	if _, err := normalizeAdminBountyType("tiny"); err == nil {
 		t.Fatal("expected unsupported bounty type error")
+	}
+}
+
+func TestRenderMergeOSPullCommentLinksScanCreditAccount(t *testing.T) {
+	comment := renderMergeOSPullComment(
+		&Task{ProofHash: "proof123"},
+		AdminTaskPullRequest{
+			HTMLURL:  "https://github.com/mergeos-bounties/demo/pull/4",
+			MergeURL: "4406a84",
+		},
+		"github:hummusonrails",
+		50,
+		"future-medium",
+		scanAccountURL(Config{ScanDomain: "scan.mergeos.shop"}, "worker:github:hummusonrails"),
+	)
+	if !strings.Contains(comment, "Merge URL: https://github.com/mergeos-bounties/demo/pull/4") {
+		t.Fatalf("comment used non-url merge value: %s", comment)
+	}
+	if !strings.Contains(comment, "MRG credit URL: https://scan.mergeos.shop/address/worker:github:hummusonrails") {
+		t.Fatalf("comment missing scan credit URL: %s", comment)
+	}
+	if !strings.Contains(comment, "Credited worker: github:hummusonrails") {
+		t.Fatalf("comment missing github worker: %s", comment)
 	}
 }
