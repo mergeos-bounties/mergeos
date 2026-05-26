@@ -7990,3 +7990,130 @@ svg {
     grid-template-columns: 1fr;
   }
 }
+
+/* ===== Auth modal responsive fixes (Bounty #13) ===== */
+
+/* Prevent iOS zoom on input focus — font-size must be >= 16px */
+@media (max-width: 760px) {
+  .input-shell input {
+    font-size: 16px;
+  }
+
+  .input-shell {
+    min-height: 48px;
+  }
+
+  .auth-submit-button {
+    min-height: 52px;
+    font-size: 16px;
+  }
+
+  .social-auth-row button {
+    min-height: 48px;
+    font-size: 15px;
+    padding: 0 16px;
+  }
+
+  .auth-option-row {
+    font-size: 13px;
+    gap: 10px;
+  }
+
+  .auth-check {
+    gap: 8px;
+  }
+
+  .auth-switch-line {
+    font-size: 14px;
+    margin-top: 18px;
+  }
+
+  .auth-security-note {
+    gap: 10px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 520px) {
+  .auth-modal-main {
+    padding: 24px 16px 20px;
+  }
+
+  .auth-close-button {
+    top: 12px;
+    right: 12px;
+    width: 36px;
+    height: 36px;
+  }
+
+  .auth-copy h2 {
+    font-size: 22px;
+  }
+
+  .auth-copy p {
+    font-size: 13px;
+  }
+
+  .social-auth-row button {
+    font-size: 14px;
+    padding: 0 12px;
+    gap: 8px;
+  }
+
+  .social-brand-logo {
+    width: 18px;
+    height: 18px;
+  }
+
+  .auth-field > span {
+    font-size: 13px;
+  }
+
+  .input-shell {
+    padding: 0 12px;
+    gap: 8px;
+  }
+
+  .input-shell input {
+    min-height: 46px;
+  }
+
+  .auth-option-row.compact span {
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  .auth-submit-button {
+    min-height: 48px;
+    font-size: 15px;
+  }
+
+  .auth-switch-line {
+    font-size: 13px;
+    text-align: center;
+  }
+}
+
+/* Ensure auth modal can scroll when content overflows */
+.auth-modal {
+  overscroll-behavior: contain;
+}
+
+/* Touch-friendly checkbox and password toggle */
+@media (hover: none) and (pointer: coarse) {
+  .input-shell button {
+    width: 36px;
+    height: 36px;
+  }
+
+  .auth-check input {
+    width: 20px;
+    height: 20px;
+  }
+
+  .auth-link-button {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+}

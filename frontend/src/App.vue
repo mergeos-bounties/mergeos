@@ -4384,6 +4384,12 @@ async function logout() {
   }
 }
 
+function handleEscape(e) {
+  if (e.key === 'Escape' && authVisible.value) {
+    closeAuth();
+  }
+}
+
 onMounted(async () => {
   if (hasWindow) {
     const params = new URLSearchParams(window.location.search);
@@ -4400,6 +4406,7 @@ onMounted(async () => {
   const handledGitHubCallback = await handleGitHubCallback();
   if (hasWindow) {
     window.addEventListener('popstate', syncPublicPageFromBrowserPath);
+    window.addEventListener('keydown', handleEscape);
     if (!handledGitHubCallback) {
       if (projectWizardVisible.value) {
         updateProjectWizardBrowserPath(true);
@@ -4420,6 +4427,7 @@ onMounted(async () => {
 onUnmounted(() => {
   if (hasWindow) {
     window.removeEventListener('popstate', syncPublicPageFromBrowserPath);
+    window.removeEventListener('keydown', handleEscape);
   }
   stopDashboardRealtime();
 });
