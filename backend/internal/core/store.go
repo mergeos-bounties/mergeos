@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -173,6 +174,74 @@ func (s *Store) Login(req LoginRequest) (*AuthResponse, error) {
 		CreatedAt: now,
 		ExpiresAt: now.Add(30 * 24 * time.Hour),
 	}
+	if err := s.saveLocked(); err != nil {
+		return nil, err
+	}
+	return &AuthResponse{Token: token, User: publicUser(user)}, nil
+}
+
+func (s *Store) LoginOrRegisterOAuth(email, name, provider string) (*AuthResponse, error) {
+	email, err := normalizeEmail(email)
+	if err != nil {
+		return nil, err
+	}
+	name = strings.TrimSpace(name)
+	if name == "" {
+		name = strings.Split(email, "@")[0]
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	user := s.userByEmailLocked(email)
+	now := time.Now().UTC()
+
+	if user == nil {
+		role := RoleClient
+		if s.cfg.AdminAutoPromote && !s.hasAdminLocked() && len(s.users) == 0 {
+			role = RoleAdmin
+		}
+
+		saltBytes := make([]byte, 16)
+		if _, err := rand.Read(saltBytes); err != nil {
+			return nil, err
+		}
+		salt := hex.EncodeToString(saltBytes)
+
+		randPassBytes := make([]byte, 32)
+		if _, err := rand.Read(randPassBytes); err != nil {
+			return nil, err
+		}
+		hash := hex.EncodeToString(randPassBytes)
+
+		user = &User{
+			ID:           s.newID("usr"),
+			Name:         name,
+			CompanyName:  "",
+			Email:        email,
+			Role:         role,
+			PasswordSalt: salt,
+			PasswordHash: hash,
+			CreatedAt:    now,
+			LastLoginAt:  &now,
+		}
+		s.users[user.ID] = user
+		s.addNotificationLocked(user.ID, "", "email", "Welcome to MergeOS via OAuth", "Your client workspace is ready. You signed up using " + provider + ".", "logged:welcome")
+	} else {
+		user.LastLoginAt = &now
+	}
+
+	token, err := newToken()
+	if err != nil {
+		return nil, err
+	}
+	s.sessions[token] = &Session{
+		Token:     token,
+		UserID:    user.ID,
+		CreatedAt: now,
+		ExpiresAt: now.Add(30 * 24 * time.Hour),
+	}
+
 	if err := s.saveLocked(); err != nil {
 		return nil, err
 	}

@@ -1821,11 +1821,11 @@
             </header>
 
             <div class="social-auth-row">
-              <button type="button" @click="showToast('Google sign-in coming soon...')">
+              <button type="button" @click="loginWithSocial('google')">
                 <span class="google-mark" aria-hidden="true">G</span>
                 Continue with Google
               </button>
-              <button type="button" @click="showToast('GitHub sign-in coming soon...')">
+              <button type="button" @click="loginWithSocial('github')">
                 <span class="github-mark" aria-hidden="true">GH</span>
                 Continue with GitHub
               </button>
@@ -3323,6 +3323,11 @@ function removeDeliverable(index) {
   projectDeliverables.value.splice(index, 1);
 }
 
+function loginWithSocial(provider) {
+  showToast(`Redirecting to ${provider === 'google' ? 'Google' : 'GitHub'}...`);
+  window.location.href = `/api/auth/${provider}/login`;
+}
+
 function formatMoney(value) {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -3905,6 +3910,18 @@ async function logout() {
 }
 
 onMounted(async () => {
+  if (hasWindow) {
+    const params = new URLSearchParams(window.location.search);
+    const oauthToken = params.get('token');
+    if (oauthToken) {
+      token.value = oauthToken;
+      writeStoredToken(oauthToken);
+      const cleanUrl = window.location.pathname + window.location.hash;
+      window.history.replaceState({}, document.title, cleanUrl);
+      showToast('Successfully logged in via OAuth!');
+    }
+  }
+
   const runtimePromise = loadRuntimeConfig().catch((error) => showToast(error.message));
   await Promise.all([
     runtimePromise,
