@@ -153,12 +153,33 @@ jobs:
             chmod +x mergeos
             DATABASE_URL_VALUE=""
             if command -v sudo >/dev/null 2>&1; then
+              wait_for_apt() {
+                if ! command -v fuser >/dev/null 2>&1; then
+                  return 0
+                fi
+                for _ in $(seq 1 60); do
+                  if ! sudo -n fuser /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock /var/lib/apt/lists/lock /var/cache/apt/archives/lock >/dev/null 2>&1; then
+                    return 0
+                  fi
+                  sleep 2
+                done
+                sudo -n fuser /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock /var/lib/apt/lists/lock /var/cache/apt/archives/lock
+                return 1
+              }
+              apt_update() {
+                wait_for_apt
+                sudo -n apt-get update
+              }
+              apt_install() {
+                wait_for_apt
+                sudo -n env DEBIAN_FRONTEND=noninteractive apt-get install -y "$@"
+              }
               DB_NAME="mergeos"
               DB_USER="mergeos"
               DB_PASSWORD_FILE="$APP_DIR/.postgres-password"
               if ! command -v psql >/dev/null 2>&1 || ! command -v openssl >/dev/null 2>&1; then
-                sudo -n apt-get update
-                sudo -n env DEBIAN_FRONTEND=noninteractive apt-get install -y postgresql openssl
+                apt_update
+                apt_install postgresql openssl
               fi
               if command -v systemctl >/dev/null 2>&1; then
                 sudo -n systemctl enable postgresql >/dev/null 2>&1 || true
@@ -222,13 +243,13 @@ jobs:
             if command -v sudo >/dev/null 2>&1; then
               NODE_MAJOR=22
               if ! command -v node >/dev/null 2>&1 || ! node -e "process.exit(Number(process.versions.node.split('.')[0]) >= 22 ? 0 : 1)"; then
-                sudo -n apt-get update
-                sudo -n env DEBIAN_FRONTEND=noninteractive apt-get install -y ca-certificates curl gnupg
+                apt_update
+                apt_install ca-certificates curl gnupg
                 sudo -n install -d -m 0755 /etc/apt/keyrings
                 curl -fsSL "https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key" | gpg --dearmor | sudo -n tee /etc/apt/keyrings/nodesource.gpg >/dev/null
                 echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_${NODE_MAJOR}.x nodistro main" | sudo -n tee /etc/apt/sources.list.d/nodesource.list >/dev/null
-                sudo -n apt-get update
-                sudo -n env DEBIAN_FRONTEND=noninteractive apt-get install -y nodejs
+                apt_update
+                apt_install nodejs
               fi
               cd "$APP_DIR/frontend"
               node -v
@@ -271,12 +292,12 @@ jobs:
                 cd "$APP_DIR"
               fi
               if ! command -v nginx >/dev/null 2>&1; then
-                sudo -n apt-get update
-                sudo -n env DEBIAN_FRONTEND=noninteractive apt-get install -y nginx
+                apt_update
+                apt_install nginx
               fi
               if ! command -v certbot >/dev/null 2>&1; then
-                sudo -n apt-get update
-                sudo -n env DEBIAN_FRONTEND=noninteractive apt-get install -y certbot python3-certbot-nginx
+                apt_update
+                apt_install certbot python3-certbot-nginx
               fi
               sudo -n tee /etc/nginx/sites-available/mergeos >/dev/null <<NGINX
             server {

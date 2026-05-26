@@ -15,7 +15,7 @@ on:
 
 permissions:
   issues: write
-  pull-requests: read
+  pull-requests: write
 
 jobs:
   evidence:
@@ -109,41 +109,76 @@ jobs:
             }
 
             async function setEvidenceLabel(labelToAdd, labelToRemove) {
-              await ensureLabel(
-                missingEvidenceLabel,
-                'D93F0B',
-                'PR needs screenshot, GIF, video, or visual evidence.',
-              );
-              await ensureLabel(
-                providedEvidenceLabel,
-                '0E8A16',
-                'PR includes screenshot, GIF, video, or visual evidence.',
-              );
+              try {
+                await ensureLabel(
+                  missingEvidenceLabel,
+                  'D93F0B',
+                  'PR needs screenshot, GIF, video, or visual evidence.',
+                );
+                await ensureLabel(
+                  providedEvidenceLabel,
+                  '0E8A16',
+                  'PR includes screenshot, GIF, video, or visual evidence.',
+                );
 
-              await removeLabelIfPresent(labelToRemove);
-              await github.rest.issues.addLabels({
-                owner,
-                repo,
-                issue_number,
-                labels: [labelToAdd],
-              });
+                await removeLabelIfPresent(labelToRemove);
+                await github.rest.issues.addLabels({
+                  owner,
+                  repo,
+                  issue_number,
+                  labels: [labelToAdd],
+                });
+              } catch (error) {
+                if (error.status === 403) {
+                  core.warning(
+                    'Could not update evidence labels. Make sure this workflow has issues: write and the repository allows GitHub Actions read/write permissions.',
+                  );
+                  return;
+                }
+
+                throw error;
+              }
+            }
+
+            async function writeComment(body) {
+              try {
+                if (botComment) {
+                  await github.rest.issues.updateComment({
+                    owner,
+                    repo,
+                    comment_id: botComment.id,
+                    body,
+                  });
+                } else {
+                  await github.rest.issues.createComment({
+                    owner,
+                    repo,
+                    issue_number,
+                    body,
+                  });
+                }
+              } catch (error) {
+                if (error.status === 403) {
+                  core.warning(
+                    'Could not write the evidence reminder comment. Make sure this workflow has pull-requests: write and the repository allows GitHub Actions read/write permissions.',
+                  );
+                  return;
+                }
+
+                throw error;
+              }
             }
 
             if (hasVisualEvidence) {
               await setEvidenceLabel(providedEvidenceLabel, missingEvidenceLabel);
 
               if (botComment) {
-                await github.rest.issues.updateComment({
-                  owner,
-                  repo,
-                  comment_id: botComment.id,
-                  body: [
-                    marker,
-                    'Evidence check passed.',
-                    '',
-                    'I found visual evidence in the PR description or comments. Thanks for adding it.',
-                  ].join('\n'),
-                });
+                await writeComment([
+                  marker,
+                  'Evidence check passed.',
+                  '',
+                  'I found visual evidence in the PR description or comments. Thanks for adding it.',
+                ].join('\n'));
               }
 
               core.notice('Visual evidence found.');
@@ -165,20 +200,6 @@ jobs:
               'After evidence is added to the PR description or comments, this check will update automatically.',
             ].join('\n');
 
-            if (botComment) {
-              await github.rest.issues.updateComment({
-                owner,
-                repo,
-                comment_id: botComment.id,
-                body: reminder,
-              });
-            } else {
-              await github.rest.issues.createComment({
-                owner,
-                repo,
-                issue_number,
-                body: reminder,
-              });
-            }
+            await writeComment(reminder);
 
             core.setFailed('Missing visual evidence for this PR.');
