@@ -1152,7 +1152,7 @@ function visiblePullsForTask(task) {
 
 function taskPullSummary(task) {
   if (taskPullsLoading.value[task.id]) return 'Checking linked PRs';
-  if (!taskPullsLoaded.value[task.id]) return 'PRs collapsed';
+  if (!taskPullsLoaded.value[task.id]) return '';
   const pulls = pullsForTask(task);
   if (!pulls.length) return 'No linked PRs yet';
   const open = pulls.filter((pull) => !pull.merged && pull.state === 'open').length;

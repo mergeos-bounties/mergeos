@@ -104,12 +104,19 @@ button:disabled {
   letter-spacing: 0;
 }
 
-.login-copy h1,
-.admin-topbar h1 {
+.login-copy h1 {
   margin: 8px 0 0;
   font-size: 34px;
   line-height: 1.08;
   font-weight: 940;
+  letter-spacing: 0;
+}
+
+.admin-topbar h1 {
+  margin: 4px 0 0;
+  font-size: 26px;
+  line-height: 1.05;
+  font-weight: 900;
   letter-spacing: 0;
 }
 
@@ -293,7 +300,7 @@ button:disabled {
 
 .admin-main {
   min-width: 0;
-  padding: 20px;
+  padding: 16px 18px;
 }
 
 .admin-topbar {
@@ -301,7 +308,7 @@ button:disabled {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 18px;
+  margin-bottom: 12px;
 }
 
 .topbar-actions {
@@ -312,12 +319,12 @@ button:disabled {
 
 .search-box {
   width: min(36vw, 360px);
-  height: 40px;
+  height: 36px;
   display: flex;
   align-items: center;
   gap: 8px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 6px;
   background: var(--surface);
   padding: 0 10px;
   color: var(--muted);
@@ -333,19 +340,19 @@ button:disabled {
   display: inline-flex;
   gap: 2px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 6px;
   background: var(--surface);
-  padding: 3px;
+  padding: 2px;
 }
 
 .device-switch button,
 .icon-button {
-  width: 34px;
-  height: 34px;
+  width: 30px;
+  height: 30px;
   display: grid;
   place-items: center;
   border: 0;
-  border-radius: 7px;
+  border-radius: 5px;
   color: #475569;
   background: transparent;
 }
@@ -926,7 +933,7 @@ button:disabled {
   min-width: 0;
   border-top: 1px solid var(--line);
   background: #fbfcfd;
-  padding: 7px 10px 9px;
+  padding: 5px 9px 6px;
 }
 
 .task-pr-toolbar,
@@ -953,6 +960,10 @@ button:disabled {
   margin-left: auto;
 }
 
+.task-pr-toolbar small:empty {
+  display: none;
+}
+
 .pr-toggle-action {
   border-color: rgba(15, 159, 120, 0.25);
   background: #ecfdf5;
@@ -960,10 +971,10 @@ button:disabled {
 }
 
 .task-review-panel .compact-action {
-  min-height: 28px;
+  min-height: 26px;
   border-radius: 6px;
   gap: 5px;
-  padding: 0 8px;
+  padding: 0 7px;
   font-size: 11px;
   font-weight: 820;
 }
