@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 func TestCreateProjectCreatesLocalBountyRepoAndPersistsLedger(t *testing.T) {
@@ -145,4 +146,134 @@ func TestAdminAutoPromoteAndRoutes(t *testing.T) {
 	if adminResp.Code != http.StatusOK {
 		t.Fatalf("admin summary status = %d, body = %s", adminResp.Code, adminResp.Body.String())
 	}
+}
+
+func TestStoreImportsLegacyJSONWhenPostgresStateIsEmpty(t *testing.T) {
+	tempDir := t.TempDir()
+	legacyPath := filepath.Join(tempDir, "mergeos-state.json")
+	legacyState := persistedState{
+		NextID: 42,
+		Users: []*User{{
+			ID:           "usr_0001",
+			Name:         "Legacy User",
+			Email:        "legacy@example.com",
+			Role:         RoleClient,
+			PasswordSalt: "salt",
+			PasswordHash: "hash",
+			CreatedAt:    time.Now().UTC(),
+		}},
+	}
+	if err := saveJSONState(legacyPath, legacyState); err != nil {
+		t.Fatal(err)
+	}
+
+	storage := &memoryStatePersistence{}
+	store := &Store{
+		cfg:           Config{StatePath: legacyPath},
+		storage:       storage,
+		nextID:        1,
+		projects:      map[string]*Project{},
+		tasks:         map[string]*Task{},
+		users:         map[string]*User{},
+		sessions:      map[string]*Session{},
+		notifications: map[string]*Notification{},
+		attachments:   map[string]*Attachment{},
+		sslReviews:    map[string]*SSLReviewStatus{},
+		ledger:        []LedgerEntry{},
+	}
+	if err := store.load(); err != nil {
+		t.Fatal(err)
+	}
+	if store.nextID != 42 {
+		t.Fatalf("nextID = %d", store.nextID)
+	}
+	if len(store.users) != 1 {
+		t.Fatalf("users = %d", len(store.users))
+	}
+	if !storage.saved {
+		t.Fatal("legacy state was not saved into configured storage")
+	}
+	if len(storage.state.Users) != 1 || storage.state.Users[0].Email != "legacy@example.com" {
+		t.Fatalf("saved users = %#v", storage.state.Users)
+	}
+}
+
+func TestPostgresPersistenceRoundTrip(t *testing.T) {
+	databaseURL := os.Getenv("MERGEOS_TEST_DATABASE_URL")
+	if databaseURL == "" {
+		t.Skip("MERGEOS_TEST_DATABASE_URL is not set")
+	}
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:       defaultTokenSymbol,
+		DatabaseURL:       databaseURL,
+		StatePath:         filepath.Join(tempDir, "legacy-state.json"),
+		PlatformFeeBps:    1000,
+		DevPaymentEnabled: true,
+		DevPaymentCode:    defaultDevPaymentCode,
+		GitHubOwner:       defaultGitHubOwner,
+		BountyRoot:        filepath.Join(tempDir, "bounties"),
+		SMTPFrom:          "noreply@mergeos.local",
+	}
+	storage, err := newPostgresPersistence(context.Background(), cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := storage.Save(context.Background(), persistedState{NextID: 1}); err != nil {
+		t.Fatal(err)
+	}
+	if err := storage.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	auth, err := store.Register(RegisterRequest{
+		Name:     "Postgres User",
+		Email:    "postgres@example.com",
+		Password: "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := store.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	reloaded, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer reloaded.Close()
+	user, ok := reloaded.UserByToken("Bearer " + auth.Token)
+	if !ok {
+		t.Fatal("reloaded store did not recognize persisted session")
+	}
+	if user.Email != "postgres@example.com" {
+		t.Fatalf("reloaded email = %q", user.Email)
+	}
+}
+
+type memoryStatePersistence struct {
+	state persistedState
+	found bool
+	saved bool
+}
+
+func (m *memoryStatePersistence) Load(context.Context) (persistedState, bool, error) {
+	return m.state, m.found, nil
+}
+
+func (m *memoryStatePersistence) Save(_ context.Context, state persistedState) error {
+	m.state = state
+	m.found = true
+	m.saved = true
+	return nil
+}
+
+func (m *memoryStatePersistence) Close() error {
+	return nil
 }

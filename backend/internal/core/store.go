@@ -24,6 +24,7 @@ type Store struct {
 	payments *PaymentManager
 	repos    RepoFactory
 	emailer  *EmailSender
+	storage  statePersistence
 
 	nextID        int
 	projects      map[string]*Project
@@ -48,6 +49,12 @@ type persistedState struct {
 	Ledger        []LedgerEntry      `json:"ledger"`
 }
 
+type statePersistence interface {
+	Load(ctx context.Context) (persistedState, bool, error)
+	Save(ctx context.Context, state persistedState) error
+	Close() error
+}
+
 func NewStore(cfg Config, payments *PaymentManager, repos RepoFactory, emailer *EmailSender) (*Store, error) {
 	store := &Store{
 		cfg:           cfg,
@@ -64,13 +71,29 @@ func NewStore(cfg Config, payments *PaymentManager, repos RepoFactory, emailer *
 		sslReviews:    map[string]*SSLReviewStatus{},
 		ledger:        []LedgerEntry{},
 	}
+	if strings.TrimSpace(cfg.DatabaseURL) != "" {
+		storage, err := newPostgresPersistence(context.Background(), cfg)
+		if err != nil {
+			return nil, err
+		}
+		store.storage = storage
+	}
 	if err := store.load(); err != nil {
+		_ = store.Close()
 		return nil, err
 	}
 	if err := store.ensureAdmin(); err != nil {
+		_ = store.Close()
 		return nil, err
 	}
 	return store, nil
+}
+
+func (s *Store) Close() error {
+	if s.storage == nil {
+		return nil
+	}
+	return s.storage.Close()
 }
 
 func (s *Store) Register(req RegisterRequest) (*AuthResponse, error) {
@@ -748,43 +771,105 @@ func (s *Store) addLedger(entryType, from, to string, amountCents int64, referen
 }
 
 func (s *Store) load() error {
-	if strings.TrimSpace(s.cfg.StatePath) == "" {
+	if s.storage != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		state, found, err := s.storage.Load(ctx)
+		if err != nil {
+			return err
+		}
+		if found {
+			s.applyState(state)
+			return nil
+		}
+		legacy, legacyFound, err := loadJSONState(s.cfg.StatePath)
+		if err != nil {
+			return fmt.Errorf("load legacy state for postgres import: %w", err)
+		}
+		if legacyFound {
+			s.applyState(legacy)
+			return s.saveLocked()
+		}
 		return nil
 	}
-	data, err := os.ReadFile(s.cfg.StatePath)
-	if errors.Is(err, os.ErrNotExist) {
-		return nil
-	}
+	state, found, err := loadJSONState(s.cfg.StatePath)
 	if err != nil {
 		return err
 	}
+	if !found {
+		return nil
+	}
+	s.applyState(state)
+	return nil
+}
+
+func loadJSONState(path string) (persistedState, bool, error) {
+	if strings.TrimSpace(path) == "" {
+		return persistedState{}, false, nil
+	}
+	data, err := os.ReadFile(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return persistedState{}, false, nil
+	}
+	if err != nil {
+		return persistedState{}, false, err
+	}
 	var state persistedState
 	if err := json.Unmarshal(data, &state); err != nil {
-		return err
+		return persistedState{}, false, err
 	}
+	return state, true, nil
+}
+
+func (s *Store) applyState(state persistedState) {
 	if state.NextID > 0 {
 		s.nextID = state.NextID
 	}
 	s.ledger = state.Ledger
+	s.projects = map[string]*Project{}
+	s.tasks = map[string]*Task{}
+	s.users = map[string]*User{}
+	s.sessions = map[string]*Session{}
+	s.notifications = map[string]*Notification{}
+	s.attachments = map[string]*Attachment{}
+	s.sslReviews = map[string]*SSLReviewStatus{}
 	for _, project := range state.Projects {
+		if project == nil || project.ID == "" {
+			continue
+		}
 		s.projects[project.ID] = project
 	}
 	for _, task := range state.Tasks {
+		if task == nil || task.ID == "" {
+			continue
+		}
 		s.tasks[task.ID] = task
 	}
 	for _, user := range state.Users {
+		if user == nil || user.ID == "" {
+			continue
+		}
 		s.users[user.ID] = user
 	}
 	now := time.Now().UTC()
 	for _, session := range state.Sessions {
+		if session == nil || session.Token == "" {
+			continue
+		}
 		if now.Before(session.ExpiresAt) {
 			s.sessions[session.Token] = session
 		}
 	}
 	for _, notification := range state.Notifications {
+		if notification == nil || notification.ID == "" {
+			continue
+		}
 		s.notifications[notification.ID] = notification
 	}
 	for _, attachment := range state.Attachments {
+		if attachment == nil || attachment.ID == "" {
+			continue
+		}
 		if attachment.URL == "" {
 			attachment.URL = "/api/uploads/" + attachment.ID + "/download"
 		}
@@ -797,16 +882,19 @@ func (s *Store) load() error {
 		review.Domain = cleanDomain(review.Domain)
 		s.sslReviews[review.Domain] = cloneSSLReview(review)
 	}
-	return nil
 }
 
 func (s *Store) saveLocked() error {
-	if strings.TrimSpace(s.cfg.StatePath) == "" {
-		return nil
+	state := s.snapshotLocked()
+	if s.storage != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		return s.storage.Save(ctx, state)
 	}
-	if err := os.MkdirAll(filepath.Dir(s.cfg.StatePath), 0755); err != nil {
-		return err
-	}
+	return saveJSONState(s.cfg.StatePath, state)
+}
+
+func (s *Store) snapshotLocked() persistedState {
 	state := persistedState{
 		NextID:        s.nextID,
 		Projects:      make([]*Project, 0, len(s.projects)),
@@ -845,15 +933,25 @@ func (s *Store) saveLocked() error {
 	for _, review := range s.sslReviewRowsLocked() {
 		state.SSLReviews = append(state.SSLReviews, review)
 	}
+	return state
+}
+
+func saveJSONState(path string, state persistedState) error {
+	if strings.TrimSpace(path) == "" {
+		return nil
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		return err
+	}
 	data, err := json.MarshalIndent(state, "", "  ")
 	if err != nil {
 		return err
 	}
-	tmp := s.cfg.StatePath + ".tmp"
+	tmp := path + ".tmp"
 	if err := os.WriteFile(tmp, data, 0644); err != nil {
 		return err
 	}
-	return os.Rename(tmp, s.cfg.StatePath)
+	return os.Rename(tmp, path)
 }
 
 func slug(value string) string {

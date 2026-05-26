@@ -24,6 +24,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer store.Close()
 	store.StartSSLReviewJob(context.Background())
 	server := core.NewServer(cfg, store, payments)
 

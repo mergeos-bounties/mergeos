@@ -126,6 +126,43 @@ jobs:
             rm -rf frontend
             tar -xzf mergeos-release.tar.gz
             chmod +x mergeos
+            DATABASE_URL_VALUE=""
+            if command -v sudo >/dev/null 2>&1; then
+              DB_NAME="mergeos"
+              DB_USER="mergeos"
+              DB_PASSWORD_FILE="$APP_DIR/.postgres-password"
+              if ! command -v psql >/dev/null 2>&1 || ! command -v openssl >/dev/null 2>&1; then
+                sudo -n apt-get update
+                sudo -n env DEBIAN_FRONTEND=noninteractive apt-get install -y postgresql openssl
+              fi
+              if command -v systemctl >/dev/null 2>&1; then
+                sudo -n systemctl enable postgresql >/dev/null 2>&1 || true
+                sudo -n systemctl start postgresql
+              else
+                sudo -n service postgresql start
+              fi
+              if [ ! -s "$DB_PASSWORD_FILE" ]; then
+                umask 077
+                openssl rand -hex 32 > "$DB_PASSWORD_FILE"
+              fi
+              DB_PASSWORD="$(tr -d '\r\n' < "$DB_PASSWORD_FILE")"
+              sudo -n -u postgres psql -v ON_ERROR_STOP=1 <<SQL
+            DO \$\$
+            BEGIN
+              IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '${DB_USER}') THEN
+                CREATE ROLE ${DB_USER} LOGIN PASSWORD '${DB_PASSWORD}';
+              ELSE
+                ALTER ROLE ${DB_USER} LOGIN PASSWORD '${DB_PASSWORD}';
+              END IF;
+            END
+            \$\$;
+            SQL
+              if ! sudo -n -u postgres psql -tAc "SELECT 1 FROM pg_database WHERE datname = '${DB_NAME}'" | grep -q 1; then
+                sudo -n -u postgres createdb -O "$DB_USER" "$DB_NAME"
+              fi
+              sudo -n -u postgres psql -v ON_ERROR_STOP=1 -d "$DB_NAME" -c "ALTER DATABASE ${DB_NAME} OWNER TO ${DB_USER};"
+              DATABASE_URL_VALUE="postgres://${DB_USER}:${DB_PASSWORD}@127.0.0.1:5432/${DB_NAME}?sslmode=disable"
+            fi
             if command -v systemctl >/dev/null 2>&1; then
               SERVICE_DIR="$HOME/.config/systemd/user"
               SERVICE_FILE="$SERVICE_DIR/mergeos.service"
@@ -141,6 +178,7 @@ jobs:
             WorkingDirectory=$APP_DIR
             Environment=MERGEOS_ENV=production
             Environment=PORT=8080
+            Environment=DATABASE_URL=$DATABASE_URL_VALUE
             ExecStart=$APP_DIR/mergeos
             Restart=always
             RestartSec=5
@@ -154,7 +192,7 @@ jobs:
               systemctl --user is-active --quiet mergeos.service
             else
               pkill -f "$APP_DIR/mergeos" || true
-              MERGEOS_ENV=production PORT=8080 nohup "$APP_DIR/mergeos" > "$APP_DIR/mergeos.log" 2> "$APP_DIR/mergeos.err.log" &
+              MERGEOS_ENV=production PORT=8080 DATABASE_URL="$DATABASE_URL_VALUE" nohup "$APP_DIR/mergeos" > "$APP_DIR/mergeos.log" 2> "$APP_DIR/mergeos.err.log" &
             fi
             if command -v sudo >/dev/null 2>&1; then
               NODE_MAJOR=22

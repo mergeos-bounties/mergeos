@@ -19,6 +19,7 @@ type Config struct {
 	Environment              string
 	TokenSymbol              string
 	StatePath                string
+	DatabaseURL              string
 	PlatformFeeBps           int64
 	DevPaymentEnabled        bool
 	DevPaymentCode           string
@@ -80,6 +81,7 @@ func LoadConfig() Config {
 		Environment:              env,
 		TokenSymbol:              getenv("TOKEN_SYMBOL", defaultTokenSymbol),
 		StatePath:                statePath,
+		DatabaseURL:              os.Getenv("DATABASE_URL"),
 		PlatformFeeBps:           getenvInt64("PLATFORM_FEE_BPS", 1000),
 		DevPaymentEnabled:        getenvBool("DEV_PAYMENT_ENABLED", devPaymentDefault),
 		DevPaymentCode:           getenv("DEV_PAYMENT_CODE", defaultDevPaymentCode),

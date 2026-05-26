@@ -9,6 +9,7 @@ import (
 var configEnvKeys = []string{
 	"MERGEOS_ENV",
 	"MERGEOS_STATE_PATH",
+	"DATABASE_URL",
 	"TOKEN_SYMBOL",
 	"PLATFORM_FEE_BPS",
 	"DEV_PAYMENT_ENABLED",
