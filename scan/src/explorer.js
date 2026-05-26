@@ -1,4 +1,4 @@
-export const TOKEN_RATE_PER_USD = 0.175;
+export const TOKEN_RATE_PER_USD = 100;
 
 export function normalizeEntry(entry = {}) {
   return {
@@ -54,6 +54,16 @@ export function toTitleLabel(value = '') {
       return `${lower.charAt(0).toUpperCase()}${lower.slice(1)}`;
     })
     .join(' ');
+}
+
+export function paymentModeLabel(value = '') {
+  const normalized = String(value || '').trim().toLowerCase();
+  return {
+    'live-adapters': 'Live payment adapters',
+    'local-dev-verifier': 'MergeOS verifier',
+    'not-configured': 'Not configured',
+    '': 'Not configured',
+  }[normalized] || toTitleLabel(value);
 }
 
 export function ledgerTypeMeta(type = '') {
@@ -194,6 +204,7 @@ export function findExplorerTarget(entries = [], accounts = [], rawQuery = '') {
   const query = String(rawQuery || '').trim();
   const normalized = query.toLowerCase();
   if (!normalized) return null;
+  const walletNormalized = normalized.startsWith('0x') ? `wallet:${normalized}` : normalized;
 
   const exactHash = entries.find((entry) => entry.entry_hash.toLowerCase() === normalized);
   if (exactHash) return { kind: 'tx', value: exactHash.entry_hash, entry: exactHash };
@@ -207,16 +218,45 @@ export function findExplorerTarget(entries = [], accounts = [], rawQuery = '') {
     if (blockEntry) return { kind: 'block', value: String(sequence), entry: blockEntry };
   }
 
-  const exactAccount = accounts.find((row) => row.account.toLowerCase() === normalized);
+  const exactAccount = accounts.find((row) => row.account.toLowerCase() === walletNormalized);
   if (exactAccount) return { kind: 'address', value: exactAccount.account, account: exactAccount };
 
-  const accountPrefix = accounts.find((row) => row.account.toLowerCase().startsWith(normalized));
+  const accountPrefix = accounts.find((row) => row.account.toLowerCase().startsWith(walletNormalized));
   if (accountPrefix && normalized.length >= 4) return { kind: 'address', value: accountPrefix.account, account: accountPrefix };
 
   const referenceMatch = entries.find((entry) => entry.reference.toLowerCase() === normalized);
   if (referenceMatch) return { kind: 'tx', value: referenceMatch.entry_hash, entry: referenceMatch };
 
   return null;
+}
+
+export function githubUsernameFromAccount(account = '') {
+  const value = String(account || '').trim();
+  const normalized = value.toLowerCase();
+  if (normalized.startsWith('github:')) return value.slice('github:'.length).trim().replace(/^\/+|\/+$/g, '');
+  if (normalized.startsWith('worker:github:')) return value.slice('worker:github:'.length).trim().replace(/^\/+|\/+$/g, '');
+  return '';
+}
+
+export function githubProfileURL(account = '') {
+  const username = githubUsernameFromAccount(account);
+  return username ? `https://github.com/${encodeURIComponent(username)}` : '';
+}
+
+export function parseExplorerRoute(pathname = '/', hash = '') {
+  const legacyHashPath = String(hash || '').replace(/^#/, '');
+  const routePath = legacyHashPath.startsWith('/') ? legacyHashPath : String(pathname || '/');
+  const parts = routePath.split('?')[0].split('/').filter(Boolean);
+  if (parts[0] === 'tx' && parts[1]) return { name: 'tx', value: decodeURIComponent(parts[1]) };
+  if (parts[0] === 'address' && parts[1]) return { name: 'address', value: decodeURIComponent(parts.slice(1).join('/')) };
+  if (parts[0] === 'block' && parts[1]) return { name: 'block', value: decodeURIComponent(parts[1]) };
+  return { name: 'home', value: '' };
+}
+
+export function normalizeExplorerPath(path = '/') {
+  const value = String(path || '/').trim();
+  if (!value || value === '/') return '/';
+  return value.startsWith('/') ? value : `/${value}`;
 }
 
 export function accountRole(account = '') {
@@ -227,6 +267,8 @@ export function accountRole(account = '') {
   if (value.startsWith('reserve:task')) return 'Task Reserve';
   if (value.startsWith('reserve:project')) return 'Project Reserve';
   if (value.startsWith('project:')) return 'Project Account';
+  if (value.startsWith('wallet:')) return 'MRG Wallet';
+  if (githubUsernameFromAccount(value)) return 'GitHub Contributor';
   if (value.startsWith('worker:')) return 'Contributor';
   if (value.startsWith('client:')) return 'Client';
   return 'Ledger Account';

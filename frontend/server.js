@@ -22,6 +22,7 @@ const mimeTypes = {
   '.woff2': 'font/woff2',
 };
 
+
 export function normalizeMode(value) {
   switch (String(value || '').trim().toLowerCase()) {
     case 'prod':

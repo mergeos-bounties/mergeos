@@ -55,6 +55,9 @@ type Config struct {
 	GitHubOwner     string
 	GitHubOwnerType string
 
+	GitHubOAuthClientID     string
+	GitHubOAuthClientSecret string
+
 	BountyRoot string
 	UploadRoot string
 
@@ -129,6 +132,9 @@ func LoadConfig() Config {
 		GitHubToken:     os.Getenv("GITHUB_TOKEN"),
 		GitHubOwner:     getenv("GITHUB_OWNER", defaultGitHubOwner),
 		GitHubOwnerType: strings.ToLower(getenv("GITHUB_OWNER_TYPE", "org")),
+
+		GitHubOAuthClientID:     os.Getenv("GITHUB_OAUTH_CLIENT_ID"),
+		GitHubOAuthClientSecret: os.Getenv("GITHUB_OAUTH_CLIENT_SECRET"),
 
 		BountyRoot: bountyRoot,
 		UploadRoot: uploadRoot,
@@ -210,6 +216,10 @@ func (c Config) CryptoReady() bool {
 
 func (c Config) GitHubReady() bool {
 	return c.GitHubToken != "" && c.GitHubOwner != ""
+}
+
+func (c Config) GitHubOAuthReady() bool {
+	return c.GitHubOAuthClientID != "" && c.GitHubOAuthClientSecret != ""
 }
 
 func (c Config) SMTPReady() bool {

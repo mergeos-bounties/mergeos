@@ -2,6 +2,8 @@ package core
 
 import (
 	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
 	"strings"
 )
@@ -25,19 +27,26 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("POST /api/public/repo/issues", s.importRepoIssues)
 	mux.HandleFunc("POST /api/auth/register", s.register)
 	mux.HandleFunc("POST /api/auth/login", s.login)
+	mux.HandleFunc("POST /api/auth/github", s.githubLogin)
 	mux.HandleFunc("GET /api/auth/me", s.me)
 	mux.HandleFunc("POST /api/auth/logout", s.logout)
 	mux.HandleFunc("GET /api/auth/google/login", s.googleLogin)
 	mux.HandleFunc("GET /api/auth/google/callback", s.googleCallback)
 	mux.HandleFunc("GET /api/auth/github/login", s.githubLogin)
 	mux.HandleFunc("GET /api/auth/github/callback", s.githubCallback)
+	mux.HandleFunc("POST /api/wallets", s.createWallet)
+	mux.HandleFunc("GET /api/wallets/{address}", s.wallet)
+	mux.HandleFunc("POST /api/wallets/link", s.linkWallet)
 	mux.HandleFunc("POST /api/payments/paypal/orders", s.createPayPalOrder)
 	mux.HandleFunc("POST /api/uploads", s.uploadAttachment)
 	mux.HandleFunc("GET /api/uploads/", s.downloadAttachment)
 	mux.HandleFunc("GET /api/admin/summary", s.adminSummary)
 	mux.HandleFunc("GET /api/admin/users", s.adminUsers)
+	mux.HandleFunc("PATCH /api/admin/users/{id}", s.updateAdminUser)
 	mux.HandleFunc("GET /api/admin/projects", s.adminProjects)
 	mux.HandleFunc("GET /api/admin/tasks", s.adminTasks)
+	mux.HandleFunc("GET /api/admin/tasks/{id}/pulls", s.adminTaskPullRequests)
+	mux.HandleFunc("POST /api/admin/tasks/{id}/pulls/{number}/merge", s.mergeAdminTaskPullRequest)
 	mux.HandleFunc("GET /api/admin/notifications", s.adminNotifications)
 	mux.HandleFunc("GET /api/admin/attachments", s.adminAttachments)
 	mux.HandleFunc("GET /api/admin/ledger", s.adminLedger)
@@ -45,6 +54,8 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("POST /api/admin/ssl/review", s.reviewAdminSSL)
 	mux.HandleFunc("GET /api/projects", s.projects)
 	mux.HandleFunc("POST /api/projects", s.createProject)
+	mux.HandleFunc("POST /api/projects/evaluate", s.evaluateProject)
+	mux.HandleFunc("POST /api/projects/evaluate-price", s.evaluateProjectPrice)
 	mux.HandleFunc("GET /api/tasks", s.tasks)
 	mux.HandleFunc("POST /api/tasks/", s.acceptTask)
 	mux.HandleFunc("GET /api/notifications", s.notifications)
@@ -69,6 +80,8 @@ func (s *Server) config(w http.ResponseWriter, _ *http.Request) {
 		TokenSymbol:       s.cfg.TokenSymbol,
 		PaymentMode:       paymentMode(s.cfg),
 		RepoProvider:      repoProvider(s.cfg),
+		GitHubOAuthReady:  s.cfg.GitHubOAuthReady(),
+		GitHubOAuthClient: s.cfg.GitHubOAuthClientID,
 		PayPalReady:       s.cfg.PayPalReady(),
 		CryptoReady:       s.cfg.CryptoReady(),
 		GitHubReady:       s.cfg.GitHubReady(),
@@ -138,6 +151,29 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, auth)
 }
 
+func (s *Server) githubLogin(w http.ResponseWriter, r *http.Request) {
+	if !s.cfg.GitHubOAuthReady() {
+		writeError(w, http.StatusBadRequest, "github oauth is not configured")
+		return
+	}
+	var req GitHubAuthRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	profile, err := FetchGitHubAuthProfile(r.Context(), s.cfg, req)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	auth, err := s.store.AuthenticateGitHub(profile, req.WalletAddress, req.RecoveryCode)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, auth)
+}
+
 func (s *Server) me(w http.ResponseWriter, r *http.Request) {
 	user, ok := s.requireUser(w, r)
 	if !ok {
@@ -149,6 +185,47 @@ func (s *Server) me(w http.ResponseWriter, r *http.Request) {
 func (s *Server) logout(w http.ResponseWriter, r *http.Request) {
 	s.store.Logout(r.Header.Get("Authorization"))
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
+}
+
+func (s *Server) createWallet(w http.ResponseWriter, r *http.Request) {
+	var req CreateWalletRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil && err != io.EOF {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	wallet, err := s.store.CreateGuestWallet(req)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusCreated, wallet)
+}
+
+func (s *Server) wallet(w http.ResponseWriter, r *http.Request) {
+	wallet, ok := s.store.WalletSummary(r.PathValue("address"))
+	if !ok {
+		writeError(w, http.StatusNotFound, "wallet not found")
+		return
+	}
+	writeJSON(w, http.StatusOK, wallet)
+}
+
+func (s *Server) linkWallet(w http.ResponseWriter, r *http.Request) {
+	user, ok := s.requireUser(w, r)
+	if !ok {
+		return
+	}
+	var req LinkWalletRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	updated, err := s.store.LinkWalletToUser(user.ID, req)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, updated)
 }
 
 func (s *Server) projects(w http.ResponseWriter, r *http.Request) {
@@ -199,6 +276,23 @@ func (s *Server) adminUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, s.store.ListUsers())
+}
+
+func (s *Server) updateAdminUser(w http.ResponseWriter, r *http.Request) {
+	if _, ok := s.requireAdmin(w, r); !ok {
+		return
+	}
+	var req AdminUpdateUserRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	user, err := s.store.UpdateUser(r.PathValue("id"), req)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, user)
 }
 
 func (s *Server) adminProjects(w http.ResponseWriter, r *http.Request) {
@@ -324,6 +418,23 @@ func (s *Server) ledger(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, s.store.ListLedgerForUser(user.ID))
 }
 
+func (s *Server) evaluateProjectPrice(w http.ResponseWriter, r *http.Request) {
+	if _, ok := s.requireUser(w, r); !ok {
+		return
+	}
+	var req ProjectPriceEvaluationRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	result, err := EvaluateProjectPrice(req)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, result)
+}
+
 func (s *Server) createProject(w http.ResponseWriter, r *http.Request) {
 	user, ok := s.requireUser(w, r)
 	if !ok {
@@ -413,7 +524,7 @@ func withCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type,Authorization")
-		w.Header().Set("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
+		w.Header().Set("Access-Control-Allow-Methods", "GET,POST,PATCH,OPTIONS")
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusNoContent)
 			return
@@ -454,4 +565,99 @@ func (s *Server) devPaymentCode() string {
 		return ""
 	}
 	return s.cfg.DevPaymentCode
+}
+
+func (s *Server) evaluateProject(w http.ResponseWriter, r *http.Request) {
+	_, ok := s.requireUser(w, r)
+	if !ok {
+		return
+	}
+
+	var req EvaluateProjectRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+
+	var basePrice int64 = 1000
+
+	tech := strings.ToLower(req.TechStack)
+	if strings.Contains(tech, "react") || strings.Contains(tech, "vue") || strings.Contains(tech, "next") {
+		basePrice += 300
+	}
+	if strings.Contains(tech, "go") || strings.Contains(tech, "rust") || strings.Contains(tech, "fastapi") {
+		basePrice += 400
+	}
+	if strings.Contains(tech, "ai") || strings.Contains(tech, "llm") || strings.Contains(tech, "machine learning") {
+		basePrice += 800
+	}
+	if strings.Contains(tech, "kubernetes") || strings.Contains(tech, "docker") || strings.Contains(tech, "devops") {
+		basePrice += 500
+	}
+
+	basePrice += int64(len(req.Deliverables) * 150)
+	basePrice += int64(len(req.Requirements) * 100)
+
+	complexity := strings.ToLower(req.Complexity)
+	if complexity == "high" {
+		basePrice = int64(float64(basePrice) * 1.6)
+	} else if complexity == "low" {
+		basePrice = int64(float64(basePrice) * 0.8)
+	}
+
+	if req.ReferenceBudget > 0 {
+		basePrice = (basePrice + req.ReferenceBudget) / 2
+	}
+
+	if basePrice < 150 {
+		basePrice = 150
+	}
+
+	low := int64(float64(basePrice) * 0.85)
+	high := int64(float64(basePrice) * 1.25)
+
+	low = (low / 50) * 50
+	high = (high / 50) * 50
+
+	breakdown := map[string]int64{
+		"Core Features & Logic": int64(float64(basePrice) * 0.50),
+		"Frontend Integration":  int64(float64(basePrice) * 0.25),
+		"Testing & CI/CD":       int64(float64(basePrice) * 0.15),
+		"Project Management":    int64(float64(basePrice) * 0.10),
+	}
+
+	assumptions := []string{
+		"The project has well-defined interfaces and clean design docs.",
+		"Development will be conducted in a sandbox or staging environment.",
+	}
+	if len(req.Deliverables) > 0 {
+		assumptions = append(assumptions, fmt.Sprintf("All %d listed deliverables are independent and testable.", len(req.Deliverables)))
+	}
+	if strings.Contains(tech, "go") {
+		assumptions = append(assumptions, "The project relies on native Go modules and clean standard library conventions.")
+	}
+
+	risks := []string{
+		"Scope creep due to changing or ambiguous deliverables.",
+	}
+	if strings.Contains(tech, "ai") || strings.Contains(tech, "llm") {
+		risks = append(risks, "AI model non-determinism and API latency/rate limits.")
+	}
+	if strings.Contains(tech, "kubernetes") || strings.Contains(tech, "devops") {
+		risks = append(risks, "Configuration drifts and target environment deployment discrepancies.")
+	}
+
+	rationale := fmt.Sprintf("Based on the tech stack (%s), the estimated effort is %s complexity. The price range represents core development, frontend binding, and automated testing.", req.TechStack, req.Complexity)
+
+	resp := EvaluateProjectResponse{
+		SuggestedLow:    low,
+		SuggestedHigh:   high,
+		ConfidenceLevel: 0.90,
+		TaskBreakdown:   breakdown,
+		Assumptions:     assumptions,
+		Risks:           risks,
+		Rationale:       rationale,
+	}
+
+	writeJSON(w, http.StatusOK, resp)
 }

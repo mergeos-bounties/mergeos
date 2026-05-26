@@ -18,13 +18,16 @@ func publicUser(user *User) PublicUser {
 		return PublicUser{}
 	}
 	return PublicUser{
-		ID:          user.ID,
-		Name:        user.Name,
-		CompanyName: user.CompanyName,
-		Email:       user.Email,
-		Role:        normalizeRole(user.Role),
-		CreatedAt:   user.CreatedAt,
-		LastLoginAt: user.LastLoginAt,
+		ID:              user.ID,
+		Name:            user.Name,
+		CompanyName:     user.CompanyName,
+		Email:           user.Email,
+		Role:            normalizeRole(user.Role),
+		WalletAddress:   normalizeWalletAddress(user.WalletAddress),
+		GitHubUsername:  normalizeGitHubUsername(user.GitHubUsername),
+		GitHubAvatarURL: strings.TrimSpace(user.GitHubAvatarURL),
+		CreatedAt:       user.CreatedAt,
+		LastLoginAt:     user.LastLoginAt,
 	}
 }
 

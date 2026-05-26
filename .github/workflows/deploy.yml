@@ -77,6 +77,7 @@ jobs:
           cp -R admin/dist/. release/admin/dist/
           cp -R scan/dist/. release/scan/dist/
           cp frontend/server.js frontend/package.json frontend/package-lock.json release/frontend/
+          cp admin/server.js admin/package.json admin/package-lock.json release/admin/
           tar -czf mergeos-release.tar.gz -C release .
 
       - name: Upload release artifact
@@ -101,11 +102,16 @@ jobs:
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
           DEPLOY_PASSWORD: ${{ secrets.DEPLOY_PASSWORD }}
           DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          DEV_PAYMENT_ENABLED: ${{ secrets.DEV_PAYMENT_ENABLED }}
         run: |
           test -n "$DEPLOY_HOST"
           test -n "$DEPLOY_USER"
           test -n "$DEPLOY_PASSWORD"
           test -n "$DEPLOY_PORT"
+          test -n "$ADMIN_EMAIL"
+          test -n "$ADMIN_PASSWORD"
 
       - name: Prepare deploy directory
         uses: appleboy/ssh-action@v1.0.3
@@ -136,12 +142,21 @@ jobs:
         uses: appleboy/ssh-action@v1.0.3
         env:
           DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          DEV_PAYMENT_ENABLED: ${{ secrets.DEV_PAYMENT_ENABLED }}
+          DEV_PAYMENT_CODE: ${{ secrets.DEV_PAYMENT_CODE }}
+          MERGEOS_GITHUB_TOKEN: ${{ secrets.MERGEOS_GITHUB_TOKEN }}
+          GITHUB_OWNER: ${{ secrets.GITHUB_OWNER }}
+          GITHUB_OWNER_TYPE: ${{ secrets.GITHUB_OWNER_TYPE }}
+          MERGEOS_GITHUB_OAUTH_CLIENT_ID: ${{ secrets.MERGEOS_GITHUB_OAUTH_CLIENT_ID }}
+          MERGEOS_GITHUB_OAUTH_CLIENT_SECRET: ${{ secrets.MERGEOS_GITHUB_OAUTH_CLIENT_SECRET }}
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           password: ${{ secrets.DEPLOY_PASSWORD }}
           port: ${{ secrets.DEPLOY_PORT }}
-          envs: DEPLOY_PATH
+          envs: DEPLOY_PATH,ADMIN_EMAIL,ADMIN_PASSWORD,DEV_PAYMENT_ENABLED,DEV_PAYMENT_CODE,MERGEOS_GITHUB_TOKEN,GITHUB_OWNER,GITHUB_OWNER_TYPE,MERGEOS_GITHUB_OAUTH_CLIENT_ID,MERGEOS_GITHUB_OAUTH_CLIENT_SECRET
           script: |
             set -e
             APP_DIR="${DEPLOY_PATH:-$HOME/mergeos}"
@@ -153,12 +168,33 @@ jobs:
             chmod +x mergeos
             DATABASE_URL_VALUE=""
             if command -v sudo >/dev/null 2>&1; then
+              wait_for_apt() {
+                if ! command -v fuser >/dev/null 2>&1; then
+                  return 0
+                fi
+                for _ in $(seq 1 60); do
+                  if ! sudo -n fuser /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock /var/lib/apt/lists/lock /var/cache/apt/archives/lock >/dev/null 2>&1; then
+                    return 0
+                  fi
+                  sleep 2
+                done
+                sudo -n fuser /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock /var/lib/apt/lists/lock /var/cache/apt/archives/lock
+                return 1
+              }
+              apt_update() {
+                wait_for_apt
+                sudo -n apt-get update
+              }
+              apt_install() {
+                wait_for_apt
+                sudo -n env DEBIAN_FRONTEND=noninteractive apt-get install -y "$@"
+              }
               DB_NAME="mergeos"
               DB_USER="mergeos"
               DB_PASSWORD_FILE="$APP_DIR/.postgres-password"
               if ! command -v psql >/dev/null 2>&1 || ! command -v openssl >/dev/null 2>&1; then
-                sudo -n apt-get update
-                sudo -n env DEBIAN_FRONTEND=noninteractive apt-get install -y postgresql openssl
+                apt_update
+                apt_install postgresql openssl
               fi
               if command -v systemctl >/dev/null 2>&1; then
                 sudo -n systemctl enable postgresql >/dev/null 2>&1 || true
@@ -204,6 +240,15 @@ jobs:
             Environment=MERGEOS_ENV=production
             Environment=PORT=8080
             Environment=DATABASE_URL=$DATABASE_URL_VALUE
+            Environment=ADMIN_EMAIL=$ADMIN_EMAIL
+            Environment=ADMIN_PASSWORD=$ADMIN_PASSWORD
+            Environment=DEV_PAYMENT_ENABLED=$DEV_PAYMENT_ENABLED
+            Environment=DEV_PAYMENT_CODE=$DEV_PAYMENT_CODE
+            Environment=GITHUB_TOKEN=$MERGEOS_GITHUB_TOKEN
+            Environment=GITHUB_OWNER=$GITHUB_OWNER
+            Environment=GITHUB_OWNER_TYPE=$GITHUB_OWNER_TYPE
+            Environment=GITHUB_OAUTH_CLIENT_ID=$MERGEOS_GITHUB_OAUTH_CLIENT_ID
+            Environment=GITHUB_OAUTH_CLIENT_SECRET=$MERGEOS_GITHUB_OAUTH_CLIENT_SECRET
             ExecStart=$APP_DIR/mergeos
             Restart=always
             RestartSec=5
@@ -217,18 +262,18 @@ jobs:
               systemctl --user is-active --quiet mergeos.service
             else
               pkill -f "$APP_DIR/mergeos" || true
-              MERGEOS_ENV=production PORT=8080 DATABASE_URL="$DATABASE_URL_VALUE" nohup "$APP_DIR/mergeos" > "$APP_DIR/mergeos.log" 2> "$APP_DIR/mergeos.err.log" &
+              MERGEOS_ENV=production PORT=8080 DATABASE_URL="$DATABASE_URL_VALUE" ADMIN_EMAIL="$ADMIN_EMAIL" ADMIN_PASSWORD="$ADMIN_PASSWORD" DEV_PAYMENT_ENABLED="$DEV_PAYMENT_ENABLED" DEV_PAYMENT_CODE="$DEV_PAYMENT_CODE" GITHUB_TOKEN="$MERGEOS_GITHUB_TOKEN" GITHUB_OWNER="$GITHUB_OWNER" GITHUB_OWNER_TYPE="$GITHUB_OWNER_TYPE" GITHUB_OAUTH_CLIENT_ID="$MERGEOS_GITHUB_OAUTH_CLIENT_ID" GITHUB_OAUTH_CLIENT_SECRET="$MERGEOS_GITHUB_OAUTH_CLIENT_SECRET" nohup "$APP_DIR/mergeos" > "$APP_DIR/mergeos.log" 2> "$APP_DIR/mergeos.err.log" &
             fi
             if command -v sudo >/dev/null 2>&1; then
               NODE_MAJOR=22
               if ! command -v node >/dev/null 2>&1 || ! node -e "process.exit(Number(process.versions.node.split('.')[0]) >= 22 ? 0 : 1)"; then
-                sudo -n apt-get update
-                sudo -n env DEBIAN_FRONTEND=noninteractive apt-get install -y ca-certificates curl gnupg
+                apt_update
+                apt_install ca-certificates curl gnupg
                 sudo -n install -d -m 0755 /etc/apt/keyrings
                 curl -fsSL "https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key" | gpg --dearmor | sudo -n tee /etc/apt/keyrings/nodesource.gpg >/dev/null
                 echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_${NODE_MAJOR}.x nodistro main" | sudo -n tee /etc/apt/sources.list.d/nodesource.list >/dev/null
-                sudo -n apt-get update
-                sudo -n env DEBIAN_FRONTEND=noninteractive apt-get install -y nodejs
+                apt_update
+                apt_install nodejs
               fi
               cd "$APP_DIR/frontend"
               node -v
@@ -270,13 +315,50 @@ jobs:
                 MERGEOS_ENV=production NODE_ENV=production FRONTEND_HOST=127.0.0.1 FRONTEND_PORT=8081 API_TARGET=http://127.0.0.1:8080 nohup node server.js --mode production --prod > "$APP_DIR/frontend.log" 2> "$APP_DIR/frontend.err.log" &
                 cd "$APP_DIR"
               fi
+              cd "$APP_DIR/admin"
+              npm ci --omit=dev
+              cd "$APP_DIR"
+              if command -v systemctl >/dev/null 2>&1; then
+                SERVICE_DIR="$HOME/.config/systemd/user"
+                ADMIN_SERVICE_FILE="$SERVICE_DIR/mergeos-admin.service"
+                mkdir -p "$SERVICE_DIR"
+                cat > "$ADMIN_SERVICE_FILE" <<SERVICE
+            [Unit]
+            Description=MergeOS SSR admin
+            After=network.target mergeos.service
+
+            [Service]
+            Type=simple
+            WorkingDirectory=$APP_DIR/admin
+            Environment=MERGEOS_ENV=production
+            Environment=NODE_ENV=production
+            Environment=ADMIN_FRONTEND_HOST=127.0.0.1
+            Environment=ADMIN_FRONTEND_PORT=8082
+            Environment=API_TARGET=http://127.0.0.1:8080
+            ExecStart=$NPM_BIN run production
+            Restart=always
+            RestartSec=5
+
+            [Install]
+            WantedBy=default.target
+            SERVICE
+                systemctl --user daemon-reload
+                systemctl --user enable mergeos-admin.service
+                systemctl --user restart mergeos-admin.service
+                systemctl --user is-active --quiet mergeos-admin.service
+              else
+                pkill -f "$APP_DIR/admin/server.js" || true
+                cd "$APP_DIR/admin"
+                MERGEOS_ENV=production NODE_ENV=production ADMIN_FRONTEND_HOST=127.0.0.1 ADMIN_FRONTEND_PORT=8082 API_TARGET=http://127.0.0.1:8080 nohup node server.js --mode production --prod > "$APP_DIR/admin.log" 2> "$APP_DIR/admin.err.log" &
+                cd "$APP_DIR"
+              fi
               if ! command -v nginx >/dev/null 2>&1; then
-                sudo -n apt-get update
-                sudo -n env DEBIAN_FRONTEND=noninteractive apt-get install -y nginx
+                apt_update
+                apt_install nginx
               fi
               if ! command -v certbot >/dev/null 2>&1; then
-                sudo -n apt-get update
-                sudo -n env DEBIAN_FRONTEND=noninteractive apt-get install -y certbot python3-certbot-nginx
+                apt_update
+                apt_install certbot python3-certbot-nginx
               fi
               sudo -n tee /etc/nginx/sites-available/mergeos >/dev/null <<NGINX
             server {
@@ -344,7 +426,7 @@ jobs:
               listen 80;
               listen [::]:80;
               server_name uta.mergeos.shop;
-              root $APP_DIR/admin/dist;
+              root $APP_DIR/admin/dist/client;
               index index.html;
               client_max_body_size 30m;
 
@@ -364,7 +446,12 @@ jobs:
               }
 
               location / {
-                try_files \$uri \$uri/ /index.html;
+                proxy_pass http://127.0.0.1:8082;
+                proxy_http_version 1.1;
+                proxy_set_header Host \$host;
+                proxy_set_header X-Real-IP \$remote_addr;
+                proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto \$scheme;
               }
             }
             NGINX

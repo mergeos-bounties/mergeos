@@ -2,7 +2,7 @@
   <div class="scan-app">
     <header class="topbar">
       <a class="brand" href="/" @click.prevent="goHome">
-        <span class="brand-mark">MRG</span>
+        <span class="brand-mark" aria-hidden="true"><img src="/favicon.svg" alt="" /></span>
         <span>
           <strong>MergeOS Scan</strong>
           <small>{{ networkLabel }}</small>
@@ -10,6 +10,45 @@
       </a>
 
       <nav class="top-actions" aria-label="Explorer actions">
+        <div class="header-account" aria-label="Wallet and GitHub">
+          <div class="wallet-address-group">
+            <button
+              :class="['header-chip', 'wallet-chip', localWalletAddress ? 'ready' : '']"
+              type="button"
+              :disabled="walletBusy && !localWalletAddress"
+              :title="localWalletAddress || 'Create MRG wallet'"
+              @click="!localWalletAddress && createGuestWallet()"
+            >
+              <WalletCards :size="16" />
+              <span>
+                <small>Wallet</small>
+                <strong>{{ localWalletAddress ? shortHash(localWalletAddress, 8, 6) : (walletBusy ? 'Creating...' : 'Create wallet') }}</strong>
+              </span>
+            </button>
+            <button
+              v-if="localWalletAddress"
+              class="icon-mini wallet-copy-button"
+              type="button"
+              title="Copy wallet address"
+              @click="copyValue(localWalletAddress)"
+            >
+              <Copy :size="15" />
+            </button>
+          </div>
+          <button
+            :class="['header-chip', 'github-chip', githubLinked ? 'connected' : (canLinkGitHub ? 'ready' : '')]"
+            type="button"
+            :disabled="!canLinkGitHub"
+            :title="githubActionTitle"
+            @click="canLinkGitHub && startGitHubWalletLink()"
+          >
+            <GitPullRequest :size="16" />
+            <span>
+              <small>GitHub</small>
+              <strong>{{ githubAccountLabel }}</strong>
+            </span>
+          </button>
+        </div>
         <button class="icon-button" type="button" title="Refresh" @click="loadExplorerData">
           <RefreshCw :size="18" />
         </button>
@@ -23,7 +62,7 @@
       <section class="search-band">
         <div class="search-copy">
           <p>MRG Token Explorer</p>
-          <h1>Transactions, addresses and proof ledger for MergeOS.</h1>
+          <h1>MRG token activity and proof ledger for MergeOS.</h1>
         </div>
 
         <form class="search-panel" @submit.prevent="submitSearch">
@@ -139,7 +178,7 @@
                 </div>
                 <span class="pill">Live</span>
               </div>
-              <dl class="token-list">
+              <dl class="ledger-summary-list">
                 <div>
                   <dt>Symbol</dt>
                   <dd>{{ tokenSymbol }}</dd>
@@ -149,8 +188,8 @@
                   <dd>{{ formatCompact(stats.mintedTokens) }} {{ tokenSymbol }}</dd>
                 </div>
                 <div>
-                  <dt>Mint rule</dt>
-                  <dd>1 USD = 0.175 {{ tokenSymbol }}</dd>
+                  <dt>Verified funding</dt>
+                  <dd>{{ formatLedgerAmount(stats.fundingCents) }}</dd>
                 </div>
                 <div>
                   <dt>Payment mode</dt>
@@ -216,6 +255,7 @@ import {
   Copy,
   ExternalLink,
   Fingerprint,
+  GitPullRequest,
   LoaderCircle,
   RefreshCw,
   RotateCcw,
@@ -231,8 +271,11 @@ import {
   findExplorerTarget,
   formatCompactNumber,
   formatLedgerDate,
-  formatMoneyFromCents,
+  githubProfileURL,
   ledgerTypeMeta,
+  normalizeExplorerPath,
+  parseExplorerRoute,
+  paymentModeLabel,
   shortHash,
   sortLedgerEntries,
   tokenAmountFromCents,
@@ -240,11 +283,20 @@ import {
 } from './explorer.js';
 
 const apiBase = String(import.meta.env.VITE_MERGEOS_API_BASE || '').replace(/\/$/, '');
+const walletStorageKey = 'mergeos_scan_wallet_address';
+const walletRecoveryStorageKey = 'mergeos_scan_wallet_recovery';
+const githubUserStorageKey = 'mergeos_scan_github_user';
 const loading = ref(true);
 const errorMessage = ref('');
 const config = ref({});
 const rawEntries = ref([]);
 const marketplace = ref({ stats: {}, projects: [] });
+const localWalletAddress = ref(readStoredValue(walletStorageKey));
+const walletRecoveryCode = ref(readStoredValue(walletRecoveryStorageKey));
+const walletSummary = ref(null);
+const walletBusy = ref(false);
+const walletError = ref('');
+const githubUser = ref(readStoredJSON(githubUserStorageKey));
 const lastSyncAt = ref(null);
 const searchInput = ref('');
 const queryFilter = ref('');
@@ -252,8 +304,21 @@ const typeFilter = ref('all');
 const route = ref(parseRoute());
 
 const tokenSymbol = computed(() => config.value?.token_symbol || marketplace.value?.stats?.token_symbol || 'MRG');
-const paymentMode = computed(() => config.value?.payment_mode || 'not configured');
-const networkLabel = computed(() => config.value?.environment === 'production' ? 'MergeOS main ledger' : 'MergeOS local ledger');
+const paymentMode = computed(() => paymentModeLabel(config.value?.payment_mode));
+const githubOAuthReady = computed(() => Boolean(config.value?.github_oauth_ready && config.value?.github_oauth_client_id));
+const networkLabel = computed(() => config.value?.environment === 'production' ? 'MergeOS main ledger' : 'MergeOS ledger');
+const linkedGitHubUsername = computed(() => cleanGitHubUsername(
+  githubUser.value?.github_username || walletSummary.value?.github_username || githubUser.value?.name || '',
+));
+const githubLinked = computed(() => Boolean(linkedGitHubUsername.value));
+const canLinkGitHub = computed(() => Boolean(localWalletAddress.value && !githubLinked.value && !walletBusy.value));
+const githubAccountLabel = computed(() => (githubLinked.value ? `github:${linkedGitHubUsername.value}` : 'Connect'));
+const githubActionTitle = computed(() => {
+  if (githubLinked.value) return `Linked as github:${linkedGitHubUsername.value}`;
+  if (!localWalletAddress.value) return 'Create a wallet first';
+  if (!githubOAuthReady.value) return 'GitHub OAuth is not configured yet';
+  return 'Connect GitHub to wallet';
+});
 const entries = computed(() => sortLedgerEntries(rawEntries.value));
 const newestEntries = computed(() => entries.value.slice().reverse());
 const accounts = computed(() => aggregateAccounts(entries.value));
@@ -274,7 +339,8 @@ const selectedEntry = computed(() => {
 const selectedAddress = computed(() => {
   if (route.value.name !== 'address') return null;
   const target = String(route.value.value || '').toLowerCase();
-  return accounts.value.find((row) => row.account.toLowerCase() === target);
+  const walletTarget = target.startsWith('0x') ? `wallet:${target}` : target;
+  return accounts.value.find((row) => row.account.toLowerCase() === walletTarget);
 });
 const addressEntries = computed(() => {
   if (!selectedAddress.value) return [];
@@ -286,19 +352,22 @@ const selectedBlockEntry = computed(() => {
   return entries.value.find((entry) => entry.sequence === sequence);
 });
 const statCards = computed(() => [
-  { label: 'Transactions', value: formatCompact(stats.value.totalTransactions), icon: Activity, tone: 'blue' },
+  { label: 'Ledger Entries', value: formatCompact(stats.value.totalTransactions), icon: Activity, tone: 'blue' },
   { label: 'MRG Minted', value: `${formatCompact(stats.value.mintedTokens)} ${tokenSymbol.value}`, icon: WalletCards, tone: 'green' },
-  { label: 'Verified Funding', value: formatMoney(stats.value.fundingCents), icon: CheckCircle2, tone: 'teal' },
+  { label: 'Verified Funding', value: formatLedgerAmount(stats.value.fundingCents), icon: CheckCircle2, tone: 'teal' },
   { label: 'Ledger Height', value: `#${formatCompact(stats.value.chainHeight)}`, icon: Blocks, tone: 'amber' },
 ]);
 
 onMounted(() => {
-  window.addEventListener('hashchange', syncRoute);
+  migrateLegacyHashRoute();
+  window.addEventListener('popstate', syncRoute);
+  void handleGitHubWalletCallback();
   void loadExplorerData();
+  void loadLocalWalletSummary();
 });
 
 onBeforeUnmount(() => {
-  window.removeEventListener('hashchange', syncRoute);
+  window.removeEventListener('popstate', syncRoute);
 });
 
 async function loadExplorerData() {
@@ -328,6 +397,118 @@ async function loadExplorerData() {
   }
 }
 
+async function createGuestWallet() {
+  walletBusy.value = true;
+  walletError.value = '';
+  try {
+    const payload = await postJSON('/api/wallets', {});
+    localWalletAddress.value = payload.address;
+    walletRecoveryCode.value = payload.recovery_code;
+    walletSummary.value = payload.wallet || null;
+    writeStoredValue(walletStorageKey, localWalletAddress.value);
+    writeStoredValue(walletRecoveryStorageKey, walletRecoveryCode.value);
+    if (localWalletAddress.value) {
+      searchInput.value = localWalletAddress.value;
+    }
+  } catch (error) {
+    walletError.value = error.message || 'Could not create wallet.';
+  } finally {
+    walletBusy.value = false;
+  }
+}
+
+async function loadLocalWalletSummary() {
+  const address = localWalletAddress.value;
+  if (!address) return;
+  try {
+    walletSummary.value = await fetchJSON(`/api/wallets/${encodeURIComponent(address)}`);
+  } catch (error) {
+    walletError.value = error.message || 'Could not load wallet.';
+  }
+}
+
+async function startGitHubWalletLink() {
+  walletError.value = '';
+  if (!localWalletAddress.value) {
+    await createGuestWallet();
+  }
+  if (!localWalletAddress.value) return;
+  if (!config.value?.github_oauth_client_id) {
+    try {
+      config.value = await fetchJSON('/api/config');
+    } catch (error) {
+      walletError.value = error.message;
+      return;
+    }
+  }
+  if (!githubOAuthReady.value) {
+    walletError.value = 'GitHub OAuth is not configured yet.';
+    return;
+  }
+  const state = randomOAuthState();
+  const redirectURI = `${window.location.origin}/`;
+  window.sessionStorage.setItem('mergeos_scan_github_state', state);
+  window.sessionStorage.setItem('mergeos_scan_github_redirect', redirectURI);
+  window.sessionStorage.setItem('mergeos_scan_return_path', window.location.pathname || '/');
+  window.sessionStorage.setItem('mergeos_scan_wallet_address', localWalletAddress.value);
+  window.sessionStorage.setItem('mergeos_scan_wallet_recovery', walletRecoveryCode.value || '');
+  const params = new URLSearchParams({
+    client_id: config.value.github_oauth_client_id,
+    redirect_uri: redirectURI,
+    scope: 'read:user user:email',
+    state,
+  });
+  window.location.href = `https://github.com/login/oauth/authorize?${params.toString()}`;
+}
+
+async function handleGitHubWalletCallback() {
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('code');
+  const state = params.get('state');
+  if (!code) return false;
+
+  const expectedState = window.sessionStorage.getItem('mergeos_scan_github_state') || '';
+  const redirectURI = window.sessionStorage.getItem('mergeos_scan_github_redirect') || `${window.location.origin}${window.location.pathname}`;
+  const returnPath = safeReturnPath(window.sessionStorage.getItem('mergeos_scan_return_path') || '/');
+  const walletAddress = window.sessionStorage.getItem('mergeos_scan_wallet_address') || localWalletAddress.value;
+  const recoveryCode = window.sessionStorage.getItem('mergeos_scan_wallet_recovery') || walletRecoveryCode.value;
+  window.sessionStorage.removeItem('mergeos_scan_github_state');
+  window.sessionStorage.removeItem('mergeos_scan_github_redirect');
+  window.sessionStorage.removeItem('mergeos_scan_return_path');
+  window.sessionStorage.removeItem('mergeos_scan_wallet_address');
+  window.sessionStorage.removeItem('mergeos_scan_wallet_recovery');
+  window.history.replaceState(null, '', returnPath);
+  route.value = parseRoute();
+
+  if (!expectedState || state !== expectedState) {
+    walletError.value = 'GitHub sign-in state did not match. Please try again.';
+    return true;
+  }
+
+  walletBusy.value = true;
+  walletError.value = '';
+  try {
+    const auth = await postJSON('/api/auth/github', {
+      code,
+      redirect_uri: redirectURI,
+      wallet_address: walletAddress,
+      recovery_code: recoveryCode,
+    });
+    githubUser.value = auth.user || null;
+    writeStoredJSON(githubUserStorageKey, githubUser.value);
+    if (auth.user?.wallet_address) {
+      localWalletAddress.value = auth.user.wallet_address;
+      writeStoredValue(walletStorageKey, localWalletAddress.value);
+    }
+    await loadLocalWalletSummary();
+  } catch (error) {
+    walletError.value = error.message || 'Could not link GitHub.';
+  } finally {
+    walletBusy.value = false;
+  }
+  return true;
+}
+
 async function fetchJSON(path) {
   const response = await fetch(`${apiBase}${path}`, {
     headers: { Accept: 'application/json' },
@@ -343,6 +524,77 @@ async function fetchJSON(path) {
     throw new Error(payload.error || `Request failed with ${response.status}`);
   }
   return payload;
+}
+
+async function postJSON(path, body = {}) {
+  const response = await fetch(`${apiBase}${path}`, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+  const text = await response.text();
+  let payload = {};
+  try {
+    payload = text ? JSON.parse(text) : {};
+  } catch {
+    payload = { error: text || 'Request failed' };
+  }
+  if (!response.ok) {
+    throw new Error(payload.error || `Request failed with ${response.status}`);
+  }
+  return payload;
+}
+
+function readStoredValue(key) {
+  try {
+    return window.localStorage.getItem(key) || '';
+  } catch {
+    return '';
+  }
+}
+
+function writeStoredValue(key, value) {
+  try {
+    window.localStorage.setItem(key, value || '');
+  } catch {
+    // Storage can be disabled; the wallet still exists on the backend.
+  }
+}
+
+function readStoredJSON(key) {
+  try {
+    return JSON.parse(window.localStorage.getItem(key) || 'null');
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredJSON(key, value) {
+  try {
+    if (value) {
+      window.localStorage.setItem(key, JSON.stringify(value));
+    } else {
+      window.localStorage.removeItem(key);
+    }
+  } catch {
+    // Ignore local storage failures.
+  }
+}
+
+function cleanGitHubUsername(value = '') {
+  return String(value || '').trim().replace(/^github:/i, '').trim();
+}
+
+function randomOAuthState() {
+  if (window.crypto?.getRandomValues) {
+    const bytes = new Uint8Array(16);
+    window.crypto.getRandomValues(bytes);
+    return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+  }
+  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
 function normalizeMarketplace(payload = {}) {
@@ -362,7 +614,7 @@ function submitSearch() {
   const target = findExplorerTarget(entries.value, accounts.value, query);
   if (!target) {
     route.value = { name: 'home', value: '' };
-    history.replaceState(null, '', '#/');
+    history.replaceState(null, '', '/');
     return;
   }
   if (target.kind === 'tx') openTx(target.value);
@@ -393,7 +645,7 @@ function goHome() {
 }
 
 function setRoute(path) {
-  window.location.hash = path;
+  window.history.pushState(null, '', normalizeExplorerPath(path));
   route.value = parseRoute();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -403,12 +655,20 @@ function syncRoute() {
 }
 
 function parseRoute() {
-  const hash = window.location.hash.replace(/^#/, '') || '/';
-  const parts = hash.split('/').filter(Boolean);
-  if (parts[0] === 'tx' && parts[1]) return { name: 'tx', value: decodeURIComponent(parts[1]) };
-  if (parts[0] === 'address' && parts[1]) return { name: 'address', value: decodeURIComponent(parts.slice(1).join('/')) };
-  if (parts[0] === 'block' && parts[1]) return { name: 'block', value: decodeURIComponent(parts[1]) };
-  return { name: 'home', value: '' };
+  return parseExplorerRoute(window.location.pathname, window.location.hash);
+}
+
+function migrateLegacyHashRoute() {
+  const legacyPath = String(window.location.hash || '').replace(/^#/, '');
+  if (!legacyPath.startsWith('/')) return;
+  window.history.replaceState(null, '', normalizeExplorerPath(legacyPath));
+  route.value = parseRoute();
+}
+
+function safeReturnPath(path = '/') {
+  const normalized = normalizeExplorerPath(path);
+  if (normalized.startsWith('//') || normalized.startsWith('/api/') || normalized === '/api') return '/';
+  return normalized;
 }
 
 async function copyValue(value) {
@@ -428,8 +688,8 @@ function typeLabel(type) {
   return ledgerTypeMeta(type).label;
 }
 
-function formatMoney(cents) {
-  return formatMoneyFromCents(cents);
+function formatLedgerAmount(cents, symbol = tokenSymbol.value) {
+  return `${formatCompactNumber(tokenAmountFromCents(cents))} ${symbol}`;
 }
 
 function formatCompact(value) {
@@ -503,10 +763,7 @@ function addressButton(account, emit) {
 }
 
 function valueLabel(entry, tokenSymbolValue) {
-  if (entry.type === 'token_mint') {
-    return `${formatCompactNumber(tokenAmountFromCents(entry.amount_cents))} ${tokenSymbolValue}`;
-  }
-  return formatMoneyFromCents(entry.amount_cents);
+  return formatLedgerAmount(entry.amount_cents, tokenSymbolValue);
 }
 
 const DetailField = defineComponent({
@@ -576,16 +833,24 @@ const AddressDetail = defineComponent({
   },
   emits: ['copy', 'go-tx', 'go-address'],
   setup(props, { emit }) {
-    return () => h('article', { class: 'detail-panel' }, [
-      detailHeader('Address Details', props.address.account, accountRole(props.address.account), 'address', emit),
-      h('div', { class: 'address-summary' }, [
-        metric('Transactions', props.address.tx_count),
-        metric('Received', formatMoneyFromCents(props.address.received_cents)),
-        metric('Sent', formatMoneyFromCents(props.address.sent_cents)),
-        metric('Net', formatMoneyFromCents(props.address.net_cents)),
-      ]),
-      h(TransactionTable, { entries: props.entries, tokenSymbol: props.tokenSymbol, onGoTx: (value) => emit('go-tx', value), onGoAddress: (value) => emit('go-address', value), onGoBlock: () => {} }),
-    ]);
+    return () => {
+      const githubURL = githubProfileURL(props.address.account);
+      return h('article', { class: 'detail-panel' }, [
+        detailHeader('Address Details', props.address.account, accountRole(props.address.account), 'address', emit),
+        h('div', { class: 'address-summary' }, [
+          metric('Transactions', props.address.tx_count),
+          metric('Received', formatLedgerAmount(props.address.received_cents, props.tokenSymbol)),
+          metric('Sent', formatLedgerAmount(props.address.sent_cents, props.tokenSymbol)),
+          metric('Net', formatLedgerAmount(props.address.net_cents, props.tokenSymbol)),
+        ]),
+        githubURL
+          ? h('div', { class: 'detail-actions' }, [
+              h('a', { href: githubURL, target: '_blank', rel: 'noreferrer' }, [h(ExternalLink, { size: 16 }), `Open ${props.address.account} on GitHub`]),
+            ])
+          : null,
+        h(TransactionTable, { entries: props.entries, tokenSymbol: props.tokenSymbol, onGoTx: (value) => emit('go-tx', value), onGoAddress: (value) => emit('go-address', value), onGoBlock: () => {} }),
+      ]);
+    };
   },
 });
 

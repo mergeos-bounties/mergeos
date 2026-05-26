@@ -38,25 +38,43 @@ const (
 )
 
 type User struct {
-	ID           string     `json:"id"`
-	Name         string     `json:"name"`
-	CompanyName  string     `json:"company_name"`
-	Email        string     `json:"email"`
-	Role         UserRole   `json:"role"`
-	PasswordSalt string     `json:"-"`
-	PasswordHash string     `json:"-"`
-	CreatedAt    time.Time  `json:"created_at"`
-	LastLoginAt  *time.Time `json:"last_login_at,omitempty"`
+	ID              string     `json:"id"`
+	Name            string     `json:"name"`
+	CompanyName     string     `json:"company_name"`
+	Email           string     `json:"email"`
+	Role            UserRole   `json:"role"`
+	PasswordSalt    string     `json:"-"`
+	PasswordHash    string     `json:"-"`
+	WalletAddress   string     `json:"wallet_address,omitempty"`
+	GitHubID        string     `json:"github_id,omitempty"`
+	GitHubUsername  string     `json:"github_username,omitempty"`
+	GitHubAvatarURL string     `json:"github_avatar_url,omitempty"`
+	CreatedAt       time.Time  `json:"created_at"`
+	LastLoginAt     *time.Time `json:"last_login_at,omitempty"`
 }
 
 type PublicUser struct {
-	ID          string     `json:"id"`
-	Name        string     `json:"name"`
-	CompanyName string     `json:"company_name"`
-	Email       string     `json:"email"`
-	Role        UserRole   `json:"role"`
-	CreatedAt   time.Time  `json:"created_at"`
-	LastLoginAt *time.Time `json:"last_login_at,omitempty"`
+	ID              string     `json:"id"`
+	Name            string     `json:"name"`
+	CompanyName     string     `json:"company_name"`
+	Email           string     `json:"email"`
+	Role            UserRole   `json:"role"`
+	WalletAddress   string     `json:"wallet_address,omitempty"`
+	GitHubUsername  string     `json:"github_username,omitempty"`
+	GitHubAvatarURL string     `json:"github_avatar_url,omitempty"`
+	CreatedAt       time.Time  `json:"created_at"`
+	LastLoginAt     *time.Time `json:"last_login_at,omitempty"`
+}
+
+type Wallet struct {
+	Address        string     `json:"address"`
+	OwnerUserID    string     `json:"owner_user_id,omitempty"`
+	GitHubID       string     `json:"github_id,omitempty"`
+	GitHubUsername string     `json:"github_username,omitempty"`
+	RecoverySalt   string     `json:"-"`
+	RecoveryHash   string     `json:"-"`
+	CreatedAt      time.Time  `json:"created_at"`
+	LinkedAt       *time.Time `json:"linked_at,omitempty"`
 }
 
 type Session struct {
@@ -130,6 +148,7 @@ type Task struct {
 	RewardCents        int64      `json:"reward_cents"`
 	RequiredWorkerKind WorkerKind `json:"required_worker_kind"`
 	SuggestedAgentType string     `json:"suggested_agent_type"`
+	BountyType         string     `json:"bounty_type,omitempty"`
 	Status             TaskStatus `json:"status"`
 	WorkerKind         WorkerKind `json:"worker_kind,omitempty"`
 	WorkerID           string     `json:"worker_id,omitempty"`
@@ -164,6 +183,58 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
+type GitHubAuthRequest struct {
+	Code          string `json:"code"`
+	RedirectURI   string `json:"redirect_uri"`
+	WalletAddress string `json:"wallet_address,omitempty"`
+	RecoveryCode  string `json:"recovery_code,omitempty"`
+}
+
+type GitHubAuthProfile struct {
+	ID        string
+	Username  string
+	Name      string
+	Email     string
+	AvatarURL string
+}
+
+type CreateWalletRequest struct {
+	Label string `json:"label,omitempty"`
+}
+
+type CreateWalletResponse struct {
+	Address      string        `json:"address"`
+	RecoveryCode string        `json:"recovery_code"`
+	Wallet       WalletSummary `json:"wallet"`
+}
+
+type LinkWalletRequest struct {
+	Address      string `json:"address"`
+	RecoveryCode string `json:"recovery_code,omitempty"`
+}
+
+type WalletSummary struct {
+	Address          string     `json:"address"`
+	Account          string     `json:"account"`
+	BalanceCents     int64      `json:"balance_cents"`
+	ReceivedCents    int64      `json:"received_cents"`
+	SentCents        int64      `json:"sent_cents"`
+	TransactionCount int        `json:"transaction_count"`
+	LinkedAccounts   []string   `json:"linked_accounts"`
+	GitHubUsername   string     `json:"github_username,omitempty"`
+	OwnerLinked      bool       `json:"owner_linked"`
+	CreatedAt        time.Time  `json:"created_at"`
+	LinkedAt         *time.Time `json:"linked_at,omitempty"`
+}
+
+type AdminUpdateUserRequest struct {
+	Name        string   `json:"name"`
+	CompanyName string   `json:"company_name"`
+	Email       string   `json:"email"`
+	Role        UserRole `json:"role"`
+	Password    string   `json:"password,omitempty"`
+}
+
 type AuthResponse struct {
 	Token string     `json:"token"`
 	User  PublicUser `json:"user"`
@@ -183,12 +254,91 @@ type CreateProjectRequest struct {
 	PaymentMethod    PaymentMethod `json:"payment_method"`
 	PaymentReference string        `json:"payment_reference"`
 	AttachmentIDs    []string      `json:"attachment_ids"`
+	SourceRepoURL    string        `json:"source_repo_url,omitempty"`
+}
+
+type ProjectPriceEvaluationRequest struct {
+	Title                string   `json:"title"`
+	Description          string   `json:"description"`
+	ProjectType          string   `json:"project_type"`
+	Requirements         string   `json:"requirements"`
+	Deliverables         []string `json:"deliverables"`
+	Timeline             string   `json:"timeline"`
+	TechStack            string   `json:"tech_stack"`
+	Complexity           string   `json:"complexity"`
+	Constraints          string   `json:"constraints"`
+	ReferenceBudgetCents int64    `json:"reference_budget_cents"`
+}
+
+type ProjectPriceEvaluationResponse struct {
+	SuggestedPriceCents int64                `json:"suggested_price_cents"`
+	SuggestedRange      PriceRange           `json:"suggested_range"`
+	Confidence          string               `json:"confidence"`
+	Breakdown           []PriceBreakdownItem `json:"breakdown"`
+	Assumptions         []string             `json:"assumptions"`
+	Risks               []string             `json:"risks"`
+	Editable            bool                 `json:"editable"`
+}
+
+type PriceRange struct {
+	LowCents  int64 `json:"low_cents"`
+	HighCents int64 `json:"high_cents"`
+}
+
+type PriceBreakdownItem struct {
+	Category    string `json:"category"`
+	AmountCents int64  `json:"amount_cents"`
+	Reason      string `json:"reason"`
 }
 
 type AcceptTaskRequest struct {
 	WorkerKind WorkerKind `json:"worker_kind"`
 	WorkerID   string     `json:"worker_id"`
 	AgentType  string     `json:"agent_type"`
+}
+
+type AdminTaskPullRequestsResponse struct {
+	TaskID       string                 `json:"task_id"`
+	IssueNumber  int                    `json:"issue_number"`
+	IssueURL     string                 `json:"issue_url,omitempty"`
+	Repository   string                 `json:"repository"`
+	PullRequests []AdminTaskPullRequest `json:"pull_requests"`
+}
+
+type AdminTaskPullRequest struct {
+	Number         int        `json:"number"`
+	Title          string     `json:"title"`
+	Body           string     `json:"-"`
+	State          string     `json:"state"`
+	HTMLURL        string     `json:"html_url"`
+	MergeURL       string     `json:"merge_url,omitempty"`
+	Author         string     `json:"author"`
+	Draft          bool       `json:"draft"`
+	Merged         bool       `json:"merged"`
+	MergeableState string     `json:"mergeable_state,omitempty"`
+	BaseRef        string     `json:"base_ref,omitempty"`
+	HeadRef        string     `json:"head_ref,omitempty"`
+	CreatedAt      time.Time  `json:"created_at"`
+	UpdatedAt      time.Time  `json:"updated_at"`
+	MergedAt       *time.Time `json:"merged_at,omitempty"`
+}
+
+type AdminMergeTaskPullRequestRequest struct {
+	RewardMRG   int64  `json:"reward_mrg"`
+	RewardCents int64  `json:"reward_cents,omitempty"`
+	BountyType  string `json:"bounty_type"`
+}
+
+type AdminMergeTaskPullRequestResponse struct {
+	Task         *Task                `json:"task"`
+	PullRequest  AdminTaskPullRequest `json:"pull_request"`
+	WorkerID     string               `json:"worker_id"`
+	RewardMRG    int64                `json:"reward_mrg"`
+	BountyType   string               `json:"bounty_type"`
+	AdminURL     string               `json:"admin_url"`
+	CreditURL    string               `json:"credit_url,omitempty"`
+	CommentURL   string               `json:"comment_url,omitempty"`
+	CommentError string               `json:"comment_error,omitempty"`
 }
 
 type StatusResponse struct {
@@ -205,6 +355,8 @@ type RuntimeConfigResponse struct {
 	TokenSymbol       string   `json:"token_symbol"`
 	PaymentMode       string   `json:"payment_mode"`
 	RepoProvider      string   `json:"repo_provider"`
+	GitHubOAuthReady  bool     `json:"github_oauth_ready"`
+	GitHubOAuthClient string   `json:"github_oauth_client_id,omitempty"`
 	PayPalReady       bool     `json:"paypal_ready"`
 	CryptoReady       bool     `json:"crypto_ready"`
 	GitHubReady       bool     `json:"github_ready"`
@@ -328,6 +480,7 @@ type AdminSummary struct {
 	UserCount         int                `json:"user_count"`
 	AdminCount        int                `json:"admin_count"`
 	ClientCount       int                `json:"client_count"`
+	WalletCount       int                `json:"wallet_count"`
 	ProjectCount      int                `json:"project_count"`
 	OpenTaskCount     int                `json:"open_task_count"`
 	AcceptedTaskCount int                `json:"accepted_task_count"`
@@ -372,4 +525,25 @@ type SSLReviewStatus struct {
 	NextCheckAt   *time.Time `json:"next_check_at,omitempty"`
 	Error         string     `json:"error,omitempty"`
 	CheckedBy     string     `json:"checked_by,omitempty"`
+}
+
+type EvaluateProjectRequest struct {
+	Description     string   `json:"description"`
+	Requirements    []string `json:"requirements"`
+	Deliverables    []string `json:"deliverables"`
+	Timeline        string   `json:"timeline"`
+	TechStack       string   `json:"tech_stack"`
+	Complexity      string   `json:"complexity"`
+	Constraints     string   `json:"constraints"`
+	ReferenceBudget int64    `json:"reference_budget,omitempty"` // in USD
+}
+
+type EvaluateProjectResponse struct {
+	SuggestedLow    int64             `json:"suggested_low"`
+	SuggestedHigh   int64             `json:"suggested_high"`
+	ConfidenceLevel float64           `json:"confidence_level"`
+	TaskBreakdown   map[string]int64  `json:"task_breakdown"`
+	Assumptions     []string          `json:"assumptions"`
+	Risks           []string          `json:"risks"`
+	Rationale       string            `json:"rationale"`
 }

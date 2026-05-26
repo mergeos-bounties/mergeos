@@ -5,25 +5,25 @@
     </div>
 
     <header class="project-flow-navbar">
-      <button class="brand-link" type="button" @click="closeProjectWizard">
+      <a class="brand-link" href="/" @click.prevent="closeProjectWizard(); openPublicPage('home')">
         <span class="brand-mark" aria-hidden="true">
-          <Box :size="22" stroke-width="2.4" />
+          <img src="/favicon.svg" alt="" />
         </span>
         <strong>MergeOS</strong>
-      </button>
+      </a>
 
       <nav class="nav-links project-flow-nav" aria-label="Project setup navigation">
-        <button type="button" @click="closeProjectWizard(); openPublicPage('product')">
+        <a href="/product" @click.prevent="closeProjectWizard(); openPublicPage('product')">
           Product
           <ChevronDown :size="13" />
-        </button>
-        <button type="button" @click="closeProjectWizard(); openPublicPage('solutions')">
+        </a>
+        <a href="/solutions" @click.prevent="closeProjectWizard(); openPublicPage('solutions')">
           Solutions
           <ChevronDown :size="13" />
-        </button>
-        <button type="button" @click="closeProjectWizard(); openPublicPage('marketplace')">Marketplace</button>
-        <button type="button" @click="closeProjectWizard(); openPublicPage('how-it-works')">How it works</button>
-        <button type="button" @click="closeProjectWizard(); openPublicPage('ledger')">Ledger Logs</button>
+        </a>
+        <a href="/marketplace" @click.prevent="closeProjectWizard(); openPublicPage('marketplace')">Marketplace</a>
+        <a href="/how-it-works" @click.prevent="closeProjectWizard(); openPublicPage('how-it-works')">How it works</a>
+        <a href="/ledger" @click.prevent="closeProjectWizard(); openPublicPage('ledger')">Ledger Logs</a>
       </nav>
 
       <div class="nav-actions project-flow-actions">
@@ -38,7 +38,7 @@
           </button>
           <button class="dash-profile slim" type="button" @click="logout">
             <span class="profile-avatar">{{ initialsFor(user.name || user.email) }}</span>
-            <span>{{ user.name || 'John Doe' }}</span>
+            <span>{{ user.name || user.email || 'Signed-in user' }}</span>
             <ChevronDown :size="14" />
           </button>
         </template>
@@ -94,17 +94,17 @@
           <Calculator :size="17" />
           <strong>AI Budget Estimator</strong>
           <p>Let AI analyze your requirements and suggest the right budget range.</p>
-          <button type="button" @click="showToast('Budget estimate generated.')">
-            Estimate with AI
+          <button type="button" :disabled="priceEvaluationBusy" @click="runProjectPriceEvaluation">
+            {{ priceEvaluationBusy ? 'Estimating...' : 'Estimate with AI' }}
           </button>
         </article>
 
         <article v-else class="wizard-quality-card">
           <Sparkles :size="17" />
           <strong>AI Review</strong>
-          <p>Your brief is clear enough to attract strong proposals.</p>
+          <p>{{ projectQualityCopy }}</p>
           <div class="quality-score">
-            <span>96</span>
+            <span>{{ projectQualityScoreLabel }}</span>
             <small>Quality score</small>
           </div>
         </article>
@@ -127,7 +127,7 @@
           <div v-if="projectWizardStep === 1" class="wizard-form-grid">
             <label class="wizard-field full">
               <span>Project title <b>*</b></span>
-              <input v-model.trim="projectSetupForm.title" placeholder="e.g. Build an AI-powered SaaS for content creation" />
+              <input v-model.trim="projectSetupForm.title" placeholder="Enter a clear project title" />
             </label>
 
             <label class="wizard-field full">
@@ -165,18 +165,42 @@
 
             <label class="wizard-field full">
               <span>Tech stack <small>(optional)</small></span>
-              <input v-model.trim="projectSetupForm.techStack" placeholder="e.g. Next.js, TypeScript, Tailwind CSS, PostgreSQL" />
+              <input v-model.trim="projectSetupForm.techStack" placeholder="Add technologies or frameworks" />
             </label>
 
             <section class="wizard-section full attach-repo">
-              <div>
-                <strong>Attach repository <small>(optional)</small></strong>
-                <p>This helps developers understand your project better.</p>
+              <div class="attach-repo-head">
+                <div>
+                  <strong>Attach repository <small>(optional)</small></strong>
+                  <p>Load open issues and turn them into scored fix tasks.</p>
+                </div>
+                <button class="secondary-button compact" :disabled="repoImportBusy" type="button" @click="loadRepoIssues">
+                  <RefreshCw :size="15" />
+                  {{ repoImportBusy ? 'Loading issues' : 'Load issues' }}
+                </button>
               </div>
-              <button class="secondary-button compact" type="button" @click="showToast('GitHub connection coming soon.')">
-                <GitBranch :size="15" />
-                Connect GitHub
-              </button>
+              <label class="wizard-field full repo-url-field">
+                <span>GitHub repository</span>
+                <input
+                  v-model.trim="projectSetupForm.repoUrl"
+                  placeholder="https://github.com/owner/repo"
+                  @keyup.enter="loadRepoIssues"
+                />
+              </label>
+              <p v-if="repoImportError" class="modal-error repo-import-error">{{ repoImportError }}</p>
+              <div v-if="repoImportedIssues.length" class="repo-issue-panel">
+                <div class="repo-issue-summary">
+                  <strong>{{ repoImportResult.owner }}/{{ repoImportResult.name }}</strong>
+                  <span>{{ repoImportedIssues.length }} issues · {{ formatMoneyFromCents(repoImportedEstimateCents) }} scored</span>
+                </div>
+                <article v-for="issue in repoImportedIssues.slice(0, 4)" :key="issue.number" class="repo-issue-row">
+                  <span>#{{ issue.number }}</span>
+                  <div>
+                    <strong>{{ issue.title }}</strong>
+                    <small>Score {{ issue.score }} · {{ issue.complexity }} · {{ formatMoneyFromCents(issue.estimated_cents) }}</small>
+                  </div>
+                </article>
+              </div>
             </section>
           </div>
 
@@ -218,7 +242,7 @@
               <div class="deliverable-list">
                 <label v-for="(deliverable, index) in projectDeliverables" :key="index" class="deliverable-row">
                   <GripVertical :size="15" />
-                  <input v-model.trim="projectDeliverables[index]" :placeholder="projectDeliverablePlaceholders[index] || 'e.g. Production deployment'" />
+                  <input v-model.trim="projectDeliverables[index]" :placeholder="projectDeliverablePlaceholders[index] || 'Describe another deliverable'" />
                   <button type="button" :aria-label="`Remove deliverable ${index + 1}`" @click="removeDeliverable(index)">
                     <X :size="14" />
                   </button>
@@ -232,7 +256,7 @@
                 v-model.trim="projectSetupForm.requirements"
                 rows="7"
                 maxlength="2000"
-                placeholder="e.g. Must use Next.js, API must be RESTful, pass accessibility checks..."
+                placeholder="Add constraints, quality bar, compliance, or integration requirements"
               />
               <small>{{ projectSetupForm.requirements.length }} / 2000</small>
             </label>
@@ -255,7 +279,7 @@
                     <option>VND</option>
                     <option>JPY</option>
                   </select>
-                  <input v-model.number="projectSetupForm.budgetAmount" type="number" min="500" step="100" />
+                  <input v-model.number="projectSetupForm.budgetAmount" placeholder="0" type="number" min="500" step="100" />
                 </div>
               </label>
 
@@ -281,6 +305,145 @@
               </div>
             </section>
 
+            <section class="wizard-section full ai-pricing-section">
+              <div class="ai-pricing-card">
+                <div class="ai-pricing-header">
+                  <Sparkles class="sparkle-icon animated-sparkle" :size="18" />
+                  <div>
+                    <strong>AI Price Suggestion Engine</strong>
+                    <small>Let our AI evaluate your scope, tech stack, and deliverables to suggest a fair budget range.</small>
+                  </div>
+                </div>
+                
+                <div class="ai-pricing-inputs">
+                  <div class="wizard-field">
+                    <span>Project Complexity</span>
+                    <div class="complexity-selector">
+                      <button 
+                        v-for="lvl in ['Low', 'Medium', 'High']" 
+                        :key="lvl"
+                        :class="{ selected: projectSetupForm.complexity === lvl }"
+                        type="button"
+                        class="complexity-btn"
+                        @click="projectSetupForm.complexity = lvl"
+                      >
+                        {{ lvl }}
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <label class="wizard-field">
+                    <span>Project Constraints & Compliance (Optional)</span>
+                    <input 
+                      v-model="projectSetupForm.constraints" 
+                      type="text" 
+                      placeholder="Add compliance, delivery, or technical constraints"
+                    />
+                  </label>
+                </div>
+
+                <div class="ai-pricing-action">
+                  <button 
+                    class="primary-button compact ai-evaluate-btn" 
+                    type="button"
+                    :disabled="aiEvaluationLoading"
+                    @click="triggerAiEvaluation"
+                  >
+                    <RefreshCw v-if="aiEvaluationLoading" class="loading-spin" :size="15" />
+                    <Sparkles v-else :size="15" />
+                    {{ aiEvaluationLoading ? 'Evaluating scope...' : 'Get AI price recommendation' }}
+                  </button>
+                </div>
+
+                <div v-if="aiEvaluationError" class="ai-evaluation-error">
+                  <Bug :size="16" />
+                  <span>{{ aiEvaluationError }}</span>
+                </div>
+
+                <div v-if="aiEvaluationResult" class="ai-evaluation-results-box">
+                  <div class="suggestion-hero">
+                    <div class="hero-range">
+                      <small>Suggested budget range</small>
+                      <strong>{{ formatMoney(aiEvaluationResult.suggested_low) }} - {{ formatMoney(aiEvaluationResult.suggested_high) }}</strong>
+                      <span class="confidence-badge">Confidence: {{ Math.round(aiEvaluationResult.confidence_level * 100) }}%</span>
+                    </div>
+                    <button 
+                      class="secondary-button compact apply-suggestion-btn" 
+                      type="button"
+                      @click="applyAiSuggestedPrice"
+                    >
+                      <CheckCircle2 :size="14" />
+                      Use Suggested Budget
+                    </button>
+                  </div>
+
+                  <div class="results-details-grid">
+                    <div class="results-col">
+                      <h4>Task Breakdown</h4>
+                      <ul class="breakdown-list">
+                        <li v-for="(amount, task) in aiEvaluationResult.task_breakdown" :key="task">
+                          <span class="task-name">{{ task }}</span>
+                          <span class="task-price">{{ formatMoney(amount) }}</span>
+                        </li>
+                      </ul>
+                    </div>
+
+                    <div class="results-col">
+                      <h4>Rationale</h4>
+                      <p class="rationale-text">{{ aiEvaluationResult.rationale }}</p>
+                    </div>
+                  </div>
+
+                  <div class="results-details-grid extra-meta">
+                    <div class="results-col">
+                      <h4>Assumptions</h4>
+                      <ul class="meta-bullets">
+                        <li v-for="(assumption, i) in aiEvaluationResult.assumptions" :key="i">
+                          {{ assumption }}
+                        </li>
+                      </ul>
+                    </div>
+
+                    <div class="results-col">
+                      <h4>Identified Risks</h4>
+                      <ul class="meta-bullets risks">
+                        <li v-for="(risk, i) in aiEvaluationResult.risks" :key="i">
+                          {{ risk }}
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section v-if="priceEvaluation" class="wizard-section full price-estimate-card">
+              <div class="wizard-section-title row">
+                <div>
+                  <strong>Suggested price</strong>
+                  <small>{{ priceEvaluation.confidence }} confidence · editable before publishing</small>
+                </div>
+                <button class="text-action" type="button" @click="applyPriceEvaluation">
+                  <CheckCircle2 :size="14" />
+                  Use estimate
+                </button>
+              </div>
+              <div class="price-estimate-summary">
+                <strong>{{ formatMoneyFromCents(priceEvaluation.suggested_price_cents) }}</strong>
+                <span>{{ formatMoneyFromCents(priceEvaluation.suggested_range.low_cents) }} - {{ formatMoneyFromCents(priceEvaluation.suggested_range.high_cents) }}</span>
+              </div>
+              <div class="price-breakdown-grid">
+                <article v-for="item in priceEvaluation.breakdown.slice(0, 4)" :key="item.category">
+                  <strong>{{ item.category }}</strong>
+                  <span>{{ formatMoneyFromCents(item.amount_cents) }}</span>
+                  <small>{{ item.reason }}</small>
+                </article>
+              </div>
+              <p v-if="priceEvaluation.risks?.length">{{ priceEvaluation.risks[0] }}</p>
+            </section>
+
+            <p v-if="priceEvaluationError" class="project-payment-error full">{{ priceEvaluationError }}</p>
+
             <section class="wizard-section full timeline-box">
               <div class="wizard-section-title">
                 <strong>Timeline</strong>
@@ -296,7 +459,7 @@
                   <input v-model="projectSetupForm.deadline" type="date" />
                 </label>
                 <div class="duration-ring">
-                  <strong>30</strong>
+                  <strong>{{ projectDurationDays || '--' }}</strong>
                   <small>days</small>
                 </div>
               </div>
@@ -361,15 +524,15 @@
               <dl>
                 <div>
                   <dt>Title</dt>
-                  <dd>{{ projectSetupForm.title }}</dd>
+                  <dd>{{ projectTitleLabel }}</dd>
                 </div>
                 <div>
                   <dt>Type</dt>
-                  <dd>{{ projectSetupForm.projectType }}</dd>
+                  <dd>{{ projectTypeLabel }}</dd>
                 </div>
                 <div>
                   <dt>Short description</dt>
-                  <dd>{{ projectSetupForm.shortDescription }}</dd>
+                  <dd>{{ projectDescriptionLabel }}</dd>
                 </div>
               </dl>
             </section>
@@ -382,12 +545,13 @@
                 <ListTodo :size="17" />
                 Scope & requirements
               </h3>
-              <ul>
+              <ul v-if="visibleDeliverables.length">
                 <li v-for="deliverable in visibleDeliverables" :key="deliverable">
                   <CheckCircle2 :size="14" />
                   {{ deliverable }}
                 </li>
               </ul>
+              <p v-else>{{ projectDeliverablesPlaceholder }}</p>
             </section>
 
             <section class="review-card">
@@ -401,11 +565,11 @@
               <dl>
                 <div>
                   <dt>Budget range</dt>
-                  <dd>{{ formatMoney(projectBudgetLow) }} - {{ formatMoney(projectBudgetHigh) }}</dd>
+                  <dd>{{ projectBudgetRangeLabel }}</dd>
                 </div>
                 <div>
                   <dt>Estimated total</dt>
-                  <dd>{{ formatMoney(projectEstimatedTotal) }}</dd>
+                  <dd>{{ projectEstimatedTotalLabel }}</dd>
                 </div>
                 <div>
                   <dt>Timeline</dt>
@@ -487,8 +651,8 @@
             </label>
             <div class="token-receipt">
               <span>You will receive</span>
-              <strong>{{ projectTokenAmount }} tokens</strong>
-              <small>1 USD = 0.175 tokens</small>
+              <strong>{{ projectTokenAmountLabel }}</strong>
+              <small>1 USD = {{ TOKEN_RATE_PER_USD }} {{ tokenSymbol }}</small>
             </div>
           </section>
 
@@ -528,7 +692,7 @@
               </label>
               <label class="wizard-field">
                 <span>Cardholder name</span>
-                <input placeholder="John Doe" />
+                <input placeholder="Name on card" />
               </label>
             </div>
           </section>
@@ -537,7 +701,7 @@
             <span><Lock :size="14" /> Your payment is secure and encrypted.</span>
             <div>
               <small>Total to pay</small>
-              <strong>{{ formatMoney(projectFundingAmount) }} USD</strong>
+              <strong>{{ projectFundingAmountLabel }}</strong>
               <button class="primary-button compact" :disabled="projectPaymentBusy" type="button" @click="completeProjectFunding">
                 {{ projectPaymentButtonLabel }}
                 <LockKeyhole :size="15" />
@@ -566,11 +730,11 @@
             <div class="payment-detail-grid">
               <div>
                 <small>Amount paid</small>
-                <strong>{{ formatMoney(projectFundingAmount) }} USD</strong>
+                <strong>{{ projectFundingAmountLabel }}</strong>
               </div>
               <div>
                 <small>Tokens received</small>
-                <strong>{{ projectTokenAmount }} {{ tokenSymbol }}</strong>
+                <strong>{{ projectTokenAmountLabel }}</strong>
               </div>
               <div>
                 <small>Payment method</small>
@@ -606,7 +770,7 @@
           <section class="tokens-box">
             <span class="token-emblem"><CircleDollarSign :size="26" /></span>
             <div>
-              <h3>You've received {{ projectTokenAmount }} {{ tokenSymbol }}</h3>
+              <h3>You've received {{ projectTokenAmountLabel }}</h3>
               <p>Use your tokens to boost your project, feature it in the marketplace, or unlock premium matching.</p>
             </div>
             <button class="secondary-button compact" type="button" @click="closeProjectWizard(); openPublicPage('ledger')">Ledger Logs</button>
@@ -651,14 +815,14 @@
           <div class="mini-project">
             <span>{{ projectInitial }}</span>
             <div>
-              <strong>{{ projectSetupForm.title }}</strong>
-              <small>{{ projectSetupForm.projectType }}</small>
+              <strong>{{ projectTitleLabel }}</strong>
+              <small>{{ projectTypeLabel }}</small>
             </div>
           </div>
           <dl>
             <div>
               <dt>Budget</dt>
-              <dd>{{ formatMoney(projectSetupForm.budgetAmount) }} ({{ projectSetupForm.budgetType }})</dd>
+              <dd>{{ projectBudgetSummaryLabel }}</dd>
             </div>
             <div>
               <dt>Timeline</dt>
@@ -677,8 +841,8 @@
 
         <article v-if="projectWizardStage === 'setup' && projectWizardStep === 3" class="rail-card budget-suggestion">
           <h3>AI Budget Suggestion</h3>
-          <strong>{{ formatMoney(projectBudgetLow) }} - {{ formatMoney(projectBudgetHigh) }}</strong>
-          <p>Based on similar projects.</p>
+          <strong>{{ projectBudgetRangeLabel }}</strong>
+          <p>{{ projectBudgetAmount ? 'Based on your current project inputs.' : 'Add a budget to calculate an estimate.' }}</p>
           <div class="budget-sparkline" aria-hidden="true">
             <span v-for="height in sparklineHeights" :key="height" :style="{ height: `${height}%` }" />
           </div>
@@ -689,14 +853,14 @@
           <div class="mini-project">
             <span>{{ projectInitial }}</span>
             <div>
-              <strong>{{ projectSetupForm.title }}</strong>
-              <small>{{ projectSetupForm.projectType }}</small>
+              <strong>{{ projectTitleLabel }}</strong>
+              <small>{{ projectTypeLabel }}</small>
             </div>
           </div>
           <dl>
             <div>
               <dt>Budget</dt>
-              <dd>{{ formatMoney(projectBudgetLow) }} - {{ formatMoney(projectBudgetHigh) }}</dd>
+              <dd>{{ projectBudgetRangeLabel }}</dd>
             </div>
             <div>
               <dt>Timeline</dt>
@@ -708,7 +872,7 @@
             </div>
             <div>
               <dt>Deliverables</dt>
-              <dd>{{ visibleDeliverables.length }} items</dd>
+              <dd>{{ projectDeliverableCountLabel }}</dd>
             </div>
           </dl>
         </article>
@@ -718,7 +882,7 @@
           <dl>
             <div>
               <dt>Client budget</dt>
-              <dd>{{ formatMoney(projectBudgetLow) }} - {{ formatMoney(projectBudgetHigh) }}</dd>
+              <dd>{{ projectBudgetRangeLabel }}</dd>
             </div>
             <div>
               <dt>Platform fee (8%)</dt>
@@ -730,25 +894,25 @@
             </div>
             <div class="strong-row">
               <dt>Estimated total</dt>
-              <dd>{{ formatMoney(projectEstimatedLow) }} - {{ formatMoney(projectEstimatedHigh) }}</dd>
+              <dd>{{ projectEstimatedRangeLabel }}</dd>
             </div>
           </dl>
         </article>
 
         <article v-if="projectWizardStage === 'funding' || projectWizardStage === 'success'" class="rail-card project-summary-mini">
-          <button v-if="projectWizardStage === 'funding'" type="button" @click="projectWizardStage = 'setup'">Edit</button>
+          <button v-if="projectWizardStage === 'funding'" type="button" @click="goProjectStep(4)">Edit</button>
           <h3>Project summary</h3>
           <div class="mini-project">
             <span>{{ projectInitial }}</span>
             <div>
-              <strong>{{ projectSetupForm.title }}</strong>
-              <small>{{ projectSetupForm.projectType }}</small>
+              <strong>{{ projectTitleLabel }}</strong>
+              <small>{{ projectTypeLabel }}</small>
             </div>
           </div>
           <dl>
             <div>
               <dt>Budget</dt>
-              <dd>{{ formatMoney(projectBudgetLow) }} - {{ formatMoney(projectBudgetHigh) }}</dd>
+              <dd>{{ projectBudgetRangeLabel }}</dd>
             </div>
             <div>
               <dt>Timeline</dt>
@@ -770,7 +934,7 @@
           <dl>
             <div>
               <dt>Amount added</dt>
-              <dd>{{ formatMoney(projectFundingAmount) }}</dd>
+              <dd>{{ projectFundingAmountLabel }}</dd>
             </div>
             <div>
               <dt>Platform fee (8%)</dt>
@@ -782,7 +946,7 @@
             </div>
             <div class="strong-row">
               <dt>You will receive</dt>
-              <dd>{{ projectTokenAmount }} tokens</dd>
+              <dd>{{ projectTokenAmountLabel }}</dd>
             </div>
           </dl>
         </article>
@@ -829,7 +993,7 @@
     <aside class="dash-sidebar" aria-label="Customer navigation">
       <button class="dash-brand" type="button" @click="showToast('Opening dashboard home...')">
         <span class="brand-mark" aria-hidden="true">
-          <Box :size="20" stroke-width="2.4" />
+          <img src="/favicon.svg" alt="" />
         </span>
         <strong>MergeOS</strong>
       </button>
@@ -895,8 +1059,8 @@
           <button class="dash-profile" type="button" @click="logout">
             <span class="profile-avatar">{{ initialsFor(user.name || user.email) }}</span>
             <span>
-              <strong>{{ user.name || 'John Doe' }}</strong>
-              <small>Customer</small>
+              <strong>{{ user.name || user.email || 'Signed-in user' }}</strong>
+              <small>{{ user.wallet_address ? shortWallet(user.wallet_address) : 'Customer' }}</small>
             </span>
             <ChevronDown :size="14" />
           </button>
@@ -1070,6 +1234,28 @@
         </section>
 
         <aside class="dash-rail">
+          <section class="dash-card rail-card wallet-summary-card">
+            <div class="card-title-row">
+              <h2>MRG Wallet</h2>
+              <span class="recording-dot">Live</span>
+            </div>
+            <div class="wallet-address-box">
+              <small>Wallet address</small>
+              <strong>{{ user.wallet_address || 'Creating wallet...' }}</strong>
+            </div>
+            <div class="wallet-link-row">
+              <span>{{ user.github_username ? `github:${user.github_username}` : 'GitHub not linked' }}</span>
+            </div>
+            <div class="wallet-action-row">
+              <button class="rail-link-button" :disabled="!user.wallet_address" type="button" @click="openWalletOnScan(user.wallet_address)">
+                View on Scan
+              </button>
+              <button class="rail-link-button" :disabled="authBusy || !githubOAuthReady" type="button" @click="startGitHubLogin">
+                Link GitHub
+              </button>
+            </div>
+          </section>
+
           <section class="dash-card rail-card project-picker-card">
             <div class="card-title-row">
               <h2>My Projects</h2>
@@ -1155,25 +1341,25 @@
 
     <header class="home-navbar">
       <div class="home-container nav-inner">
-        <button class="brand-link" type="button" @click="openPublicPage('home')">
+        <a class="brand-link" href="/" @click.prevent="openPublicPage('home')">
           <span class="brand-mark" aria-hidden="true">
-            <Box :size="22" stroke-width="2.4" />
+            <img src="/favicon.svg" alt="" />
           </span>
           <strong>MergeOS</strong>
-        </button>
+        </a>
 
         <nav class="nav-links" aria-label="Primary">
-          <button :class="{ 'nav-active': publicPage === 'product' }" type="button" @click="openPublicPage('product')">
+          <a href="/product" :class="{ 'nav-active': publicPage === 'product' }" @click.prevent="openPublicPage('product')">
             Product
             <ChevronDown :size="13" />
-          </button>
-          <button :class="{ 'nav-active': publicPage === 'solutions' }" type="button" @click="openPublicPage('solutions')">
+          </a>
+          <a href="/solutions" :class="{ 'nav-active': publicPage === 'solutions' }" @click.prevent="openPublicPage('solutions')">
             Solutions
             <ChevronDown :size="13" />
-          </button>
-          <button :class="{ 'nav-active': publicPage === 'marketplace' }" type="button" @click="openPublicPage('marketplace')">Marketplace</button>
-          <button :class="{ 'nav-active': publicPage === 'how-it-works' }" type="button" @click="openPublicPage('how-it-works')">How it works</button>
-          <button :class="{ 'nav-active': publicPage === 'ledger' }" type="button" @click="openPublicPage('ledger')">Ledger Logs</button>
+          </a>
+          <a href="/marketplace" :class="{ 'nav-active': publicPage === 'marketplace' }" @click.prevent="openPublicPage('marketplace')">Marketplace</a>
+          <a href="/how-it-works" :class="{ 'nav-active': publicPage === 'how-it-works' }" @click.prevent="openPublicPage('how-it-works')">How it works</a>
+          <a href="/ledger" :class="{ 'nav-active': publicPage === 'ledger' }" @click.prevent="openPublicPage('ledger')">Ledger Logs</a>
         </nav>
 
         <div class="nav-actions">
@@ -1311,6 +1497,7 @@
       <div class="home-container ledger-shell">
         <section class="ledger-hero">
           <div class="ledger-hero-copy">
+            <span class="marketplace-eyebrow">LEDGER LOGS</span>
             <div class="ledger-title-row">
               <h1>Ledger Logs</h1>
               <span class="ledger-public-badge">
@@ -1387,7 +1574,6 @@
                     <th>Time (UTC)</th>
                     <th>Type</th>
                     <th>Project</th>
-                    <th>Description</th>
                     <th>Amount</th>
                     <th>Status</th>
                     <th>Tx / Ref</th>
@@ -1395,13 +1581,13 @@
                 </thead>
                 <tbody>
                   <tr v-if="ledgerLoading">
-                    <td class="ledger-state-cell" colspan="7">Loading real ledger entries...</td>
+                    <td class="ledger-state-cell" colspan="6">Loading real ledger entries...</td>
                   </tr>
                   <tr v-else-if="ledgerError">
-                    <td class="ledger-state-cell error" colspan="7">{{ ledgerError }}</td>
+                    <td class="ledger-state-cell error" colspan="6">{{ ledgerError }}</td>
                   </tr>
                   <tr v-else-if="ledgerEvents.length === 0">
-                    <td class="ledger-state-cell" colspan="7">No ledger entries yet. Fund a project to mint tokens and create the first logs.</td>
+                    <td class="ledger-state-cell" colspan="6">No ledger entries yet. Fund a project to mint tokens and create the first logs.</td>
                   </tr>
                   <template v-else>
                     <tr v-for="event in ledgerEvents" :key="event.key">
@@ -1424,7 +1610,6 @@
                           </div>
                         </div>
                       </td>
-                      <td>{{ event.description }}</td>
                       <td>
                         <strong :class="['ledger-amount', event.amountTone]">{{ event.amount }}</strong>
                         <span v-if="event.secondaryAmount">{{ event.secondaryAmount }}</span>
@@ -1465,7 +1650,7 @@
                     </div>
                     <small>Real projects will appear after payment.</small>
                     <p>
-                      <b>$0 Escrow</b>
+                      <b>0 {{ tokenSymbol }} Escrow</b>
                       <span>0 Contributors</span>
                       <span>0 PRs</span>
                     </p>
@@ -1523,12 +1708,12 @@
 
         <section class="ledger-footer-stats" aria-label="Ledger totals">
           <article>
-            <ShieldCheck :size="18" />
-            <div>
-              <strong>Built for transparency.</strong>
-              <span>Trusted by builders worldwide.</span>
-            </div>
-          </article>
+              <ShieldCheck :size="18" />
+              <div>
+                <strong>Built for transparency.</strong>
+                <span>Ready for builder verification.</span>
+              </div>
+            </article>
           <article v-for="stat in ledgerFooterStats" :key="stat.label">
             <strong>{{ stat.value }}</strong>
             <span>{{ stat.label }}</span>
@@ -1803,7 +1988,7 @@
           <div class="auth-form-panel">
             <div class="auth-brand">
               <span class="auth-brand-mark" aria-hidden="true">
-                <Box :size="19" stroke-width="2.5" />
+                <img src="/favicon.svg" alt="" />
               </span>
               <strong>MergeOS</strong>
             </div>
@@ -1825,9 +2010,9 @@
                 <span class="google-mark" aria-hidden="true">G</span>
                 Continue with Google
               </button>
-              <button type="button" @click="loginWithSocial('github')">
+              <button type="button" :disabled="authBusy || !githubOAuthReady" @click="startGitHubLogin">
                 <span class="github-mark" aria-hidden="true">GH</span>
-                Continue with GitHub
+                {{ githubOAuthReady ? 'Continue with GitHub' : 'Configure GitHub OAuth' }}
               </button>
             </div>
 
@@ -1946,35 +2131,34 @@
                 <CheckCircle2 :size="17" />
               </div>
               <div class="rating-card">
-                <span class="mini-avatar">AR</span>
-                <strong>5 stars</strong>
-                <small>Builder verified</small>
+                <span class="mini-avatar">MRG</span>
+                <strong>Wallet ready</strong>
+                <small>Link after signup</small>
               </div>
-              <span class="orbit-avatar left">JD</span>
-              <span class="orbit-avatar right">SK</span>
+              <span class="orbit-avatar left">MRG</span>
+              <span class="orbit-avatar right">DAO</span>
               <span class="orbit-check top"><CheckCircle2 :size="18" /></span>
               <span class="orbit-check bottom"><CheckCircle2 :size="18" /></span>
             </div>
 
             <template v-else>
               <article class="auth-quote-card">
-                <Quote :size="24" />
-                <p>MergeOS helped us go from idea to production 10x faster.</p>
+                <ShieldCheck :size="24" />
+                <p>Create an account to save projects, link an MRG wallet, and record funding on the live ledger.</p>
                 <div>
-                  <span class="mini-avatar">AR</span>
-                  <strong>Alex Rodriguez</strong>
-                  <small>AI Startup Founder</small>
-                  <span class="star-row">*****</span>
+                  <span class="mini-avatar">MRG</span>
+                  <strong>Account data appears after login</strong>
+                  <small>Login to view profile details.</small>
                 </div>
               </article>
 
               <div class="auth-trusted">
-                <small>Trusted by builders from</small>
+                <small>Live account areas</small>
                 <div>
-                  <strong>Vercel</strong>
-                  <strong>OpenAI</strong>
-                  <strong>GitHub</strong>
-                  <strong>stripe</strong>
+                  <strong>Projects</strong>
+                  <strong>Wallet</strong>
+                  <strong>Ledger</strong>
+                  <strong>Tasks</strong>
                 </div>
               </div>
             </template>
@@ -1986,7 +2170,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, onUnmounted, reactive, ref } from 'vue';
 import {
   ArrowLeft,
   ArrowRight,
@@ -2040,6 +2224,71 @@ import {
 } from '@lucide/vue';
 
 const hasWindow = typeof window !== 'undefined';
+const TOKEN_RATE_PER_USD = 100;
+const DASHBOARD_REFRESH_MS = 5000;
+const publicPagePaths = {
+  home: '/',
+  product: '/product',
+  solutions: '/solutions',
+  marketplace: '/marketplace',
+  'how-it-works': '/how-it-works',
+  ledger: '/ledger',
+};
+const publicPageNames = new Set(Object.keys(publicPagePaths));
+const projectWizardStepPaths = {
+  1: '/project/new',
+  2: '/project/new/scope',
+  3: '/project/new/budget',
+  4: '/project/new/review',
+};
+const projectWizardStagePaths = {
+  funding: '/project/new/funding',
+  success: '/project/new/success',
+};
+
+const props = defineProps({
+  initialPath: { type: String, default: '' },
+});
+
+function normalizeRoutePath(path = '/') {
+  const pathname = String(path || '/').split('?')[0].split('#')[0] || '/';
+  const normalized = pathname.replace(/\/+$/, '') || '/';
+  return normalized.startsWith('/') ? normalized : `/${normalized}`;
+}
+
+function normalizePublicPage(page = 'home') {
+  return publicPageNames.has(page) ? page : 'home';
+}
+
+function publicPageFromPath(path = '/') {
+  const normalizedPath = normalizeRoutePath(path);
+  const match = Object.entries(publicPagePaths).find(([, routePath]) => routePath === normalizedPath);
+  return match?.[0] || 'home';
+}
+
+function publicPathForPage(page = 'home') {
+  return publicPagePaths[normalizePublicPage(page)] || '/';
+}
+
+function normalizeProjectWizardStep(step = 1) {
+  return Math.min(4, Math.max(1, Number(step) || 1));
+}
+
+function projectWizardRouteFromPath(path = '/') {
+  const normalizedPath = normalizeRoutePath(path);
+  const stepMatch = Object.entries(projectWizardStepPaths).find(([, routePath]) => routePath === normalizedPath);
+  if (stepMatch) return { stage: 'setup', step: Number(stepMatch[0]) };
+  if (normalizedPath === '/project/new/details' || normalizedPath === '/projects/new') return { stage: 'setup', step: 1 };
+  if (normalizedPath === projectWizardStagePaths.funding) return { stage: 'funding', step: 4 };
+  if (normalizedPath === projectWizardStagePaths.success) return { stage: 'success', step: 4 };
+  return null;
+}
+
+function projectWizardPathForState(stage = 'setup', step = 1) {
+  if (stage === 'funding') return projectWizardStagePaths.funding;
+  if (stage === 'success') return projectWizardStagePaths.success;
+  return projectWizardStepPaths[normalizeProjectWizardStep(step)] || projectWizardStepPaths[1];
+}
 
 function getBrowserStorage() {
   if (!hasWindow || !('localStorage' in window)) {
@@ -2091,13 +2340,16 @@ const showConfirmPassword = ref(false);
 const toastMessage = ref('');
 let toastTimer = 0;
 
-const publicPage = ref('home');
-const publicModeVisible = ref(false);
+const initialRoutePath = props.initialPath || (hasWindow ? window.location.pathname : '/');
+const initialProjectWizardRoute = projectWizardRouteFromPath(initialRoutePath);
+const initialPublicPage = publicPageFromPath(initialRoutePath);
+const publicPage = ref(initialPublicPage);
+const publicModeVisible = ref(Boolean(initialProjectWizardRoute) || initialPublicPage !== 'home');
 
-const projectWizardVisible = ref(false);
-const projectWizardStage = ref('setup');
-const projectWizardStep = ref(1);
-const projectFundingAmount = ref(2000);
+const projectWizardVisible = ref(Boolean(initialProjectWizardRoute));
+const projectWizardStage = ref(initialProjectWizardRoute?.stage || 'setup');
+const projectWizardStep = ref(initialProjectWizardRoute?.step || 1);
+const projectFundingAmount = ref('');
 const projectPaymentMethod = ref('Credit / Debit card');
 const projectPaymentBusy = ref(false);
 const projectPaymentError = ref('');
@@ -2126,37 +2378,46 @@ const dashboardLoading = ref(false);
 const dashboardError = ref('');
 const dashboardSearch = ref('');
 const selectedDashboardProjectID = ref('');
+const priceEvaluation = ref(null);
+const priceEvaluationBusy = ref(false);
+const priceEvaluationError = ref('');
+const repoImportBusy = ref(false);
+const repoImportError = ref('');
+const repoImportResult = ref(null);
+let dashboardRefreshTimer = 0;
 
 const projectSetupForm = reactive({
-  title: 'AI-Powered SaaS Dashboard',
-  shortDescription: 'Build a modern SaaS dashboard with analytics, real-time data, and AI insights.',
-  projectType: 'Web Development',
-  techStack: 'Next.js, TypeScript, Tailwind CSS, PostgreSQL',
+  title: '',
+  shortDescription: '',
+  projectType: '',
+  techStack: '',
+  repoUrl: '',
   overview: '',
   requirements: '',
   currency: 'USD',
-  budgetAmount: 10000,
+  budgetAmount: '',
   budgetType: 'Fixed price',
-  startDate: '2026-05-26',
-  deadline: '2026-06-25',
+  startDate: '',
+  deadline: '',
   fundingMethod: 'Escrow',
   visibility: 'Public',
   allowAgents: true,
   skills: '',
+  complexity: 'Medium',
+  constraints: '',
 });
 
-const projectDeliverables = ref([
-  'User authentication system',
-  'Admin dashboard with analytics',
-  'Payment integration',
-  'Real-time notifications',
-]);
+const aiEvaluationResult = ref(null);
+const aiEvaluationLoading = ref(false);
+const aiEvaluationError = ref('');
+
+const projectDeliverables = ref(['']);
 
 const projectDeliverablePlaceholders = [
-  'e.g. User authentication system',
-  'e.g. Admin dashboard',
-  'e.g. Payment integration',
-  'e.g. QA and deployment',
+  'Describe a key deliverable',
+  'Describe the next deliverable',
+  'Add integration or workflow deliverables',
+  'Add QA, launch, or handoff deliverables',
 ];
 
 const projectSetupSteps = [
@@ -2192,6 +2453,7 @@ const projectSetupSteps = [
 
 const projectTypeOptions = [
   { label: 'Web Development', caption: 'Web apps', icon: Globe2 },
+  { label: 'Repo Issue Fix', caption: 'Existing repo', icon: Bug },
   { label: 'Mobile Development', caption: 'iOS and Android', icon: Compass },
   { label: 'AI / ML', caption: 'Agents and models', icon: Bot },
   { label: 'Smart Contract', caption: 'Web3', icon: Link2 },
@@ -2212,10 +2474,10 @@ const fundingMethodOptions = [
 ];
 
 const fundingAmountOptions = [
-  { amount: 500, tokens: 80 },
-  { amount: 1000, tokens: 170 },
-  { amount: 2000, tokens: 350, popular: true },
-  { amount: 5000, tokens: 900 },
+  { amount: 500, tokens: 50000 },
+  { amount: 1000, tokens: 100000 },
+  { amount: 2000, tokens: 200000, popular: true },
+  { amount: 5000, tokens: 500000 },
 ];
 
 const paymentMethodOptions = [
@@ -2280,11 +2542,32 @@ const postPaymentActions = [
 const currentProjectStep = computed(() => projectSetupSteps.find((step) => step.number === projectWizardStep.value) || projectSetupSteps[0]);
 const visibleDeliverables = computed(() => {
   const items = projectDeliverables.value.map((item) => item.trim()).filter(Boolean);
-  return items.length ? items : ['Project scope and implementation'];
+  return items;
 });
+const projectTitleLabel = computed(() => projectSetupForm.title.trim() || 'Untitled project');
+const projectTypeLabel = computed(() => projectSetupForm.projectType || 'Select a project type');
+const projectDescriptionLabel = computed(() => projectSetupForm.shortDescription.trim() || 'Add a short project description');
+const projectDeliverablesPlaceholder = 'No deliverables added yet';
+const projectDeliverableCountLabel = computed(() =>
+  visibleDeliverables.value.length ? `${visibleDeliverables.value.length} items` : projectDeliverablesPlaceholder,
+);
+const repoImportedIssues = computed(() => Array.isArray(repoImportResult.value?.issues) ? repoImportResult.value.issues : []);
+const repoImportedEstimateCents = computed(() =>
+  repoImportedIssues.value.reduce((total, issue) => total + (Number(issue.estimated_cents) || 0), 0),
+);
 const projectBudgetAmount = computed(() => Math.max(0, Number(projectSetupForm.budgetAmount) || 0));
-const projectBudgetLow = computed(() => Math.round(projectBudgetAmount.value * 0.8));
-const projectBudgetHigh = computed(() => Math.round(projectBudgetAmount.value * 1.2));
+const projectBudgetLow = computed(() => {
+  if (aiEvaluationResult.value && projectSetupForm.budgetAmount === Math.round((aiEvaluationResult.value.suggested_low + aiEvaluationResult.value.suggested_high) / 2)) {
+    return aiEvaluationResult.value.suggested_low;
+  }
+  return Math.round(projectBudgetAmount.value * 0.85);
+});
+const projectBudgetHigh = computed(() => {
+  if (aiEvaluationResult.value && projectSetupForm.budgetAmount === Math.round((aiEvaluationResult.value.suggested_low + aiEvaluationResult.value.suggested_high) / 2)) {
+    return aiEvaluationResult.value.suggested_high;
+  }
+  return Math.round(projectBudgetAmount.value * 1.25);
+});
 const projectPlatformFeeLow = computed(() => Math.round(projectBudgetLow.value * 0.08));
 const projectPlatformFeeHigh = computed(() => Math.round(projectBudgetHigh.value * 0.08));
 const projectEscrowFeeLow = computed(() => Math.round(projectBudgetLow.value * 0.02));
@@ -2294,9 +2577,54 @@ const projectEstimatedHigh = computed(() => projectBudgetHigh.value + projectPla
 const projectEstimatedTotal = computed(() => Math.round(projectBudgetAmount.value * 1.1));
 const projectFundingPlatformFee = computed(() => Math.round((Number(projectFundingAmount.value) || 0) * 0.08));
 const projectFundingEscrowFee = computed(() => Math.round((Number(projectFundingAmount.value) || 0) * 0.02));
-const projectTokenAmount = computed(() => Math.round((Number(projectFundingAmount.value) || 0) * 0.175));
+const projectTokenAmount = computed(() => Math.round((Number(projectFundingAmount.value) || 0) * TOKEN_RATE_PER_USD));
 const projectInitial = computed(() => (projectSetupForm.title.trim().charAt(0) || 'M').toUpperCase());
-const projectTimelineLabel = computed(() => 'May 26 - Jun 25, 2026 (30 days)');
+const projectBudgetRangeLabel = computed(() =>
+  projectBudgetAmount.value > 0 ? `${formatMoney(projectBudgetLow.value)} - ${formatMoney(projectBudgetHigh.value)}` : 'Budget not set',
+);
+const projectBudgetSummaryLabel = computed(() =>
+  projectBudgetAmount.value > 0 ? `${formatMoney(projectBudgetAmount.value)} (${projectSetupForm.budgetType})` : 'Budget not set',
+);
+const projectEstimatedTotalLabel = computed(() => (projectBudgetAmount.value > 0 ? formatMoney(projectEstimatedTotal.value) : 'Not calculated yet'));
+const projectEstimatedRangeLabel = computed(() =>
+  projectBudgetAmount.value > 0 ? `${formatMoney(projectEstimatedLow.value)} - ${formatMoney(projectEstimatedHigh.value)}` : 'Not calculated yet',
+);
+const projectFundingAmountLabel = computed(() => (Number(projectFundingAmount.value) > 0 ? `${formatMoney(projectFundingAmount.value)} USD` : 'Choose amount'));
+const projectTokenAmountLabel = computed(() => (projectTokenAmount.value > 0 ? `${projectTokenAmount.value} ${tokenSymbol.value}` : 'Choose an amount'));
+const projectDurationDays = computed(() => {
+  if (!projectSetupForm.startDate || !projectSetupForm.deadline) return 0;
+  const start = Date.parse(`${projectSetupForm.startDate}T00:00:00Z`);
+  const end = Date.parse(`${projectSetupForm.deadline}T00:00:00Z`);
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) return 0;
+  return Math.max(1, Math.round((end - start) / 86400000));
+});
+const projectTimelineLabel = computed(() => {
+  const start = formatDateInputLabel(projectSetupForm.startDate);
+  const deadline = formatDateInputLabel(projectSetupForm.deadline);
+  if (start && deadline) return `${start} - ${deadline}${projectDurationDays.value ? ` (${projectDurationDays.value} days)` : ''}`;
+  if (start) return `Starts ${start}`;
+  if (deadline) return `Due ${deadline}`;
+  return 'Timeline not set';
+});
+const projectQualityScore = computed(() => {
+  const filledSections = [
+    projectSetupForm.title.trim(),
+    projectSetupForm.shortDescription.trim(),
+    projectSetupForm.projectType,
+    projectSetupForm.overview.trim(),
+    visibleDeliverables.value.length ? 'deliverables' : '',
+    projectBudgetAmount.value > 0 ? 'budget' : '',
+    projectSetupForm.deadline,
+  ].filter(Boolean).length;
+
+  return filledSections ? Math.round((filledSections / 7) * 100) : 0;
+});
+const projectQualityScoreLabel = computed(() => (projectQualityScore.value ? String(projectQualityScore.value) : '--'));
+const projectQualityCopy = computed(() => {
+  if (!projectQualityScore.value) return 'Complete the brief to generate a quality check.';
+  if (projectQualityScore.value >= 75) return 'Your brief has enough detail for a strong review.';
+  return 'Keep adding scope, budget, and timing details to improve the brief.';
+});
 const wizardIntroCopy = computed(() => {
   if (projectWizardStage.value === 'funding') {
     return 'Add escrow funding so contributors can send stronger proposals.';
@@ -2337,27 +2665,27 @@ const projectFooterSteps = computed(() =>
 );
 
 const authForm = reactive({
-  name: 'MergeOS Admin',
-  company_name: 'MergeOS',
-  email: 'admin@gmail.com',
-  password: 'Admin123',
+  name: '',
+  company_name: '',
+  email: '',
+  password: '',
   confirm_password: '',
 });
 
 const defaultLoginAuth = {
-  name: 'MergeOS Admin',
-  company_name: 'MergeOS',
-  email: 'admin@gmail.com',
-  password: 'Admin123',
+  name: '',
+  company_name: '',
+  email: '',
+  password: '',
   confirm_password: '',
 };
 
 const defaultRegisterAuth = {
-  name: 'Maintenance Client',
-  company_name: 'MergeOS Customer',
-  email: 'client@mergeos.local',
-  password: 'mergeos123',
-  confirm_password: 'mergeos123',
+  name: '',
+  company_name: '',
+  email: '',
+  password: '',
+  confirm_password: '',
 };
 
 const authBenefits = [
@@ -2390,15 +2718,6 @@ const authBenefits = [
     body: 'Collaborate seamlessly and ship high-quality software.',
   },
 ];
-
-const trustChips = [
-  { label: 'Pay only for results', icon: ShieldCheck },
-  { label: 'Escrow protected', icon: LockKeyhole },
-  { label: 'Live progress', icon: Zap },
-  { label: 'On-chain verified', icon: Link2 },
-];
-
-const trustedLogos = ['polygon', 'Chainlink', 'BNB CHAIN', 'aws', 'stripe'];
 
 const ledgerTrustItems = [
   {
@@ -2442,6 +2761,7 @@ const ledgerProjectIndex = computed(() => {
 });
 
 const tokenSymbol = computed(() => runtimeConfig.value?.token_symbol || 'MRG');
+const githubOAuthReady = computed(() => Boolean(runtimeConfig.value?.github_oauth_ready && runtimeConfig.value?.github_oauth_client_id));
 const projectPaymentAmountCents = computed(() => Math.round(Math.max(100, Number(projectFundingAmount.value) || 100) * 100));
 const projectPaymentButtonLabel = computed(() => {
   if (projectPaymentBusy.value) {
@@ -2449,7 +2769,7 @@ const projectPaymentButtonLabel = computed(() => {
   }
   return user.value ? 'Add funds & get tokens' : 'Log in to pay';
 });
-const successProjectTitle = computed(() => fundedProject.value?.title || projectSetupForm.title);
+const successProjectTitle = computed(() => fundedProject.value?.title || projectTitleLabel.value);
 const successPaymentReference = computed(() => fundedProject.value?.payment_reference || '');
 
 const ledgerEvents = computed(() => ledgerRawEntries.value.slice().reverse().map(mapLedgerEntry));
@@ -2463,6 +2783,15 @@ const ledgerVerifiedFundingCents = computed(() =>
     .filter((entry) => entry.type === 'payment_verified')
     .reduce((total, entry) => total + (Number(entry.amount_cents) || 0), 0),
 );
+const publicVerifiedFundingCents = computed(() => {
+  const ledgerFunding = ledgerVerifiedFundingCents.value;
+  if (ledgerFunding > 0) return ledgerFunding;
+  return Number(marketplaceStats.value.total_budget_cents) || 0;
+});
+const publicMintedTokenTotal = computed(() => {
+  if (ledgerMintedTokenTotal.value > 0) return ledgerMintedTokenTotal.value;
+  return tokenAmountFromCents(publicVerifiedFundingCents.value);
+});
 const ledgerProjectCount = computed(() => {
   const ids = new Set();
   for (const entry of ledgerRawEntries.value) {
@@ -2471,10 +2800,17 @@ const ledgerProjectCount = computed(() => {
   }
   return ids.size;
 });
+const publicProjectCount = computed(() =>
+  ledgerProjectCount.value
+  || Number(marketplaceStats.value.project_count)
+  || ledgerProjects.value.length
+  || marketplaceData.value.projects.length
+  || 0,
+);
 const ledgerLiveStats = computed(() => [
   { value: String(ledgerRawEntries.value.length), label: 'Ledger entries' },
-  { value: `${formatCompactNumber(ledgerMintedTokenTotal.value)} ${tokenSymbol.value}`, label: 'Tokens minted' },
-  { value: formatMoneyFromCents(ledgerVerifiedFundingCents.value), label: 'Verified funding' },
+  { value: formatPublicTokenAmount(publicMintedTokenTotal.value), label: 'Tokens minted' },
+  { value: formatLedgerMRGFromCents(publicVerifiedFundingCents.value), label: 'Verified funding' },
   { value: String(ledgerRawEntries.value.filter((entry) => entry.type === 'task_payment').length), label: 'Payments released' },
 ]);
 const ledgerTrendingProjects = computed(() => {
@@ -2505,18 +2841,18 @@ const ledgerTrendingProjects = computed(() => {
   }
   return Array.from(grouped.values()).slice(0, 4).map((project) => ({
     ...project,
-    escrow: `${formatMoneyFromCents(project.escrowCents)} Escrow`,
+    escrow: `${formatLedgerMRGFromCents(project.escrowCents)} Escrow`,
   }));
 });
 const ledgerChainRows = computed(() => [
   { label: 'Token', value: tokenSymbol.value },
-  { label: 'Payment mode', value: runtimeConfig.value?.payment_mode || 'not loaded' },
-  { label: 'Repo provider', value: runtimeConfig.value?.repo_provider || 'not loaded' },
+  { label: 'Payment mode', value: paymentModeLabel(runtimeConfig.value?.payment_mode) },
+  { label: 'Repo provider', value: repoProviderLabel(runtimeConfig.value?.repo_provider) },
 ]);
 const ledgerFooterStats = computed(() => [
-  { value: formatMoneyFromCents(ledgerVerifiedFundingCents.value), label: 'Verified funding' },
-  { value: String(ledgerProjectCount.value), label: 'Funded projects' },
-  { value: `${formatCompactNumber(ledgerMintedTokenTotal.value)} ${tokenSymbol.value}`, label: 'Tokens minted' },
+  { value: formatLedgerMRGFromCents(publicVerifiedFundingCents.value), label: 'Verified funding' },
+  { value: String(publicProjectCount.value), label: 'Funded projects' },
+  { value: formatPublicTokenAmount(publicMintedTokenTotal.value), label: 'Tokens minted' },
   { value: String(ledgerRawEntries.value.length), label: 'Ledger entries' },
 ]);
 
@@ -2540,7 +2876,7 @@ const emptyMarketplaceProject = {
   body: 'Post and fund a project to publish a real marketplace listing.',
   tags: ['Escrow', 'Tasks', 'Ledger'],
   extra: 0,
-  budget: '$0',
+  budget: '0 MRG',
   timeline: 'Waiting for first project',
   client: 'MergeOS',
   clientInitials: 'M',
@@ -2556,7 +2892,7 @@ const marketplaceTrustItems = computed(() => [
   {
     icon: ShieldCheck,
     tone: 'green',
-    title: formatMoneyFromCents(marketplaceStats.value.total_budget_cents),
+    title: formatPublicMRGFromCents(marketplaceStats.value.total_budget_cents),
     body: 'Verified escrow',
   },
   {
@@ -2576,8 +2912,8 @@ const marketplaceTrustItems = computed(() => [
 const homeLiveStats = computed(() => [
   { value: String(Number(marketplaceStats.value.project_count) || marketplaceData.value.projects.length || 0), label: 'Funded projects' },
   { value: String(Number(marketplaceStats.value.open_task_count) || 0), label: 'Open tasks' },
-  { value: formatMoneyFromCents(marketplaceStats.value.total_budget_cents), label: 'Verified escrow' },
-  { value: `${formatCompactNumber(ledgerMintedTokenTotal.value)} ${tokenSymbol.value}`, label: 'Tokens minted' },
+  { value: formatPublicMRGFromCents(marketplaceStats.value.total_budget_cents), label: 'Verified escrow' },
+  { value: formatPublicTokenAmount(publicMintedTokenTotal.value), label: 'Tokens minted' },
 ]);
 
 const homeWorkflowCards = [
@@ -2676,7 +3012,7 @@ const publicInfoPages = {
     features: [
       { title: 'No forced auth upfront', body: 'Visitors can view home, marketplace, talent signals, and product pages before login.', icon: Globe2, tone: 'green' },
       { title: 'Auth before payment', body: 'Checkout gates login and attaches payment to the correct user and project.', icon: LockKeyhole, tone: 'blue' },
-      { title: 'Real ledger logs', body: 'Ledger Logs shows backend payment_verified and token_mint records, not dummy rows.', icon: Link2, tone: 'purple' },
+      { title: 'Real ledger logs', body: 'Ledger Logs shows backend payment_verified and token_mint records from the API.', icon: Link2, tone: 'purple' },
     ],
   },
 };
@@ -2711,7 +3047,7 @@ const marketplaceSummaryLabel = computed(() => {
   const stats = marketplaceStats.value;
   const projects = Number(stats.project_count) || marketplaceData.value.projects?.length || 0;
   const tasks = Number(stats.open_task_count) || 0;
-  return `${projects} live projects · ${tasks} open tasks · ${formatMoneyFromCents(stats.total_budget_cents)} verified`;
+  return `${projects} live projects · ${tasks} open tasks · ${formatPublicMRGFromCents(stats.total_budget_cents)} verified`;
 });
 const marketplaceHeroProject = computed(() => marketplaceProjectsView.value[0] || emptyMarketplaceProject);
 const marketplaceContributorsView = computed(() =>
@@ -2721,7 +3057,7 @@ const marketplaceContributorsView = computed(() =>
     initials: initialsFor(contributor.name || contributor.worker_id || 'FW'),
     name: contributor.name || contributor.worker_id || 'Contributor',
     role: contributor.agent_type ? toTitleLabel(contributor.agent_type) : toTitleLabel(contributor.kind || 'human contributor'),
-    earned: formatMoneyFromCents(contributor.earned_cents),
+    earned: formatPublicMRGFromCents(contributor.earned_cents),
     tone: marketplaceAvatarTones[index % marketplaceAvatarTones.length],
   })),
 );
@@ -2730,7 +3066,7 @@ const marketplaceAgentsView = computed(() =>
     type: agent.type || `agent-${index}`,
     icon: marketplaceAgentIcon(agent.type),
     title: agent.title || toTitleLabel(agent.type || 'AI Agent'),
-    body: `${Number(agent.open_task_count) || 0} open tasks · ${formatMoneyFromCents(agent.budget_cents)} pool`,
+    body: `${Number(agent.open_task_count) || 0} open tasks · ${formatPublicMRGFromCents(agent.budget_cents)} pool`,
     tone: ['green', 'blue', 'yellow', 'red'][index % 4],
   })),
 );
@@ -2877,125 +3213,6 @@ const marketplaceBenefits = [
   },
 ];
 
-const workflowHeroSteps = [
-  {
-    number: '1',
-    title: 'Submit',
-    body: 'Share your idea, repo, or issue. AI analyzes and breaks it down.',
-    icon: UploadCloud,
-    tone: 'green',
-  },
-  {
-    number: '2',
-    title: 'Match',
-    body: 'We match you with the best AI agents and human developers.',
-    icon: UsersRound,
-    tone: 'blue',
-  },
-  {
-    number: '3',
-    title: 'Build',
-    body: 'Work begins with live updates, PRs, and real-time progress.',
-    icon: Code2,
-    tone: 'purple',
-  },
-  {
-    number: '4',
-    title: 'Review & Test',
-    body: 'You review, test, and request changes until it is perfect.',
-    icon: ShieldCheck,
-    tone: 'amber',
-  },
-  {
-    number: '5',
-    title: 'Ship & Get Paid',
-    body: 'We ship your project. Escrow releases payment securely.',
-    icon: CheckCircle2,
-    tone: 'green',
-  },
-];
-
-const workflowCards = [
-  {
-    number: '01',
-    visual: 'submit',
-    title: 'Submit Your Request',
-    body: 'Describe your idea, upload a repo, or create an issue. Our AI scans and understands requirements.',
-    footer: 'AI requirement analysis',
-  },
-  {
-    number: '02',
-    visual: 'match',
-    avatars: ['AR', 'MC', 'SK'],
-    title: 'Match & Plan',
-    body: 'We match you with the best AI agents and human developers. A clear plan and estimate are shared for approval.',
-    footer: 'Transparent estimate',
-  },
-  {
-    number: '03',
-    visual: 'build',
-    lines: ['feat: add payment gateway', 'fix: validate card inputs', 'tests pass in 4m'],
-    title: 'Build & Collaborate',
-    body: 'Work starts with live PRs, tasks, and commits. You get real-time updates and can provide feedback at any time.',
-    footer: 'Live updates & PRs',
-  },
-  {
-    number: '04',
-    visual: 'review',
-    checks: ['AI tests passed', 'Unit Tests', 'Integration Tests', 'Security Scan'],
-    title: 'Review & Test',
-    body: 'You review the work, test it in a staging environment, and request changes if needed. We iterate until it is perfect.',
-    footer: 'Quality guarantee',
-  },
-  {
-    number: '05',
-    visual: 'ship',
-    amount: '$2,450',
-    title: 'Ship & Get Paid',
-    body: 'Once approved, we ship to production. Escrow releases payment securely. You own full ownership.',
-    footer: 'Secure escrow payment',
-  },
-];
-
-const benefitCards = [
-  {
-    icon: Bot,
-    tone: 'blue',
-    title: 'AI-Powered',
-    body: 'AI agents handle the heavy lifting from planning to code generation.',
-  },
-  {
-    icon: UsersRound,
-    tone: 'green',
-    title: 'Human Expertise',
-    body: 'Expert developers review, build, and ensure high quality.',
-  },
-  {
-    icon: FileCheck2,
-    tone: 'purple',
-    title: 'Transparent',
-    body: 'Real-time updates, PRs, and clear communication at every step.',
-  },
-  {
-    icon: LockKeyhole,
-    tone: 'amber',
-    title: 'Secure Payments',
-    body: 'Escrow protects your payment until you are fully satisfied.',
-  },
-  {
-    icon: Rocket,
-    tone: 'violet',
-    title: 'Scalable',
-    body: 'From MVPs to complex platforms, we scale with your team.',
-  },
-  {
-    icon: Box,
-    tone: 'indigo',
-    title: 'Own Everything',
-    body: 'You own the code, IP, and everything we build for you.',
-  },
-];
-
 const sidebarSections = [
   {
     label: 'Main',
@@ -3037,71 +3254,6 @@ const topNavItems = [
 
 const dashboardTabs = ['Overview', 'Tasks', 'Activity', 'Ledger', 'Files', 'Settings'];
 
-const features = [
-  {
-    icon: Bot,
-    accent: '#4f46e5',
-    soft: '#eef2ff',
-    title: 'AI Issue Scanner',
-    body: 'AI analyzes your repo and converts issues into actionable, scored tasks.',
-    link: 'See how it works',
-    toast: 'Opening AI scanner...',
-  },
-  {
-    icon: Zap,
-    accent: '#ef4444',
-    soft: '#fef2f2',
-    title: 'Live Development',
-    body: 'Watch PRs, commits, tests, and deployments happen in real-time.',
-    link: 'See live demo',
-    toast: 'Opening live demo...',
-  },
-  {
-    icon: UsersRound,
-    accent: '#2563eb',
-    soft: '#eff6ff',
-    title: 'Human + AI Talent',
-    body: 'Hire verified developers or AI agents, or let our system match for you.',
-    link: 'Become talent',
-    toast: 'Opening talent network...',
-  },
-  {
-    icon: CircleDollarSign,
-    accent: '#eab308',
-    soft: '#fefce8',
-    title: 'Secure Payments',
-    body: 'Escrow protected payments release only when work is approved.',
-    link: 'Learn about security',
-    toast: 'Opening payment security...',
-  },
-  {
-    icon: Link2,
-    accent: '#059669',
-    soft: '#ecfdf5',
-    title: 'On-chain Proof',
-    body: 'All work is recorded on-chain for transparency and verifiability.',
-    link: 'Explore ledger',
-    toast: 'Opening proof ledger...',
-  },
-  {
-    icon: Trophy,
-    accent: '#7c3aed',
-    soft: '#f5f3ff',
-    title: 'Reputation & Rewards',
-    body: 'Earn MRG tokens, build reputation, and unlock more opportunities.',
-    link: 'Learn about MRG',
-    toast: 'Opening MRG rewards...',
-  },
-];
-
-const stats = [
-  { value: '2,435+', label: 'Active Projects' },
-  { value: '18,640+', label: 'Tasks Completed' },
-  { value: '7,320+', label: 'Developers & Agents' },
-  { value: '$12.6M+', label: 'Paid to Builders' },
-  { value: '99.2%', label: 'Success Rate' },
-];
-
 function initialsFor(value = '') {
   const parts = value
     .replace(/@.*/, '')
@@ -3109,8 +3261,88 @@ function initialsFor(value = '') {
     .filter(Boolean);
   const letters = parts.length > 1
     ? `${parts[0][0]}${parts[1][0]}`
-    : (parts[0] || 'JD').slice(0, 2);
+    : (parts[0] || 'MR').slice(0, 2);
   return letters.toUpperCase();
+}
+
+function shortWallet(value = '') {
+  const address = String(value || '').trim();
+  if (address.length <= 14) return address || 'MRG wallet';
+  return `${address.slice(0, 6)}...${address.slice(-6)}`;
+}
+
+function randomOAuthState() {
+  if (hasWindow && window.crypto?.getRandomValues) {
+    const bytes = new Uint8Array(16);
+    window.crypto.getRandomValues(bytes);
+    return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+  }
+  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function openWalletOnScan(address = '') {
+  const wallet = String(address || '').trim();
+  if (!wallet || !hasWindow) return;
+  window.open(`https://scan.mergeos.shop/address/${encodeURIComponent(wallet)}`, '_blank', 'noopener,noreferrer');
+}
+
+async function startGitHubLogin() {
+  if (!hasWindow) return;
+  errorMessage.value = '';
+  const cfg = await loadRuntimeConfig();
+  if (!cfg.github_oauth_ready || !cfg.github_oauth_client_id) {
+    errorMessage.value = 'GitHub OAuth is not configured yet.';
+    showToast(errorMessage.value);
+    return;
+  }
+
+  const state = randomOAuthState();
+  const redirectURI = `${window.location.origin}${window.location.pathname}`;
+  window.sessionStorage.setItem('mergeos_github_oauth_state', state);
+  window.sessionStorage.setItem('mergeos_github_oauth_redirect', redirectURI);
+  const params = new URLSearchParams({
+    client_id: cfg.github_oauth_client_id,
+    redirect_uri: redirectURI,
+    scope: 'read:user user:email',
+    state,
+  });
+  window.location.href = `https://github.com/login/oauth/authorize?${params.toString()}`;
+}
+
+async function handleGitHubCallback() {
+  if (!hasWindow) return false;
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('code');
+  const state = params.get('state');
+  if (!code) return false;
+
+  const expectedState = window.sessionStorage.getItem('mergeos_github_oauth_state') || '';
+  const redirectURI = window.sessionStorage.getItem('mergeos_github_oauth_redirect') || `${window.location.origin}${window.location.pathname}`;
+  window.sessionStorage.removeItem('mergeos_github_oauth_state');
+  window.sessionStorage.removeItem('mergeos_github_oauth_redirect');
+  window.history.replaceState({ publicPage: publicPage.value }, '', window.location.pathname || '/');
+
+  if (!expectedState || state !== expectedState) {
+    errorMessage.value = 'GitHub sign-in state did not match. Please try again.';
+    showToast(errorMessage.value);
+    return true;
+  }
+
+  authBusy.value = true;
+  try {
+    const auth = await publicApi('/api/auth/github', {
+      method: 'POST',
+      body: JSON.stringify({ code, redirect_uri: redirectURI }),
+    });
+    setSession(auth);
+    showToast(auth.user?.wallet_address ? 'GitHub linked to your MRG wallet.' : 'Logged in with GitHub.');
+  } catch (error) {
+    errorMessage.value = error.message;
+    showToast(error.message);
+  } finally {
+    authBusy.value = false;
+  }
+  return true;
 }
 
 function showToast(message) {
@@ -3130,19 +3362,71 @@ function scrollToSection(id) {
   }
 }
 
-function openPublicPage(page) {
-  publicModeVisible.value = true;
-  const nextPage = ['home', 'product', 'solutions', 'marketplace', 'how-it-works', 'ledger'].includes(page) ? page : 'home';
-  publicPage.value = nextPage;
-  if (nextPage === 'ledger') {
+function loadPublicPageData(page) {
+  if (page === 'ledger') {
     void loadLedgerData();
-  } else if (nextPage === 'marketplace' || nextPage === 'home') {
-    void loadMarketplaceData({ silent: true });
+    return;
   }
+  if (page === 'marketplace' || page === 'home') {
+    void loadMarketplaceData({ silent: true });
+    void loadLedgerData({ silent: true });
+  }
+}
+
+function updatePublicBrowserPath(page, replace = false) {
   if (!hasWindow) return;
+  const targetPath = publicPathForPage(page);
+  const currentPath = normalizeRoutePath(window.location.pathname);
+  if (currentPath === targetPath && !window.location.search && !window.location.hash) {
+    return;
+  }
+  const method = replace ? 'replaceState' : 'pushState';
+  window.history[method]({ publicPage: page }, '', targetPath);
+}
+
+function updateProjectWizardBrowserPath(replace = false) {
+  if (!hasWindow) return;
+  const targetPath = projectWizardPathForState(projectWizardStage.value, projectWizardStep.value);
+  const currentPath = normalizeRoutePath(window.location.pathname);
+  if (currentPath === targetPath && !window.location.search && !window.location.hash) {
+    return;
+  }
+  const method = replace ? 'replaceState' : 'pushState';
+  window.history[method](
+    { projectWizard: true, stage: projectWizardStage.value, step: projectWizardStep.value },
+    '',
+    targetPath,
+  );
+}
+
+function openPublicPage(page, options = {}) {
+  publicModeVisible.value = true;
+  projectWizardVisible.value = false;
+  const nextPage = normalizePublicPage(page);
+  publicPage.value = nextPage;
+  loadPublicPageData(nextPage);
+  updatePublicBrowserPath(nextPage, Boolean(options.replace));
+  if (!hasWindow) return;
+  if (options.scroll === false) return;
   window.requestAnimationFrame(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
+}
+
+function syncPublicPageFromBrowserPath() {
+  if (!hasWindow) return;
+  publicModeVisible.value = true;
+  const wizardRoute = projectWizardRouteFromPath(window.location.pathname);
+  if (wizardRoute) {
+    projectWizardVisible.value = true;
+    projectWizardStage.value = wizardRoute.stage;
+    projectWizardStep.value = wizardRoute.step;
+    return;
+  }
+  projectWizardVisible.value = false;
+  const nextPage = publicPageFromPath(window.location.pathname);
+  publicPage.value = nextPage;
+  loadPublicPageData(nextPage);
 }
 
 function handlePublicAction(action = {}) {
@@ -3183,6 +3467,8 @@ function handleDashboardNav(item) {
 function openMarketplaceSection(id) {
   publicModeVisible.value = true;
   publicPage.value = 'marketplace';
+  updatePublicBrowserPath('marketplace');
+  loadPublicPageData('marketplace');
   if (!hasWindow) return;
   window.requestAnimationFrame(() => scrollToSection(id));
 }
@@ -3192,25 +3478,69 @@ function scrollProjectFlowTop() {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-function openProjectWizard() {
+function openProjectWizard(options = {}) {
+  publicModeVisible.value = true;
   projectWizardVisible.value = true;
   projectWizardStage.value = 'setup';
   projectWizardStep.value = 1;
   errorMessage.value = '';
+  updateProjectWizardBrowserPath(Boolean(options.replace));
   scrollProjectFlowTop();
 }
 
-function restartProjectWizard() {
+function restartProjectWizard(options = {}) {
+  publicModeVisible.value = true;
   projectWizardVisible.value = true;
   projectWizardStage.value = 'setup';
   projectWizardStep.value = 1;
+  updateProjectWizardBrowserPath(Boolean(options.replace));
   scrollProjectFlowTop();
 }
 
-function closeProjectWizard() {
+function closeProjectWizard(options = {}) {
   projectWizardVisible.value = false;
   projectWizardStage.value = 'setup';
   projectWizardStep.value = 1;
+  if (options.updatePath !== false) {
+    updatePublicBrowserPath(publicPage.value, Boolean(options.replace));
+  }
+}
+
+async function loadRepoIssues() {
+  const repoURL = projectSetupForm.repoUrl.trim();
+  repoImportError.value = '';
+  if (!repoURL) {
+    repoImportError.value = 'Enter a GitHub repo URL first.';
+    return;
+  }
+
+  repoImportBusy.value = true;
+  try {
+    const result = await publicApi('/api/public/repo/issues', {
+      method: 'POST',
+      body: JSON.stringify({ repo_url: repoURL }),
+    });
+    repoImportResult.value = result;
+    projectSetupForm.repoUrl = result.repo_url || repoURL;
+    if (repoImportedIssues.value.length) {
+      projectSetupForm.projectType = 'Repo Issue Fix';
+      projectSetupForm.title = `Fix all issues in ${result.owner}/${result.name}`;
+      projectSetupForm.shortDescription = `Fix ${repoImportedIssues.value.length} open GitHub issues in ${result.owner}/${result.name}.`;
+      projectSetupForm.overview = repoImportedIssues.value
+        .map((issue) => `#${issue.number} ${issue.title} - score ${issue.score}, ${issue.complexity}`)
+        .join('\n');
+      projectDeliverables.value = repoImportedIssues.value.map((issue) => `Fix #${issue.number}: ${issue.title}`);
+      showToast(`${repoImportedIssues.value.length} issues loaded and scored.`);
+    } else {
+      showToast('No open issues found.');
+    }
+  } catch (error) {
+    repoImportResult.value = null;
+    repoImportError.value = error.message || 'Could not load repo issues.';
+    showToast(repoImportError.value);
+  } finally {
+    repoImportBusy.value = false;
+  }
 }
 
 function openAuthFromProjectWizard(mode = 'login') {
@@ -3220,25 +3550,77 @@ function openAuthFromProjectWizard(mode = 'login') {
 
 function goProjectStep(stepNumber) {
   projectWizardStage.value = 'setup';
-  projectWizardStep.value = Math.min(4, Math.max(1, Number(stepNumber) || 1));
+  projectWizardStep.value = normalizeProjectWizardStep(stepNumber);
+  updateProjectWizardBrowserPath();
   scrollProjectFlowTop();
 }
 
 function nextProjectStep() {
   if (projectWizardStep.value < 4) {
     projectWizardStep.value += 1;
+    updateProjectWizardBrowserPath();
     scrollProjectFlowTop();
     return;
   }
 
+  projectFundingAmount.value = Math.max(100, projectBudgetAmount.value || projectFundingAmount.value);
   projectWizardStage.value = 'funding';
+  updateProjectWizardBrowserPath();
   scrollProjectFlowTop();
   showToast('Project published. Add funds to start receiving proposals.');
+}
+
+function buildPriceEvaluationPayload() {
+  return {
+    title: projectSetupForm.title,
+    description: [projectSetupForm.shortDescription, projectSetupForm.overview].filter(Boolean).join('\n\n'),
+    project_type: projectSetupForm.projectType,
+    requirements: projectSetupForm.requirements,
+    deliverables: visibleDeliverables.value,
+    timeline: projectTimelineLabel.value,
+    tech_stack: projectSetupForm.techStack,
+    complexity: projectSetupForm.allowAgents ? 'moderate' : 'high',
+    constraints: projectSetupForm.skills,
+    reference_budget_cents: Math.round(Math.max(0, Number(projectSetupForm.budgetAmount) || 0) * 100),
+  };
+}
+
+async function runProjectPriceEvaluation() {
+  priceEvaluationError.value = '';
+  if (!user.value) {
+    authReturnToProjectWizard.value = true;
+    projectWizardVisible.value = false;
+    openAuth('login');
+    showToast('Log in to estimate this project.');
+    return;
+  }
+  if (priceEvaluationBusy.value) return;
+  priceEvaluationBusy.value = true;
+  try {
+    priceEvaluation.value = await api('/api/projects/evaluate-price', {
+      method: 'POST',
+      body: JSON.stringify(buildPriceEvaluationPayload()),
+    });
+    applyPriceEvaluation();
+    showToast('Budget estimate generated.');
+  } catch (error) {
+    priceEvaluationError.value = error.message;
+    showToast(error.message);
+  } finally {
+    priceEvaluationBusy.value = false;
+  }
+}
+
+function applyPriceEvaluation() {
+  if (!priceEvaluation.value?.suggested_price_cents) return;
+  projectSetupForm.budgetAmount = Math.max(100, Math.round(priceEvaluation.value.suggested_price_cents / 100));
+  projectSetupForm.budgetType = 'Range';
 }
 
 function projectWizardBack() {
   if (projectWizardStage.value === 'success') {
     projectWizardStage.value = 'funding';
+    updateProjectWizardBrowserPath();
     scrollProjectFlowTop();
     return;
   }
@@ -3246,12 +3628,14 @@ function projectWizardBack() {
   if (projectWizardStage.value === 'funding') {
     projectWizardStage.value = 'setup';
     projectWizardStep.value = 4;
+    updateProjectWizardBrowserPath();
     scrollProjectFlowTop();
     return;
   }
 
   if (projectWizardStep.value > 1) {
     projectWizardStep.value -= 1;
+    updateProjectWizardBrowserPath();
     scrollProjectFlowTop();
     return;
   }
@@ -3291,6 +3675,8 @@ async function completeProjectFunding() {
     fundedProject.value = project;
     projectWizardVisible.value = true;
     projectWizardStage.value = 'success';
+    projectWizardStep.value = 4;
+    updateProjectWizardBrowserPath();
     pendingProjectPaymentAfterAuth.value = false;
     authReturnToProjectWizard.value = false;
     await loadLedgerData({ silent: true });
@@ -3328,6 +3714,47 @@ function loginWithSocial(provider) {
   window.location.href = `/api/auth/${provider}/login`;
 }
 
+async function triggerAiEvaluation() {
+  aiEvaluationLoading.value = true;
+  aiEvaluationError.value = '';
+  aiEvaluationResult.value = null;
+  try {
+    const payload = {
+      description: projectSetupForm.overview || projectSetupForm.shortDescription || '',
+      requirements: projectSetupForm.requirements
+        ? projectSetupForm.requirements.split('\n').map(r => r.trim()).filter(Boolean)
+        : [],
+      deliverables: visibleDeliverables.value,
+      timeline: projectTimelineLabel.value,
+      tech_stack: projectSetupForm.techStack || '',
+      complexity: projectSetupForm.complexity || 'Medium',
+      constraints: projectSetupForm.constraints || '',
+      reference_budget: Math.max(0, Number(projectSetupForm.budgetAmount) || 0)
+    };
+    
+    const response = await api('/api/projects/evaluate', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+    
+    aiEvaluationResult.value = response;
+  } catch (err) {
+    console.error('AI evaluation failed:', err);
+    aiEvaluationError.value = err.message || 'AI evaluation failed. Please try again.';
+  } finally {
+    aiEvaluationLoading.value = false;
+  }
+}
+
+function applyAiSuggestedPrice() {
+  if (aiEvaluationResult.value) {
+    const avg = Math.round((aiEvaluationResult.value.suggested_low + aiEvaluationResult.value.suggested_high) / 2);
+    projectSetupForm.budgetAmount = avg;
+    showToast(`Applied AI suggested budget: ${formatMoney(avg)}`);
+  }
+}
+}
+
 function formatMoney(value) {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -3344,6 +3771,18 @@ function formatMoneyFromCents(cents = 0) {
   }).format((Number(cents) || 0) / 100);
 }
 
+function formatLedgerMRGFromCents(cents = 0) {
+  return `${formatCompactNumber(tokenAmountFromCents(cents))} ${tokenSymbol.value}`;
+}
+
+function formatPublicMRGFromCents(cents = 0) {
+  return `${formatCompactNumber(tokenAmountFromCents(cents))} ${tokenSymbol.value}`;
+}
+
+function formatPublicTokenAmount(amount = 0) {
+  return `${formatCompactNumber(amount)} ${tokenSymbol.value}`;
+}
+
 function formatCompactNumber(value = 0) {
   return new Intl.NumberFormat('en-US', {
     maximumFractionDigits: value >= 100 ? 0 : 1,
@@ -3351,7 +3790,7 @@ function formatCompactNumber(value = 0) {
 }
 
 function tokenAmountFromCents(cents = 0) {
-  return Math.round(((Number(cents) || 0) / 100) * 0.175);
+  return Math.round(((Number(cents) || 0) / 100) * TOKEN_RATE_PER_USD);
 }
 
 function toTitleLabel(value = '') {
@@ -3366,6 +3805,24 @@ function toTitleLabel(value = '') {
       return `${lower.charAt(0).toUpperCase()}${lower.slice(1)}`;
     })
     .join(' ');
+}
+
+function paymentModeLabel(value = '') {
+  const normalized = String(value || '').trim().toLowerCase();
+  return {
+    'live-adapters': 'Live payment adapters',
+    'local-dev-verifier': 'MergeOS verifier',
+    'not-configured': 'Not configured',
+    '': 'Not loaded',
+  }[normalized] || toTitleLabel(value);
+}
+
+function repoProviderLabel(value = '') {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (!normalized) return 'Not loaded';
+  if (normalized.startsWith('github-private:')) return 'GitHub private repos';
+  if (normalized === 'local-git') return 'MergeOS repositories';
+  return toTitleLabel(value);
 }
 
 function formatMarketplaceDate(value) {
@@ -3423,7 +3880,7 @@ function mapMarketplaceProject(project = {}, index = 0) {
     body: trimMarketplaceText(project.brief),
     tags: tags.slice(0, 3),
     extra: Math.max(0, tags.length - 3),
-    budget: formatMoneyFromCents(project.budget_cents),
+    budget: formatPublicMRGFromCents(project.budget_cents),
     timeline: project.timeline || formatMarketplaceDate(project.created_at),
     client,
     clientInitials: initialsFor(client),
@@ -3451,6 +3908,13 @@ function formatDashboardDate(value) {
   const date = value ? new Date(value) : null;
   if (!date || Number.isNaN(date.getTime())) return '-';
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function formatDateInputLabel(value = '') {
+  if (!value) return '';
+  const date = new Date(`${value}T00:00:00Z`);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
 }
 
 function shortRepoLabel(project = {}) {
@@ -3568,7 +4032,6 @@ function mapLedgerEntry(entry) {
   const tokenAmount = tokenAmountFromCents(entry.amount_cents);
   const projectTitle = project?.title || (projectID ? `Project ${projectID.slice(-6)}` : 'MergeOS ledger');
   const company = project?.company_name || project?.client_name || 'MergeOS';
-  const isTokenMint = entry.type === 'token_mint';
   const isFeeOrPayout = entry.type === 'platform_fee' || entry.type === 'task_payment';
   return {
     key: `${entry.sequence}-${entry.entry_hash || entry.reference}`,
@@ -3581,36 +4044,11 @@ function mapLedgerEntry(entry) {
     projectTone: projectToneFor(projectID || projectTitle),
     project: projectTitle,
     company,
-    description: ledgerDescription(entry, projectTitle, tokenAmount),
-    amount: isTokenMint
-      ? `+ ${formatCompactNumber(tokenAmount)} ${tokenSymbol.value}`
-      : `${isFeeOrPayout ? '-' : '+'} ${formatMoneyFromCents(entry.amount_cents)}`,
-    secondaryAmount: isTokenMint ? `${formatMoneyFromCents(entry.amount_cents)} verified` : entry.type === 'payment_verified' ? `${formatCompactNumber(tokenAmount)} ${tokenSymbol.value} minted` : '',
+    amount: `${isFeeOrPayout ? '-' : '+'} ${formatCompactNumber(tokenAmount)} ${tokenSymbol.value}`,
+    secondaryAmount: entry.type === 'payment_verified' ? 'funding verified' : entry.type === 'token_mint' ? 'mint log' : '',
     amountTone: meta.amountTone,
     ref: shortLedgerReference(entry.reference || entry.entry_hash || `#${entry.sequence}`),
   };
-}
-
-function ledgerDescription(entry, projectTitle, tokenAmount) {
-  if (entry.type === 'token_mint') {
-    return `${formatCompactNumber(tokenAmount)} ${tokenSymbol.value} minted for payer on ${projectTitle}`;
-  }
-  if (entry.type === 'payment_verified') {
-    return `Payment verified and attached to ${projectTitle}`;
-  }
-  if (entry.type === 'platform_fee') {
-    return `Platform fee recorded for ${projectTitle}`;
-  }
-  if (entry.type === 'project_reserve') {
-    return `Escrow reserve opened for ${projectTitle}`;
-  }
-  if (entry.type === 'task_reserve') {
-    return `Task budget reserved from project escrow`;
-  }
-  if (entry.type === 'task_payment') {
-    return `Task payout released from escrow`;
-  }
-  return `Ledger entry ${entry.type}`;
 }
 
 function shortLedgerReference(value = '') {
@@ -3646,13 +4084,16 @@ function buildCreateProjectPayload() {
     payment_method: paymentMethodForProject(),
     payment_reference: paymentReferenceForProject(),
     attachment_ids: [],
+    source_repo_url: projectSetupForm.repoUrl || '',
   };
 }
 
 function buildProjectBrief() {
   return [
+    projectSetupForm.repoUrl && `Source repository: ${projectSetupForm.repoUrl}`,
     projectSetupForm.shortDescription,
     projectSetupForm.overview && `Overview:\n${projectSetupForm.overview}`,
+    repoImportedIssues.value.length && `Imported issues:\n${repoImportedIssues.value.map((issue) => `- #${issue.number} ${issue.title} (score ${issue.score}, ${issue.complexity})`).join('\n')}`,
     visibleDeliverables.value.length && `Deliverables:\n${visibleDeliverables.value.map((item) => `- ${item}`).join('\n')}`,
     projectSetupForm.requirements && `Requirements:\n${projectSetupForm.requirements}`,
     projectSetupForm.techStack && `Tech stack: ${projectSetupForm.techStack}`,
@@ -3804,6 +4245,21 @@ async function loadDashboardData(options = {}) {
   }
 }
 
+function startDashboardRealtime() {
+  if (!hasWindow || dashboardRefreshTimer) return;
+  dashboardRefreshTimer = window.setInterval(() => {
+    if (!token.value || !user.value) return;
+    if (document.visibilityState === 'hidden') return;
+    void loadDashboardData({ silent: true });
+  }, DASHBOARD_REFRESH_MS);
+}
+
+function stopDashboardRealtime() {
+  if (!hasWindow || !dashboardRefreshTimer) return;
+  window.clearInterval(dashboardRefreshTimer);
+  dashboardRefreshTimer = 0;
+}
+
 function openAuth(mode = 'login') {
   setAuthMode(mode);
   authVisible.value = true;
@@ -3838,9 +4294,11 @@ function setSession(auth) {
     void loadLedgerData({ silent: true });
   }
   void loadDashboardData({ silent: true });
+  startDashboardRealtime();
 }
 
 function clearSession() {
+  stopDashboardRealtime();
   token.value = '';
   user.value = null;
   authVisible.value = false;
@@ -3892,6 +4350,7 @@ async function restoreSession() {
   try {
     user.value = await api('/api/auth/me');
     await loadDashboardData({ silent: true });
+    startDashboardRealtime();
     if (publicPage.value === 'ledger') {
       void loadLedgerData({ silent: true });
     }
@@ -3922,11 +4381,30 @@ onMounted(async () => {
     }
   }
 
+  const handledGitHubCallback = await handleGitHubCallback();
+  if (hasWindow) {
+    window.addEventListener('popstate', syncPublicPageFromBrowserPath);
+    if (!handledGitHubCallback) {
+      if (projectWizardVisible.value) {
+        updateProjectWizardBrowserPath(true);
+      } else {
+        updatePublicBrowserPath(publicPage.value, true);
+      }
+    }
+  }
   const runtimePromise = loadRuntimeConfig().catch((error) => showToast(error.message));
   await Promise.all([
     runtimePromise,
     restoreSession(),
     loadMarketplaceData({ silent: true }),
+    loadLedgerData({ silent: true }),
   ]);
+});
+
+onUnmounted(() => {
+  if (hasWindow) {
+    window.removeEventListener('popstate', syncPublicPageFromBrowserPath);
+  }
+  stopDashboardRealtime();
 });
 </script>
