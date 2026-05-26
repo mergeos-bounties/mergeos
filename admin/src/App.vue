@@ -417,7 +417,7 @@
 </template>
 
 <script setup>
-import { computed, defineComponent, h, onMounted, reactive, ref } from 'vue';
+import { computed, defineComponent, h, onMounted, reactive, ref, watch } from 'vue';
 import {
   Activity,
   AlertTriangle,
@@ -429,6 +429,7 @@ import {
   Eye,
   FolderKanban,
   GitPullRequest,
+  KeyRound,
   LayoutDashboard,
   ListChecks,
   LogIn,
@@ -440,10 +441,12 @@ import {
   RefreshCw,
   Search,
   Settings2,
+  Save,
   ShieldCheck,
   SlidersHorizontal,
   Smartphone,
   Tablet,
+  UserCog,
   UsersRound,
 } from '@lucide/vue';
 
@@ -460,9 +463,16 @@ const loading = ref(false);
 const authBusy = ref(false);
 const authError = ref('');
 const errorMessage = ref('');
+const userEditorBusy = ref(false);
+const userEditorError = ref('');
+const userEditorMessage = ref('');
+const sslReviewBusy = ref(false);
+const sslReviewError = ref('');
+const sslReviewMessage = ref('');
 const density = ref(2);
 const showLedgerHashes = ref(false);
 const compactRows = ref(true);
+const selectedUserId = ref('');
 
 const summary = ref({});
 const users = ref([]);
@@ -475,6 +485,16 @@ const sslRows = ref([]);
 const loginForm = reactive({
   email: 'admin@gmail.com',
   password: 'Admin123',
+});
+
+const userForm = reactive({
+  id: '',
+  name: '',
+  company_name: '',
+  email: '',
+  role: 'client',
+  password: '',
+  password_confirm: '',
 });
 
 const navItems = [
@@ -505,6 +525,9 @@ const activeNav = computed(() => navItems.find((item) => item.id === activeView.
 const selectedWidgetLabel = computed(() => builderWidgets.find((widget) => widget.id === selectedWidget.value)?.label || 'Widget');
 const isAuthenticated = computed(() => Boolean(token.value && adminUser.value));
 const query = computed(() => search.value.toLowerCase());
+const selectedUser = computed(() => users.value.find((row) => row.id === selectedUserId.value) || null);
+const sslOkCount = computed(() => sslRows.value.filter((row) => row.status === 'ok').length);
+const sslAttentionCount = computed(() => sslRows.value.length - sslOkCount.value);
 
 const summaryMetrics = computed(() => [
   { label: 'Users', value: number(summary.value.user_count), icon: UsersRound, tone: 'blue' },
@@ -642,10 +665,106 @@ async function loadAdminData() {
     notifications.value = Array.isArray(notificationData) ? notificationData : [];
     ledgerEntries.value = Array.isArray(ledgerData) ? ledgerData : [];
     sslRows.value = Array.isArray(sslData) ? sslData : [];
+    ensureSelectedUser();
   } catch (error) {
     errorMessage.value = error.message;
   } finally {
     loading.value = false;
+  }
+}
+
+function ensureSelectedUser() {
+  if (!users.value.length) {
+    hydrateUserForm(null);
+    return;
+  }
+  const current = users.value.find((row) => row.id === selectedUserId.value);
+  const fallback = users.value.find((row) => row.id === adminUser.value?.id) || users.value[0];
+  openUserEditor(current || fallback, { silent: true });
+}
+
+function openUserEditor(row, options = {}) {
+  if (!row) return;
+  selectedUserId.value = row.id;
+  hydrateUserForm(row);
+  if (!options.silent) {
+    userEditorError.value = '';
+    userEditorMessage.value = '';
+  }
+}
+
+function hydrateUserForm(row) {
+  userForm.id = row?.id || '';
+  userForm.name = row?.name || '';
+  userForm.company_name = row?.company_name || '';
+  userForm.email = row?.email || '';
+  userForm.role = row?.role || 'client';
+  userForm.password = '';
+  userForm.password_confirm = '';
+}
+
+async function saveSelectedUser() {
+  userEditorBusy.value = true;
+  userEditorError.value = '';
+  userEditorMessage.value = '';
+  try {
+    if (!userForm.id) {
+      throw new Error('Select a user first.');
+    }
+    if (userForm.password || userForm.password_confirm) {
+      if (userForm.password !== userForm.password_confirm) {
+        throw new Error('Password confirmation does not match.');
+      }
+    }
+
+    const payload = {
+      name: userForm.name,
+      company_name: userForm.company_name,
+      email: userForm.email,
+      role: userForm.role,
+    };
+    if (userForm.password) {
+      payload.password = userForm.password;
+    }
+
+    const updated = await api(`/api/admin/users/${encodeURIComponent(userForm.id)}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
+    users.value = users.value.map((row) => (row.id === updated.id ? updated : row));
+    if (adminUser.value?.id === updated.id) {
+      adminUser.value = {
+        ...adminUser.value,
+        name: updated.name,
+        company_name: updated.company_name,
+        email: updated.email,
+        role: updated.role,
+      };
+    }
+    openUserEditor(updated, { silent: true });
+    userEditorMessage.value = 'User updated.';
+  } catch (error) {
+    userEditorError.value = error.message;
+  } finally {
+    userEditorBusy.value = false;
+  }
+}
+
+async function reviewSSLNow() {
+  sslReviewBusy.value = true;
+  sslReviewError.value = '';
+  sslReviewMessage.value = '';
+  try {
+    const rows = await api('/api/admin/ssl/review', {
+      method: 'POST',
+      body: JSON.stringify({}),
+    });
+    sslRows.value = Array.isArray(rows) ? rows : [];
+    sslReviewMessage.value = `Reviewed ${sslRows.value.length} domains.`;
+  } catch (error) {
+    sslReviewError.value = error.message;
+  } finally {
+    sslReviewBusy.value = false;
   }
 }
 
@@ -707,6 +826,10 @@ function formatDate(value) {
 function haystack(row = {}) {
   return Object.values(row).join(' ').toLowerCase();
 }
+
+watch(activeView, (view) => {
+  if (view === 'users') ensureSelectedUser();
+});
 
 onMounted(() => {
   void restoreSession();
