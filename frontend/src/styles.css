@@ -6172,6 +6172,15 @@ svg {
     padding: 30px 20px 24px;
   }
 
+  .auth-form {
+    min-width: 0;
+  }
+
+  .auth-submit-button,
+  .social-auth-row button {
+    width: 100%;
+  }
+
   .auth-close-button {
     top: 16px;
     right: 16px;
@@ -6202,6 +6211,53 @@ svg {
 }
 
 @media (max-width: 520px) {
+  .modal-backdrop {
+    align-items: start;
+    padding: 10px;
+  }
+
+  .auth-modal {
+    width: 100%;
+    max-height: calc(100dvh - 20px);
+    border-radius: 12px;
+  }
+
+  .auth-modal-main {
+    gap: 18px;
+    padding: 22px 14px 18px;
+  }
+
+  .auth-close-button {
+    top: 10px;
+    right: 10px;
+    width: 34px;
+    height: 34px;
+  }
+
+  .auth-copy {
+    margin-top: 20px;
+    padding-right: 32px;
+  }
+
+  .auth-divider {
+    margin: 14px 0 12px;
+  }
+
+  .auth-option-row {
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .input-shell {
+    grid-template-columns: 20px minmax(0, 1fr) auto;
+    gap: 8px;
+    padding: 0 12px;
+  }
+
+  .input-shell input {
+    font-size: 16px;
+  }
+
   .primary-button.compact {
     padding: 0 12px;
   }
