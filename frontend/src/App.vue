@@ -191,13 +191,13 @@
               <div v-if="repoImportedIssues.length" class="repo-issue-panel">
                 <div class="repo-issue-summary">
                   <strong>{{ repoImportResult.owner }}/{{ repoImportResult.name }}</strong>
-                  <span>{{ repoImportedIssues.length }} issues · {{ formatMoneyFromCents(repoImportedEstimateCents) }} scored</span>
+                  <span>{{ repoImportedIssues.length }} issues · {{ formatMRGFromCents(repoImportedEstimateCents) }} scored</span>
                 </div>
                 <article v-for="issue in repoImportedIssues.slice(0, 4)" :key="issue.number" class="repo-issue-row">
                   <span>#{{ issue.number }}</span>
                   <div>
                     <strong>{{ issue.title }}</strong>
-                    <small>Score {{ issue.score }} · {{ issue.complexity }} · {{ formatMoneyFromCents(issue.estimated_cents) }}</small>
+                    <small>Score {{ issue.score }} · {{ issue.complexity }} · {{ formatMRGFromCents(issue.estimated_cents) }}</small>
                   </div>
                 </article>
               </div>
@@ -272,14 +272,10 @@
           <div v-else-if="projectWizardStep === 3" class="wizard-form-grid">
             <section class="wizard-section full budget-row">
               <label class="wizard-field compact-field">
-                <span>Budget</span>
+                <span>Budget (MRG)</span>
                 <div class="currency-input">
-                  <select v-model="projectSetupForm.currency" aria-label="Currency">
-                    <option>USD</option>
-                    <option>VND</option>
-                    <option>JPY</option>
-                  </select>
-                  <input v-model.number="projectSetupForm.budgetAmount" placeholder="0" type="number" min="500" step="100" />
+                  <span class="currency-chip">{{ tokenSymbol }}</span>
+                  <input v-model.number="projectSetupForm.budgetAmount" placeholder="0" type="number" min="10000" step="1000" />
                 </div>
               </label>
 
@@ -364,7 +360,7 @@
                   <div class="suggestion-hero">
                     <div class="hero-range">
                       <small>Suggested budget range</small>
-                      <strong>{{ formatMoney(aiEvaluationResult.suggested_low) }} - {{ formatMoney(aiEvaluationResult.suggested_high) }}</strong>
+                      <strong>{{ formatMRGFromUSD(aiEvaluationResult.suggested_low) }} - {{ formatMRGFromUSD(aiEvaluationResult.suggested_high) }}</strong>
                       <span class="confidence-badge">Confidence: {{ Math.round(aiEvaluationResult.confidence_level * 100) }}%</span>
                     </div>
                     <button 
@@ -383,7 +379,7 @@
                       <ul class="breakdown-list">
                         <li v-for="(amount, task) in aiEvaluationResult.task_breakdown" :key="task">
                           <span class="task-name">{{ task }}</span>
-                          <span class="task-price">{{ formatMoney(amount) }}</span>
+                          <span class="task-price">{{ formatMRGFromUSD(amount) }}</span>
                         </li>
                       </ul>
                     </div>
@@ -429,13 +425,13 @@
                 </button>
               </div>
               <div class="price-estimate-summary">
-                <strong>{{ formatMoneyFromCents(priceEvaluation.suggested_price_cents) }}</strong>
-                <span>{{ formatMoneyFromCents(priceEvaluation.suggested_range.low_cents) }} - {{ formatMoneyFromCents(priceEvaluation.suggested_range.high_cents) }}</span>
+                <strong>{{ formatMRGFromCents(priceEvaluation.suggested_price_cents) }}</strong>
+                <span>{{ formatMRGFromCents(priceEvaluation.suggested_range.low_cents) }} - {{ formatMRGFromCents(priceEvaluation.suggested_range.high_cents) }}</span>
               </div>
               <div class="price-breakdown-grid">
                 <article v-for="item in priceEvaluation.breakdown.slice(0, 4)" :key="item.category">
                   <strong>{{ item.category }}</strong>
-                  <span>{{ formatMoneyFromCents(item.amount_cents) }}</span>
+                  <span>{{ formatMRGFromCents(item.amount_cents) }}</span>
                   <small>{{ item.reason }}</small>
                 </article>
               </div>
@@ -641,7 +637,7 @@
                 @click="projectFundingAmount = option.amount"
               >
                 <strong>{{ formatMoney(option.amount) }}</strong>
-                <small>{{ option.tokens }} tokens</small>
+                <small>{{ formatMRG(option.tokens) }}</small>
                 <span v-if="option.popular">Popular</span>
               </button>
             </div>
@@ -886,11 +882,11 @@
             </div>
             <div>
               <dt>Platform fee (8%)</dt>
-              <dd>{{ formatMoney(projectPlatformFeeLow) }} - {{ formatMoney(projectPlatformFeeHigh) }}</dd>
+              <dd>{{ formatMRG(projectPlatformFeeLow) }} - {{ formatMRG(projectPlatformFeeHigh) }}</dd>
             </div>
             <div>
               <dt>Escrow fee (2%)</dt>
-              <dd>{{ formatMoney(projectEscrowFeeLow) }} - {{ formatMoney(projectEscrowFeeHigh) }}</dd>
+              <dd>{{ formatMRG(projectEscrowFeeLow) }} - {{ formatMRG(projectEscrowFeeHigh) }}</dd>
             </div>
             <div class="strong-row">
               <dt>Estimated total</dt>
@@ -1111,7 +1107,7 @@
             <article>
               <span>Budget</span>
               <strong>{{ dashboardProjectView.budget }}</strong>
-              <small>{{ dashboardProjectView.tokenBudget }}</small>
+              <small>{{ dashboardProjectView.budgetCaption }}</small>
             </article>
             <article>
               <span>Progress</span>
@@ -1157,7 +1153,7 @@
                   <span><i class="green-dot" />Completed <b>{{ dashboardAcceptedTasks.length }} tasks</b></span>
                   <span><i class="blue-dot" />Open <b>{{ dashboardOpenTasks.length }} tasks</b></span>
                   <span><i class="orange-dot" />Ledger <b>{{ dashboardProjectLedger.length }} entries</b></span>
-                  <span><i class="gray-dot" />Escrow <b>{{ formatMoneyFromCents(dashboardLedgerFundingCents) }}</b></span>
+                  <span><i class="gray-dot" />Escrow <b>{{ formatMRGFromCents(dashboardLedgerFundingCents) }}</b></span>
                 </div>
               </div>
             </article>
@@ -1165,10 +1161,10 @@
             <article class="dash-card budget-card">
               <h2>Budget & Payments</h2>
               <div class="budget-lines">
-                <span>Total Budget <strong>{{ formatMoneyFromCents(dashboardSelectedProject?.budget_cents) }}</strong></span>
-                <span>Work Pool <strong>{{ formatMoneyFromCents(dashboardSelectedProject?.work_pool_cents) }}</strong></span>
-                <span>Released <strong>{{ formatMoneyFromCents(dashboardLedgerPayoutCents || dashboardSpentCents) }}</strong></span>
-                <span>Remaining <strong>{{ formatMoneyFromCents(dashboardRemainingCents) }}</strong></span>
+                <span>Total Budget <strong>{{ formatMRGFromCents(dashboardSelectedProject?.budget_cents) }}</strong></span>
+                <span>Work Pool <strong>{{ formatMRGFromCents(dashboardSelectedProject?.work_pool_cents) }}</strong></span>
+                <span>Released <strong>{{ formatMRGFromCents(dashboardLedgerPayoutCents || dashboardSpentCents) }}</strong></span>
+                <span>Remaining <strong>{{ formatMRGFromCents(dashboardRemainingCents) }}</strong></span>
               </div>
               <button type="button" @click="openPublicPage('ledger')">View Ledger</button>
             </article>
@@ -1272,7 +1268,7 @@
                 <span class="contributor-avatar">{{ initialsFor(project.title || project.company_name || 'MP') }}</span>
                 <div>
                   <strong>{{ project.title }}</strong>
-                  <small>{{ formatMoneyFromCents(project.budget_cents) }} - {{ (project.tasks || []).length }} tasks</small>
+                  <small>{{ formatMRGFromCents(project.budget_cents) }} - {{ (project.tasks || []).length }} tasks</small>
                 </div>
               </button>
             </div>
@@ -2401,7 +2397,6 @@ const projectSetupForm = reactive({
   repoUrl: '',
   overview: '',
   requirements: '',
-  currency: 'USD',
   budgetAmount: '',
   budgetType: 'Fixed price',
   startDate: '',
@@ -2564,14 +2559,14 @@ const repoImportedEstimateCents = computed(() =>
 );
 const projectBudgetAmount = computed(() => Math.max(0, Number(projectSetupForm.budgetAmount) || 0));
 const projectBudgetLow = computed(() => {
-  if (aiEvaluationResult.value && projectSetupForm.budgetAmount === Math.round((aiEvaluationResult.value.suggested_low + aiEvaluationResult.value.suggested_high) / 2)) {
-    return aiEvaluationResult.value.suggested_low;
+  if (aiEvaluationResult.value && projectBudgetAmount.value === mrgFromUSD(Math.round((aiEvaluationResult.value.suggested_low + aiEvaluationResult.value.suggested_high) / 2))) {
+    return mrgFromUSD(aiEvaluationResult.value.suggested_low);
   }
   return Math.round(projectBudgetAmount.value * 0.85);
 });
 const projectBudgetHigh = computed(() => {
-  if (aiEvaluationResult.value && projectSetupForm.budgetAmount === Math.round((aiEvaluationResult.value.suggested_low + aiEvaluationResult.value.suggested_high) / 2)) {
-    return aiEvaluationResult.value.suggested_high;
+  if (aiEvaluationResult.value && projectBudgetAmount.value === mrgFromUSD(Math.round((aiEvaluationResult.value.suggested_low + aiEvaluationResult.value.suggested_high) / 2))) {
+    return mrgFromUSD(aiEvaluationResult.value.suggested_high);
   }
   return Math.round(projectBudgetAmount.value * 1.25);
 });
@@ -2587,14 +2582,14 @@ const projectFundingEscrowFee = computed(() => Math.round((Number(projectFunding
 const projectTokenAmount = computed(() => Math.round((Number(projectFundingAmount.value) || 0) * TOKEN_RATE_PER_USD));
 const projectInitial = computed(() => (projectSetupForm.title.trim().charAt(0) || 'M').toUpperCase());
 const projectBudgetRangeLabel = computed(() =>
-  projectBudgetAmount.value > 0 ? `${formatMoney(projectBudgetLow.value)} - ${formatMoney(projectBudgetHigh.value)}` : 'Budget not set',
+  projectBudgetAmount.value > 0 ? `${formatMRG(projectBudgetLow.value)} - ${formatMRG(projectBudgetHigh.value)}` : 'Budget not set',
 );
 const projectBudgetSummaryLabel = computed(() =>
-  projectBudgetAmount.value > 0 ? `${formatMoney(projectBudgetAmount.value)} (${projectSetupForm.budgetType})` : 'Budget not set',
+  projectBudgetAmount.value > 0 ? `${formatMRG(projectBudgetAmount.value)} (${projectSetupForm.budgetType})` : 'Budget not set',
 );
-const projectEstimatedTotalLabel = computed(() => (projectBudgetAmount.value > 0 ? formatMoney(projectEstimatedTotal.value) : 'Not calculated yet'));
+const projectEstimatedTotalLabel = computed(() => (projectBudgetAmount.value > 0 ? formatMRG(projectEstimatedTotal.value) : 'Not calculated yet'));
 const projectEstimatedRangeLabel = computed(() =>
-  projectBudgetAmount.value > 0 ? `${formatMoney(projectEstimatedLow.value)} - ${formatMoney(projectEstimatedHigh.value)}` : 'Not calculated yet',
+  projectBudgetAmount.value > 0 ? `${formatMRG(projectEstimatedLow.value)} - ${formatMRG(projectEstimatedHigh.value)}` : 'Not calculated yet',
 );
 const projectFundingAmountLabel = computed(() => (Number(projectFundingAmount.value) > 0 ? `${formatMoney(projectFundingAmount.value)} USD` : 'Choose amount'));
 const projectTokenAmountLabel = computed(() => (projectTokenAmount.value > 0 ? `${projectTokenAmount.value} ${tokenSymbol.value}` : 'Choose an amount'));
@@ -3153,8 +3148,8 @@ const dashboardProjectView = computed(() => {
       body: dashboardLoading.value ? 'Fetching funded work from MergeOS.' : 'Start and fund a project to see real tasks, escrow, and ledger activity here.',
       initials: 'MP',
       status: dashboardLoading.value ? 'Syncing' : 'Empty',
-      budget: '$0',
-      tokenBudget: `0 ${tokenSymbol.value}`,
+      budget: `0 ${tokenSymbol.value}`,
+      budgetCaption: 'MRG budget',
       repo: 'No repo yet',
       created: '-',
       taskSummary: '0 / 0',
@@ -3167,8 +3162,8 @@ const dashboardProjectView = computed(() => {
     body: trimMarketplaceText(project.brief, 'Funded MergeOS project with escrow-backed tasks.'),
     initials: initialsFor(project.title || project.company_name || project.client_name || 'MP'),
     status: toTitleLabel(project.status || 'funded'),
-    budget: formatMoneyFromCents(project.budget_cents),
-    tokenBudget: `${formatCompactNumber(tokenAmountFromCents(project.budget_cents))} ${tokenSymbol.value}`,
+    budget: formatMRGFromCents(project.budget_cents),
+    budgetCaption: 'MRG budget',
     repo: shortRepoLabel(project),
     created: formatDashboardDate(project.created_at),
     taskSummary: `${dashboardAcceptedTasks.value.length} / ${dashboardSelectedTasks.value.length}`,
@@ -3193,9 +3188,7 @@ const dashboardLedgerRows = computed(() =>
     return {
       key: `${entry.sequence}-${entry.entry_hash || entry.reference}`,
       title: meta.type,
-      value: entry.type === 'token_mint'
-        ? `${formatCompactNumber(tokenAmountFromCents(entry.amount_cents))} ${tokenSymbol.value}`
-        : formatMoneyFromCents(entry.amount_cents),
+      value: formatMRGFromCents(entry.amount_cents),
       ref: shortLedgerReference(entry.reference || entry.entry_hash || `#${entry.sequence}`),
     };
   }),
@@ -3569,7 +3562,10 @@ function nextProjectStep() {
     return;
   }
 
-  projectFundingAmount.value = Math.max(100, projectBudgetAmount.value || projectFundingAmount.value);
+  if (projectBudgetAmount.value > 0 && projectBudgetAmount.value < TOKEN_RATE_PER_USD * 100) {
+    projectSetupForm.budgetAmount = TOKEN_RATE_PER_USD * 100;
+  }
+  projectFundingAmount.value = Math.max(100, Math.ceil(projectBudgetAmount.value / TOKEN_RATE_PER_USD) || projectFundingAmount.value);
   projectWizardStage.value = 'funding';
   updateProjectWizardBrowserPath();
   scrollProjectFlowTop();
@@ -3587,7 +3583,7 @@ function buildPriceEvaluationPayload() {
     tech_stack: projectSetupForm.techStack,
     complexity: projectSetupForm.allowAgents ? 'moderate' : 'high',
     constraints: projectSetupForm.skills,
-    reference_budget_cents: Math.round(Math.max(0, Number(projectSetupForm.budgetAmount) || 0) * 100),
+    reference_budget_cents: centsFromMRG(projectSetupForm.budgetAmount),
   };
 }
 
@@ -3619,7 +3615,7 @@ async function runProjectPriceEvaluation() {
 
 function applyPriceEvaluation() {
   if (!priceEvaluation.value?.suggested_price_cents) return;
-  projectSetupForm.budgetAmount = Math.max(100, Math.round(priceEvaluation.value.suggested_price_cents / 100));
+  projectSetupForm.budgetAmount = Math.max(TOKEN_RATE_PER_USD * 100, tokenAmountFromCents(priceEvaluation.value.suggested_price_cents));
   projectSetupForm.budgetType = 'Range';
 }
 
@@ -3735,7 +3731,7 @@ async function triggerAiEvaluation() {
       tech_stack: projectSetupForm.techStack || '',
       complexity: projectSetupForm.complexity || 'Medium',
       constraints: projectSetupForm.constraints || '',
-      reference_budget: Math.max(0, Number(projectSetupForm.budgetAmount) || 0)
+      reference_budget: Math.round(usdFromMRG(projectSetupForm.budgetAmount))
     };
     
     const response = await api('/api/projects/evaluate', {
@@ -3755,8 +3751,8 @@ async function triggerAiEvaluation() {
 function applyAiSuggestedPrice() {
   if (aiEvaluationResult.value) {
     const avg = Math.round((aiEvaluationResult.value.suggested_low + aiEvaluationResult.value.suggested_high) / 2);
-    projectSetupForm.budgetAmount = avg;
-    showToast(`Applied AI suggested budget: ${formatMoney(avg)}`);
+    projectSetupForm.budgetAmount = mrgFromUSD(avg);
+    showToast(`Applied AI suggested budget: ${formatMRGFromUSD(avg)}`);
   }
 }
 
@@ -3768,20 +3764,36 @@ function formatMoney(value) {
   }).format(Number(value) || 0);
 }
 
-function formatMoneyFromCents(cents = 0) {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 0,
-  }).format((Number(cents) || 0) / 100);
+function mrgFromUSD(value = 0) {
+  return Math.round((Number(value) || 0) * TOKEN_RATE_PER_USD);
+}
+
+function usdFromMRG(value = 0) {
+  return (Number(value) || 0) / TOKEN_RATE_PER_USD;
+}
+
+function centsFromMRG(value = 0) {
+  return Math.round(usdFromMRG(value) * 100);
+}
+
+function formatMRG(value = 0) {
+  return `${formatCompactNumber(value)} ${tokenSymbol.value}`;
+}
+
+function formatMRGFromUSD(value = 0) {
+  return formatMRG(mrgFromUSD(value));
+}
+
+function formatMRGFromCents(cents = 0) {
+  return formatMRG(tokenAmountFromCents(cents));
 }
 
 function formatLedgerMRGFromCents(cents = 0) {
-  return `${formatCompactNumber(tokenAmountFromCents(cents))} ${tokenSymbol.value}`;
+  return formatMRGFromCents(cents);
 }
 
 function formatPublicMRGFromCents(cents = 0) {
-  return `${formatCompactNumber(tokenAmountFromCents(cents))} ${tokenSymbol.value}`;
+  return formatMRGFromCents(cents);
 }
 
 function formatPublicTokenAmount(amount = 0) {
@@ -3956,7 +3968,7 @@ function mapDashboardTask(task = {}) {
     title: task.title || 'Untitled task',
     acceptance: trimMarketplaceText(task.acceptance, 'Acceptance criteria not provided.'),
     reference: taskIssueReference(task),
-    reward: formatMoneyFromCents(task.reward_cents),
+    reward: formatMRGFromCents(task.reward_cents),
     kind: toTitleLabel(task.required_worker_kind || task.worker_kind || 'task'),
     agent: task.suggested_agent_type ? toTitleLabel(task.suggested_agent_type) : '-',
     status,
@@ -4037,7 +4049,6 @@ function mapLedgerEntry(entry) {
   const tokenAmount = tokenAmountFromCents(entry.amount_cents);
   const projectTitle = project?.title || (projectID ? `Project ${projectID.slice(-6)}` : 'MergeOS ledger');
   const company = project?.company_name || project?.client_name || 'MergeOS';
-  const isFeeOrPayout = entry.type === 'platform_fee' || entry.type === 'task_payment';
   return {
     key: `${entry.sequence}-${entry.entry_hash || entry.reference}`,
     date: when.date,
@@ -4049,7 +4060,7 @@ function mapLedgerEntry(entry) {
     projectTone: projectToneFor(projectID || projectTitle),
     project: projectTitle,
     company,
-    amount: `${isFeeOrPayout ? '-' : '+'} ${formatCompactNumber(tokenAmount)} ${tokenSymbol.value}`,
+    amount: `${formatCompactNumber(Math.abs(tokenAmount))} ${tokenSymbol.value}`,
     secondaryAmount: entry.type === 'payment_verified' ? 'funding verified' : entry.type === 'token_mint' ? 'mint log' : '',
     amountTone: meta.amountTone,
     ref: shortLedgerReference(entry.reference || entry.entry_hash || `#${entry.sequence}`),
@@ -4304,16 +4315,22 @@ function setSession(auth) {
 
 function clearSession() {
   stopDashboardRealtime();
-  token.value = '';
+  token.value = "";
   user.value = null;
   authVisible.value = false;
-  ledgerError.value = '';
+  projectWizardVisible.value = false;
+  ledgerError.value = "";
   dashboardProjects.value = [];
   dashboardTasks.value = [];
   dashboardLedgerEntries.value = [];
-  dashboardError.value = '';
-  selectedDashboardProjectID.value = '';
+  dashboardError.value = "";
+  selectedDashboardProjectID.value = "";
+  publicPage.value = "home";
   removeStoredToken();
+  if (hasWindow) {
+    window.location.hash = "";
+    window.history.replaceState({}, document.title, "/");
+  }
 }
 
 async function submitAuth() {
