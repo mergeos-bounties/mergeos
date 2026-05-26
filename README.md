@@ -252,7 +252,8 @@ Important backend variables:
 - `DEV_PAYMENT_ENABLED` and `DEV_PAYMENT_CODE`: local verifier
 - `PAYPAL_ENV`, `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`: PayPal Orders v2
 - `CRYPTO_RPC_URL`, `CRYPTO_RECEIVER`, `CRYPTO_ASSET`, `CRYPTO_TOKEN_CONTRACT`: crypto verifier
-- `GITHUB_TOKEN`, `GITHUB_OWNER`, `GITHUB_OWNER_TYPE`: GitHub bounty repo creation
+- `GITHUB_TOKEN`, `GITHUB_OWNER`, `GITHUB_OWNER_TYPE`: backend runtime values for GitHub bounty repo creation and admin PR merge actions
+- `MERGEOS_GITHUB_TOKEN`: Docker Compose and GitHub Actions secret name that maps into backend `GITHUB_TOKEN`; use a personal access token with repo write access, not the automatic GitHub Actions token
 - `GITHUB_OAUTH_CLIENT_ID`, `GITHUB_OAUTH_CLIENT_SECRET`: backend runtime values for GitHub login and MRG wallet linking
 - `MERGEOS_GITHUB_OAUTH_CLIENT_ID`, `MERGEOS_GITHUB_OAUTH_CLIENT_SECRET`: Docker Compose and GitHub Actions secret names that map into the backend runtime values
 - `BOUNTY_ROOT`: local child bounty repo root
