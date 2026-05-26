@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
+import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
 import {
@@ -104,6 +105,51 @@ test('production server injects SSR HTML into the app shell', async (t) => {
   assert.match(html, />\/admin</);
   assert.doesNotMatch(html, /ssr-outlet/);
   assert.doesNotMatch(html, /<div id="app"><\/div>/);
+});
+
+test('API proxy forwards the public frontend host for auth redirects', async (t) => {
+  const api = http.createServer((req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.end(JSON.stringify({
+      host: req.headers.host,
+      forwardedHost: req.headers['x-forwarded-host'],
+      forwardedProto: req.headers['x-forwarded-proto'],
+    }));
+  });
+  t.after(() => api.close());
+  await new Promise((resolve) => api.listen(0, '127.0.0.1', resolve));
+  const apiAddress = api.address();
+
+  const cwd = await fs.mkdtemp(path.join(os.tmpdir(), 'mergeos-frontend-proxy-'));
+  const clientDist = path.join(cwd, 'client');
+  const serverDir = path.join(cwd, 'server');
+  const serverEntry = path.join(serverDir, 'entry-server.mjs');
+  await fs.mkdir(clientDist, { recursive: true });
+  await fs.mkdir(serverDir, { recursive: true });
+  await fs.writeFile(path.join(clientDist, 'index.html'), '<!doctype html><html><body><div id="app"><!--ssr-outlet--></div></body></html>');
+  await fs.writeFile(serverEntry, "export async function render() { return '<main></main>'; }\n");
+
+  const server = await createMergeOSServer({
+    mode: 'production',
+    production: true,
+    cwd,
+    host: '127.0.0.1',
+    port: 0,
+    hmrPort: 0,
+    apiTarget: `http://127.0.0.1:${apiAddress.port}`,
+    clientDist,
+    serverEntry,
+  });
+  t.after(() => server.close());
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const frontendAddress = server.address();
+
+  const response = await fetch(`http://127.0.0.1:${frontendAddress.port}/api/header-check`);
+  const headers = await response.json();
+
+  assert.equal(headers.host, `127.0.0.1:${apiAddress.port}`);
+  assert.equal(headers.forwardedHost, `127.0.0.1:${frontendAddress.port}`);
+  assert.equal(headers.forwardedProto, 'http');
 });
 
 test('shared Vue entry leaves browser mounting to the client hydration entry', async () => {

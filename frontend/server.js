@@ -204,6 +204,8 @@ async function serveStatic(req, res, clientDist = defaultClientDist) {
 function proxyApi(req, res, apiTarget) {
   const target = new URL(apiTarget);
   const transport = target.protocol === 'https:' ? https : http;
+  const forwardedHost = req.headers['x-forwarded-host'] || req.headers.host || target.host;
+  const forwardedProto = req.headers['x-forwarded-proto'] || (req.socket.encrypted ? 'https' : 'http');
   const proxyReq = transport.request({
     protocol: target.protocol,
     hostname: target.hostname,
@@ -213,6 +215,8 @@ function proxyApi(req, res, apiTarget) {
     headers: {
       ...req.headers,
       host: target.host,
+      'x-forwarded-host': forwardedHost,
+      'x-forwarded-proto': forwardedProto,
     },
   }, (proxyRes) => {
     res.writeHead(proxyRes.statusCode || 500, proxyRes.headers);

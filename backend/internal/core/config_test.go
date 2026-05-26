@@ -1,6 +1,7 @@
 package core
 
 import (
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
@@ -182,6 +183,17 @@ func TestLoadConfigUsesMergeOSGoogleCredentials(t *testing.T) {
 	}
 	if cfg.GoogleClientSecret != "google-secret" {
 		t.Fatalf("google client secret = %q", cfg.GoogleClientSecret)
+	}
+}
+
+func TestLocalOAuthRedirectBaseUsesForwardedFrontendHost(t *testing.T) {
+	server := NewServer(Config{Environment: "local"}, nil, nil)
+	request := httptest.NewRequest("GET", "http://127.0.0.1:18080/api/auth/google/callback", nil)
+	request.Header.Set("X-Forwarded-Proto", "http")
+	request.Header.Set("X-Forwarded-Host", "127.0.0.1:15173")
+
+	if got, want := server.getFrontRedirectBase(request), "http://127.0.0.1:15173"; got != want {
+		t.Fatalf("redirect base = %q, want %q", got, want)
 	}
 }
 

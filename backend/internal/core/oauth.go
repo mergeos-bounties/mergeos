@@ -291,6 +291,13 @@ func (s *Server) githubCallback(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) getFrontRedirectBase(r *http.Request) string {
 	if s.cfg.Environment == "local" {
+		if forwardedHost := firstForwardedHeader(r.Header.Get("X-Forwarded-Host")); forwardedHost != "" {
+			scheme := firstForwardedHeader(r.Header.Get("X-Forwarded-Proto"))
+			if scheme != "https" {
+				scheme = "http"
+			}
+			return scheme + "://" + forwardedHost
+		}
 		return "http://127.0.0.1:5173"
 	}
 	scheme := "https"
@@ -298,4 +305,9 @@ func (s *Server) getFrontRedirectBase(r *http.Request) string {
 		scheme = "http"
 	}
 	return scheme + "://" + s.cfg.PrimaryDomain
+}
+
+func firstForwardedHeader(value string) string {
+	head, _, _ := strings.Cut(value, ",")
+	return strings.TrimSpace(head)
 }
