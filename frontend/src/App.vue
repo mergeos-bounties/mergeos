@@ -4380,6 +4380,7 @@ async function logout() {
     await api('/api/auth/logout', { method: 'POST', body: JSON.stringify({}) });
   } finally {
     clearSession();
+    openPublicPage('home');
     showToast('Logged out.');
   }
 }
