@@ -4237,7 +4237,6 @@ svg {
   position: relative;
   width: min(1030px, 100%);
   max-height: calc(100vh - 64px);
-  overflow: auto;
   border: 1px solid rgba(226, 232, 240, 0.86);
   border-radius: 18px;
   background: #ffffff;
@@ -4270,6 +4269,8 @@ svg {
   grid-template-columns: minmax(0, 1fr) 392px;
   gap: 40px;
   padding: 36px 44px 32px;
+  max-height: calc(100vh - 64px);
+  overflow-y: auto;
 }
 
 .auth-form-panel {
@@ -6170,6 +6171,8 @@ svg {
 
   .auth-modal-main {
     padding: 30px 20px 24px;
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
   }
 
   .auth-close-button {
