@@ -241,28 +241,43 @@
           <div>
             <span class="eyebrow">REVIEW QUEUE</span>
             <h2>Task review board</h2>
-            <p>Tasks stay visible for audit; merged PRs are hidden after credit is recorded.</p>
+            <p>Review GitHub issues by state and expand linked PRs only when needed.</p>
           </div>
           <div class="task-review-stats" aria-label="Task queue summary">
             <article>
               <strong>{{ number(filteredTasks.length) }}</strong>
-              <small>Tasks visible</small>
+              <small>Issues visible</small>
             </article>
             <article>
-              <strong>{{ number(summary.open_task_count) }}</strong>
-              <small>Open tasks</small>
+              <strong>{{ number(issueTabCounts.open) }}</strong>
+              <small>Open issues</small>
             </article>
             <article>
-              <strong>{{ number(hiddenMergedPullCount) }}</strong>
-              <small>Merged PRs hidden</small>
+              <strong>{{ number(issueTabCounts.closed) }}</strong>
+              <small>Closed issues</small>
             </article>
           </div>
         </header>
 
+        <div class="issue-state-tabs" role="tablist" aria-label="Issue state filter">
+          <button
+            v-for="tab in issueStateTabs"
+            :key="tab.id"
+            :aria-selected="taskIssueTab === tab.id"
+            :class="{ active: taskIssueTab === tab.id }"
+            role="tab"
+            type="button"
+            @click="taskIssueTab = tab.id"
+          >
+            {{ tab.label }}
+            <span>{{ number(tab.count) }}</span>
+          </button>
+        </div>
+
         <div v-if="!filteredTasks.length" class="task-empty-state">
           <span class="metric-icon green"><CheckCircle2 :size="19" /></span>
-          <strong>No tasks found</strong>
-          <small>Clear the search to see the full task audit board.</small>
+          <strong>No {{ taskIssueTab }} issues found</strong>
+          <small>Clear the search or switch tabs to see more GitHub issues.</small>
         </div>
 
         <div v-else class="task-review-list">
@@ -271,7 +286,10 @@
               <div class="task-review-title">
                 <span class="task-issue-mark">{{ task.issue_number || 'T' }}</span>
                 <div>
-                  <strong>{{ task.title }}</strong>
+                  <div class="task-title-line">
+                    <strong>{{ task.title }}</strong>
+                    <span :class="['status-pill', issueStateForTask(task) === 'closed' ? 'amber' : 'green']">{{ issueStateForTask(task) }}</span>
+                  </div>
                   <small>{{ taskIssueLabel(task) }} / {{ taskProjectTitle(task) }}</small>
                 </div>
               </div>
@@ -282,59 +300,65 @@
               </div>
             </div>
 
-            <aside class="task-review-side">
-              <span>Reward</span>
-              <strong>{{ mrgFromCents(task.reward_cents) }}</strong>
-              <small>{{ task.worker_id || 'Unassigned' }}</small>
-            </aside>
-
             <section class="task-pr-section" aria-label="Linked pull requests">
               <div class="task-pr-toolbar">
-                <button class="compact-action" :disabled="taskPullsLoading[task.id]" type="button" @click="loadTaskPulls(task, true)">
+                <button
+                  class="compact-action"
+                  :aria-expanded="isTaskPullsExpanded(task)"
+                  :disabled="taskPullsLoading[task.id]"
+                  type="button"
+                  @click="toggleTaskPulls(task)"
+                >
                   <GitPullRequest :size="14" />
-                  {{ taskPullsLoading[task.id] ? 'Checking...' : 'Refresh PRs' }}
+                  {{ taskPullsLoading[task.id] ? 'Checking...' : isTaskPullsExpanded(task) ? 'Hide PRs' : 'Show PRs' }}
+                </button>
+                <button v-if="isTaskPullsExpanded(task)" class="compact-action" :disabled="taskPullsLoading[task.id]" type="button" @click="loadTaskPulls(task, true)">
+                  <RefreshCw :size="14" />
+                  Refresh
                 </button>
                 <small>{{ taskPullSummary(task) }}</small>
               </div>
-              <p v-if="taskPullsError[task.id]" class="inline-error">{{ taskPullsError[task.id] }}</p>
-              <p v-else-if="taskPullsLoaded[task.id] && !actionablePullsForTask(task).length" class="muted-inline">{{ emptyPullMessage(task) }}</p>
-              <div v-else class="task-pr-list">
-                <article v-for="pull in actionablePullsForTask(task)" :key="pull.number" class="task-pr-row">
-                  <div class="task-pr-main">
-                    <span :class="['metric-icon', pull.merged ? 'green' : pull.draft ? 'amber' : 'blue']">
-                      <GitPullRequest :size="16" />
-                    </span>
-                    <div>
-                      <strong>#{{ pull.number }} {{ pull.title }}</strong>
-                      <small>@{{ pull.author }} / {{ pullStatus(pull) }} / {{ pull.head_ref || 'head' }} -> {{ pull.base_ref || 'base' }}</small>
-                      <em>Credit: github:{{ pull.author }} / {{ mrg(mergeSelection(task, pull).reward_mrg) }}</em>
+              <div v-if="isTaskPullsExpanded(task)" class="task-pr-collapse">
+                <p v-if="taskPullsError[task.id]" class="inline-error">{{ taskPullsError[task.id] }}</p>
+                <p v-else-if="taskPullsLoaded[task.id] && !visiblePullsForTask(task).length" class="muted-inline">{{ emptyPullMessage(task) }}</p>
+                <div v-else class="task-pr-list">
+                  <article v-for="pull in visiblePullsForTask(task)" :key="pull.number" class="task-pr-row">
+                    <div class="task-pr-main">
+                      <span :class="['metric-icon', pull.merged ? 'green' : pull.draft ? 'amber' : 'blue']">
+                        <GitPullRequest :size="16" />
+                      </span>
+                      <div>
+                        <strong>#{{ pull.number }} {{ pull.title }}</strong>
+                        <small>@{{ pull.author }} / {{ pullStatus(pull) }} / {{ pull.head_ref || 'head' }} -> {{ pull.base_ref || 'base' }}</small>
+                        <em>Credit: github:{{ pull.author }} / {{ mrg(mergeSelection(task, pull).reward_mrg) }}</em>
+                      </div>
                     </div>
-                  </div>
-                  <div class="bounty-review-controls">
-                    <label>
-                      <span>Type</span>
-                      <select :value="mergeSelection(task, pull).bounty_type" @change="setMergeBounty(task, pull, $event.target.value)">
-                        <option v-for="option in bountyOptions" :key="option.id" :value="option.id">{{ option.label }}</option>
-                      </select>
-                    </label>
-                    <label>
-                      <span>MRG</span>
-                      <input
-                        :value="mergeSelection(task, pull).reward_mrg"
-                        min="1"
-                        step="1"
-                        type="number"
-                        @input="setMergeReward(task, pull, $event.target.value)"
-                      />
-                    </label>
-                  </div>
-                  <div class="task-pr-actions">
-                    <a class="compact-action link-action" :href="pull.html_url" target="_blank" rel="noreferrer">View</a>
-                    <button class="compact-action merge-action" :disabled="!canMergeTaskPull(task, pull)" type="button" @click="mergeTaskPull(task, pull)">
-                      {{ mergeBusy[mergeKey(task, pull)] ? 'Merging...' : pull.merged ? 'Credit' : 'Merge' }}
-                    </button>
-                  </div>
-                </article>
+                    <div class="bounty-review-controls">
+                      <label>
+                        <span>Type</span>
+                        <select :value="mergeSelection(task, pull).bounty_type" @change="setMergeBounty(task, pull, $event.target.value)">
+                          <option v-for="option in bountyOptions" :key="option.id" :value="option.id">{{ option.label }}</option>
+                        </select>
+                      </label>
+                      <label>
+                        <span>MRG</span>
+                        <input
+                          :value="mergeSelection(task, pull).reward_mrg"
+                          min="1"
+                          step="1"
+                          type="number"
+                          @input="setMergeReward(task, pull, $event.target.value)"
+                        />
+                      </label>
+                    </div>
+                    <div class="task-pr-actions">
+                      <a class="compact-action link-action" :href="pull.html_url" target="_blank" rel="noreferrer">View</a>
+                      <button class="compact-action merge-action" :disabled="!canMergeTaskPull(task, pull)" type="button" @click="mergeTaskPull(task, pull)">
+                        {{ mergeBusy[mergeKey(task, pull)] ? 'Merging...' : pull.merged ? 'Credit' : 'Merge' }}
+                      </button>
+                    </div>
+                  </article>
+                </div>
               </div>
               <p v-if="mergeMessages[task.id]" class="inline-success">{{ mergeMessages[task.id] }}</p>
             </section>
@@ -544,6 +568,7 @@ const density = ref(2);
 const showLedgerHashes = ref(false);
 const compactRows = ref(true);
 const selectedUserId = ref('');
+const taskIssueTab = ref('open');
 
 const summary = ref({});
 const users = ref([]);
@@ -559,6 +584,8 @@ const taskPullsError = ref({});
 const mergeBusy = ref({});
 const mergeMessages = ref({});
 const mergeSelections = ref({});
+const taskIssueStates = ref({});
+const expandedTaskPulls = ref({});
 
 const loginForm = reactive({
   email: 'admin@gmail.com',
@@ -651,10 +678,22 @@ const projectLookup = computed(() => {
   return rows;
 });
 
-const filteredTasks = computed(() => {
+const searchedTasks = computed(() => {
   if (!query.value) return tasks.value;
   return tasks.value.filter((task) => haystack(task).includes(query.value));
 });
+
+const issueTabCounts = computed(() => ({
+  open: searchedTasks.value.filter((task) => issueStateForTask(task) === 'open').length,
+  closed: searchedTasks.value.filter((task) => issueStateForTask(task) === 'closed').length,
+}));
+
+const issueStateTabs = computed(() => [
+  { id: 'open', label: 'Open', count: issueTabCounts.value.open },
+  { id: 'closed', label: 'Closed', count: issueTabCounts.value.closed },
+]);
+
+const filteredTasks = computed(() => searchedTasks.value.filter((task) => issueStateForTask(task) === taskIssueTab.value));
 
 const filteredUsers = computed(() => {
   if (!query.value) return users.value;
@@ -814,8 +853,8 @@ async function loadAdminData() {
     notifications.value = Array.isArray(notificationData) ? notificationData : [];
     ledgerEntries.value = Array.isArray(ledgerData) ? ledgerData : [];
     sslRows.value = Array.isArray(sslData) ? sslData : [];
+    void syncTaskIssueStates(tasks.value);
     ensureSelectedUser();
-    if (activeView.value === 'tasks') void loadPullsForVisibleTasks();
   } catch (error) {
     errorMessage.value = error.message;
   } finally {
@@ -922,29 +961,28 @@ function pullsForTask(task) {
   return taskPulls.value[task.id] || [];
 }
 
-function actionablePullsForTask(task) {
-  return pullsForTask(task).filter((pull) => !pull.merged);
+function visiblePullsForTask(task) {
+  return pullsForTask(task);
 }
-
-function hiddenMergedPullsForTask(task) {
-  return pullsForTask(task).filter((pull) => pull.merged);
-}
-
-const hiddenMergedPullCount = computed(() =>
-  Object.values(taskPulls.value).reduce((count, pulls) => count + (Array.isArray(pulls) ? pulls.filter((pull) => pull.merged).length : 0), 0),
-);
 
 function taskPullSummary(task) {
-  const actionable = actionablePullsForTask(task).length;
-  const hidden = hiddenMergedPullsForTask(task).length;
-  if (!actionable && !hidden) return taskPullsLoaded.value[task.id] ? 'No linked PRs yet' : 'No PR loaded';
-  if (actionable && hidden) return `${actionable} active / ${hidden} merged hidden`;
-  if (hidden) return `${hidden} merged PR${hidden === 1 ? '' : 's'} hidden`;
-  return `${actionable} active PR${actionable === 1 ? '' : 's'}`;
+  if (taskPullsLoading.value[task.id]) return 'Checking linked PRs';
+  if (!taskPullsLoaded.value[task.id]) return 'PRs collapsed';
+  const pulls = pullsForTask(task);
+  if (!pulls.length) return 'No linked PRs yet';
+  const open = pulls.filter((pull) => !pull.merged && pull.state === 'open').length;
+  const merged = pulls.filter((pull) => pull.merged).length;
+  const closed = pulls.filter((pull) => !pull.merged && pull.state === 'closed').length;
+  const parts = [
+    open ? `${open} open` : '',
+    merged ? `${merged} merged` : '',
+    closed ? `${closed} closed` : '',
+  ].filter(Boolean);
+  return parts.length ? parts.join(' / ') : `${pulls.length} linked PR${pulls.length === 1 ? '' : 's'}`;
 }
 
-function emptyPullMessage(task) {
-  return hiddenMergedPullsForTask(task).length ? 'All linked PRs are already merged and hidden.' : 'No linked PRs yet.';
+function emptyPullMessage() {
+  return 'No linked PRs yet.';
 }
 
 function taskProjectTitle(task = {}) {
@@ -954,6 +992,67 @@ function taskProjectTitle(task = {}) {
 function taskIssueLabel(task = {}) {
   if (task.issue_url) return `Issue #${task.issue_number}`;
   return task.id || 'Task';
+}
+
+function normalizeIssueState(value = '') {
+  const state = String(value || '').trim().toLowerCase();
+  return state === 'closed' || state === 'close' ? 'closed' : 'open';
+}
+
+function issueStateForTask(task = {}) {
+  return normalizeIssueState(taskIssueStates.value[task.id] || task.issue_state || task.github_issue_state || 'open');
+}
+
+function githubIssueApiURL(task = {}) {
+  const raw = String(task.issue_url || '').trim();
+  if (!raw || !hasWindow) return '';
+  try {
+    const parsed = new URL(raw);
+    if (!['github.com', 'www.github.com'].includes(parsed.hostname.toLowerCase())) return '';
+    const parts = parsed.pathname.split('/').filter(Boolean);
+    if (parts.length < 4 || parts[2] !== 'issues') return '';
+    return `https://api.github.com/repos/${encodeURIComponent(parts[0])}/${encodeURIComponent(parts[1])}/issues/${encodeURIComponent(parts[3])}`;
+  } catch {
+    return '';
+  }
+}
+
+async function syncTaskIssueStates(rows = []) {
+  if (!hasWindow) return;
+  const candidates = rows
+    .map((task) => ({ id: task.id, url: githubIssueApiURL(task) }))
+    .filter((row) => row.id && row.url);
+  if (!candidates.length) return;
+
+  const updates = {};
+  await Promise.allSettled(candidates.map(async (row) => {
+    const response = await fetch(row.url, {
+      headers: {
+        Accept: 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28',
+      },
+    });
+    if (!response.ok) return;
+    const payload = await response.json();
+    updates[row.id] = normalizeIssueState(payload.state);
+  }));
+
+  if (Object.keys(updates).length) {
+    taskIssueStates.value = { ...taskIssueStates.value, ...updates };
+  }
+}
+
+function isTaskPullsExpanded(task = {}) {
+  return Boolean(expandedTaskPulls.value[task.id]);
+}
+
+async function toggleTaskPulls(task = {}) {
+  if (!task?.id) return;
+  const nextExpanded = !isTaskPullsExpanded(task);
+  expandedTaskPulls.value = { ...expandedTaskPulls.value, [task.id]: nextExpanded };
+  if (nextExpanded) {
+    await loadTaskPulls(task);
+  }
 }
 
 function mergeKey(task, pull) {
@@ -1020,7 +1119,7 @@ function pullStatus(pull) {
 
 function canMergeTaskPull(task, pull) {
   const selection = mergeSelection(task, pull);
-  if (!pull?.author || task.status === 'accepted') return false;
+  if (!pull?.author) return false;
   if (mergeBusy.value[mergeKey(task, pull)] || pull.draft) return false;
   if (!selection.bounty_type || Number(selection.reward_mrg) <= 0) return false;
   return pull.merged || pull.state === 'open';
@@ -1046,21 +1145,6 @@ async function loadTaskPulls(task, force = false) {
     taskPullsLoaded.value = { ...taskPullsLoaded.value, [task.id]: true };
   } finally {
     taskPullsLoading.value = { ...taskPullsLoading.value, [task.id]: false };
-  }
-}
-
-let visiblePullsLoading = false;
-
-async function loadPullsForVisibleTasks() {
-  if (visiblePullsLoading || activeView.value !== 'tasks' || !isAuthenticated.value) return;
-  visiblePullsLoading = true;
-  try {
-    for (const task of filteredTasks.value) {
-      if (activeView.value !== 'tasks') break;
-      await loadTaskPulls(task);
-    }
-  } finally {
-    visiblePullsLoading = false;
   }
 }
 
@@ -1168,11 +1252,6 @@ function handlePopState() {
 watch(activeView, (view) => {
   updateDocumentTitle();
   if (view === 'users') ensureSelectedUser();
-  if (view === 'tasks') void loadPullsForVisibleTasks();
-});
-
-watch(filteredTasks, () => {
-  if (activeView.value === 'tasks') void loadPullsForVisibleTasks();
 });
 
 onMounted(() => {

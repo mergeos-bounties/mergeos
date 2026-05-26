@@ -33,7 +33,7 @@ func ImportRepoIssues(ctx context.Context, cfg Config, req ImportRepoIssuesReque
 		return nil, err
 	}
 
-	endpoint := fmt.Sprintf("https://api.github.com/repos/%s/%s/issues?state=open&per_page=100&sort=updated&direction=desc", url.PathEscape(owner), url.PathEscape(name))
+	endpoint := fmt.Sprintf("https://api.github.com/repos/%s/%s/issues?state=all&per_page=100&sort=updated&direction=desc", url.PathEscape(owner), url.PathEscape(name))
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
 	if err != nil {
 		return nil, err
@@ -135,7 +135,7 @@ func scoreRepoIssue(row githubIssueRow) *ImportedRepoIssue {
 	}
 
 	score := 25
-	reasons := []string{"open GitHub issue"}
+	reasons := []string{"GitHub issue"}
 	text := strings.ToLower(row.Title + " " + row.Body + " " + strings.Join(labels, " "))
 	bodyLength := len(strings.TrimSpace(row.Body))
 

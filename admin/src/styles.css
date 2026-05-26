@@ -734,6 +734,46 @@ button:disabled {
   text-transform: uppercase;
 }
 
+.issue-state-tabs {
+  display: inline-flex;
+  width: fit-content;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: 4px;
+  gap: 4px;
+}
+
+.issue-state-tabs button {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  padding: 0 12px;
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.issue-state-tabs button.active {
+  background: #ecfdf5;
+  color: var(--green-dark);
+}
+
+.issue-state-tabs span {
+  min-width: 22px;
+  border-radius: 999px;
+  background: rgba(15, 159, 120, 0.12);
+  padding: 2px 7px;
+  color: inherit;
+  font-size: 11px;
+  font-weight: 940;
+}
+
 .task-empty-state {
   min-height: 260px;
   display: grid;
@@ -766,7 +806,7 @@ button:disabled {
 
 .task-review-item {
   display: grid;
-  grid-template-columns: minmax(260px, 1fr) 160px minmax(420px, 1.45fr);
+  grid-template-columns: minmax(280px, 0.95fr) minmax(420px, 1.45fr);
   gap: 14px;
   align-items: start;
   border: 1px solid var(--line);
@@ -803,6 +843,21 @@ button:disabled {
 
 .task-review-title > div {
   min-width: 0;
+}
+
+.task-title-line {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.task-title-line strong {
+  min-width: 0;
+}
+
+.task-title-line .status-pill {
+  flex: 0 0 auto;
 }
 
 .task-review-title strong,
@@ -843,36 +898,6 @@ button:disabled {
   font-weight: 850;
 }
 
-.task-review-side {
-  display: grid;
-  gap: 4px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--surface-2);
-  padding: 12px;
-}
-
-.task-review-side span,
-.task-review-side small {
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 900;
-  text-transform: uppercase;
-}
-
-.task-review-side strong {
-  color: var(--green-dark);
-  font-size: 18px;
-  font-weight: 940;
-}
-
-.task-review-side small {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  text-transform: none;
-  white-space: nowrap;
-}
-
 .task-pr-section {
   min-width: 0;
 }
@@ -887,6 +912,7 @@ button:disabled {
 
 .task-pr-toolbar {
   justify-content: space-between;
+  flex-wrap: wrap;
 }
 
 .task-pr-toolbar small,
@@ -900,6 +926,10 @@ button:disabled {
   display: grid;
   gap: 8px;
   margin-top: 10px;
+}
+
+.task-pr-collapse {
+  margin-top: 8px;
 }
 
 .task-pr-row {

@@ -989,9 +989,6 @@ func (s *Store) AcceptTaskWithReview(taskID string, req AcceptTaskRequest, rewar
 	if !ok {
 		return nil, errors.New("task not found")
 	}
-	if task.Status == TaskAccepted {
-		return nil, errors.New("task already accepted")
-	}
 	if req.WorkerKind != WorkerHuman && req.WorkerKind != WorkerAgent && req.WorkerKind != WorkerHybrid {
 		return nil, errors.New("worker kind must be human, agent, or hybrid")
 	}

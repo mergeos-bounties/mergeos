@@ -102,10 +102,6 @@ func (s *Server) mergeAdminTaskPullRequest(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusNotFound, "task not found")
 		return
 	}
-	if task.Status == TaskAccepted {
-		writeError(w, http.StatusConflict, "task already accepted")
-		return
-	}
 	pullNumber, err := strconv.Atoi(strings.TrimSpace(r.PathValue("number")))
 	if err != nil || pullNumber <= 0 {
 		writeError(w, http.StatusBadRequest, "pull request number is invalid")
