@@ -150,6 +150,7 @@ svg {
 
 .nav-links button,
 .locale-button {
+  min-height: 40px;
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -180,7 +181,7 @@ svg {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: -14px;
+  bottom: -8px;
   height: 2px;
   border-radius: 999px;
   background: var(--green);
@@ -2487,7 +2488,9 @@ svg {
 }
 
 .public-home-page,
-.public-info-page {
+.public-info-page,
+.marketplace-page,
+.ledger-page {
   padding: 34px 0 42px;
 }
 
@@ -2732,16 +2735,12 @@ svg {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.marketplace-page {
-  padding: 24px 0 34px;
-}
-
 .home-container.marketplace-layout {
   width: min(1220px, 100%);
   display: grid;
   grid-template-columns: minmax(0, 1fr) 270px;
   align-items: start;
-  gap: 20px;
+  gap: 28px;
 }
 
 .marketplace-main,
@@ -2752,13 +2751,13 @@ svg {
 .marketplace-hero {
   display: grid;
   grid-template-columns: minmax(320px, 0.92fr) minmax(400px, 1.08fr);
-  align-items: center;
-  gap: 24px;
+  align-items: stretch;
+  gap: 26px;
 }
 
 .marketplace-copy {
   min-width: 0;
-  padding-top: 12px;
+  padding: 34px 0 18px;
 }
 
 .marketplace-eyebrow {
@@ -2770,10 +2769,10 @@ svg {
 }
 
 .marketplace-copy h1 {
-  max-width: 560px;
+  max-width: 760px;
   margin: 22px 0 0;
   color: #0f172a;
-  font-size: 44px;
+  font-size: 48px;
   line-height: 1.08;
   font-weight: 930;
   letter-spacing: 0;
@@ -2784,11 +2783,11 @@ svg {
 }
 
 .marketplace-copy p {
-  max-width: 520px;
-  margin: 16px 0 0;
-  color: #4b5563;
-  font-size: 15px;
-  line-height: 1.55;
+  max-width: 680px;
+  margin: 18px 0 0;
+  color: #475569;
+  font-size: 17px;
+  line-height: 1.58;
   font-weight: 650;
 }
 
@@ -2878,9 +2877,10 @@ svg {
 
 .marketplace-visual {
   position: relative;
-  min-height: 310px;
+  min-height: 340px;
   overflow: hidden;
   border: 1px solid #eef1ed;
+  border-radius: 8px;
   background:
     linear-gradient(135deg, rgba(236, 253, 245, 0.84), rgba(248, 250, 252, 0.92) 56%, rgba(255, 251, 235, 0.56)),
     #f8fbfa;
@@ -6283,24 +6283,18 @@ svg {
   }
 }
 
-.ledger-page {
-  padding-top: 30px;
-  padding-bottom: 28px;
-}
-
 .ledger-shell {
   display: grid;
-  gap: 20px;
+  gap: 28px;
 }
 
 .ledger-hero {
   display: grid;
-  grid-template-columns: minmax(0, 1.28fr) minmax(360px, 0.82fr);
-  gap: 22px;
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 420px);
+  gap: 26px;
   align-items: stretch;
 }
 
-.ledger-hero-copy,
 .ledger-live-card,
 .ledger-main-card,
 .ledger-side-card,
@@ -6313,21 +6307,10 @@ svg {
 
 .ledger-hero-copy {
   position: relative;
-  overflow: hidden;
-  min-height: 178px;
-  padding: 28px;
-}
-
-.ledger-hero-copy::after {
-  content: "";
-  position: absolute;
-  inset: 0 0 auto auto;
-  width: 340px;
-  height: 178px;
-  background:
-    linear-gradient(135deg, transparent 0 36%, rgba(15, 159, 120, 0.1) 36% 37%, transparent 37% 54%, rgba(37, 99, 235, 0.08) 54% 55%, transparent 55%),
-    linear-gradient(160deg, rgba(15, 159, 120, 0.05), transparent 72%);
-  pointer-events: none;
+  min-width: 0;
+  overflow: visible;
+  min-height: 0;
+  padding: 34px 0 18px;
 }
 
 .ledger-title-row,
@@ -6344,13 +6327,14 @@ svg {
 .ledger-title-row {
   gap: 12px;
   flex-wrap: wrap;
+  margin-top: 22px;
 }
 
 .ledger-title-row h1 {
   margin: 0;
   color: #111827;
-  font-size: 31px;
-  line-height: 1.12;
+  font-size: 48px;
+  line-height: 1.08;
   font-weight: 930;
   letter-spacing: 0;
 }
@@ -6369,11 +6353,11 @@ svg {
 }
 
 .ledger-hero-copy > p {
-  max-width: 650px;
-  margin: 10px 0 0;
-  color: #4b5563;
-  font-size: 13px;
-  line-height: 1.55;
+  max-width: 680px;
+  margin: 18px 0 0;
+  color: #475569;
+  font-size: 17px;
+  line-height: 1.58;
   font-weight: 650;
 }
 
@@ -6435,7 +6419,10 @@ svg {
 
 .ledger-live-card {
   min-width: 0;
-  padding: 22px 22px 20px;
+  border-color: #dfe7ef;
+  background: #ffffff;
+  box-shadow: 0 18px 46px rgba(15, 23, 42, 0.08);
+  padding: 22px;
 }
 
 .ledger-card-head {
@@ -7203,7 +7190,6 @@ svg {
 
   .marketplace-copy h1 {
     max-width: 720px;
-    font-size: 44px;
   }
 
   .marketplace-visual {
@@ -7230,25 +7216,17 @@ svg {
 
 @media (max-width: 760px) {
   .public-home-copy h1,
-  .public-info-hero h1 {
+  .public-info-hero h1,
+  .marketplace-copy h1,
+  .ledger-title-row h1 {
     font-size: 40px;
   }
 
   .public-home-copy,
-  .public-info-hero > div {
+  .public-info-hero > div,
+  .marketplace-copy,
+  .ledger-hero-copy {
     padding-top: 14px;
-  }
-
-  .marketplace-page {
-    padding-top: 18px;
-  }
-
-  .marketplace-copy h1 {
-    font-size: 38px;
-  }
-
-  .marketplace-copy p {
-    font-size: 15px;
   }
 
   .marketplace-actions .primary-button,
@@ -7298,10 +7276,6 @@ svg {
   .public-home-panel,
   .public-info-summary {
     padding: 16px;
-  }
-
-  .marketplace-copy h1 {
-    font-size: 33px;
   }
 
   .marketplace-visual {
@@ -7435,18 +7409,9 @@ svg {
 }
 
 @media (max-width: 760px) {
-  .ledger-page {
-    padding-top: 18px;
-  }
-
-  .ledger-hero-copy,
   .ledger-live-card,
   .ledger-side-card {
     padding: 16px;
-  }
-
-  .ledger-title-row h1 {
-    font-size: 27px;
   }
 
   .ledger-table-actions {

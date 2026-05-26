@@ -1311,6 +1311,7 @@
       <div class="home-container ledger-shell">
         <section class="ledger-hero">
           <div class="ledger-hero-copy">
+            <span class="marketplace-eyebrow">LEDGER LOGS</span>
             <div class="ledger-title-row">
               <h1>Ledger Logs</h1>
               <span class="ledger-public-badge">
