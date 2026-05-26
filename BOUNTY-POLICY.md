@@ -45,7 +45,7 @@ Every bounty PR must include:
 - Test commands and results.
 - Notes for migrations, environment variables, risk, or deployment changes.
 
-The automated PR readiness check manages these labels:
+Maintainers use these labels while reviewing bounty PRs. GitHub Copilot code review should flag missing readiness items and suggest the relevant labels in its review summary, but maintainers apply the labels manually:
 
 - `evidence: missing`
 - `evidence: provided`
