@@ -5244,6 +5244,15 @@ svg {
   margin-top: 16px;
 }
 
+.dash-project-header:focus {
+  outline: none;
+}
+
+.dash-project-header:focus-visible {
+  outline: 2px solid rgba(15, 159, 120, 0.45);
+  outline-offset: 4px;
+}
+
 .dash-project-title {
   min-width: 0;
   display: grid;
