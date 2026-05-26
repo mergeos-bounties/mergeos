@@ -1412,7 +1412,6 @@
                     <th>Time (UTC)</th>
                     <th>Type</th>
                     <th>Project</th>
-                    <th>Description</th>
                     <th>Amount</th>
                     <th>Status</th>
                     <th>Tx / Ref</th>
@@ -1420,13 +1419,13 @@
                 </thead>
                 <tbody>
                   <tr v-if="ledgerLoading">
-                    <td class="ledger-state-cell" colspan="7">Loading real ledger entries...</td>
+                    <td class="ledger-state-cell" colspan="6">Loading real ledger entries...</td>
                   </tr>
                   <tr v-else-if="ledgerError">
-                    <td class="ledger-state-cell error" colspan="7">{{ ledgerError }}</td>
+                    <td class="ledger-state-cell error" colspan="6">{{ ledgerError }}</td>
                   </tr>
                   <tr v-else-if="ledgerEvents.length === 0">
-                    <td class="ledger-state-cell" colspan="7">No ledger entries yet. Fund a project to mint tokens and create the first logs.</td>
+                    <td class="ledger-state-cell" colspan="6">No ledger entries yet. Fund a project to mint tokens and create the first logs.</td>
                   </tr>
                   <template v-else>
                     <tr v-for="event in ledgerEvents" :key="event.key">
@@ -1449,7 +1448,6 @@
                           </div>
                         </div>
                       </td>
-                      <td>{{ event.description }}</td>
                       <td>
                         <strong :class="['ledger-amount', event.amountTone]">{{ event.amount }}</strong>
                         <span v-if="event.secondaryAmount">{{ event.secondaryAmount }}</span>
@@ -2067,6 +2065,39 @@ import {
 const hasWindow = typeof window !== 'undefined';
 const TOKEN_RATE_PER_USD = 100;
 const DASHBOARD_REFRESH_MS = 5000;
+const publicPagePaths = {
+  home: '/',
+  product: '/product',
+  solutions: '/solutions',
+  marketplace: '/marketplace',
+  'how-it-works': '/how-it-works',
+  ledger: '/ledger',
+};
+const publicPageNames = new Set(Object.keys(publicPagePaths));
+
+const props = defineProps({
+  initialPath: { type: String, default: '' },
+});
+
+function normalizeRoutePath(path = '/') {
+  const pathname = String(path || '/').split('?')[0].split('#')[0] || '/';
+  const normalized = pathname.replace(/\/+$/, '') || '/';
+  return normalized.startsWith('/') ? normalized : `/${normalized}`;
+}
+
+function normalizePublicPage(page = 'home') {
+  return publicPageNames.has(page) ? page : 'home';
+}
+
+function publicPageFromPath(path = '/') {
+  const normalizedPath = normalizeRoutePath(path);
+  const match = Object.entries(publicPagePaths).find(([, routePath]) => routePath === normalizedPath);
+  return match?.[0] || 'home';
+}
+
+function publicPathForPage(page = 'home') {
+  return publicPagePaths[normalizePublicPage(page)] || '/';
+}
 
 function getBrowserStorage() {
   if (!hasWindow || !('localStorage' in window)) {
@@ -2118,8 +2149,9 @@ const showConfirmPassword = ref(false);
 const toastMessage = ref('');
 let toastTimer = 0;
 
-const publicPage = ref('home');
-const publicModeVisible = ref(false);
+const initialPublicPage = publicPageFromPath(props.initialPath || (hasWindow ? window.location.pathname : '/'));
+const publicPage = ref(initialPublicPage);
+const publicModeVisible = ref(initialPublicPage !== 'home');
 
 const projectWizardVisible = ref(false);
 const projectWizardStage = ref('setup');
@@ -3183,20 +3215,47 @@ function scrollToSection(id) {
   }
 }
 
-function openPublicPage(page) {
-  publicModeVisible.value = true;
-  const nextPage = ['home', 'product', 'solutions', 'marketplace', 'how-it-works', 'ledger'].includes(page) ? page : 'home';
-  publicPage.value = nextPage;
-  if (nextPage === 'ledger') {
+function loadPublicPageData(page) {
+  if (page === 'ledger') {
     void loadLedgerData();
-  } else if (nextPage === 'marketplace' || nextPage === 'home') {
+    return;
+  }
+  if (page === 'marketplace' || page === 'home') {
     void loadMarketplaceData({ silent: true });
     void loadLedgerData({ silent: true });
   }
+}
+
+function updatePublicBrowserPath(page, replace = false) {
   if (!hasWindow) return;
+  const targetPath = publicPathForPage(page);
+  const currentPath = normalizeRoutePath(window.location.pathname);
+  if (currentPath === targetPath && !window.location.search && !window.location.hash) {
+    return;
+  }
+  const method = replace ? 'replaceState' : 'pushState';
+  window.history[method]({ publicPage: page }, '', targetPath);
+}
+
+function openPublicPage(page, options = {}) {
+  publicModeVisible.value = true;
+  const nextPage = normalizePublicPage(page);
+  publicPage.value = nextPage;
+  loadPublicPageData(nextPage);
+  updatePublicBrowserPath(nextPage, Boolean(options.replace));
+  if (!hasWindow) return;
+  if (options.scroll === false) return;
   window.requestAnimationFrame(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
+}
+
+function syncPublicPageFromBrowserPath() {
+  if (!hasWindow) return;
+  publicModeVisible.value = true;
+  const nextPage = publicPageFromPath(window.location.pathname);
+  publicPage.value = nextPage;
+  loadPublicPageData(nextPage);
 }
 
 function handlePublicAction(action = {}) {
@@ -3237,6 +3296,8 @@ function handleDashboardNav(item) {
 function openMarketplaceSection(id) {
   publicModeVisible.value = true;
   publicPage.value = 'marketplace';
+  updatePublicBrowserPath('marketplace');
+  loadPublicPageData('marketplace');
   if (!hasWindow) return;
   window.requestAnimationFrame(() => scrollToSection(id));
 }
@@ -3679,34 +3740,11 @@ function mapLedgerEntry(entry) {
     projectTone: projectToneFor(projectID || projectTitle),
     project: projectTitle,
     company,
-    description: ledgerDescription(entry, projectTitle, tokenAmount),
     amount: `${isFeeOrPayout ? '-' : '+'} ${formatCompactNumber(tokenAmount)} ${tokenSymbol.value}`,
     secondaryAmount: entry.type === 'payment_verified' ? 'funding verified' : entry.type === 'token_mint' ? 'mint log' : '',
     amountTone: meta.amountTone,
     ref: shortLedgerReference(entry.reference || entry.entry_hash || `#${entry.sequence}`),
   };
-}
-
-function ledgerDescription(entry, projectTitle, tokenAmount) {
-  if (entry.type === 'token_mint') {
-    return `${formatCompactNumber(tokenAmount)} ${tokenSymbol.value} minted for payer on ${projectTitle}`;
-  }
-  if (entry.type === 'payment_verified') {
-    return `Payment verified and attached to ${projectTitle}`;
-  }
-  if (entry.type === 'platform_fee') {
-    return `Platform fee recorded for ${projectTitle}`;
-  }
-  if (entry.type === 'project_reserve') {
-    return `Escrow reserve opened for ${projectTitle}`;
-  }
-  if (entry.type === 'task_reserve') {
-    return `Task budget reserved from project escrow`;
-  }
-  if (entry.type === 'task_payment') {
-    return `Task payout released from escrow`;
-  }
-  return `Ledger entry ${entry.type}`;
 }
 
 function shortLedgerReference(value = '') {
@@ -4027,6 +4065,10 @@ async function logout() {
 }
 
 onMounted(async () => {
+  if (hasWindow) {
+    window.addEventListener('popstate', syncPublicPageFromBrowserPath);
+    updatePublicBrowserPath(publicPage.value, true);
+  }
   const runtimePromise = loadRuntimeConfig().catch((error) => showToast(error.message));
   await Promise.all([
     runtimePromise,
@@ -4037,6 +4079,9 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
+  if (hasWindow) {
+    window.removeEventListener('popstate', syncPublicPageFromBrowserPath);
+  }
   stopDashboardRealtime();
 });
 </script>
