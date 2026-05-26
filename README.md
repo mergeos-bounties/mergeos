@@ -85,6 +85,11 @@ Environment and setup notes:
 - Existing frontend API proxy settings still apply.
 - Local development uses the same `npm run local` and backend startup flow as before.
 
+Evidence screenshots in this branch:
+
+- [Public homepage live update](docs/evidence/realtime-homepage-live.png)
+- [Authenticated dashboard live update](docs/evidence/realtime-dashboard-live.png)
+
 ## Stack
 
 - Backend: Go `net/http`
