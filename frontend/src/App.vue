@@ -136,10 +136,39 @@
                 v-model.trim="projectSetupForm.shortDescription"
                 rows="5"
                 maxlength="1000"
-                placeholder="Describe your project, what you want to build, and the problem you're solving..."
+                :placeholder="projectSetupForm.projectMode === 'bugfix' ? 'Describe the bug, steps to reproduce, and expected behavior...' : 'Describe your project, what you want to build, and the problem you're solving...'"
               />
               <small>{{ projectSetupForm.shortDescription.length }} / 1000</small>
             </label>
+
+            <section class="wizard-section full">
+              <div class="wizard-section-title">
+                <strong>Project mode <b>*</b></strong>
+                <small>Are you starting fresh or fixing something?</small>
+              </div>
+              <div class="project-mode-selector">
+                <button
+                  :class="{ selected: projectSetupForm.projectMode === 'new' }"
+                  class="project-mode-tile"
+                  type="button"
+                  @click="projectSetupForm.projectMode = 'new'"
+                >
+                  <span class="mode-icon"><Lightbulb :size="20" /></span>
+                  <strong>New project</strong>
+                  <small>Start a brand-new project or idea from scratch</small>
+                </button>
+                <button
+                  :class="{ selected: projectSetupForm.projectMode === 'bugfix' }"
+                  class="project-mode-tile"
+                  type="button"
+                  @click="projectSetupForm.projectMode = 'bugfix'"
+                >
+                  <span class="mode-icon"><Bug :size="20" /></span>
+                  <strong>Fix existing project</strong>
+                  <small>Fix a bug or issue in an existing repo or product</small>
+                </button>
+              </div>
+            </section>
 
             <section class="wizard-section full">
               <div class="wizard-section-title">
@@ -2390,6 +2419,7 @@ const repoImportResult = ref(null);
 let dashboardRefreshTimer = 0;
 
 const projectSetupForm = reactive({
+  projectMode: 'new',
   title: '',
   shortDescription: '',
   projectType: '',
@@ -2453,14 +2483,25 @@ const projectSetupSteps = [
   },
 ];
 
-const projectTypeOptions = [
+const projectTypeOptionsNew = [
   { label: 'Web Development', caption: 'Web apps', icon: Globe2 },
-  { label: 'Repo Issue Fix', caption: 'Existing repo', icon: Bug },
   { label: 'Mobile Development', caption: 'iOS and Android', icon: Compass },
   { label: 'AI / ML', caption: 'Agents and models', icon: Bot },
   { label: 'Smart Contract', caption: 'Web3', icon: Link2 },
   { label: 'Other', caption: 'Custom work', icon: MoreHorizontal },
 ];
+
+const projectTypeOptionsBugfix = [
+  { label: 'Bug Fix', caption: 'Fix a specific bug', icon: Bug },
+  { label: 'Performance', caption: 'Optimize speed', icon: Zap },
+  { label: 'Security', caption: 'Patch vulnerability', icon: ShieldCheck },
+  { label: 'UI/UX', caption: 'Fix interface issues', icon: Layout },
+  { label: 'Other', caption: 'Custom fix', icon: MoreHorizontal },
+];
+
+const projectTypeOptions = computed(() =>
+  projectSetupForm.projectMode === 'bugfix' ? projectTypeOptionsBugfix : projectTypeOptionsNew
+);
 
 const budgetTypeOptions = [
   { label: 'Fixed price', icon: CircleDollarSign },
