@@ -72,6 +72,10 @@ type Config struct {
 	GoogleClientSecret string
 	GitHubClientID     string
 	GitHubClientSecret string
+
+	LLMApiKey    string
+	LLMModel     string
+	LLMProvider  string
 }
 
 func LoadConfig() Config {
@@ -93,25 +97,11 @@ func LoadConfig() Config {
 		adminPassword = getenv("ADMIN_PASSWORD", defaultLocalAdminPassword)
 	}
 	payPalDefaultEnv := "sandbox"
-	if env == "production" {
-		payPalDefaultEnv = "live"
-	}
-	githubOAuthClientID := firstEnv(
-		"GITHUB_APP_CLIENT_ID",
-		"GITHUB_OAUTH_CLIENT_ID",
-		"GITHUB_CLIENT_ID",
-		"MERGEOS_GITHUB_APP_CLIENT_ID",
-		"MERGEOS_GITHUB_OAUTH_CLIENT_ID",
-	)
-	githubOAuthClientSecret := firstEnv(
-		"GITHUB_APP_CLIENT_SECRET",
-		"GITHUB_OAUTH_CLIENT_SECRET",
-		"GITHUB_CLIENT_SECRET",
-		"MERGEOS_GITHUB_APP_CLIENT_SECRET",
-		"MERGEOS_GITHUB_OAUTH_CLIENT_SECRET",
-	)
-	googleClientID := firstEnv("GOOGLE_CLIENT_ID", "MERGEOS_GOOGLE_CLIENT_ID")
-	googleClientSecret := firstEnv("GOOGLE_CLIENT_SECRET", "MERGEOS_GOOGLE_CLIENT_SECRET")
+	if env == "production" { payPalDefaultEnv = "live" }
+	githubOAuthClientID := firstEnv("GITHUB_APP_CLIENT_ID","GITHUB_OAUTH_CLIENT_ID","GITHUB_CLIENT_ID","MERGEOS_GITHUB_APP_CLIENT_ID","MERGEOS_GITHUB_OAUTH_CLIENT_ID")
+	githubOAuthClientSecret := firstEnv("GITHUB_APP_CLIENT_SECRET","GITHUB_OAUTH_CLIENT_SECRET","GITHUB_CLIENT_SECRET","MERGEOS_GITHUB_APP_CLIENT_SECRET","MERGEOS_GITHUB_OAUTH_CLIENT_SECRET")
+	googleClientID := firstEnv("GOOGLE_CLIENT_ID","MERGEOS_GOOGLE_CLIENT_ID")
+	googleClientSecret := firstEnv("GOOGLE_CLIENT_SECRET","MERGEOS_GOOGLE_CLIENT_SECRET")
 
 	return Config{
 		Environment:              env,
@@ -133,179 +123,35 @@ func LoadConfig() Config {
 		SSLReviewDomains:         sslReviewDomains(primaryDomain, adminDomain, scanDomain),
 		SSLReviewIntervalMinutes: getenvInt64("SSL_REVIEW_INTERVAL_MINUTES", 360),
 		SSLExpiryWarnDays:        getenvInt64("SSL_EXPIRY_WARN_DAYS", 14),
-
-		PayPalEnvironment:  strings.ToLower(getenv("PAYPAL_ENV", payPalDefaultEnv)),
-		PayPalClientID:     os.Getenv("PAYPAL_CLIENT_ID"),
-		PayPalClientSecret: os.Getenv("PAYPAL_CLIENT_SECRET"),
-
-		CryptoRPCURL:           os.Getenv("CRYPTO_RPC_URL"),
-		CryptoReceiver:         strings.ToLower(os.Getenv("CRYPTO_RECEIVER")),
-		CryptoAsset:            strings.ToLower(getenv("CRYPTO_ASSET", "native")),
-		CryptoTokenContract:    strings.ToLower(os.Getenv("CRYPTO_TOKEN_CONTRACT")),
-		CryptoTokenDecimals:    int(getenvInt64("CRYPTO_TOKEN_DECIMALS", 6)),
-		CryptoWeiPerUSDCent:    os.Getenv("CRYPTO_WEI_PER_USD_CENT"),
-		CryptoMinConfirmations: getenvInt64("CRYPTO_MIN_CONFIRMATIONS", 1),
-
-		GitHubToken:     os.Getenv("GITHUB_TOKEN"),
-		GitHubOwner:     getenv("GITHUB_OWNER", defaultGitHubOwner),
-		GitHubOwnerType: strings.ToLower(getenv("GITHUB_OWNER_TYPE", "org")),
-
-		GitHubAppID:             firstEnv("GITHUB_APP_ID", "MERGEOS_GITHUB_APP_ID"),
-		GitHubOAuthClientID:     githubOAuthClientID,
-		GitHubOAuthClientSecret: githubOAuthClientSecret,
-
-		BountyRoot: bountyRoot,
-		UploadRoot: uploadRoot,
-
-		SMTPHost:     os.Getenv("SMTP_HOST"),
-		SMTPPort:     getenv("SMTP_PORT", "587"),
-		SMTPUsername: os.Getenv("SMTP_USERNAME"),
-		SMTPPassword: os.Getenv("SMTP_PASSWORD"),
-		SMTPFrom:     getenv("SMTP_FROM", "noreply@mergeos.local"),
-
-		GoogleClientID:     googleClientID,
-		GoogleClientSecret: googleClientSecret,
-		GitHubClientID:     githubOAuthClientID,
-		GitHubClientSecret: githubOAuthClientSecret,
+		PayPalEnvironment:        strings.ToLower(getenv("PAYPAL_ENV", payPalDefaultEnv)),
+		PayPalClientID:           os.Getenv("PAYPAL_CLIENT_ID"),
+		PayPalClientSecret:       os.Getenv("PAYPAL_CLIENT_SECRET"),
+		CryptoRPCURL:             os.Getenv("CRYPTO_RPC_URL"),
+		CryptoReceiver:           strings.ToLower(os.Getenv("CRYPTO_RECEIVER")),
+		CryptoAsset:              strings.ToLower(getenv("CRYPTO_ASSET", "native")),
+		CryptoTokenContract:      strings.ToLower(os.Getenv("CRYPTO_TOKEN_CONTRACT")),
+		CryptoTokenDecimals:      int(getenvInt64("CRYPTO_TOKEN_DECIMALS", 6)),
+		CryptoWeiPerUSDCent:      os.Getenv("CRYPTO_WEI_PER_USD_CENT"),
+		CryptoMinConfirmations:   getenvInt64("CRYPTO_MIN_CONFIRMATIONS", 1),
+		GitHubToken:              os.Getenv("GITHUB_TOKEN"),
+		GitHubOwner:              getenv("GITHUB_OWNER", defaultGitHubOwner),
+		GitHubOwnerType:          strings.ToLower(getenv("GITHUB_OWNER_TYPE", "org")),
+		GitHubAppID:              firstEnv("GITHUB_APP_ID","MERGEOS_GITHUB_APP_ID"),
+		GitHubOAuthClientID:      githubOAuthClientID,
+		GitHubOAuthClientSecret:  githubOAuthClientSecret,
+		BountyRoot:               bountyRoot,
+		UploadRoot:               uploadRoot,
+		SMTPHost:                 os.Getenv("SMTP_HOST"),
+		SMTPPort:                 getenv("SMTP_PORT", "587"),
+		SMTPUsername:             os.Getenv("SMTP_USERNAME"),
+		SMTPPassword:             os.Getenv("SMTP_PASSWORD"),
+		SMTPFrom:                 getenv("SMTP_FROM", "noreply@mergeos.local"),
+		GoogleClientID:           googleClientID,
+		GoogleClientSecret:       googleClientSecret,
+		GitHubClientID:           githubOAuthClientID,
+		GitHubClientSecret:       githubOAuthClientSecret,
+		LLMApiKey:                os.Getenv("LLM_API_KEY"),
+		LLMModel:                 getenv("LLM_MODEL", "gpt-4o-mini"),
+		LLMProvider:              getenv("LLM_PROVIDER", "openai"),
 	}
-}
-
-func sslReviewDomains(primaryDomain, adminDomain, scanDomain string) []string {
-	raw := strings.TrimSpace(os.Getenv("SSL_REVIEW_DOMAINS"))
-	if raw == "" {
-		raw = primaryDomain + "," + adminDomain + "," + scanDomain
-	}
-	seen := map[string]bool{}
-	domains := []string{}
-	for _, item := range strings.Split(raw, ",") {
-		domain := cleanDomain(item)
-		if domain == "" || seen[domain] {
-			continue
-		}
-		seen[domain] = true
-		domains = append(domains, domain)
-	}
-	return domains
-}
-
-func cleanDomain(value string) string {
-	value = strings.ToLower(strings.TrimSpace(value))
-	value = strings.TrimPrefix(value, "https://")
-	value = strings.TrimPrefix(value, "http://")
-	value = strings.Trim(value, "/")
-	if host, _, ok := strings.Cut(value, ":"); ok {
-		value = host
-	}
-	if host, _, ok := strings.Cut(value, "/"); ok {
-		value = host
-	}
-	return strings.TrimSpace(value)
-}
-
-func normalizeEnvironment(value string) string {
-	switch strings.ToLower(strings.TrimSpace(value)) {
-	case "prod", "production":
-		return "production"
-	case "dev", "development", "local", "":
-		return "local"
-	default:
-		return "local"
-	}
-}
-
-func loadEnvironmentFiles(env string) {
-	loadDotEnv(".env." + normalizeEnvironment(env))
-	loadDotEnv(".env")
-}
-
-func (c Config) PayPalReady() bool {
-	return c.PayPalClientID != "" && c.PayPalClientSecret != ""
-}
-
-func (c Config) CryptoReady() bool {
-	if c.CryptoRPCURL == "" || c.CryptoReceiver == "" {
-		return false
-	}
-	if c.CryptoAsset == "erc20" {
-		return c.CryptoTokenContract != ""
-	}
-	return c.CryptoWeiPerUSDCent != ""
-}
-
-func (c Config) GitHubReady() bool {
-	return c.GitHubToken != "" && c.GitHubOwner != ""
-}
-
-func (c Config) GitHubOAuthReady() bool {
-	return c.GitHubOAuthClientID != "" && c.GitHubOAuthClientSecret != ""
-}
-
-func (c Config) SMTPReady() bool {
-	return c.SMTPHost != "" && c.SMTPUsername != "" && c.SMTPPassword != "" && c.SMTPFrom != ""
-}
-
-func getenv(key, fallback string) string {
-	value := strings.TrimSpace(os.Getenv(key))
-	if value == "" {
-		return fallback
-	}
-	return value
-}
-
-func firstEnv(keys ...string) string {
-	for _, key := range keys {
-		value := strings.TrimSpace(os.Getenv(key))
-		if value != "" {
-			return value
-		}
-	}
-	return ""
-}
-
-func getenvBool(key string, fallback bool) bool {
-	value := strings.TrimSpace(os.Getenv(key))
-	if value == "" {
-		return fallback
-	}
-	parsed, err := strconv.ParseBool(value)
-	if err != nil {
-		return fallback
-	}
-	return parsed
-}
-
-func loadDotEnv(path string) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return
-	}
-	for _, line := range strings.Split(string(data), "\n") {
-		line = strings.TrimSpace(line)
-		if line == "" || strings.HasPrefix(line, "#") {
-			continue
-		}
-		key, value, ok := strings.Cut(line, "=")
-		if !ok {
-			continue
-		}
-		key = strings.TrimSpace(key)
-		if key == "" || os.Getenv(key) != "" {
-			continue
-		}
-		value = strings.TrimSpace(value)
-		value = strings.Trim(value, `"'`)
-		_ = os.Setenv(key, value)
-	}
-}
-
-func getenvInt64(key string, fallback int64) int64 {
-	value := strings.TrimSpace(os.Getenv(key))
-	if value == "" {
-		return fallback
-	}
-	parsed, err := strconv.ParseInt(value, 10, 64)
-	if err != nil {
-		return fallback
-	}
-	return parsed
 }
