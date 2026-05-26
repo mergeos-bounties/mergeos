@@ -3,6 +3,7 @@ package core
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 )
@@ -26,15 +27,22 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("POST /api/public/repo/issues", s.importRepoIssues)
 	mux.HandleFunc("POST /api/auth/register", s.register)
 	mux.HandleFunc("POST /api/auth/login", s.login)
+	mux.HandleFunc("POST /api/auth/github", s.githubLogin)
 	mux.HandleFunc("GET /api/auth/me", s.me)
 	mux.HandleFunc("POST /api/auth/logout", s.logout)
+	mux.HandleFunc("POST /api/wallets", s.createWallet)
+	mux.HandleFunc("GET /api/wallets/{address}", s.wallet)
+	mux.HandleFunc("POST /api/wallets/link", s.linkWallet)
 	mux.HandleFunc("POST /api/payments/paypal/orders", s.createPayPalOrder)
 	mux.HandleFunc("POST /api/uploads", s.uploadAttachment)
 	mux.HandleFunc("GET /api/uploads/", s.downloadAttachment)
 	mux.HandleFunc("GET /api/admin/summary", s.adminSummary)
 	mux.HandleFunc("GET /api/admin/users", s.adminUsers)
+	mux.HandleFunc("PATCH /api/admin/users/{id}", s.updateAdminUser)
 	mux.HandleFunc("GET /api/admin/projects", s.adminProjects)
 	mux.HandleFunc("GET /api/admin/tasks", s.adminTasks)
+	mux.HandleFunc("GET /api/admin/tasks/{id}/pulls", s.adminTaskPullRequests)
+	mux.HandleFunc("POST /api/admin/tasks/{id}/pulls/{number}/merge", s.mergeAdminTaskPullRequest)
 	mux.HandleFunc("GET /api/admin/notifications", s.adminNotifications)
 	mux.HandleFunc("GET /api/admin/attachments", s.adminAttachments)
 	mux.HandleFunc("GET /api/admin/ledger", s.adminLedger)
@@ -43,6 +51,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/projects", s.projects)
 	mux.HandleFunc("POST /api/projects", s.createProject)
 	mux.HandleFunc("POST /api/projects/evaluate", s.evaluateProject)
+	mux.HandleFunc("POST /api/projects/evaluate-price", s.evaluateProjectPrice)
 	mux.HandleFunc("GET /api/tasks", s.tasks)
 	mux.HandleFunc("POST /api/tasks/", s.acceptTask)
 	mux.HandleFunc("GET /api/notifications", s.notifications)
@@ -67,6 +76,8 @@ func (s *Server) config(w http.ResponseWriter, _ *http.Request) {
 		TokenSymbol:       s.cfg.TokenSymbol,
 		PaymentMode:       paymentMode(s.cfg),
 		RepoProvider:      repoProvider(s.cfg),
+		GitHubOAuthReady:  s.cfg.GitHubOAuthReady(),
+		GitHubOAuthClient: s.cfg.GitHubOAuthClientID,
 		PayPalReady:       s.cfg.PayPalReady(),
 		CryptoReady:       s.cfg.CryptoReady(),
 		GitHubReady:       s.cfg.GitHubReady(),
@@ -136,6 +147,29 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, auth)
 }
 
+func (s *Server) githubLogin(w http.ResponseWriter, r *http.Request) {
+	if !s.cfg.GitHubOAuthReady() {
+		writeError(w, http.StatusBadRequest, "github oauth is not configured")
+		return
+	}
+	var req GitHubAuthRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	profile, err := FetchGitHubAuthProfile(r.Context(), s.cfg, req)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	auth, err := s.store.AuthenticateGitHub(profile, req.WalletAddress, req.RecoveryCode)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, auth)
+}
+
 func (s *Server) me(w http.ResponseWriter, r *http.Request) {
 	user, ok := s.requireUser(w, r)
 	if !ok {
@@ -147,6 +181,47 @@ func (s *Server) me(w http.ResponseWriter, r *http.Request) {
 func (s *Server) logout(w http.ResponseWriter, r *http.Request) {
 	s.store.Logout(r.Header.Get("Authorization"))
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
+}
+
+func (s *Server) createWallet(w http.ResponseWriter, r *http.Request) {
+	var req CreateWalletRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil && err != io.EOF {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	wallet, err := s.store.CreateGuestWallet(req)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusCreated, wallet)
+}
+
+func (s *Server) wallet(w http.ResponseWriter, r *http.Request) {
+	wallet, ok := s.store.WalletSummary(r.PathValue("address"))
+	if !ok {
+		writeError(w, http.StatusNotFound, "wallet not found")
+		return
+	}
+	writeJSON(w, http.StatusOK, wallet)
+}
+
+func (s *Server) linkWallet(w http.ResponseWriter, r *http.Request) {
+	user, ok := s.requireUser(w, r)
+	if !ok {
+		return
+	}
+	var req LinkWalletRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	updated, err := s.store.LinkWalletToUser(user.ID, req)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, updated)
 }
 
 func (s *Server) projects(w http.ResponseWriter, r *http.Request) {
@@ -197,6 +272,23 @@ func (s *Server) adminUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, s.store.ListUsers())
+}
+
+func (s *Server) updateAdminUser(w http.ResponseWriter, r *http.Request) {
+	if _, ok := s.requireAdmin(w, r); !ok {
+		return
+	}
+	var req AdminUpdateUserRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	user, err := s.store.UpdateUser(r.PathValue("id"), req)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, user)
 }
 
 func (s *Server) adminProjects(w http.ResponseWriter, r *http.Request) {
@@ -322,6 +414,23 @@ func (s *Server) ledger(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, s.store.ListLedgerForUser(user.ID))
 }
 
+func (s *Server) evaluateProjectPrice(w http.ResponseWriter, r *http.Request) {
+	if _, ok := s.requireUser(w, r); !ok {
+		return
+	}
+	var req ProjectPriceEvaluationRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	result, err := EvaluateProjectPrice(req)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, result)
+}
+
 func (s *Server) createProject(w http.ResponseWriter, r *http.Request) {
 	user, ok := s.requireUser(w, r)
 	if !ok {
@@ -411,7 +520,7 @@ func withCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type,Authorization")
-		w.Header().Set("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
+		w.Header().Set("Access-Control-Allow-Methods", "GET,POST,PATCH,OPTIONS")
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusNoContent)
 			return
