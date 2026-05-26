@@ -1002,7 +1002,7 @@
             :key="item.label"
             :class="{ active: item.active }"
             type="button"
-            @click="handleDashboardNav(item)"
+            @click="item.section ? openDashboardSection(item.section) : handleDashboardNav(item)"
           >
             <component :is="item.icon" :size="16" />
             {{ item.label }}
@@ -1037,7 +1037,7 @@
             :key="item.label"
             :class="{ active: item.active }"
             type="button"
-            @click="handleDashboardNav(item)"
+            @click="item.section ? openDashboardSection(item.section) : handleDashboardNav(item)"
           >
             {{ item.label }}
           </button>
@@ -1166,7 +1166,7 @@
                 <span>Released <strong>{{ formatMRGFromCents(dashboardLedgerPayoutCents || dashboardSpentCents) }}</strong></span>
                 <span>Remaining <strong>{{ formatMRGFromCents(dashboardRemainingCents) }}</strong></span>
               </div>
-              <button type="button" @click="openPublicPage('ledger')">View Ledger</button>
+              <button type="button" @click="openDashboardSection('payments')">Payment History</button>
             </article>
 
             <article class="dash-card analysis-card">
@@ -1182,6 +1182,38 @@
                 </span>
               </div>
               <button type="button" @click="showToast('Opening task routing...')">View Routing</button>
+            </article>
+          </section>
+
+          <section ref="dashboardPaymentHistory" class="dash-card dashboard-payment-history" tabindex="-1">
+            <div class="card-title-row">
+              <div>
+                <h2>Payment History</h2>
+                <p>Project funding, token minting, escrow movement, and payout ledger records.</p>
+              </div>
+              <span>{{ dashboardPaymentRows.length }} rows</span>
+            </div>
+
+            <div v-if="dashboardPaymentRows.length" class="payment-history-list">
+              <article v-for="payment in dashboardPaymentRows" :key="payment.key">
+                <span :class="['payment-history-icon', payment.tone]">
+                  <component :is="payment.icon" :size="15" />
+                </span>
+                <div class="payment-history-main">
+                  <strong>{{ payment.title }}</strong>
+                  <small>{{ payment.project }}</small>
+                  <span>{{ payment.reference }}</span>
+                </div>
+                <div class="payment-history-meta">
+                  <strong :class="payment.amountTone">{{ payment.amount }}</strong>
+                  <small>{{ payment.method }} · {{ payment.status }}</small>
+                  <span>{{ payment.when }}</span>
+                </div>
+              </article>
+            </div>
+            <article v-else class="dash-empty-state compact">
+              <strong>{{ dashboardLoading ? 'Loading payment history...' : 'No payment history yet' }}</strong>
+              <p>{{ dashboardLoading ? 'Fetching project ledger records.' : 'Funding, mint, reserve, fee, and payout rows will appear here after payment.' }}</p>
             </article>
           </section>
 
@@ -2173,7 +2205,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, onUnmounted, reactive, ref } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, reactive, ref } from 'vue';
 import {
   ArrowLeft,
   ArrowRight,
@@ -2381,6 +2413,7 @@ const dashboardLoading = ref(false);
 const dashboardError = ref('');
 const dashboardSearch = ref('');
 const selectedDashboardProjectID = ref('');
+const dashboardPaymentHistory = ref(null);
 const priceEvaluation = ref(null);
 const priceEvaluationBusy = ref(false);
 const priceEvaluationError = ref('');
@@ -3193,6 +3226,13 @@ const dashboardLedgerRows = computed(() =>
     };
   }),
 );
+const dashboardPaymentRows = computed(() =>
+  dashboardProjectLedger.value
+    .filter((entry) => dashboardPaymentEntryTypes.has(String(entry.type || '')))
+    .slice()
+    .reverse()
+    .map(mapDashboardPaymentRow),
+);
 const dashboardNotificationCount = computed(() => Math.min(9, dashboardActivityRows.value.length));
 
 const marketplaceBenefits = [
@@ -3221,7 +3261,7 @@ const sidebarSections = [
       { label: 'My Projects', icon: FolderKanban, active: true, toast: 'Opening projects...' },
       { label: 'Tasks', icon: ListTodo, toast: 'Opening tasks...' },
       { label: 'Repositories', icon: GitBranch, toast: 'Opening repositories...' },
-      { label: 'Payments', icon: CreditCard, toast: 'Opening payments...' },
+      { label: 'Payments', icon: CreditCard, section: 'payments' },
       { label: 'Notifications', icon: Bell, toast: 'Opening notifications...' },
     ],
   },
@@ -3248,11 +3288,19 @@ const topNavItems = [
   { label: 'Projects', toast: 'Opening projects...' },
   { label: 'Marketplace', page: 'marketplace' },
   { label: 'Repos', toast: 'Opening repositories...' },
-  { label: 'Payments', toast: 'Opening payments...' },
+  { label: 'Payments', section: 'payments' },
   { label: 'Analytics', toast: 'Opening analytics...' },
 ];
 
 const dashboardTabs = ['Overview', 'Tasks', 'Activity', 'Ledger', 'Files', 'Settings'];
+const dashboardPaymentEntryTypes = new Set([
+  'payment_verified',
+  'token_mint',
+  'platform_fee',
+  'project_reserve',
+  'task_reserve',
+  'task_payment',
+]);
 
 function initialsFor(value = '') {
   const parts = value
@@ -3456,11 +3504,30 @@ function handleDashboardNav(item) {
     openPublicPage(item.page);
     return;
   }
+  if (item.section) {
+    openDashboardSection(item.section);
+    return;
+  }
   if (item.label === 'Dashboard') {
     openDashboard();
     return;
   }
   showToast(item.toast || `${item.label} opened.`);
+}
+
+async function openDashboardSection(section) {
+  publicModeVisible.value = false;
+  if (user.value) {
+    void loadDashboardData({ silent: true });
+  }
+  await nextTick();
+  if (!hasWindow) return;
+  if (section === 'payments') {
+    window.requestAnimationFrame(() => {
+      dashboardPaymentHistory.value?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      dashboardPaymentHistory.value?.focus({ preventScroll: true });
+    });
+  }
 }
 
 function openMarketplaceSection(id) {
@@ -3985,6 +4052,42 @@ function mapDashboardActivity(entry = {}) {
     color: meta.tone === 'amber' ? 'yellow' : meta.tone,
     time: formatLedgerDateTime(entry.created_at).full,
   };
+}
+
+function mapDashboardPaymentRow(entry = {}) {
+  const meta = ledgerMetaFor(entry.type);
+  const when = formatLedgerDateTime(entry.created_at);
+  return {
+    key: `${entry.sequence}-${entry.entry_hash || entry.reference || entry.type}`,
+    title: meta.type,
+    icon: meta.icon,
+    tone: meta.tone,
+    amountTone: meta.amountTone,
+    project: dashboardSelectedProject.value?.title || 'Selected project',
+    amount: formatMRGFromCents(entry.amount_cents),
+    method: dashboardPaymentMethodLabel(entry),
+    status: dashboardPaymentStatusLabel(entry),
+    when: when.full,
+    reference: shortLedgerReference(entry.reference || entry.entry_hash || `#${entry.sequence || '-'}`),
+  };
+}
+
+function dashboardPaymentMethodLabel(entry = {}) {
+  const text = String(entry.reference || entry.from_account || entry.to_account || '').toLowerCase();
+  if (text.includes('paypal')) return 'PayPal';
+  if (text.includes('usdt') || text.includes('usdc') || text.includes('crypto') || text.includes('0x')) return 'Crypto';
+  if (text.includes('local-paid')) return 'Local verifier';
+  if (entry.type === 'task_payment') return 'MRG payout';
+  if (entry.type === 'token_mint') return 'MRG mint';
+  return 'Ledger';
+}
+
+function dashboardPaymentStatusLabel(entry = {}) {
+  if (entry.type === 'task_payment') return 'Released';
+  if (entry.type === 'platform_fee') return 'Collected';
+  if (entry.type === 'project_reserve' || entry.type === 'task_reserve') return 'Reserved';
+  if (entry.type === 'token_mint') return 'Minted';
+  return 'Verified';
 }
 
 function formatLedgerDateTime(value) {
