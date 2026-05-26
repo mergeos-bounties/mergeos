@@ -52,9 +52,10 @@ jobs:
 
       - name: Package release
         run: |
-          mkdir -p release/frontend
+          mkdir -p release/frontend/dist
           cp backend/dist/mergeos release/mergeos
-          cp -R frontend/dist/. release/frontend/
+          cp -R frontend/dist/. release/frontend/dist/
+          cp frontend/server.js frontend/package.json frontend/package-lock.json release/frontend/
           tar -czf mergeos-release.tar.gz -C release .
 
       - name: Upload release artifact
@@ -158,6 +159,48 @@ jobs:
               MERGEOS_ENV=production PORT=8080 nohup "$APP_DIR/mergeos" > "$APP_DIR/mergeos.log" 2> "$APP_DIR/mergeos.err.log" &
             fi
             if command -v sudo >/dev/null 2>&1; then
+              if ! command -v node >/dev/null 2>&1 || ! command -v npm >/dev/null 2>&1; then
+                sudo -n apt-get update
+                sudo -n env DEBIAN_FRONTEND=noninteractive apt-get install -y nodejs npm
+              fi
+              cd "$APP_DIR/frontend"
+              npm ci --omit=dev
+              cd "$APP_DIR"
+              if command -v systemctl >/dev/null 2>&1; then
+                SERVICE_DIR="$HOME/.config/systemd/user"
+                FRONTEND_SERVICE_FILE="$SERVICE_DIR/mergeos-frontend.service"
+                NPM_BIN="$(command -v npm)"
+                mkdir -p "$SERVICE_DIR"
+                cat > "$FRONTEND_SERVICE_FILE" <<SERVICE
+            [Unit]
+            Description=MergeOS SSR frontend
+            After=network.target mergeos.service
+
+            [Service]
+            Type=simple
+            WorkingDirectory=$APP_DIR/frontend
+            Environment=MERGEOS_ENV=production
+            Environment=NODE_ENV=production
+            Environment=FRONTEND_HOST=127.0.0.1
+            Environment=FRONTEND_PORT=8081
+            Environment=API_TARGET=http://127.0.0.1:8080
+            ExecStart=$NPM_BIN run production
+            Restart=always
+            RestartSec=5
+
+            [Install]
+            WantedBy=default.target
+            SERVICE
+                systemctl --user daemon-reload
+                systemctl --user enable mergeos-frontend.service
+                systemctl --user restart mergeos-frontend.service
+                systemctl --user is-active --quiet mergeos-frontend.service
+              else
+                pkill -f "$APP_DIR/frontend/server.js" || true
+                cd "$APP_DIR/frontend"
+                MERGEOS_ENV=production NODE_ENV=production FRONTEND_HOST=127.0.0.1 FRONTEND_PORT=8081 API_TARGET=http://127.0.0.1:8080 nohup node server.js --mode production --prod > "$APP_DIR/frontend.log" 2> "$APP_DIR/frontend.err.log" &
+                cd "$APP_DIR"
+              fi
               if ! command -v nginx >/dev/null 2>&1; then
                 sudo -n apt-get update
                 sudo -n env DEBIAN_FRONTEND=noninteractive apt-get install -y nginx
@@ -167,7 +210,7 @@ jobs:
               listen 80;
               listen [::]:80;
               server_name mergeos.shop uta.mergeos.shop _;
-              root $APP_DIR/frontend/client;
+              root $APP_DIR/frontend/dist/client;
               index index.html;
               client_max_body_size 30m;
 
@@ -187,7 +230,12 @@ jobs:
               }
 
               location / {
-                try_files \$uri \$uri/ /index.html;
+                proxy_pass http://127.0.0.1:8081;
+                proxy_http_version 1.1;
+                proxy_set_header Host \$host;
+                proxy_set_header X-Real-IP \$remote_addr;
+                proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto \$scheme;
               }
             }
             NGINX
