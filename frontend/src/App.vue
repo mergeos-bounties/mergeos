@@ -2500,6 +2500,15 @@ const ledgerVerifiedFundingCents = computed(() =>
     .filter((entry) => entry.type === 'payment_verified')
     .reduce((total, entry) => total + (Number(entry.amount_cents) || 0), 0),
 );
+const publicVerifiedFundingCents = computed(() => {
+  const ledgerFunding = ledgerVerifiedFundingCents.value;
+  if (ledgerFunding > 0) return ledgerFunding;
+  return Number(marketplaceStats.value.total_budget_cents) || 0;
+});
+const publicMintedTokenTotal = computed(() => {
+  if (ledgerMintedTokenTotal.value > 0) return ledgerMintedTokenTotal.value;
+  return tokenAmountFromCents(publicVerifiedFundingCents.value);
+});
 const ledgerProjectCount = computed(() => {
   const ids = new Set();
   for (const entry of ledgerRawEntries.value) {
@@ -2508,10 +2517,17 @@ const ledgerProjectCount = computed(() => {
   }
   return ids.size;
 });
+const publicProjectCount = computed(() =>
+  ledgerProjectCount.value
+  || Number(marketplaceStats.value.project_count)
+  || ledgerProjects.value.length
+  || marketplaceData.value.projects.length
+  || 0,
+);
 const ledgerLiveStats = computed(() => [
   { value: String(ledgerRawEntries.value.length), label: 'Ledger entries' },
-  { value: `${formatCompactNumber(ledgerMintedTokenTotal.value)} ${tokenSymbol.value}`, label: 'Tokens minted' },
-  { value: formatLedgerMRGFromCents(ledgerVerifiedFundingCents.value), label: 'Verified funding' },
+  { value: formatPublicTokenAmount(publicMintedTokenTotal.value), label: 'Tokens minted' },
+  { value: formatLedgerMRGFromCents(publicVerifiedFundingCents.value), label: 'Verified funding' },
   { value: String(ledgerRawEntries.value.filter((entry) => entry.type === 'task_payment').length), label: 'Payments released' },
 ]);
 const ledgerTrendingProjects = computed(() => {
@@ -2551,9 +2567,9 @@ const ledgerChainRows = computed(() => [
   { label: 'Repo provider', value: runtimeConfig.value?.repo_provider || 'not loaded' },
 ]);
 const ledgerFooterStats = computed(() => [
-  { value: formatLedgerMRGFromCents(ledgerVerifiedFundingCents.value), label: 'Verified funding' },
-  { value: String(ledgerProjectCount.value), label: 'Funded projects' },
-  { value: `${formatCompactNumber(ledgerMintedTokenTotal.value)} ${tokenSymbol.value}`, label: 'Tokens minted' },
+  { value: formatLedgerMRGFromCents(publicVerifiedFundingCents.value), label: 'Verified funding' },
+  { value: String(publicProjectCount.value), label: 'Funded projects' },
+  { value: formatPublicTokenAmount(publicMintedTokenTotal.value), label: 'Tokens minted' },
   { value: String(ledgerRawEntries.value.length), label: 'Ledger entries' },
 ]);
 
@@ -2614,7 +2630,7 @@ const homeLiveStats = computed(() => [
   { value: String(Number(marketplaceStats.value.project_count) || marketplaceData.value.projects.length || 0), label: 'Funded projects' },
   { value: String(Number(marketplaceStats.value.open_task_count) || 0), label: 'Open tasks' },
   { value: formatPublicMRGFromCents(marketplaceStats.value.total_budget_cents), label: 'Verified escrow' },
-  { value: `${formatCompactNumber(ledgerMintedTokenTotal.value)} ${tokenSymbol.value}`, label: 'Tokens minted' },
+  { value: formatPublicTokenAmount(publicMintedTokenTotal.value), label: 'Tokens minted' },
 ]);
 
 const homeWorkflowCards = [
@@ -3175,6 +3191,7 @@ function openPublicPage(page) {
     void loadLedgerData();
   } else if (nextPage === 'marketplace' || nextPage === 'home') {
     void loadMarketplaceData({ silent: true });
+    void loadLedgerData({ silent: true });
   }
   if (!hasWindow) return;
   window.requestAnimationFrame(() => {
@@ -3420,6 +3437,10 @@ function formatLedgerMRGFromCents(cents = 0) {
 
 function formatPublicMRGFromCents(cents = 0) {
   return `${formatCompactNumber(tokenAmountFromCents(cents))} ${tokenSymbol.value}`;
+}
+
+function formatPublicTokenAmount(amount = 0) {
+  return `${formatCompactNumber(amount)} ${tokenSymbol.value}`;
 }
 
 function formatCompactNumber(value = 0) {
@@ -4011,6 +4032,7 @@ onMounted(async () => {
     runtimePromise,
     restoreSession(),
     loadMarketplaceData({ silent: true }),
+    loadLedgerData({ silent: true }),
   ]);
 });
 
