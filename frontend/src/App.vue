@@ -4049,7 +4049,6 @@ function mapLedgerEntry(entry) {
   const tokenAmount = tokenAmountFromCents(entry.amount_cents);
   const projectTitle = project?.title || (projectID ? `Project ${projectID.slice(-6)}` : 'MergeOS ledger');
   const company = project?.company_name || project?.client_name || 'MergeOS';
-  const isFeeOrPayout = entry.type === 'platform_fee' || entry.type === 'task_payment';
   return {
     key: `${entry.sequence}-${entry.entry_hash || entry.reference}`,
     date: when.date,
@@ -4061,7 +4060,7 @@ function mapLedgerEntry(entry) {
     projectTone: projectToneFor(projectID || projectTitle),
     project: projectTitle,
     company,
-    amount: `${isFeeOrPayout ? '-' : '+'} ${formatCompactNumber(tokenAmount)} ${tokenSymbol.value}`,
+    amount: `${formatCompactNumber(Math.abs(tokenAmount))} ${tokenSymbol.value}`,
     secondaryAmount: entry.type === 'payment_verified' ? 'funding verified' : entry.type === 'token_mint' ? 'mint log' : '',
     amountTone: meta.amountTone,
     ref: shortLedgerReference(entry.reference || entry.entry_hash || `#${entry.sequence}`),
