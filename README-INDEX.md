@@ -29,6 +29,7 @@ Use this index as the fast public map for MergeOS bounty docs and current bounty
 | [#11 Frontend homepage responsive QA](https://github.com/mergeos-bounties/mergeos/issues/11) | Bug bounty | 2000 MRG | Unclaimed | Open issue, needs responsive QA evidence |
 | [#12 Create-project flow for new projects and bug fixes](https://github.com/mergeos-bounties/mergeos/issues/12) | Feature bounty | 3000 MRG | Unclaimed | Open issue, needs UX implementation evidence |
 | [#13 Login/logout modal responsive QA](https://github.com/mergeos-bounties/mergeos/issues/13) | Bug bounty | 500 MRG | [@campersurfer](https://github.com/campersurfer), [claim comment](https://github.com/mergeos-bounties/mergeos/issues/13#issuecomment-4543976591), [PR #22](https://github.com/mergeos-bounties/mergeos/pull/22) | Open PR, evidence provided |
+| [#21 Live project creation updates on dashboard and homepage via WebSocket](https://github.com/mergeos-bounties/mergeos/issues/21) | Feature bounty | 1500 MRG | [@TUPM96](https://github.com/TUPM96), [PR #21](https://github.com/mergeos-bounties/mergeos/pull/21) | Open PR, evidence pending, realtime implementation in progress |
 
 ## Awarded Bounties
 

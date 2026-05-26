@@ -53,6 +53,38 @@ MergeOS currently supports:
 
 Roadmap items include full AI codebase scanning, task dependency DAGs, automated PR verification, reputation scoring, fraud detection, and automatic real payout execution.
 
+## Realtime Project Updates
+
+MergeOS now pushes funded project updates over WebSockets so connected clients do not need to refresh the page.
+
+- Public clients subscribe to `GET /api/ws/public`.
+- Authenticated dashboard clients subscribe to `GET /api/ws/dashboard?token=...` using the same bearer token that the frontend already stores for API calls.
+- The backend emits a `project-funded` event after a successful project create/fund flow.
+
+Event payloads:
+
+- Public channel: `{"type":"project-funded","marketplace":{...}}`
+- Dashboard channel: `{"type":"project-funded","project":{...}}`
+
+Payload intent:
+
+- The public payload only contains marketplace-safe project data.
+- The dashboard payload contains the full project object for the owning user or admins.
+- The frontend deduplicates by `project.id` when merging dashboard updates.
+
+Reconnect and fallback behavior:
+
+- The frontend reconnects automatically with exponential backoff when a socket closes.
+- Public marketplace data still loads from `GET /api/public/marketplace` on startup and on manual refresh.
+- The dashboard still keeps its existing polling fallback so the app remains functional if WebSockets are unavailable.
+- The SSR frontend proxy forwards `/api/ws/*` upgrade requests to the backend, so no extra setup is required beyond the normal frontend/backend services.
+
+Environment and setup notes:
+
+- No new environment variables were added for this feature.
+- Existing frontend API proxy settings still apply.
+- Local development uses the same `npm run local` and backend startup flow as before.
+
 ## Stack
 
 - Backend: Go `net/http`

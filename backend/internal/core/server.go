@@ -14,10 +14,11 @@ type Server struct {
 	store          *Store
 	payments       *PaymentManager
 	geminiReviewer *GeminiReviewService
+	realtime       *RealtimeHub
 }
 
 func NewServer(cfg Config, store *Store, payments *PaymentManager) *Server {
-	return &Server{cfg: cfg, store: store, payments: payments, geminiReviewer: NewGeminiReviewService(cfg, store)}
+	return &Server{cfg: cfg, store: store, payments: payments, geminiReviewer: NewGeminiReviewService(cfg, store), realtime: NewRealtimeHub()}
 }
 
 func (s *Server) Routes() http.Handler {
@@ -26,6 +27,8 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/config", s.config)
 	mux.HandleFunc("GET /api/public/marketplace", s.marketplace)
 	mux.HandleFunc("GET /api/public/ledger", s.publicLedger)
+	mux.HandleFunc("GET /api/ws/public", s.publicWebSocket)
+	mux.HandleFunc("GET /api/ws/dashboard", s.dashboardWebSocket)
 	mux.HandleFunc("POST /api/public/repo/issues", s.importRepoIssues)
 	mux.HandleFunc("POST /api/integrations/github/pr-review", s.geminiReviewWebhook)
 	mux.HandleFunc("POST /api/auth/register", s.register)
@@ -511,6 +514,7 @@ func (s *Server) createProject(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	s.publishProjectEvent(project)
 	writeJSON(w, http.StatusCreated, project)
 }
 

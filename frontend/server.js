@@ -144,6 +144,14 @@ export async function createMergeOSServer(config) {
     }
   });
 
+  server.on('upgrade', (req, socket, head) => {
+    if (!req.url?.startsWith('/api')) {
+      socket.destroy();
+      return;
+    }
+    proxyWebsocket(req, socket, head, config.apiTarget);
+  });
+
   return server;
 }
 
@@ -230,6 +238,75 @@ function proxyApi(req, res, apiTarget) {
   });
 
   req.pipe(proxyReq);
+}
+
+function proxyWebsocket(req, socket, head, apiTarget) {
+  const target = new URL(apiTarget);
+  const transport = target.protocol === 'https:' ? https : http;
+  const forwardedHost = req.headers['x-forwarded-host'] || req.headers.host || target.host;
+  const forwardedProto = req.headers['x-forwarded-proto'] || (req.socket.encrypted ? 'https' : 'http');
+  const proxyReq = transport.request({
+    protocol: target.protocol,
+    hostname: target.hostname,
+    port: target.port,
+    method: req.method,
+    path: req.url,
+    headers: {
+      ...req.headers,
+      host: target.host,
+      connection: 'Upgrade',
+      upgrade: req.headers.upgrade || 'websocket',
+      'x-forwarded-host': forwardedHost,
+      'x-forwarded-proto': forwardedProto,
+    },
+  });
+
+  proxyReq.on('response', async (proxyRes) => {
+    try {
+      const chunks = [];
+      for await (const chunk of proxyRes) {
+        chunks.push(Buffer.from(chunk));
+      }
+      const body = Buffer.concat(chunks);
+      socket.write(`HTTP/1.1 ${proxyRes.statusCode || 502} ${proxyRes.statusMessage || 'Bad Gateway'}\r\n`);
+      for (const [key, value] of Object.entries(proxyRes.headers)) {
+        if (['connection', 'content-length', 'transfer-encoding'].includes(key.toLowerCase())) continue;
+        if (typeof value === 'undefined') continue;
+        socket.write(`${key}: ${Array.isArray(value) ? value.join(', ') : value}\r\n`);
+      }
+      socket.write(`content-length: ${body.length}\r\n\r\n`);
+      socket.end(body);
+    } catch (error) {
+      if (!socket.destroyed) {
+        socket.destroy(error);
+      }
+    }
+  });
+
+  proxyReq.on('upgrade', (proxyRes, proxySocket, proxyHead) => {
+    socket.write(`HTTP/1.1 ${proxyRes.statusCode || 101} ${proxyRes.statusMessage || 'Switching Protocols'}\r\n`);
+    for (const [key, value] of Object.entries(proxyRes.headers)) {
+      if (typeof value === 'undefined') continue;
+      socket.write(`${key}: ${Array.isArray(value) ? value.join(', ') : value}\r\n`);
+    }
+    socket.write('\r\n');
+    if (proxyHead?.length) {
+      socket.write(proxyHead);
+    }
+    proxySocket.pipe(socket);
+    socket.pipe(proxySocket);
+  });
+
+  proxyReq.on('error', (error) => {
+    if (!socket.destroyed) {
+      socket.end(`HTTP/1.1 502 Bad Gateway\r\nContent-Type: text/plain; charset=utf-8\r\n\r\nwebsocket proxy failed: ${error.message}`);
+    }
+  });
+
+  if (head?.length) {
+    proxyReq.write(head);
+  }
+  proxyReq.end();
 }
 
 function readArgValue(argv, name) {

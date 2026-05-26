@@ -2388,6 +2388,20 @@ const repoImportBusy = ref(false);
 const repoImportError = ref('');
 const repoImportResult = ref(null);
 let dashboardRefreshTimer = 0;
+const publicRealtimeState = {
+  socket: null,
+  reconnectTimer: 0,
+  reconnectDelay: 1000,
+  enabled: false,
+  connected: false,
+};
+const dashboardRealtimeState = {
+  socket: null,
+  reconnectTimer: 0,
+  reconnectDelay: 1000,
+  enabled: false,
+  connected: false,
+};
 
 const projectSetupForm = reactive({
   title: '',
@@ -4179,21 +4193,193 @@ async function publicApi(path, options = {}) {
   return payload;
 }
 
+function buildRealtimeUrl(path, tokenValue = '') {
+  if (!hasWindow) {
+    return '';
+  }
+  const url = new URL(path, window.location.origin);
+  url.protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  if (tokenValue) {
+    url.searchParams.set('token', tokenValue);
+  }
+  return url.toString();
+}
+
+function clearRealtimeTimer(state) {
+  if (state.reconnectTimer) {
+    window.clearTimeout(state.reconnectTimer);
+    state.reconnectTimer = 0;
+  }
+}
+
+function stopRealtimeConnection(state) {
+  state.enabled = false;
+  state.connected = false;
+  clearRealtimeTimer(state);
+  if (state.socket) {
+    try {
+      state.socket.close();
+    } catch {
+      // Ignore socket close failures during teardown.
+    }
+    state.socket = null;
+  }
+  state.reconnectDelay = 1000;
+}
+
+function scheduleRealtimeReconnect(state, path, handler) {
+  if (!hasWindow || !state.enabled || state.reconnectTimer) {
+    return;
+  }
+  const delay = state.reconnectDelay || 1000;
+  state.reconnectTimer = window.setTimeout(() => {
+    state.reconnectTimer = 0;
+    if (state.enabled) {
+      connectRealtimeSocket(state, path, handler);
+    }
+  }, delay);
+  state.reconnectDelay = Math.min(delay * 2, 30000);
+}
+
+function connectRealtimeSocket(state, path, handler) {
+  if (!hasWindow || !state.enabled || state.socket || typeof window.WebSocket !== 'function') {
+    return;
+  }
+  const socket = new window.WebSocket(buildRealtimeUrl(path, state.token || ''));
+  state.socket = socket;
+  socket.addEventListener('open', () => {
+    state.connected = true;
+    state.reconnectDelay = 1000;
+  });
+  socket.addEventListener('message', (event) => {
+    handler(event.data);
+  });
+  socket.addEventListener('close', () => {
+    state.connected = false;
+    if (state.socket === socket) {
+      state.socket = null;
+    }
+    if (state.enabled) {
+      scheduleRealtimeReconnect(state, path, handler);
+    }
+  });
+  socket.addEventListener('error', () => {
+    try {
+      socket.close();
+    } catch {
+      // Ignore errors while forcing the reconnect loop.
+    }
+  });
+}
+
+function applyMarketplaceSnapshot(snapshot = {}) {
+  marketplaceData.value = {
+    stats: snapshot.stats || {},
+    projects: Array.isArray(snapshot.projects) ? snapshot.projects : [],
+    contributors: Array.isArray(snapshot.contributors) ? snapshot.contributors : [],
+    agents: Array.isArray(snapshot.agents) ? snapshot.agents : [],
+  };
+  if (!marketplaceCategories.value.includes(activeMarketplaceCategory.value)) {
+    activeMarketplaceCategory.value = 'All';
+  }
+}
+
+function handlePublicRealtimeMessage(messageText = '') {
+  let payload = null;
+  try {
+    payload = JSON.parse(messageText);
+  } catch {
+    return;
+  }
+  if (payload?.type !== 'project-funded' || !payload.marketplace) {
+    return;
+  }
+  applyMarketplaceSnapshot(payload.marketplace);
+  marketplaceError.value = '';
+  marketplaceLoading.value = false;
+}
+
+function startPublicRealtime() {
+  if (!hasWindow) {
+    return;
+  }
+  publicRealtimeState.enabled = true;
+  connectRealtimeSocket(publicRealtimeState, '/api/ws/public', handlePublicRealtimeMessage);
+}
+
+function stopPublicRealtime() {
+  stopRealtimeConnection(publicRealtimeState);
+}
+
+function upsertDashboardProject(project = {}) {
+  if (!project.id) {
+    return;
+  }
+  const nextProjects = dashboardProjects.value.slice();
+  const index = nextProjects.findIndex((item) => item.id === project.id);
+  if (index >= 0) {
+    nextProjects[index] = { ...nextProjects[index], ...project };
+  } else {
+    nextProjects.unshift(project);
+  }
+  dashboardProjects.value = nextProjects;
+  const selectedExists = nextProjects.some((item) => item.id === selectedDashboardProjectID.value);
+  if (!selectedDashboardProjectID.value || !selectedExists) {
+    selectedDashboardProjectID.value = nextProjects[0]?.id || '';
+  }
+  if (fundedProject.value?.id === project.id) {
+    fundedProject.value = { ...fundedProject.value, ...project };
+  }
+}
+
+function handleDashboardRealtimeMessage(messageText = '') {
+  let payload = null;
+  try {
+    payload = JSON.parse(messageText);
+  } catch {
+    return;
+  }
+  if (payload?.type !== 'project-funded' || !payload.project) {
+    return;
+  }
+  upsertDashboardProject(payload.project);
+  dashboardError.value = '';
+}
+
+function startDashboardRealtime() {
+  if (!hasWindow) {
+    return;
+  }
+  dashboardRealtimeState.enabled = Boolean(token.value && user.value);
+  dashboardRealtimeState.token = token.value || '';
+  if (!dashboardRealtimeState.enabled) {
+    stopRealtimeConnection(dashboardRealtimeState);
+    return;
+  }
+  connectRealtimeSocket(dashboardRealtimeState, '/api/ws/dashboard', handleDashboardRealtimeMessage);
+  if (!dashboardRefreshTimer) {
+    dashboardRefreshTimer = window.setInterval(() => {
+      if (!token.value || !user.value) return;
+      if (document.visibilityState === 'hidden') return;
+      void loadDashboardData({ silent: true });
+    }, DASHBOARD_REFRESH_MS);
+  }
+}
+
+function stopDashboardRealtime() {
+  stopRealtimeConnection(dashboardRealtimeState);
+  if (!hasWindow || !dashboardRefreshTimer) return;
+  window.clearInterval(dashboardRefreshTimer);
+  dashboardRefreshTimer = 0;
+}
+
 async function loadMarketplaceData(options = {}) {
   const silent = Boolean(options.silent);
   if (!silent) marketplaceLoading.value = true;
   marketplaceError.value = '';
   try {
     const payload = await publicApi('/api/public/marketplace');
-    marketplaceData.value = {
-      stats: payload.stats || {},
-      projects: Array.isArray(payload.projects) ? payload.projects : [],
-      contributors: Array.isArray(payload.contributors) ? payload.contributors : [],
-      agents: Array.isArray(payload.agents) ? payload.agents : [],
-    };
-    if (!marketplaceCategories.value.includes(activeMarketplaceCategory.value)) {
-      activeMarketplaceCategory.value = 'All';
-    }
+    applyMarketplaceSnapshot(payload);
   } catch (error) {
     marketplaceError.value = error.message || 'Could not load marketplace data';
   } finally {
@@ -4259,21 +4445,6 @@ async function loadDashboardData(options = {}) {
   } finally {
     dashboardLoading.value = false;
   }
-}
-
-function startDashboardRealtime() {
-  if (!hasWindow || dashboardRefreshTimer) return;
-  dashboardRefreshTimer = window.setInterval(() => {
-    if (!token.value || !user.value) return;
-    if (document.visibilityState === 'hidden') return;
-    void loadDashboardData({ silent: true });
-  }, DASHBOARD_REFRESH_MS);
-}
-
-function stopDashboardRealtime() {
-  if (!hasWindow || !dashboardRefreshTimer) return;
-  window.clearInterval(dashboardRefreshTimer);
-  dashboardRefreshTimer = 0;
 }
 
 function openAuth(mode = 'login') {
@@ -4398,6 +4569,7 @@ onMounted(async () => {
   }
 
   const handledGitHubCallback = await handleGitHubCallback();
+  startPublicRealtime();
   if (hasWindow) {
     window.addEventListener('popstate', syncPublicPageFromBrowserPath);
     if (!handledGitHubCallback) {
@@ -4421,6 +4593,7 @@ onUnmounted(() => {
   if (hasWindow) {
     window.removeEventListener('popstate', syncPublicPageFromBrowserPath);
   }
+  stopPublicRealtime();
   stopDashboardRealtime();
 });
 </script>
