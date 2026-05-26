@@ -473,13 +473,110 @@ main {
   overflow: hidden;
 }
 
-.token-list {
+.wallet-card-body {
+  display: grid;
+  gap: 12px;
+  padding: 16px 18px 18px;
+}
+
+.wallet-card-body p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.wallet-address-row,
+.wallet-recovery-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px 10px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f8fafc;
+  padding: 12px;
+}
+
+.wallet-address-row small,
+.wallet-recovery-row small {
+  grid-column: 1 / -1;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.wallet-address-row strong,
+.wallet-recovery-row code {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 0.86rem;
+}
+
+.wallet-balance-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.wallet-balance-list div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.wallet-balance-list dt {
+  color: var(--muted);
+}
+
+.wallet-balance-list dd {
+  margin: 0;
+  font-weight: 900;
+  text-align: right;
+}
+
+.wallet-action-button {
+  min-height: 42px;
+  border: 1px solid #17202a;
+  border-radius: 8px;
+  background: #17202a;
+  color: #ffffff;
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.wallet-action-button:disabled {
+  border-color: var(--line);
+  background: #edf0f2;
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+.wallet-linked-note,
+.wallet-error {
+  margin: 0;
+  padding: 0 18px 16px;
+  font-size: 0.84rem;
+}
+
+.wallet-linked-note {
+  color: var(--green);
+  font-weight: 800;
+}
+
+.wallet-error {
+  color: var(--red);
+  font-weight: 800;
+}
+
+.ledger-summary-list {
   display: grid;
   margin: 0;
   padding: 0;
 }
 
-.token-list div {
+.ledger-summary-list div {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -488,12 +585,12 @@ main {
   border-top: 1px solid var(--line);
 }
 
-.token-list dt {
+.ledger-summary-list dt {
   color: var(--muted);
   font-size: 0.86rem;
 }
 
-.token-list dd {
+.ledger-summary-list dd {
   margin: 0;
   font-weight: 900;
   text-align: right;
@@ -673,10 +770,25 @@ main {
   flex-wrap: wrap;
 }
 
-.detail-actions button {
+.detail-actions button,
+.detail-actions a {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
   background: var(--surface-soft);
   color: var(--ink);
+  font-size: 0.86rem;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.detail-actions a:hover {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .address-summary {

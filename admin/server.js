@@ -6,8 +6,6 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const defaultClientDist = path.resolve(__dirname, 'dist/client');
-const defaultServerEntry = path.resolve(__dirname, 'dist/server/entry-server.js');
 const mimeTypes = {
   '.css': 'text/css; charset=utf-8',
   '.html': 'text/html; charset=utf-8',
@@ -22,8 +20,7 @@ const mimeTypes = {
   '.woff2': 'font/woff2',
 };
 
-
-export function normalizeMode(value) {
+function normalizeMode(value) {
   switch (String(value || '').trim().toLowerCase()) {
     case 'prod':
     case 'production':
@@ -38,58 +35,34 @@ export function normalizeMode(value) {
   }
 }
 
-export function resolveMode(argv = process.argv, env = process.env) {
+function readArgValue(argv, name) {
+  const inline = argv.find((arg) => arg.startsWith(`${name}=`));
+  if (inline) return inline.slice(name.length + 1);
+  const index = argv.indexOf(name);
+  if (index >= 0) return argv[index + 1] || '';
+  return '';
+}
+
+function resolveMode(argv = process.argv, env = process.env) {
   const modeArg = readArgValue(argv, '--mode');
   if (modeArg) return normalizeMode(modeArg);
   if (argv.includes('--prod')) return 'production';
   return normalizeMode(env.MERGEOS_ENV || env.NODE_ENV);
 }
 
-export function shouldRunProduction(argv = process.argv, env = process.env, mode = resolveMode(argv, env)) {
+function shouldRunProduction(argv = process.argv, env = process.env, mode = resolveMode(argv, env)) {
   return mode === 'production' || argv.includes('--prod') || env.NODE_ENV === 'production';
 }
 
-export function parseEnvText(text) {
-  const entries = {};
-  for (const rawLine of String(text || '').split('\n')) {
-    const line = rawLine.trim();
-    if (!line || line.startsWith('#')) continue;
-    const separator = line.indexOf('=');
-    if (separator <= 0) continue;
-    const key = line.slice(0, separator).trim();
-    let value = line.slice(separator + 1).trim();
-    if (!key) continue;
-    value = value.replace(/^['"]|['"]$/g, '');
-    entries[key] = value;
-  }
-  return entries;
-}
-
-export async function loadEnvFiles(mode, { cwd = __dirname, env = process.env } = {}) {
-  for (const fileName of [`.env.${normalizeMode(mode)}`, '.env']) {
-    let data;
-    try {
-      data = await fs.readFile(path.join(cwd, fileName), 'utf-8');
-    } catch {
-      continue;
-    }
-    for (const [key, value] of Object.entries(parseEnvText(data))) {
-      if (String(env[key] || '').trim() === '') {
-        env[key] = value;
-      }
-    }
-  }
-}
-
-export function createRuntimeConfig({ argv = process.argv, env = process.env, cwd = __dirname } = {}) {
+function createRuntimeConfig({ argv = process.argv, env = process.env, cwd = __dirname } = {}) {
   const mode = resolveMode(argv, env);
   const production = shouldRunProduction(argv, env, mode);
-  const port = Number(env.FRONTEND_PORT || env.SSR_PORT || (production ? 8081 : 5173));
+  const port = Number(env.ADMIN_FRONTEND_PORT || env.ADMIN_PORT || (production ? 8082 : 5174));
   return {
     mode,
     production,
     cwd,
-    host: env.FRONTEND_HOST || '127.0.0.1',
+    host: env.ADMIN_FRONTEND_HOST || env.ADMIN_HOST || '127.0.0.1',
     port,
     hmrPort: Number(env.VITE_HMR_PORT || port + 10000),
     apiTarget: env.API_TARGET || 'http://127.0.0.1:8080',
@@ -98,7 +71,7 @@ export function createRuntimeConfig({ argv = process.argv, env = process.env, cw
   };
 }
 
-export async function createMergeOSServer(config) {
+async function createAdminServer(config) {
   let vite;
   let productionTemplate;
   let productionRender;
@@ -117,7 +90,7 @@ export async function createMergeOSServer(config) {
     productionRender = (await import(pathToFileURL(config.serverEntry))).render;
   }
 
-  const server = http.createServer(async (req, res) => {
+  return http.createServer(async (req, res) => {
     try {
       if (req.url?.startsWith('/api')) {
         proxyApi(req, res, config.apiTarget);
@@ -143,40 +116,23 @@ export async function createMergeOSServer(config) {
       res.end(error.stack || error.message);
     }
   });
-
-  return server;
-}
-
-export async function startServer({ argv = process.argv, env = process.env, cwd = __dirname } = {}) {
-  const mode = resolveMode(argv, env);
-  await loadEnvFiles(mode, { cwd, env });
-  env.MERGEOS_ENV = mode;
-  if (mode === 'production') env.NODE_ENV = 'production';
-
-  const config = createRuntimeConfig({ argv, env, cwd });
-  const server = await createMergeOSServer(config);
-  server.listen(config.port, config.host, () => {
-    console.log(`MergeOS SSR frontend (${config.mode}) listening on http://${config.host}:${config.port}`);
-  });
-  return { server, config };
 }
 
 async function renderUrl(req, res, context) {
-  const url = req.url || '/';
+  const route = req.url || '/';
   const template = context.vite
-    ? await context.vite.transformIndexHtml(url, await fs.readFile(path.resolve(context.cwd, 'index.html'), 'utf-8'))
+    ? await context.vite.transformIndexHtml(route, await fs.readFile(path.resolve(context.cwd, 'index.html'), 'utf-8'))
     : context.productionTemplate;
   const render = context.vite
     ? (await context.vite.ssrLoadModule('/src/entry-server.js')).render
     : context.productionRender;
-  const appHtml = await render(url);
-  const html = template.replace('<!--ssr-outlet-->', appHtml);
+  const html = template.replace('<!--ssr-outlet-->', await render(route));
   res.statusCode = 200;
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.end(html);
 }
 
-async function serveStatic(req, res, clientDist = defaultClientDist) {
+async function serveStatic(req, res, clientDist) {
   const pathname = decodeURIComponent(new URL(req.url || '/', 'http://127.0.0.1').pathname);
   if (pathname === '/') return false;
 
@@ -228,12 +184,13 @@ function proxyApi(req, res, apiTarget) {
   req.pipe(proxyReq);
 }
 
-function readArgValue(argv, name) {
-  const inline = argv.find((arg) => arg.startsWith(`${name}=`));
-  if (inline) return inline.slice(name.length + 1);
-  const index = argv.indexOf(name);
-  if (index >= 0) return argv[index + 1] || '';
-  return '';
+async function startServer({ argv = process.argv, env = process.env, cwd = __dirname } = {}) {
+  const config = createRuntimeConfig({ argv, env, cwd });
+  const server = await createAdminServer(config);
+  server.listen(config.port, config.host, () => {
+    console.log(`MergeOS SSR admin (${config.mode}) listening on http://${config.host}:${config.port}`);
+  });
+  return { server, config };
 }
 
 if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {
@@ -242,8 +199,3 @@ if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) 
     process.exit(1);
   });
 }
-
-export const paths = {
-  clientDist: defaultClientDist,
-  serverEntry: defaultServerEntry,
-};

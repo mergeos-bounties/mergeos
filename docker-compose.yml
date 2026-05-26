@@ -1,0 +1,110 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: mergeos
+      POSTGRES_PASSWORD: mergeos
+      POSTGRES_DB: mergeos_local
+    ports:
+      - "${MERGEOS_POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mergeos -d mergeos_local"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  backend:
+    build:
+      context: ./backend
+    environment:
+      PORT: "8080"
+      MERGEOS_ENV: local
+      DATABASE_URL: postgres://mergeos:mergeos@postgres:5432/mergeos_local?sslmode=disable
+      MERGEOS_STATE_PATH: /data/mergeos-state.local.json
+      TOKEN_SYMBOL: MRG
+      PLATFORM_FEE_BPS: "1000"
+      DEV_PAYMENT_ENABLED: "true"
+      DEV_PAYMENT_CODE: LOCAL-PAID
+      ADMIN_AUTO_PROMOTE_FIRST_USER: "true"
+      ADMIN_EMAIL: admin@gmail.com
+      ADMIN_PASSWORD: Admin123
+      ADMIN_NAME: MergeOS Admin
+      ADMIN_COMPANY_NAME: MergeOS
+      PRIMARY_DOMAIN: mergeos.local
+      ADMIN_DOMAIN: admin.mergeos.local
+      SCAN_DOMAIN: scan.mergeos.local
+      SSL_REVIEW_ENABLED: "false"
+      PAYPAL_ENV: sandbox
+      CRYPTO_ASSET: erc20
+      CRYPTO_TOKEN_DECIMALS: "6"
+      CRYPTO_MIN_CONFIRMATIONS: "1"
+      GITHUB_TOKEN: ${MERGEOS_GITHUB_TOKEN:-}
+      GITHUB_OWNER: mergeos-bounties
+      GITHUB_OWNER_TYPE: org
+      GITHUB_OAUTH_CLIENT_ID: ${MERGEOS_GITHUB_OAUTH_CLIENT_ID:-}
+      GITHUB_OAUTH_CLIENT_SECRET: ${MERGEOS_GITHUB_OAUTH_CLIENT_SECRET:-}
+      BOUNTY_ROOT: /data/bounties
+      UPLOAD_ROOT: /data/uploads
+      SMTP_PORT: "587"
+      SMTP_FROM: noreply@mergeos.local
+    ports:
+      - "${MERGEOS_BACKEND_PORT:-8080}:8080"
+    volumes:
+      - backend-data:/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  frontend:
+    build:
+      context: ./frontend
+    environment:
+      NODE_ENV: production
+      MERGEOS_ENV: local
+      FRONTEND_HOST: 0.0.0.0
+      FRONTEND_PORT: "5173"
+      API_TARGET: http://backend:8080
+      CLIENT_DIST: dist/client
+      SERVER_ENTRY: dist/server/entry-server.js
+    ports:
+      - "${MERGEOS_FRONTEND_PORT:-5173}:5173"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  admin:
+    build:
+      context: ./admin
+    environment:
+      NODE_ENV: production
+      MERGEOS_ENV: local
+      ADMIN_FRONTEND_HOST: 0.0.0.0
+      ADMIN_FRONTEND_PORT: "80"
+      API_TARGET: http://backend:8080
+      CLIENT_DIST: dist/client
+      SERVER_ENTRY: dist/server/entry-server.js
+    ports:
+      - "${MERGEOS_ADMIN_PORT:-5174}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  scan:
+    build:
+      context: ./scan
+    ports:
+      - "${MERGEOS_SCAN_PORT:-5175}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  postgres-data:
+  backend-data:

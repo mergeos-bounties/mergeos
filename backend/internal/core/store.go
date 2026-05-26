@@ -30,6 +30,7 @@ type Store struct {
 	projects      map[string]*Project
 	tasks         map[string]*Task
 	users         map[string]*User
+	wallets       map[string]*Wallet
 	sessions      map[string]*Session
 	notifications map[string]*Notification
 	attachments   map[string]*Attachment
@@ -42,6 +43,7 @@ type persistedState struct {
 	Projects      []*Project         `json:"projects"`
 	Tasks         []*Task            `json:"tasks"`
 	Users         []*User            `json:"users"`
+	Wallets       []*Wallet          `json:"wallets"`
 	Sessions      []*Session         `json:"sessions"`
 	Notifications []*Notification    `json:"notifications"`
 	Attachments   []*Attachment      `json:"attachments"`
@@ -65,6 +67,7 @@ func NewStore(cfg Config, payments *PaymentManager, repos RepoFactory, emailer *
 		projects:      map[string]*Project{},
 		tasks:         map[string]*Task{},
 		users:         map[string]*User{},
+		wallets:       map[string]*Wallet{},
 		sessions:      map[string]*Session{},
 		notifications: map[string]*Notification{},
 		attachments:   map[string]*Attachment{},
@@ -131,6 +134,9 @@ func (s *Store) Register(req RegisterRequest) (*AuthResponse, error) {
 		CreatedAt:    now,
 		LastLoginAt:  &now,
 	}
+	if _, err := s.ensureWalletForUserLocked(user, "", ""); err != nil {
+		return nil, err
+	}
 	token, err := newToken()
 	if err != nil {
 		return nil, err
@@ -167,6 +173,9 @@ func (s *Store) Login(req LoginRequest) (*AuthResponse, error) {
 		return nil, err
 	}
 	user.LastLoginAt = &now
+	if _, err := s.ensureWalletForUserLocked(user, "", ""); err != nil {
+		return nil, err
+	}
 	s.sessions[token] = &Session{
 		Token:     token,
 		UserID:    user.ID,
@@ -217,6 +226,14 @@ func (s *Store) ensureAdmin() error {
 		role := normalizeRole(user.Role)
 		if user.Role != role {
 			user.Role = role
+			changed = true
+		}
+		previousWallet := user.WalletAddress
+		previousWalletCount := len(s.wallets)
+		if _, err := s.ensureWalletForUserLocked(user, "", ""); err != nil {
+			return err
+		}
+		if previousWallet != user.WalletAddress || previousWalletCount != len(s.wallets) {
 			changed = true
 		}
 	}
@@ -276,6 +293,14 @@ func (s *Store) ensureConfiguredAdminLocked() (bool, error) {
 			user.CompanyName = companyName
 			changed = true
 		}
+		previousWallet := user.WalletAddress
+		previousWalletCount := len(s.wallets)
+		if _, err := s.ensureWalletForUserLocked(user, "", ""); err != nil {
+			return false, err
+		}
+		if previousWallet != user.WalletAddress || previousWalletCount != len(s.wallets) {
+			changed = true
+		}
 		password := strings.TrimSpace(s.cfg.AdminPassword)
 		if password != "" && !verifyPassword(password, user.PasswordSalt, user.PasswordHash) {
 			salt, hash, err := hashPassword(password)
@@ -307,6 +332,9 @@ func (s *Store) ensureConfiguredAdminLocked() (bool, error) {
 		PasswordHash: hash,
 		CreatedAt:    now,
 	}
+	if _, err := s.ensureWalletForUserLocked(admin, "", ""); err != nil {
+		return false, err
+	}
 	s.users[admin.ID] = admin
 	s.addNotificationLocked(admin.ID, "", "email", "MergeOS admin enabled", "Your admin workspace can manage customers, funded projects, task payouts, ledger entries and delivery notifications.", "logged:admin-bootstrap")
 	return true, nil
@@ -335,6 +363,19 @@ func (s *Store) CreateProject(ctx context.Context, userID string, req CreateProj
 		return nil, errors.New("payment method must be paypal or crypto")
 	}
 	tokenSymbol := normalizedTokenSymbol(s.cfg.TokenSymbol)
+	sourceRepoURL := strings.TrimSpace(req.SourceRepoURL)
+	var importedIssues []*ImportedRepoIssue
+	if sourceRepoURL != "" {
+		imported, err := ImportRepoIssues(ctx, s.cfg, ImportRepoIssuesRequest{RepoURL: sourceRepoURL})
+		if err != nil {
+			return nil, err
+		}
+		if len(imported.Issues) == 0 {
+			return nil, errors.New("repo has no open issues to fund")
+		}
+		importedIssues = imported.Issues
+		sourceRepoURL = imported.RepoURL
+	}
 
 	verification, err := s.payments.Verify(ctx, req)
 	if err != nil {
@@ -393,6 +434,9 @@ func (s *Store) CreateProject(ctx context.Context, userID string, req CreateProj
 		Status:           ProjectFunded,
 		CreatedAt:        now,
 	}
+	if sourceRepoURL != "" && !strings.Contains(project.Brief, sourceRepoURL) {
+		project.Brief = "Source repository: " + sourceRepoURL + "\n\n" + project.Brief
+	}
 	for _, attachmentID := range req.AttachmentIDs {
 		attachment, ok := s.attachments[attachmentID]
 		if !ok {
@@ -407,7 +451,11 @@ func (s *Store) CreateProject(ctx context.Context, userID string, req CreateProj
 		attachment.ProjectID = project.ID
 		project.Attachments = append(project.Attachments, cloneAttachment(attachment))
 	}
-	project.Tasks = s.splitProjectTasks(project)
+	if len(importedIssues) > 0 {
+		project.Tasks = s.tasksFromImportedIssues(project, importedIssues)
+	} else {
+		project.Tasks = s.splitProjectTasks(project)
+	}
 
 	repo, err := s.repos.CreateProjectRepo(ctx, project, project.Tasks)
 	if err != nil {
@@ -420,7 +468,9 @@ func (s *Store) CreateProject(ctx context.Context, userID string, req CreateProj
 	for _, task := range project.Tasks {
 		if issue, ok := repo.Issues[task.ID]; ok {
 			task.IssueNumber = issue.Number
-			task.IssueURL = issue.URL
+			if strings.TrimSpace(task.IssueURL) == "" {
+				task.IssueURL = issue.URL
+			}
 		}
 	}
 
@@ -440,7 +490,7 @@ func (s *Store) CreateProject(ctx context.Context, userID string, req CreateProj
 		s.addLedger("task_reserve", "reserve:project:"+projectID, "reserve:task:"+task.ID, task.RewardCents, reference)
 	}
 	subject := "MergeOS project funded: " + project.Title
-	body := fmt.Sprintf("Hi %s,\n\nYour project %q is funded. MergeOS created bounty repo %s and split it into %d payable tasks.\n\nBudget: %s USD\nWork pool: %s %s\nAttachments: %d\n\nWe will notify you as tasks are accepted.", project.ClientName, project.Title, project.BountyRepoName, len(project.Tasks), centsToPayPalValue(project.BudgetCents), centsToPayPalValue(project.WorkPoolCents), tokenSymbol, len(project.Attachments))
+	body := fmt.Sprintf("Hi %s,\n\nYour project %q is funded. MergeOS created bounty repo %s and split it into %d payable tasks.\n\nBudget: %s USD\nWork pool: %s %s\nAttachments: %d\n\nWe will notify you as tasks are accepted.", project.ClientName, project.Title, project.BountyRepoName, len(project.Tasks), centsToPayPalValue(project.BudgetCents), formatTokenAmount(project.WorkPoolCents), tokenSymbol, len(project.Attachments))
 	status := s.emailer.Send(project.ClientEmail, subject, body)
 	s.addNotificationLocked(user.ID, project.ID, "email", subject, body, status)
 	if err := s.saveLocked(); err != nil {
@@ -480,6 +530,22 @@ func (s *Store) ListTasks(userID string) []*Task {
 		tasks = append(tasks, &copyTask)
 	}
 	return tasks
+}
+
+func (s *Store) TaskWithProject(taskID string) (*Task, *Project, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	task, ok := s.tasks[strings.TrimSpace(taskID)]
+	if !ok {
+		return nil, nil, false
+	}
+	project, ok := s.projects[task.ProjectID]
+	if !ok {
+		return nil, nil, false
+	}
+	taskCopy := *task
+	return &taskCopy, cloneProject(project), true
 }
 
 func (s *Store) ListNotifications(userID string) []*Notification {
@@ -686,23 +752,8 @@ func (s *Store) ListUsers() []AdminUser {
 	defer s.mu.RUnlock()
 
 	rows := make([]AdminUser, 0, len(s.users))
-	byID := map[string]int{}
 	for _, user := range s.users {
-		row := AdminUser{PublicUser: publicUser(user)}
-		byID[user.ID] = len(rows)
-		rows = append(rows, row)
-	}
-	for _, project := range s.projects {
-		index, ok := byID[project.ClientUserID]
-		if !ok {
-			continue
-		}
-		rows[index].ProjectCount++
-		rows[index].TotalBudgetCents += project.BudgetCents
-		if rows[index].LastProjectAt == nil || project.CreatedAt.After(*rows[index].LastProjectAt) {
-			createdAt := project.CreatedAt
-			rows[index].LastProjectAt = &createdAt
-		}
+		rows = append(rows, s.adminUserRowLocked(user))
 	}
 	sort.Slice(rows, func(i, j int) bool {
 		if rows[i].Role != rows[j].Role {
@@ -711,6 +762,90 @@ func (s *Store) ListUsers() []AdminUser {
 		return rows[i].CreatedAt.After(rows[j].CreatedAt)
 	})
 	return rows
+}
+
+func (s *Store) UpdateUser(userID string, req AdminUpdateUserRequest) (AdminUser, error) {
+	userID = strings.TrimSpace(userID)
+	if userID == "" {
+		return AdminUser{}, errors.New("user id is required")
+	}
+	name := strings.TrimSpace(req.Name)
+	if name == "" {
+		return AdminUser{}, errors.New("name is required")
+	}
+	email, err := normalizeEmail(req.Email)
+	if err != nil {
+		return AdminUser{}, err
+	}
+
+	var passwordSalt string
+	var passwordHash string
+	if strings.TrimSpace(req.Password) != "" {
+		passwordSalt, passwordHash, err = hashPassword(req.Password)
+		if err != nil {
+			return AdminUser{}, err
+		}
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	user, ok := s.users[userID]
+	if !ok {
+		return AdminUser{}, errors.New("user not found")
+	}
+	for _, other := range s.users {
+		if other.ID != userID && strings.EqualFold(other.Email, email) {
+			return AdminUser{}, errors.New("email is already registered")
+		}
+	}
+
+	role := normalizeRole(user.Role)
+	if strings.TrimSpace(string(req.Role)) != "" {
+		role = normalizeRole(req.Role)
+	}
+	if normalizeRole(user.Role) == RoleAdmin && role != RoleAdmin && !s.hasOtherAdminLocked(userID) {
+		return AdminUser{}, errors.New("at least one admin user is required")
+	}
+
+	user.Name = name
+	user.CompanyName = strings.TrimSpace(req.CompanyName)
+	user.Email = email
+	user.Role = role
+	if passwordHash != "" {
+		user.PasswordSalt = passwordSalt
+		user.PasswordHash = passwordHash
+	}
+	row := s.adminUserRowLocked(user)
+	if err := s.saveLocked(); err != nil {
+		return AdminUser{}, err
+	}
+	return row, nil
+}
+
+func (s *Store) adminUserRowLocked(user *User) AdminUser {
+	row := AdminUser{PublicUser: publicUser(user)}
+	for _, project := range s.projects {
+		if project.ClientUserID != user.ID {
+			continue
+		}
+		row.ProjectCount++
+		row.TotalBudgetCents += project.BudgetCents
+		if row.LastProjectAt == nil || project.CreatedAt.After(*row.LastProjectAt) {
+			createdAt := project.CreatedAt
+			row.LastProjectAt = &createdAt
+		}
+	}
+	return row
+}
+
+func (s *Store) hasOtherAdminLocked(userID string) bool {
+	for id, user := range s.users {
+		if id != userID && normalizeRole(user.Role) == RoleAdmin {
+			return true
+		}
+	}
+	return false
 }
 
 func (s *Store) AdminSummary() AdminSummary {
@@ -730,6 +865,7 @@ func (s *Store) AdminSummary() AdminSummary {
 		UploadRoot:        s.cfg.UploadRoot,
 		SSLReviews:        s.sslReviewRowsLocked(),
 		ProjectCount:      len(s.projects),
+		WalletCount:       len(s.wallets),
 		NotificationCount: len(s.notifications),
 		AttachmentCount:   len(s.attachments),
 	}
@@ -773,6 +909,10 @@ func (s *Store) CanAccessTask(userID string, role UserRole, taskID string) bool 
 }
 
 func (s *Store) AcceptTask(taskID string, req AcceptTaskRequest) (*Task, error) {
+	return s.AcceptTaskWithReview(taskID, req, 0, "")
+}
+
+func (s *Store) AcceptTaskWithReview(taskID string, req AcceptTaskRequest, rewardCents int64, bountyType string) (*Task, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -799,11 +939,18 @@ func (s *Store) AcceptTask(taskID string, req AcceptTaskRequest) (*Task, error) 
 		return nil, errors.New("agent type must be empty for human work")
 	}
 
+	workerID := strings.TrimSpace(req.WorkerID)
+	payoutCents := task.RewardCents
+	if rewardCents > 0 {
+		payoutCents = rewardCents
+		task.RewardCents = rewardCents
+	}
+	task.BountyType = strings.TrimSpace(bountyType)
 	now := time.Now().UTC()
-	entry := s.addLedger("task_payment", "reserve:task:"+task.ID, "worker:"+strings.TrimSpace(req.WorkerID), task.RewardCents, "task:"+task.ID)
+	entry := s.addLedger("task_payment", "reserve:task:"+task.ID, s.payoutAccountForWorkerLocked(workerID), payoutCents, "task:"+task.ID)
 	task.Status = TaskAccepted
 	task.WorkerKind = req.WorkerKind
-	task.WorkerID = strings.TrimSpace(req.WorkerID)
+	task.WorkerID = workerID
 	task.AgentType = strings.TrimSpace(req.AgentType)
 	task.ProofHash = entry.EntryHash
 	task.AcceptedAt = &now
@@ -817,7 +964,7 @@ func (s *Store) AcceptTask(taskID string, req AcceptTaskRequest) (*Task, error) 
 			}
 		}
 		subject := "MergeOS task paid: " + task.Title
-		body := fmt.Sprintf("Task #%d was accepted and paid to %s. Proof hash: %s", task.IssueNumber, task.WorkerID, task.ProofHash)
+		body := fmt.Sprintf("Task #%d was accepted and paid %s %s to %s. Proof hash: %s", task.IssueNumber, formatTokenAmount(payoutCents), normalizedTokenSymbol(s.cfg.TokenSymbol), task.WorkerID, task.ProofHash)
 		status := s.emailer.Send(project.ClientEmail, subject, body)
 		s.addNotificationLocked(project.ClientUserID, project.ID, "email", subject, body, status)
 	}
@@ -827,6 +974,24 @@ func (s *Store) AcceptTask(taskID string, req AcceptTaskRequest) (*Task, error) 
 
 	copyTask := *task
 	return &copyTask, nil
+}
+
+func (s *Store) TaskPayoutAccount(taskID string) (string, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	reference := "task:" + strings.TrimSpace(taskID)
+	for index := len(s.ledger) - 1; index >= 0; index-- {
+		entry := s.ledger[index]
+		if entry.Type == "task_payment" && entry.Reference == reference {
+			return entry.ToAccount, true
+		}
+	}
+	task, ok := s.tasks[taskID]
+	if !ok || strings.TrimSpace(task.WorkerID) == "" {
+		return "", false
+	}
+	return s.payoutAccountForWorkerLocked(task.WorkerID), true
 }
 
 func (s *Store) userByEmailLocked(email string) *User {
@@ -899,6 +1064,75 @@ func (s *Store) splitProjectTasks(project *Project) []*Task {
 		tasks = append(tasks, task)
 	}
 	return tasks
+}
+
+func (s *Store) tasksFromImportedIssues(project *Project, issues []*ImportedRepoIssue) []*Task {
+	tasks := make([]*Task, 0, len(issues))
+	totalWeight := int64(0)
+	for _, issue := range issues {
+		totalWeight += issueRewardWeight(issue)
+	}
+	if totalWeight <= 0 {
+		totalWeight = int64(len(issues))
+	}
+
+	allocated := int64(0)
+	for index, issue := range issues {
+		weight := issueRewardWeight(issue)
+		reward := project.WorkPoolCents * weight / totalWeight
+		if index == len(issues)-1 {
+			reward = project.WorkPoolCents - allocated
+		}
+		allocated += reward
+		task := &Task{
+			ID:                 s.newID("tsk"),
+			ProjectID:          project.ID,
+			IssueNumber:        issue.Number,
+			Title:              fmt.Sprintf("Fix #%d: %s", issue.Number, strings.TrimSpace(issue.Title)),
+			Acceptance:         importedIssueAcceptance(issue),
+			RewardCents:        reward,
+			RequiredWorkerKind: issue.RequiredWorkerKind,
+			SuggestedAgentType: strings.TrimSpace(issue.SuggestedAgentType),
+			Status:             TaskOpen,
+			IssueURL:           strings.TrimSpace(issue.URL),
+			CreatedAt:          time.Now().UTC(),
+		}
+		tasks = append(tasks, task)
+	}
+	return tasks
+}
+
+func issueRewardWeight(issue *ImportedRepoIssue) int64 {
+	if issue == nil {
+		return 1
+	}
+	if issue.EstimatedCents > 0 {
+		return issue.EstimatedCents
+	}
+	if issue.Score > 0 {
+		return int64(issue.Score)
+	}
+	return 1
+}
+
+func importedIssueAcceptance(issue *ImportedRepoIssue) string {
+	if issue == nil {
+		return "Resolve the imported GitHub issue and provide verification notes."
+	}
+	parts := []string{
+		fmt.Sprintf("Resolve GitHub issue #%d and include verification notes.", issue.Number),
+	}
+	if strings.TrimSpace(issue.URL) != "" {
+		parts = append(parts, "Source issue: "+strings.TrimSpace(issue.URL)+".")
+	}
+	if issue.Complexity != "" {
+		parts = append(parts, "Complexity: "+issue.Complexity+".")
+	}
+	if len(issue.Reasons) > 0 {
+		parts = append(parts, "Scoring signals: "+strings.Join(issue.Reasons, ", ")+".")
+	}
+	parts = append(parts, "Acceptance requires passing checks, a clear fix summary, and evidence that the original issue can be closed.")
+	return strings.Join(parts, " ")
 }
 
 func (s *Store) addLedger(entryType, from, to string, amountCents int64, reference string) LedgerEntry {
@@ -982,6 +1216,7 @@ func (s *Store) applyState(state persistedState) {
 	s.projects = map[string]*Project{}
 	s.tasks = map[string]*Task{}
 	s.users = map[string]*User{}
+	s.wallets = map[string]*Wallet{}
 	s.sessions = map[string]*Session{}
 	s.notifications = map[string]*Notification{}
 	s.attachments = map[string]*Attachment{}
@@ -1002,7 +1237,20 @@ func (s *Store) applyState(state persistedState) {
 		if user == nil || user.ID == "" {
 			continue
 		}
+		user.WalletAddress = normalizeWalletAddress(user.WalletAddress)
+		user.GitHubUsername = normalizeGitHubUsername(user.GitHubUsername)
 		s.users[user.ID] = user
+	}
+	for _, wallet := range state.Wallets {
+		if wallet == nil {
+			continue
+		}
+		wallet.Address = normalizeWalletAddress(wallet.Address)
+		wallet.GitHubUsername = normalizeGitHubUsername(wallet.GitHubUsername)
+		if !validWalletAddress(wallet.Address) {
+			continue
+		}
+		s.wallets[wallet.Address] = wallet
 	}
 	now := time.Now().UTC()
 	for _, session := range state.Sessions {
@@ -1053,6 +1301,7 @@ func (s *Store) snapshotLocked() persistedState {
 		Projects:      make([]*Project, 0, len(s.projects)),
 		Tasks:         make([]*Task, 0, len(s.tasks)),
 		Users:         make([]*User, 0, len(s.users)),
+		Wallets:       make([]*Wallet, 0, len(s.wallets)),
 		Sessions:      make([]*Session, 0, len(s.sessions)),
 		Notifications: make([]*Notification, 0, len(s.notifications)),
 		Attachments:   make([]*Attachment, 0, len(s.attachments)),
@@ -1069,6 +1318,10 @@ func (s *Store) snapshotLocked() persistedState {
 	for _, user := range s.users {
 		userCopy := *user
 		state.Users = append(state.Users, &userCopy)
+	}
+	for _, wallet := range s.wallets {
+		walletCopy := *wallet
+		state.Wallets = append(state.Wallets, &walletCopy)
 	}
 	for token, session := range s.sessions {
 		sessionCopy := *session
@@ -1274,6 +1527,12 @@ func publicLedgerAccount(account, projectID, taskID string) string {
 		return "issuer:mergeos"
 	case strings.HasPrefix(account, "treasury:"):
 		return "treasury:mergeos"
+	case strings.HasPrefix(account, "wallet:"):
+		return walletAccount(account)
+	case strings.HasPrefix(account, "worker:github:"):
+		return githubWorkerAccount(strings.TrimPrefix(account, "worker:"))
+	case strings.HasPrefix(account, "github:"):
+		return githubWorkerAccount(account)
 	case strings.HasPrefix(account, "worker:"):
 		return "worker:contributor"
 	case strings.Contains(account, "reserve:task:"):

@@ -5,12 +5,14 @@
   "type": "module",
   "scripts": {
     "dev": "npm run local",
-    "local": "vite --host 127.0.0.1 --port 5174",
-    "build": "vite build --mode production",
-    "preview": "vite preview --host 127.0.0.1 --port 4174"
+    "local": "node server.js --mode local",
+    "production": "node server.js --mode production --prod",
+    "build": "vite build --mode production --outDir dist/client --ssrManifest && vite build --mode production --ssr src/entry-server.js --outDir dist/server",
+    "preview": "npm run production"
   },
   "dependencies": {
     "@lucide/vue": "latest",
+    "@vue/server-renderer": "latest",
     "vue": "latest"
   },
   "devDependencies": {

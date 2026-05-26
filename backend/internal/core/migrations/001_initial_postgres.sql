@@ -17,9 +17,32 @@ CREATE TABLE IF NOT EXISTS users (
   role text NOT NULL,
   password_salt text NOT NULL,
   password_hash text NOT NULL,
+  wallet_address text NOT NULL DEFAULT '',
+  github_id text NOT NULL DEFAULT '',
+  github_username text NOT NULL DEFAULT '',
+  github_avatar_url text NOT NULL DEFAULT '',
   created_at timestamptz NOT NULL,
   last_login_at timestamptz
 );
+
+CREATE INDEX IF NOT EXISTS users_wallet_address_idx ON users (wallet_address);
+CREATE UNIQUE INDEX IF NOT EXISTS users_github_id_unique_idx ON users (github_id) WHERE github_id <> '';
+CREATE UNIQUE INDEX IF NOT EXISTS users_github_username_unique_idx ON users (lower(github_username)) WHERE github_username <> '';
+
+CREATE TABLE IF NOT EXISTS wallets (
+  address text PRIMARY KEY,
+  owner_user_id text NOT NULL DEFAULT '',
+  github_id text NOT NULL DEFAULT '',
+  github_username text NOT NULL DEFAULT '',
+  recovery_salt text NOT NULL DEFAULT '',
+  recovery_hash text NOT NULL DEFAULT '',
+  created_at timestamptz NOT NULL,
+  linked_at timestamptz
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS wallets_owner_user_id_unique_idx ON wallets (owner_user_id) WHERE owner_user_id <> '';
+CREATE UNIQUE INDEX IF NOT EXISTS wallets_github_id_unique_idx ON wallets (github_id) WHERE github_id <> '';
+CREATE UNIQUE INDEX IF NOT EXISTS wallets_github_username_unique_idx ON wallets (lower(github_username)) WHERE github_username <> '';
 
 CREATE TABLE IF NOT EXISTS projects (
   id text PRIMARY KEY,
@@ -61,6 +84,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   reward_cents bigint NOT NULL,
   required_worker_kind text NOT NULL,
   suggested_agent_type text NOT NULL DEFAULT '',
+  bounty_type text NOT NULL DEFAULT '',
   status text NOT NULL,
   worker_kind text NOT NULL DEFAULT '',
   worker_id text NOT NULL DEFAULT '',

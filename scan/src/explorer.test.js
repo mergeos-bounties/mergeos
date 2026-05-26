@@ -2,9 +2,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   aggregateAccounts,
+  accountRole,
   buildExplorerStats,
   filterEntries,
   findExplorerTarget,
+  githubProfileURL,
+  githubUsernameFromAccount,
+  normalizeExplorerPath,
+  parseExplorerRoute,
   tokenAmountFromCents,
   verifyLedgerChain,
 } from './explorer.js';
@@ -35,7 +40,7 @@ const entries = [
 ];
 
 test('converts funded cents to MRG token amount', () => {
-  assert.equal(tokenAmountFromCents(100000), 175);
+  assert.equal(tokenAmountFromCents(100000), 100000);
 });
 
 test('verifies the public ledger hash chain', () => {
@@ -53,10 +58,30 @@ test('aggregates account activity for address pages', () => {
 
 test('finds transactions, blocks and addresses from one search box', () => {
   const accounts = aggregateAccounts(entries);
+  accounts.push({
+    account: 'wallet:0x1234567890abcdef1234567890abcdef12345678',
+    tx_count: 1,
+  });
 
   assert.equal(findExplorerTarget(entries, accounts, 'bbbbbbbb').kind, 'tx');
   assert.equal(findExplorerTarget(entries, accounts, '#2').kind, 'block');
   assert.equal(findExplorerTarget(entries, accounts, 'project:prj_0001').kind, 'address');
+  assert.equal(findExplorerTarget(entries, accounts, '0x1234567890abcdef1234567890abcdef12345678').kind, 'address');
+});
+
+test('treats github aliases as short public addresses', () => {
+  assert.equal(githubUsernameFromAccount('github:hummusonrails'), 'hummusonrails');
+  assert.equal(githubUsernameFromAccount('worker:github:hummusonrails'), 'hummusonrails');
+  assert.equal(githubProfileURL('github:hummusonrails'), 'https://github.com/hummusonrails');
+  assert.equal(accountRole('github:hummusonrails'), 'GitHub Contributor');
+});
+
+test('parses history routes and legacy hash routes', () => {
+  assert.deepEqual(parseExplorerRoute('/address/wallet%3A0x123', ''), { name: 'address', value: 'wallet:0x123' });
+  assert.deepEqual(parseExplorerRoute('/', '#/tx/bbbbbbbb'), { name: 'tx', value: 'bbbbbbbb' });
+  assert.deepEqual(parseExplorerRoute('/block/2', ''), { name: 'block', value: '2' });
+  assert.deepEqual(parseExplorerRoute('/unknown', ''), { name: 'home', value: '' });
+  assert.equal(normalizeExplorerPath('address/0x123'), '/address/0x123');
 });
 
 test('filters entries by type, account and free text', () => {
@@ -69,7 +94,7 @@ test('builds explorer-level stats from ledger and marketplace payloads', () => {
   const stats = buildExplorerStats(entries, { stats: { project_count: 3 }, projects: [] }, 'MRG');
 
   assert.equal(stats.totalTransactions, 2);
-  assert.equal(stats.mintedTokens, 175);
+  assert.equal(stats.mintedTokens, 100000);
   assert.equal(stats.projectCount, 3);
   assert.equal(stats.chainOk, true);
 });

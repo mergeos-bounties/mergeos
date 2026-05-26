@@ -1,5 +1,7 @@
-import { createApp } from 'vue';
+import { createSSRApp } from 'vue';
 import App from './App.vue';
 import './styles.css';
 
-createApp(App).mount('#app');
+export function createApp() {
+  return createSSRApp(App);
+}

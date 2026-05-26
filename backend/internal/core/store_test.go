@@ -106,6 +106,158 @@ func TestCreateProjectCreatesLocalBountyRepoAndPersistsLedger(t *testing.T) {
 	}
 }
 
+func TestGitHubAuthLinksMRGWalletAndRoutesPayouts(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:       defaultTokenSymbol,
+		StatePath:         filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:    1000,
+		DevPaymentEnabled: true,
+		DevPaymentCode:    defaultDevPaymentCode,
+		GitHubOwner:       defaultGitHubOwner,
+		BountyRoot:        filepath.Join(tempDir, "bounties"),
+		SMTPFrom:          "noreply@mergeos.local",
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	wallet, err := store.CreateGuestWallet(CreateWalletRequest{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	auth, err := store.AuthenticateGitHub(GitHubAuthProfile{
+		ID:       "12345",
+		Username: "Octo-Builder",
+		Name:     "Octo Builder",
+		Email:    "octo@example.com",
+	}, wallet.Address, wallet.RecoveryCode)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if auth.User.WalletAddress != wallet.Address {
+		t.Fatalf("wallet address = %q, want %q", auth.User.WalletAddress, wallet.Address)
+	}
+	if auth.User.GitHubUsername != "octo-builder" {
+		t.Fatalf("github username = %q", auth.User.GitHubUsername)
+	}
+
+	project, err := store.CreateProject(context.Background(), auth.User.ID, CreateProjectRequest{
+		Title:            "GitHub reward route",
+		ClientName:       "Octo Builder",
+		ClientEmail:      "octo@example.com",
+		Brief:            "Create a payable task for a linked GitHub wallet.",
+		BudgetCents:      120000,
+		PaymentMethod:    PaymentPayPal,
+		PaymentReference: defaultDevPaymentCode,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	accepted, err := store.AcceptTask(project.Tasks[0].ID, AcceptTaskRequest{
+		WorkerKind: WorkerHuman,
+		WorkerID:   "github:octo-builder",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if accepted.ProofHash == "" {
+		t.Fatal("accepted task missing proof hash")
+	}
+
+	ledger := store.ListLedger()
+	payout := ledger[len(ledger)-1]
+	expectedAccount := walletAccount(wallet.Address)
+	if payout.ToAccount != expectedAccount {
+		t.Fatalf("payout account = %q, want %q", payout.ToAccount, expectedAccount)
+	}
+	summary, ok := store.WalletSummary(wallet.Address)
+	if !ok {
+		t.Fatal("wallet summary not found")
+	}
+	if summary.BalanceCents != project.Tasks[0].RewardCents || summary.GitHubUsername != "octo-builder" {
+		t.Fatalf("wallet summary = %#v", summary)
+	}
+
+	publicLedger := store.ListPublicLedger()
+	publicBody, err := json.Marshal(publicLedger)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(publicBody), wallet.Address) {
+		t.Fatalf("public ledger did not expose wallet address: %s", publicBody)
+	}
+	if strings.Contains(string(publicBody), "github:octo-builder") {
+		t.Fatalf("public ledger should expose wallet instead of github alias for linked wallets: %s", publicBody)
+	}
+}
+
+func TestImportedRepoIssuesBecomeFundedTasks(t *testing.T) {
+	store := &Store{nextID: 1}
+	project := &Project{
+		ID:            "prj_0001",
+		Title:         "Fix repo issues",
+		WorkPoolCents: 90000,
+	}
+	issues := []*ImportedRepoIssue{
+		{
+			Number:             3,
+			Title:              "AI project evaluation for price suggestion",
+			URL:                "https://github.com/mergeos-bounties/mergeos/issues/3",
+			Score:              80,
+			Complexity:         "high",
+			EstimatedCents:     42000,
+			RequiredWorkerKind: WorkerAgent,
+			SuggestedAgentType: "backend-agent",
+			Reasons:            []string{"open GitHub issue", "backend surface"},
+		},
+		{
+			Number:             2,
+			Title:              "Implement social login",
+			URL:                "https://github.com/mergeos-bounties/mergeos/issues/2",
+			Score:              60,
+			Complexity:         "medium",
+			EstimatedCents:     30000,
+			RequiredWorkerKind: WorkerHybrid,
+			SuggestedAgentType: "security-review-agent",
+			Reasons:            []string{"open GitHub issue", "auth risk"},
+		},
+		{
+			Number:             1,
+			Title:              "Claim MRG Tokens for Bug Bounty Reports",
+			URL:                "https://github.com/mergeos-bounties/mergeos/issues/1",
+			Score:              30,
+			Complexity:         "low",
+			EstimatedCents:     18000,
+			RequiredWorkerKind: WorkerHuman,
+			Reasons:            []string{"open GitHub issue"},
+		},
+	}
+
+	tasks := store.tasksFromImportedIssues(project, issues)
+	if len(tasks) != len(issues) {
+		t.Fatalf("tasks = %d", len(tasks))
+	}
+	if tasks[0].IssueNumber != 3 || tasks[0].IssueURL != issues[0].URL || !strings.Contains(tasks[0].Title, "Fix #3") {
+		t.Fatalf("first task did not preserve source issue: %#v", tasks[0])
+	}
+	var total int64
+	for _, task := range tasks {
+		total += task.RewardCents
+		if !strings.Contains(task.Acceptance, "Source issue: https://github.com/mergeos-bounties/mergeos/issues/") {
+			t.Fatalf("task acceptance missing source issue: %#v", task)
+		}
+	}
+	if total != project.WorkPoolCents {
+		t.Fatalf("task rewards = %d, want %d", total, project.WorkPoolCents)
+	}
+	if tokenAmountFromCents(100000) != 100000 {
+		t.Fatalf("token amount = %d, want 100000", tokenAmountFromCents(100000))
+	}
+}
+
 func TestPublicMarketplaceRouteReturnsSanitizedLiveData(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := Config{
@@ -256,7 +408,6 @@ func TestPublicLedgerRouteReturnsSanitizedLiveData(t *testing.T) {
 		"+1 555 0199",
 		auth.User.ID,
 		tempDir,
-		"github:private-worker",
 		defaultDevPaymentCode,
 	}
 	for _, value := range privateValues {
@@ -273,6 +424,7 @@ func TestPublicLedgerRouteReturnsSanitizedLiveData(t *testing.T) {
 		t.Fatal("public ledger returned no entries")
 	}
 	foundProjectReference := false
+	foundGitHubWorker := false
 	for _, entry := range payload {
 		if strings.Contains(entry.FromAccount, "client:") || strings.Contains(entry.ToAccount, "client:") {
 			t.Fatalf("public ledger leaked client account: %#v", entry)
@@ -280,9 +432,15 @@ func TestPublicLedgerRouteReturnsSanitizedLiveData(t *testing.T) {
 		if strings.Contains(entry.Reference, project.ID) {
 			foundProjectReference = true
 		}
+		if entry.ToAccount == "github:private-worker" {
+			foundGitHubWorker = true
+		}
 	}
 	if !foundProjectReference {
 		t.Fatalf("public ledger did not preserve project reference: %#v", payload)
+	}
+	if !foundGitHubWorker {
+		t.Fatalf("public ledger did not expose github worker account: %#v", payload)
 	}
 }
 
@@ -345,6 +503,79 @@ func TestAdminAutoPromoteAndRoutes(t *testing.T) {
 	}
 }
 
+func TestAdminTasksRouteIncludesAcceptedTasksForAudit(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:       defaultTokenSymbol,
+		StatePath:         filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:    1000,
+		DevPaymentEnabled: true,
+		DevPaymentCode:    defaultDevPaymentCode,
+		GitHubOwner:       defaultGitHubOwner,
+		BountyRoot:        filepath.Join(tempDir, "bounties"),
+		SMTPFrom:          "noreply@mergeos.local",
+		AdminAutoPromote:  true,
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	adminAuth, err := store.Register(RegisterRequest{
+		Name:     "Admin User",
+		Email:    "review-admin@example.com",
+		Password: "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	project, err := store.CreateProject(context.Background(), adminAuth.User.ID, CreateProjectRequest{
+		Title:            "Review queue",
+		ClientName:       "Admin User",
+		ClientEmail:      "review-admin@example.com",
+		Brief:            "Create tasks and keep paid work visible in the admin audit board.",
+		BudgetCents:      120000,
+		PaymentMethod:    PaymentPayPal,
+		PaymentReference: defaultDevPaymentCode,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	req, err := acceptRequestForPullAuthor(project.Tasks[0], "reviewer")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.AcceptTask(project.Tasks[0].ID, req); err != nil {
+		t.Fatal(err)
+	}
+
+	server := NewServer(cfg, store, payments)
+	adminReq := httptest.NewRequest(http.MethodGet, "/api/admin/tasks", nil)
+	adminReq.Header.Set("Authorization", "Bearer "+adminAuth.Token)
+	adminResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(adminResp, adminReq)
+	if adminResp.Code != http.StatusOK {
+		t.Fatalf("admin tasks status = %d, body = %s", adminResp.Code, adminResp.Body.String())
+	}
+	var payload []Task
+	if err := json.Unmarshal(adminResp.Body.Bytes(), &payload); err != nil {
+		t.Fatal(err)
+	}
+	foundAccepted := false
+	for _, task := range payload {
+		if task.ID == project.Tasks[0].ID && task.Status == TaskAccepted {
+			foundAccepted = true
+			break
+		}
+	}
+	if !foundAccepted {
+		t.Fatalf("accepted task missing from admin task audit board: %#v", payload)
+	}
+	if len(payload) != len(project.Tasks) {
+		t.Fatalf("admin task count = %d, want %d", len(payload), len(project.Tasks))
+	}
+}
+
 func TestConfiguredAdminBootstrapCanLogin(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := Config{
@@ -376,6 +607,103 @@ func TestConfiguredAdminBootstrapCanLogin(t *testing.T) {
 	}
 	if auth.User.Role != RoleAdmin {
 		t.Fatalf("configured admin role = %q", auth.User.Role)
+	}
+}
+
+func TestAdminCanUpdateUserAndPassword(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:       defaultTokenSymbol,
+		StatePath:         filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:    1000,
+		DevPaymentEnabled: true,
+		DevPaymentCode:    defaultDevPaymentCode,
+		GitHubOwner:       defaultGitHubOwner,
+		BountyRoot:        filepath.Join(tempDir, "bounties"),
+		SMTPFrom:          "noreply@mergeos.local",
+		AdminEmail:        defaultLocalAdminEmail,
+		AdminPassword:     defaultLocalAdminPassword,
+		AdminName:         "MergeOS Admin",
+		AdminCompanyName:  "MergeOS",
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	clientAuth, err := store.Register(RegisterRequest{
+		Name:        "Client User",
+		CompanyName: "Old Co",
+		Email:       "client@example.com",
+		Password:    "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	adminAuth, err := store.Login(LoginRequest{Email: defaultLocalAdminEmail, Password: defaultLocalAdminPassword})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	server := NewServer(cfg, store, payments)
+	body := strings.NewReader(`{"name":"Updated Client","company_name":"New Co","email":"updated@example.com","role":"client","password":"newpass123"}`)
+	req := httptest.NewRequest(http.MethodPatch, "/api/admin/users/"+clientAuth.User.ID, body)
+	req.Header.Set("Authorization", "Bearer "+adminAuth.Token)
+	req.Header.Set("Content-Type", "application/json")
+	resp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(resp, req)
+	if resp.Code != http.StatusOK {
+		t.Fatalf("update user status = %d, body = %s", resp.Code, resp.Body.String())
+	}
+	var updated AdminUser
+	if err := json.NewDecoder(resp.Body).Decode(&updated); err != nil {
+		t.Fatal(err)
+	}
+	if updated.Name != "Updated Client" || updated.Email != "updated@example.com" || updated.CompanyName != "New Co" {
+		t.Fatalf("updated user = %#v", updated)
+	}
+	if _, err := store.Login(LoginRequest{Email: "updated@example.com", Password: "password123"}); err == nil {
+		t.Fatal("old password still works")
+	}
+	if _, err := store.Login(LoginRequest{Email: "updated@example.com", Password: "newpass123"}); err != nil {
+		t.Fatalf("new password login failed: %v", err)
+	}
+}
+
+func TestCannotDemoteOnlyAdmin(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:       defaultTokenSymbol,
+		StatePath:         filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:    1000,
+		DevPaymentEnabled: true,
+		DevPaymentCode:    defaultDevPaymentCode,
+		GitHubOwner:       defaultGitHubOwner,
+		BountyRoot:        filepath.Join(tempDir, "bounties"),
+		SMTPFrom:          "noreply@mergeos.local",
+		AdminEmail:        defaultLocalAdminEmail,
+		AdminPassword:     defaultLocalAdminPassword,
+		AdminName:         "MergeOS Admin",
+		AdminCompanyName:  "MergeOS",
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	adminAuth, err := store.Login(LoginRequest{Email: defaultLocalAdminEmail, Password: defaultLocalAdminPassword})
+	if err != nil {
+		t.Fatal(err)
+	}
+	server := NewServer(cfg, store, payments)
+	body := strings.NewReader(`{"name":"MergeOS Admin","company_name":"MergeOS","email":"admin@gmail.com","role":"client"}`)
+	req := httptest.NewRequest(http.MethodPatch, "/api/admin/users/"+adminAuth.User.ID, body)
+	req.Header.Set("Authorization", "Bearer "+adminAuth.Token)
+	req.Header.Set("Content-Type", "application/json")
+	resp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(resp, req)
+	if resp.Code != http.StatusBadRequest {
+		t.Fatalf("only admin demotion status = %d, body = %s", resp.Code, resp.Body.String())
 	}
 }
 

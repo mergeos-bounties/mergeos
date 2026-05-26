@@ -28,3 +28,4 @@ bounties/
 !scan/.env.production.example
 .codex/
 .DS_Store
+.idea

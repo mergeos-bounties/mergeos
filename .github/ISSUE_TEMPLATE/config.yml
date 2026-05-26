@@ -2,4 +2,4 @@ blank_issues_enabled: false
 contact_links:
   - name: Claim MRG Tokens for Bug Bounty Reports
     url: https://github.com/mergeos-bounties/mergeos/issues/1
-    about: New bounty bugs must be claimed by commenting here before opening a PR.
+    about: Star this repository first, then claim new bounty bugs here before opening a PR.

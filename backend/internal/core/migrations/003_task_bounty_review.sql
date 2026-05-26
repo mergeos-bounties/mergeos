@@ -1,0 +1,1 @@
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS bounty_type text NOT NULL DEFAULT '';
