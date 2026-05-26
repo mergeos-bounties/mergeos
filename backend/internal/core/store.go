@@ -36,6 +36,7 @@ type Store struct {
 	notifications map[string]*Notification
 	attachments   map[string]*Attachment
 	sslReviews    map[string]*SSLReviewStatus
+	geminiAPIKeys map[string]*GeminiAPIKey
 	ledger        []LedgerEntry
 }
 
@@ -49,6 +50,7 @@ type persistedState struct {
 	Notifications []*Notification    `json:"notifications"`
 	Attachments   []*Attachment      `json:"attachments"`
 	SSLReviews    []*SSLReviewStatus `json:"ssl_reviews"`
+	GeminiAPIKeys []*GeminiAPIKey    `json:"gemini_api_keys"`
 	Ledger        []LedgerEntry      `json:"ledger"`
 }
 
@@ -73,6 +75,7 @@ func NewStore(cfg Config, payments *PaymentManager, repos RepoFactory, emailer *
 		notifications: map[string]*Notification{},
 		attachments:   map[string]*Attachment{},
 		sslReviews:    map[string]*SSLReviewStatus{},
+		geminiAPIKeys: map[string]*GeminiAPIKey{},
 		ledger:        []LedgerEntry{},
 	}
 	if strings.TrimSpace(cfg.DatabaseURL) != "" {
@@ -87,6 +90,10 @@ func NewStore(cfg Config, payments *PaymentManager, repos RepoFactory, emailer *
 		return nil, err
 	}
 	if err := store.ensureAdmin(); err != nil {
+		_ = store.Close()
+		return nil, err
+	}
+	if err := store.SeedGeminiAPIKeysFromConfig(); err != nil {
 		_ = store.Close()
 		return nil, err
 	}
@@ -235,7 +242,7 @@ func (s *Store) LoginOrRegisterOAuth(email, name, provider string) (*AuthRespons
 			LastLoginAt:  &now,
 		}
 		s.users[user.ID] = user
-		s.addNotificationLocked(user.ID, "", "email", "Welcome to MergeOS via OAuth", "Your client workspace is ready. You signed up using " + provider + ".", "logged:welcome")
+		s.addNotificationLocked(user.ID, "", "email", "Welcome to MergeOS via OAuth", "Your client workspace is ready. You signed up using "+provider+".", "logged:welcome")
 	} else {
 		user.LastLoginAt = &now
 	}
@@ -1408,6 +1415,7 @@ func (s *Store) applyState(state persistedState) {
 	s.notifications = map[string]*Notification{}
 	s.attachments = map[string]*Attachment{}
 	s.sslReviews = map[string]*SSLReviewStatus{}
+	s.geminiAPIKeys = map[string]*GeminiAPIKey{}
 	for _, project := range state.Projects {
 		if project == nil || project.ID == "" {
 			continue
@@ -1470,6 +1478,22 @@ func (s *Store) applyState(state persistedState) {
 		review.Domain = cleanDomain(review.Domain)
 		s.sslReviews[review.Domain] = cloneSSLReview(review)
 	}
+	for _, key := range state.GeminiAPIKeys {
+		if key == nil || strings.TrimSpace(key.KeyValue) == "" {
+			continue
+		}
+		keyCopy := *key
+		if keyCopy.ID == "" {
+			keyCopy.ID = geminiAPIKeyID(keyCopy.KeyValue)
+		}
+		if keyCopy.KeyHint == "" {
+			keyCopy.KeyHint = geminiAPIKeyHint(keyCopy.KeyValue)
+		}
+		if keyCopy.Status == "" {
+			keyCopy.Status = GeminiAPIKeyStatusActive
+		}
+		s.geminiAPIKeys[keyCopy.ID] = &keyCopy
+	}
 }
 
 func (s *Store) saveLocked() error {
@@ -1493,6 +1517,7 @@ func (s *Store) snapshotLocked() persistedState {
 		Notifications: make([]*Notification, 0, len(s.notifications)),
 		Attachments:   make([]*Attachment, 0, len(s.attachments)),
 		SSLReviews:    make([]*SSLReviewStatus, 0, len(s.sslReviews)),
+		GeminiAPIKeys: make([]*GeminiAPIKey, 0, len(s.geminiAPIKeys)),
 		Ledger:        s.ledger,
 	}
 	for _, project := range s.projects {
@@ -1526,6 +1551,13 @@ func (s *Store) snapshotLocked() persistedState {
 	for _, review := range s.sslReviewRowsLocked() {
 		state.SSLReviews = append(state.SSLReviews, review)
 	}
+	for _, key := range s.geminiAPIKeys {
+		keyCopy := *key
+		state.GeminiAPIKeys = append(state.GeminiAPIKeys, &keyCopy)
+	}
+	sort.Slice(state.GeminiAPIKeys, func(i, j int) bool {
+		return state.GeminiAPIKeys[i].ID < state.GeminiAPIKeys[j].ID
+	})
 	return state
 }
 

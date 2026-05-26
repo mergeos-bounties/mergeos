@@ -16,22 +16,21 @@ import (
 	"regexp"
 	"sort"
 	"strings"
-	"sync"
 	"time"
 )
 
 const geminiReviewMarker = "<!-- mergeos-gemini-pr-review -->"
 
 type GeminiReviewService struct {
-	cfg     Config
-	client  *http.Client
-	mu      sync.Mutex
-	nextKey int
+	cfg    Config
+	store  *Store
+	client *http.Client
 }
 
-func NewGeminiReviewService(cfg Config) *GeminiReviewService {
+func NewGeminiReviewService(cfg Config, store *Store) *GeminiReviewService {
 	return &GeminiReviewService{
-		cfg: cfg,
+		cfg:   cfg,
+		store: store,
 		client: &http.Client{
 			Timeout: 90 * time.Second,
 		},
@@ -67,7 +66,7 @@ type GeminiReviewWebhookResponse struct {
 	EvidenceProvided bool     `json:"evidence_provided"`
 	StarVerified     bool     `json:"star_verified"`
 	Model            string   `json:"model"`
-	KeyIndex         int      `json:"key_index"`
+	KeyID            string   `json:"key_id,omitempty"`
 }
 
 type geminiReviewPullRequest struct {
@@ -118,7 +117,7 @@ type geminiReviewIssue struct {
 }
 
 func (s *Server) geminiReviewWebhook(w http.ResponseWriter, r *http.Request) {
-	if !s.cfg.GeminiReviewReady() {
+	if !s.cfg.GeminiReviewReady() || s.geminiReviewer == nil || !s.geminiReviewer.Ready() {
 		writeError(w, http.StatusServiceUnavailable, "Gemini reviewer is not configured")
 		return
 	}
@@ -150,6 +149,10 @@ func (s *Server) geminiReviewWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, result)
+}
+
+func (s *GeminiReviewService) Ready() bool {
+	return s.store != nil && s.store.HasRunnableGeminiAPIKey()
 }
 
 func geminiReviewRequestFromGitHubWebhook(eventName string, body []byte) (GeminiReviewWebhookRequest, bool, error) {
@@ -316,7 +319,7 @@ func (s *GeminiReviewService) ReviewPullRequest(ctx context.Context, req GeminiR
 	evidenceProvided := reviewEvidenceProvided(pr, comments)
 
 	prompt := buildGeminiReviewPrompt(pr, files, comments, linkedIssues, starVerified, evidenceProvided, s.cfg.GeminiReviewMaxPatchBytes)
-	review, keyIndex, err := s.generate(ctx, prompt)
+	review, keyID, err := s.generate(ctx, prompt)
 	if err != nil {
 		return GeminiReviewWebhookResponse{}, err
 	}
@@ -338,54 +341,47 @@ func (s *GeminiReviewService) ReviewPullRequest(ctx context.Context, req GeminiR
 		EvidenceProvided: evidenceProvided,
 		StarVerified:     starVerified,
 		Model:            s.cfg.GeminiReviewModel,
-		KeyIndex:         keyIndex,
+		KeyID:            keyID,
 	}, nil
 }
 
-func (s *GeminiReviewService) generate(ctx context.Context, prompt string) (string, int, error) {
-	if len(s.cfg.GeminiAPIKeys) == 0 {
-		return "", -1, errors.New("GEMINI_API_KEYS is required")
+func (s *GeminiReviewService) generate(ctx context.Context, prompt string) (string, string, error) {
+	if s.store == nil {
+		return "", "", errors.New("Gemini key store is required")
+	}
+	candidates := s.store.GeminiAPIKeyCandidates()
+	if len(candidates) == 0 {
+		return "", "", errors.New("no active Gemini API keys are configured")
 	}
 	var lastErr error
-	for _, keyIndex := range s.keyOrder() {
-		text, err := s.generateWithKey(ctx, s.cfg.GeminiAPIKeys[keyIndex], prompt)
+	for _, candidate := range candidates {
+		if err := s.store.MarkGeminiAPIKeyAttempt(candidate.ID); err != nil {
+			return "", "", err
+		}
+		text, err := s.generateWithKey(ctx, candidate.KeyValue, prompt)
 		if err == nil {
-			s.markNextKey(keyIndex)
-			return text, keyIndex, nil
+			if markErr := s.store.MarkGeminiAPIKeySuccess(candidate.ID, http.StatusOK); markErr != nil {
+				return "", "", markErr
+			}
+			return text, candidate.ID, nil
 		}
 		lastErr = err
-		if !isGeminiQuotaError(err) {
-			return "", keyIndex, err
+		statusCode := geminiErrorStatusCode(err)
+		if isGeminiQuotaError(err) {
+			_ = s.store.MarkGeminiAPIKeyQuotaLimited(candidate.ID, statusCode, err.Error())
+			continue
 		}
+		if isGeminiKeySpecificError(err) {
+			_ = s.store.MarkGeminiAPIKeyError(candidate.ID, statusCode, err.Error())
+			continue
+		}
+		_ = s.store.MarkGeminiAPIKeyError(candidate.ID, statusCode, err.Error())
+		return "", "", err
 	}
 	if lastErr == nil {
 		lastErr = errors.New("Gemini review failed")
 	}
-	return "", -1, lastErr
-}
-
-func (s *GeminiReviewService) keyOrder() []int {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	count := len(s.cfg.GeminiAPIKeys)
-	order := make([]int, 0, count)
-	if count == 0 {
-		return order
-	}
-	start := s.nextKey % count
-	s.nextKey = (s.nextKey + 1) % count
-	for offset := 0; offset < count; offset++ {
-		order = append(order, (start+offset)%count)
-	}
-	return order
-}
-
-func (s *GeminiReviewService) markNextKey(index int) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if len(s.cfg.GeminiAPIKeys) > 0 {
-		s.nextKey = (index + 1) % len(s.cfg.GeminiAPIKeys)
-	}
+	return "", "", lastErr
 }
 
 func (s *GeminiReviewService) generateWithKey(ctx context.Context, key, prompt string) (string, error) {
@@ -472,6 +468,22 @@ func isGeminiQuotaError(err error) bool {
 		return apiErr.StatusCode == http.StatusForbidden && (strings.Contains(body, "quota") || strings.Contains(body, "rate"))
 	}
 	return false
+}
+
+func isGeminiKeySpecificError(err error) bool {
+	var apiErr geminiAPIError
+	if errors.As(err, &apiErr) {
+		return apiErr.StatusCode == http.StatusUnauthorized || apiErr.StatusCode == http.StatusForbidden || apiErr.StatusCode == http.StatusTooManyRequests
+	}
+	return false
+}
+
+func geminiErrorStatusCode(err error) int {
+	var apiErr geminiAPIError
+	if errors.As(err, &apiErr) {
+		return apiErr.StatusCode
+	}
+	return 0
 }
 
 func githubIssueTargetFromRepository(repository string, pullNumber int) (githubIssueTarget, error) {

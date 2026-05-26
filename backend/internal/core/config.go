@@ -252,7 +252,7 @@ func (c Config) GitHubReady() bool {
 }
 
 func (c Config) GeminiReviewReady() bool {
-	return len(c.GeminiAPIKeys) > 0 && c.GitHubToken != "" && c.GeminiReviewWebhookSecret != ""
+	return c.GitHubToken != "" && c.GeminiReviewWebhookSecret != ""
 }
 
 func (c Config) GitHubOAuthReady() bool {

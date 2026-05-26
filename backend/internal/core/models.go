@@ -528,6 +528,21 @@ type SSLReviewStatus struct {
 	CheckedBy     string     `json:"checked_by,omitempty"`
 }
 
+type GeminiAPIKey struct {
+	ID              string     `json:"id"`
+	KeyValue        string     `json:"key_value"`
+	KeyHint         string     `json:"key_hint"`
+	Status          string     `json:"status"`
+	RequestCount    int64      `json:"request_count"`
+	SuccessCount    int64      `json:"success_count"`
+	QuotaErrorCount int64      `json:"quota_error_count"`
+	LastStatusCode  int        `json:"last_status_code"`
+	LastError       string     `json:"last_error,omitempty"`
+	LastUsedAt      *time.Time `json:"last_used_at,omitempty"`
+	CreatedAt       time.Time  `json:"created_at"`
+	UpdatedAt       time.Time  `json:"updated_at"`
+}
+
 type EvaluateProjectRequest struct {
 	Description     string   `json:"description"`
 	Requirements    []string `json:"requirements"`
@@ -540,11 +555,11 @@ type EvaluateProjectRequest struct {
 }
 
 type EvaluateProjectResponse struct {
-	SuggestedLow    int64             `json:"suggested_low"`
-	SuggestedHigh   int64             `json:"suggested_high"`
-	ConfidenceLevel float64           `json:"confidence_level"`
-	TaskBreakdown   map[string]int64  `json:"task_breakdown"`
-	Assumptions     []string          `json:"assumptions"`
-	Risks           []string          `json:"risks"`
-	Rationale       string            `json:"rationale"`
+	SuggestedLow    int64            `json:"suggested_low"`
+	SuggestedHigh   int64            `json:"suggested_high"`
+	ConfidenceLevel float64          `json:"confidence_level"`
+	TaskBreakdown   map[string]int64 `json:"task_breakdown"`
+	Assumptions     []string         `json:"assumptions"`
+	Risks           []string         `json:"risks"`
+	Rationale       string           `json:"rationale"`
 }

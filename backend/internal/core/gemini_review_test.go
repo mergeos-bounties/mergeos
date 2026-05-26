@@ -54,6 +54,60 @@ func TestSplitEnvList(t *testing.T) {
 	}
 }
 
+func TestGeminiAPIKeyStats(t *testing.T) {
+	store := &Store{
+		cfg:           Config{GeminiAPIKeys: []string{"first-key", "second-key"}},
+		geminiAPIKeys: map[string]*GeminiAPIKey{},
+	}
+	if err := store.SeedGeminiAPIKeysFromConfig(); err != nil {
+		t.Fatalf("seed keys: %v", err)
+	}
+	candidates := store.GeminiAPIKeyCandidates()
+	if len(candidates) != 2 {
+		t.Fatalf("expected two candidates, got %d", len(candidates))
+	}
+	firstID := candidates[0].ID
+	if err := store.MarkGeminiAPIKeyAttempt(firstID); err != nil {
+		t.Fatalf("mark attempt: %v", err)
+	}
+	if err := store.MarkGeminiAPIKeyQuotaLimited(firstID, 429, "quota exceeded"); err != nil {
+		t.Fatalf("mark quota: %v", err)
+	}
+	stats := store.ListGeminiAPIKeyStats()
+	if len(stats) != 2 {
+		t.Fatalf("expected two stats rows, got %d", len(stats))
+	}
+	var quotaFound bool
+	for _, item := range stats {
+		if item.ID == firstID && item.Status == GeminiAPIKeyStatusQuotaLimited && item.RequestCount == 1 {
+			quotaFound = true
+		}
+	}
+	if !quotaFound {
+		t.Fatalf("expected quota status for first key: %#v", stats)
+	}
+	next := store.GeminiAPIKeyCandidates()
+	if len(next) != 1 || next[0].ID == firstID {
+		t.Fatalf("expected quota-limited key to be skipped: %#v", next)
+	}
+	if err := store.MarkGeminiAPIKeyAttempt(next[0].ID); err != nil {
+		t.Fatalf("mark second attempt: %v", err)
+	}
+	if err := store.MarkGeminiAPIKeySuccess(next[0].ID, 200); err != nil {
+		t.Fatalf("mark second success: %v", err)
+	}
+	stats = store.ListGeminiAPIKeyStats()
+	var successFound bool
+	for _, item := range stats {
+		if item.SuccessCount == 1 && item.Status == GeminiAPIKeyStatusActive {
+			successFound = true
+		}
+	}
+	if !successFound {
+		t.Fatalf("expected successful key stats: %#v", stats)
+	}
+}
+
 func TestGeminiReviewRequestFromGitHubWebhook(t *testing.T) {
 	body := []byte(`{
 		"action":"opened",

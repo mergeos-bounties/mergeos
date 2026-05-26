@@ -139,6 +139,9 @@ func (p *postgresPersistence) Load(ctx context.Context) (persistedState, bool, e
 	if err := p.loadSSLReviews(ctx, &state); err != nil {
 		return persistedState{}, false, err
 	}
+	if err := p.loadGeminiAPIKeys(ctx, &state); err != nil {
+		return persistedState{}, false, err
+	}
 	if err := p.loadLedger(ctx, &state); err != nil {
 		return persistedState{}, false, err
 	}
@@ -152,6 +155,7 @@ SELECT EXISTS (SELECT 1 FROM store_meta WHERE key = 'next_id')
    OR EXISTS (SELECT 1 FROM users)
    OR EXISTS (SELECT 1 FROM wallets)
    OR EXISTS (SELECT 1 FROM projects)
+   OR EXISTS (SELECT 1 FROM gemini_api_keys)
    OR EXISTS (SELECT 1 FROM ledger_entries)`).Scan(&found)
 	if err != nil {
 		return false, fmt.Errorf("check postgres state: %w", err)
@@ -419,6 +423,32 @@ ORDER BY sequence`)
 	return rows.Err()
 }
 
+func (p *postgresPersistence) loadGeminiAPIKeys(ctx context.Context, state *persistedState) error {
+	rows, err := p.db.QueryContext(ctx, `
+SELECT id, key_value, key_hint, status, request_count, success_count, quota_error_count,
+       last_status_code, last_error, last_used_at, created_at, updated_at
+FROM gemini_api_keys
+ORDER BY request_count, last_used_at NULLS FIRST, id`)
+	if err != nil {
+		return fmt.Errorf("load gemini api keys: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var key GeminiAPIKey
+		var lastUsedAt sql.NullTime
+		if err := rows.Scan(
+			&key.ID, &key.KeyValue, &key.KeyHint, &key.Status, &key.RequestCount, &key.SuccessCount,
+			&key.QuotaErrorCount, &key.LastStatusCode, &key.LastError, &lastUsedAt, &key.CreatedAt, &key.UpdatedAt,
+		); err != nil {
+			return fmt.Errorf("scan gemini api key: %w", err)
+		}
+		key.LastUsedAt = timePtr(lastUsedAt)
+		state.GeminiAPIKeys = append(state.GeminiAPIKeys, &key)
+	}
+	return rows.Err()
+}
+
 func (p *postgresPersistence) Save(ctx context.Context, state persistedState) error {
 	tx, err := p.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -428,6 +458,7 @@ func (p *postgresPersistence) Save(ctx context.Context, state persistedState) er
 
 	for _, table := range []string{
 		"ledger_entries",
+		"gemini_api_keys",
 		"ssl_reviews",
 		"attachments",
 		"notifications",
@@ -470,6 +501,9 @@ VALUES ('next_id', $1, now())`, strconv.Itoa(state.NextID)); err != nil {
 		return err
 	}
 	if err := saveSSLReviews(ctx, tx, state.SSLReviews); err != nil {
+		return err
+	}
+	if err := saveGeminiAPIKeys(ctx, tx, state.GeminiAPIKeys); err != nil {
 		return err
 	}
 	if err := saveLedger(ctx, tx, state.Ledger); err != nil {
@@ -650,6 +684,42 @@ INSERT INTO ssl_reviews (
 			review.NextCheckAt, review.Error, review.CheckedBy,
 		); err != nil {
 			return fmt.Errorf("save ssl review %s: %w", review.Domain, err)
+		}
+	}
+	return nil
+}
+
+func saveGeminiAPIKeys(ctx context.Context, tx *sql.Tx, keys []*GeminiAPIKey) error {
+	for _, key := range keys {
+		if key == nil || strings.TrimSpace(key.KeyValue) == "" {
+			continue
+		}
+		if key.ID == "" {
+			key.ID = geminiAPIKeyID(key.KeyValue)
+		}
+		if key.KeyHint == "" {
+			key.KeyHint = geminiAPIKeyHint(key.KeyValue)
+		}
+		if key.Status == "" {
+			key.Status = GeminiAPIKeyStatusActive
+		}
+		if key.CreatedAt.IsZero() {
+			key.CreatedAt = time.Now().UTC()
+		}
+		if key.UpdatedAt.IsZero() {
+			key.UpdatedAt = key.CreatedAt
+		}
+		if _, err := tx.ExecContext(ctx, `
+INSERT INTO gemini_api_keys (
+  id, key_value, key_hint, status, request_count, success_count, quota_error_count,
+  last_status_code, last_error, last_used_at, created_at, updated_at
+) VALUES (
+  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
+)`,
+			key.ID, key.KeyValue, key.KeyHint, key.Status, key.RequestCount, key.SuccessCount,
+			key.QuotaErrorCount, key.LastStatusCode, key.LastError, key.LastUsedAt, key.CreatedAt, key.UpdatedAt,
+		); err != nil {
+			return fmt.Errorf("save gemini api key %s: %w", key.ID, err)
 		}
 	}
 	return nil

@@ -16,7 +16,7 @@ type Server struct {
 }
 
 func NewServer(cfg Config, store *Store, payments *PaymentManager) *Server {
-	return &Server{cfg: cfg, store: store, payments: payments, geminiReviewer: NewGeminiReviewService(cfg)}
+	return &Server{cfg: cfg, store: store, payments: payments, geminiReviewer: NewGeminiReviewService(cfg, store)}
 }
 
 func (s *Server) Routes() http.Handler {
@@ -54,6 +54,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/admin/ledger", s.adminLedger)
 	mux.HandleFunc("GET /api/admin/ssl", s.adminSSLReviews)
 	mux.HandleFunc("POST /api/admin/ssl/review", s.reviewAdminSSL)
+	mux.HandleFunc("GET /api/admin/gemini/keys", s.adminGeminiKeys)
 	mux.HandleFunc("GET /api/projects", s.projects)
 	mux.HandleFunc("POST /api/projects", s.createProject)
 	mux.HandleFunc("POST /api/projects/evaluate", s.evaluateProject)
@@ -350,6 +351,13 @@ func (s *Server) reviewAdminSSL(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, reviews)
+}
+
+func (s *Server) adminGeminiKeys(w http.ResponseWriter, r *http.Request) {
+	if _, ok := s.requireAdmin(w, r); !ok {
+		return
+	}
+	writeJSON(w, http.StatusOK, s.store.ListGeminiAPIKeyStats())
 }
 
 func (s *Server) uploadAttachment(w http.ResponseWriter, r *http.Request) {
