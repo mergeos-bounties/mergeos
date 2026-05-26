@@ -4,6 +4,8 @@ MergeOS is an AI-assisted software maintenance and bounty operating system. A cu
 
 This repository is the current MergeOS MVP: Go backend, Vue SSR frontend, project funding flow, bounty workspace generation, GitHub issue import, evidence attachments, notifications, admin review, and proof ledger.
 
+`scan/` is the public MergeOS Scan explorer for `scan.mergeos.shop`. It reads the public ledger API and presents MRG token mints, escrow movements, task reserves, payouts, addresses, transaction hashes, and hash-chain proof in a BscScan-style interface.
+
 ## New Workflow
 
 1. The customer registers or logs in.
@@ -100,6 +102,8 @@ Roadmap items include full AI codebase scanning, task dependency DAGs, automated
 - Backend: Go `net/http`
 - Storage: PostgreSQL when `DATABASE_URL` is set, with legacy JSON state fallback for local development
 - Frontend: Vue 3 + Vite SSR
+- Admin: Vue 3 + Vite static admin console
+- Scan: Vue 3 + Vite static explorer served from `scan.mergeos.shop`
 - Token symbol: `MRG` by default through `TOKEN_SYMBOL`
 - Bounty repos: local git under `BOUNTY_ROOT`, or GitHub private repos with `GITHUB_TOKEN`
 - Payments: local verifier, PayPal, EVM native/ERC-20 verifier
@@ -132,8 +136,18 @@ npm install
 npm run local
 ```
 
+Scan:
+
+```powershell
+cd scan
+Copy-Item .env.local.example .env.local
+npm install
+npm run dev
+```
+
 Open `http://127.0.0.1:5173`.
 Open admin at `http://127.0.0.1:5174`.
+Open scan at `http://127.0.0.1:5175`.
 
 Local payment reference:
 
@@ -161,6 +175,15 @@ npm install
 npm run build
 ```
 
+Build the scan explorer:
+
+```powershell
+cd scan
+Copy-Item .env.production.example .env.production
+npm install
+npm run build
+```
+
 Start the backend:
 
 ```powershell
@@ -177,7 +200,7 @@ cd frontend
 npm run production
 ```
 
-Before real deployment, set production values in `backend/.env.production`: `ADMIN_PASSWORD`, PayPal credentials, crypto verifier settings, GitHub repo settings, SMTP settings, receiver addresses, and SSL review domains.
+Before real deployment, set production values in `backend/.env.production`: `ADMIN_PASSWORD`, PayPal credentials, crypto verifier settings, GitHub repo settings, SMTP settings, receiver addresses, and SSL review domains. The GitHub deploy workflow builds `scan/`, serves it statically from nginx, proxies `/api/` to the MergeOS backend, and requests certificates for `mergeos.shop`, `uta.mergeos.shop`, and `scan.mergeos.shop`.
 
 ## Environment Reference
 
@@ -197,12 +220,18 @@ Admin examples:
 - `admin/.env.local.example`
 - `admin/.env.production.example`
 
+Scan examples:
+
+- `scan/.env.local.example`
+- `scan/.env.production.example`
+
 Important backend variables:
 
 - `MERGEOS_ENV`: `local` or `production`
 - `DATABASE_URL`: PostgreSQL connection string
 - `MERGEOS_STATE_PATH`: legacy JSON state path or import source
 - `TOKEN_SYMBOL`: token label shown by the app, default `MRG`
+- `PRIMARY_DOMAIN`, `ADMIN_DOMAIN`, `SCAN_DOMAIN`: production hostnames, defaulting to `mergeos.shop`, `uta.mergeos.shop`, and `scan.mergeos.shop`
 - `PLATFORM_FEE_BPS`: platform fee basis points
 - `DEV_PAYMENT_ENABLED` and `DEV_PAYMENT_CODE`: local verifier
 - `PAYPAL_ENV`, `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`: PayPal Orders v2

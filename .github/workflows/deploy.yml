@@ -41,6 +41,7 @@ jobs:
           cache-dependency-path: |
             frontend/package-lock.json
             admin/package-lock.json
+            scan/package-lock.json
 
       - name: Install frontend dependencies
         working-directory: frontend
@@ -58,13 +59,23 @@ jobs:
         working-directory: admin
         run: npm run build
 
+      - name: Install scan dependencies
+        working-directory: scan
+        run: npm ci
+
+      - name: Build scan
+        working-directory: scan
+        run: npm run build
+
       - name: Package release
         run: |
           mkdir -p release/frontend/dist
           mkdir -p release/admin/dist
+          mkdir -p release/scan/dist
           cp backend/dist/mergeos release/mergeos
           cp -R frontend/dist/. release/frontend/dist/
           cp -R admin/dist/. release/admin/dist/
+          cp -R scan/dist/. release/scan/dist/
           cp frontend/server.js frontend/package.json frontend/package-lock.json release/frontend/
           tar -czf mergeos-release.tar.gz -C release .
 
@@ -137,6 +148,7 @@ jobs:
             cd "$APP_DIR"
             rm -rf frontend
             rm -rf admin
+            rm -rf scan
             tar -xzf mergeos-release.tar.gz
             chmod +x mergeos
             DATABASE_URL_VALUE=""
@@ -270,6 +282,34 @@ jobs:
             server {
               listen 80;
               listen [::]:80;
+              server_name scan.mergeos.shop;
+              root $APP_DIR/scan/dist;
+              index index.html;
+              client_max_body_size 30m;
+
+              location /api/ {
+                proxy_pass http://127.0.0.1:8080;
+                proxy_http_version 1.1;
+                proxy_set_header Host \$host;
+                proxy_set_header X-Real-IP \$remote_addr;
+                proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto \$scheme;
+              }
+
+              location /assets/ {
+                try_files \$uri =404;
+                access_log off;
+                expires 1h;
+              }
+
+              location / {
+                try_files \$uri \$uri/ /index.html;
+              }
+            }
+
+            server {
+              listen 80;
+              listen [::]:80;
               server_name mergeos.shop _;
               root $APP_DIR/frontend/dist/client;
               index index.html;
@@ -334,7 +374,7 @@ jobs:
               sudo -n systemctl enable nginx
               sudo -n systemctl restart nginx
               CERTBOT_CONTACT_ARGS="--register-unsafely-without-email"
-              sudo -n certbot --nginx --non-interactive --agree-tos $CERTBOT_CONTACT_ARGS --redirect --keep-until-expiring -d mergeos.shop -d uta.mergeos.shop
+              sudo -n certbot --nginx --non-interactive --agree-tos $CERTBOT_CONTACT_ARGS --redirect --keep-until-expiring -d mergeos.shop -d uta.mergeos.shop -d scan.mergeos.shop
               sudo -n nginx -t
               sudo -n systemctl restart nginx
               sudo -n systemctl is-active --quiet nginx

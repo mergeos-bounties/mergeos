@@ -79,6 +79,7 @@ func (s *Server) config(w http.ResponseWriter, _ *http.Request) {
 		AdminBootstrap:    s.cfg.AdminAutoPromote || strings.TrimSpace(s.cfg.AdminEmail) != "",
 		PrimaryDomain:     s.cfg.PrimaryDomain,
 		AdminDomain:       s.cfg.AdminDomain,
+		ScanDomain:        s.cfg.ScanDomain,
 		SSLReviewDomains:  s.cfg.SSLReviewDomains,
 	})
 }

@@ -19,6 +19,13 @@ var configEnvKeys = []string{
 	"ADMIN_NAME",
 	"ADMIN_COMPANY_NAME",
 	"ADMIN_AUTO_PROMOTE_FIRST_USER",
+	"PRIMARY_DOMAIN",
+	"ADMIN_DOMAIN",
+	"SCAN_DOMAIN",
+	"SSL_REVIEW_DOMAINS",
+	"SSL_REVIEW_ENABLED",
+	"SSL_REVIEW_INTERVAL_MINUTES",
+	"SSL_EXPIRY_WARN_DAYS",
 	"PAYPAL_ENV",
 	"PAYPAL_CLIENT_ID",
 	"PAYPAL_CLIENT_SECRET",
@@ -99,6 +106,12 @@ func TestLoadConfigProductionDefaultsAreStrict(t *testing.T) {
 	}
 	if cfg.PayPalEnvironment != "live" {
 		t.Fatalf("paypal env = %q", cfg.PayPalEnvironment)
+	}
+	if cfg.ScanDomain != defaultScanDomain {
+		t.Fatalf("scan domain = %q", cfg.ScanDomain)
+	}
+	if len(cfg.SSLReviewDomains) != 3 {
+		t.Fatalf("ssl review domains = %#v", cfg.SSLReviewDomains)
 	}
 }
 

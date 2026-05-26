@@ -219,6 +219,7 @@ type RuntimeConfigResponse struct {
 	AdminBootstrap    bool     `json:"admin_bootstrap"`
 	PrimaryDomain     string   `json:"primary_domain,omitempty"`
 	AdminDomain       string   `json:"admin_domain,omitempty"`
+	ScanDomain        string   `json:"scan_domain,omitempty"`
 	SSLReviewDomains  []string `json:"ssl_review_domains,omitempty"`
 }
 

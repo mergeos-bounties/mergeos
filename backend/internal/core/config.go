@@ -13,6 +13,7 @@ const (
 	defaultGitHubOwner        = "mergeos-bounties"
 	defaultPrimaryDomain      = "mergeos.shop"
 	defaultAdminDomain        = "uta.mergeos.shop"
+	defaultScanDomain         = "scan.mergeos.shop"
 	defaultLocalAdminEmail    = "admin@gmail.com"
 	defaultLocalAdminPassword = "Admin123"
 )
@@ -32,6 +33,7 @@ type Config struct {
 	AdminAutoPromote         bool
 	PrimaryDomain            string
 	AdminDomain              string
+	ScanDomain               string
 	SSLReviewEnabled         bool
 	SSLReviewDomains         []string
 	SSLReviewIntervalMinutes int64
@@ -72,6 +74,7 @@ func LoadConfig() Config {
 	uploadRoot := getenv("UPLOAD_ROOT", filepath.Join("data", "uploads"))
 	primaryDomain := cleanDomain(getenv("PRIMARY_DOMAIN", defaultPrimaryDomain))
 	adminDomain := cleanDomain(getenv("ADMIN_DOMAIN", defaultAdminDomain))
+	scanDomain := cleanDomain(getenv("SCAN_DOMAIN", defaultScanDomain))
 	devPaymentDefault := env != "production"
 	adminAutoPromoteDefault := env != "production"
 	adminEmail := os.Getenv("ADMIN_EMAIL")
@@ -100,8 +103,9 @@ func LoadConfig() Config {
 		AdminAutoPromote:         getenvBool("ADMIN_AUTO_PROMOTE_FIRST_USER", adminAutoPromoteDefault),
 		PrimaryDomain:            primaryDomain,
 		AdminDomain:              adminDomain,
+		ScanDomain:               scanDomain,
 		SSLReviewEnabled:         getenvBool("SSL_REVIEW_ENABLED", true),
-		SSLReviewDomains:         sslReviewDomains(primaryDomain, adminDomain),
+		SSLReviewDomains:         sslReviewDomains(primaryDomain, adminDomain, scanDomain),
 		SSLReviewIntervalMinutes: getenvInt64("SSL_REVIEW_INTERVAL_MINUTES", 360),
 		SSLExpiryWarnDays:        getenvInt64("SSL_EXPIRY_WARN_DAYS", 14),
 
@@ -132,10 +136,10 @@ func LoadConfig() Config {
 	}
 }
 
-func sslReviewDomains(primaryDomain, adminDomain string) []string {
+func sslReviewDomains(primaryDomain, adminDomain, scanDomain string) []string {
 	raw := strings.TrimSpace(os.Getenv("SSL_REVIEW_DOMAINS"))
 	if raw == "" {
-		raw = primaryDomain + "," + adminDomain
+		raw = primaryDomain + "," + adminDomain + "," + scanDomain
 	}
 	seen := map[string]bool{}
 	domains := []string{}
