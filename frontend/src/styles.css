@@ -5871,6 +5871,80 @@ svg {
   white-space: nowrap;
 }
 
+.notification-center-card:focus {
+  outline: none;
+}
+
+.notification-center-card:focus-visible {
+  outline: 2px solid rgba(15, 159, 120, 0.45);
+  outline-offset: 4px;
+}
+
+.notification-center-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.notification-center-list article {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr);
+  gap: 10px;
+}
+
+.notification-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  margin-top: 3px;
+  background: #94a3b8;
+}
+
+.notification-dot.green {
+  background: var(--green);
+}
+
+.notification-dot.blue {
+  background: #2563eb;
+}
+
+.notification-dot.red {
+  background: #ef4444;
+}
+
+.notification-center-list strong,
+.notification-center-list small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notification-center-list strong {
+  color: #111827;
+  font-size: 11px;
+  font-weight: 920;
+}
+
+.notification-center-list p {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  margin: 4px 0 0;
+  color: #374151;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.notification-center-list small {
+  margin-top: 4px;
+  color: #7b8492;
+  font-size: 10px;
+  font-weight: 720;
+}
+
 .chat-input {
   min-height: 40px;
   display: grid;

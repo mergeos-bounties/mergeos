@@ -1,6 +1,6 @@
 <template>
   <div v-if="projectWizardVisible" class="project-flow-shell">
-    <div v-if="toastMessage" class="toast project-flow-toast">
+    <div v-if="toastMessage" class="toast project-flow-toast" role="status" aria-live="polite">
       {{ toastMessage }}
     </div>
 
@@ -982,7 +982,7 @@
   </div>
 
   <div v-else-if="user && !publicModeVisible" class="dashboard-shell">
-    <div v-if="toastMessage" class="toast dashboard-toast">
+    <div v-if="toastMessage" class="toast dashboard-toast" role="status" aria-live="polite">
       {{ toastMessage }}
     </div>
 
@@ -1002,7 +1002,7 @@
             :key="item.label"
             :class="{ active: item.active }"
             type="button"
-            @click="handleDashboardNav(item)"
+            @click="item.section ? openDashboardSection(item.section) : handleDashboardNav(item)"
           >
             <component :is="item.icon" :size="16" />
             {{ item.label }}
@@ -1037,14 +1037,14 @@
             :key="item.label"
             :class="{ active: item.active }"
             type="button"
-            @click="handleDashboardNav(item)"
+            @click="item.section ? openDashboardSection(item.section) : handleDashboardNav(item)"
           >
             {{ item.label }}
           </button>
         </nav>
 
         <div class="dash-top-actions">
-          <button class="dash-icon-button" aria-label="Notifications" type="button" @click="showToast('Opening notifications...')">
+          <button class="dash-icon-button" aria-label="Notifications" type="button" @click="openDashboardSection('notifications')">
             <Bell :size="18" />
             <span>{{ dashboardNotificationCount }}</span>
           </button>
@@ -1303,6 +1303,30 @@
             </button>
           </section>
 
+          <section ref="dashboardNotificationCenter" class="dash-card rail-card notification-center-card" tabindex="-1">
+            <div class="card-title-row">
+              <h2>Notifications</h2>
+              <span>{{ dashboardNotificationRows.length }}</span>
+            </div>
+            <div v-if="dashboardNotificationRows.length" class="notification-center-list">
+              <article v-for="note in dashboardNotificationRows" :key="note.id">
+                <span :class="['notification-dot', note.tone]" />
+                <div>
+                  <strong>{{ note.subject }}</strong>
+                  <p>{{ note.body }}</p>
+                  <small>{{ note.meta }}</small>
+                </div>
+              </article>
+            </div>
+            <article v-else class="dash-empty-state compact">
+              <strong>{{ dashboardNotificationsLoading ? 'Loading notifications...' : 'No notifications yet' }}</strong>
+              <p>{{ dashboardNotificationsLoading ? 'Fetching delivery records.' : dashboardNotificationsError || 'Project updates and delivery notices will appear here.' }}</p>
+            </article>
+            <button class="rail-link-button" type="button" @click="loadDashboardNotifications">
+              Refresh notifications
+            </button>
+          </section>
+
           <section class="dash-card rail-card chat-card">
             <div class="card-title-row">
               <h2>Ledger Snapshot</h2>
@@ -1331,7 +1355,7 @@
   </div>
 
   <div v-else class="home-shell">
-    <div v-if="toastMessage" class="toast">
+    <div v-if="toastMessage" class="toast" role="status" aria-live="polite">
       {{ toastMessage }}
     </div>
 
@@ -2377,10 +2401,14 @@ const activeMarketplaceCategory = ref('All');
 const dashboardProjects = ref([]);
 const dashboardTasks = ref([]);
 const dashboardLedgerEntries = ref([]);
+const dashboardNotifications = ref([]);
+const dashboardNotificationsLoading = ref(false);
+const dashboardNotificationsError = ref('');
 const dashboardLoading = ref(false);
 const dashboardError = ref('');
 const dashboardSearch = ref('');
 const selectedDashboardProjectID = ref('');
+const dashboardNotificationCenter = ref(null);
 const priceEvaluation = ref(null);
 const priceEvaluationBusy = ref(false);
 const priceEvaluationError = ref('');
@@ -3193,7 +3221,14 @@ const dashboardLedgerRows = computed(() =>
     };
   }),
 );
-const dashboardNotificationCount = computed(() => Math.min(9, dashboardActivityRows.value.length));
+const dashboardNotificationRows = computed(() =>
+  dashboardNotifications.value
+    .slice()
+    .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+    .slice(0, 8)
+    .map(mapDashboardNotification),
+);
+const dashboardNotificationCount = computed(() => Math.min(9, dashboardNotificationRows.value.length));
 
 const marketplaceBenefits = [
   {
@@ -3222,7 +3257,7 @@ const sidebarSections = [
       { label: 'Tasks', icon: ListTodo, toast: 'Opening tasks...' },
       { label: 'Repositories', icon: GitBranch, toast: 'Opening repositories...' },
       { label: 'Payments', icon: CreditCard, toast: 'Opening payments...' },
-      { label: 'Notifications', icon: Bell, toast: 'Opening notifications...' },
+      { label: 'Notifications', icon: Bell, section: 'notifications' },
     ],
   },
   {
@@ -3456,11 +3491,27 @@ function handleDashboardNav(item) {
     openPublicPage(item.page);
     return;
   }
+  if (item.section) {
+    openDashboardSection(item.section);
+    return;
+  }
   if (item.label === 'Dashboard') {
     openDashboard();
     return;
   }
   showToast(item.toast || `${item.label} opened.`);
+}
+
+function openDashboardSection(section) {
+  publicModeVisible.value = false;
+  if (section === 'notifications') {
+    void loadDashboardNotifications();
+    if (!hasWindow) return;
+    window.requestAnimationFrame(() => {
+      dashboardNotificationCenter.value?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      dashboardNotificationCenter.value?.focus({ preventScroll: true });
+    });
+  }
 }
 
 function openMarketplaceSection(id) {
@@ -3987,6 +4038,17 @@ function mapDashboardActivity(entry = {}) {
   };
 }
 
+function mapDashboardNotification(note = {}) {
+  const when = formatLedgerDateTime(note.created_at);
+  return {
+    id: note.id || `${note.subject}-${note.created_at}`,
+    subject: note.subject || 'Notification',
+    body: trimMarketplaceText(note.body, 'MergeOS status update.'),
+    meta: `${toTitleLabel(note.channel || 'app')} · ${toTitleLabel(note.status || 'logged')} · ${when.full}`,
+    tone: note.status === 'failed' ? 'red' : note.project_id ? 'green' : 'blue',
+  };
+}
+
 function formatLedgerDateTime(value) {
   const date = value ? new Date(value) : new Date();
   if (Number.isNaN(date.getTime())) {
@@ -4261,6 +4323,24 @@ async function loadDashboardData(options = {}) {
   }
 }
 
+async function loadDashboardNotifications() {
+  if (!token.value) {
+    dashboardNotifications.value = [];
+    dashboardNotificationsError.value = '';
+    return;
+  }
+  dashboardNotificationsLoading.value = true;
+  dashboardNotificationsError.value = '';
+  try {
+    const rows = await api('/api/notifications');
+    dashboardNotifications.value = Array.isArray(rows) ? rows : [];
+  } catch (error) {
+    dashboardNotificationsError.value = error.message || 'Could not load notifications';
+  } finally {
+    dashboardNotificationsLoading.value = false;
+  }
+}
+
 function startDashboardRealtime() {
   if (!hasWindow || dashboardRefreshTimer) return;
   dashboardRefreshTimer = window.setInterval(() => {
@@ -4310,6 +4390,7 @@ function setSession(auth) {
     void loadLedgerData({ silent: true });
   }
   void loadDashboardData({ silent: true });
+  void loadDashboardNotifications();
   startDashboardRealtime();
 }
 
@@ -4322,6 +4403,8 @@ function clearSession() {
   dashboardProjects.value = [];
   dashboardTasks.value = [];
   dashboardLedgerEntries.value = [];
+  dashboardNotifications.value = [];
+  dashboardNotificationsError.value = '';
   dashboardError.value = '';
   selectedDashboardProjectID.value = '';
   removeStoredToken();
@@ -4366,6 +4449,7 @@ async function restoreSession() {
   try {
     user.value = await api('/api/auth/me');
     await loadDashboardData({ silent: true });
+    await loadDashboardNotifications();
     startDashboardRealtime();
     if (publicPage.value === 'ledger') {
       void loadLedgerData({ silent: true });
