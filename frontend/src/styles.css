@@ -27,6 +27,8 @@
 
 html {
   scroll-behavior: smooth;
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
 }
 
 body {
@@ -2897,10 +2899,10 @@ svg {
 }
 
 .talent-preview-card {
-  left: 30px;
-  top: 42px;
-  width: 204px;
-  padding: 16px;
+  left: 24px;
+  top: 52px;
+  width: clamp(184px, 43%, 204px);
+  padding: 14px;
   transform: rotate(5deg);
 }
 
@@ -3020,9 +3022,9 @@ svg {
 }
 
 .market-code-card {
-  right: 30px;
-  top: 26px;
-  width: 198px;
+  right: 24px;
+  top: 28px;
+  width: clamp(172px, 38%, 198px);
   background: #0b1220;
   border-color: #0b1220;
   padding: 18px;
