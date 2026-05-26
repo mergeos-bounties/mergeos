@@ -4385,12 +4385,16 @@ async function restoreSession() {
 }
 
 async function logout() {
-  try {
-    await api('/api/auth/logout', { method: 'POST', body: JSON.stringify({}) });
-  } finally {
-    clearSession();
-    showToast('Logged out.');
-  }
+ try {
+ await api('/api/auth/logout', { method: 'POST', body: JSON.stringify({}) });
+ } finally {
+ clearSession();
+ currentPublicPage.value = 'home';
+ if (hasWindow) {
+ window.history.pushState({}, '', '/');
+ }
+ showToast('Logged out.');
+ }
 }
 
 onMounted(async () => {

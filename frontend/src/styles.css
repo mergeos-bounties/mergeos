@@ -6201,10 +6201,14 @@ svg {
   }
 }
 
+body {
+ overflow-x: hidden;
+}
+
 @media (max-width: 520px) {
-  .primary-button.compact {
-    padding: 0 12px;
-  }
+ .primary-button.compact {
+ padding: 0 12px;
+ }
 
   .primary-button.compact svg {
     display: none;
@@ -6218,11 +6222,25 @@ svg {
     font-size: 34px;
   }
 
-  .trust-chips span {
-    flex: 1 1 180px;
-  }
+ .trust-chips span {
+ flex: 1 1 140px;
+ }
 
-  .product-console {
+ .public-home-copy h1,
+ .public-info-hero h1,
+ .marketplace-copy h1,
+ .ledger-title-row h1 {
+ font-size: 30px;
+ }
+
+ .hero-actions .primary-button,
+ .hero-actions .secondary-button,
+ .marketplace-actions .primary-button,
+ .marketplace-actions .secondary-button {
+ flex: 1 1 100%;
+ }
+
+ .product-console {
     padding: 12px;
   }
 
