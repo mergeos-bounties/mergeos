@@ -1374,9 +1374,31 @@ async function mergeTaskPull(task, pull) {
 
 function logout(callApi = true) {
   const currentToken = token.value;
+  // Clear all auth and UI state so the dashboard never shows stale data
   token.value = '';
   adminUser.value = null;
+  summary.value = {};
+  users.value = [];
+  projects.value = [];
+  tasks.value = [];
+  notifications.value = [];
+  ledgerEntries.value = [];
+  sslRows.value = [];
+  geminiKeys.value = [];
+  geminiWebhookLogs.value = [];
+  taskPulls.value = {};
+  taskPullsLoaded.value = {};
+  taskPullsLoading.value = {};
+  taskPullsError.value = {};
+  mergeBusy.value = {};
+  mergeMessages.value = {};
+  mergeSelections.value = {};
+  expandedTaskPulls.value = {};
+  errorMessage.value = '';
+  selectedUserId.value = '';
   if (hasWindow) localStorage.removeItem(storageKey);
+  // Navigate to the login/root view
+  setActiveView('builder', { replace: true });
   if (callApi && currentToken) {
     fetch('/api/auth/logout', {
       method: 'POST',

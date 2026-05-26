@@ -292,7 +292,17 @@ func (s *Store) Logout(token string) {
 	token = strings.TrimSpace(strings.TrimPrefix(token, "Bearer "))
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	delete(s.sessions, token)
+	// Find the user for this token so we can invalidate ALL their sessions
+	if session, ok := s.sessions[token]; ok {
+		userID := session.UserID
+		for t, sess := range s.sessions {
+			if sess.UserID == userID {
+				delete(s.sessions, t)
+			}
+		}
+	} else {
+		delete(s.sessions, token)
+	}
 	_ = s.saveLocked()
 }
 
