@@ -63,7 +63,7 @@ func (s *Server) adminTaskPullRequests(w http.ResponseWriter, r *http.Request) {
 	}
 	pulls, err := client.listPullRequestsLinkedToIssue(r.Context(), target)
 	if err != nil {
-		writeError(w, http.StatusBadGateway, err.Error())
+		writeGitHubAdminError(w, err, http.StatusBadGateway)
 		return
 	}
 	writeJSON(w, http.StatusOK, AdminTaskPullRequestsResponse{
@@ -120,7 +120,7 @@ func (s *Server) mergeAdminTaskPullRequest(w http.ResponseWriter, r *http.Reques
 	}
 	pull, err := client.pullRequest(r.Context(), target, pullNumber)
 	if err != nil {
-		writeError(w, http.StatusBadGateway, err.Error())
+		writeGitHubAdminError(w, err, http.StatusBadGateway)
 		return
 	}
 	if pull.Draft {
@@ -135,7 +135,7 @@ func (s *Server) mergeAdminTaskPullRequest(w http.ResponseWriter, r *http.Reques
 		}
 		mergeSHA, err = client.mergePullRequest(r.Context(), target, pullNumber)
 		if err != nil {
-			writeError(w, http.StatusBadGateway, err.Error())
+			writeGitHubAdminError(w, fmt.Errorf("GitHub refused to merge PR #%d: %w", pullNumber, err), http.StatusConflict)
 			return
 		}
 		if refreshed, err := client.pullRequest(r.Context(), target, pullNumber); err == nil {
@@ -232,6 +232,24 @@ func renderMergeOSPullComment(task *Task, pull AdminTaskPullRequest, workerID st
 - MRG credited: %d MRG
 - Proof hash: %s
 `, mergeURL, adminURL, workerID, adminBountyTitle(bountyType), rewardMRG, task.ProofHash)
+}
+
+func writeGitHubAdminError(w http.ResponseWriter, err error, fallbackStatus int) {
+	status := fallbackStatus
+	var apiErr githubAPIError
+	if errors.As(err, &apiErr) {
+		switch apiErr.StatusCode {
+		case http.StatusForbidden:
+			status = http.StatusForbidden
+		case http.StatusNotFound:
+			status = http.StatusNotFound
+		case http.StatusConflict, http.StatusUnprocessableEntity, http.StatusMethodNotAllowed:
+			status = http.StatusConflict
+		case http.StatusUnauthorized:
+			status = http.StatusUnauthorized
+		}
+	}
+	writeError(w, status, err.Error())
 }
 
 func githubIssueTargetForTask(task *Task, project *Project) (githubIssueTarget, error) {
@@ -481,12 +499,51 @@ func (c *adminGitHubClient) githubJSON(ctx context.Context, method, endpoint str
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("github request failed (%d): %s", resp.StatusCode, readBody(resp.Body))
+		return githubAPIError{StatusCode: resp.StatusCode, Body: readBody(resp.Body)}
 	}
 	if out == nil {
 		return nil
 	}
 	return json.NewDecoder(resp.Body).Decode(out)
+}
+
+type githubAPIError struct {
+	StatusCode int
+	Body       string
+}
+
+func (e githubAPIError) Error() string {
+	body := strings.TrimSpace(e.Body)
+	if body == "" {
+		return fmt.Sprintf("github request failed with status %d", e.StatusCode)
+	}
+	var decoded struct {
+		Message string `json:"message"`
+		Errors  []struct {
+			Message string `json:"message"`
+			Code    string `json:"code"`
+			Field   string `json:"field"`
+		} `json:"errors"`
+	}
+	if err := json.Unmarshal([]byte(body), &decoded); err == nil {
+		parts := []string{}
+		if decoded.Message != "" {
+			parts = append(parts, decoded.Message)
+		}
+		for _, item := range decoded.Errors {
+			detail := strings.TrimSpace(item.Message)
+			if detail == "" {
+				detail = strings.TrimSpace(strings.Join([]string{item.Field, item.Code}, " "))
+			}
+			if detail != "" {
+				parts = append(parts, detail)
+			}
+		}
+		if len(parts) > 0 {
+			return fmt.Sprintf("github request failed (%d): %s", e.StatusCode, strings.Join(parts, "; "))
+		}
+	}
+	return fmt.Sprintf("github request failed (%d): %s", e.StatusCode, body)
 }
 
 type githubTimelineEvent struct {

@@ -956,7 +956,7 @@ function setMergeReward(task, pull, value) {
 function pullStatus(pull) {
   if (pull.merged) return 'merged';
   if (pull.draft) return 'draft';
-  return pull.state || 'open';
+  return [pull.state || 'open', pull.mergeable_state].filter(Boolean).join(' / ');
 }
 
 function canMergeTaskPull(task, pull) {
