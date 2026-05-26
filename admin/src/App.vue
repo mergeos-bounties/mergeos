@@ -303,7 +303,7 @@
             <section class="task-pr-section" aria-label="Linked pull requests">
               <div class="task-pr-toolbar">
                 <button
-                  class="compact-action"
+                  class="compact-action pr-toggle-action"
                   :aria-expanded="isTaskPullsExpanded(task)"
                   :disabled="taskPullsLoading[task.id]"
                   type="button"
@@ -311,6 +311,7 @@
                 >
                   <GitPullRequest :size="14" />
                   {{ taskPullsLoading[task.id] ? 'Checking...' : isTaskPullsExpanded(task) ? 'Hide PRs' : 'Show PRs' }}
+                  <ChevronDown :class="['pr-chevron', { open: isTaskPullsExpanded(task) }]" :size="15" />
                 </button>
                 <button v-if="isTaskPullsExpanded(task)" class="compact-action" :disabled="taskPullsLoading[task.id]" type="button" @click="loadTaskPulls(task, true)">
                   <RefreshCw :size="14" />
@@ -520,6 +521,7 @@ import {
   AlertTriangle,
   BarChart3,
   CheckCircle2,
+  ChevronDown,
   CircleDollarSign,
   Columns3,
   Eye,

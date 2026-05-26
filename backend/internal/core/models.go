@@ -155,6 +155,7 @@ type Task struct {
 	AgentType          string     `json:"agent_type,omitempty"`
 	ProofHash          string     `json:"proof_hash,omitempty"`
 	IssueURL           string     `json:"issue_url,omitempty"`
+	IssueState         string     `json:"issue_state,omitempty"`
 	CreatedAt          time.Time  `json:"created_at"`
 	AcceptedAt         *time.Time `json:"accepted_at,omitempty"`
 }

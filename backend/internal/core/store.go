@@ -598,7 +598,75 @@ func (s *Store) ListTasks(userID string) []*Task {
 		copyTask := *task
 		tasks = append(tasks, &copyTask)
 	}
+	sortTasks(tasks)
 	return tasks
+}
+
+func (s *Store) SyncProjectImportedIssues(projectID string, issues []*ImportedRepoIssue) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	project, ok := s.projects[strings.TrimSpace(projectID)]
+	if !ok {
+		return errors.New("project not found")
+	}
+
+	existing := map[int]*Task{}
+	for _, task := range s.tasks {
+		if task.ProjectID == project.ID && task.IssueNumber > 0 {
+			existing[task.IssueNumber] = task
+		}
+	}
+
+	changed := false
+	now := time.Now().UTC()
+	for _, issue := range issues {
+		if issue == nil || issue.Number <= 0 {
+			continue
+		}
+		state := normalizeIssueState(issue.State)
+		if task, ok := existing[issue.Number]; ok {
+			taskChanged := false
+			if task.IssueState != state {
+				task.IssueState = state
+				taskChanged = true
+			}
+			if strings.TrimSpace(task.IssueURL) == "" && strings.TrimSpace(issue.URL) != "" {
+				task.IssueURL = strings.TrimSpace(issue.URL)
+				taskChanged = true
+			}
+			if taskChanged {
+				s.syncProjectTaskSnapshotLocked(project, task)
+				changed = true
+			}
+			continue
+		}
+
+		task := &Task{
+			ID:                 s.newID("tsk"),
+			ProjectID:          project.ID,
+			IssueNumber:        issue.Number,
+			Title:              fmt.Sprintf("Fix #%d: %s", issue.Number, strings.TrimSpace(issue.Title)),
+			Acceptance:         importedIssueAcceptance(issue),
+			RewardCents:        importedIssueReward(issue),
+			RequiredWorkerKind: issue.RequiredWorkerKind,
+			SuggestedAgentType: strings.TrimSpace(issue.SuggestedAgentType),
+			Status:             TaskOpen,
+			IssueURL:           strings.TrimSpace(issue.URL),
+			IssueState:         state,
+			CreatedAt:          now,
+		}
+		s.tasks[task.ID] = task
+		existing[issue.Number] = task
+		s.syncProjectTaskSnapshotLocked(project, task)
+		changed = true
+	}
+
+	if !changed {
+		return nil
+	}
+	sortTasks(project.Tasks)
+	return s.saveLocked()
 }
 
 func (s *Store) TaskWithProject(taskID string) (*Task, *Project, bool) {
@@ -1125,6 +1193,7 @@ func (s *Store) splitProjectTasks(project *Project) []*Task {
 			RequiredWorkerKind: item.kind,
 			SuggestedAgentType: item.agent,
 			Status:             TaskOpen,
+			IssueState:         "open",
 			CreatedAt:          time.Now().UTC(),
 		}
 		tasks = append(tasks, task)
@@ -1161,6 +1230,7 @@ func (s *Store) tasksFromImportedIssues(project *Project, issues []*ImportedRepo
 			SuggestedAgentType: strings.TrimSpace(issue.SuggestedAgentType),
 			Status:             TaskOpen,
 			IssueURL:           strings.TrimSpace(issue.URL),
+			IssueState:         normalizeIssueState(issue.State),
 			CreatedAt:          time.Now().UTC(),
 		}
 		tasks = append(tasks, task)
@@ -1179,6 +1249,57 @@ func issueRewardWeight(issue *ImportedRepoIssue) int64 {
 		return int64(issue.Score)
 	}
 	return 1
+}
+
+func importedIssueReward(issue *ImportedRepoIssue) int64 {
+	if issue != nil && issue.EstimatedCents > 0 {
+		return issue.EstimatedCents
+	}
+	return 100
+}
+
+func normalizeIssueState(value string) string {
+	state := strings.ToLower(strings.TrimSpace(value))
+	if state == "closed" || state == "close" {
+		return "closed"
+	}
+	return "open"
+}
+
+func sortTasks(tasks []*Task) {
+	sort.SliceStable(tasks, func(i, j int) bool {
+		left, right := tasks[i], tasks[j]
+		if left == nil {
+			return false
+		}
+		if right == nil {
+			return true
+		}
+		if left.ProjectID != right.ProjectID {
+			return left.ProjectID < right.ProjectID
+		}
+		if left.IssueNumber != right.IssueNumber {
+			return left.IssueNumber < right.IssueNumber
+		}
+		if !left.CreatedAt.Equal(right.CreatedAt) {
+			return left.CreatedAt.Before(right.CreatedAt)
+		}
+		return left.ID < right.ID
+	})
+}
+
+func (s *Store) syncProjectTaskSnapshotLocked(project *Project, task *Task) {
+	if project == nil || task == nil {
+		return
+	}
+	taskCopy := *task
+	for index, projectTask := range project.Tasks {
+		if projectTask != nil && projectTask.ID == task.ID {
+			project.Tasks[index] = &taskCopy
+			return
+		}
+	}
+	project.Tasks = append(project.Tasks, &taskCopy)
 }
 
 func importedIssueAcceptance(issue *ImportedRepoIssue) string {

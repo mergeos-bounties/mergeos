@@ -258,6 +258,62 @@ func TestImportedRepoIssuesBecomeFundedTasks(t *testing.T) {
 	}
 }
 
+func TestSyncProjectImportedIssuesAddsMissingAndTracksState(t *testing.T) {
+	store := &Store{
+		cfg:      Config{StatePath: filepath.Join(t.TempDir(), "state.json")},
+		nextID:   2,
+		projects: map[string]*Project{},
+		tasks:    map[string]*Task{},
+	}
+	project := &Project{ID: "prj_0001", Title: "Repo issues", Tasks: []*Task{}}
+	existing := &Task{
+		ID:          "tsk_0001",
+		ProjectID:   project.ID,
+		IssueNumber: 1,
+		Title:       "Fix #1",
+		Status:      TaskAccepted,
+		IssueState:  "open",
+		IssueURL:    "https://github.com/mergeos-bounties/mergeos/issues/1",
+		CreatedAt:   time.Now().UTC(),
+	}
+	project.Tasks = append(project.Tasks, existing)
+	store.projects[project.ID] = project
+	store.tasks[existing.ID] = existing
+
+	err := store.SyncProjectImportedIssues(project.ID, []*ImportedRepoIssue{
+		{
+			Number:             1,
+			Title:              "Already imported",
+			State:              "closed",
+			URL:                existing.IssueURL,
+			EstimatedCents:     100,
+			RequiredWorkerKind: WorkerHuman,
+		},
+		{
+			Number:             7,
+			Title:              "New issue from GitHub",
+			State:              "open",
+			URL:                "https://github.com/mergeos-bounties/mergeos/issues/7",
+			EstimatedCents:     100,
+			RequiredWorkerKind: WorkerAgent,
+			SuggestedAgentType: "backend-agent",
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	tasks := store.ListTasks("")
+	if len(tasks) != 2 {
+		t.Fatalf("tasks = %d, want 2", len(tasks))
+	}
+	if tasks[0].IssueNumber != 1 || tasks[0].IssueState != "closed" || tasks[0].Status != TaskAccepted {
+		t.Fatalf("existing issue not updated safely: %#v", tasks[0])
+	}
+	if tasks[1].IssueNumber != 7 || tasks[1].IssueState != "open" || tasks[1].Status != TaskOpen {
+		t.Fatalf("missing issue not added: %#v", tasks[1])
+	}
+}
+
 func TestPublicMarketplaceRouteReturnsSanitizedLiveData(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := Config{

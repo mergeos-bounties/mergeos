@@ -224,6 +224,57 @@ func adminTasksURL(cfg Config) string {
 	return "https://" + domain + "/tasks"
 }
 
+func (s *Server) syncAdminProjectIssues(ctx context.Context) {
+	for _, project := range s.store.ListProjects("") {
+		repoURL := projectSourceRepoURL(project)
+		if repoURL == "" {
+			continue
+		}
+		imported, err := ImportRepoIssues(ctx, s.cfg, ImportRepoIssuesRequest{RepoURL: repoURL})
+		if err != nil || imported == nil {
+			continue
+		}
+		_ = s.store.SyncProjectImportedIssues(project.ID, imported.Issues)
+	}
+}
+
+func projectSourceRepoURL(project *Project) string {
+	if project == nil {
+		return ""
+	}
+	for _, task := range project.Tasks {
+		if target, err := parseGitHubIssueURL(task.IssueURL); err == nil {
+			return "https://github.com/" + target.fullName()
+		}
+	}
+	if repoURL := sourceRepoURLFromBrief(project.Brief); repoURL != "" {
+		return repoURL
+	}
+	for _, candidate := range []string{project.RepoURL, project.BountyRepoName} {
+		owner, repo, err := parseGitHubRepo(candidate)
+		if err == nil {
+			return "https://github.com/" + owner + "/" + repo
+		}
+	}
+	return ""
+}
+
+func sourceRepoURLFromBrief(brief string) string {
+	for _, line := range strings.Split(brief, "\n") {
+		line = strings.TrimSpace(line)
+		if !strings.HasPrefix(strings.ToLower(line), "source repository:") {
+			continue
+		}
+		value := strings.TrimSpace(line[len("source repository:"):])
+		owner, repo, err := parseGitHubRepo(value)
+		if err != nil {
+			return ""
+		}
+		return "https://github.com/" + owner + "/" + repo
+	}
+	return ""
+}
+
 func scanBaseURL(cfg Config) string {
 	domain := strings.TrimSpace(cfg.ScanDomain)
 	if domain == "" {

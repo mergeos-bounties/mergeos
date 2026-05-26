@@ -806,19 +806,20 @@ button:disabled {
 
 .task-review-item {
   display: grid;
-  grid-template-columns: minmax(280px, 0.95fr) minmax(420px, 1.45fr);
-  gap: 14px;
+  grid-template-columns: 1fr;
+  gap: 0;
   align-items: start;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--surface);
-  padding: 14px;
+  overflow: hidden;
 }
 
 .task-review-main {
   min-width: 0;
   display: grid;
   gap: 12px;
+  padding: 14px;
 }
 
 .task-review-title {
@@ -900,6 +901,9 @@ button:disabled {
 
 .task-pr-section {
   min-width: 0;
+  border-top: 1px solid var(--line);
+  background: linear-gradient(180deg, #fbfefd 0%, var(--surface-2) 100%);
+  padding: 12px 14px 14px;
 }
 
 .task-pr-toolbar,
@@ -911,7 +915,7 @@ button:disabled {
 }
 
 .task-pr-toolbar {
-  justify-content: space-between;
+  justify-content: flex-start;
   flex-wrap: wrap;
 }
 
@@ -920,6 +924,24 @@ button:disabled {
   color: var(--muted);
   font-size: 12px;
   font-weight: 800;
+}
+
+.task-pr-toolbar small {
+  margin-left: auto;
+}
+
+.pr-toggle-action {
+  border-color: rgba(15, 159, 120, 0.25);
+  background: #ecfdf5;
+  color: var(--green-dark);
+}
+
+.pr-chevron {
+  transition: transform 0.16s ease;
+}
+
+.pr-chevron.open {
+  transform: rotate(180deg);
 }
 
 .task-pr-list {
@@ -939,7 +961,7 @@ button:disabled {
   align-items: center;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: var(--surface-2);
+  background: var(--surface);
   padding: 10px;
 }
 

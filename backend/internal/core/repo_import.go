@@ -33,32 +33,8 @@ func ImportRepoIssues(ctx context.Context, cfg Config, req ImportRepoIssuesReque
 		return nil, err
 	}
 
-	endpoint := fmt.Sprintf("https://api.github.com/repos/%s/%s/issues?state=all&per_page=100&sort=updated&direction=desc", url.PathEscape(owner), url.PathEscape(name))
-	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+	rows, err := fetchRepoIssueRows(ctx, cfg, owner, name)
 	if err != nil {
-		return nil, err
-	}
-	httpReq.Header.Set("Accept", "application/vnd.github+json")
-	httpReq.Header.Set("X-GitHub-Api-Version", "2022-11-28")
-	if strings.TrimSpace(cfg.GitHubToken) != "" {
-		httpReq.Header.Set("Authorization", "Bearer "+cfg.GitHubToken)
-	}
-
-	client := &http.Client{Timeout: 20 * time.Second}
-	resp, err := client.Do(httpReq)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode == http.StatusNotFound {
-		return nil, errors.New("repo was not found or is private; connect GitHub before importing private repos")
-	}
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("github issue import failed: %s", readBody(resp.Body))
-	}
-
-	var rows []githubIssueRow
-	if err := json.NewDecoder(resp.Body).Decode(&rows); err != nil {
 		return nil, err
 	}
 
@@ -87,6 +63,52 @@ func ImportRepoIssues(ctx context.Context, cfg Config, req ImportRepoIssuesReque
 		TotalEstimatedCents: total,
 		Issues:              issues,
 	}, nil
+}
+
+func fetchRepoIssueRows(ctx context.Context, cfg Config, owner, name string) ([]githubIssueRow, error) {
+	client := &http.Client{Timeout: 20 * time.Second}
+	rows := []githubIssueRow{}
+	for page := 1; page <= 10; page++ {
+		endpoint := fmt.Sprintf(
+			"https://api.github.com/repos/%s/%s/issues?state=all&per_page=100&page=%d&sort=updated&direction=desc",
+			url.PathEscape(owner),
+			url.PathEscape(name),
+			page,
+		)
+		httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+		if err != nil {
+			return nil, err
+		}
+		httpReq.Header.Set("Accept", "application/vnd.github+json")
+		httpReq.Header.Set("X-GitHub-Api-Version", "2022-11-28")
+		if strings.TrimSpace(cfg.GitHubToken) != "" {
+			httpReq.Header.Set("Authorization", "Bearer "+cfg.GitHubToken)
+		}
+
+		resp, err := client.Do(httpReq)
+		if err != nil {
+			return nil, err
+		}
+		var pageRows []githubIssueRow
+		decodeErr := func() error {
+			defer resp.Body.Close()
+			if resp.StatusCode == http.StatusNotFound {
+				return errors.New("repo was not found or is private; connect GitHub before importing private repos")
+			}
+			if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+				return fmt.Errorf("github issue import failed: %s", readBody(resp.Body))
+			}
+			return json.NewDecoder(resp.Body).Decode(&pageRows)
+		}()
+		if decodeErr != nil {
+			return nil, decodeErr
+		}
+		rows = append(rows, pageRows...)
+		if len(pageRows) < 100 {
+			break
+		}
+	}
+	return rows, nil
 }
 
 func parseGitHubRepo(value string) (string, string, error) {

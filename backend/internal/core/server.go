@@ -308,6 +308,7 @@ func (s *Server) adminTasks(w http.ResponseWriter, r *http.Request) {
 	if _, ok := s.requireAdmin(w, r); !ok {
 		return
 	}
+	s.syncAdminProjectIssues(r.Context())
 	writeJSON(w, http.StatusOK, s.store.ListTasks(""))
 }
 
