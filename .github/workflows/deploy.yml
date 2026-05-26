@@ -159,11 +159,19 @@ jobs:
               MERGEOS_ENV=production PORT=8080 nohup "$APP_DIR/mergeos" > "$APP_DIR/mergeos.log" 2> "$APP_DIR/mergeos.err.log" &
             fi
             if command -v sudo >/dev/null 2>&1; then
-              if ! command -v node >/dev/null 2>&1 || ! command -v npm >/dev/null 2>&1; then
+              NODE_MAJOR=22
+              if ! command -v node >/dev/null 2>&1 || ! node -e "process.exit(Number(process.versions.node.split('.')[0]) >= 22 ? 0 : 1)"; then
                 sudo -n apt-get update
-                sudo -n env DEBIAN_FRONTEND=noninteractive apt-get install -y nodejs npm
+                sudo -n env DEBIAN_FRONTEND=noninteractive apt-get install -y ca-certificates curl gnupg
+                sudo -n install -d -m 0755 /etc/apt/keyrings
+                curl -fsSL "https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key" | gpg --dearmor | sudo -n tee /etc/apt/keyrings/nodesource.gpg >/dev/null
+                echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_${NODE_MAJOR}.x nodistro main" | sudo -n tee /etc/apt/sources.list.d/nodesource.list >/dev/null
+                sudo -n apt-get update
+                sudo -n env DEBIAN_FRONTEND=noninteractive apt-get install -y nodejs
               fi
               cd "$APP_DIR/frontend"
+              node -v
+              npm -v
               npm ci --omit=dev
               cd "$APP_DIR"
               if command -v systemctl >/dev/null 2>&1; then
