@@ -4379,8 +4379,27 @@ async function logout() {
   try {
     await api('/api/auth/logout', { method: 'POST', body: JSON.stringify({}) });
   } finally {
+    // 1. Force stop real-time data streaming listeners to prevent memory leaks
+    if (typeof stopDashboardRealtime === 'function') {
+      try { stopDashboardRealtime(); } catch (e) { console.error(e); }
+    }
+    
+    // 2. Clear out local state/session memory tokens
     clearSession();
+    
+    // 3. Clear visible active state memory stores to satisfy clean UI requirements
+    if (typeof dashboardData !== 'undefined' && dashboardData.value) dashboardData.value = null;
+    if (typeof ledgerData !== 'undefined' && ledgerData.value) ledgerData.value = null;
+    if (typeof user !== 'undefined' && user.value) user.value = null;
+
     showToast('Logged out.');
+
+    // 4. Force reliable view redirection to prevent getting stuck on broken private pages
+    if (typeof publicPage !== 'undefined') {
+      publicPage.value = 'login'; 
+    } else if (typeof hasWindow !== 'undefined' && hasWindow) {
+      window.location.href = '/'; // Fallback fallback redirect to index landing page
+    }
   }
 }
 
