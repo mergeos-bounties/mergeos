@@ -1987,7 +1987,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, onUnmounted, reactive, ref } from 'vue';
 import {
   ArrowLeft,
   ArrowRight,
@@ -2041,6 +2041,8 @@ import {
 } from '@lucide/vue';
 
 const hasWindow = typeof window !== 'undefined';
+const TOKEN_RATE_PER_USD = 100;
+const DASHBOARD_REFRESH_MS = 5000;
 
 function getBrowserStorage() {
   if (!hasWindow || !('localStorage' in window)) {
@@ -2127,12 +2129,17 @@ const dashboardLoading = ref(false);
 const dashboardError = ref('');
 const dashboardSearch = ref('');
 const selectedDashboardProjectID = ref('');
+const repoImportBusy = ref(false);
+const repoImportError = ref('');
+const repoImportResult = ref(null);
+let dashboardRefreshTimer = 0;
 
 const projectSetupForm = reactive({
   title: 'AI-Powered SaaS Dashboard',
   shortDescription: 'Build a modern SaaS dashboard with analytics, real-time data, and AI insights.',
   projectType: 'Web Development',
   techStack: 'Next.js, TypeScript, Tailwind CSS, PostgreSQL',
+  repoUrl: '',
   overview: '',
   requirements: '',
   currency: 'USD',
@@ -2193,6 +2200,7 @@ const projectSetupSteps = [
 
 const projectTypeOptions = [
   { label: 'Web Development', caption: 'Web apps', icon: Globe2 },
+  { label: 'Repo Issue Fix', caption: 'Existing repo', icon: Bug },
   { label: 'Mobile Development', caption: 'iOS and Android', icon: Compass },
   { label: 'AI / ML', caption: 'Agents and models', icon: Bot },
   { label: 'Smart Contract', caption: 'Web3', icon: Link2 },

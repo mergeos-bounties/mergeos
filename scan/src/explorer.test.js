@@ -35,7 +35,7 @@ const entries = [
 ];
 
 test('converts funded cents to MRG token amount', () => {
-  assert.equal(tokenAmountFromCents(100000), 175);
+  assert.equal(tokenAmountFromCents(100000), 100000);
 });
 
 test('verifies the public ledger hash chain', () => {
@@ -69,7 +69,7 @@ test('builds explorer-level stats from ledger and marketplace payloads', () => {
   const stats = buildExplorerStats(entries, { stats: { project_count: 3 }, projects: [] }, 'MRG');
 
   assert.equal(stats.totalTransactions, 2);
-  assert.equal(stats.mintedTokens, 175);
+  assert.equal(stats.mintedTokens, 100000);
   assert.equal(stats.projectCount, 3);
   assert.equal(stats.chainOk, true);
 });

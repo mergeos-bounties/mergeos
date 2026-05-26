@@ -281,7 +281,7 @@ func renderRepoReadme(project *Project, tasks []*Task, tokenSymbol string) strin
 	}
 	builder.WriteString("## Bounty Tasks\n\n")
 	for _, task := range tasks {
-		builder.WriteString(fmt.Sprintf("- #%d %s - %s - %s %s\n", task.IssueNumber, task.Title, task.RequiredWorkerKind, centsToPayPalValue(task.RewardCents), tokenSymbol))
+		builder.WriteString(fmt.Sprintf("- #%d %s - %s - %s %s (%s USD)\n", task.IssueNumber, task.Title, task.RequiredWorkerKind, formatTokenAmount(task.RewardCents), tokenSymbol, centsToPayPalValue(task.RewardCents)))
 	}
 	return builder.String()
 }
@@ -299,9 +299,20 @@ func renderTaskMarkdown(project *Project, task *Task, tokenSymbol string) string
 	if len(project.Attachments) > 0 {
 		builder.WriteString("Client attachments are available in the repo `attachments/` directory and should be used as visual/content references.\n\n")
 	}
-	builder.WriteString("Reward: " + centsToPayPalValue(task.RewardCents) + " " + tokenSymbol + "\n\n")
+	builder.WriteString("Reward: " + formatTokenAmount(task.RewardCents) + " " + tokenSymbol + " (" + centsToPayPalValue(task.RewardCents) + " USD equivalent)\n\n")
 	builder.WriteString("A paid submission must include a worker manifest with worker kind, worker id, and agent type when the work is agent or hybrid.\n")
 	return builder.String()
+}
+
+func tokenAmountFromCents(cents int64) int64 {
+	if cents <= 0 {
+		return 0
+	}
+	return cents
+}
+
+func formatTokenAmount(cents int64) string {
+	return fmt.Sprintf("%d", tokenAmountFromCents(cents))
 }
 
 func normalizedTokenSymbol(tokenSymbol string) string {

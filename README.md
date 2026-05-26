@@ -13,7 +13,7 @@ This repository is the current MergeOS MVP: Go backend, Vue SSR frontend, projec
 3. The customer funds escrow through PayPal, crypto, or the local development verifier.
 4. MergeOS records the funded project, mints internal `MRG` token credit, and creates a bounty workspace.
 5. The system splits the project into tasks with reward pools, worker type, agent suggestion, and acceptance criteria.
-6. Contributors who want token rewards for new bugs must comment in the Claim Token issue before starting work.
+6. Contributors who want token rewards must star this repository, then comment in the Claim Token issue before starting work.
 7. The contributor opens a PR after the fix, including screenshots/log evidence and a clear description.
 8. Maintainers review the PR, verify the evidence, merge valid work, and release the token reward.
 
@@ -28,6 +28,7 @@ Do not open a separate issue for a new bounty bug unless a maintainer asks for i
 ### Claim Rules
 
 - One bug equals one claim comment.
+- Contributors must star this repository before claiming or starting bounty work.
 - A claim must include impact, steps to reproduce, expected result, actual result, and evidence.
 - A maintainer must confirm the claim before the contributor starts bounty work.
 - Duplicates, vague reports, missing reproduction steps, or reports without evidence are not eligible yet.
@@ -71,12 +72,14 @@ Wallet/token receiver:
 Every bounty PR must include:
 
 - Link to the Claim Token issue comment.
+- Bounty type: bug bounty or feature bounty.
+- The PR author must have starred this repository.
 - Summary of the bug and the fix.
 - Evidence before and after the fix. Screenshots or GIFs are preferred for UI bugs. Logs, request/response examples, or test output are acceptable for backend bugs.
 - Test commands that were run and their result.
 - Any risk, migration, environment variable, or deployment note.
 
-PRs without evidence are not ready for bounty review.
+PRs from authors who have not starred the repository, or PRs without evidence, are not ready for bounty review.
 
 ## Product Scope
 

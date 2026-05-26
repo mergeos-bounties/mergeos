@@ -150,7 +150,7 @@
                 </div>
                 <div>
                   <dt>Mint rule</dt>
-                  <dd>1 USD = 0.175 {{ tokenSymbol }}</dd>
+                  <dd>1 USD = 100 {{ tokenSymbol }}</dd>
                 </div>
                 <div>
                   <dt>Payment mode</dt>

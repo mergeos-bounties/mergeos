@@ -1,4 +1,4 @@
-export const TOKEN_RATE_PER_USD = 0.175;
+export const TOKEN_RATE_PER_USD = 100;
 
 export function normalizeEntry(entry = {}) {
   return {
