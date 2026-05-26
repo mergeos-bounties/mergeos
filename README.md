@@ -122,8 +122,8 @@ The backend runs in `MERGEOS_ENV=local`, sets `DATABASE_URL=postgres://mergeos:m
 GitHub OAuth for local testing is optional. To enable "Continue with GitHub" and wallet linking, create a GitHub OAuth app and set these before starting Compose:
 
 ```powershell
-$env:GITHUB_OAUTH_CLIENT_ID='your-client-id'
-$env:GITHUB_OAUTH_CLIENT_SECRET='your-client-secret'
+$env:MERGEOS_GITHUB_OAUTH_CLIENT_ID='your-client-id'
+$env:MERGEOS_GITHUB_OAUTH_CLIENT_SECRET='your-client-secret'
 docker compose up --build
 ```
 
@@ -253,7 +253,8 @@ Important backend variables:
 - `PAYPAL_ENV`, `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`: PayPal Orders v2
 - `CRYPTO_RPC_URL`, `CRYPTO_RECEIVER`, `CRYPTO_ASSET`, `CRYPTO_TOKEN_CONTRACT`: crypto verifier
 - `GITHUB_TOKEN`, `GITHUB_OWNER`, `GITHUB_OWNER_TYPE`: GitHub bounty repo creation
-- `GITHUB_OAUTH_CLIENT_ID`, `GITHUB_OAUTH_CLIENT_SECRET`: GitHub login and MRG wallet linking
+- `GITHUB_OAUTH_CLIENT_ID`, `GITHUB_OAUTH_CLIENT_SECRET`: backend runtime values for GitHub login and MRG wallet linking
+- `MERGEOS_GITHUB_OAUTH_CLIENT_ID`, `MERGEOS_GITHUB_OAUTH_CLIENT_SECRET`: Docker Compose and GitHub Actions secret names that map into the backend runtime values
 - `BOUNTY_ROOT`: local child bounty repo root
 - `UPLOAD_ROOT`: attachment storage root
 - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_FROM`: email notifications
