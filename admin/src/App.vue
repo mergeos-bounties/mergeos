@@ -5,7 +5,7 @@
         <span class="brand-mark" aria-hidden="true"><img src="/favicon.svg" alt="" /></span>
         <div>
           <strong>MergeOS Admin</strong>
-          <small>Elementor workspace</small>
+          <small>Dashboard</small>
         </div>
       </div>
 
@@ -110,7 +110,7 @@
         <div class="canvas-column">
           <div class="canvas-toolbar">
             <div>
-              <span>Elementor canvas</span>
+              <span>Dashboard</span>
               <strong>{{ selectedWidgetLabel }}</strong>
             </div>
             <div class="canvas-tools">
@@ -576,7 +576,7 @@ const userForm = reactive({
 });
 
 const navItems = [
-  { id: 'builder', label: 'Elementor', title: 'Elementor admin canvas', kicker: 'BUILDER', icon: PanelLeft },
+  { id: 'builder', label: 'Dashboard', title: 'Dashboard', kicker: 'DASHBOARD', icon: PanelLeft },
   { id: 'overview', label: 'Overview', title: 'Platform overview', kicker: 'DASHBOARD', icon: LayoutDashboard },
   { id: 'projects', label: 'Projects', title: 'Funded projects', kicker: 'PROJECTS', icon: FolderKanban },
   { id: 'tasks', label: 'Tasks', title: 'Task operations', kicker: 'TASKS', icon: ListChecks },
