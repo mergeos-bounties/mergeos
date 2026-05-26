@@ -127,5 +127,32 @@ jobs:
             tar -xzf mergeos-release.tar.gz
             chmod +x mergeos
             if command -v systemctl >/dev/null 2>&1; then
-              systemctl --user try-restart mergeos.service || true
+              SERVICE_DIR="$HOME/.config/systemd/user"
+              SERVICE_FILE="$SERVICE_DIR/mergeos.service"
+              mkdir -p "$SERVICE_DIR"
+              loginctl enable-linger "$USER" 2>/dev/null || true
+              cat > "$SERVICE_FILE" <<SERVICE
+            [Unit]
+            Description=MergeOS production service
+            After=network.target
+
+            [Service]
+            Type=simple
+            WorkingDirectory=$APP_DIR
+            Environment=MERGEOS_ENV=production
+            Environment=PORT=8080
+            ExecStart=$APP_DIR/mergeos
+            Restart=always
+            RestartSec=5
+
+            [Install]
+            WantedBy=default.target
+            SERVICE
+              systemctl --user daemon-reload
+              systemctl --user enable mergeos.service
+              systemctl --user restart mergeos.service
+              systemctl --user is-active --quiet mergeos.service
+            else
+              pkill -f "$APP_DIR/mergeos" || true
+              MERGEOS_ENV=production PORT=8080 nohup "$APP_DIR/mergeos" > "$APP_DIR/mergeos.log" 2> "$APP_DIR/mergeos.err.log" &
             fi
