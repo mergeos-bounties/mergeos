@@ -1,9 +1,21 @@
 package core
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
 	"math"
+	"net/http"
 	"strings"
+	"time"
+)
+
+type LLMProvider string
+const (
+	LLMOpenAI  LLMProvider = "openai"
+	LLMAnthropic LLMProvider = "anthropic"
 )
 
 type priceFactor struct {
@@ -12,165 +24,157 @@ type priceFactor struct {
 	Reason      string
 }
 
-func EvaluateProjectPrice(req ProjectPriceEvaluationRequest) (*ProjectPriceEvaluationResponse, error) {
-	description := compactText(req.Description)
-	if description == "" {
-		description = compactText(req.Requirements)
-	}
-	if description == "" {
-		return nil, errValidation("project description is required")
+// aiPriceAnalysis calls an LLM to analyze project details and produce a structured price estimate.
+func (s *Server) aiPriceAnalysis(req ProjectPriceEvaluationRequest) (*ProjectPriceEvaluationResponse, error) {
+	apiKey := s.cfg.LLMApiKey
+	model := s.cfg.LLMModel
+	provider := LLMProvider(s.cfg.LLMProvider)
+
+	if apiKey == "" || model == "" {
+		return nil, errors.New("LLM not configured: set LLM_API_KEY, LLM_MODEL, LLM_PROVIDER")
 	}
 
-	projectType := compactText(req.ProjectType)
-	techStack := compactText(req.TechStack)
-	complexity := strings.ToLower(compactText(req.Complexity))
-	timeline := strings.ToLower(compactText(req.Timeline))
-	requirements := compactText(req.Requirements)
-	constraints := compactText(req.Constraints)
-	deliverables := cleanStrings(req.Deliverables)
+	prompt := buildLLMPrompt(req)
 
-	base := int64(180000)
-	if projectType != "" {
-		switch {
-		case strings.Contains(strings.ToLower(projectType), "mobile"):
-			base = 260000
-		case strings.Contains(strings.ToLower(projectType), "ai"), strings.Contains(strings.ToLower(projectType), "ml"):
-			base = 320000
-		case strings.Contains(strings.ToLower(projectType), "contract"), strings.Contains(strings.ToLower(projectType), "web3"):
-			base = 300000
-		case strings.Contains(strings.ToLower(projectType), "web"):
-			base = 220000
-		}
+	var llmResp *LLMResponse
+	var err error
+
+	switch provider {
+	case LLMOpenAI:
+		llmResp, err = callOpenAI(apiKey, model, prompt)
+	case LLMAnthropic:
+		llmResp, err = callAnthropic(apiKey, model, prompt)
+	default:
+		return nil, fmt.Errorf("unsupported LLM provider: %s", provider)
 	}
 
-	factors := []priceFactor{{Name: "Base scope", AmountCents: base, Reason: "Core planning, implementation, review, and delivery work."}}
-	if len(deliverables) > 0 {
-		amount := int64(len(deliverables)) * 45000
-		factors = append(factors, priceFactor{Name: "Deliverables", AmountCents: amount, Reason: "Each named deliverable adds implementation and acceptance work."})
-	}
-	if techStack != "" {
-		stackParts := splitCSVish(techStack)
-		amount := int64(len(stackParts)) * 25000
-		if amount > 150000 {
-			amount = 150000
-		}
-		factors = append(factors, priceFactor{Name: "Technical surface", AmountCents: amount, Reason: "Multiple technologies increase integration and testing effort."})
-	}
-	if len(requirements) > 220 {
-		factors = append(factors, priceFactor{Name: "Requirement detail", AmountCents: int64(math.Min(180000, float64(len(requirements)/120)*30000)), Reason: "Longer requirement sets usually imply more cases and constraints."})
-	}
-	if constraints != "" {
-		factors = append(factors, priceFactor{Name: "Constraints", AmountCents: 60000, Reason: "Explicit constraints add delivery risk and review overhead."})
-	}
-	if strings.Contains(timeline, "urgent") || strings.Contains(timeline, "asap") || strings.Contains(timeline, "week") {
-		factors = append(factors, priceFactor{Name: "Timeline pressure", AmountCents: 90000, Reason: "Short timelines require more coordination and execution buffer."})
-	}
-	switch complexity {
-	case "high", "advanced", "complex":
-		factors = append(factors, priceFactor{Name: "Complexity", AmountCents: 160000, Reason: "High complexity requires deeper design, tests, and risk controls."})
-	case "medium", "moderate":
-		factors = append(factors, priceFactor{Name: "Complexity", AmountCents: 70000, Reason: "Moderate complexity adds implementation and validation work."})
+	if err != nil {
+		return nil, fmt.Errorf("LLM call failed: %w", err)
 	}
 
-	total := int64(0)
-	breakdown := make([]PriceBreakdownItem, 0, len(factors))
-	for _, factor := range factors {
-		total += factor.AmountCents
-		breakdown = append(breakdown, PriceBreakdownItem{Category: factor.Name, AmountCents: factor.AmountCents, Reason: factor.Reason})
-	}
+	suggested := maxInt64(llmResp.SuggestedPriceCents, 10000)
+	low := maxInt64(roundToNearestCents(int64(float64(suggested)*0.85), 5000), 5000)
+	high := maxInt64(roundToNearestCents(int64(float64(suggested)*1.2), 5000), suggested+5000)
 
 	if req.ReferenceBudgetCents > 0 {
-		weighted := int64(math.Round(float64(total)*0.7 + float64(req.ReferenceBudgetCents)*0.3))
-		breakdown = append(breakdown, PriceBreakdownItem{Category: "Reference budget calibration", AmountCents: weighted - total, Reason: "Blends the estimate toward the user's reference budget without replacing scope-based pricing."})
-		total = weighted
-	}
-
-	if total < 10000 {
-		total = 10000
-	}
-	low := roundToNearestCents(int64(math.Round(float64(total)*0.85)), 5000)
-	high := roundToNearestCents(int64(math.Round(float64(total)*1.2)), 5000)
-	suggested := roundToNearestCents(total, 5000)
-
-	confidence := "medium"
-	if len(deliverables) >= 3 && len(requirements) > 120 && techStack != "" {
-		confidence = "high"
-	} else if len(deliverables) == 0 || len(description) < 80 {
-		confidence = "low"
+		weighted := int64(math.Round(float64(suggested)*0.7 + float64(req.ReferenceBudgetCents)*0.3))
+		weighted = maxInt64(weighted, 10000)
+		suggested = weighted
 	}
 
 	return &ProjectPriceEvaluationResponse{
 		SuggestedPriceCents: suggested,
 		SuggestedRange:      PriceRange{LowCents: low, HighCents: high},
-		Confidence:          confidence,
-		Breakdown:           breakdown,
-		Assumptions:         priceAssumptions(projectType, deliverables, techStack),
-		Risks:               priceRisks(req, confidence),
-		Editable:            true,
+		Confidence:          llmResp.Confidence,
+		Breakdown: []PriceBreakdownItem{
+			{Category: "AI analysis", AmountCents: suggested, Reason: llmResp.Reasoning},
+		},
+		Assumptions: llmResp.Assumptions,
+		Risks:       llmResp.Risks,
+		Editable:    true,
 	}, nil
 }
 
-func errValidation(message string) error { return errors.New(message) }
+func callOpenAI(apiKey, model, prompt string) (*LLMResponse, error) {
+	body := map[string]interface{}{
+		"model": model,
+		"messages": []map[string]string{
+			{"role": "system", "content": "You are a JSON-only pricing expert. Respond only with valid JSON."},
+			{"role": "user", "content": prompt},
+		},
+		"temperature": 0.3,
+		"response_format": map[string]string{"type": "json_object"},
+	}
+	payload, _ := json.Marshal(body)
 
-func compactText(value string) string {
-	return strings.Join(strings.Fields(value), " ")
+	req, _ := http.NewRequest("POST", "https://api.openai.com/v1/chat/completions", bytes.NewReader(payload))
+	req.Header.Set("Authorization", "Bearer "+apiKey)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	respBody, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("OpenAI API error %d: %s", resp.StatusCode, string(respBody))
+	}
+
+	var openAIResp struct {
+		Choices []struct {
+			Message struct {
+				Content string `json:"content"`
+			} `json:"message"`
+		} `json:"choices"`
+	}
+	if err := json.Unmarshal(respBody, &openAIResp); err != nil {
+		return nil, err
+	}
+	if len(openAIResp.Choices) == 0 {
+		return nil, errors.New("no response from OpenAI")
+	}
+
+	var result LLMResponse
+	if err := json.Unmarshal([]byte(openAIResp.Choices[0].Message.Content), &result); err != nil {
+		return nil, fmt.Errorf("parse OpenAI response: %w", err)
+	}
+	return &result, nil
 }
 
-func cleanStrings(values []string) []string {
-	items := make([]string, 0, len(values))
-	for _, value := range values {
-		clean := compactText(value)
-		if clean != "" {
-			items = append(items, clean)
-		}
+func callAnthropic(apiKey, model, prompt string) (*LLMResponse, error) {
+	body := map[string]interface{}{
+		"model":      model,
+		"max_tokens": 1024,
+		"messages":   []map[string]string{{"role": "user", "content": prompt}},
 	}
-	return items
+	payload, _ := json.Marshal(body)
+
+	req, _ := http.NewRequest("POST", "https://api.anthropic.com/v1/messages", bytes.NewReader(payload))
+	req.Header.Set("x-api-key", apiKey)
+	req.Header.Set("anthropic-version", "2023-06-01")
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	respBody, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("Anthropic API error %d: %s", resp.StatusCode, string(respBody))
+	}
+
+	var anthropicResp struct {
+		Content []struct {
+			Text string `json:"text"`
+		} `json:"content"`
+	}
+	if err := json.Unmarshal(respBody, &anthropicResp); err != nil {
+		return nil, err
+	}
+	if len(anthropicResp.Content) == 0 {
+		return nil, errors.New("no response from Anthropic")
+	}
+
+	var result LLMResponse
+	if err := json.Unmarshal([]byte(anthropicResp.Content[0].Text), &result); err != nil {
+		return nil, fmt.Errorf("parse Anthropic response: %w", err)
+	}
+	return &result, nil
 }
 
-func splitCSVish(value string) []string {
-	fields := strings.FieldsFunc(value, func(r rune) bool {
-		return r == ',' || r == ';' || r == '/' || r == '|'
-	})
-	return cleanStrings(fields)
+func buildLLMPrompt(req ProjectPriceEvaluationRequest) string {
+	return fmt.Sprintf("You are a software project pricing expert. Analyze the following project and return a JSON estimate.\n\nProject: %s\nDescription: %s\nType: %s\nTech Stack: %s\nTimeline: %s\nComplexity: %s\nDeliverables: %s\nConstraints: %s\n\nReturn JSON with fields:\n- suggested_price_cents (int, minimum 10000)\n- low_cents (int, 80-90%%%% of suggested)\n- high_cents (int, 110-130%%%% of suggested)\n- confidence (string: "low", "medium", "high")\n- reasoning (string, brief explanation)\n- risks (array of strings)\n- assumptions (array of strings)",
+		req.Title, req.Description, req.ProjectType, req.TechStack,
+		req.Timeline, req.Complexity, strings.Join(req.Deliverables, ", "), req.Constraints)
 }
 
-func roundToNearestCents(value int64, nearest int64) int64 {
-	if nearest <= 0 {
-		return value
-	}
-	return ((value + nearest/2) / nearest) * nearest
-}
-
-func priceAssumptions(projectType string, deliverables []string, techStack string) []string {
-	assumptions := []string{
-		"Estimate assumes one production-ready implementation pass plus review and QA.",
-		"Final funding can be edited before the project is published.",
-	}
-	if projectType != "" {
-		assumptions = append(assumptions, "Project type is treated as "+projectType+".")
-	}
-	if len(deliverables) > 0 {
-		assumptions = append(assumptions, "Named deliverables are independently reviewable milestones.")
-	}
-	if techStack != "" {
-		assumptions = append(assumptions, "The listed tech stack is required, not merely preferred.")
-	}
-	return assumptions
-}
-
-func priceRisks(req ProjectPriceEvaluationRequest, confidence string) []string {
-	risks := []string{}
-	if confidence == "low" {
-		risks = append(risks, "Scope is light on detail; add deliverables and constraints before funding.")
-	}
-	if req.Constraints != "" {
-		risks = append(risks, "Hard constraints may change cost if they conflict with the implementation plan.")
-	}
-	if strings.Contains(strings.ToLower(req.Timeline), "urgent") || strings.Contains(strings.ToLower(req.Timeline), "asap") {
-		risks = append(risks, "Urgent timelines may require a higher reward pool to attract qualified contributors.")
-	}
-	if len(risks) == 0 {
-		risks = append(risks, "Major scope changes after publishing can move the price range.")
-	}
-	return risks
+func maxInt64(a, b int64) int64 {
+	if a > b { return a }
+	return b
 }
