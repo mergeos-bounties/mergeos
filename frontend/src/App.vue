@@ -1975,7 +1975,7 @@
     </main>
 
     <div v-if="authVisible" class="modal-backdrop" role="presentation" @click.self="closeAuth">
-      <section class="auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-title">
+      <section ref="authDialog" class="auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-title" tabindex="-1" @keydown.esc="closeAuth">
         <button class="auth-close-button" aria-label="Close" type="button" @click="closeAuth">
           <X :size="24" />
         </button>
@@ -2173,7 +2173,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, onUnmounted, reactive, ref } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue';
 import {
   ArrowLeft,
   ArrowRight,
@@ -2333,6 +2333,7 @@ function removeStoredToken() {
 const token = ref(readStoredToken());
 const user = ref(null);
 const authVisible = ref(false);
+const authDialog = ref(null);
 const authMode = ref('login');
 const authBusy = ref(false);
 const authRememberMe = ref(false);
@@ -2720,6 +2721,12 @@ const authBenefits = [
     body: 'Collaborate seamlessly and ship high-quality software.',
   },
 ];
+
+watch(authVisible, async (visible) => {
+  if (!visible) return;
+  await nextTick();
+  authDialog.value?.focus();
+});
 
 const ledgerTrustItems = [
   {
