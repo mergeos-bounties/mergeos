@@ -84,6 +84,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   reward_cents bigint NOT NULL,
   required_worker_kind text NOT NULL,
   suggested_agent_type text NOT NULL DEFAULT '',
+  bounty_type text NOT NULL DEFAULT '',
   status text NOT NULL,
   worker_kind text NOT NULL DEFAULT '',
   worker_id text NOT NULL DEFAULT '',

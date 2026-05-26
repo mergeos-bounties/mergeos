@@ -909,6 +909,10 @@ func (s *Store) CanAccessTask(userID string, role UserRole, taskID string) bool 
 }
 
 func (s *Store) AcceptTask(taskID string, req AcceptTaskRequest) (*Task, error) {
+	return s.AcceptTaskWithReview(taskID, req, 0, "")
+}
+
+func (s *Store) AcceptTaskWithReview(taskID string, req AcceptTaskRequest, rewardCents int64, bountyType string) (*Task, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -936,8 +940,14 @@ func (s *Store) AcceptTask(taskID string, req AcceptTaskRequest) (*Task, error) 
 	}
 
 	workerID := strings.TrimSpace(req.WorkerID)
+	payoutCents := task.RewardCents
+	if rewardCents > 0 {
+		payoutCents = rewardCents
+		task.RewardCents = rewardCents
+	}
+	task.BountyType = strings.TrimSpace(bountyType)
 	now := time.Now().UTC()
-	entry := s.addLedger("task_payment", "reserve:task:"+task.ID, s.payoutAccountForWorkerLocked(workerID), task.RewardCents, "task:"+task.ID)
+	entry := s.addLedger("task_payment", "reserve:task:"+task.ID, s.payoutAccountForWorkerLocked(workerID), payoutCents, "task:"+task.ID)
 	task.Status = TaskAccepted
 	task.WorkerKind = req.WorkerKind
 	task.WorkerID = workerID
@@ -954,7 +964,7 @@ func (s *Store) AcceptTask(taskID string, req AcceptTaskRequest) (*Task, error) 
 			}
 		}
 		subject := "MergeOS task paid: " + task.Title
-		body := fmt.Sprintf("Task #%d was accepted and paid to %s. Proof hash: %s", task.IssueNumber, task.WorkerID, task.ProofHash)
+		body := fmt.Sprintf("Task #%d was accepted and paid %s %s to %s. Proof hash: %s", task.IssueNumber, formatTokenAmount(payoutCents), normalizedTokenSymbol(s.cfg.TokenSymbol), task.WorkerID, task.ProofHash)
 		status := s.emailer.Send(project.ClientEmail, subject, body)
 		s.addNotificationLocked(project.ClientUserID, project.ID, "email", subject, body, status)
 	}

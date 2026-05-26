@@ -721,7 +721,7 @@ button:disabled {
 
 .task-pr-card {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) minmax(210px, 280px) auto;
   gap: 10px;
   align-items: center;
   border: 1px solid var(--line);
@@ -758,6 +758,35 @@ button:disabled {
 .task-pr-actions {
   flex-wrap: wrap;
   justify-content: flex-end;
+}
+
+.bounty-review-controls {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) 82px;
+  gap: 8px;
+}
+
+.bounty-review-controls label {
+  display: grid;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.bounty-review-controls select,
+.bounty-review-controls input {
+  width: 100%;
+  height: 32px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--text);
+  padding: 0 9px;
+  font-size: 12px;
+  font-weight: 850;
+  outline: none;
 }
 
 .inline-error,
@@ -1030,6 +1059,10 @@ button:disabled {
   }
 
   .task-pr-card {
+    grid-template-columns: 1fr;
+  }
+
+  .bounty-review-controls {
     grid-template-columns: 1fr;
   }
 

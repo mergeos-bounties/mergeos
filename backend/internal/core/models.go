@@ -148,6 +148,7 @@ type Task struct {
 	RewardCents        int64      `json:"reward_cents"`
 	RequiredWorkerKind WorkerKind `json:"required_worker_kind"`
 	SuggestedAgentType string     `json:"suggested_agent_type"`
+	BountyType         string     `json:"bounty_type,omitempty"`
 	Status             TaskStatus `json:"status"`
 	WorkerKind         WorkerKind `json:"worker_kind,omitempty"`
 	WorkerID           string     `json:"worker_id,omitempty"`
@@ -275,6 +276,7 @@ type AdminTaskPullRequest struct {
 	Title          string     `json:"title"`
 	State          string     `json:"state"`
 	HTMLURL        string     `json:"html_url"`
+	MergeURL       string     `json:"merge_url,omitempty"`
 	Author         string     `json:"author"`
 	Draft          bool       `json:"draft"`
 	Merged         bool       `json:"merged"`
@@ -286,10 +288,21 @@ type AdminTaskPullRequest struct {
 	MergedAt       *time.Time `json:"merged_at,omitempty"`
 }
 
+type AdminMergeTaskPullRequestRequest struct {
+	RewardMRG   int64  `json:"reward_mrg"`
+	RewardCents int64  `json:"reward_cents,omitempty"`
+	BountyType  string `json:"bounty_type"`
+}
+
 type AdminMergeTaskPullRequestResponse struct {
-	Task        *Task                `json:"task"`
-	PullRequest AdminTaskPullRequest `json:"pull_request"`
-	WorkerID    string               `json:"worker_id"`
+	Task         *Task                `json:"task"`
+	PullRequest  AdminTaskPullRequest `json:"pull_request"`
+	WorkerID     string               `json:"worker_id"`
+	RewardMRG    int64                `json:"reward_mrg"`
+	BountyType   string               `json:"bounty_type"`
+	AdminURL     string               `json:"admin_url"`
+	CommentURL   string               `json:"comment_url,omitempty"`
+	CommentError string               `json:"comment_error,omitempty"`
 }
 
 type StatusResponse struct {

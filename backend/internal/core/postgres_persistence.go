@@ -264,7 +264,7 @@ ORDER BY created_at, id`)
 
 func (p *postgresPersistence) loadTasks(ctx context.Context, state *persistedState, projects map[string]*Project) error {
 	rows, err := p.db.QueryContext(ctx, `
-SELECT id, project_id, issue_number, title, acceptance, reward_cents, required_worker_kind, suggested_agent_type,
+SELECT id, project_id, issue_number, title, acceptance, reward_cents, required_worker_kind, suggested_agent_type, bounty_type,
        status, worker_kind, worker_id, agent_type, proof_hash, issue_url, created_at, accepted_at
 FROM tasks
 ORDER BY project_id, issue_number, created_at, id`)
@@ -278,7 +278,7 @@ ORDER BY project_id, issue_number, created_at, id`)
 		var acceptedAt sql.NullTime
 		if err := rows.Scan(
 			&task.ID, &task.ProjectID, &task.IssueNumber, &task.Title, &task.Acceptance, &task.RewardCents,
-			&task.RequiredWorkerKind, &task.SuggestedAgentType, &task.Status, &task.WorkerKind, &task.WorkerID,
+			&task.RequiredWorkerKind, &task.SuggestedAgentType, &task.BountyType, &task.Status, &task.WorkerKind, &task.WorkerID,
 			&task.AgentType, &task.ProofHash, &task.IssueURL, &task.CreatedAt, &acceptedAt,
 		); err != nil {
 			return fmt.Errorf("scan task: %w", err)
@@ -560,14 +560,14 @@ func saveTasks(ctx context.Context, tx *sql.Tx, tasks []*Task) error {
 		}
 		if _, err := tx.ExecContext(ctx, `
 INSERT INTO tasks (
-  id, project_id, issue_number, title, acceptance, reward_cents, required_worker_kind, suggested_agent_type,
+  id, project_id, issue_number, title, acceptance, reward_cents, required_worker_kind, suggested_agent_type, bounty_type,
   status, worker_kind, worker_id, agent_type, proof_hash, issue_url, created_at, accepted_at
 ) VALUES (
   $1, $2, $3, $4, $5, $6, $7, $8,
-  $9, $10, $11, $12, $13, $14, $15, $16
+  $9, $10, $11, $12, $13, $14, $15, $16, $17
 )`,
 			task.ID, task.ProjectID, task.IssueNumber, task.Title, task.Acceptance, task.RewardCents, task.RequiredWorkerKind,
-			task.SuggestedAgentType, task.Status, task.WorkerKind, task.WorkerID, task.AgentType, task.ProofHash,
+			task.SuggestedAgentType, task.BountyType, task.Status, task.WorkerKind, task.WorkerID, task.AgentType, task.ProofHash,
 			task.IssueURL, task.CreatedAt, task.AcceptedAt,
 		); err != nil {
 			return fmt.Errorf("save task %s: %w", task.ID, err)

@@ -266,7 +266,7 @@
               <small>{{ task.issue_url ? `Issue #${task.issue_number}` : task.project_id }}</small>
             </td>
             <td>{{ task.required_worker_kind }}</td>
-            <td>{{ money(task.reward_cents) }}</td>
+            <td>{{ mrg(task.reward_cents) }}</td>
             <td>{{ task.worker_id || task.suggested_agent_type || 'Unassigned' }}</td>
             <td><span :class="['status-pill', task.status === 'accepted' ? 'blue' : 'amber']">{{ task.status }}</span></td>
             <td class="task-pr-cell">
@@ -288,8 +288,26 @@
                     <div>
                       <strong>#{{ pull.number }} {{ pull.title }}</strong>
                       <small>@{{ pull.author }} / {{ pullStatus(pull) }} / {{ pull.head_ref || 'head' }} -> {{ pull.base_ref || 'base' }}</small>
-                      <em>Credit: github:{{ pull.author }}</em>
+                      <em>Credit: github:{{ pull.author }} / {{ mrg(mergeSelection(task, pull).reward_mrg) }}</em>
                     </div>
+                  </div>
+                  <div class="bounty-review-controls">
+                    <label>
+                      <span>Type</span>
+                      <select :value="mergeSelection(task, pull).bounty_type" @change="setMergeBounty(task, pull, $event.target.value)">
+                        <option v-for="option in bountyOptions" :key="option.id" :value="option.id">{{ option.label }}</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span>MRG</span>
+                      <input
+                        :value="mergeSelection(task, pull).reward_mrg"
+                        min="1"
+                        step="1"
+                        type="number"
+                        @input="setMergeReward(task, pull, $event.target.value)"
+                      />
+                    </label>
                   </div>
                   <div class="task-pr-actions">
                     <a class="compact-action link-action" :href="pull.html_url" target="_blank" rel="noreferrer">View</a>
@@ -523,6 +541,7 @@ const taskPullsLoading = ref({});
 const taskPullsError = ref({});
 const mergeBusy = ref({});
 const mergeMessages = ref({});
+const mergeSelections = ref({});
 
 const loginForm = reactive({
   email: 'admin@gmail.com',
@@ -563,6 +582,13 @@ const viewByRoute = Object.entries(routeByView).reduce((routes, [view, route]) =
   return routes;
 }, {});
 
+const bountyOptions = [
+  { id: 'future-small', label: 'Future small', reward_mrg: 25 },
+  { id: 'future-medium', label: 'Future medium', reward_mrg: 50 },
+  { id: 'bug-large', label: 'Bug bounty large', reward_mrg: 100 },
+  { id: 'major-feature', label: 'Major feature', reward_mrg: 200 },
+];
+
 const builderWidgets = [
   { id: 'metrics', label: 'Metric Counter', icon: BarChart3 },
   { id: 'project-list', label: 'Project Queue', icon: FolderKanban },
@@ -584,6 +610,7 @@ const query = computed(() => search.value.toLowerCase());
 const selectedUser = computed(() => users.value.find((row) => row.id === selectedUserId.value) || null);
 const sslOkCount = computed(() => sslRows.value.filter((row) => row.status === 'ok').length);
 const sslAttentionCount = computed(() => sslRows.value.length - sslOkCount.value);
+const tokenSymbol = computed(() => summary.value.token_symbol || 'MRG');
 
 const summaryMetrics = computed(() => [
   { label: 'Users', value: number(summary.value.user_count), icon: UsersRound, tone: 'blue' },
@@ -874,6 +901,58 @@ function mergeKey(task, pull) {
   return `${task.id}:${pull.number}`;
 }
 
+function defaultBountyForTask(task = {}) {
+  const reward = Number(task.reward_cents) || 25;
+  return bountyOptions.find((option) => option.reward_mrg === reward) || bountyOptions[0];
+}
+
+function ensureMergeSelection(task, pull) {
+  if (!task?.id || !pull?.number) return;
+  const key = mergeKey(task, pull);
+  if (mergeSelections.value[key]) return;
+  const option = defaultBountyForTask(task);
+  mergeSelections.value = {
+    ...mergeSelections.value,
+    [key]: {
+      bounty_type: option.id,
+      reward_mrg: option.reward_mrg,
+    },
+  };
+}
+
+function mergeSelection(task, pull) {
+  ensureMergeSelection(task, pull);
+  return mergeSelections.value[mergeKey(task, pull)] || {
+    bounty_type: bountyOptions[0].id,
+    reward_mrg: bountyOptions[0].reward_mrg,
+  };
+}
+
+function setMergeBounty(task, pull, value) {
+  const option = bountyOptions.find((row) => row.id === value) || bountyOptions[0];
+  const key = mergeKey(task, pull);
+  mergeSelections.value = {
+    ...mergeSelections.value,
+    [key]: {
+      bounty_type: option.id,
+      reward_mrg: option.reward_mrg,
+    },
+  };
+}
+
+function setMergeReward(task, pull, value) {
+  const key = mergeKey(task, pull);
+  const current = mergeSelection(task, pull);
+  const reward = Math.max(1, Math.round(Number(value) || 0));
+  mergeSelections.value = {
+    ...mergeSelections.value,
+    [key]: {
+      ...current,
+      reward_mrg: reward,
+    },
+  };
+}
+
 function pullStatus(pull) {
   if (pull.merged) return 'merged';
   if (pull.draft) return 'draft';
@@ -881,8 +960,10 @@ function pullStatus(pull) {
 }
 
 function canMergeTaskPull(task, pull) {
+  const selection = mergeSelection(task, pull);
   if (!pull?.author || task.status === 'accepted') return false;
   if (mergeBusy.value[mergeKey(task, pull)] || pull.draft) return false;
+  if (!selection.bounty_type || Number(selection.reward_mrg) <= 0) return false;
   return pull.merged || pull.state === 'open';
 }
 
@@ -897,6 +978,9 @@ async function loadTaskPulls(task, force = false) {
       ...taskPulls.value,
       [task.id]: Array.isArray(payload.pull_requests) ? payload.pull_requests : [],
     };
+    for (const pull of taskPulls.value[task.id]) {
+      ensureMergeSelection(task, pull);
+    }
     taskPullsLoaded.value = { ...taskPullsLoaded.value, [task.id]: true };
   } catch (error) {
     taskPullsError.value = { ...taskPullsError.value, [task.id]: error.message };
@@ -924,13 +1008,17 @@ async function loadPullsForVisibleTasks() {
 async function mergeTaskPull(task, pull) {
   if (!canMergeTaskPull(task, pull)) return;
   const key = mergeKey(task, pull);
+  const selection = mergeSelection(task, pull);
   mergeBusy.value = { ...mergeBusy.value, [key]: true };
   mergeMessages.value = { ...mergeMessages.value, [task.id]: '' };
   taskPullsError.value = { ...taskPullsError.value, [task.id]: '' };
   try {
     const result = await api(`/api/admin/tasks/${encodeURIComponent(task.id)}/pulls/${pull.number}/merge`, {
       method: 'POST',
-      body: JSON.stringify({}),
+      body: JSON.stringify({
+        bounty_type: selection.bounty_type,
+        reward_mrg: Number(selection.reward_mrg) || 0,
+      }),
     });
     if (result.task) {
       tasks.value = tasks.value.map((row) => (row.id === result.task.id ? result.task : row));
@@ -941,7 +1029,8 @@ async function mergeTaskPull(task, pull) {
         [task.id]: pullsForTask(task).map((row) => (row.number === result.pull_request.number ? result.pull_request : row)),
       };
     }
-    mergeMessages.value = { ...mergeMessages.value, [task.id]: `Paid ${result.worker_id || `github:${pull.author}`}.` };
+    const commentStatus = result.comment_error ? ` Comment failed: ${result.comment_error}` : ' Commented on PR.';
+    mergeMessages.value = { ...mergeMessages.value, [task.id]: `Paid ${mrg(result.reward_mrg || selection.reward_mrg)} to ${result.worker_id || `github:${pull.author}`}.${commentStatus}` };
     const [summaryData, ledgerData] = await Promise.all([
       api('/api/admin/summary'),
       api('/api/admin/ledger'),
@@ -983,6 +1072,10 @@ function money(cents = 0) {
     currency: 'USD',
     maximumFractionDigits: 0,
   }).format((Number(cents) || 0) / 100);
+}
+
+function mrg(value = 0) {
+  return `${number(value)} ${tokenSymbol.value}`;
 }
 
 function number(value = 0) {

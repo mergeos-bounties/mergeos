@@ -65,3 +65,16 @@ func TestAcceptRequestForPullAuthorCreditsGitHubWorker(t *testing.T) {
 		t.Fatalf("agent req = %#v", agentReq)
 	}
 }
+
+func TestNormalizeAdminBountyType(t *testing.T) {
+	bountyType, err := normalizeAdminBountyType("Bug-Large")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bountyType != "bug-large" {
+		t.Fatalf("bounty type = %q", bountyType)
+	}
+	if _, err := normalizeAdminBountyType("tiny"); err == nil {
+		t.Fatal("expected unsupported bounty type error")
+	}
+}

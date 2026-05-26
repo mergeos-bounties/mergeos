@@ -79,6 +79,21 @@ func (s *Server) mergeAdminTaskPullRequest(w http.ResponseWriter, r *http.Reques
 	if _, ok := s.requireAdmin(w, r); !ok {
 		return
 	}
+	var review AdminMergeTaskPullRequestRequest
+	if err := json.NewDecoder(r.Body).Decode(&review); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	rewardMRG := selectedReviewRewardMRG(review)
+	if rewardMRG <= 0 {
+		writeError(w, http.StatusBadRequest, "reward_mrg is required")
+		return
+	}
+	bountyType, err := normalizeAdminBountyType(review.BountyType)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
 	task, project, ok := s.store.TaskWithProject(r.PathValue("id"))
 	if !ok {
 		writeError(w, http.StatusNotFound, "task not found")
@@ -112,12 +127,14 @@ func (s *Server) mergeAdminTaskPullRequest(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusConflict, "draft pull requests cannot be merged")
 		return
 	}
+	var mergeSHA string
 	if !pull.Merged {
 		if !strings.EqualFold(pull.State, "open") {
 			writeError(w, http.StatusConflict, "pull request is closed without being merged")
 			return
 		}
-		if err := client.mergePullRequest(r.Context(), target, pullNumber); err != nil {
+		mergeSHA, err = client.mergePullRequest(r.Context(), target, pullNumber)
+		if err != nil {
 			writeError(w, http.StatusBadGateway, err.Error())
 			return
 		}
@@ -131,16 +148,90 @@ func (s *Server) mergeAdminTaskPullRequest(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	accepted, err := s.store.AcceptTask(task.ID, req)
+	accepted, err := s.store.AcceptTaskWithReview(task.ID, req, rewardMRG, bountyType)
 	if err != nil {
 		writeError(w, http.StatusConflict, err.Error())
 		return
 	}
+	if mergeSHA != "" && pull.MergeURL == "" {
+		pull.MergeURL = githubCommitURL(target, mergeSHA)
+	}
+	adminURL := adminTasksURL(s.cfg)
+	commentURL, commentErr := client.commentPullRequest(r.Context(), target, pullNumber, renderMergeOSPullComment(accepted, pull, req.WorkerID, rewardMRG, bountyType, adminURL))
+	commentError := ""
+	if commentErr != nil {
+		commentError = commentErr.Error()
+	}
 	writeJSON(w, http.StatusOK, AdminMergeTaskPullRequestResponse{
-		Task:        accepted,
-		PullRequest: pull,
-		WorkerID:    req.WorkerID,
+		Task:         accepted,
+		PullRequest:  pull,
+		WorkerID:     req.WorkerID,
+		RewardMRG:    rewardMRG,
+		BountyType:   bountyType,
+		AdminURL:     adminURL,
+		CommentURL:   commentURL,
+		CommentError: commentError,
 	})
+}
+
+func selectedReviewRewardMRG(review AdminMergeTaskPullRequestRequest) int64 {
+	if review.RewardMRG > 0 {
+		return review.RewardMRG
+	}
+	return review.RewardCents
+}
+
+func normalizeAdminBountyType(value string) (string, error) {
+	normalized := strings.ToLower(strings.TrimSpace(value))
+	switch normalized {
+	case "future-small", "future-medium", "bug-large", "major-feature":
+		return normalized, nil
+	case "":
+		return "", errors.New("bounty_type is required")
+	default:
+		return "", fmt.Errorf("unsupported bounty_type %q", value)
+	}
+}
+
+func adminBountyTitle(value string) string {
+	switch value {
+	case "future-small":
+		return "Future bounty - small"
+	case "future-medium":
+		return "Future bounty - medium"
+	case "bug-large":
+		return "Bug bounty - large"
+	case "major-feature":
+		return "Major feature bounty"
+	default:
+		return value
+	}
+}
+
+func adminTasksURL(cfg Config) string {
+	domain := strings.TrimSpace(cfg.AdminDomain)
+	if domain == "" {
+		return "https://uta.mergeos.shop/tasks"
+	}
+	domain = strings.TrimPrefix(strings.TrimPrefix(domain, "https://"), "http://")
+	domain = strings.Trim(domain, "/")
+	return "https://" + domain + "/tasks"
+}
+
+func renderMergeOSPullComment(task *Task, pull AdminTaskPullRequest, workerID string, rewardMRG int64, bountyType string, adminURL string) string {
+	mergeURL := pull.MergeURL
+	if mergeURL == "" {
+		mergeURL = pull.HTMLURL
+	}
+	return fmt.Sprintf(`MergeOS approved and merged this PR.
+
+- Merge URL: %s
+- MRG credit URL: %s
+- Credited worker: %s
+- Bounty type: %s
+- MRG credited: %d MRG
+- Proof hash: %s
+`, mergeURL, adminURL, workerID, adminBountyTitle(bountyType), rewardMRG, task.ProofHash)
 }
 
 func githubIssueTargetForTask(task *Task, project *Project) (githubIssueTarget, error) {
@@ -310,10 +401,10 @@ func (c *adminGitHubClient) pullRequest(ctx context.Context, target githubIssueT
 	if err := c.githubJSON(ctx, http.MethodGet, endpoint, nil, &row); err != nil {
 		return AdminTaskPullRequest{}, err
 	}
-	return row.adminRow(), nil
+	return row.adminRow(target), nil
 }
 
-func (c *adminGitHubClient) mergePullRequest(ctx context.Context, target githubIssueTarget, number int) error {
+func (c *adminGitHubClient) mergePullRequest(ctx context.Context, target githubIssueTarget, number int) (string, error) {
 	endpoint := fmt.Sprintf(
 		"https://api.github.com/repos/%s/%s/pulls/%d/merge",
 		url.PathEscape(target.Owner),
@@ -327,18 +418,43 @@ func (c *adminGitHubClient) mergePullRequest(ctx context.Context, target githubI
 	var result struct {
 		Merged  bool   `json:"merged"`
 		Message string `json:"message"`
+		SHA     string `json:"sha"`
 	}
 	if err := c.githubJSON(ctx, http.MethodPut, endpoint, payload, &result); err != nil {
-		return err
+		return "", err
 	}
 	if !result.Merged {
 		message := strings.TrimSpace(result.Message)
 		if message == "" {
 			message = "GitHub did not merge the pull request"
 		}
-		return errors.New(message)
+		return "", errors.New(message)
 	}
-	return nil
+	return result.SHA, nil
+}
+
+func (c *adminGitHubClient) commentPullRequest(ctx context.Context, target githubIssueTarget, number int, body string) (string, error) {
+	endpoint := fmt.Sprintf(
+		"https://api.github.com/repos/%s/%s/issues/%d/comments",
+		url.PathEscape(target.Owner),
+		url.PathEscape(target.Repo),
+		number,
+	)
+	var result struct {
+		HTMLURL string `json:"html_url"`
+	}
+	if err := c.githubJSON(ctx, http.MethodPost, endpoint, map[string]string{"body": body}, &result); err != nil {
+		return "", err
+	}
+	return result.HTMLURL, nil
+}
+
+func githubCommitURL(target githubIssueTarget, sha string) string {
+	sha = strings.TrimSpace(sha)
+	if sha == "" {
+		return ""
+	}
+	return "https://github.com/" + target.fullName() + "/commit/" + sha
 }
 
 func (c *adminGitHubClient) githubJSON(ctx context.Context, method, endpoint string, body any, out any) error {
@@ -397,6 +513,7 @@ type githubPullRequestRow struct {
 	Title          string     `json:"title"`
 	State          string     `json:"state"`
 	HTMLURL        string     `json:"html_url"`
+	MergeCommitSHA string     `json:"merge_commit_sha"`
 	Draft          bool       `json:"draft"`
 	Merged         bool       `json:"merged"`
 	MergeableState string     `json:"mergeable_state"`
@@ -414,12 +531,13 @@ type githubPullRequestRow struct {
 	} `json:"head"`
 }
 
-func (row githubPullRequestRow) adminRow() AdminTaskPullRequest {
+func (row githubPullRequestRow) adminRow(target githubIssueTarget) AdminTaskPullRequest {
 	result := AdminTaskPullRequest{
 		Number:         row.Number,
 		Title:          row.Title,
 		State:          row.State,
 		HTMLURL:        row.HTMLURL,
+		MergeURL:       githubCommitURL(target, row.MergeCommitSHA),
 		Draft:          row.Draft,
 		Merged:         row.Merged,
 		MergeableState: row.MergeableState,
