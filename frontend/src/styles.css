@@ -19,6 +19,8 @@
   --yellow: #eab308;
   --red: #dc2626;
   --shadow: 0 18px 48px rgba(15, 23, 42, 0.08);
+  --page-container: 1220px;
+  --page-gutter: 34px;
 }
 
 * {
@@ -65,10 +67,10 @@ svg {
 }
 
 .home-container {
-  width: min(1220px, 100%);
+  width: min(var(--page-container), 100%);
   margin: 0 auto;
-  padding-left: 34px;
-  padding-right: 34px;
+  padding-left: var(--page-gutter);
+  padding-right: var(--page-gutter);
 }
 
 .toast {
@@ -288,15 +290,17 @@ svg {
   position: sticky;
   top: 0;
   z-index: 50;
+  width: min(var(--page-container), 100%);
   min-height: 58px;
   display: grid;
-  grid-template-columns: minmax(150px, 210px) minmax(0, 1fr) minmax(290px, auto);
+  grid-template-columns: minmax(140px, 190px) minmax(0, 1fr) minmax(250px, auto);
   align-items: center;
   gap: 18px;
+  margin: 0 auto;
   border-bottom: 1px solid rgba(229, 231, 235, 0.92);
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(14px);
-  padding: 8px 24px;
+  padding: 8px var(--page-gutter);
 }
 
 .project-flow-nav {
@@ -334,13 +338,13 @@ svg {
 }
 
 .project-flow-main {
-  width: min(1440px, 100%);
+  width: min(var(--page-container), 100%);
   display: grid;
-  grid-template-columns: minmax(220px, 270px) minmax(0, 1fr) minmax(240px, 300px);
+  grid-template-columns: minmax(200px, 230px) minmax(0, 1fr) minmax(210px, 250px);
   align-items: start;
-  gap: 22px;
+  gap: 18px;
   margin: 0 auto;
-  padding: 26px 28px 88px;
+  padding: 24px var(--page-gutter) 88px;
 }
 
 .project-flow-sidebar,
@@ -537,6 +541,10 @@ svg {
 }
 
 .project-flow-board {
+  min-width: 0;
+}
+
+.project-flow-main > * {
   min-width: 0;
 }
 
@@ -1656,18 +1664,22 @@ svg {
 
 .project-flow-footer {
   position: fixed;
-  left: 0;
-  right: 0;
+  left: 50%;
+  right: auto;
   bottom: 0;
   z-index: 45;
+  width: min(var(--page-container), calc(100% - (var(--page-gutter) * 2)));
   display: grid;
-  grid-template-columns: 220px minmax(0, 1fr) 280px;
+  grid-template-columns: 190px minmax(0, 1fr) 240px;
   align-items: center;
-  gap: 26px;
-  border-top: 1px solid #e7ecf2;
+  gap: 18px;
+  transform: translateX(-50%);
+  border: 1px solid #e7ecf2;
+  border-bottom: 0;
+  border-radius: 8px 8px 0 0;
   background: rgba(255, 255, 255, 0.96);
   backdrop-filter: blur(16px);
-  padding: 13px 28px;
+  padding: 13px 22px;
 }
 
 .footer-progress {
@@ -5887,9 +5899,13 @@ svg {
 }
 
 @media (max-width: 1120px) {
+  :root {
+    --page-gutter: 28px;
+  }
+
   .home-container {
-    padding-left: 28px;
-    padding-right: 28px;
+    padding-left: var(--page-gutter);
+    padding-right: var(--page-gutter);
   }
 
   .nav-links {
@@ -6029,9 +6045,13 @@ svg {
 }
 
 @media (max-width: 760px) {
+  :root {
+    --page-gutter: 16px;
+  }
+
   .home-container {
-    padding-left: 16px;
-    padding-right: 16px;
+    padding-left: var(--page-gutter);
+    padding-right: var(--page-gutter);
   }
 
   .nav-inner {
@@ -7095,7 +7115,7 @@ svg {
 
   .project-flow-main {
     grid-template-columns: 1fr;
-    padding: 22px 18px 96px;
+    padding: 22px var(--page-gutter) 96px;
   }
 
   .project-flow-sidebar {
@@ -7141,7 +7161,7 @@ svg {
 @media (max-width: 760px) {
   .project-flow-navbar {
     min-height: auto;
-    padding: 10px 14px;
+    padding: 10px var(--page-gutter);
   }
 
   .project-flow-actions {
@@ -7162,6 +7182,12 @@ svg {
 
   .wizard-card {
     padding: 16px;
+  }
+
+  .wizard-card-heading h2,
+  .funding-heading h2,
+  .payment-success-panel h2 {
+    overflow-wrap: anywhere;
   }
 
   .wizard-card-heading,
@@ -7226,9 +7252,27 @@ svg {
     align-items: flex-start;
   }
 
+  .review-card dl div,
+  .rail-card dl div {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .review-card dd,
+  .rail-card dd {
+    text-align: left;
+    overflow-wrap: anywhere;
+  }
+
   .project-flow-footer {
     position: static;
-    padding: 14px 16px;
+    width: auto;
+    transform: none;
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+    padding: 14px var(--page-gutter);
   }
 
   .project-flow-main {
@@ -7251,8 +7295,13 @@ svg {
   }
 
   .project-flow-main {
-    padding-left: 12px;
-    padding-right: 12px;
+    padding-left: var(--page-gutter);
+    padding-right: var(--page-gutter);
+  }
+
+  .review-card,
+  .rail-card {
+    padding: 16px;
   }
 
   .project-step-list {
