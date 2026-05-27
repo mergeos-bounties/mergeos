@@ -8221,3 +8221,67 @@ svg {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* --- Toast Notification Styles (Issue #19) --- */
+.toast.success { background: #065f46 !important; }
+.toast.error { background: #991b1b !important; }
+.toast.warning { background: #92400e !important; }
+.toast.info { background: #1e3a5f !important; }
+
+.toast-icon {
+  flex: 0 0 20px;
+  font-size: 14px;
+  font-weight: 920;
+  opacity: 0.9;
+}
+
+.toast-text {
+  flex: 1;
+  text-align: left;
+}
+
+.toast-dismiss {
+  flex: 0 0 24px;
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 18px;
+  cursor: pointer;
+  opacity: 0.6;
+  padding: 0;
+  line-height: 1;
+}
+
+.toast-dismiss:hover { opacity: 1; }
+
+.notif-badge {
+  position: absolute;
+  top: -2px;
+  right: -4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: #dc2626;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 920;
+  line-height: 16px;
+  text-align: center;
+}
+
+.notif-badge-zero {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 7px;
+  background: #e5e7eb;
+  color: #6b7280;
+  font-size: 9px;
+  font-weight: 750;
+  line-height: 14px;
+  text-align: center;
+}

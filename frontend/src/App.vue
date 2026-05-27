@@ -982,8 +982,10 @@
   </div>
 
   <div v-else-if="user && !publicModeVisible" class="dashboard-shell">
-    <div v-if="toastMessage" class="toast dashboard-toast" role="status" aria-live="polite">
-      {{ toastMessage }}
+    <div v-if="toastMessage" class="toast dashboard-toast" :class="toastType" role="alert" aria-live="polite" @click="dismissToast">
+      <span class="toast-icon">{{ toastIcon }}</span>
+      <span class="toast-text">{{ toastMessage }}</span>
+      <button class="toast-dismiss" type="button" aria-label="Dismiss" @click.stop="dismissToast">&times;</button>
     </div>
 
     <aside class="dash-sidebar" aria-label="Customer navigation">
@@ -1046,7 +1048,8 @@
         <div class="dash-top-actions">
           <button class="dash-icon-button" aria-label="Notifications" type="button" @click="openDashboardSection('notifications')">
             <Bell :size="18" />
-            <span>{{ dashboardNotificationCount }}</span>
+            <span v-if="dashboardUnreadCount > 0" class="notif-badge">{{ dashboardUnreadCount > 99 ? '99+' : dashboardUnreadCount }}</span>
+            <span v-else class="notif-badge-zero">{{ dashboardNotificationCount }}</span>
           </button>
           <button class="primary-button compact" type="button" @click="openProjectWizard">
             <Plus :size="16" />
@@ -1355,8 +1358,10 @@
   </div>
 
   <div v-else class="home-shell">
-    <div v-if="toastMessage" class="toast" role="status" aria-live="polite">
-      {{ toastMessage }}
+    <div v-if="toastMessage" class="toast" :class="toastType" role="alert" aria-live="polite" @click="dismissToast">
+      <span class="toast-icon">{{ toastIcon }}</span>
+      <span class="toast-text">{{ toastMessage }}</span>
+      <button class="toast-dismiss" type="button" aria-label="Dismiss" @click.stop="dismissToast">&times;</button>
     </div>
 
     <header class="home-navbar">
@@ -2383,6 +2388,11 @@ const errorMessage = ref('');
 const showPassword = ref(false);
 const showConfirmPassword = ref(false);
 const toastMessage = ref('');
+const toastType = ref('info');
+const toastIcon = computed(() => {
+  const icons = { success: '✓', error: '✕', warning: '⚠', info: 'ℹ' };
+  return icons[toastType.value] || 'ℹ';
+});
 const publicNotifications = ref([]);
 let toastTimer = 0;
 
@@ -3282,6 +3292,7 @@ const dashboardNotificationRows = computed(() =>
     .map(mapDashboardNotification),
 );
 const dashboardNotificationCount = computed(() => Math.min(9, dashboardNotificationRows.value.length));
+const dashboardUnreadCount = computed(() => dashboardNotificationRows.filter(n => !n.read).length);
 
 const marketplaceBenefits = [
   {
@@ -3425,21 +3436,26 @@ async function handleGitHubCallback() {
     showToast(auth.user?.wallet_address ? 'GitHub linked to your MRG wallet.' : 'Logged in with GitHub.');
   } catch (error) {
     errorMessage.value = error.message;
-    showToast(error.message);
+    showToast(error.message, 'error');
   } finally {
     authBusy.value = false;
   }
   return true;
 }
 
-function showToast(message) {
+function showToast(message, type) {
   toastMessage.value = message;
-  pushPublicNotification(message);
+  toastType.value = type || 'info';
   if (!hasWindow) return;
   if (toastTimer) window.clearTimeout(toastTimer);
   toastTimer = window.setTimeout(() => {
     toastMessage.value = '';
-  }, 2200);
+  }, 3500);
+}
+
+function dismissToast() {
+  toastMessage.value = '';
+  if (toastTimer) window.clearTimeout(toastTimer);
 }
 
 function pushPublicNotification(message) {
