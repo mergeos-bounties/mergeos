@@ -58,6 +58,10 @@
           <ArrowLeft :size="15" />
           Back to home
         </button>
+        <button v-if="projectTypeInitial" class="back-link type-back-link" type="button" @click="resetProjectType">
+          <ArrowLeft :size="13" />
+          Change project type
+        </button>
 
         <div class="project-flow-title">
           <h1>{{ projectWizardStage === 'success' ? 'Payment complete' : 'Start a project' }}</h1>
@@ -111,7 +115,43 @@
       </aside>
 
       <section class="project-flow-board">
-        <article v-if="projectWizardStage === 'setup'" class="wizard-card project-step-panel">
+        <article v-if="projectWizardStage === 'setup' && !projectTypeInitial" class="wizard-card project-type-init-panel">
+          <header class="wizard-card-heading">
+            <div>
+              <span class="step-kicker">GET STARTED</span>
+              <h2>What kind of work do you need?</h2>
+              <p>Choose the type of project you want to create. This helps us tailor the form and matching.</p>
+            </div>
+          </header>
+
+          <div class="project-type-init-grid">
+            <button class="project-type-init-card" type="button" @click="selectProjectType('new')">
+              <span class="init-card-icon green">
+                <Rocket :size="28" />
+              </span>
+              <strong>Start a new project</strong>
+              <p>Build something new from scratch. Describe your idea, set requirements, and find the right talent or AI agents to bring it to life.</p>
+              <span class="init-card-cta">
+                Create new project
+                <ArrowRight :size="15" />
+              </span>
+            </button>
+
+            <button class="project-type-init-card" type="button" @click="selectProjectType('bugfix')">
+              <span class="init-card-icon amber">
+                <Bug :size="28" />
+              </span>
+              <strong>Fix an existing project</strong>
+              <p>Import a GitHub repository, load open issues, and turn them into scored bounty tasks with set reward pools for contributors.</p>
+              <span class="init-card-cta">
+                Fix existing project
+                <ArrowRight :size="15" />
+              </span>
+            </button>
+          </div>
+        </article>
+
+        <article v-else-if="projectWizardStage === 'setup'" class="wizard-card project-step-panel">
           <header class="wizard-card-heading">
             <div>
               <span class="step-kicker">{{ projectWizardStep }}. {{ currentProjectStep.label }}</span>
@@ -124,7 +164,72 @@
             </button>
           </header>
 
-          <div v-if="projectWizardStep === 1" class="wizard-form-grid">
+          <div v-if="projectWizardStep === 1 && projectTypeInitial === 'bugfix'" class="wizard-form-grid">
+            <section class="wizard-section full attach-repo attach-repo-primary">
+              <div class="attach-repo-head">
+                <div>
+                  <strong>GitHub repository <b>*</b></strong>
+                  <p>Paste the repository URL to import open issues and turn them into scored bounty tasks.</p>
+                </div>
+                <button class="primary-button compact" :disabled="repoImportBusy" type="button" @click="loadRepoIssues">
+                  <RefreshCw :size="15" />
+                  {{ repoImportBusy ? 'Loading issues...' : 'Load issues' }}
+                </button>
+              </div>
+              <label class="wizard-field full repo-url-field">
+                <span>Repository URL</span>
+                <input
+                  v-model.trim="projectSetupForm.repoUrl"
+                  placeholder="https://github.com/owner/repo"
+                  @keyup.enter="loadRepoIssues"
+                />
+              </label>
+              <p v-if="repoImportError" class="modal-error repo-import-error">{{ repoImportError }}</p>
+              <div v-if="repoImportedIssues.length" class="repo-issue-panel">
+                <div class="repo-issue-summary">
+                  <strong>{{ repoImportResult.owner }}/{{ repoImportResult.name }}</strong>
+                  <span>{{ repoImportedIssues.length }} issues · {{ formatMRGFromCents(repoImportedEstimateCents) }} scored</span>
+                </div>
+                <article v-for="issue in repoImportedIssues.slice(0, 4)" :key="issue.number" class="repo-issue-row">
+                  <span>#{{ issue.number }}</span>
+                  <div>
+                    <strong>{{ issue.title }}</strong>
+                    <small>Score {{ issue.score }} · {{ issue.complexity }} · {{ formatMRGFromCents(issue.estimated_cents) }}</small>
+                  </div>
+                </article>
+              </div>
+            </section>
+
+            <label class="wizard-field full">
+              <span>Project title <b>*</b></span>
+              <input v-model.trim="projectSetupForm.title" placeholder="Fix issues in owner/repo" />
+            </label>
+
+            <label class="wizard-field full">
+              <span>Short description <b>*</b></span>
+              <textarea
+                v-model.trim="projectSetupForm.shortDescription"
+                rows="4"
+                maxlength="1000"
+                placeholder="Describe the bugs and issues that need fixing..."
+              />
+              <small>{{ projectSetupForm.shortDescription.length }} / 1000</small>
+            </label>
+
+            <section class="wizard-section full">
+              <div class="wizard-section-title">
+                <strong>Project type</strong>
+                <small>Set to "Repo Issue Fix" based on your selection.</small>
+              </div>
+              <div class="selected-type-badge">
+                <Bug :size="16" />
+                <span>Repo Issue Fix</span>
+                <CheckCircle2 :size="14" class="tile-check" />
+              </div>
+            </section>
+          </div>
+
+          <div v-else-if="projectWizardStep === 1" class="wizard-form-grid">
             <label class="wizard-field full">
               <span>Project title <b>*</b></span>
               <input v-model.trim="projectSetupForm.title" placeholder="Enter a clear project title" />
@@ -2410,6 +2515,7 @@ const dashboardError = ref('');
 const dashboardSearch = ref('');
 const selectedDashboardProjectID = ref('');
 const dashboardNotificationCenter = ref(null);
+const projectTypeInitial = ref(null);
 const priceEvaluation = ref(null);
 const priceEvaluationBusy = ref(false);
 const priceEvaluationError = ref('');
@@ -2665,7 +2771,13 @@ const wizardIntroCopy = computed(() => {
     return 'Your project is funded and ready for matching.';
   }
 
-  return 'Tell us about your project so we can match you with the right talent or AI agents.';
+  if (!projectTypeInitial.value) {
+    return 'Choose the type of project you want to create.';
+  }
+
+  return projectTypeInitial.value === 'bugfix'
+    ? 'Import a repository, load issues, and fund bounty tasks for contributors.'
+    : 'Tell us about your project so we can match you with the right talent or AI agents.';
 });
 const footerStepNumber = computed(() => (projectWizardStage.value === 'setup' ? projectWizardStep.value : 4));
 const footerProgress = computed(() => {
@@ -3530,6 +3642,23 @@ function openMarketplaceSection(id) {
   window.requestAnimationFrame(() => scrollToSection(id));
 }
 
+function selectProjectType(type) {
+  projectTypeInitial.value = type;
+  projectWizardStep.value = 1;
+  if (type === 'bugfix') {
+    projectSetupForm.projectType = 'Repo Issue Fix';
+  } else {
+    projectSetupForm.projectType = '';
+  }
+  scrollProjectFlowTop();
+}
+
+function resetProjectType() {
+  projectTypeInitial.value = null;
+  projectSetupForm.projectType = '';
+  scrollProjectFlowTop();
+}
+
 function scrollProjectFlowTop() {
   if (!hasWindow) return;
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -3540,6 +3669,7 @@ function openProjectWizard(options = {}) {
   projectWizardVisible.value = true;
   projectWizardStage.value = 'setup';
   projectWizardStep.value = 1;
+  projectTypeInitial.value = null;
   errorMessage.value = '';
   updateProjectWizardBrowserPath(Boolean(options.replace));
   scrollProjectFlowTop();
@@ -3550,6 +3680,7 @@ function restartProjectWizard(options = {}) {
   projectWizardVisible.value = true;
   projectWizardStage.value = 'setup';
   projectWizardStep.value = 1;
+  projectTypeInitial.value = null;
   updateProjectWizardBrowserPath(Boolean(options.replace));
   scrollProjectFlowTop();
 }

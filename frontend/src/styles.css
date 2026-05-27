@@ -8140,3 +8140,901 @@ svg {
     grid-template-columns: 1fr;
   }
 }
+
+/* ===================================================
+   BOUNTY #11 + #13: Responsive media queries
+   Homepage, auth modal, and all public page layouts
+   =================================================== */
+
+/* ---- 1440px and below ---- */
+@media (max-width: 1440px) {
+  .public-home-copy h1,
+  .public-info-hero h1 {
+    font-size: 48px;
+  }
+  .hero-copy h1 {
+    font-size: 46px;
+  }
+}
+
+/* ---- 1366px and below ---- */
+@media (max-width: 1366px) {
+  :root {
+    --page-container: 1100px;
+  }
+  .hero-copy h1 {
+    font-size: 40px;
+    max-width: 460px;
+  }
+  .public-home-copy h1 {
+    font-size: 42px;
+  }
+  .hero-section {
+    grid-template-columns: minmax(280px, 0.9fr) minmax(420px, 1.1fr);
+    gap: 32px;
+  }
+  .hero-copy p {
+    font-size: 14px;
+  }
+  .public-home-hero,
+  .public-info-hero {
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+    gap: 20px;
+  }
+  .marketplace-hero {
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 1fr);
+    gap: 20px;
+  }
+  .how-hero {
+    grid-template-columns: minmax(280px, 0.8fr) minmax(480px, 1.2fr);
+    gap: 32px;
+  }
+  .home-container.marketplace-layout {
+    grid-template-columns: minmax(0, 1fr) 240px;
+    gap: 20px;
+  }
+}
+
+/* ---- 1200px and below ---- */
+@media (max-width: 1200px) {
+  .feature-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .stats-strip {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .why-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .workflow-board {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+  .workflow-step-card.has-arrow::after {
+    display: none;
+  }
+  .home-container.marketplace-layout {
+    grid-template-columns: 1fr;
+  }
+  .marketplace-rail {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    position: static;
+  }
+}
+
+/* ---- 1024px and below ---- */
+@media (max-width: 1024px) {
+  :root {
+    --page-gutter: 24px;
+  }
+  .nav-links {
+    gap: 16px;
+  }
+  .nav-actions {
+    min-width: 0;
+    gap: 8px;
+  }
+  .public-home-copy h1 {
+    font-size: 36px;
+  }
+  .hero-copy h1 {
+    font-size: 34px;
+  }
+  .public-home-hero,
+  .public-info-hero {
+    grid-template-columns: 1fr;
+  }
+  .public-home-panel,
+  .public-info-summary {
+    max-width: 500px;
+  }
+  .hero-section {
+    grid-template-columns: 1fr;
+    gap: 24px;
+    padding-top: 32px;
+  }
+  .hero-copy h1 {
+    max-width: 100%;
+  }
+  .public-workflow-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .public-talent-strip {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .public-talent-list {
+    grid-template-columns: 1fr 1fr;
+  }
+  .marketplace-hero {
+    grid-template-columns: 1fr;
+  }
+  .marketplace-copy h1 {
+    font-size: 36px;
+  }
+  .marketplace-trust {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .marketplace-project-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .how-hero {
+    grid-template-columns: 1fr;
+    gap: 24px;
+    padding-top: 32px;
+  }
+  .how-steps-panel {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  .how-hero-step:not(:last-child)::after {
+    display: none;
+  }
+  .public-info-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .marketplace-filter-panel {
+    grid-template-columns: 1fr;
+  }
+  .marketplace-selects {
+    flex-wrap: wrap;
+  }
+  .marketplace-visual {
+    min-height: 280px;
+  }
+  .auth-modal-main {
+    grid-template-columns: 1fr;
+    gap: 24px;
+    padding: 24px 28px;
+  }
+  .auth-benefit-panel {
+    order: -1;
+  }
+  .auth-benefit-panel h3 {
+    font-size: 17px;
+    margin-bottom: 16px;
+  }
+  .auth-modal {
+    max-height: calc(100vh - 32px);
+  }
+  .modal-backdrop {
+    padding: 16px;
+  }
+  .project-flow-main {
+    grid-template-columns: minmax(160px, 180px) minmax(0, 1fr);
+    gap: 16px;
+  }
+  .project-flow-rail {
+    display: none;
+  }
+  .project-flow-footer {
+    grid-template-columns: 160px minmax(0, 1fr);
+  }
+  .project-flow-footer p {
+    display: none;
+  }
+  .dash-content {
+    grid-template-columns: 1fr;
+  }
+  .dash-rail {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+}
+
+/* ---- 768px and below ---- */
+@media (max-width: 768px) {
+  :root {
+    --page-gutter: 16px;
+  }
+  .home-navbar .nav-links {
+    display: none;
+  }
+  .nav-inner {
+    min-height: 48px;
+  }
+  .brand-link strong {
+    font-size: 17px;
+  }
+  .nav-actions {
+    gap: 6px;
+  }
+  .nav-actions .secondary-button.compact,
+  .nav-actions .primary-button.compact {
+    min-height: 34px;
+    padding: 0 11px;
+    font-size: 12px;
+  }
+  .public-home-copy h1,
+  .public-info-hero h1 {
+    font-size: 30px;
+  }
+  .public-home-copy p,
+  .public-info-hero p {
+    font-size: 14px;
+  }
+  .marketplace-copy h1 {
+    font-size: 30px;
+  }
+  .public-workflow-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .public-talent-list {
+    grid-template-columns: 1fr;
+  }
+  .marketplace-project-grid {
+    grid-template-columns: 1fr;
+  }
+  .marketplace-trust {
+    grid-template-columns: 1fr;
+  }
+  .marketplace-benefit-strip {
+    grid-template-columns: 1fr;
+  }
+  .marketplace-benefit-strip article + article {
+    border-left: 0;
+    border-top: 1px solid #eef0f2;
+  }
+  .marketplace-rail {
+    grid-template-columns: 1fr;
+  }
+  .feature-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .stats-strip {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .why-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .workflow-board {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .how-steps-panel {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .how-hero-copy h1 {
+    font-size: 34px;
+  }
+  .public-info-grid {
+    grid-template-columns: 1fr;
+  }
+  .hero-copy h1 {
+    font-size: 28px;
+  }
+  .hero-section {
+    padding-top: 24px;
+  }
+  .escrow-steps {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .project-flow-navbar {
+    grid-template-columns: minmax(120px, 150px) minmax(0, 1fr);
+  }
+  .project-flow-nav {
+    display: none;
+  }
+  .project-flow-main {
+    grid-template-columns: 1fr;
+  }
+  .project-flow-sidebar {
+    position: static;
+    display: none;
+  }
+  .project-flow-main.stage-setup .project-flow-sidebar {
+    display: none;
+  }
+  .project-flow-footer {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    padding: 10px 16px;
+  }
+  .footer-progress {
+    display: none;
+  }
+  .wizard-form-grid {
+    grid-template-columns: 1fr;
+  }
+  .settings-grid {
+    grid-template-columns: 1fr;
+  }
+  .review-grid {
+    grid-template-columns: 1fr;
+  }
+  .timeline-grid {
+    grid-template-columns: 1fr 1fr 70px;
+    gap: 10px;
+  }
+  .project-type-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .budget-type-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .payment-method-grid,
+  .payment-choice-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .funding-amount-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .card-input-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .budget-row {
+    grid-template-columns: 1fr;
+  }
+  .next-step-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .payment-detail-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .dash-sidebar {
+    display: none;
+  }
+  .dashboard-shell {
+    grid-template-columns: 1fr;
+  }
+  .dash-topbar {
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+    min-height: 50px;
+    padding: 6px 12px;
+  }
+  .dash-topnav {
+    display: none;
+  }
+  .dash-search {
+    min-width: 0;
+  }
+  .dash-rail {
+    grid-template-columns: 1fr;
+  }
+  .dash-metrics {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  .dash-overview-grid {
+    grid-template-columns: 1fr;
+  }
+  .dash-pr-row {
+    grid-template-columns: 32px minmax(0, 1fr) 50px;
+    gap: 8px;
+    padding: 10px 12px;
+  }
+  .dash-pr-stat {
+    display: none;
+  }
+  .dash-pr-row b {
+    justify-self: start;
+  }
+  .tokens-box {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+  .token-emblem {
+    justify-self: center;
+  }
+  .auth-modal-main {
+    padding: 20px;
+  }
+  .auth-copy h2 {
+    font-size: 24px;
+  }
+  .auth-copy p {
+    font-size: 13px;
+  }
+  .social-auth-row {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .social-auth-row button {
+    min-height: 42px;
+    font-size: 13px;
+  }
+  .auth-benefit-panel {
+    padding: 20px 16px;
+  }
+  .auth-orbit-visual {
+    min-height: 200px;
+  }
+  .code-card {
+    left: 20px;
+    top: 16px;
+    width: 120px;
+    height: 110px;
+    padding: 16px;
+  }
+  .agent-card {
+    right: 10px;
+    top: 28px;
+    padding: 12px;
+  }
+  .rating-card {
+    left: 40px;
+    bottom: 14px;
+    min-width: 150px;
+    padding: 12px;
+  }
+  .orbit-avatar.left {
+    left: 0;
+    top: 100px;
+  }
+  .orbit-avatar.right {
+    right: 6px;
+    bottom: 48px;
+  }
+  .ledger-hero {
+    grid-template-columns: 1fr;
+  }
+  .ledger-content {
+    grid-template-columns: 1fr;
+  }
+  .payment-detail-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .escrow-banner {
+    min-width: 0;
+  }
+  .funding-heading {
+    flex-direction: column;
+  }
+}
+
+/* ---- 480px and below (mobile) ---- */
+@media (max-width: 480px) {
+  .public-home-copy h1,
+  .public-info-hero h1 {
+    font-size: 24px;
+  }
+  .public-home-copy p,
+  .public-info-hero p {
+    font-size: 13px;
+  }
+  .public-workflow-grid {
+    grid-template-columns: 1fr;
+  }
+  .feature-grid {
+    grid-template-columns: 1fr;
+  }
+  .stats-strip {
+    grid-template-columns: 1fr;
+  }
+  .stats-strip article + article {
+    border-left: 0;
+    border-top: 1px solid #eef0f2;
+  }
+  .why-grid {
+    grid-template-columns: 1fr;
+  }
+  .how-steps-panel {
+    grid-template-columns: 1fr;
+  }
+  .workflow-board {
+    grid-template-columns: 1fr;
+  }
+  .marketplace-copy h1 {
+    font-size: 24px;
+  }
+  .marketplace-copy p {
+    font-size: 13px;
+  }
+  .marketplace-actions {
+    flex-direction: column;
+  }
+  .marketplace-actions button {
+    width: 100%;
+  }
+  .public-info-hero .marketplace-actions {
+    flex-direction: column;
+  }
+  .public-info-hero .marketplace-actions button {
+    width: 100%;
+  }
+  .project-type-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .payment-method-grid,
+  .payment-choice-grid {
+    grid-template-columns: 1fr;
+  }
+  .funding-amount-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .card-input-grid {
+    grid-template-columns: 1fr;
+  }
+  .next-step-grid {
+    grid-template-columns: 1fr;
+  }
+  .next-step-grid article:not(:last-child)::after {
+    display: none;
+  }
+  .payment-detail-grid {
+    grid-template-columns: 1fr;
+  }
+  .auth-modal {
+    border-radius: 12px;
+  }
+  .auth-modal-main {
+    padding: 16px;
+    gap: 16px;
+  }
+  .auth-copy h2 {
+    font-size: 20px;
+  }
+  .auth-form-panel {
+    padding: 0;
+  }
+  .auth-close-button {
+    top: 12px;
+    right: 12px;
+    width: 32px;
+    height: 32px;
+  }
+  .auth-brand strong {
+    font-size: 17px;
+  }
+  .input-shell {
+    min-height: 40px;
+  }
+  .input-shell input {
+    min-height: 38px;
+    font-size: 13px;
+  }
+  .auth-submit-button {
+    min-height: 44px;
+    font-size: 14px;
+  }
+  .auth-benefit-panel {
+    display: none;
+  }
+  .escrow-steps {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    padding: 10px;
+  }
+  .hero-actions {
+    flex-direction: column;
+  }
+  .hero-actions button {
+    width: 100%;
+  }
+  .public-talent-strip h2 {
+    font-size: 22px;
+  }
+  .dash-metrics {
+    grid-template-columns: 1fr 1fr;
+  }
+  .dash-project-title {
+    grid-template-columns: 40px minmax(0, 1fr);
+  }
+  .dash-project-title h1 {
+    font-size: 20px;
+  }
+  .dash-project-header {
+    flex-direction: column;
+  }
+  .dash-project-actions {
+    width: 100%;
+  }
+  .dash-content {
+    padding: 12px;
+  }
+  .ledger-table-wrap {
+    overflow-x: auto;
+  }
+  .ledger-table {
+    min-width: 600px;
+  }
+  .ledger-footer-stats {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .ledger-trust-row {
+    grid-template-columns: 1fr;
+  }
+  .ledger-live-card {
+    padding: 16px;
+  }
+  .ledger-table-actions {
+    flex-wrap: wrap;
+  }
+  .project-flow-navbar {
+    grid-template-columns: auto 1fr;
+    padding: 6px var(--page-gutter);
+    min-height: 48px;
+  }
+  .project-flow-actions {
+    gap: 6px;
+  }
+  .project-flow-actions .primary-button.compact,
+  .project-flow-actions .secondary-button.compact {
+    min-height: 32px;
+    padding: 0 10px;
+    font-size: 11px;
+  }
+  .locale-button.icon-only {
+    padding: 6px 8px;
+  }
+  .nav-actions {
+    min-width: 0;
+  }
+  .nav-actions .primary-button.compact,
+  .nav-actions .secondary-button.compact {
+    min-height: 32px;
+    padding: 0 10px;
+    font-size: 11px;
+  }
+  .user-pill {
+    max-width: 120px;
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+}
+
+/* ---- 390px and below ---- */
+@media (max-width: 390px) {
+  :root {
+    --page-gutter: 12px;
+  }
+  .brand-link strong {
+    font-size: 15px;
+  }
+  .brand-mark {
+    width: 28px;
+    height: 28px;
+  }
+  .public-home-copy h1,
+  .public-info-hero h1 {
+    font-size: 22px;
+  }
+  .marketplace-copy h1 {
+    font-size: 22px;
+  }
+  .hero-copy h1 {
+    font-size: 24px;
+  }
+  .project-type-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .funding-amount-grid {
+    grid-template-columns: 1fr;
+  }
+  .timeline-grid {
+    grid-template-columns: 1fr;
+  }
+  .duration-ring {
+    justify-self: start;
+  }
+  .dash-metrics {
+    grid-template-columns: 1fr;
+  }
+  .ledger-footer-stats {
+    grid-template-columns: 1fr;
+  }
+  .public-talent-strip h2 {
+    font-size: 20px;
+  }
+}
+
+/* ---- 360px and below ---- */
+/* ---- Project type initial selection (Bounty #12) ---- */
+.project-type-init-panel {
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.project-type-init-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  margin-top: 8px;
+}
+
+.project-type-init-card {
+  position: relative;
+  min-height: 280px;
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  border: 1px solid #dfe5ec;
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 28px 24px;
+  text-align: left;
+  transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+.project-type-init-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(15, 159, 120, 0.42);
+  box-shadow: 0 20px 48px rgba(15, 23, 42, 0.08);
+}
+
+.init-card-icon {
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+}
+
+.init-card-icon.green {
+  color: #ffffff;
+  background: linear-gradient(135deg, #0f9f78, #0ea5e9);
+}
+
+.init-card-icon.amber {
+  color: #ffffff;
+  background: linear-gradient(135deg, #f97316, #dc2626);
+}
+
+.project-type-init-card strong {
+  color: #0f172a;
+  font-size: 18px;
+  line-height: 1.2;
+  font-weight: 930;
+}
+
+.project-type-init-card p {
+  margin: 0;
+  color: #5b6472;
+  font-size: 13px;
+  line-height: 1.55;
+  font-weight: 650;
+}
+
+.init-card-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: auto;
+  color: var(--green-dark);
+  font-size: 13px;
+  font-weight: 880;
+  padding-top: 12px;
+}
+
+.type-back-link {
+  color: #6b7280 !important;
+  font-size: 11px !important;
+  margin-top: -6px;
+}
+
+.selected-type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--green);
+  border-radius: 8px;
+  background: #f1fbf6;
+  color: var(--green-dark);
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 850;
+}
+
+.selected-type-badge svg:first-child {
+  color: var(--green);
+}
+
+.selected-type-badge .tile-check {
+  margin-left: auto;
+  color: var(--green);
+}
+
+.attach-repo-primary {
+  border: 1px solid rgba(15, 159, 120, 0.24);
+  border-radius: 8px;
+  background: #f7fdfa;
+  padding: 16px;
+}
+
+.attach-repo-primary .attach-repo-head strong {
+  font-size: 14px;
+}
+
+@media (max-width: 768px) {
+  .project-type-init-grid {
+    grid-template-columns: 1fr;
+  }
+  .project-type-init-card {
+    min-height: 220px;
+    padding: 20px;
+  }
+  .init-card-icon {
+    width: 48px;
+    height: 48px;
+  }
+  .project-type-init-card strong {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 360px) {
+  .public-home-copy h1,
+  .public-info-hero h1 {
+    font-size: 20px;
+  }
+  .marketplace-copy h1 {
+    font-size: 20px;
+  }
+  .hero-copy h1 {
+    font-size: 22px;
+  }
+  .how-hero-copy h1 {
+    font-size: 28px;
+  }
+  .public-talent-strip {
+    padding: 18px 0;
+  }
+  .marketplace-search {
+    min-height: 40px;
+  }
+  .marketplace-selects button {
+    min-width: 90px;
+    min-height: 36px;
+    font-size: 11px;
+    padding: 0 10px;
+  }
+  .auth-form-panel .auth-copy h2 {
+    font-size: 18px;
+  }
+  .project-step-actions {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .project-step-actions > div {
+    width: 100%;
+  }
+  .project-step-actions button {
+    flex: 1;
+  }
+  .funding-actions {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .funding-actions > div {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  .auth-brand-mark {
+    width: 26px;
+    height: 26px;
+  }
+  .nav-actions .secondary-button.compact {
+    padding: 0 8px;
+    font-size: 10px;
+    min-height: 28px;
+  }
+  .nav-actions .primary-button.compact {
+    padding: 0 8px;
+    font-size: 10px;
+    min-height: 28px;
+  }
+}
