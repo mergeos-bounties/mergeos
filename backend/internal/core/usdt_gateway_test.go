@@ -2,6 +2,7 @@ package core
 
 import (
 	"bytes"
+	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
@@ -260,7 +261,7 @@ func TestUSDTWebhookHandlerValidConfirmed(t *testing.T) {
 
 	// First create a project for the webhook to reference
 	userID := createTestUser(t, store)
-	project, err := store.CreateProject(nil, userID, CreateProjectRequest{
+	project, err := store.CreateProject(context.Background(), userID, CreateProjectRequest{
 		Title:         "Test Project",
 		ClientName:    "Test",
 		CompanyName:   "TestCo",
@@ -335,7 +336,7 @@ func TestUSDTWebhookHandlerIdempotencyDuplicate(t *testing.T) {
 	gm := NewUSDTGatewayManager(cfg, store)
 
 	userID := createTestUser(t, store)
-	project, err := store.CreateProject(nil, userID, CreateProjectRequest{
+	project, err := store.CreateProject(context.Background(), userID, CreateProjectRequest{
 		Title:         "Test",
 		ClientName:    "Test",
 		CompanyName:   "TestCo",
