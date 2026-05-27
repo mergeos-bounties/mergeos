@@ -1039,3 +1039,97 @@ func (c *adminGitHubClient) removeIssueLabel(ctx context.Context, target githubI
 	}
 	return err
 }
+
+// GenerateStructured calls Gemini with a structured payload that includes responseMimeType,
+// enabling JSON mode. Returns the response text and key ID. This is used by the AI evaluation service.
+func (s *GeminiReviewService) GenerateStructured(ctx context.Context, payload map[string]any) (string, string, error) {
+	if s.store == nil {
+		return "", "", errors.New("Gemini key store is required")
+	}
+	candidates := s.store.GeminiAPIKeyCandidates()
+	if len(candidates) == 0 {
+		return "", "", errors.New("no active Gemini API keys are configured")
+	}
+	var lastErr error
+	for _, candidate := range candidates {
+		if err := s.store.MarkGeminiAPIKeyAttempt(candidate.ID); err != nil {
+			return "", "", err
+		}
+		text, err := s.generateWithPayload(ctx, candidate.KeyValue, payload)
+		if err == nil {
+			if markErr := s.store.MarkGeminiAPIKeySuccess(candidate.ID, http.StatusOK); markErr != nil {
+				return "", "", markErr
+			}
+			return text, candidate.ID, nil
+		}
+		lastErr = err
+		statusCode := geminiErrorStatusCode(err)
+		if isGeminiQuotaError(err) {
+			_ = s.store.MarkGeminiAPIKeyQuotaLimited(candidate.ID, statusCode, err.Error())
+			continue
+		}
+		if isGeminiKeySpecificError(err) {
+			_ = s.store.MarkGeminiAPIKeyError(candidate.ID, statusCode, err.Error())
+			continue
+		}
+		_ = s.store.MarkGeminiAPIKeyError(candidate.ID, statusCode, err.Error())
+		return "", "", err
+	}
+	if lastErr == nil {
+		lastErr = errors.New("Gemini structured generation failed")
+	}
+	return "", "", lastErr
+}
+
+// generateWithPayload sends a structured payload to Gemini (supports responseMimeType for JSON).
+func (s *GeminiReviewService) generateWithPayload(ctx context.Context, key string, payload map[string]any) (string, error) {
+	model := strings.Trim(strings.TrimSpace(s.cfg.GeminiReviewModel), "/")
+	if model == "" {
+		model = "gemini-2.5-flash"
+	}
+	model = strings.TrimPrefix(model, "models/")
+	endpoint := "https://generativelanguage.googleapis.com/v1beta/models/" + url.PathEscape(model) + ":generateContent"
+	
+	var body bytes.Buffer
+	if err := json.NewEncoder(&body).Encode(payload); err != nil {
+		return "", err
+	}
+	
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, &body)
+	if err != nil {
+		return "", err
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("x-goog-api-key", strings.TrimSpace(key))
+	
+	resp, err := s.client.Do(httpReq)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return "", geminiAPIError{StatusCode: resp.StatusCode, Body: readBody(resp.Body)}
+	}
+	
+	var decoded struct {
+		Candidates []struct {
+			Content struct {
+				Parts []struct {
+					Text string `json:"text"`
+				} `json:"parts"`
+			} `json:"content"`
+		} `json:"candidates"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&decoded); err != nil {
+		return "", err
+	}
+	for _, candidate := range decoded.Candidates {
+		for _, part := range candidate.Content.Parts {
+			if text := strings.TrimSpace(part.Text); text != "" {
+				return text, nil
+			}
+		}
+	}
+	return "", errors.New("Gemini returned an empty response")
+}
