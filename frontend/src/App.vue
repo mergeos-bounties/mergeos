@@ -4479,7 +4479,11 @@ function clearSession() {
   dashboardNotifications.value = [];
   dashboardNotificationsError.value = '';
   dashboardError.value = '';
+  dashboardSearch.value = '';
   selectedDashboardProjectID.value = '';
+  pendingProjectPaymentAfterAuth.value = false;
+  authReturnToProjectWizard.value = false;
+  errorMessage.value = '';
   removeStoredToken();
 }
 
@@ -4535,8 +4539,11 @@ async function restoreSession() {
 async function logout() {
   try {
     await api('/api/auth/logout', { method: 'POST', body: JSON.stringify({}) });
+  } catch {
+    // Still clear local session if the API is unreachable.
   } finally {
     clearSession();
+    openPublicPage('home', { replace: true, scroll: false });
     showToast('Logged out.');
   }
 }
