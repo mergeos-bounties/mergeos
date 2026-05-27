@@ -17,10 +17,11 @@ type Server struct {
 	store          *Store
 	payments       *PaymentManager
 	geminiReviewer *GeminiReviewService
+	usdtWebhookHandler *usdtWebhookHandler
 }
 
 func NewServer(cfg Config, store *Store, payments *PaymentManager) *Server {
-	return &Server{cfg: cfg, store: store, payments: payments, geminiReviewer: NewGeminiReviewService(cfg, store)}
+	return &Server{cfg: cfg, store: store, payments: payments, geminiReviewer: NewGeminiReviewService(cfg, store), usdtWebhookHandler: newUSDTWebhookHandler(cfg, store)}
 }
 
 func (s *Server) Routes() http.Handler {
@@ -45,6 +46,8 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/wallets/{address}", s.wallet)
 	mux.HandleFunc("POST /api/wallets/link", s.linkWallet)
 	mux.HandleFunc("POST /api/payments/paypal/orders", s.createPayPalOrder)
+	mux.HandleFunc("POST /api/payments/usdt/webhook", s.handleUSDTWebhook)
+	mux.HandleFunc("GET /api/admin/usdt/webhooks", s.adminUSDTWebhookEvents)
 	mux.HandleFunc("POST /api/uploads", s.uploadAttachment)
 	mux.HandleFunc("GET /api/uploads/", s.downloadAttachment)
 	mux.HandleFunc("GET /api/admin/summary", s.adminSummary)
@@ -830,4 +833,41 @@ func (s *Server) cryptoWebhook(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusCreated, project)
+}
+
+func (s *Server) handleUSDTWebhook(w http.ResponseWriter, r *http.Request) {
+	s.usdtWebhookHandler.handleUSDTWebhook(w, r)
+}
+
+func (s *Server) adminUSDTWebhookEvents(w http.ResponseWriter, r *http.Request) {
+	if _, ok := s.requireUser(w, r); !ok {
+		return
+	}
+	events := s.store.ListUSDTWebhookEvents()
+
+	// Sanitize: strip raw_payload to prevent leaking gateway secrets
+	sanitized := make([]map[string]interface{}, 0, len(events))
+	for _, e := range events {
+		entry := map[string]interface{}{
+			"id":               e.ID,
+			"provider":         e.Provider,
+			"event_type":       e.EventType,
+			"status":           e.Status,
+			"gateway_id":       e.GatewayID,
+			"amount_cents":     e.AmountCents,
+			"currency":         e.Currency,
+			"network":          e.Network,
+			"tx_hash":          e.TxHash,
+			"sender_address":   e.SenderAddress,
+			"receiver_address": e.ReceiverAddress,
+			"signature_valid":  e.SignatureValid,
+			"project_id":       e.ProjectID,
+			"idempotency_key":  e.IdempotencyKey,
+			"error":            e.Error,
+			"received_at":      e.ReceivedAt,
+			"processed_at":     e.ProcessedAt,
+		}
+		sanitized = append(sanitized, entry)
+	}
+	writeJSON(w, http.StatusOK, sanitized)
 }

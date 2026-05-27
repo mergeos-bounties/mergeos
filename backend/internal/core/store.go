@@ -48,6 +48,7 @@ type Store struct {
 	sslReviews        map[string]*SSLReviewStatus
 	geminiAPIKeys     map[string]*GeminiAPIKey
 	geminiWebhookLogs map[string]*GeminiWebhookLog
+	usdtWebhookEvents map[string]*USDTWebhookEvent
 	adminSettings     AdminSettings
 	ledger            []LedgerEntry
 }
@@ -64,6 +65,7 @@ type persistedState struct {
 	SSLReviews        []*SSLReviewStatus  `json:"ssl_reviews"`
 	GeminiAPIKeys     []*GeminiAPIKey     `json:"gemini_api_keys"`
 	GeminiWebhookLogs []*GeminiWebhookLog `json:"gemini_webhook_logs"`
+	USDTWebhookEvents []*USDTWebhookEvent `json:"usdt_webhook_events"`
 	AdminSettings     *AdminSettings      `json:"admin_settings,omitempty"`
 	Ledger            []LedgerEntry       `json:"ledger"`
 }
@@ -91,6 +93,7 @@ func NewStore(cfg Config, payments *PaymentManager, repos RepoFactory, emailer *
 		sslReviews:        map[string]*SSLReviewStatus{},
 		geminiAPIKeys:     map[string]*GeminiAPIKey{},
 		geminiWebhookLogs: map[string]*GeminiWebhookLog{},
+		usdtWebhookEvents: map[string]*USDTWebhookEvent{},
 		adminSettings:     defaultAdminSettings(cfg),
 		ledger:            []LedgerEntry{},
 	}
@@ -1939,4 +1942,65 @@ func (s *Store) IsPaymentReferenceUsed(reference string) bool {
 		}
 	}
 	return false
+}
+
+// SaveUSDTWebhookEvent persists a USDT webhook event.
+func (s *Store) SaveUSDTWebhookEvent(event *USDTWebhookEvent) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.usdtWebhookEvents == nil {
+		s.usdtWebhookEvents = make(map[string]*USDTWebhookEvent)
+	}
+	s.usdtWebhookEvents[event.ID] = event
+}
+
+// FindUSDTWebhookByIdempotencyKey looks up a webhook event by its idempotency key.
+func (s *Store) FindUSDTWebhookByIdempotencyKey(key string) *USDTWebhookEvent {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	if s.usdtWebhookEvents == nil {
+		return nil
+	}
+	for _, event := range s.usdtWebhookEvents {
+		if event.IdempotencyKey == key {
+			return event
+		}
+	}
+	return nil
+}
+
+// ListUSDTWebhookEvents returns all USDT webhook events in reverse chronological order.
+func (s *Store) ListUSDTWebhookEvents() []*USDTWebhookEvent {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	events := make([]*USDTWebhookEvent, 0, len(s.usdtWebhookEvents))
+	for _, event := range s.usdtWebhookEvents {
+		events = append(events, event)
+	}
+	sort.Slice(events, func(i, j int) bool {
+		return events[i].ReceivedAt.After(events[j].ReceivedAt)
+	})
+	return events
+}
+
+// ApplyUSDTWebhookPayment credits a project from a confirmed USDT webhook payment.
+func (s *Store) ApplyUSDTWebhookPayment(event *USDTWebhookEvent) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	project, ok := s.projects[event.ProjectID]
+	if !ok {
+		return fmt.Errorf("project %s not found", event.ProjectID)
+	}
+
+	// Update project payment status
+	project.PaymentStatus = "verified"
+	project.PaymentProvider = "usdt-webhook:" + event.Provider
+	project.PaymentReference = event.TxHash
+
+	// Add ledger entries (mirrors CreateProject ledger logic)
+	clientProjectAccount := "client:" + project.ClientUserID + ":project:" + project.ID
+	s.addLedger("usdt_payment_confirmed", "payment:usdt-webhook", clientProjectAccount, project.BudgetCents, event.TxHash)
+
+	return nil
 }
