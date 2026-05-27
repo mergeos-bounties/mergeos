@@ -2673,6 +2673,87 @@ svg {
   text-align: right;
 }
 
+.public-notification-feed {
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+  border-top: 1px solid #edf2f7;
+  padding-top: 18px;
+}
+
+.public-notification-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.public-notification-head span {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: #ecfdf5;
+  color: var(--green);
+}
+
+.public-notification-head strong {
+  min-width: 0;
+  flex: 1;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 920;
+}
+
+.public-notification-head small {
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #475569;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.public-notification-feed article {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr);
+  gap: 10px;
+}
+
+.public-notification-feed article strong,
+.public-notification-feed article small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.public-notification-feed article strong {
+  color: #111827;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.public-notification-feed article p {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  margin: 3px 0 0;
+  color: #475569;
+  font-size: 11px;
+  line-height: 1.45;
+  font-weight: 650;
+}
+
+.public-notification-feed article small {
+  margin-top: 3px;
+  color: #7b8492;
+  font-size: 10px;
+  font-weight: 720;
+}
+
 .public-workflow-grid,
 .public-info-grid {
   display: grid;
@@ -4895,10 +4976,12 @@ svg {
 }
 
 .dashboard-shell {
+  min-width: 0;
   min-height: 100vh;
   display: grid;
   grid-template-columns: 188px minmax(0, 1fr);
   background: #fbfcfb;
+  overflow-x: hidden;
 }
 
 .dashboard-toast {
@@ -4910,6 +4993,7 @@ svg {
   top: 0;
   height: 100vh;
   display: flex;
+  align-self: start;
   min-width: 0;
   flex-direction: column;
   border-right: 1px solid var(--line);
@@ -4942,6 +5026,7 @@ svg {
 }
 
 .dash-side-nav section {
+  min-width: 0;
   display: grid;
   gap: 6px;
 }
@@ -4957,6 +5042,7 @@ svg {
 
 .dash-side-nav button {
   width: 100%;
+  min-width: 0;
   min-height: 38px;
   display: inline-flex;
   align-items: center;
@@ -5034,6 +5120,7 @@ svg {
 
 .dash-workspace {
   min-width: 0;
+  max-width: 100%;
 }
 
 .dash-topbar {
@@ -5109,10 +5196,15 @@ svg {
 }
 
 .dash-top-actions {
+  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 10px;
+}
+
+.dash-top-actions > * {
+  min-width: 0;
 }
 
 .dash-icon-button,
@@ -5133,6 +5225,7 @@ svg {
 
 .dash-icon-button {
   position: relative;
+  flex: 0 0 38px;
   width: 38px;
   padding: 0;
 }
@@ -5155,6 +5248,8 @@ svg {
 }
 
 .dash-profile {
+  min-width: 0;
+  max-width: 148px;
   display: grid;
   grid-template-columns: 32px minmax(0, auto) 14px;
   align-items: center;
@@ -5204,10 +5299,13 @@ svg {
 }
 
 .dash-content {
+  min-width: 0;
+  max-width: 100%;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 286px;
   gap: 16px;
   padding: 18px;
+  overflow-x: clip;
 }
 
 .dash-main,
@@ -5247,9 +5345,13 @@ svg {
 .dash-project-title {
   min-width: 0;
   display: grid;
-  grid-template-columns: 52px minmax(0, auto) auto;
+  grid-template-columns: 52px minmax(0, 1fr) auto;
   align-items: center;
   gap: 12px;
+}
+
+.dash-project-title > div {
+  min-width: 0;
 }
 
 .project-photo {
@@ -5265,6 +5367,7 @@ svg {
   font-size: 26px;
   line-height: 1.1;
   font-weight: 930;
+  overflow-wrap: anywhere;
 }
 
 .dash-project-title p {
@@ -5272,6 +5375,7 @@ svg {
   color: #6b7280;
   font-size: 12px;
   font-weight: 700;
+  overflow-wrap: anywhere;
 }
 
 .dash-project-actions {
@@ -5279,6 +5383,8 @@ svg {
   align-items: center;
   gap: 8px;
   flex: 0 0 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .dash-metrics {
@@ -5451,6 +5557,7 @@ svg {
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 .card-title-row > span:not(.recording-dot):not(.online-dot) {
@@ -5497,11 +5604,15 @@ svg {
   color: #6b7280;
   font-size: 12px;
   font-weight: 760;
+  min-width: 0;
 }
 
 .budget-lines strong {
   color: var(--green);
   font-weight: 920;
+  min-width: 0;
+  text-align: right;
+  overflow-wrap: anywhere;
 }
 
 .budget-card button,
@@ -5614,6 +5725,7 @@ svg {
   color: #6b7280;
   font-size: 10px;
   font-weight: 760;
+  overflow-wrap: anywhere;
 }
 
 .dash-pr-main span {
@@ -5768,6 +5880,10 @@ svg {
   text-align: left;
 }
 
+.dashboard-project-list button > div {
+  min-width: 0;
+}
+
 .dashboard-project-list button.active {
   border-color: rgba(15, 159, 120, 0.34);
   background: #ecfdf5;
@@ -5869,6 +5985,80 @@ svg {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.notification-center-card:focus {
+  outline: none;
+}
+
+.notification-center-card:focus-visible {
+  outline: 2px solid rgba(15, 159, 120, 0.45);
+  outline-offset: 4px;
+}
+
+.notification-center-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.notification-center-list article {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr);
+  gap: 10px;
+}
+
+.notification-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  margin-top: 3px;
+  background: #94a3b8;
+}
+
+.notification-dot.green {
+  background: var(--green);
+}
+
+.notification-dot.blue {
+  background: #2563eb;
+}
+
+.notification-dot.red {
+  background: #ef4444;
+}
+
+.notification-center-list strong,
+.notification-center-list small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notification-center-list strong {
+  color: #111827;
+  font-size: 11px;
+  font-weight: 920;
+}
+
+.notification-center-list p {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  margin: 4px 0 0;
+  color: #374151;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.notification-center-list small {
+  margin-top: 4px;
+  color: #7b8492;
+  font-size: 10px;
+  font-weight: 720;
 }
 
 .chat-input {
@@ -6009,7 +6199,7 @@ svg {
   }
 
   .dash-side-nav {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(150px, 1fr));
     overflow: visible;
   }
 
@@ -6027,6 +6217,11 @@ svg {
 
   .dash-content {
     grid-template-columns: 1fr;
+  }
+
+  .dash-metrics,
+  .dash-overview-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .dash-rail {
@@ -6116,10 +6311,15 @@ svg {
   .dash-topbar {
     grid-template-columns: 1fr;
     align-items: stretch;
+    gap: 10px;
   }
 
   .dash-top-actions {
     justify-content: space-between;
+  }
+
+  .dash-top-actions .primary-button.compact {
+    flex: 1 1 auto;
   }
 
   .dash-profile {
@@ -6249,6 +6449,37 @@ svg {
 
   .console-actions button:first-child {
     flex: 1;
+  }
+
+  .dash-sidebar {
+    padding: 14px var(--page-gutter);
+  }
+
+  .dash-content {
+    padding: 12px var(--page-gutter) 18px;
+  }
+
+  .dash-project-title {
+    grid-template-columns: 44px minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .dash-project-title .project-photo {
+    width: 44px;
+    height: 44px;
+  }
+
+  .dash-project-title h1 {
+    font-size: 22px;
+  }
+
+  .dash-tabs {
+    gap: 20px;
+  }
+
+  .risk-grid,
+  .wallet-action-row {
+    grid-template-columns: 1fr;
   }
 
   .project-head {
@@ -7991,7 +8222,6 @@ svg {
   }
 }
 
-/* === Notification Panel === */
 .notification-panel {
   position: absolute;
   top: calc(100% + 8px);
