@@ -59,10 +59,13 @@
           Back to home
         </button>
 
-        <div class="project-flow-title">
-          <h1>{{ projectWizardStage === 'success' ? 'Payment complete' : 'Start a project' }}</h1>
-          <p>{{ wizardIntroCopy }}</p>
-        </div>
+ <div class="project-flow-title">
+ <h1>{{ projectWizardStage === 'success' ? 'Payment complete' : 'Start a project' }}</h1>
+ <p>{{ wizardIntroCopy }}</p>
+ <span v-if="projectCategoryLabel && projectWizardStage === 'setup' && projectWizardStep > 0" class="category-badge" :class="projectSetupForm.projectCategory">
+ {{ projectCategoryLabel }}
+ </span>
+ </div>
 
         <nav class="project-step-list" aria-label="Project setup steps">
           <button
@@ -81,14 +84,20 @@
           </button>
         </nav>
 
-        <article v-if="projectWizardStage === 'setup' && projectWizardStep === 1" class="wizard-help-card">
-          <Sparkles :size="17" />
-          <strong>Need help?</strong>
-          <p>Our AI assistant can help you structure your project.</p>
-          <button type="button" @click="showToast('AI assistant is preparing your brief...')">
-            Use AI assistant
-          </button>
-        </article>
+ <article v-if="projectWizardStage === 'setup' && projectWizardStep === 0" class="wizard-help-card">
+ <Sparkles :size="17" />
+ <strong>Not sure?</strong>
+ <p>You can always change your choice later. Pick what feels closest.</p>
+ </article>
+
+ <article v-else-if="projectWizardStage === 'setup' && projectWizardStep === 1" class="wizard-help-card">
+ <Sparkles :size="17" />
+ <strong>Need help?</strong>
+ <p>Our AI assistant can help you structure your project.</p>
+ <button type="button" @click="showToast('AI assistant is preparing your brief...')">
+ Use AI assistant
+ </button>
+ </article>
 
         <article v-else-if="projectWizardStage === 'setup' && projectWizardStep === 3" class="wizard-help-card accent">
           <Calculator :size="17" />
@@ -124,22 +133,55 @@
             </button>
           </header>
 
-          <div v-if="projectWizardStep === 1" class="wizard-form-grid">
-            <label class="wizard-field full">
-              <span>Project title <b>*</b></span>
-              <input v-model.trim="projectSetupForm.title" placeholder="Enter a clear project title" />
-            </label>
+ <div v-if="projectWizardStep === 0" class="wizard-form-grid">
+ <section class="wizard-section full">
+ <div class="wizard-section-title">
+ <strong>Choose your project category <b>*</b></strong>
+ <small>This helps us tailor the rest of the form to your needs.</small>
+ </div>
+ <div class="project-category-grid">
+ <button
+ :class="{ selected: projectSetupForm.projectCategory === 'new-project' }"
+ class="project-category-card"
+ type="button"
+ @click="projectSetupForm.projectCategory = 'new-project'; if (projectSetupForm.projectType === 'Repo Issue Fix') projectSetupForm.projectType = ''"
+ >
+ <Sparkles :size="28" />
+ <strong>New project</strong>
+ <p>Start a brand-new project or idea from scratch</p>
+ <CheckCircle2 v-if="projectSetupForm.projectCategory === 'new-project'" class="tile-check" :size="18" />
+ </button>
+ <button
+ :class="{ selected: projectSetupForm.projectCategory === 'bug-fix' }"
+ class="project-category-card"
+ type="button"
+ @click="projectSetupForm.projectCategory = 'bug-fix'; projectSetupForm.projectType = 'Repo Issue Fix'"
+ >
+ <Bug :size="28" />
+ <strong>Fix bug in existing project</strong>
+ <p>Fix an issue in an existing repository or product</p>
+ <CheckCircle2 v-if="projectSetupForm.projectCategory === 'bug-fix'" class="tile-check" :size="18" />
+ </button>
+ </div>
+ </section>
+ </div>
 
-            <label class="wizard-field full">
-              <span>Short description <b>*</b></span>
-              <textarea
-                v-model.trim="projectSetupForm.shortDescription"
-                rows="5"
-                maxlength="1000"
-                placeholder="Describe your project, what you want to build, and the problem you're solving..."
-              />
-              <small>{{ projectSetupForm.shortDescription.length }} / 1000</small>
-            </label>
+ <div v-if="projectWizardStep === 1" class="wizard-form-grid">
+ <label class="wizard-field full">
+ <span>Project title <b>*</b></span>
+ <input v-model.trim="projectSetupForm.title" :placeholder="projectSetupForm.projectCategory === 'bug-fix' ? 'e.g. Fix login redirect on mobile Safari' : 'Enter a clear project title'" />
+ </label>
+
+ <label class="wizard-field full">
+ <span>Short description <b>*</b></span>
+ <textarea
+ v-model.trim="projectSetupForm.shortDescription"
+ rows="5"
+ maxlength="1000"
+ :placeholder="projectSetupForm.projectCategory === 'bug-fix' ? 'Describe the bug, expected behavior, and impact on users...' : 'Describe your project, what you want to build, and the problem you are solving...'"
+ />
+ <small>{{ projectSetupForm.shortDescription.length }} / 1000</small>
+ </label>
 
             <section class="wizard-section full">
               <div class="wizard-section-title">
@@ -2263,10 +2305,11 @@ const publicPagePaths = {
 };
 const publicPageNames = new Set(Object.keys(publicPagePaths));
 const projectWizardStepPaths = {
-  1: '/project/new',
-  2: '/project/new/scope',
-  3: '/project/new/budget',
-  4: '/project/new/review',
+ 0: '/project/new/category',
+ 1: '/project/new',
+ 2: '/project/new/scope',
+ 3: '/project/new/budget',
+ 4: '/project/new/review',
 };
 const projectWizardStagePaths = {
   funding: '/project/new/funding',
@@ -2297,8 +2340,8 @@ function publicPathForPage(page = 'home') {
   return publicPagePaths[normalizePublicPage(page)] || '/';
 }
 
-function normalizeProjectWizardStep(step = 1) {
-  return Math.min(4, Math.max(1, Number(step) || 1));
+function normalizeProjectWizardStep(step = 0) {
+ return Math.min(4, Math.max(0, Number(step) || 0));
 }
 
 function projectWizardRouteFromPath(path = '/') {
@@ -2419,9 +2462,10 @@ const repoImportResult = ref(null);
 let dashboardRefreshTimer = 0;
 
 const projectSetupForm = reactive({
-  title: '',
-  shortDescription: '',
-  projectType: '',
+ title: '',
+ shortDescription: '',
+ projectCategory: '',
+ projectType: '',
   techStack: '',
   repoUrl: '',
   overview: '',
@@ -2452,13 +2496,20 @@ const projectDeliverablePlaceholders = [
 ];
 
 const projectSetupSteps = [
-  {
-    number: 1,
-    label: 'Project details',
-    title: 'Let\'s start with the basics',
-    description: 'Describe your project',
-    helper: 'Tell us about your idea and we will help you build it with the right people and AI.',
-  },
+ {
+ number: 0,
+ label: 'Project category',
+ title: 'What are you looking to do?',
+ description: 'Choose your project type',
+ helper: 'Select whether you want to start a new project or fix a bug in an existing one.',
+ },
+ {
+ number: 1,
+ label: 'Project details',
+ title: 'Let\'s start with the basics',
+ description: 'Describe your project',
+ helper: 'Tell us about your idea and we will help you build it with the right people and AI.',
+ },
   {
     number: 2,
     label: 'Scope & requirements',
@@ -2668,13 +2719,18 @@ const wizardIntroCopy = computed(() => {
 
   return 'Tell us about your project so we can match you with the right talent or AI agents.';
 });
+const projectCategoryLabel = computed(() => {
+ if (projectSetupForm.projectCategory === 'new-project') return 'New project';
+ if (projectSetupForm.projectCategory === 'bug-fix') return 'Bug fix';
+ return '';
+});
 const footerStepNumber = computed(() => (projectWizardStage.value === 'setup' ? projectWizardStep.value : 4));
 const footerProgress = computed(() => {
   if (projectWizardStage.value === 'success') {
     return 100;
   }
 
-  return Math.min(100, footerStepNumber.value * 25);
+  return Math.min(100, footerStepNumber.value * 20);
 });
 const footerProtectionCopy = computed(() => {
   if (projectWizardStage.value === 'success') {
@@ -3538,27 +3594,27 @@ function scrollProjectFlowTop() {
 
 function openProjectWizard(options = {}) {
   publicModeVisible.value = true;
-  projectWizardVisible.value = true;
-  projectWizardStage.value = 'setup';
-  projectWizardStep.value = 1;
-  errorMessage.value = '';
-  updateProjectWizardBrowserPath(Boolean(options.replace));
+ projectWizardVisible.value = true;
+ projectWizardStage.value = 'setup';
+ projectWizardStep.value = 0;
+ errorMessage.value = '';
+ updateProjectWizardBrowserPath(Boolean(options.replace));
   scrollProjectFlowTop();
 }
 
 function restartProjectWizard(options = {}) {
-  publicModeVisible.value = true;
-  projectWizardVisible.value = true;
-  projectWizardStage.value = 'setup';
-  projectWizardStep.value = 1;
-  updateProjectWizardBrowserPath(Boolean(options.replace));
+ publicModeVisible.value = true;
+ projectWizardVisible.value = true;
+ projectWizardStage.value = 'setup';
+ projectWizardStep.value = 0;
+ updateProjectWizardBrowserPath(Boolean(options.replace));
   scrollProjectFlowTop();
 }
 
 function closeProjectWizard(options = {}) {
-  projectWizardVisible.value = false;
-  projectWizardStage.value = 'setup';
-  projectWizardStep.value = 1;
+ projectWizardVisible.value = false;
+ projectWizardStage.value = 'setup';
+ projectWizardStep.value = 0;
   if (options.updatePath !== false) {
     updatePublicBrowserPath(publicPage.value, Boolean(options.replace));
   }
@@ -3632,10 +3688,11 @@ function nextProjectStep() {
 }
 
 function buildPriceEvaluationPayload() {
-  return {
-    title: projectSetupForm.title,
-    description: [projectSetupForm.shortDescription, projectSetupForm.overview].filter(Boolean).join('\n\n'),
-    project_type: projectSetupForm.projectType,
+ return {
+ title: projectSetupForm.title,
+ description: [projectSetupForm.shortDescription, projectSetupForm.overview].filter(Boolean).join('\n\n'),
+ project_category: projectSetupForm.projectCategory,
+ project_type: projectSetupForm.projectType,
     requirements: projectSetupForm.requirements,
     deliverables: visibleDeliverables.value,
     timeline: projectTimelineLabel.value,
