@@ -4374,7 +4374,6 @@ async function restoreSession() {
     clearSession();
   }
 }
-
 async function logout() {
   try {
     await api('/api/auth/logout', { method: 'POST', body: JSON.stringify({}) });
@@ -4382,9 +4381,9 @@ async function logout() {
     // 1. Force stop real-time data streaming listeners to prevent memory leaks
     if (typeof stopDashboardRealtime === 'function') {
       try { stopDashboardRealtime(); } catch (e) { console.error(e); }
-    }    
+    }
     // 2. Clear out local state/session memory tokens
-    clearSession();    
+    clearSession();
     // 3. Clear visible active state memory stores to satisfy clean UI requirements
     if (typeof dashboardData !== 'undefined' && dashboardData.value) dashboardData.value = null;
     if (typeof ledgerData !== 'undefined' && ledgerData.value) ledgerData.value = null;
