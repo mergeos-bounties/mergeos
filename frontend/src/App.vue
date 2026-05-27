@@ -127,7 +127,7 @@
           <div v-if="projectWizardStep === 1" class="wizard-form-grid">
             <label class="wizard-field full">
               <span>Project title <b>*</b></span>
-              <input v-model.trim="projectSetupForm.title" placeholder="Enter a clear project title" />
+              <input v-model.trim="projectSetupForm.title" :placeholder="projectTitlePlaceholder" />
             </label>
 
             <label class="wizard-field full">
@@ -136,7 +136,7 @@
                 v-model.trim="projectSetupForm.shortDescription"
                 rows="5"
                 maxlength="1000"
-                placeholder="Describe your project, what you want to build, and the problem you're solving..."
+                :placeholder="dynamicProjectDescPlaceholder"
               />
               <small>{{ projectSetupForm.shortDescription.length }} / 1000</small>
             </label>
@@ -2234,6 +2234,7 @@ import {
   Filter,
   FileCheck2,
   FolderKanban,
+  FolderPlus,
   GitBranch,
   GitPullRequest,
   Globe2,
@@ -2501,12 +2502,8 @@ const projectSetupSteps = [
 ];
 
 const projectTypeOptions = [
-  { label: 'Web Development', caption: 'Web apps', icon: Globe2 },
-  { label: 'Repo Issue Fix', caption: 'Existing repo', icon: Bug },
-  { label: 'Mobile Development', caption: 'iOS and Android', icon: Compass },
-  { label: 'AI / ML', caption: 'Agents and models', icon: Bot },
-  { label: 'Smart Contract', caption: 'Web3', icon: Link2 },
-  { label: 'Other', caption: 'Custom work', icon: MoreHorizontal },
+  { label: 'New project', caption: 'Build something from scratch', icon: FolderPlus },
+  { label: 'Fix bug in existing project', caption: 'Fix an issue in an existing codebase', icon: Bug },
 ];
 
 const budgetTypeOptions = [
@@ -2594,6 +2591,16 @@ const visibleDeliverables = computed(() => {
   return items;
 });
 const projectTitleLabel = computed(() => projectSetupForm.title.trim() || 'Untitled project');
+const projectTitlePlaceholder = computed(() =>
+  projectSetupForm.projectType === 'Fix bug in existing project'
+    ? 'What bug needs fixing?'
+    : 'Enter your project name',
+);
+const dynamicProjectDescPlaceholder = computed(() =>
+  projectSetupForm.projectType === 'Fix bug in existing project'
+    ? 'Describe the bug and where it occurs...'
+    : 'Describe what you want to build...',
+);
 const projectTypeLabel = computed(() => projectSetupForm.projectType || 'Select a project type');
 const projectDescriptionLabel = computed(() => projectSetupForm.shortDescription.trim() || 'Add a short project description');
 const projectDeliverablesPlaceholder = 'No deliverables added yet';
@@ -3644,7 +3651,7 @@ async function loadRepoIssues() {
     repoImportResult.value = result;
     projectSetupForm.repoUrl = result.repo_url || repoURL;
     if (repoImportedIssues.value.length) {
-      projectSetupForm.projectType = 'Repo Issue Fix';
+      projectSetupForm.projectType = 'Fix bug in existing project';
       projectSetupForm.title = `Fix all issues in ${result.owner}/${result.name}`;
       projectSetupForm.shortDescription = `Fix ${repoImportedIssues.value.length} open GitHub issues in ${result.owner}/${result.name}.`;
       projectSetupForm.overview = repoImportedIssues.value
@@ -3845,6 +3852,7 @@ async function triggerAiEvaluation() {
   try {
     const payload = {
       description: projectSetupForm.overview || projectSetupForm.shortDescription || '',
+      project_type: projectSetupForm.projectType,
       requirements: projectSetupForm.requirements
         ? projectSetupForm.requirements.split('\n').map(r => r.trim()).filter(Boolean)
         : [],
