@@ -8160,10 +8160,6 @@ svg {
     padding: 12px;
   }
   
-  .dash-topbar {
-    grid-template-columns: 1fr auto;
-    gap: 8px;
-  }
   
   .dash-project-grid {
     grid-template-columns: 1fr;
