@@ -8221,3 +8221,176 @@ svg {
     grid-template-columns: 1fr;
   }
 }
+
+/* ===================================================
+   BOUNTY #11: Homepage responsive QA fixes
+   Added responsive breakpoints for consistent homepage
+   rendering across desktop, tablet, and mobile.
+   =================================================== */
+
+/* ---- 1366px and below ---- */
+@media (max-width: 1366px) {
+  .public-home-hero {
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+  }
+  .public-home-copy h1 {
+    font-size: 48px;
+  }
+  .public-talent-strip {
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 1fr);
+  }
+}
+
+/* ---- 1120px and below ---- */
+@media (max-width: 1120px) {
+  .public-home-hero {
+    grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
+  }
+  .public-home-copy h1 {
+    font-size: 42px;
+  }
+  .public-workflow-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* ---- 1024px and below ---- */
+@media (max-width: 1024px) {
+  .public-home-hero {
+    grid-template-columns: 1fr;
+  }
+  .public-home-panel,
+  .public-info-summary {
+    max-width: 500px;
+  }
+  .public-workflow-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .public-home-copy h1 {
+    font-size: 36px;
+  }
+  .public-talent-strip {
+    grid-template-columns: 1fr;
+  }
+  .public-talent-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ---- 768px and below ---- */
+@media (max-width: 768px) {
+  .public-home-page {
+    padding: 22px 0 36px;
+  }
+  .public-home-copy {
+    padding-top: 12px;
+  }
+  .public-home-copy h1 {
+    font-size: 30px;
+  }
+  .public-home-copy p {
+    font-size: 14px;
+  }
+  .marketplace-actions {
+    flex-wrap: wrap;
+  }
+  .marketplace-actions .primary-button.large,
+  .marketplace-actions .secondary-button.large {
+    flex: 1 1 200px;
+    min-height: 44px;
+    font-size: 14px;
+  }
+  .public-home-panel {
+    padding: 18px;
+  }
+  .public-talent-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---- 520px and below (mobile) ---- */
+@media (max-width: 520px) {
+  .public-home-page {
+    padding: 16px 0 30px;
+  }
+  .public-home-copy h1 {
+    font-size: 26px;
+  }
+  .public-home-copy p {
+    font-size: 13px;
+  }
+  .marketplace-actions {
+    flex-direction: column;
+  }
+  .marketplace-actions button {
+    width: 100%;
+  }
+  .public-workflow-grid {
+    grid-template-columns: 1fr;
+  }
+  .public-home-panel {
+    padding: 14px;
+  }
+  .public-stat-grid {
+    gap: 12px;
+  }
+  .public-stat-grid strong {
+    font-size: 20px;
+  }
+  .public-talent-list {
+    grid-template-columns: 1fr;
+  }
+  .public-talent-strip {
+    padding: 20px 0;
+  }
+  .public-talent-strip h2 {
+    font-size: 22px;
+  }
+}
+
+/* ---- 390px and below (small mobile) ---- */
+@media (max-width: 390px) {
+  :root {
+    --page-gutter: 12px;
+  }
+  .public-home-copy h1 {
+    font-size: 22px;
+  }
+  .public-home-copy p {
+    font-size: 12px;
+  }
+  .public-home-panel {
+    padding: 12px;
+  }
+  .public-stat-grid strong {
+    font-size: 18px;
+  }
+  .public-notification-feed article {
+    gap: 8px;
+  }
+  .marketplace-eyebrow {
+    font-size: 10px;
+  }
+}
+
+/* ---- 360px and below ---- */
+@media (max-width: 360px) {
+  .public-home-copy h1 {
+    font-size: 20px;
+  }
+  .public-home-copy p {
+    font-size: 12px;
+  }
+  .public-talent-strip h2 {
+    font-size: 20px;
+  }
+}
+
+/* ---- Fix potential horizontal overflow on all viewports ---- */
+.public-home-page {
+  overflow-x: hidden;
+}
+.public-home-layout {
+  overflow-x: hidden;
+}
