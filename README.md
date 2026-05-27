@@ -22,6 +22,7 @@ This repository is the current MergeOS MVP: Go backend, Vue SSR frontend, projec
 - [CONTRIBUTING.md](CONTRIBUTING.md): contributor setup, PR rules, tests, and bounty workflow.
 - [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md): community behavior expectations and enforcement.
 - [SECURITY.md](SECURITY.md): private vulnerability reporting policy.
+- [SUPPORT.md](SUPPORT.md): support channels for bugs, features, bounties, and security.
 - [LICENSE](LICENSE): MIT license.
 - [Claim Token issue #1](https://github.com/mergeos-bounties/mergeos/issues/1): public bounty claim intake.
 
