@@ -408,7 +408,7 @@ func TestListUSDTWebhookEvents(t *testing.T) {
 	store.SaveUSDTWebhookEvent(&USDTWebhookEvent{
 		ID:         "test-1",
 		Status:     "confirmed",
-		ReceivedAt: now(),
+		ReceivedAt: now,
 	})
 
 	events = store.ListUSDTWebhookEvents()
