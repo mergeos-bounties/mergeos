@@ -14,10 +14,17 @@ type Server struct {
 	store          *Store
 	payments       *PaymentManager
 	geminiReviewer *GeminiReviewService
+	cryptoGateway  *CryptoGatewayManager
 }
 
 func NewServer(cfg Config, store *Store, payments *PaymentManager) *Server {
-	return &Server{cfg: cfg, store: store, payments: payments, geminiReviewer: NewGeminiReviewService(cfg, store)}
+	return &Server{
+		cfg:            cfg,
+		store:          store,
+		payments:       payments,
+		geminiReviewer: NewGeminiReviewService(cfg, store),
+		cryptoGateway:  NewCryptoGatewayManager(cfg),
+	}
 }
 
 func (s *Server) Routes() http.Handler {
@@ -41,6 +48,8 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/wallets/{address}", s.wallet)
 	mux.HandleFunc("POST /api/wallets/link", s.linkWallet)
 	mux.HandleFunc("POST /api/payments/paypal/orders", s.createPayPalOrder)
+	mux.HandleFunc("POST /api/payments/crypto/invoice", s.createCryptoInvoice)
+	mux.HandleFunc("POST /api/payments/crypto/webhook", s.cryptoWebhook)
 	mux.HandleFunc("POST /api/uploads", s.uploadAttachment)
 	mux.HandleFunc("GET /api/uploads/", s.downloadAttachment)
 	mux.HandleFunc("GET /api/admin/summary", s.adminSummary)

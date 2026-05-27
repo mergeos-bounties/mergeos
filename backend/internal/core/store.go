@@ -38,7 +38,24 @@ type Store struct {
 	sslReviews        map[string]*SSLReviewStatus
 	geminiAPIKeys     map[string]*GeminiAPIKey
 	geminiWebhookLogs map[string]*GeminiWebhookLog
+	cryptoInvoices    map[string]*CryptoInvoice
 	ledger            []LedgerEntry
+}
+
+// CryptoInvoice tracks a pending crypto payment invoice.
+type CryptoInvoice struct {
+	ID          string    `json:"id"`
+	InvoiceID   string    `json:"invoice_id"`
+	ProjectID   string    `json:"project_id"`
+	UserID      string    `json:"user_id"`
+	AmountCents int64     `json:"amount_cents"`
+	Currency    string    `json:"currency"`
+	Network     string    `json:"network"`
+	PayAddress  string    `json:"pay_address"`
+	Status      string    `json:"status"`
+	TxHash      string    `json:"tx_hash,omitempty"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
 }
 
 type persistedState struct {
@@ -1801,4 +1818,104 @@ func publicLedgerReference(projectID, taskID string, sequence int) string {
 		return fmt.Sprintf("project:%s;task:%s", projectID, taskID)
 	}
 	return "project:" + projectID
+}
+
+// --- Crypto Invoice Management ---
+
+// CreateCryptoInvoice stores a new pending crypto invoice.
+func (s *Store) CreateCryptoInvoice(userID, projectID string, req CryptoInvoiceRequest, resp *CryptoInvoiceResponse) (*CryptoInvoice, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.nextID++
+	invoice := &CryptoInvoice{
+		ID:          fmt.Sprintf("cinvc_%d", s.nextID),
+		InvoiceID:   resp.InvoiceID,
+		ProjectID:   projectID,
+		UserID:      userID,
+		AmountCents: req.AmountCents,
+		Currency:    req.Currency,
+		Network:     req.Network,
+		PayAddress:  resp.PayAddress,
+		Status:      "pending",
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
+	}
+	s.cryptoInvoices[invoice.InvoiceID] = invoice
+	return invoice, nil
+}
+
+// GetCryptoInvoiceByInvoiceID retrieves a crypto invoice by its provider invoice ID.
+func (s *Store) GetCryptoInvoiceByInvoiceID(invoiceID string) (*CryptoInvoice, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	inv, ok := s.cryptoInvoices[invoiceID]
+	return inv, ok
+}
+
+// ConfirmCryptoPayment marks a crypto invoice as confirmed and mints MRG credit.
+func (s *Store) ConfirmCryptoPayment(invoiceID, txHash string, amountCents int64) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	inv, ok := s.cryptoInvoices[invoiceID]
+	if !ok {
+		return fmt.Errorf("crypto invoice %s not found", invoiceID)
+	}
+	if inv.Status == "confirmed" {
+		return nil // already confirmed (idempotent)
+	}
+
+	inv.Status = "confirmed"
+	inv.TxHash = txHash
+	inv.UpdatedAt = time.Now()
+
+	// Update project funding if project exists
+	if inv.ProjectID != "" {
+		if project, ok := s.projects[inv.ProjectID]; ok {
+			project.PaymentStatus = "confirmed"
+			project.PaymentReference = txHash
+			project.Status = ProjectFunded
+
+			// Mint MRG token credit
+			tokenSymbol := normalizedTokenSymbol(s.cfg.TokenSymbol)
+			mrgAmount := amountCents // 1:1 cents to MRG internal credit
+			s.addLedgerEntry(LedgerEntry{
+				Account:     fmt.Sprintf("user:%s:wallet", inv.UserID),
+				AmountCents: mrgAmount,
+				TokenSymbol: tokenSymbol,
+				Reference:   fmt.Sprintf("crypto:usdt:%s", txHash),
+				ProjectID:   inv.ProjectID,
+				CreatedAt:   time.Now(),
+			})
+			s.addLedgerEntry(LedgerEntry{
+				Account:     fmt.Sprintf("reserve:project:%s", inv.ProjectID),
+				AmountCents: mrgAmount,
+				TokenSymbol: tokenSymbol,
+				Reference:   fmt.Sprintf("crypto:usdt:escrow:%s", txHash),
+				ProjectID:   inv.ProjectID,
+				CreatedAt:   time.Now(),
+			})
+		}
+	}
+
+	return nil
+}
+
+// FailCryptoPayment marks a crypto invoice as failed or expired.
+func (s *Store) FailCryptoPayment(invoiceID, status string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	inv, ok := s.cryptoInvoices[invoiceID]
+	if !ok {
+		return fmt.Errorf("crypto invoice %s not found", invoiceID)
+	}
+	if inv.Status == "confirmed" {
+		return nil // don't downgrade a confirmed payment
+	}
+
+	inv.Status = status
+	inv.UpdatedAt = time.Now()
+	return nil
 }

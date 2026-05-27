@@ -51,6 +51,11 @@ type Config struct {
 	CryptoWeiPerUSDCent    string
 	CryptoMinConfirmations int64
 
+	// Crypto Gateway
+	CryptoGatewayProvider string
+	CryptoWebhookSecret   string
+	CryptoDefaultNetwork  string
+
 	GitHubToken     string
 	GitHubOwner     string
 	GitHubOwnerType string
@@ -150,6 +155,11 @@ func LoadConfig() Config {
 		CryptoTokenDecimals:    int(getenvInt64("CRYPTO_TOKEN_DECIMALS", 6)),
 		CryptoWeiPerUSDCent:    os.Getenv("CRYPTO_WEI_PER_USD_CENT"),
 		CryptoMinConfirmations: getenvInt64("CRYPTO_MIN_CONFIRMATIONS", 1),
+
+		// Crypto Gateway
+		CryptoGatewayProvider: strings.ToLower(os.Getenv("CRYPTO_GATEWAY_PROVIDER")),
+		CryptoWebhookSecret:   os.Getenv("CRYPTO_WEBHOOK_SECRET"),
+		CryptoDefaultNetwork:  strings.ToLower(getenv("CRYPTO_DEFAULT_NETWORK", "erc20")),
 
 		GitHubToken:     firstEnv("GITHUB_TOKEN", "MERGEOS_GITHUB_TOKEN"),
 		GitHubOwner:     getenv("GITHUB_OWNER", defaultGitHubOwner),
