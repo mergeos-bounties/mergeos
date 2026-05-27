@@ -2498,6 +2498,62 @@ const dashboardView = ref('overview');
 const dashboardNotifications = ref([]);
 const dashboardNotificationsLoading = ref(false);
 const dashboardNotificationsError = ref('');
+let wsReconnectTimer = null;
+let wsConn = null;
+
+function connectWebSocket() {
+  if (wsConn && wsConn.readyState <= 1) return;
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const token = readStoredToken();
+  const url = protocol + '//' + window.location.host + '/api/ws' + (token ? '?token=' + encodeURIComponent(token) : '');
+  try {
+    wsConn = new WebSocket(url);
+    wsConn.onmessage = function(event) {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === 'project_created') {
+          void loadMarketplaceData({ silent: true });
+          void loadDashboardData({ silent: true });
+        }
+      } catch (e) {
+        console.warn('WS message parse error:', e);
+      }
+    };
+    wsConn.onclose = function() {
+      wsConn = null;
+      if (!wsReconnectTimer) {
+        wsReconnectTimer = window.setTimeout(function() {
+          wsReconnectTimer = null;
+          connectWebSocket();
+        }, 5000);
+      }
+    };
+    wsConn.onerror = function() {
+      wsConn.close();
+    };
+  } catch (e) {
+    console.warn('WS connection failed:', e);
+    if (!wsReconnectTimer) {
+      wsReconnectTimer = window.setTimeout(function() {
+        wsReconnectTimer = null;
+        connectWebSocket();
+      }, 10000);
+    }
+  }
+}
+
+function disconnectWebSocket() {
+  if (wsReconnectTimer) {
+    window.clearTimeout(wsReconnectTimer);
+    wsReconnectTimer = null;
+  }
+  if (wsConn) {
+    wsConn.onclose = null;
+    wsConn.close();
+    wsConn = null;
+  }
+}
+
 const priceEvaluation = ref(null);
 const priceEvaluationBusy = ref(false);
 const priceEvaluationError = ref('');
@@ -4454,6 +4510,7 @@ function closeAuth() {
   if (authBusy.value) return;
   authVisible.value = false;
   errorMessage.value = '';
+  connectWebSocket();
   if (authReturnToProjectWizard.value) {
     projectWizardVisible.value = true;
     authReturnToProjectWizard.value = false;
@@ -4483,6 +4540,7 @@ function setSession(auth) {
 }
 
 function clearSession() {
+  disconnectWebSocket();
   stopDashboardRealtime();
   token.value = '';
   user.value = null;
@@ -4604,6 +4662,7 @@ async function logout() {
 }
 
 onMounted(async () => {
+  connectWebSocket();
   if (hasWindow) {
     const params = new URLSearchParams(window.location.search);
     const oauthToken = params.get('token');
@@ -4637,6 +4696,7 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
+  disconnectWebSocket();
   if (hasWindow) {
     window.removeEventListener('popstate', syncPublicPageFromBrowserPath);
   }

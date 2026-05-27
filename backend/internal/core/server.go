@@ -14,10 +14,11 @@ type Server struct {
 	store          *Store
 	payments       *PaymentManager
 	geminiReviewer *GeminiReviewService
+	eventHub       *eventHub
 }
 
 func NewServer(cfg Config, store *Store, payments *PaymentManager) *Server {
-	return &Server{cfg: cfg, store: store, payments: payments, geminiReviewer: NewGeminiReviewService(cfg, store)}
+	return &Server{cfg: cfg, store: store, payments: payments, geminiReviewer: NewGeminiReviewService(cfg, store), eventHub: newEventHub()}
 }
 
 func (s *Server) Routes() http.Handler {
@@ -68,6 +69,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/notifications", s.notifications)
 	mux.HandleFunc("POST /api/notifications/read", s.markNotificationRead)
 	mux.HandleFunc("POST /api/notifications/read-all", s.markAllNotificationsRead)
+	mux.HandleFunc("GET /api/ws", s.wsHandler)
 	mux.HandleFunc("GET /api/ledger", s.ledger)
 	return withCORS(mux)
 }
@@ -304,6 +306,20 @@ func (s *Server) markAllNotificationsRead(w http.ResponseWriter, r *http.Request
 
 	s.store.MarkAllNotificationsRead(user.ID)
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+}
+
+func (s *Server) wsHandler(w http.ResponseWriter, r *http.Request) {
+	userID := ""
+	if token := r.URL.Query().Get("token"); token != "" {
+		if user, ok := s.store.UserByToken(token); ok {
+			userID = user.ID
+		}
+	}
+	conn, err := wsUpgrade(w, r)
+	if err != nil {
+		return
+	}
+	go conn.readLoop(s.eventHub, userID)
 }
 
 
@@ -547,6 +563,10 @@ func (s *Server) createProject(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	s.eventHub.broadcastAll(map[string]interface{}{
+		"type":    "project_created",
+		"project": project,
+	})
 	writeJSON(w, http.StatusCreated, project)
 }
 
