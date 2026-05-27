@@ -1,7 +1,6 @@
 package core
 
 import (
-	"bufio"
 	"crypto/sha1"
 	"encoding/base64"
 	"encoding/json"
@@ -30,11 +29,9 @@ func wsUpgrade(w http.ResponseWriter, r *http.Request) (*wsConn, error) {
 	if key == "" {
 		return nil, errors.New("missing key")
 	}
-
 	h := sha1.New()
 	h.Write([]byte(key + wsMagicGUID))
 	accept := base64.StdEncoding.EncodeToString(h.Sum(nil))
-
 	hj, ok := w.(http.Hijacker)
 	if !ok {
 		return nil, errors.New("hijack not supported")
@@ -43,7 +40,6 @@ func wsUpgrade(w http.ResponseWriter, r *http.Request) (*wsConn, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	resp := "HTTP/1.1 101 Switching Protocols\r\n" +
 		"Upgrade: websocket\r\n" +
 		"Connection: Upgrade\r\n" +
@@ -83,9 +79,9 @@ func (c *wsConn) writeText(data []byte) error {
 	return err
 }
 
-func (c *wsConn) readLoop(hub *eventHub, userID string) {
-	defer func() { _ = c.conn.Close() }()
-	hub.add(c, userID)
+func (c *wsConn) readLoop(hub *eventHub) {
+	defer c.conn.Close()
+	hub.add(c)
 	defer hub.remove(c)
 	for {
 		hdr := make([]byte, 2)
@@ -93,7 +89,6 @@ func (c *wsConn) readLoop(hub *eventHub, userID string) {
 			return
 		}
 		op := hdr[0] & 0x0F
-		masked := (hdr[1] & 0x80) != 0
 		length := int64(hdr[1] & 0x7F)
 		if length == 126 {
 			b := make([]byte, 2)
@@ -106,27 +101,30 @@ func (c *wsConn) readLoop(hub *eventHub, userID string) {
 			if _, err := io.ReadFull(c.reader, b); err != nil {
 				return
 			}
-			length = 0
 			for i := range 8 {
 				length = (length << 8) | int64(b[i])
 			}
 		}
+		// skip masked payload bytes
+		masked := (hdr[1] & 0x80) != 0
 		if masked {
-			mask := make([]byte, 4)
-			if _, err := io.ReadFull(c.reader, mask); err != nil {
+			maskKey := make([]byte, 4)
+			if _, err := io.ReadFull(c.reader, maskKey); err != nil {
 				return
 			}
-			_ = mask
-		}
-		if length > 0 {
+			if length > 0 {
+				payload := make([]byte, length)
+				if _, err := io.ReadFull(c.reader, payload); err != nil {
+					return
+				}
+				for i := range payload {
+					payload[i] ^= maskKey[i%4]
+				}
+			}
+		} else if length > 0 {
 			payload := make([]byte, length)
 			if _, err := io.ReadFull(c.reader, payload); err != nil {
 				return
-			}
-			if masked {
-				for i := range payload {
-					payload[i] ^= mask[i%4]
-				}
 			}
 			_ = payload
 		}
@@ -134,30 +132,35 @@ func (c *wsConn) readLoop(hub *eventHub, userID string) {
 			return
 		}
 		if op == 9 {
-			_ = c.writeText([]byte{})
+			c.writeText([]byte{})
 		}
 	}
 }
 
 type eventHub struct {
 	mu      sync.RWMutex
-	clients map[*wsConn]string
+	clients []*wsConn
 }
 
 func newEventHub() *eventHub {
-	return &eventHub{clients: make(map[*wsConn]string)}
+	return &eventHub{}
 }
 
-func (h *eventHub) add(c *wsConn, userID string) {
+func (h *eventHub) add(c *wsConn) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	h.clients[c] = userID
+	h.clients = append(h.clients, c)
 }
 
 func (h *eventHub) remove(c *wsConn) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	delete(h.clients, c)
+	for i, client := range h.clients {
+		if client == c {
+			h.clients = append(h.clients[:i], h.clients[i+1:]...)
+			return
+		}
+	}
 }
 
 func (h *eventHub) broadcastAll(event interface{}) {
@@ -167,21 +170,7 @@ func (h *eventHub) broadcastAll(event interface{}) {
 	}
 	h.mu.RLock()
 	defer h.mu.RUnlock()
-	for c := range h.clients {
-		_ = c.writeText(data)
-	}
-}
-
-func (h *eventHub) broadcastTo(userID string, event interface{}) {
-	data, err := json.Marshal(event)
-	if err != nil {
-		return
-	}
-	h.mu.RLock()
-	defer h.mu.RUnlock()
-	for c, uid := range h.clients {
-		if uid == userID {
-			_ = c.writeText(data)
-		}
+	for _, c := range h.clients {
+		c.writeText(data)
 	}
 }

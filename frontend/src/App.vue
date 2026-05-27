@@ -1046,7 +1046,7 @@
         <div class="dash-top-actions">
           <button class="dash-icon-button" aria-label="Notifications" type="button" @click="openDashboardSection('notifications')">
             <Bell :size="18" />
-            <span v-if="dashboardNotificationBadge">{{ dashboardNotificationBadge }}</span>
+            <span>{{ dashboardNotificationCount }}</span>
           </button>
           <button class="primary-button compact" type="button" @click="openProjectWizard">
             <Plus :size="16" />
@@ -1065,122 +1065,12 @@
 
       <main class="dash-content">
         <section class="dash-main">
-
-          <!-- === Notifications View === -->
-          <template v-if="dashboardView === 'notifications'">
-            <div class="dash-breadcrumb">
-              <Home :size="14" />
-              <span>Dashboard</span>
-              <ChevronDown :size="13" />
-              <strong>Notifications</strong>
-            </div>
-
-            <div v-if="dashboardNotificationBadge" style="margin: 20px 0; display: flex; gap: 8px; align-items: center;">
-              <button class="secondary-button compact" type="button" @click="markAllNotificationsRead()">
-                <CheckCheck :size="14" />
-                Mark all read
-              </button>
-            </div>
-
-            <section v-if="dashboardLoading" class="dash-empty-state" style="margin-top: 30px;">
-              <strong>Loading notifications...</strong>
-              <p>Syncing with the ledger.</p>
-            </section>
-
-            <section v-else-if="!dashboardNotifications.length" class="dash-empty-state" style="margin-top: 30px;">
-              <Bell :size="40" />
-              <strong>No notifications yet</strong>
-              <p>Notifications about project funding, payments, and ledger activity will appear here.</p>
-            </section>
-
-            <section v-else class="dash-card" style="padding: 0; overflow: hidden;">
-              <div class="dash-pr-list" style="border: 0;">
-                <article
-                  v-for="notification in dashboardNotifications"
-                  :key="notification.id"
-                  class="dash-pr-row"
-                  style="padding: 12px 16px; border-bottom: 1px solid var(--line); cursor: pointer;"
-                  :style="{ background: notification.read_at ? 'transparent' : '#f0fdf6' }"
-                  @click="markNotificationRead(notification)"
-                >
-                  <span style="font-size: 20px; width: 36px; text-align: center;">{{ notification.icon }}</span>
-                  <div class="dash-pr-main">
-                    <strong style="font-size: 13px;">{{ notification.title }}</strong>
-                    <p v-if="notification.body" style="margin: 2px 0 0; color: #6b7280; font-size: 12px;">{{ notification.body }}</p>
-                    <small style="color: #9aa3af; font-size: 10px;">{{ formatDashboardDate(notification.created_at) }}</small>
-                  </div>
-                  <span v-if="!notification.read_at" style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #10b981; flex: 0 0 auto;"></span>
-                </article>
-              </div>
-            </section>
-          </template>
-
-          <!-- === Payment History View === -->
-          <template v-if="dashboardView === 'payments'">
-            <div class="dash-breadcrumb">
-              <Home :size="14" />
-              <span>Dashboard</span>
-              <ChevronDown :size="13" />
-              <strong>Payment History</strong>
-            </div>
-
-            <section v-if="dashboardLoading" class="dash-empty-state" style="margin-top: 30px;">
-              <strong>Loading payments...</strong>
-              <p>Fetching your payment history from the ledger.</p>
-            </section>
-
-            <section v-else-if="!dashboardLedgerEntries.length" class="dash-empty-state" style="margin-top: 30px;">
-              <CreditCard :size="40" />
-              <strong>No payments yet</strong>
-              <p>Fund a project to see payment history here. All payments are secured by escrow and recorded on the ledger.</p>
-            </section>
-
-            <template v-else>
-              <section class="dash-payment-summary" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin: 20px 0;">
-                <article class="dash-card" style="padding: 16px;">
-                  <span style="color: #6b7280; font-size: 11px; font-weight: 800; text-transform: uppercase;">Total Spent</span>
-                  <strong style="font-size: 22px; display: block; margin-top: 6px;">{{ formatMRGFromCents(dashboardTotalPaymentCents) }}</strong>
-                  <small style="color: #9aa3af; font-size: 11px;">{{ dashboardLedgerEntries.length }} transactions</small>
-                </article>
-                <article class="dash-card" style="padding: 16px;">
-                  <span style="color: #6b7280; font-size: 11px; font-weight: 800; text-transform: uppercase;">This Month</span>
-                  <strong style="font-size: 22px; display: block; margin-top: 6px;">{{ formatMRGFromCents(dashboardMonthPaymentCents) }}</strong>
-                  <small style="color: #9aa3af; font-size: 11px;">Current billing period</small>
-                </article>
-                <article class="dash-card" style="padding: 16px;">
-                  <span style="color: #6b7280; font-size: 11px; font-weight: 800; text-transform: uppercase;">Projects</span>
-                  <strong style="font-size: 22px; display: block; margin-top: 6px;">{{ dashboardPaymentProjects }}</strong>
-                  <small style="color: #9aa3af; font-size: 11px;">Funded projects</small>
-                </article>
-              </section>
-
-              <section class="dash-card" style="padding: 0; overflow: hidden;">
-                <div class="dash-pr-list" style="border: 0;">
-                  <article v-for="entry in dashboardPaymentRows" :key="entry.key" class="dash-pr-row" style="padding: 14px 16px; border-bottom: 1px solid var(--line);">
-                    <span class="contributor-avatar" style="width: 36px; height: 36px; font-size: 10px;">{{ entry.initials }}</span>
-                    <div class="dash-pr-main">
-                      <strong style="font-size: 13px;">{{ entry.title }}</strong>
-                      <small style="display: block; color: #6b7280;">{{ entry.ref }}</small>
-                      <span style="font-size: 11px; color: #9aa3af;">{{ entry.date }}</span>
-                    </div>
-                    <div class="dash-pr-stat">
-                      <strong :style="{ color: entry.type === 'payment' ? '#10b981' : '#f59e0b' }">{{ entry.value }}</strong>
-                      <small>{{ entry.type === 'payment' ? 'Payment' : 'Funding' }}</small>
-                    </div>
-                  </article>
-                </div>
-              </section>
-            </template>
-          </template>
-
-          <!-- === Default Overview View === -->
-          <template v-if="dashboardView === 'overview'">
-            <div class="dash-breadcrumb">
-              <Home :size="14" />
-              <span>My Projects</span>
-              <ChevronDown :size="13" />
-              <strong>{{ dashboardProjectView.title }}</strong>
-            </div>
+          <div class="dash-breadcrumb">
+            <Home :size="14" />
+            <span>My Projects</span>
+            <ChevronDown :size="13" />
+            <strong>{{ dashboardProjectView.title }}</strong>
+          </div>
 
           <section v-if="dashboardError" class="dash-empty-state">
             <strong>Could not load your projects</strong>
@@ -1337,12 +1227,9 @@
               {{ dashboardTaskRows.length }} real tasks loaded
             </div>
           </section>
-
-        <!-- End overview template -->
-        </template>
         </section>
 
-        <aside v-if="dashboardView === 'overview'" class="dash-rail">
+        <aside class="dash-rail">
           <section class="dash-card rail-card wallet-summary-card">
             <div class="card-title-row">
               <h2>MRG Wallet</h2>
@@ -2540,66 +2427,6 @@ const dashboardLoading = ref(false);
 const dashboardError = ref('');
 const dashboardSearch = ref('');
 const selectedDashboardProjectID = ref('');
-const dashboardView = ref('overview');
-const dashboardNotifications = ref([]);
-const dashboardNotificationsLoading = ref(false);
-const dashboardNotificationsError = ref('');
-let wsReconnectTimer = null;
-let wsConn = null;
-
-function connectWebSocket() {
-  if (wsConn && wsConn.readyState <= 1) return;
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const token = readStoredToken();
-  const url = protocol + '//' + window.location.host + '/api/ws' + (token ? '?token=' + encodeURIComponent(token) : '');
-  try {
-    wsConn = new WebSocket(url);
-    wsConn.onmessage = function(event) {
-      try {
-        const data = JSON.parse(event.data);
-        if (data.type === 'project_created') {
-          void loadMarketplaceData({ silent: true });
-          void loadDashboardData({ silent: true });
-        }
-      } catch (e) {
-        console.warn('WS message parse error:', e);
-      }
-    };
-    wsConn.onclose = function() {
-      wsConn = null;
-      if (!wsReconnectTimer) {
-        wsReconnectTimer = window.setTimeout(function() {
-          wsReconnectTimer = null;
-          connectWebSocket();
-        }, 5000);
-      }
-    };
-    wsConn.onerror = function() {
-      wsConn.close();
-    };
-  } catch (e) {
-    console.warn('WS connection failed:', e);
-    if (!wsReconnectTimer) {
-      wsReconnectTimer = window.setTimeout(function() {
-        wsReconnectTimer = null;
-        connectWebSocket();
-      }, 10000);
-    }
-  }
-}
-
-function disconnectWebSocket() {
-  if (wsReconnectTimer) {
-    window.clearTimeout(wsReconnectTimer);
-    wsReconnectTimer = null;
-  }
-  if (wsConn) {
-    wsConn.onclose = null;
-    wsConn.close();
-    wsConn = null;
-  }
-}
-
 const dashboardNotificationCenter = ref(null);
 const priceEvaluation = ref(null);
 const priceEvaluationBusy = ref(false);
@@ -3436,36 +3263,6 @@ const dashboardTaskRows = computed(() => dashboardSelectedTasks.value.map(mapDas
 const dashboardActivityRows = computed(() =>
   dashboardProjectLedger.value.slice().reverse().slice(0, 6).map(mapDashboardActivity),
 );
-
-// --- Payment History Computed ---
-const dashboardTotalPaymentCents = computed(() =>
-  dashboardLedgerEntries.value.reduce((total, entry) => total + (Number(entry.amount_cents) || 0), 0),
-);
-const dashboardMonthPaymentCents = computed(() => {
-  const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-  return dashboardLedgerEntries.value
-    .filter((entry) => entry.created_at >= monthStart)
-    .reduce((total, entry) => total + (Number(entry.amount_cents) || 0), 0);
-});
-const dashboardPaymentProjects = computed(() => {
-  const projectIDs = new Set(dashboardLedgerEntries.value.map((e) => e.project_id).filter(Boolean));
-  return projectIDs.size;
-});
-const dashboardPaymentRows = computed(() =>
-  dashboardLedgerEntries.value.slice().reverse().slice(0, 50).map((entry) => {
-    const project = dashboardProjects.value.find((p) => p.id === entry.project_id);
-    return {
-      key: entry.id || entry.key || Math.random().toString(36),
-      title: entry.title || entry.description || project?.title || 'Ledger entry',
-      ref: entry.ref || entry.project_id || '-',
-      date: formatDashboardDate(entry.created_at),
-      value: formatMRGFromCents(entry.amount_cents),
-      type: (entry.type === 'funding' || entry.type === 'task_payment') ? 'payment' : 'funding',
-      initials: initialsFor((entry.title || entry.description || project?.title || 'LG').slice(0, 2)),
-    };
-  }),
-);
 const dashboardLedgerRows = computed(() =>
   dashboardProjectLedger.value.slice().reverse().slice(0, 5).map((entry) => {
     const meta = ledgerMetaFor(entry.type);
@@ -3477,10 +3274,17 @@ const dashboardLedgerRows = computed(() =>
     };
   }),
 );
-const dashboardNotificationBadge = computed(() => {
-  const unread = dashboardNotifications.value.filter(function(n) { return !n.read_at; });
-  return unread.length ? Math.min(9, unread.length) : 0;
-});
+const dashboardNotificationRows = computed(() =>
+  dashboardNotifications.value
+    .slice()
+    .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+    .slice(0, 8)
+    .map(mapDashboardNotification),
+);
+const dashboardNotificationCount = computed(() => Math.min(9, dashboardNotificationRows.value.length));
+
+const marketplaceBenefits = [
+  {
     icon: LockKeyhole,
     title: 'Secure Payments',
     body: 'Your payments are protected with escrow until the work is completed.',
@@ -3764,14 +3568,6 @@ function handleDashboardNav(item) {
   }
   if (item.label === 'Dashboard') {
     openDashboard();
-    return;
-  }
-  if (item.label === 'Payments') {
-    dashboardView.value = 'payments';
-    return;
-  }
-  if (item.label === 'Notifications') {
-    dashboardView.value = 'notifications';
     return;
   }
   showToast(item.toast || `${item.label} opened.`);
@@ -4587,16 +4383,6 @@ async function loadDashboardData(options = {}) {
     dashboardProjects.value = Array.isArray(projects) ? projects : [];
     dashboardTasks.value = Array.isArray(tasks) ? tasks : [];
     dashboardLedgerEntries.value = Array.isArray(entries) ? entries : [];
-    dashboardNotifications.value = dashboardLedgerEntries.value.slice().reverse().slice(0, 20).map((entry) => ({
-      id: entry.id || entry.key || Math.random().toString(36),
-      title: entry.title || entry.description || 'Ledger update',
-      body: entry.ref ? `Reference: ${entry.ref}` : '',
-      project_id: entry.project_id,
-      created_at: entry.created_at,
-      type: entry.type === 'funding' ? 'funding' : entry.type === 'task_payment' ? 'payment' : 'update',
-      read_at: entry.read_at || null,
-      icon: entry.type === 'funding' ? '💰' : entry.type === 'task_payment' ? '💳' : '📋',
-    }));
     const requestedProjectID = options.selectProjectID || selectedDashboardProjectID.value;
     const selectedExists = dashboardProjects.value.some((project) => project.id === requestedProjectID);
     selectedDashboardProjectID.value = selectedExists
@@ -4652,7 +4438,6 @@ function closeAuth() {
   if (authBusy.value) return;
   authVisible.value = false;
   errorMessage.value = '';
-  connectWebSocket();
   if (authReturnToProjectWizard.value) {
     projectWizardVisible.value = true;
     authReturnToProjectWizard.value = false;
@@ -4695,7 +4480,6 @@ function clearSession() {
   dashboardNotifications.value = [];
   dashboardNotificationsError.value = '';
   dashboardError.value = '';
-  dashboardView.value = 'overview';
   selectedDashboardProjectID.value = '';
   removeStoredToken();
 }
@@ -4733,54 +4517,6 @@ async function submitAuth() {
     authBusy.value = false;
   }
 }
-
-
-async function loadDashboardNotifications() {
-  if (!token.value || !user.value) {
-    dashboardNotifications.value = [];
-    return;
-  }
-  dashboardNotificationsLoading.value = true;
-  dashboardNotificationsError.value = '';
-  try {
-    const rows = await api('/api/notifications');
-    dashboardNotifications.value = rows.map(function(entry) {
-      entry.read_at = entry.read_at || null;
-      return entry;
-    });
-  } catch (error) {
-    dashboardNotificationsError.value = error.message || 'Could not load notifications';
-  } finally {
-    dashboardNotificationsLoading.value = false;
-  }
-}
-
-async function markNotificationRead(notification) {
-  if (!notification || notification.read_at) return;
-  try {
-    const updated = await api('/api/notifications/read', {
-      method: 'POST',
-      body: JSON.stringify({ notification_id: notification.id }),
-    });
-    Object.assign(notification, {
-      read_at: updated.read_at,
-    });
-  } catch (error) {
-    console.warn('Failed to mark notification read:', error);
-  }
-}
-
-async function markAllNotificationsRead() {
-  try {
-    await api('/api/notifications/read-all', { method: 'POST' });
-    dashboardNotifications.value.forEach(function(n) {
-      n.read_at = n.read_at || new Date().toISOString();
-    });
-  } catch (error) {
-    console.warn('Failed to mark all notifications read:', error);
-  }
-}
-
 
 async function restoreSession() {
   if (!token.value) return;

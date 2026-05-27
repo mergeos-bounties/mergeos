@@ -317,17 +317,11 @@ func (s *Server) markAllNotificationsRead(w http.ResponseWriter, r *http.Request
 }
 
 func (s *Server) wsHandler(w http.ResponseWriter, r *http.Request) {
-	userID := ""
-	if token := r.URL.Query().Get("token"); token != "" {
-		if user, ok := s.store.UserByToken(token); ok {
-			userID = user.ID
-		}
-	}
 	conn, err := wsUpgrade(w, r)
 	if err != nil {
 		return
 	}
-	go conn.readLoop(s.eventHub, userID)
+	go conn.readLoop(s.eventHub)
 }
 
 
