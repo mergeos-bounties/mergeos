@@ -1157,6 +1157,107 @@ button:disabled {
   gap: 16px;
 }
 
+.settings-workspace {
+  display: grid;
+  gap: 16px;
+}
+
+.settings-panel {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(320px, 520px);
+  gap: 16px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  padding: 16px;
+  box-shadow: 0 12px 34px rgba(15, 23, 42, 0.06);
+}
+
+.settings-panel-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.settings-panel-head h2 {
+  margin: 4px 0 0;
+  font-size: 20px;
+  line-height: 1.1;
+}
+
+.settings-panel-head p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.settings-form {
+  display: grid;
+  grid-template-columns: minmax(160px, 0.8fr) minmax(220px, 1.2fr) auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.settings-form label {
+  display: grid;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.settings-form input,
+.settings-form select {
+  width: 100%;
+  height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--text);
+  outline: none;
+  padding: 0 12px;
+}
+
+.settings-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.settings-summary-grid article {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: 14px;
+}
+
+.settings-summary-grid span,
+.settings-summary-grid strong {
+  display: block;
+}
+
+.settings-summary-grid span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.settings-summary-grid strong {
+  margin-top: 6px;
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 940;
+  overflow-wrap: anywhere;
+}
+
+.settings-panel .form-error,
+.settings-panel .form-success {
+  grid-column: 1 / -1;
+}
+
+.logs-workspace,
 .gemini-workspace {
   display: grid;
   gap: 16px;
@@ -1164,7 +1265,7 @@ button:disabled {
 
 .gemini-control-panel {
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) minmax(320px, 520px) minmax(260px, 420px);
+  grid-template-columns: minmax(180px, 0.75fr) minmax(480px, 1.5fr) minmax(260px, 420px);
   gap: 16px;
   align-items: center;
   border: 1px solid var(--line);
@@ -1188,7 +1289,7 @@ button:disabled {
 
 .gemini-key-form {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(130px, 0.85fr) minmax(170px, 1fr) minmax(220px, 1.35fr) auto;
   gap: 10px;
   align-items: end;
 }
@@ -1201,7 +1302,8 @@ button:disabled {
   font-weight: 800;
 }
 
-.gemini-key-form input {
+.gemini-key-form input,
+.gemini-key-form select {
   width: 100%;
   height: 42px;
   border: 1px solid var(--line);
@@ -1245,6 +1347,16 @@ button:disabled {
 .gemini-control-panel .form-error,
 .gemini-control-panel .form-success {
   grid-column: 1 / -1;
+}
+
+.gemini-test-result.ok {
+  color: var(--green-dark);
+  font-weight: 820;
+}
+
+.gemini-test-result.bad {
+  color: var(--danger);
+  font-weight: 820;
 }
 
 .ssl-review-panel {
@@ -1401,6 +1513,7 @@ button:disabled {
   .login-screen,
   .builder-workspace,
   .users-workspace,
+  .settings-panel,
   .gemini-control-panel,
   .ssl-review-panel,
   .task-review-item {
@@ -1449,6 +1562,8 @@ button:disabled {
   .metric-grid,
   .data-grid,
   .split-band,
+  .settings-form,
+  .settings-summary-grid,
   .gemini-key-form,
   .gemini-status-grid,
   .ssl-status-grid {
