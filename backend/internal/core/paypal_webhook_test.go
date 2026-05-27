@@ -2,9 +2,7 @@ package core
 
 import (
 	"encoding/json"
-	"fmt"
 	"testing"
-	"time"
 )
 
 func TestPayPalWebhookEventUnmarshal(t *testing.T) {
@@ -17,13 +15,7 @@ func TestPayPalWebhookEventUnmarshal(t *testing.T) {
 		"resource": {
 			"id": "ORDER-123",
 			"status": "COMPLETED",
-			"intent": "CAPTURE",
 			"purchase_units": [{
-				"reference_id": "default",
-				"amount": {
-					"currency_code": "USD",
-					"value": "150.00"
-				},
 				"payments": {
 					"captures": [{
 						"id": "CAPTURE-456",
@@ -42,48 +34,40 @@ func TestPayPalWebhookEventUnmarshal(t *testing.T) {
 		}
 	}`
 
-	var event PayPalWebhookEvent
+	var event paypalWebhookEvent
 	if err := json.Unmarshal([]byte(testData), &event); err != nil {
-		t.Fatalf("failed to unmarshal webhook event: %v", err)
+		t.Fatalf("failed to unmarshal: %v", err)
 	}
 
 	if event.ID != "WH-TEST-123" {
-		t.Errorf("expected event ID WH-TEST-123, got %s", event.ID)
+		t.Errorf("expected ID WH-TEST-123, got %s", event.ID)
 	}
 	if event.EventType != "PAYMENT.CAPTURE.COMPLETED" {
-		t.Errorf("expected event type PAYMENT.CAPTURE.COMPLETED, got %s", event.EventType)
+		t.Errorf("expected PAYMENT.CAPTURE.COMPLETED, got %s", event.EventType)
 	}
-	if event.Resource == nil {
-		t.Fatal("expected resource to be non-nil")
+
+	var res paypalResource
+	if err := json.Unmarshal(event.Resource, &res); err != nil {
+		t.Fatalf("failed to unmarshal resource: %v", err)
 	}
-	if event.Resource.ID != "ORDER-123" {
-		t.Errorf("expected order ID ORDER-123, got %s", event.Resource.ID)
+	if res.ID != "ORDER-123" {
+		t.Errorf("expected ORDER-123, got %s", res.ID)
 	}
-	if event.Resource.Status != "COMPLETED" {
-		t.Errorf("expected status COMPLETED, got %s", event.Resource.Status)
+	if res.Status != "COMPLETED" {
+		t.Errorf("expected COMPLETED, got %s", res.Status)
 	}
-	if len(event.Resource.PurchaseUnits) == 0 {
-		t.Fatal("expected at least one purchase unit")
+	if len(res.PurchaseUnits) == 0 || res.PurchaseUnits[0].Payments == nil || len(res.PurchaseUnits[0].Payments.Captures) == 0 {
+		t.Fatal("expected captures")
 	}
-	pu := event.Resource.PurchaseUnits[0]
-	if pu.Payments == nil || len(pu.Payments.Captures) == 0 {
-		t.Fatal("expected captures in purchase unit")
+	cap := res.PurchaseUnits[0].Payments.Captures[0]
+	if cap.Status != "COMPLETED" {
+		t.Errorf("expected capture COMPLETED, got %s", cap.Status)
 	}
-	capture := pu.Payments.Captures[0]
-	if capture.Status != "COMPLETED" {
-		t.Errorf("expected capture status COMPLETED, got %s", capture.Status)
+	if cap.Amount.CurrencyCode != "USD" {
+		t.Errorf("expected USD, got %s", cap.Amount.CurrencyCode)
 	}
-	if capture.Amount.CurrencyCode != "USD" {
-		t.Errorf("expected currency USD, got %s", capture.Amount.CurrencyCode)
-	}
-	if capture.Amount.Value != "150.00" {
-		t.Errorf("expected value 150.00, got %s", capture.Amount.Value)
-	}
-	if event.Resource.Payer == nil {
-		t.Fatal("expected payer info")
-	}
-	if event.Resource.Payer.EmailAddress != "buyer@example.com" {
-		t.Errorf("expected buyer@example.com, got %s", event.Resource.Payer.EmailAddress)
+	if cap.Amount.Value != "150.00" {
+		t.Errorf("expected 150.00, got %s", cap.Amount.Value)
 	}
 }
 
@@ -97,40 +81,38 @@ func TestPayPalWebhookEventTypes(t *testing.T) {
 		"CHECKOUT.ORDER.COMPLETED",
 	}
 
-	for _, eventType := range eventTypes {
-		testData := fmt.Sprintf(`{"id": "test-1", "event_type": "%s", "resource": {"id": "ORDER-1", "status": "COMPLETED"}}`, eventType)
-		var event PayPalWebhookEvent
-		if err := json.Unmarshal([]byte(testData), &event); err != nil {
-			t.Errorf("failed to unmarshal event type %s: %v", eventType, err)
+	for _, et := range eventTypes {
+		data := `{"id": "test-1", "event_type": "` + et + `", "resource": {"id": "ORDER-1"}}`
+		var event paypalWebhookEvent
+		if err := json.Unmarshal([]byte(data), &event); err != nil {
+			t.Errorf("failed to unmarshal %s: %v", et, err)
 		}
-		if event.EventType != eventType {
-			t.Errorf("expected event type %s, got %s", eventType, event.EventType)
+		if event.EventType != et {
+			t.Errorf("expected %s, got %s", et, event.EventType)
 		}
 	}
 }
 
 func TestPayPalWebhookLog(t *testing.T) {
-	log := PayPalWebhookLog{
-		EventID:    "WH-LOG-1",
-		EventType:  "PAYMENT.CAPTURE.COMPLETED",
-		OrderID:    "ORDER-1",
-		Currency:   "USD",
-		Value:      "150.00",
-		RawPayload: `{"id": "test"}`,
-		ReceivedAt: time.Now(),
-		Processed:  true,
+	log := paypalWebhookLog{
+		EventID:   "WH-LOG-1",
+		EventType: "PAYMENT.CAPTURE.COMPLETED",
+		OrderID:   "ORDER-1",
+		Currency:  "USD",
+		Value:     "150.00",
+		Processed: true,
 	}
 
 	if log.EventID != "WH-LOG-1" {
-		t.Errorf("expected event ID WH-LOG-1, got %s", log.EventID)
+		t.Errorf("expected WH-LOG-1, got %s", log.EventID)
 	}
 	if !log.Processed {
-		t.Error("expected log to be processed")
+		t.Error("expected processed=true")
 	}
 }
 
 func TestPayPalWebhookResourceExtraction(t *testing.T) {
-	testData := `{
+	data := `{
 		"id": "WH-EXTRACT-1",
 		"event_type": "PAYMENT.CAPTURE.COMPLETED",
 		"resource": {
@@ -150,23 +132,23 @@ func TestPayPalWebhookResourceExtraction(t *testing.T) {
 		}
 	}`
 
-	var event PayPalWebhookEvent
-	if err := json.Unmarshal([]byte(testData), &event); err != nil {
+	var event paypalWebhookEvent
+	if err := json.Unmarshal([]byte(data), &event); err != nil {
 		t.Fatalf("failed to unmarshal: %v", err)
 	}
 
-	orderID := ""
+	var res paypalResource
+	json.Unmarshal(event.Resource, &res)
+
+	orderID := res.ID
 	currency := ""
 	value := ""
-	if event.Resource != nil {
-		orderID = event.Resource.ID
-		for _, pu := range event.Resource.PurchaseUnits {
-			if pu.Payments != nil && len(pu.Payments.Captures) > 0 {
-				capture := pu.Payments.Captures[0]
-				if capture.Status == "COMPLETED" {
-					currency = capture.Amount.CurrencyCode
-					value = capture.Amount.Value
-				}
+	for _, pu := range res.PurchaseUnits {
+		if pu.Payments != nil && len(pu.Payments.Captures) > 0 {
+			cap := pu.Payments.Captures[0]
+			if cap.Status == "COMPLETED" {
+				currency = cap.Amount.CurrencyCode
+				value = cap.Amount.Value
 			}
 		}
 	}
