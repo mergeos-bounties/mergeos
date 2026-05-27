@@ -6261,7 +6261,19 @@ svg {
     min-width: auto;
   }
 
+  /*
+   * Bounty #13 fix: previously every .secondary-button inside .nav-actions was
+   * hidden at <=760px. That removed the only entry point to the login modal
+   * ("Log in") and the logout button on mobile, leaving signed-in users unable
+   * to log out and guests unable to open the auth modal from the navbar.
+   * Keep buttons visible but compact them so they fit on narrow viewports.
+   */
   .nav-actions .secondary-button {
+    padding: 0 12px;
+    font-size: 12px;
+  }
+
+  .nav-actions .user-pill {
     display: none;
   }
 
@@ -6322,7 +6334,17 @@ svg {
     flex: 1 1 auto;
   }
 
+  /*
+   * Bounty #13 fix: the dashboard profile / logout button was display:none on
+   * mobile, leaving signed-in users unable to log out from the dashboard top
+   * bar. Shrink it instead of hiding it.
+   */
   .dash-profile {
+    padding: 0 10px;
+    font-size: 12px;
+  }
+
+  .dash-profile small {
     display: none;
   }
 
@@ -6402,6 +6424,33 @@ svg {
 }
 
 @media (max-width: 520px) {
+  /* Bounty #13: tighten auth modal padding/sizing on very small viewports
+     so the modal does not clip its close button or controls. */
+  .modal-backdrop {
+    padding: 10px;
+  }
+
+  .auth-modal {
+    max-height: calc(100vh - 20px);
+    border-radius: 12px;
+  }
+
+  .auth-modal-main {
+    padding: 26px 16px 20px;
+    gap: 22px;
+  }
+
+  .auth-copy h2 {
+    font-size: 24px;
+  }
+
+  .auth-close-button {
+    top: 10px;
+    right: 10px;
+    width: 36px;
+    height: 36px;
+  }
+
   .primary-button.compact {
     padding: 0 12px;
   }
