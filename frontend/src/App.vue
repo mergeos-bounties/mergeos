@@ -4494,7 +4494,6 @@ async function logout() {
     }
   }
 }
-) });
   } finally {
     clearSession();
     showToast('Logged out.');
