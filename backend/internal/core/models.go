@@ -93,6 +93,7 @@ type Notification struct {
 	Body      string    `json:"body"`
 	Status    string    `json:"status"`
 	CreatedAt time.Time `json:"created_at"`
+	ReadAt    *time.Time `json:"read_at,omitempty"`
 }
 
 type Attachment struct {
@@ -376,6 +377,34 @@ type RuntimeConfigResponse struct {
 	SSLReviewDomains  []string `json:"ssl_review_domains,omitempty"`
 }
 
+type AdminSettings struct {
+	LLMProvider       string    `json:"llm_provider"`
+	LLMModel          string    `json:"llm_model"`
+	GeminiReviewModel string    `json:"gemini_review_model"`
+	UpdatedAt         time.Time `json:"updated_at"`
+}
+
+type LLMProviderOption struct {
+	ID     string   `json:"id"`
+	Label  string   `json:"label"`
+	Models []string `json:"models"`
+}
+
+type AdminSettingsResponse struct {
+	LLMProvider              string              `json:"llm_provider"`
+	LLMModel                 string              `json:"llm_model"`
+	LLMProviderOptions       []LLMProviderOption `json:"llm_provider_options"`
+	GeminiReviewModel        string              `json:"gemini_review_model"`
+	GeminiReviewModelOptions []string            `json:"gemini_review_model_options"`
+	UpdatedAt                time.Time           `json:"updated_at"`
+}
+
+type UpdateAdminSettingsRequest struct {
+	LLMProvider       string `json:"llm_provider"`
+	LLMModel          string `json:"llm_model"`
+	GeminiReviewModel string `json:"gemini_review_model"`
+}
+
 type CreatePayPalOrderRequest struct {
 	AmountCents int64  `json:"amount_cents"`
 	Description string `json:"description"`
@@ -530,6 +559,8 @@ type SSLReviewStatus struct {
 
 type GeminiAPIKey struct {
 	ID              string     `json:"id"`
+	Provider        string     `json:"provider"`
+	Model           string     `json:"model,omitempty"`
 	KeyValue        string     `json:"key_value"`
 	KeyHint         string     `json:"key_hint"`
 	Status          string     `json:"status"`

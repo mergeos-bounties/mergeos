@@ -1076,7 +1076,7 @@
             </div>
 
             <div v-if="dashboardNotificationBadge" style="margin: 20px 0; display: flex; gap: 8px; align-items: center;">
-              <button class="secondary-button compact" type="button" @click="dashboardNotifications.forEach(n => n.read_at = n.read_at || new Date().toISOString())">
+              <button class="secondary-button compact" type="button" @click="markAllNotificationsRead()">
                 <CheckCheck :size="14" />
                 Mark all read
               </button>
@@ -1101,7 +1101,7 @@
                   class="dash-pr-row"
                   style="padding: 12px 16px; border-bottom: 1px solid var(--line); cursor: pointer;"
                   :style="{ background: notification.read_at ? 'transparent' : '#f0fdf6' }"
-                  @click="notification.read_at = notification.read_at || new Date().toISOString()"
+                  @click="markNotificationRead(notification)"
                 >
                   <span style="font-size: 20px; width: 36px; text-align: center;">{{ notification.icon }}</span>
                   <div class="dash-pr-main">
@@ -1174,7 +1174,7 @@
           </template>
 
           <!-- === Default Overview View === -->
-          <template v-if="dashboardView === 'overview' || dashboardView === 'notifications'">
+          <template v-if="dashboardView === 'overview'">
             <div class="dash-breadcrumb">
               <Home :size="14" />
               <span>My Projects</span>
@@ -2495,6 +2495,9 @@ const dashboardError = ref('');
 const dashboardSearch = ref('');
 const selectedDashboardProjectID = ref('');
 const dashboardView = ref('overview');
+const dashboardNotifications = ref([]);
+const dashboardNotificationsLoading = ref(false);
+const dashboardNotificationsError = ref('');
 const priceEvaluation = ref(null);
 const priceEvaluationBusy = ref(false);
 const priceEvaluationError = ref('');
@@ -3338,6 +3341,10 @@ const dashboardLedgerRows = computed(() =>
   }),
 );
 const dashboardNotificationCount = computed(() => Math.min(9, dashboardActivityRows.value.length));
+const dashboardNotificationBadge = computed(() => {
+  const unread = dashboardNotifications.value.filter(function(n) { return !n.read_at; });
+  return unread.length ? Math.min(9, unread.length) : 0;
+});
 
 const marketplaceBenefits = [
   {
@@ -4485,6 +4492,7 @@ function clearSession() {
   dashboardTasks.value = [];
   dashboardLedgerEntries.value = [];
   dashboardError.value = '';
+  dashboardView.value = 'overview';
   selectedDashboardProjectID.value = '';
   removeStoredToken();
 }
@@ -4523,11 +4531,60 @@ async function submitAuth() {
   }
 }
 
+
+async function loadDashboardNotifications() {
+  if (!token.value || !user.value) {
+    dashboardNotifications.value = [];
+    return;
+  }
+  dashboardNotificationsLoading.value = true;
+  dashboardNotificationsError.value = '';
+  try {
+    const rows = await api('/api/notifications');
+    dashboardNotifications.value = rows.map(function(entry) {
+      entry.read_at = entry.read_at || null;
+      return entry;
+    });
+  } catch (error) {
+    dashboardNotificationsError.value = error.message || 'Could not load notifications';
+  } finally {
+    dashboardNotificationsLoading.value = false;
+  }
+}
+
+async function markNotificationRead(notification) {
+  if (!notification || notification.read_at) return;
+  try {
+    const updated = await api('/api/notifications/read', {
+      method: 'POST',
+      body: JSON.stringify({ notification_id: notification.id }),
+    });
+    Object.assign(notification, {
+      read_at: updated.read_at,
+    });
+  } catch (error) {
+    console.warn('Failed to mark notification read:', error);
+  }
+}
+
+async function markAllNotificationsRead() {
+  try {
+    await api('/api/notifications/read-all', { method: 'POST' });
+    dashboardNotifications.value.forEach(function(n) {
+      n.read_at = n.read_at || new Date().toISOString();
+    });
+  } catch (error) {
+    console.warn('Failed to mark all notifications read:', error);
+  }
+}
+
+
 async function restoreSession() {
   if (!token.value) return;
   try {
     user.value = await api('/api/auth/me');
     await loadDashboardData({ silent: true });
+    await loadDashboardNotifications();
     startDashboardRealtime();
     if (publicPage.value === 'ledger') {
       void loadLedgerData({ silent: true });
