@@ -286,6 +286,7 @@ import {
   formatLedgerDate,
   githubProfileURL,
   ledgerTypeMeta,
+  normalizeLedgerAccount,
   normalizeExplorerPath,
   parseExplorerRoute,
   paymentModeLabel,
@@ -353,8 +354,8 @@ const selectedEntry = computed(() => {
 const selectedAddress = computed(() => {
   if (route.value.name !== 'address') return null;
   const target = String(route.value.value || '').toLowerCase();
-  const walletTarget = target.startsWith('0x') ? `wallet:${target}` : target;
-  return accounts.value.find((row) => row.account.toLowerCase() === walletTarget);
+  const accountTarget = normalizeLedgerAccount(target).toLowerCase();
+  return accounts.value.find((row) => normalizeLedgerAccount(row.account).toLowerCase() === accountTarget);
 });
 const addressEntries = computed(() => {
   if (!selectedAddress.value) return [];
@@ -899,10 +900,12 @@ const BlockDetail = defineComponent({
 });
 
 function detailHeader(title, primary, badge, tone, emit) {
+  const showFullPrimary = tone === 'address';
+  const primaryLabel = showFullPrimary ? primary : shortHash(primary, 18, 12);
   return h('div', { class: 'detail-head' }, [
     h('div', [
       h('p', title),
-      h('h2', shortHash(primary, 18, 12)),
+      h('h2', { class: showFullPrimary ? 'full-address' : '', title: primary }, primaryLabel),
     ]),
     h('div', { class: 'detail-head-actions' }, [
       h('span', { class: ['type-badge', tone] }, badge),

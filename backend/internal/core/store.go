@@ -19,6 +19,85 @@ import (
 
 var slugClean = regexp.MustCompile(`[^a-z0-9-]+`)
 
+const defaultGeminiReviewModel = "gemini-2.5-flash"
+const defaultLLMProvider = "gemini"
+
+type llmProviderDefinition struct {
+	ID     string
+	Label  string
+	Models []string
+}
+
+var llmProviderDefinitions = []llmProviderDefinition{
+	{
+		ID:    "gemini",
+		Label: "Google Gemini",
+		Models: []string{
+			"gemini-2.5-flash",
+			"gemini-2.5-pro",
+			"gemini-2.5-flash-lite",
+			"gemini-2.0-flash",
+			"gemini-2.0-flash-lite",
+		},
+	},
+	{
+		ID:    "openai",
+		Label: "OpenAI",
+		Models: []string{
+			"gpt-4.1",
+			"gpt-4.1-mini",
+			"gpt-4o",
+			"gpt-4o-mini",
+			"o3-mini",
+		},
+	},
+	{
+		ID:    "anthropic",
+		Label: "Anthropic Claude",
+		Models: []string{
+			"claude-3-5-sonnet-latest",
+			"claude-3-5-haiku-latest",
+			"claude-3-opus-latest",
+		},
+	},
+	{
+		ID:    "groq",
+		Label: "Groq",
+		Models: []string{
+			"llama-3.3-70b-versatile",
+			"llama-3.1-8b-instant",
+			"mixtral-8x7b-32768",
+		},
+	},
+	{
+		ID:    "openrouter",
+		Label: "OpenRouter",
+		Models: []string{
+			"openai/gpt-4o-mini",
+			"anthropic/claude-3.5-sonnet",
+			"google/gemini-2.0-flash-001",
+			"meta-llama/llama-3.1-70b-instruct",
+		},
+	},
+	{
+		ID:    "deepseek",
+		Label: "DeepSeek",
+		Models: []string{
+			"deepseek-chat",
+			"deepseek-reasoner",
+		},
+	},
+	{
+		ID:    "mistral",
+		Label: "Mistral AI",
+		Models: []string{
+			"mistral-large-latest",
+			"mistral-small-latest",
+			"codestral-latest",
+		},
+	},
+}
+
 type Store struct {
 	mu       sync.RWMutex
 	cfg      Config
@@ -38,6 +117,7 @@ type Store struct {
 	sslReviews        map[string]*SSLReviewStatus
 	geminiAPIKeys     map[string]*GeminiAPIKey
 	geminiWebhookLogs map[string]*GeminiWebhookLog
+	adminSettings     AdminSettings
 	ledger            []LedgerEntry
 }
 
@@ -53,6 +133,7 @@ type persistedState struct {
 	SSLReviews        []*SSLReviewStatus  `json:"ssl_reviews"`
 	GeminiAPIKeys     []*GeminiAPIKey     `json:"gemini_api_keys"`
 	GeminiWebhookLogs []*GeminiWebhookLog `json:"gemini_webhook_logs"`
+	AdminSettings     *AdminSettings      `json:"admin_settings,omitempty"`
 	Ledger            []LedgerEntry       `json:"ledger"`
 }
 
@@ -79,6 +160,7 @@ func NewStore(cfg Config, payments *PaymentManager, repos RepoFactory, emailer *
 		sslReviews:        map[string]*SSLReviewStatus{},
 		geminiAPIKeys:     map[string]*GeminiAPIKey{},
 		geminiWebhookLogs: map[string]*GeminiWebhookLog{},
+		adminSettings:     defaultAdminSettings(cfg),
 		ledger:            []LedgerEntry{},
 	}
 	if strings.TrimSpace(cfg.DatabaseURL) != "" {
@@ -108,6 +190,64 @@ func (s *Store) Close() error {
 		return nil
 	}
 	return s.storage.Close()
+}
+
+func (s *Store) AdminSettings() AdminSettingsResponse {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return adminSettingsResponse(s.adminSettings)
+}
+
+func (s *Store) UpdateAdminSettings(req UpdateAdminSettingsRequest) (AdminSettingsResponse, error) {
+	provider := strings.TrimSpace(req.LLMProvider)
+	modelValue := strings.TrimSpace(req.LLMModel)
+	if provider == "" && modelValue == "" && strings.TrimSpace(req.GeminiReviewModel) != "" {
+		provider = "gemini"
+		modelValue = req.GeminiReviewModel
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if provider == "" {
+		provider = s.adminSettings.LLMProvider
+	}
+	provider = normalizedLLMProviderOrDefault(provider)
+	if modelValue == "" {
+		if provider == s.adminSettings.LLMProvider {
+			modelValue = s.adminSettings.LLMModel
+		} else {
+			modelValue = normalizedLLMModelOrDefault(provider, "")
+		}
+	}
+	model, err := normalizeLLMModel(provider, modelValue)
+	if err != nil {
+		return AdminSettingsResponse{}, err
+	}
+
+	s.adminSettings.LLMProvider = provider
+	s.adminSettings.LLMModel = model
+	if provider == "gemini" {
+		s.adminSettings.GeminiReviewModel = model
+	}
+	s.adminSettings.UpdatedAt = time.Now().UTC()
+	if err := s.saveLocked(); err != nil {
+		return AdminSettingsResponse{}, err
+	}
+	return adminSettingsResponse(s.adminSettings), nil
+}
+
+func (s *Store) GeminiReviewModel() string {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return normalizedGeminiReviewModelOrDefault(s.adminSettings.GeminiReviewModel)
+}
+
+func (s *Store) LLMReviewProviderModel() (string, string) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	provider := normalizedLLMProviderOrDefault(s.adminSettings.LLMProvider)
+	model := normalizedLLMModelOrDefault(provider, s.adminSettings.LLMModel)
+	return provider, model
 }
 
 func (s *Store) Register(req RegisterRequest) (*AuthResponse, error) {
@@ -566,7 +706,7 @@ func (s *Store) CreateProject(ctx context.Context, userID string, req CreateProj
 		if task.IssueURL != "" {
 			reference = task.IssueURL
 		}
-		s.addLedger("task_reserve", "reserve:project:"+projectID, "reserve:task:"+task.ID, task.RewardCents, reference)
+		s.addLedger("task_reserve", "reserve:project:"+projectID, taskReserveAccount(), task.RewardCents, reference)
 	}
 	subject := "MergeOS project funded: " + project.Title
 	body := fmt.Sprintf("Hi %s,\n\nYour project %q is funded. MergeOS created bounty repo %s and split it into %d payable tasks.\n\nBudget: %s %s\nWork pool: %s %s\nAttachments: %d\n\nWe will notify you as tasks are accepted.", project.ClientName, project.Title, project.BountyRepoName, len(project.Tasks), formatTokenAmount(project.BudgetCents), tokenSymbol, formatTokenAmount(project.WorkPoolCents), tokenSymbol, len(project.Attachments))
@@ -1083,7 +1223,7 @@ func (s *Store) AcceptTaskWithReview(taskID string, req AcceptTaskRequest, rewar
 		return nil, errors.New("agent type must be empty for human work")
 	}
 
-	workerID := strings.TrimSpace(req.WorkerID)
+	workerID := normalizeWorkerID(req.WorkerID)
 	payoutCents := task.RewardCents
 	if rewardCents > 0 {
 		payoutCents = rewardCents
@@ -1091,7 +1231,7 @@ func (s *Store) AcceptTaskWithReview(taskID string, req AcceptTaskRequest, rewar
 	}
 	task.BountyType = strings.TrimSpace(bountyType)
 	now := time.Now().UTC()
-	entry := s.addLedger("task_payment", "reserve:task:"+task.ID, s.payoutAccountForWorkerLocked(workerID), payoutCents, "task:"+task.ID)
+	entry := s.addLedger("task_payment", taskReserveAccount(), s.payoutAccountForWorkerLocked(workerID), payoutCents, "task:"+task.ID)
 	task.Status = TaskAccepted
 	task.WorkerKind = req.WorkerKind
 	task.WorkerID = workerID
@@ -1347,11 +1487,62 @@ func (s *Store) addLedger(entryType, from, to string, amountCents int64, referen
 		PreviousHash: previous,
 		CreatedAt:    time.Now().UTC(),
 	}
-	payload := fmt.Sprintf("%d|%s|%s|%s|%d|%s|%s|%s", entry.Sequence, entry.Type, entry.FromAccount, entry.ToAccount, entry.AmountCents, entry.Reference, entry.PreviousHash, entry.CreatedAt.Format(time.RFC3339Nano))
-	sum := sha256.Sum256([]byte(payload))
-	entry.EntryHash = hex.EncodeToString(sum[:])
+	entry.EntryHash = ledgerEntryHash(entry)
 	s.ledger = append(s.ledger, entry)
 	return entry
+}
+
+func normalizeLedgerAccounts(entries []LedgerEntry) ([]LedgerEntry, bool) {
+	normalized := make([]LedgerEntry, len(entries))
+	changed := false
+	for index, entry := range entries {
+		if account, ok := normalizeLedgerAccount(entry.FromAccount); ok {
+			entry.FromAccount = account
+			changed = true
+		}
+		if account, ok := normalizeLedgerAccount(entry.ToAccount); ok {
+			entry.ToAccount = account
+			changed = true
+		}
+		normalized[index] = entry
+	}
+	if !changed {
+		return normalized, false
+	}
+
+	previous := strings.Repeat("0", 64)
+	for index := range normalized {
+		normalized[index].PreviousHash = previous
+		normalized[index].EntryHash = ledgerEntryHash(normalized[index])
+		previous = normalized[index].EntryHash
+	}
+	return normalized, true
+}
+
+func normalizeLedgerAccount(account string) (string, bool) {
+	trimmed := strings.TrimSpace(account)
+	lower := strings.ToLower(trimmed)
+	if strings.HasPrefix(lower, "wallet:") {
+		normalized := walletAccount(trimmed)
+		if !validWalletAddress(normalized) || normalized == trimmed {
+			return "", false
+		}
+		return normalized, true
+	}
+	if strings.HasPrefix(lower, "reserve:task:") {
+		return taskReserveAccount(), true
+	}
+	return "", false
+}
+
+func ledgerEntryHash(entry LedgerEntry) string {
+	payload := fmt.Sprintf("%d|%s|%s|%s|%d|%s|%s|%s", entry.Sequence, entry.Type, entry.FromAccount, entry.ToAccount, entry.AmountCents, entry.Reference, entry.PreviousHash, entry.CreatedAt.Format(time.RFC3339Nano))
+	sum := sha256.Sum256([]byte(payload))
+	return hex.EncodeToString(sum[:])
+}
+
+func taskReserveAccount() string {
+	return "reserve:task"
 }
 
 func (s *Store) load() error {
@@ -1363,7 +1554,9 @@ func (s *Store) load() error {
 			return err
 		}
 		if found {
-			s.applyState(state)
+			if s.applyState(state) {
+				return s.saveLocked()
+			}
 			return nil
 		}
 		legacy, legacyFound, err := loadJSONState(s.cfg.StatePath)
@@ -1383,7 +1576,9 @@ func (s *Store) load() error {
 	if !found {
 		return nil
 	}
-	s.applyState(state)
+	if s.applyState(state) {
+		return s.saveLocked()
+	}
 	return nil
 }
 
@@ -1405,11 +1600,29 @@ func loadJSONState(path string) (persistedState, bool, error) {
 	return state, true, nil
 }
 
-func (s *Store) applyState(state persistedState) {
+func (s *Store) applyState(state persistedState) bool {
+	migrated := false
 	if state.NextID > 0 {
 		s.nextID = state.NextID
 	}
-	s.ledger = state.Ledger
+	s.adminSettings = defaultAdminSettings(s.cfg)
+	if state.AdminSettings != nil {
+		s.adminSettings = *state.AdminSettings
+		s.adminSettings.LLMProvider = normalizedLLMProviderOrDefault(s.adminSettings.LLMProvider)
+		if strings.TrimSpace(s.adminSettings.LLMModel) == "" && strings.TrimSpace(s.adminSettings.GeminiReviewModel) != "" {
+			s.adminSettings.LLMModel = s.adminSettings.GeminiReviewModel
+		}
+		s.adminSettings.LLMModel = normalizedLLMModelOrDefault(s.adminSettings.LLMProvider, s.adminSettings.LLMModel)
+		if s.adminSettings.LLMProvider == "gemini" {
+			s.adminSettings.GeminiReviewModel = s.adminSettings.LLMModel
+		} else {
+			s.adminSettings.GeminiReviewModel = normalizedGeminiReviewModelOrDefault(s.adminSettings.GeminiReviewModel)
+		}
+		if s.adminSettings.UpdatedAt.IsZero() {
+			s.adminSettings.UpdatedAt = time.Now().UTC()
+		}
+	}
+	s.ledger, migrated = normalizeLedgerAccounts(state.Ledger)
 	s.projects = map[string]*Project{}
 	s.tasks = map[string]*Task{}
 	s.users = map[string]*User{}
@@ -1424,11 +1637,28 @@ func (s *Store) applyState(state persistedState) {
 		if project == nil || project.ID == "" {
 			continue
 		}
+		for _, task := range project.Tasks {
+			if task == nil {
+				continue
+			}
+			workerID := normalizeWorkerID(task.WorkerID)
+			if workerID != task.WorkerID {
+				task.WorkerID = workerID
+				migrated = true
+			}
+		}
 		s.projects[project.ID] = project
 	}
 	for _, task := range state.Tasks {
 		if task == nil || task.ID == "" {
 			continue
+		}
+		workerID := normalizeWorkerID(task.WorkerID)
+		if workerID != task.WorkerID {
+			taskCopy := *task
+			taskCopy.WorkerID = workerID
+			task = &taskCopy
+			migrated = true
 		}
 		s.tasks[task.ID] = task
 	}
@@ -1490,6 +1720,8 @@ func (s *Store) applyState(state persistedState) {
 		if keyCopy.ID == "" {
 			keyCopy.ID = geminiAPIKeyID(keyCopy.KeyValue)
 		}
+		keyCopy.Provider = normalizedLLMProviderOrDefault(keyCopy.Provider)
+		keyCopy.Model = normalizedLLMModelOrDefault(keyCopy.Provider, keyCopy.Model)
 		if keyCopy.KeyHint == "" {
 			keyCopy.KeyHint = geminiAPIKeyHint(keyCopy.KeyValue)
 		}
@@ -1507,6 +1739,7 @@ func (s *Store) applyState(state persistedState) {
 		s.geminiWebhookLogs[logCopy.ID] = &logCopy
 	}
 	s.trimGeminiWebhookLogsLocked()
+	return migrated
 }
 
 func (s *Store) saveLocked() error {
@@ -1532,6 +1765,7 @@ func (s *Store) snapshotLocked() persistedState {
 		SSLReviews:        make([]*SSLReviewStatus, 0, len(s.sslReviews)),
 		GeminiAPIKeys:     make([]*GeminiAPIKey, 0, len(s.geminiAPIKeys)),
 		GeminiWebhookLogs: make([]*GeminiWebhookLog, 0, len(s.geminiWebhookLogs)),
+		AdminSettings:     cloneAdminSettings(s.adminSettings),
 		Ledger:            s.ledger,
 	}
 	for _, project := range s.projects {
@@ -1599,6 +1833,159 @@ func saveJSONState(path string, state persistedState) error {
 		return err
 	}
 	return os.Rename(tmp, path)
+}
+
+func defaultAdminSettings(cfg Config) AdminSettings {
+	model := normalizedGeminiReviewModelOrDefault(cfg.GeminiReviewModel)
+	return AdminSettings{
+		LLMProvider:       defaultLLMProvider,
+		LLMModel:          model,
+		GeminiReviewModel: model,
+		UpdatedAt:         time.Now().UTC(),
+	}
+}
+
+func adminSettingsResponse(settings AdminSettings) AdminSettingsResponse {
+	provider := normalizedLLMProviderOrDefault(settings.LLMProvider)
+	model := normalizedLLMModelOrDefault(provider, settings.LLMModel)
+	return AdminSettingsResponse{
+		LLMProvider:              provider,
+		LLMModel:                 model,
+		LLMProviderOptions:       llmProviderOptions(),
+		GeminiReviewModel:        normalizedGeminiReviewModelOrDefault(settings.GeminiReviewModel),
+		GeminiReviewModelOptions: append([]string(nil), llmModelsForProvider("gemini")...),
+		UpdatedAt:                settings.UpdatedAt,
+	}
+}
+
+func cloneAdminSettings(settings AdminSettings) *AdminSettings {
+	copy := settings
+	copy.LLMProvider = normalizedLLMProviderOrDefault(copy.LLMProvider)
+	copy.LLMModel = normalizedLLMModelOrDefault(copy.LLMProvider, copy.LLMModel)
+	copy.GeminiReviewModel = normalizedGeminiReviewModelOrDefault(copy.GeminiReviewModel)
+	if copy.GeminiReviewModel == defaultGeminiReviewModel && copy.LLMProvider == "gemini" {
+		copy.GeminiReviewModel = copy.LLMModel
+	}
+	if copy.UpdatedAt.IsZero() {
+		copy.UpdatedAt = time.Now().UTC()
+	}
+	return &copy
+}
+
+func normalizeGeminiReviewModel(value string) (string, error) {
+	return normalizeLLMModel("gemini", value)
+}
+
+func normalizeLLMProvider(value string) (string, error) {
+	provider := strings.ToLower(strings.TrimSpace(value))
+	if provider == "" {
+		return "", errors.New("LLM provider is required")
+	}
+	for _, option := range llmProviderDefinitions {
+		if provider == option.ID {
+			return provider, nil
+		}
+	}
+	return "", errors.New("unsupported LLM provider")
+}
+
+func normalizedLLMProviderOrDefault(value string) string {
+	provider, err := normalizeLLMProvider(value)
+	if err == nil {
+		return provider
+	}
+	return defaultLLMProvider
+}
+
+func normalizeLLMModel(provider, value string) (string, error) {
+	provider = normalizedLLMProviderOrDefault(provider)
+	model := strings.Trim(strings.TrimSpace(value), "/")
+	if provider == "gemini" {
+		model = strings.TrimPrefix(model, "models/")
+	}
+	model = strings.TrimSpace(model)
+	if model == "" {
+		return "", errors.New("LLM model is required")
+	}
+	for _, allowed := range llmModelsForProvider(provider) {
+		if model == allowed {
+			return model, nil
+		}
+	}
+	if !validLLMModelName(model) {
+		return "", errors.New("LLM model contains unsupported characters")
+	}
+	return model, nil
+}
+
+func normalizedLLMModelOrDefault(provider, value string) string {
+	model, err := normalizeLLMModel(provider, value)
+	if err == nil {
+		return model
+	}
+	models := llmModelsForProvider(provider)
+	if len(models) > 0 {
+		return models[0]
+	}
+	return defaultGeminiReviewModel
+}
+
+func normalizedGeminiReviewModelOrDefault(value string) string {
+	model, err := normalizeGeminiReviewModel(value)
+	if err == nil {
+		return model
+	}
+	return defaultGeminiReviewModel
+}
+
+func validGeminiReviewModelName(value string) bool {
+	return validLLMModelName(value)
+}
+
+func validLLMModelName(value string) bool {
+	if len(value) < 3 || len(value) > 96 {
+		return false
+	}
+	for _, char := range value {
+		if char >= 'a' && char <= 'z' {
+			continue
+		}
+		if char >= 'A' && char <= 'Z' {
+			continue
+		}
+		if char >= '0' && char <= '9' {
+			continue
+		}
+		switch char {
+		case '.', '_', '-', '/', ':':
+			continue
+		default:
+			return false
+		}
+	}
+	return true
+}
+
+func llmModelsForProvider(provider string) []string {
+	provider = normalizedLLMProviderOrDefault(provider)
+	for _, option := range llmProviderDefinitions {
+		if option.ID == provider {
+			return append([]string(nil), option.Models...)
+		}
+	}
+	return []string{defaultGeminiReviewModel}
+}
+
+func llmProviderOptions() []LLMProviderOption {
+	options := make([]LLMProviderOption, 0, len(llmProviderDefinitions))
+	for _, option := range llmProviderDefinitions {
+		options = append(options, LLMProviderOption{
+			ID:     option.ID,
+			Label:  option.Label,
+			Models: append([]string(nil), option.Models...),
+		})
+	}
+	return options
 }
 
 func slug(value string) string {
@@ -1762,6 +2149,8 @@ func publicLedgerAccount(account, projectID, taskID string) string {
 		return ""
 	}
 	switch {
+	case validWalletAddress(account):
+		return walletAccount(account)
 	case strings.HasPrefix(account, "payment:"):
 		return account
 	case strings.HasPrefix(account, "issuer:"):
@@ -1776,10 +2165,9 @@ func publicLedgerAccount(account, projectID, taskID string) string {
 		return githubWorkerAccount(account)
 	case strings.HasPrefix(account, "worker:"):
 		return "worker:contributor"
+	case account == taskReserveAccount():
+		return taskReserveAccount()
 	case strings.Contains(account, "reserve:task:"):
-		if taskID != "" {
-			return "reserve:task:" + taskID
-		}
 		return "reserve:task"
 	case strings.Contains(account, "reserve:project:"):
 		if projectID != "" {
@@ -1801,4 +2189,20 @@ func publicLedgerReference(projectID, taskID string, sequence int) string {
 		return fmt.Sprintf("project:%s;task:%s", projectID, taskID)
 	}
 	return "project:" + projectID
+}
+
+func (s *Store) IsPaymentReferenceUsed(reference string) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	ref := strings.TrimSpace(strings.ToLower(reference))
+	if ref == "" {
+		return false
+	}
+	for _, project := range s.projects {
+		if strings.ToLower(project.PaymentReference) == ref {
+			return true
+		}
+	}
+	return false
 }
