@@ -559,15 +559,13 @@
             <strong>{{ number(settingsModelOptions.length) }}</strong>
           </article>
         </section>
-      </section>
 
-      <section v-else-if="activeView === 'gemini'" class="gemini-workspace">
         <section class="gemini-control-panel">
           <div class="gemini-panel-head">
             <span class="metric-icon purple"><KeyRound :size="19" /></span>
             <div>
               <span class="eyebrow">GEMINI</span>
-              <h2>Reviewer keys</h2>
+              <h2>API keys</h2>
             </div>
           </div>
 
@@ -602,7 +600,7 @@
         </section>
 
         <section class="table-panel">
-          <TableHeader title="Gemini keys" :count="geminiKeys.length" />
+          <TableHeader title="Gemini API keys" :count="geminiKeys.length" />
           <DataTable :columns="['Key', 'Status', 'Requests', 'Success', 'Quota', 'Last used', 'Actions']">
             <tr v-for="row in geminiKeys" :key="row.id">
               <td><strong>{{ row.key_hint }}</strong><small>{{ row.id }}</small></td>
@@ -624,12 +622,14 @@
             </tr>
           </DataTable>
         </section>
+      </section>
 
+      <section v-else-if="activeView === 'logs'" class="logs-workspace">
         <section class="table-panel">
           <header class="table-header">
             <div>
               <span>Events</span>
-              <h2>Webhook logs</h2>
+              <h2>Log</h2>
             </div>
             <button class="compact-action" :disabled="loading" type="button" @click="loadGeminiAdminData">
               <RefreshCw :size="14" />
@@ -774,7 +774,7 @@ const navItems = [
   { id: 'users', label: 'Users', title: 'User management', kicker: 'USERS', icon: UsersRound },
   { id: 'ssl', label: 'SSL', title: 'SSL monitoring', kicker: 'SECURITY', icon: ShieldCheck },
   { id: 'setting', label: 'Setting', title: 'Settings', kicker: 'SYSTEM', icon: Settings2 },
-  { id: 'gemini', label: 'Gemini', title: 'Gemini reviewer', kicker: 'AUTOMATION', icon: KeyRound },
+  { id: 'logs', label: 'Log', title: 'Log', kicker: 'AUTOMATION', icon: KeyRound },
 ];
 
 const routeByView = {
@@ -786,12 +786,13 @@ const routeByView = {
   users: '/users',
   ssl: '/ssl',
   setting: '/setting',
-  gemini: '/gemini',
+  logs: '/logs',
 };
 const viewByRoute = Object.entries(routeByView).reduce((routes, [view, route]) => {
   routes[route] = view;
   return routes;
 }, {});
+viewByRoute['/gemini'] = 'logs';
 
 const bountyOptions = [
   { id: 'future-small', label: 'Future small', reward_mrg: 25 },
@@ -824,7 +825,6 @@ const sslAttentionCount = computed(() => sslRows.value.length - sslOkCount.value
 const tokenSymbol = computed(() => summary.value.token_symbol || 'MRG');
 const geminiActiveCount = computed(() => geminiKeys.value.filter((row) => row.status === 'active').length);
 const geminiAttentionCount = computed(() => geminiKeys.value.filter((row) => ['quota_limited', 'error', 'disabled'].includes(row.status)).length);
-
 const settingsModelOptions = computed(() => {
   const options = Array.isArray(adminSettings.value.gemini_review_model_options)
     ? [...adminSettings.value.gemini_review_model_options]
@@ -1152,7 +1152,6 @@ async function reviewSSLNow() {
     sslReviewBusy.value = false;
   }
 }
-
 
 function syncSettingsForm() {
   settingsForm.gemini_review_model = adminSettings.value.gemini_review_model || 'gemini-2.5-flash';

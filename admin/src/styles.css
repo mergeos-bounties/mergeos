@@ -1157,7 +1157,6 @@ button:disabled {
   gap: 16px;
 }
 
-
 .settings-workspace {
   display: grid;
   gap: 16px;
@@ -1257,6 +1256,7 @@ button:disabled {
   grid-column: 1 / -1;
 }
 
+.logs-workspace,
 .gemini-workspace {
   display: grid;
   gap: 16px;
