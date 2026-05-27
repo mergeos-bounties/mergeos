@@ -8221,3 +8221,40 @@ svg {
     grid-template-columns: 1fr;
   }
 }
+
+/* === Auth Modal Touch Optimization (Bounty #13) === */
+@media (hover: none) and (pointer: coarse) {
+  .auth-modal .social-login-btn,
+  .auth-modal .primary-button,
+  .auth-modal .secondary-button {
+    min-height: 48px !important;
+    padding-top: 12px !important;
+    padding-bottom: 12px !important;
+  }
+  .auth-modal .input-shell input {
+    min-height: 48px;
+    font-size: 16px !important;
+  }
+  .auth-modal button[aria-label="Close"],
+  .auth-close-btn {
+    width: 48px !important;
+    height: 48px !important;
+    min-width: 48px !important;
+    min-height: 48px !important;
+  }
+}
+@media (max-width: 520px) {
+  .auth-modal .modal-body {
+    padding: 20px 16px !important;
+  }
+  .auth-modal .social-login-btn {
+    width: 100%;
+    margin: 4px 0;
+  }
+  .auth-modal .divider {
+    margin: 12px 0 !important;
+  }
+  .auth-modal input {
+    font-size: 16px !important;
+  }
+}
