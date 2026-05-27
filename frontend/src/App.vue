@@ -3378,6 +3378,7 @@ async function startGitHubLogin() {
   if (!hasWindow) return;
   errorMessage.value = '';
   const cfg = await loadRuntimeConfig();
+    connectProjectWS();
   if (!cfg.github_oauth_ready || !cfg.github_oauth_client_id) {
     errorMessage.value = 'GitHub App login is not configured yet.';
     showToast(errorMessage.value);
@@ -3430,6 +3431,24 @@ async function handleGitHubCallback() {
     authBusy.value = false;
   }
   return true;
+}
+
+function connectProjectWS() {
+  const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const wsUrl = proto + '//' + window.location.host + '/api/ws';
+  const ws = new WebSocket(wsUrl);
+  ws.onopen = () => {};
+  ws.onmessage = function(ev) {
+    try {
+      var event = JSON.parse(ev.data);
+      if (event.type === 'project.created' || event.type === 'project.funded') {
+        if (user.value) { loadDashboardProjects(); loadDashboardLedger(); }
+        loadPublicProjects();
+      }
+    } catch(e) {}
+  };
+  ws.onclose = function() { setTimeout(connectProjectWS, 3000); };
+  ws.onerror = function() { ws.close(); };
 }
 
 function showToast(message) {
@@ -3789,6 +3808,7 @@ async function completeProjectFunding() {
   projectPaymentBusy.value = true;
   try {
     await loadRuntimeConfig();
+    connectProjectWS();
     if (!paymentReferenceForProject()) {
       throw new Error('Payment reference is missing. Configure PayPal/Crypto checkout or enable local dev payments.');
     }
