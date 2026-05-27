@@ -4414,7 +4414,14 @@ function clearSession() {
   dashboardNotificationsError.value = '';
   dashboardError.value = '';
   selectedDashboardProjectID.value = '';
+  pendingProjectPaymentAfterAuth.value = false;
+  authReturnToProjectWizard.value = false;
   removeStoredToken();
+
+  if (publicPage.value === 'dashboard' || projectWizardVisible.value) {
+    projectWizardVisible.value = false;
+    openPublicPage('home');
+  }
 }
 
 async function submitAuth() {
