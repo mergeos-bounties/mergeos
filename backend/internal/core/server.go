@@ -41,6 +41,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/wallets/{address}", s.wallet)
 	mux.HandleFunc("POST /api/wallets/link", s.linkWallet)
 	mux.HandleFunc("POST /api/payments/paypal/orders", s.createPayPalOrder)
+	mux.HandleFunc("POST /api/notifications/read-all", s.markAllNotificationsRead)
 	mux.HandleFunc("POST /api/uploads", s.uploadAttachment)
 	mux.HandleFunc("GET /api/uploads/", s.downloadAttachment)
 	mux.HandleFunc("GET /api/admin/summary", s.adminSummary)
