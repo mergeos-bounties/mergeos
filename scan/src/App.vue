@@ -900,10 +900,12 @@ const BlockDetail = defineComponent({
 });
 
 function detailHeader(title, primary, badge, tone, emit) {
+  const showFullPrimary = tone === 'address';
+  const primaryLabel = showFullPrimary ? primary : shortHash(primary, 18, 12);
   return h('div', { class: 'detail-head' }, [
     h('div', [
       h('p', title),
-      h('h2', shortHash(primary, 18, 12)),
+      h('h2', { class: showFullPrimary ? 'full-address' : '', title: primary }, primaryLabel),
     ]),
     h('div', { class: 'detail-head-actions' }, [
       h('span', { class: ['type-badge', tone] }, badge),
