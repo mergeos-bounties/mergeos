@@ -3267,7 +3267,7 @@ const dashboardPaymentRows = computed(() =>
   dashboardLedgerEntries.value.slice().reverse().slice(0, 50).map((entry) => {
     const project = dashboardProjects.value.find((p) => p.id === entry.project_id);
     return {
-      key: entry.id || entry.key || Math.random().toString(36),
+      key: entry.id || entry.key || entry.ref || entry.title + '-' + entry.date,
       title: entry.title || entry.description || project?.title || 'Ledger entry',
       ref: entry.ref || entry.project_id || '-',
       date: formatDashboardDate(entry.created_at),
