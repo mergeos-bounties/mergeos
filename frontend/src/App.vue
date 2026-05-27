@@ -4325,6 +4325,9 @@ function clearSession() {
   dashboardError.value = '';
   selectedDashboardProjectID.value = '';
   removeStoredToken();
+  if (!publicModeVisible.value || projectWizardVisible.value) {
+    openPublicPage('home', { replace: true });
+  }
 }
 
 async function submitAuth() {
