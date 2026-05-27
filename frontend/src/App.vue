@@ -1,6 +1,6 @@
 <template>
   <div v-if="projectWizardVisible" class="project-flow-shell">
-    <div v-if="toastMessage" class="toast project-flow-toast">
+    <div v-if="toastMessage" class="toast project-flow-toast" role="status" aria-live="polite">
       {{ toastMessage }}
     </div>
 
@@ -982,7 +982,7 @@
   </div>
 
   <div v-else-if="user && !publicModeVisible" class="dashboard-shell">
-    <div v-if="toastMessage" class="toast dashboard-toast">
+    <div v-if="toastMessage" class="toast dashboard-toast" role="status" aria-live="polite">
       {{ toastMessage }}
     </div>
 
@@ -1002,7 +1002,7 @@
             :key="item.label"
             :class="{ active: item.active }"
             type="button"
-            @click="handleDashboardNav(item)"
+            @click="item.section ? openDashboardSection(item.section) : handleDashboardNav(item)"
           >
             <component :is="item.icon" :size="16" />
             {{ item.label }}
@@ -1037,7 +1037,7 @@
             :key="item.label"
             :class="{ active: item.active }"
             type="button"
-            @click="handleDashboardNav(item)"
+            @click="item.section ? openDashboardSection(item.section) : handleDashboardNav(item)"
           >
             {{ item.label }}
           </button>
@@ -1092,6 +1092,9 @@
               <p>Loading notifications...</p>
             </div>
           </div>
+          <button class="primary-button compact" type="button" @click="openProjectWizard">
+            <Plus :size="16" />
+            
           <button class="primary-button compact" type="button" @click="openProjectWizard">
             <Plus :size="16" />
             New Project
@@ -1347,6 +1350,30 @@
             </button>
           </section>
 
+          <section ref="dashboardNotificationCenter" class="dash-card rail-card notification-center-card" tabindex="-1">
+            <div class="card-title-row">
+              <h2>Notifications</h2>
+              <span>{{ dashboardNotificationRows.length }}</span>
+            </div>
+            <div v-if="dashboardNotificationRows.length" class="notification-center-list">
+              <article v-for="note in dashboardNotificationRows" :key="note.id">
+                <span :class="['notification-dot', note.tone]" />
+                <div>
+                  <strong>{{ note.subject }}</strong>
+                  <p>{{ note.body }}</p>
+                  <small>{{ note.meta }}</small>
+                </div>
+              </article>
+            </div>
+            <article v-else class="dash-empty-state compact">
+              <strong>{{ dashboardNotificationsLoading ? 'Loading notifications...' : 'No notifications yet' }}</strong>
+              <p>{{ dashboardNotificationsLoading ? 'Fetching delivery records.' : dashboardNotificationsError || 'Project updates and delivery notices will appear here.' }}</p>
+            </article>
+            <button class="rail-link-button" type="button" @click="loadDashboardNotifications">
+              Refresh notifications
+            </button>
+          </section>
+
           <section class="dash-card rail-card chat-card">
             <div class="card-title-row">
               <h2>Ledger Snapshot</h2>
@@ -1375,7 +1402,7 @@
   </div>
 
   <div v-else class="home-shell">
-    <div v-if="toastMessage" class="toast">
+    <div v-if="toastMessage" class="toast" role="status" aria-live="polite">
       {{ toastMessage }}
     </div>
 
@@ -1448,6 +1475,23 @@
               <article v-for="stat in homeLiveStats" :key="stat.label">
                 <strong>{{ stat.value }}</strong>
                 <span>{{ stat.label }}</span>
+              </article>
+            </div>
+            <div class="public-notification-feed" aria-live="polite">
+              <div class="public-notification-head">
+                <span>
+                  <Bell :size="15" />
+                </span>
+                <strong>Recent updates</strong>
+                <small>{{ publicNotificationRows.length }}</small>
+              </div>
+              <article v-for="note in publicNotificationRows.slice(0, 3)" :key="note.id">
+                <i :class="['notification-dot', note.tone]" />
+                <div>
+                  <strong>{{ note.subject }}</strong>
+                  <p>{{ note.body }}</p>
+                  <small>{{ note.meta }}</small>
+                </div>
               </article>
             </div>
           </aside>
@@ -2019,7 +2063,7 @@
     </main>
 
     <div v-if="authVisible" class="modal-backdrop" role="presentation" @click.self="closeAuth">
-      <section class="auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-title">
+      <section ref="authDialog" class="auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-title" tabindex="-1" @keydown.esc="closeAuth">
         <button class="auth-close-button" aria-label="Close" type="button" @click="closeAuth">
           <X :size="24" />
         </button>
@@ -2217,7 +2261,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, onUnmounted, reactive, ref } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue';
 import {
   ArrowLeft,
   ArrowRight,
@@ -2377,6 +2421,7 @@ function removeStoredToken() {
 const token = ref(readStoredToken());
 const user = ref(null);
 const authVisible = ref(false);
+const authDialog = ref(null);
 const authMode = ref('login');
 const authBusy = ref(false);
 const authRememberMe = ref(false);
@@ -2385,6 +2430,7 @@ const errorMessage = ref('');
 const showPassword = ref(false);
 const showConfirmPassword = ref(false);
 const toastMessage = ref('');
+const publicNotifications = ref([]);
 let toastTimer = 0;
 
 const initialRoutePath = props.initialPath || (hasWindow ? window.location.pathname : '/');
@@ -2421,10 +2467,14 @@ const activeMarketplaceCategory = ref('All');
 const dashboardProjects = ref([]);
 const dashboardTasks = ref([]);
 const dashboardLedgerEntries = ref([]);
+const dashboardNotifications = ref([]);
+const dashboardNotificationsLoading = ref(false);
+const dashboardNotificationsError = ref('');
 const dashboardLoading = ref(false);
 const dashboardError = ref('');
 const dashboardSearch = ref('');
 const selectedDashboardProjectID = ref('');
+const dashboardNotificationCenter = ref(null);
 const priceEvaluation = ref(null);
 const priceEvaluationBusy = ref(false);
 const priceEvaluationError = ref('');
@@ -2765,6 +2815,12 @@ const authBenefits = [
   },
 ];
 
+watch(authVisible, async (visible) => {
+  if (!visible) return;
+  await nextTick();
+  authDialog.value?.focus();
+});
+
 const ledgerTrustItems = [
   {
     icon: ShieldCheck,
@@ -2961,6 +3017,34 @@ const homeLiveStats = computed(() => [
   { value: formatPublicMRGFromCents(marketplaceStats.value.total_budget_cents), label: 'Verified escrow' },
   { value: formatPublicTokenAmount(publicMintedTokenTotal.value), label: 'Tokens minted' },
 ]);
+const publicNotificationRows = computed(() => {
+  const actionRows = publicNotifications.value.map((note) => ({
+    id: note.id,
+    subject: note.subject,
+    body: note.body,
+    meta: note.meta,
+    tone: note.tone,
+    createdAt: note.createdAt,
+  }));
+  const ledgerRows = ledgerEvents.value.slice(0, 4).map((event) => ({
+    id: `ledger-${event.key}`,
+    subject: event.type,
+    body: `${event.project} recorded ${event.amount}.`,
+    meta: event.time,
+    tone: event.tone === 'green' || event.tone === 'blue' ? event.tone : 'blue',
+    createdAt: event.createdAt,
+  }));
+  const rows = [...actionRows, ...ledgerRows].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+  if (rows.length) return rows;
+  return [{
+    id: 'empty-public-notification',
+    subject: marketplaceLoading.value ? 'Loading platform updates' : 'No live updates yet',
+    body: marketplaceLoading.value ? 'Fetching the latest ledger and marketplace status.' : 'Funding, marketplace, and ledger activity will appear here.',
+    meta: marketplaceLoading.value ? 'Syncing' : 'Waiting for activity',
+    tone: 'blue',
+    createdAt: new Date(0).toISOString(),
+  }];
+});
 
 const homeWorkflowCards = [
   {
@@ -3237,7 +3321,14 @@ const dashboardLedgerRows = computed(() =>
     };
   }),
 );
-const dashboardNotificationCount = computed(() => Math.min(9, dashboardActivityRows.value.length));
+const dashboardNotificationRows = computed(() =>
+  dashboardNotifications.value
+    .slice()
+    .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+    .slice(0, 8)
+    .map(mapDashboardNotification),
+);
+const dashboardNotificationCount = computed(() => Math.min(9, dashboardNotificationRows.value.length));
 
 const marketplaceBenefits = [
   {
@@ -3266,7 +3357,7 @@ const sidebarSections = [
       { label: 'Tasks', icon: ListTodo, toast: 'Opening tasks...' },
       { label: 'Repositories', icon: GitBranch, toast: 'Opening repositories...' },
       { label: 'Payments', icon: CreditCard, toast: 'Opening payments...' },
-      { label: 'Notifications', icon: Bell, action: () => { toggleNotificationPanel() } },
+      { label: 'Notifications', icon: Bell, section: 'notifications' },
     ],
   },
   {
@@ -3390,11 +3481,29 @@ async function handleGitHubCallback() {
 
 function showToast(message) {
   toastMessage.value = message;
+  pushPublicNotification(message);
   if (!hasWindow) return;
   if (toastTimer) window.clearTimeout(toastTimer);
   toastTimer = window.setTimeout(() => {
     toastMessage.value = '';
   }, 2200);
+}
+
+function pushPublicNotification(message) {
+  if (!message || (user.value && !publicModeVisible.value && !projectWizardVisible.value)) return;
+  const createdAt = new Date().toISOString();
+  const body = projectWizardVisible.value ? 'Project setup status changed.' : 'Public session status changed.';
+  publicNotifications.value = [
+    {
+      id: `public-${Date.now()}`,
+      subject: String(message),
+      body,
+      meta: formatLedgerDateTime(createdAt).full,
+      tone: projectWizardVisible.value ? 'green' : 'blue',
+      createdAt,
+    },
+    ...publicNotifications.value,
+  ].slice(0, 6);
 }
 
 function scrollToSection(id) {
@@ -3500,11 +3609,27 @@ function handleDashboardNav(item) {
     openPublicPage(item.page);
     return;
   }
+  if (item.section) {
+    openDashboardSection(item.section);
+    return;
+  }
   if (item.label === 'Dashboard') {
     openDashboard();
     return;
   }
   showToast(item.toast || `${item.label} opened.`);
+}
+
+function openDashboardSection(section) {
+  publicModeVisible.value = false;
+  if (section === 'notifications') {
+    void loadDashboardNotifications();
+    if (!hasWindow) return;
+    window.requestAnimationFrame(() => {
+      dashboardNotificationCenter.value?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      dashboardNotificationCenter.value?.focus({ preventScroll: true });
+    });
+  }
 }
 
 function openMarketplaceSection(id) {
@@ -4031,6 +4156,17 @@ function mapDashboardActivity(entry = {}) {
   };
 }
 
+function mapDashboardNotification(note = {}) {
+  const when = formatLedgerDateTime(note.created_at);
+  return {
+    id: note.id || `${note.subject}-${note.created_at}`,
+    subject: note.subject || 'Notification',
+    body: trimMarketplaceText(note.body, 'MergeOS status update.'),
+    meta: `${toTitleLabel(note.channel || 'app')} · ${toTitleLabel(note.status || 'logged')} · ${when.full}`,
+    tone: note.status === 'failed' ? 'red' : note.project_id ? 'green' : 'blue',
+  };
+}
+
 function formatLedgerDateTime(value) {
   const date = value ? new Date(value) : new Date();
   if (Number.isNaN(date.getTime())) {
@@ -4097,6 +4233,7 @@ function mapLedgerEntry(entry) {
     key: `${entry.sequence}-${entry.entry_hash || entry.reference}`,
     date: when.date,
     time: when.time,
+    createdAt: entry.created_at,
     type: meta.type,
     icon: meta.icon,
     tone: meta.tone,
@@ -4305,12 +4442,31 @@ async function loadDashboardData(options = {}) {
   }
 }
 
+async function loadDashboardNotifications() {
+  if (!token.value) {
+    dashboardNotifications.value = [];
+    dashboardNotificationsError.value = '';
+    return;
+  }
+  dashboardNotificationsLoading.value = true;
+  dashboardNotificationsError.value = '';
+  try {
+    const rows = await api('/api/notifications');
+    dashboardNotifications.value = Array.isArray(rows) ? rows : [];
+  } catch (error) {
+    dashboardNotificationsError.value = error.message || 'Could not load notifications';
+  } finally {
+    dashboardNotificationsLoading.value = false;
+  }
+}
+
 function startDashboardRealtime() {
   if (!hasWindow || dashboardRefreshTimer) return;
   dashboardRefreshTimer = window.setInterval(() => {
     if (!token.value || !user.value) return;
     if (document.visibilityState === 'hidden') return;
     void loadDashboardData({ silent: true });
+    void loadDashboardNotifications();
   }, DASHBOARD_REFRESH_MS);
 }
 
@@ -4354,10 +4510,12 @@ function setSession(auth) {
     void loadLedgerData({ silent: true });
   }
   void loadDashboardData({ silent: true });
+  void loadDashboardNotifications();
   startDashboardRealtime();
 }
 
 function clearSession() {
+  disconnectWebSocket();
   stopDashboardRealtime();
   token.value = '';
   user.value = null;
@@ -4366,6 +4524,8 @@ function clearSession() {
   dashboardProjects.value = [];
   dashboardTasks.value = [];
   dashboardLedgerEntries.value = [];
+  dashboardNotifications.value = [];
+  dashboardNotificationsError.value = '';
   dashboardError.value = '';
   selectedDashboardProjectID.value = '';
   removeStoredToken();
@@ -4410,6 +4570,7 @@ async function restoreSession() {
   try {
     user.value = await api('/api/auth/me');
     await loadDashboardData({ silent: true });
+    await loadDashboardNotifications();
     startDashboardRealtime();
     if (publicPage.value === 'ledger') {
       void loadLedgerData({ silent: true });
@@ -4424,11 +4585,15 @@ async function logout() {
     await api('/api/auth/logout', { method: 'POST', body: JSON.stringify({}) });
   } finally {
     clearSession();
+    publicModeVisible.value = true;
+    publicPage.value = 'home';
+    updatePublicBrowserPath('home', true);
     showToast('Logged out.');
   }
 }
 
 onMounted(async () => {
+  connectWebSocket();
   if (hasWindow) {
     const params = new URLSearchParams(window.location.search);
     const oauthToken = params.get('token');
@@ -4462,11 +4627,13 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
+  disconnectWebSocket();
   if (hasWindow) {
     window.removeEventListener('popstate', syncPublicPageFromBrowserPath);
   }
   stopDashboardRealtime();
 });
+</script>
 // --- Notification System ---
 const notificationPanelOpen = ref(false);
 const notifications = ref([]);
