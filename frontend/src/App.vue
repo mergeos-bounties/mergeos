@@ -4468,7 +4468,33 @@ async function restoreSession() {
 
 async function logout() {
   try {
-    await api('/api/auth/logout', { method: 'POST', body: JSON.stringify({}) });
+    const response = await api(`/api/auth/logout`, {
+      method: `POST`,
+      body: JSON.stringify({})
+    });
+    
+    // 清除本地session并跳转
+    clearSession();
+    showToast(`Successfully logged out.`);
+    
+    // 强制跳转到首页，确保UI刷新
+    if (hasWindow) {
+      window.location.href = `/`;
+    }
+  } catch (error) {
+    console.error(`Logout error:`, error);
+    
+    // 即使后端失败，也清除本地session（避免卡在登录状态）
+    clearSession();
+    showToast(`Logged out locally. You may need to log out again if issues persist.`);
+    
+    // 跳转到首页
+    if (hasWindow) {
+      window.location.href = `/`;
+    }
+  }
+}
+) });
   } finally {
     clearSession();
     showToast('Logged out.');
