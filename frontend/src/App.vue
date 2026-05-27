@@ -1382,6 +1382,21 @@
           <a href="/ledger" :class="{ 'nav-active': publicPage === 'ledger' }" @click.prevent="openPublicPage('ledger')">Ledger Logs</a>
         </nav>
 
+        <button class="hamburger-button" type="button" aria-label="Toggle navigation" :aria-expanded="mobileMenuOpen" @click="mobileMenuOpen = !mobileMenuOpen">
+          <svg v-if="!mobileMenuOpen" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+          <svg v-else width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+        </button>
+
+        <!-- Mobile nav overlay -->
+        <div v-if="mobileMenuOpen" class="mobile-nav-overlay" @click="mobileMenuOpen = false"></div>
+        <nav v-if="mobileMenuOpen" class="mobile-nav-panel" aria-label="Mobile navigation">
+          <a href="/product" @click.prevent="mobileMenuOpen = false; openPublicPage('product')">Product <ChevronDown :size="13" /></a>
+          <a href="/solutions" @click.prevent="mobileMenuOpen = false; openPublicPage('solutions')">Solutions <ChevronDown :size="13" /></a>
+          <a href="/marketplace" @click.prevent="mobileMenuOpen = false; openPublicPage('marketplace')">Marketplace</a>
+          <a href="/how-it-works" @click.prevent="mobileMenuOpen = false; openPublicPage('how-it-works')">How it works</a>
+          <a href="/ledger" @click.prevent="mobileMenuOpen = false; openPublicPage('ledger')">Ledger Logs</a>
+        </nav>
+
         <div class="nav-actions">
           <template v-if="user">
             <button class="secondary-button compact" type="button" @click="openDashboard">Dashboard</button>
@@ -2380,6 +2395,7 @@ const authBusy = ref(false);
 const authRememberMe = ref(false);
 const authTermsAccepted = ref(true);
 const errorMessage = ref('');
+const mobileMenuOpen = ref(false);
 const showPassword = ref(false);
 const showConfirmPassword = ref(false);
 const toastMessage = ref('');
