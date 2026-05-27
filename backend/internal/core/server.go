@@ -32,6 +32,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("POST /api/public/repo/issues", s.importRepoIssues)
 	mux.HandleFunc("POST /api/integrations/github/pr-review", s.geminiReviewWebhook)
 	mux.HandleFunc("POST /api/payments/crypto/webhook", s.cryptoWebhook)
+	mux.HandleFunc("POST /api/payments/crypto/create", s.createCryptoPayment)
 	mux.HandleFunc("POST /api/auth/register", s.register)
 	mux.HandleFunc("POST /api/auth/login", s.login)
 	mux.HandleFunc("POST /api/auth/github", s.githubLogin)

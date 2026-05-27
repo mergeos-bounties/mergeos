@@ -52,6 +52,11 @@ type Config struct {
 	CryptoMinConfirmations int64
 	CryptoWebhookSecret    string
 
+	// NowPayments
+	NPAPIKey    string
+	NPIPNSecret string
+	NPSandbox   bool
+
 	GitHubToken     string
 	GitHubOwner     string
 	GitHubOwnerType string
@@ -152,6 +157,10 @@ func LoadConfig() Config {
 		CryptoWeiPerUSDCent:    os.Getenv("CRYPTO_WEI_PER_USD_CENT"),
 		CryptoMinConfirmations: getenvInt64("CRYPTO_MIN_CONFIRMATIONS", 1),
 		CryptoWebhookSecret:    os.Getenv("CRYPTO_WEBHOOK_SECRET"),
+
+		NPAPIKey:    os.Getenv("NP_API_KEY"),
+		NPIPNSecret: os.Getenv("NP_IPN_SECRET"),
+		NPSandbox:   getenvBool("NP_SANDBOX", true),
 
 		GitHubToken:     firstEnv("GITHUB_TOKEN", "MERGEOS_GITHUB_TOKEN"),
 		GitHubOwner:     getenv("GITHUB_OWNER", defaultGitHubOwner),
