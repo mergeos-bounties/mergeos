@@ -79,6 +79,14 @@ func TestCreateProjectCreatesLocalBountyRepoAndPersistsLedger(t *testing.T) {
 	if mintEntry.ToAccount != expectedPayerAccount || mintEntry.Reference != "mint:"+project.ID {
 		t.Fatalf("token mint ledger entry not tied to payer/project: %#v", mintEntry)
 	}
+	for _, entry := range ledger {
+		if entry.Type == "task_reserve" && entry.ToAccount != taskReserveAccount() {
+			t.Fatalf("task reserve account = %q, want %q", entry.ToAccount, taskReserveAccount())
+		}
+		if strings.Contains(entry.FromAccount, "reserve:task:") || strings.Contains(entry.ToAccount, "reserve:task:") {
+			t.Fatalf("ledger entry exposed task reserve id: %#v", entry)
+		}
+	}
 	if len(store.ListNotifications(auth.User.ID)) != 2 {
 		t.Fatalf("notifications after create = %d", len(store.ListNotifications(auth.User.ID)))
 	}
@@ -103,6 +111,109 @@ func TestCreateProjectCreatesLocalBountyRepoAndPersistsLedger(t *testing.T) {
 	}
 	if len(reloaded.ListLedger()) != 11 {
 		t.Fatalf("reloaded ledger entries = %d", len(reloaded.ListLedger()))
+	}
+}
+
+func TestAdminSettingsPersistGeminiReviewModel(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:       defaultTokenSymbol,
+		StatePath:         filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:    1000,
+		DevPaymentEnabled: true,
+		DevPaymentCode:    defaultDevPaymentCode,
+		GeminiReviewModel: "gemini-2.5-pro",
+		GitHubOwner:       defaultGitHubOwner,
+		BountyRoot:        filepath.Join(tempDir, "bounties"),
+		SMTPFrom:          "noreply@mergeos.local",
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := store.AdminSettings().GeminiReviewModel; got != "gemini-2.5-pro" {
+		t.Fatalf("initial model = %q", got)
+	}
+
+	updated, err := store.UpdateAdminSettings(UpdateAdminSettingsRequest{GeminiReviewModel: "models/gemini-2.5-flash-lite"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if updated.GeminiReviewModel != "gemini-2.5-flash-lite" || store.GeminiReviewModel() != "gemini-2.5-flash-lite" {
+		t.Fatalf("updated model not applied: %#v", updated)
+	}
+	if _, err := store.UpdateAdminSettings(UpdateAdminSettingsRequest{GeminiReviewModel: "bad model name"}); err == nil {
+		t.Fatal("invalid model name accepted")
+	}
+
+	reloaded, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := reloaded.AdminSettings().GeminiReviewModel; got != "gemini-2.5-flash-lite" {
+		t.Fatalf("reloaded model = %q", got)
+	}
+}
+
+func TestAdminSettingsPersistLLMProviderModel(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:       defaultTokenSymbol,
+		StatePath:         filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:    1000,
+		DevPaymentEnabled: true,
+		DevPaymentCode:    defaultDevPaymentCode,
+		GitHubOwner:       defaultGitHubOwner,
+		BountyRoot:        filepath.Join(tempDir, "bounties"),
+		SMTPFrom:          "noreply@mergeos.local",
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	updated, err := store.UpdateAdminSettings(UpdateAdminSettingsRequest{
+		LLMProvider: "openai",
+		LLMModel:    "gpt-4o-mini",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if updated.LLMProvider != "openai" || updated.LLMModel != "gpt-4o-mini" {
+		t.Fatalf("updated LLM settings not applied: %#v", updated)
+	}
+	if len(updated.LLMProviderOptions) == 0 {
+		t.Fatal("missing LLM provider options")
+	}
+	provider, model := store.LLMReviewProviderModel()
+	if provider != "openai" || model != "gpt-4o-mini" {
+		t.Fatalf("store provider/model = %q/%q", provider, model)
+	}
+
+	key, err := store.AddGeminiAPIKey("sk-test-openai-token", "openai", "gpt-4o-mini")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if key.Provider != "openai" || key.Model != "gpt-4o-mini" {
+		t.Fatalf("key provider/model = %#v", key)
+	}
+	if !store.HasRunnableGeminiAPIKey() {
+		t.Fatal("selected OpenAI token should be runnable")
+	}
+
+	reloaded, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	reloadedSettings := reloaded.AdminSettings()
+	if reloadedSettings.LLMProvider != "openai" || reloadedSettings.LLMModel != "gpt-4o-mini" {
+		t.Fatalf("reloaded LLM settings = %#v", reloadedSettings)
+	}
+	reloadedKeys := reloaded.ListGeminiAPIKeyStats()
+	if len(reloadedKeys) != 1 || reloadedKeys[0].Provider != "openai" || reloadedKeys[0].Model != "gpt-4o-mini" {
+		t.Fatalf("reloaded LLM keys = %#v", reloadedKeys)
 	}
 }
 
@@ -173,6 +284,12 @@ func TestGitHubAuthLinksMRGWalletAndRoutesPayouts(t *testing.T) {
 	if payout.ToAccount != expectedAccount {
 		t.Fatalf("payout account = %q, want %q", payout.ToAccount, expectedAccount)
 	}
+	if strings.HasPrefix(payout.ToAccount, "wallet:") {
+		t.Fatalf("payout account kept legacy wallet prefix: %q", payout.ToAccount)
+	}
+	if payout.FromAccount != taskReserveAccount() {
+		t.Fatalf("payout reserve account = %q, want %q", payout.FromAccount, taskReserveAccount())
+	}
 	summary, ok := store.WalletSummary(wallet.Address)
 	if !ok {
 		t.Fatal("wallet summary not found")
@@ -191,6 +308,67 @@ func TestGitHubAuthLinksMRGWalletAndRoutesPayouts(t *testing.T) {
 	}
 	if strings.Contains(string(publicBody), "github:octo-builder") {
 		t.Fatalf("public ledger should expose wallet instead of github alias for linked wallets: %s", publicBody)
+	}
+	if strings.Contains(string(publicBody), "wallet:") {
+		t.Fatalf("public ledger should expose raw wallet addresses: %s", publicBody)
+	}
+}
+
+func TestLegacyWalletAccountPrefixMigratesToRawAddress(t *testing.T) {
+	store := &Store{cfg: Config{GeminiReviewModel: defaultGeminiReviewModel}}
+	wallet := &Wallet{
+		Address:        "0x1234567890abcdef1234567890abcdef12345678",
+		GitHubUsername: "octo-builder",
+		CreatedAt:      time.Now().UTC(),
+	}
+	state := persistedState{
+		Wallets: []*Wallet{wallet},
+		Tasks: []*Task{
+			{
+				ID:         "tsk_0001",
+				ProjectID:  "prj_0001",
+				WorkerID:   legacyWalletAccount(wallet.Address),
+				CreatedAt:  time.Now().UTC(),
+				AcceptedAt: nil,
+			},
+		},
+		Ledger: []LedgerEntry{
+			{
+				Sequence:    1,
+				Type:        "task_payment",
+				FromAccount: "reserve:task:tsk_0001",
+				ToAccount:   legacyWalletAccount(wallet.Address),
+				AmountCents: 10000,
+				Reference:   "task:tsk_0001",
+				CreatedAt:   time.Now().UTC(),
+			},
+		},
+	}
+	state.Ledger[0].PreviousHash = strings.Repeat("0", 64)
+	state.Ledger[0].EntryHash = ledgerEntryHash(state.Ledger[0])
+
+	if !store.applyState(state) {
+		t.Fatal("legacy wallet account prefix did not report migration")
+	}
+	if got := store.ledger[0].ToAccount; got != wallet.Address {
+		t.Fatalf("ledger account = %q, want %q", got, wallet.Address)
+	}
+	if got := store.ledger[0].FromAccount; got != taskReserveAccount() {
+		t.Fatalf("reserve account = %q, want %q", got, taskReserveAccount())
+	}
+	if got := store.tasks["tsk_0001"].WorkerID; got != wallet.Address {
+		t.Fatalf("task worker id = %q, want %q", got, wallet.Address)
+	}
+	summary, ok := store.WalletSummary(wallet.Address)
+	if !ok {
+		t.Fatal("wallet summary not found")
+	}
+	if summary.BalanceCents != 10000 || summary.Account != wallet.Address {
+		t.Fatalf("wallet summary = %#v", summary)
+	}
+	publicLedger := store.ListPublicLedger()
+	if publicLedger[0].ToAccount != wallet.Address {
+		t.Fatalf("public account = %q, want %q", publicLedger[0].ToAccount, wallet.Address)
 	}
 }
 

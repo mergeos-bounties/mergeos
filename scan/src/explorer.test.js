@@ -8,6 +8,7 @@ import {
   findExplorerTarget,
   githubProfileURL,
   githubUsernameFromAccount,
+  normalizeLedgerAccount,
   normalizeExplorerPath,
   parseExplorerRoute,
   paymentModeLabel,
@@ -60,7 +61,7 @@ test('aggregates account activity for address pages', () => {
 test('finds transactions, blocks and addresses from one search box', () => {
   const accounts = aggregateAccounts(entries);
   accounts.push({
-    account: 'wallet:0x1234567890abcdef1234567890abcdef12345678',
+    account: '0x1234567890abcdef1234567890abcdef12345678',
     tx_count: 1,
   });
 
@@ -68,6 +69,7 @@ test('finds transactions, blocks and addresses from one search box', () => {
   assert.equal(findExplorerTarget(entries, accounts, '#2').kind, 'block');
   assert.equal(findExplorerTarget(entries, accounts, 'project:prj_0001').kind, 'address');
   assert.equal(findExplorerTarget(entries, accounts, '0x1234567890abcdef1234567890abcdef12345678').kind, 'address');
+  assert.equal(findExplorerTarget(entries, accounts, 'wallet:0x1234567890abcdef1234567890abcdef12345678').kind, 'address');
 });
 
 test('treats github aliases as short public addresses', () => {
@@ -81,6 +83,12 @@ test('shows production-friendly payment mode labels', () => {
   assert.equal(paymentModeLabel('local-dev-verifier'), 'MergeOS verifier');
   assert.equal(paymentModeLabel('live-adapters'), 'Live payment adapters');
   assert.equal(paymentModeLabel(''), 'Not configured');
+});
+
+test('normalizes legacy wallet account labels to raw addresses', () => {
+  assert.equal(normalizeLedgerAccount('wallet:0x1234567890abcdef1234567890abcdef12345678'), '0x1234567890abcdef1234567890abcdef12345678');
+  assert.equal(accountRole('0x1234567890abcdef1234567890abcdef12345678'), 'MRG Wallet');
+  assert.equal(normalizeLedgerAccount('reserve:task:tsk_0010'), 'reserve:task');
 });
 
 test('parses history routes and legacy hash routes', () => {

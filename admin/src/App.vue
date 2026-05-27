@@ -511,24 +511,91 @@
         </section>
       </section>
 
-      <section v-else-if="activeView === 'gemini'" class="gemini-workspace">
+      <section v-else-if="activeView === 'setting'" class="settings-workspace">
+        <section class="settings-panel">
+          <div class="settings-panel-head">
+            <span class="metric-icon purple"><Settings2 :size="19" /></span>
+            <div>
+              <span class="eyebrow">AI MODEL</span>
+              <h2>Review LLM</h2>
+              <p>Used by the automated reviewer for PR and issue automation.</p>
+            </div>
+          </div>
+
+          <form class="settings-form" @submit.prevent="saveAdminSettings">
+            <label>
+              <span>Provider</span>
+              <select v-model.trim="settingsForm.llm_provider" autocomplete="off" @change="syncSelectedProviderModel">
+                <option v-for="provider in llmProviderOptions" :key="provider.id" :value="provider.id">{{ provider.label }}</option>
+              </select>
+            </label>
+            <label>
+              <span>Model</span>
+              <select
+                v-model.trim="settingsForm.llm_model"
+                autocomplete="off"
+              >
+                <option v-for="model in settingsModelOptions" :key="model" :value="model">{{ model }}</option>
+              </select>
+            </label>
+            <button class="primary-action" :disabled="settingsBusy" type="submit">
+              <Save :size="16" />
+              {{ settingsBusy ? 'Saving...' : 'Save model' }}
+            </button>
+          </form>
+
+          <p v-if="settingsError" class="form-error">{{ settingsError }}</p>
+          <p v-if="settingsMessage" class="form-success">{{ settingsMessage }}</p>
+        </section>
+
+        <section class="settings-summary-grid" aria-label="Current model settings">
+          <article>
+            <span>Provider</span>
+            <strong>{{ providerLabel(adminSettings.llm_provider || 'gemini') }}</strong>
+          </article>
+          <article>
+            <span>Current model</span>
+            <strong>{{ adminSettings.llm_model || adminSettings.gemini_review_model || 'gemini-2.5-flash' }}</strong>
+          </article>
+          <article>
+            <span>Updated</span>
+            <strong>{{ formatDate(adminSettings.updated_at) }}</strong>
+          </article>
+          <article>
+            <span>Available presets</span>
+            <strong>{{ number(settingsModelOptions.length) }}</strong>
+          </article>
+        </section>
+
         <section class="gemini-control-panel">
           <div class="gemini-panel-head">
             <span class="metric-icon purple"><KeyRound :size="19" /></span>
             <div>
-              <span class="eyebrow">GEMINI</span>
-              <h2>Reviewer keys</h2>
+              <span class="eyebrow">LLM</span>
+              <h2>API tokens</h2>
             </div>
           </div>
 
           <form class="gemini-key-form" @submit.prevent="addGeminiKey">
             <label>
-              <span>API key</span>
-              <input v-model.trim="geminiKeyForm.key_value" autocomplete="off" placeholder="Paste Gemini API key" type="password" />
+              <span>Provider</span>
+              <select v-model.trim="geminiKeyForm.provider" autocomplete="off" @change="syncKeyProviderModel">
+                <option v-for="provider in llmProviderOptions" :key="provider.id" :value="provider.id">{{ provider.label }}</option>
+              </select>
+            </label>
+            <label>
+              <span>Default model</span>
+              <select v-model.trim="geminiKeyForm.model" autocomplete="off">
+                <option v-for="model in keyModelOptions" :key="model" :value="model">{{ model }}</option>
+              </select>
+            </label>
+            <label>
+              <span>Token</span>
+              <input v-model.trim="geminiKeyForm.key_value" autocomplete="off" placeholder="Paste provider API token" type="password" />
             </label>
             <button class="primary-action" :disabled="geminiKeyBusy" type="submit">
               <Save :size="16" />
-              {{ geminiKeyBusy ? 'Adding...' : 'Add key' }}
+              {{ geminiKeyBusy ? 'Adding...' : 'Add token' }}
             </button>
           </form>
 
@@ -552,21 +619,33 @@
         </section>
 
         <section class="table-panel">
-          <TableHeader title="Gemini keys" :count="geminiKeys.length" />
-          <DataTable :columns="['Key', 'Status', 'Requests', 'Success', 'Quota', 'Last used', 'Actions']">
+          <TableHeader title="LLM API tokens" :count="geminiKeys.length" />
+          <DataTable :columns="['Token', 'Provider', 'Model', 'Status', 'Requests', 'Success', 'Quota', 'Last used', 'Actions']">
             <tr v-for="row in geminiKeys" :key="row.id">
               <td><strong>{{ row.key_hint }}</strong><small>{{ row.id }}</small></td>
+              <td><strong>{{ providerLabel(row.provider || 'gemini') }}</strong><small>{{ row.provider || 'gemini' }}</small></td>
+              <td><strong>{{ row.model || modelFallbackForProvider(row.provider || 'gemini') }}</strong></td>
               <td><span :class="['status-pill', geminiKeyStatusTone(row.status)]">{{ titleize(row.status || 'active') }}</span></td>
               <td>{{ number(row.request_count) }}</td>
               <td>{{ number(row.success_count) }}</td>
               <td>{{ number(row.quota_error_count) }}</td>
-              <td><strong>{{ formatDate(row.last_used_at) }}</strong><small>{{ row.last_error || 'No recent error' }}</small></td>
+              <td>
+                <strong>{{ formatDate(row.last_used_at) }}</strong>
+                <small v-if="geminiTestResults[row.id]" :class="['gemini-test-result', geminiTestResults[row.id].ok ? 'ok' : 'bad']">
+                  {{ geminiTestResults[row.id].message }}
+                </small>
+                <small v-else>{{ row.last_error || 'No recent error' }}</small>
+              </td>
               <td class="row-action">
-                <button class="compact-action" :disabled="geminiActionBusy[row.id]" type="button" @click="setGeminiKeyStatus(row, row.status === 'disabled' ? 'active' : 'disabled')">
+                <button class="compact-action" :disabled="geminiActionBusy[row.id] || geminiTestBusy[row.id]" type="button" @click="testGeminiKey(row)">
+                  <CheckCircle2 :size="14" />
+                  {{ geminiTestBusy[row.id] ? 'Testing...' : 'Test' }}
+                </button>
+                <button class="compact-action" :disabled="geminiActionBusy[row.id] || geminiTestBusy[row.id]" type="button" @click="setGeminiKeyStatus(row, row.status === 'disabled' ? 'active' : 'disabled')">
                   <Power :size="14" />
                   {{ row.status === 'disabled' ? 'Enable' : 'Disable' }}
                 </button>
-                <button class="compact-action" :disabled="geminiActionBusy[row.id]" type="button" @click="resetGeminiKey(row)">
+                <button class="compact-action" :disabled="geminiActionBusy[row.id] || geminiTestBusy[row.id]" type="button" @click="resetGeminiKey(row)">
                   <RefreshCw :size="14" />
                   Reset
                 </button>
@@ -574,12 +653,14 @@
             </tr>
           </DataTable>
         </section>
+      </section>
 
+      <section v-else-if="activeView === 'logs'" class="logs-workspace">
         <section class="table-panel">
           <header class="table-header">
             <div>
               <span>Events</span>
-              <h2>Webhook logs</h2>
+              <h2>Log</h2>
             </div>
             <button class="compact-action" :disabled="loading" type="button" @click="loadGeminiAdminData">
               <RefreshCw :size="14" />
@@ -687,6 +768,12 @@ const geminiKeyBusy = ref(false);
 const geminiKeyError = ref('');
 const geminiKeyMessage = ref('');
 const geminiActionBusy = ref({});
+const geminiTestBusy = ref({});
+const geminiTestResults = ref({});
+const adminSettings = ref({});
+const settingsBusy = ref(false);
+const settingsError = ref('');
+const settingsMessage = ref('');
 
 const loginForm = reactive({
   email: 'admin@gmail.com',
@@ -704,7 +791,15 @@ const userForm = reactive({
 });
 
 const geminiKeyForm = reactive({
+  provider: 'gemini',
+  model: 'gemini-2.5-flash',
   key_value: '',
+});
+
+const settingsForm = reactive({
+  llm_provider: 'gemini',
+  llm_model: 'gemini-2.5-flash',
+  gemini_review_model: '',
 });
 
 const navItems = [
@@ -715,7 +810,8 @@ const navItems = [
   { id: 'ledger', label: 'Ledger', title: 'Proof ledger', kicker: 'LEDGER', icon: Activity },
   { id: 'users', label: 'Users', title: 'User management', kicker: 'USERS', icon: UsersRound },
   { id: 'ssl', label: 'SSL', title: 'SSL monitoring', kicker: 'SECURITY', icon: ShieldCheck },
-  { id: 'gemini', label: 'Gemini', title: 'Gemini reviewer', kicker: 'AUTOMATION', icon: KeyRound },
+  { id: 'setting', label: 'Setting', title: 'Settings', kicker: 'SYSTEM', icon: Settings2 },
+  { id: 'logs', label: 'Log', title: 'Log', kicker: 'AUTOMATION', icon: KeyRound },
 ];
 
 const routeByView = {
@@ -726,12 +822,14 @@ const routeByView = {
   ledger: '/ledger',
   users: '/users',
   ssl: '/ssl',
-  gemini: '/gemini',
+  setting: '/setting',
+  logs: '/logs',
 };
 const viewByRoute = Object.entries(routeByView).reduce((routes, [view, route]) => {
   routes[route] = view;
   return routes;
 }, {});
+viewByRoute['/gemini'] = 'logs';
 
 const bountyOptions = [
   { id: 'future-small', label: 'Future small', reward_mrg: 25 },
@@ -764,6 +862,25 @@ const sslAttentionCount = computed(() => sslRows.value.length - sslOkCount.value
 const tokenSymbol = computed(() => summary.value.token_symbol || 'MRG');
 const geminiActiveCount = computed(() => geminiKeys.value.filter((row) => row.status === 'active').length);
 const geminiAttentionCount = computed(() => geminiKeys.value.filter((row) => ['quota_limited', 'error', 'disabled'].includes(row.status)).length);
+const llmProviderOptions = computed(() => {
+  const options = Array.isArray(adminSettings.value.llm_provider_options)
+    ? adminSettings.value.llm_provider_options
+    : [];
+  return options.length ? options : [{ id: 'gemini', label: 'Google Gemini', models: ['gemini-2.5-flash'] }];
+});
+const settingsModelOptions = computed(() => {
+  const provider = llmProviderOptions.value.find((item) => item.id === settingsForm.llm_provider);
+  const options = provider?.models ? [...provider.models] : [];
+  const current = settingsForm.llm_model || adminSettings.value.llm_model || adminSettings.value.gemini_review_model;
+  if (current && !options.includes(current)) options.unshift(current);
+  return options;
+});
+const keyModelOptions = computed(() => {
+  const provider = llmProviderOptions.value.find((item) => item.id === geminiKeyForm.provider);
+  const options = provider?.models ? [...provider.models] : [];
+  if (geminiKeyForm.model && !options.includes(geminiKeyForm.model)) options.unshift(geminiKeyForm.model);
+  return options;
+});
 
 const summaryMetrics = computed(() => [
   { label: 'Users', value: number(summary.value.user_count), icon: UsersRound, tone: 'blue' },
@@ -946,7 +1063,18 @@ async function loadAdminData() {
   loading.value = true;
   errorMessage.value = '';
   try {
-    const [summaryData, userData, projectData, taskData, notificationData, ledgerData, sslData, geminiKeyData, geminiLogData] = await Promise.all([
+    const [
+      summaryData,
+      userData,
+      projectData,
+      taskData,
+      notificationData,
+      ledgerData,
+      sslData,
+      settingsData,
+      geminiKeyData,
+      geminiLogData,
+    ] = await Promise.all([
       api('/api/admin/summary'),
       api('/api/admin/users'),
       api('/api/admin/projects'),
@@ -954,6 +1082,7 @@ async function loadAdminData() {
       api('/api/admin/notifications'),
       api('/api/admin/ledger'),
       api('/api/admin/ssl'),
+      api('/api/admin/settings'),
       api('/api/admin/gemini/keys'),
       api('/api/admin/gemini/webhooks?limit=100'),
     ]);
@@ -964,6 +1093,8 @@ async function loadAdminData() {
     notifications.value = Array.isArray(notificationData) ? notificationData : [];
     ledgerEntries.value = Array.isArray(ledgerData) ? ledgerData : [];
     sslRows.value = Array.isArray(sslData) ? sslData : [];
+    adminSettings.value = settingsData || {};
+    syncSettingsForm();
     geminiKeys.value = Array.isArray(geminiKeyData) ? geminiKeyData : [];
     geminiWebhookLogs.value = Array.isArray(geminiLogData) ? geminiLogData : [];
     void syncTaskIssueStates(tasks.value);
@@ -1070,6 +1201,41 @@ async function reviewSSLNow() {
   }
 }
 
+function syncSettingsForm() {
+  settingsForm.llm_provider = adminSettings.value.llm_provider || 'gemini';
+  settingsForm.llm_model = adminSettings.value.llm_model || adminSettings.value.gemini_review_model || modelFallbackForProvider(settingsForm.llm_provider);
+  settingsForm.gemini_review_model = settingsForm.llm_provider === 'gemini' ? settingsForm.llm_model : (adminSettings.value.gemini_review_model || 'gemini-2.5-flash');
+  syncSelectedProviderModel();
+  if (!geminiKeyForm.key_value) {
+    geminiKeyForm.provider = settingsForm.llm_provider;
+    geminiKeyForm.model = settingsForm.llm_model;
+    syncKeyProviderModel();
+  }
+}
+
+async function saveAdminSettings() {
+  settingsBusy.value = true;
+  settingsError.value = '';
+  settingsMessage.value = '';
+  try {
+    const updated = await api('/api/admin/settings', {
+      method: 'PATCH',
+      body: JSON.stringify({
+        llm_provider: settingsForm.llm_provider,
+        llm_model: settingsForm.llm_model,
+        gemini_review_model: settingsForm.llm_provider === 'gemini' ? settingsForm.llm_model : settingsForm.gemini_review_model,
+      }),
+    });
+    adminSettings.value = updated || {};
+    syncSettingsForm();
+    settingsMessage.value = `Using ${providerLabel(adminSettings.value.llm_provider)} / ${adminSettings.value.llm_model}.`;
+  } catch (error) {
+    settingsError.value = error.message;
+  } finally {
+    settingsBusy.value = false;
+  }
+}
+
 async function loadGeminiAdminData() {
   if (!token.value) return;
   errorMessage.value = '';
@@ -1092,11 +1258,15 @@ async function addGeminiKey() {
   try {
     const row = await api('/api/admin/gemini/keys', {
       method: 'POST',
-      body: JSON.stringify({ key_value: geminiKeyForm.key_value }),
+      body: JSON.stringify({
+        provider: geminiKeyForm.provider,
+        model: geminiKeyForm.model,
+        key_value: geminiKeyForm.key_value,
+      }),
     });
     geminiKeys.value = [row, ...geminiKeys.value.filter((item) => item.id !== row.id)];
     geminiKeyForm.key_value = '';
-    geminiKeyMessage.value = `Added ${row.key_hint}.`;
+    geminiKeyMessage.value = `Added ${providerLabel(row.provider)} token ${row.key_hint}.`;
   } catch (error) {
     geminiKeyError.value = error.message;
   } finally {
@@ -1139,6 +1309,74 @@ async function resetGeminiKey(row) {
     geminiKeyError.value = error.message;
   } finally {
     geminiActionBusy.value = { ...geminiActionBusy.value, [row.id]: false };
+  }
+}
+
+async function testGeminiKey(row) {
+  if (!row?.id) return;
+  geminiTestBusy.value = { ...geminiTestBusy.value, [row.id]: true };
+  geminiKeyError.value = '';
+  geminiKeyMessage.value = '';
+  geminiTestResults.value = { ...geminiTestResults.value, [row.id]: null };
+  const provider = row.provider || 'gemini';
+  const model = settingsForm.llm_provider === provider
+    ? settingsForm.llm_model
+    : (row.model || modelFallbackForProvider(provider));
+  try {
+    const result = await api(`/api/admin/gemini/keys/${encodeURIComponent(row.id)}/test`, {
+      method: 'POST',
+      body: JSON.stringify({ provider, model }),
+    });
+    if (result?.key?.id) {
+      geminiKeys.value = geminiKeys.value.map((item) => (item.id === result.key.id ? result.key : item));
+    }
+    const status = result?.status_code ? `HTTP ${result.status_code}` : 'No status';
+    const testedProvider = providerLabel(result?.provider || provider);
+    const message = result?.ok
+      ? `Test OK on ${testedProvider} / ${result.model || model} (${result.duration_millis || 0} ms)`
+      : `Test failed on ${testedProvider} / ${result?.model || model}: ${result?.error || status}`;
+    geminiTestResults.value = {
+      ...geminiTestResults.value,
+      [row.id]: { ok: Boolean(result?.ok), message },
+    };
+    if (result?.ok) {
+      geminiKeyMessage.value = `${row.key_hint} passed with ${testedProvider} / ${result.model || model}.`;
+    } else {
+      geminiKeyError.value = `${row.key_hint} failed: ${result?.error || status}.`;
+    }
+  } catch (error) {
+    geminiTestResults.value = {
+      ...geminiTestResults.value,
+      [row.id]: { ok: false, message: error.message },
+    };
+    geminiKeyError.value = error.message;
+  } finally {
+    geminiTestBusy.value = { ...geminiTestBusy.value, [row.id]: false };
+  }
+}
+
+function providerLabel(providerId = 'gemini') {
+  const provider = llmProviderOptions.value.find((item) => item.id === providerId);
+  return provider?.label || titleize(providerId || 'gemini');
+}
+
+function modelFallbackForProvider(providerId = 'gemini') {
+  const provider = llmProviderOptions.value.find((item) => item.id === providerId);
+  return provider?.models?.[0] || 'gemini-2.5-flash';
+}
+
+function syncSelectedProviderModel() {
+  if (!settingsModelOptions.value.includes(settingsForm.llm_model)) {
+    settingsForm.llm_model = modelFallbackForProvider(settingsForm.llm_provider);
+  }
+  if (settingsForm.llm_provider === 'gemini') {
+    settingsForm.gemini_review_model = settingsForm.llm_model;
+  }
+}
+
+function syncKeyProviderModel() {
+  if (!keyModelOptions.value.includes(geminiKeyForm.model)) {
+    geminiKeyForm.model = modelFallbackForProvider(geminiKeyForm.provider);
   }
 }
 
