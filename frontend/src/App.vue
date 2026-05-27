@@ -4418,7 +4418,7 @@ function clearSession() {
   authReturnToProjectWizard.value = false;
   removeStoredToken();
 
-  if (publicPage.value === 'dashboard' || projectWizardVisible.value) {
+  if (!publicModeVisible.value || projectWizardVisible.value) {
     projectWizardVisible.value = false;
     openPublicPage('home');
   }
