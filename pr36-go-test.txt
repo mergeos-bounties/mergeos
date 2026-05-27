@@ -1,0 +1,4 @@
+=== RUN   TestProjectFundingBroadcastsRealtimeUpdates
+--- PASS: TestProjectFundingBroadcastsRealtimeUpdates (0.39s)
+PASS
+ok  mergeos/backend/internal/core   0.492s
