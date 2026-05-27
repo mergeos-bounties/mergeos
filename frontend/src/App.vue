@@ -1,6 +1,6 @@
 <template>
   <div v-if="projectWizardVisible" class="project-flow-shell">
-    <div v-if="toastMessage" class="toast project-flow-toast">
+    <div v-if="toastMessage" class="toast project-flow-toast" role="status" aria-live="polite">
       {{ toastMessage }}
     </div>
 
@@ -191,13 +191,13 @@
               <div v-if="repoImportedIssues.length" class="repo-issue-panel">
                 <div class="repo-issue-summary">
                   <strong>{{ repoImportResult.owner }}/{{ repoImportResult.name }}</strong>
-                  <span>{{ repoImportedIssues.length }} issues · {{ formatMoneyFromCents(repoImportedEstimateCents) }} scored</span>
+                  <span>{{ repoImportedIssues.length }} issues · {{ formatMRGFromCents(repoImportedEstimateCents) }} scored</span>
                 </div>
                 <article v-for="issue in repoImportedIssues.slice(0, 4)" :key="issue.number" class="repo-issue-row">
                   <span>#{{ issue.number }}</span>
                   <div>
                     <strong>{{ issue.title }}</strong>
-                    <small>Score {{ issue.score }} · {{ issue.complexity }} · {{ formatMoneyFromCents(issue.estimated_cents) }}</small>
+                    <small>Score {{ issue.score }} · {{ issue.complexity }} · {{ formatMRGFromCents(issue.estimated_cents) }}</small>
                   </div>
                 </article>
               </div>
@@ -272,14 +272,10 @@
           <div v-else-if="projectWizardStep === 3" class="wizard-form-grid">
             <section class="wizard-section full budget-row">
               <label class="wizard-field compact-field">
-                <span>Budget</span>
+                <span>Budget (MRG)</span>
                 <div class="currency-input">
-                  <select v-model="projectSetupForm.currency" aria-label="Currency">
-                    <option>USD</option>
-                    <option>VND</option>
-                    <option>JPY</option>
-                  </select>
-                  <input v-model.number="projectSetupForm.budgetAmount" placeholder="0" type="number" min="500" step="100" />
+                  <span class="currency-chip">{{ tokenSymbol }}</span>
+                  <input v-model.number="projectSetupForm.budgetAmount" placeholder="0" type="number" min="10000" step="1000" />
                 </div>
               </label>
 
@@ -364,7 +360,7 @@
                   <div class="suggestion-hero">
                     <div class="hero-range">
                       <small>Suggested budget range</small>
-                      <strong>{{ formatMoney(aiEvaluationResult.suggested_low) }} - {{ formatMoney(aiEvaluationResult.suggested_high) }}</strong>
+                      <strong>{{ formatMRGFromUSD(aiEvaluationResult.suggested_low) }} - {{ formatMRGFromUSD(aiEvaluationResult.suggested_high) }}</strong>
                       <span class="confidence-badge">Confidence: {{ Math.round(aiEvaluationResult.confidence_level * 100) }}%</span>
                     </div>
                     <button 
@@ -383,7 +379,7 @@
                       <ul class="breakdown-list">
                         <li v-for="(amount, task) in aiEvaluationResult.task_breakdown" :key="task">
                           <span class="task-name">{{ task }}</span>
-                          <span class="task-price">{{ formatMoney(amount) }}</span>
+                          <span class="task-price">{{ formatMRGFromUSD(amount) }}</span>
                         </li>
                       </ul>
                     </div>
@@ -429,13 +425,13 @@
                 </button>
               </div>
               <div class="price-estimate-summary">
-                <strong>{{ formatMoneyFromCents(priceEvaluation.suggested_price_cents) }}</strong>
-                <span>{{ formatMoneyFromCents(priceEvaluation.suggested_range.low_cents) }} - {{ formatMoneyFromCents(priceEvaluation.suggested_range.high_cents) }}</span>
+                <strong>{{ formatMRGFromCents(priceEvaluation.suggested_price_cents) }}</strong>
+                <span>{{ formatMRGFromCents(priceEvaluation.suggested_range.low_cents) }} - {{ formatMRGFromCents(priceEvaluation.suggested_range.high_cents) }}</span>
               </div>
               <div class="price-breakdown-grid">
                 <article v-for="item in priceEvaluation.breakdown.slice(0, 4)" :key="item.category">
                   <strong>{{ item.category }}</strong>
-                  <span>{{ formatMoneyFromCents(item.amount_cents) }}</span>
+                  <span>{{ formatMRGFromCents(item.amount_cents) }}</span>
                   <small>{{ item.reason }}</small>
                 </article>
               </div>
@@ -641,7 +637,7 @@
                 @click="projectFundingAmount = option.amount"
               >
                 <strong>{{ formatMoney(option.amount) }}</strong>
-                <small>{{ option.tokens }} tokens</small>
+                <small>{{ formatMRG(option.tokens) }}</small>
                 <span v-if="option.popular">Popular</span>
               </button>
             </div>
@@ -886,11 +882,11 @@
             </div>
             <div>
               <dt>Platform fee (8%)</dt>
-              <dd>{{ formatMoney(projectPlatformFeeLow) }} - {{ formatMoney(projectPlatformFeeHigh) }}</dd>
+              <dd>{{ formatMRG(projectPlatformFeeLow) }} - {{ formatMRG(projectPlatformFeeHigh) }}</dd>
             </div>
             <div>
               <dt>Escrow fee (2%)</dt>
-              <dd>{{ formatMoney(projectEscrowFeeLow) }} - {{ formatMoney(projectEscrowFeeHigh) }}</dd>
+              <dd>{{ formatMRG(projectEscrowFeeLow) }} - {{ formatMRG(projectEscrowFeeHigh) }}</dd>
             </div>
             <div class="strong-row">
               <dt>Estimated total</dt>
@@ -986,7 +982,7 @@
   </div>
 
   <div v-else-if="user && !publicModeVisible" class="dashboard-shell">
-    <div v-if="toastMessage" class="toast dashboard-toast">
+    <div v-if="toastMessage" class="toast dashboard-toast" role="status" aria-live="polite">
       {{ toastMessage }}
     </div>
 
@@ -1004,9 +1000,9 @@
           <button
             v-for="item in section.items"
             :key="item.label"
-            :class="{ active: item.active }"
+            :class="{ active: isDashboardNavActive(item) }"
             type="button"
-            @click="handleDashboardNav(item)"
+            @click="item.section ? openDashboardSection(item.section) : handleDashboardNav(item)"
           >
             <component :is="item.icon" :size="16" />
             {{ item.label }}
@@ -1031,7 +1027,7 @@
       <header class="dash-topbar">
         <label class="dash-search">
           <Search :size="16" />
-          <input v-model.trim="dashboardSearch" placeholder="Search your live projects..." />
+          <input v-model.trim="dashboardSearch" :placeholder="dashboardSearchPlaceholder" />
           <kbd>Ctrl K</kbd>
         </label>
 
@@ -1039,16 +1035,16 @@
           <button
             v-for="item in topNavItems"
             :key="item.label"
-            :class="{ active: item.active }"
+            :class="{ active: isDashboardNavActive(item) }"
             type="button"
-            @click="handleDashboardNav(item)"
+            @click="item.section ? openDashboardSection(item.section) : handleDashboardNav(item)"
           >
             {{ item.label }}
           </button>
         </nav>
 
         <div class="dash-top-actions">
-          <button class="dash-icon-button" aria-label="Notifications" type="button" @click="showToast('Opening notifications...')">
+          <button class="dash-icon-button" aria-label="Notifications" type="button" @click="openDashboardSection('notifications')">
             <Bell :size="18" />
             <span>{{ dashboardNotificationCount }}</span>
           </button>
@@ -1069,168 +1065,276 @@
 
       <main class="dash-content">
         <section class="dash-main">
-          <div class="dash-breadcrumb">
-            <Home :size="14" />
-            <span>My Projects</span>
-            <ChevronDown :size="13" />
-            <strong>{{ dashboardProjectView.title }}</strong>
-          </div>
-
-          <section v-if="dashboardError" class="dash-empty-state">
-            <strong>Could not load your projects</strong>
-            <p>{{ dashboardError }}</p>
-            <button class="secondary-button compact" type="button" @click="loadDashboardData">Retry</button>
-          </section>
-
-          <section class="dash-project-header">
-            <div class="dash-project-title">
-              <span class="project-photo">{{ dashboardProjectView.initials }}</span>
-              <div>
-                <h1>{{ dashboardProjectView.title }}</h1>
-                <p>{{ dashboardProjectView.body }}</p>
-              </div>
-              <span class="live-badge">{{ dashboardProjectView.status }}</span>
+          <template v-if="dashboardSection === 'payments'">
+            <div class="dash-breadcrumb">
+              <Home :size="14" />
+              <span>Payments</span>
+              <ChevronDown :size="13" />
+              <strong>{{ dashboardPaymentView.title }}</strong>
             </div>
 
-            <div class="dash-project-actions">
-              <button type="button" @click="loadDashboardData">
-                <RefreshCw :size="15" />
-                Refresh
-              </button>
-              <button type="button" @click="showToast('Project share link copied.')">
-                <Share2 :size="15" />
-                Share
-              </button>
-              <button type="button" aria-label="More project actions" @click="showToast('Opening project actions...')">
-                <MoreHorizontal :size="16" />
-              </button>
-            </div>
-          </section>
+            <section v-if="dashboardError" class="dash-empty-state">
+              <strong>Could not load your payment history</strong>
+              <p>{{ dashboardError }}</p>
+              <button class="secondary-button compact" type="button" @click="loadDashboardData">Retry</button>
+            </section>
 
-          <section class="dash-metrics" aria-label="Project summary">
-            <article>
-              <span>Budget</span>
-              <strong>{{ dashboardProjectView.budget }}</strong>
-              <small>{{ dashboardProjectView.tokenBudget }}</small>
-            </article>
-            <article>
-              <span>Progress</span>
-              <strong>{{ dashboardProjectView.progress }}%</strong>
-              <div class="mini-progress"><i :style="{ width: `${dashboardProjectView.progress}%` }" /></div>
-            </article>
-            <article>
-              <span>Tasks</span>
-              <strong>{{ dashboardProjectView.taskSummary }}</strong>
-            </article>
-            <article>
-              <span>Repository</span>
-              <strong>{{ dashboardProjectView.repo }}</strong>
-            </article>
-            <article>
-              <span>Created</span>
-              <strong>{{ dashboardProjectView.created }}</strong>
-            </article>
-          </section>
-
-          <div class="dash-tabs" role="tablist" aria-label="Project tabs">
-            <button
-              v-for="tabItem in dashboardTabs"
-              :key="tabItem"
-              :class="{ active: tabItem === 'Overview' }"
-              type="button"
-              role="tab"
-            >
-              {{ tabItem }}
-              <span v-if="tabItem === 'Tasks'">{{ dashboardTaskRows.length }}</span>
-            </button>
-          </div>
-
-          <section class="dash-overview-grid">
-            <article class="dash-card progress-overview-card">
-              <h2>Progress Overview</h2>
-              <div class="progress-card-body">
-                <div class="progress-ring large" :style="dashboardRingStyle" :aria-label="`${dashboardProgress} percent completed`">
-                  <strong>{{ dashboardProgress }}%</strong>
-                  <span>Completed</span>
+            <template v-else>
+              <section class="dash-project-header payment-history-header">
+                <div class="dash-project-title">
+                  <span class="project-photo payment-photo">
+                    <CreditCard :size="18" />
+                  </span>
+                  <div>
+                    <h1>{{ dashboardPaymentView.title }}</h1>
+                    <p>{{ dashboardPaymentView.body }}</p>
+                  </div>
+                  <span class="live-badge">{{ dashboardPaymentView.status }}</span>
                 </div>
-                <div class="progress-legend compact">
-                  <span><i class="green-dot" />Completed <b>{{ dashboardAcceptedTasks.length }} tasks</b></span>
-                  <span><i class="blue-dot" />Open <b>{{ dashboardOpenTasks.length }} tasks</b></span>
-                  <span><i class="orange-dot" />Ledger <b>{{ dashboardProjectLedger.length }} entries</b></span>
-                  <span><i class="gray-dot" />Escrow <b>{{ formatMoneyFromCents(dashboardLedgerFundingCents) }}</b></span>
+
+                <div class="dash-project-actions">
+                  <button type="button" @click="loadDashboardData">
+                    <RefreshCw :size="15" />
+                    Refresh
+                  </button>
+                  <button type="button" @click="openPublicPage('ledger')">
+                    <Link2 :size="15" />
+                    View Ledger
+                  </button>
+                  <button type="button" aria-label="Copy payment history state" @click="showToast('Payment history is live and synced from your ledger.')">
+                    <MoreHorizontal :size="16" />
+                  </button>
                 </div>
-              </div>
-            </article>
+              </section>
 
-            <article class="dash-card budget-card">
-              <h2>Budget & Payments</h2>
-              <div class="budget-lines">
-                <span>Total Budget <strong>{{ formatMoneyFromCents(dashboardSelectedProject?.budget_cents) }}</strong></span>
-                <span>Work Pool <strong>{{ formatMoneyFromCents(dashboardSelectedProject?.work_pool_cents) }}</strong></span>
-                <span>Released <strong>{{ formatMoneyFromCents(dashboardLedgerPayoutCents || dashboardSpentCents) }}</strong></span>
-                <span>Remaining <strong>{{ formatMoneyFromCents(dashboardRemainingCents) }}</strong></span>
-              </div>
-              <button type="button" @click="openPublicPage('ledger')">View Ledger</button>
-            </article>
-
-            <article class="dash-card analysis-card">
-              <div class="card-title-row">
-                <h2>Work Split</h2>
-                <span>Live</span>
-              </div>
-              <p>Task routing is loaded from the funded project plan.</p>
-              <div class="risk-grid">
-                <span v-for="item in dashboardWorkSplit" :key="item.label" :class="item.className">
-                  {{ item.label }}
+              <section class="dash-overview-grid payment-summary-grid">
+                <article v-for="item in dashboardPaymentSummary" :key="item.label" class="dash-card payment-summary-card">
+                  <span>{{ item.label }}</span>
                   <strong>{{ item.value }}</strong>
-                </span>
+                  <small>{{ item.caption }}</small>
+                </article>
+              </section>
+
+              <section class="dash-card payment-history-card">
+                <div class="card-title-row">
+                  <div>
+                    <h2>Ledger-backed payment activity</h2>
+                    <p>Funding, escrow, fees, mint logs, and payouts for the selected project are grouped in one place.</p>
+                  </div>
+                  <span>{{ dashboardPaymentRows.length }} rows</span>
+                </div>
+
+                <div v-if="dashboardPaymentRows.length" class="payment-history-list">
+                  <article v-for="row in dashboardPaymentRows" :key="row.key" class="payment-history-row">
+                    <div class="payment-history-main">
+                      <span :class="['ledger-event-type', row.tone]">{{ row.type }}</span>
+                      <strong>{{ row.title }}</strong>
+                      <p>{{ row.body }}</p>
+                    </div>
+
+                    <div class="payment-history-meta">
+                      <span>
+                        <small>Method</small>
+                        <strong>{{ row.method }}</strong>
+                      </span>
+                      <span>
+                        <small>Status</small>
+                        <strong>{{ row.status }}</strong>
+                      </span>
+                      <span>
+                        <small>Counterparty</small>
+                        <strong>{{ row.counterparty }}</strong>
+                      </span>
+                    </div>
+
+                    <div class="payment-history-side">
+                      <strong :class="['payment-history-amount', row.amountClass]">{{ row.amount }}</strong>
+                      <small>{{ row.when }}</small>
+                      <button type="button" @click="showToast(`Reference: ${row.rawReference}`)">
+                        {{ row.reference }}
+                      </button>
+                    </div>
+                  </article>
+                </div>
+                <article v-else class="dash-empty-state compact">
+                  <strong>{{ dashboardLoading ? 'Loading payment history...' : 'No payment history yet' }}</strong>
+                  <p>{{ dashboardLoading ? 'Fetching real funding and payout logs.' : 'Fund a project or release a task payout to create the first payment row.' }}</p>
+                </article>
+
+                <div class="watching-line">
+                  <CreditCard :size="14" />
+                  {{ dashboardPaymentRows.length }} payment events loaded
+                </div>
+              </section>
+            </template>
+          </template>
+
+          <template v-else>
+            <div class="dash-breadcrumb">
+              <Home :size="14" />
+              <span>My Projects</span>
+              <ChevronDown :size="13" />
+              <strong>{{ dashboardProjectView.title }}</strong>
+            </div>
+
+            <section v-if="dashboardError" class="dash-empty-state">
+              <strong>Could not load your projects</strong>
+              <p>{{ dashboardError }}</p>
+              <button class="secondary-button compact" type="button" @click="loadDashboardData">Retry</button>
+            </section>
+
+            <template v-else>
+              <section class="dash-project-header">
+                <div class="dash-project-title">
+                  <span class="project-photo">{{ dashboardProjectView.initials }}</span>
+                  <div>
+                    <h1>{{ dashboardProjectView.title }}</h1>
+                    <p>{{ dashboardProjectView.body }}</p>
+                  </div>
+                  <span class="live-badge">{{ dashboardProjectView.status }}</span>
+                </div>
+
+                <div class="dash-project-actions">
+                  <button type="button" @click="loadDashboardData">
+                    <RefreshCw :size="15" />
+                    Refresh
+                  </button>
+                  <button type="button" @click="showToast('Project share link copied.')">
+                    <Share2 :size="15" />
+                    Share
+                  </button>
+                  <button type="button" aria-label="More project actions" @click="showToast('Opening project actions...')">
+                    <MoreHorizontal :size="16" />
+                  </button>
+                </div>
+              </section>
+
+              <section class="dash-metrics" aria-label="Project summary">
+                <article>
+                  <span>Budget</span>
+                  <strong>{{ dashboardProjectView.budget }}</strong>
+                  <small>{{ dashboardProjectView.budgetCaption }}</small>
+                </article>
+                <article>
+                  <span>Progress</span>
+                  <strong>{{ dashboardProjectView.progress }}%</strong>
+                  <div class="mini-progress"><i :style="{ width: `${dashboardProjectView.progress}%` }" /></div>
+                </article>
+                <article>
+                  <span>Tasks</span>
+                  <strong>{{ dashboardProjectView.taskSummary }}</strong>
+                </article>
+                <article>
+                  <span>Repository</span>
+                  <strong>{{ dashboardProjectView.repo }}</strong>
+                </article>
+                <article>
+                  <span>Created</span>
+                  <strong>{{ dashboardProjectView.created }}</strong>
+                </article>
+              </section>
+
+              <div class="dash-tabs" role="tablist" aria-label="Project tabs">
+                <button
+                  v-for="tabItem in dashboardTabs"
+                  :key="tabItem"
+                  :class="{ active: tabItem === 'Overview' }"
+                  type="button"
+                  role="tab"
+                >
+                  {{ tabItem }}
+                  <span v-if="tabItem === 'Tasks'">{{ dashboardTaskRows.length }}</span>
+                </button>
               </div>
-              <button type="button" @click="showToast('Opening task routing...')">View Routing</button>
-            </article>
-          </section>
 
-          <section class="dash-card live-pr-board">
-            <div class="card-title-row">
-              <div>
-                <h2>Project Tasks</h2>
-                <p>Real tasks split from the funded project and loaded from the backend.</p>
-              </div>
-              <button type="button" @click="loadDashboardData">Refresh Tasks</button>
-            </div>
+              <section class="dash-overview-grid">
+                <article class="dash-card progress-overview-card">
+                  <h2>Progress Overview</h2>
+                  <div class="progress-card-body">
+                    <div class="progress-ring large" :style="dashboardRingStyle" :aria-label="`${dashboardProgress} percent completed`">
+                      <strong>{{ dashboardProgress }}%</strong>
+                      <span>Completed</span>
+                    </div>
+                    <div class="progress-legend compact">
+                      <span><i class="green-dot" />Completed <b>{{ dashboardAcceptedTasks.length }} tasks</b></span>
+                      <span><i class="blue-dot" />Open <b>{{ dashboardOpenTasks.length }} tasks</b></span>
+                      <span><i class="orange-dot" />Ledger <b>{{ dashboardProjectLedger.length }} entries</b></span>
+                      <span><i class="gray-dot" />Escrow <b>{{ formatMRGFromCents(dashboardLedgerFundingCents) }}</b></span>
+                    </div>
+                  </div>
+                </article>
 
-            <div v-if="dashboardTaskRows.length" class="dash-pr-list">
-              <article v-for="task in dashboardTaskRows" :key="task.id" class="dash-pr-row">
-                <span class="contributor-avatar">{{ task.initials }}</span>
-                <div class="dash-pr-main">
-                  <strong>#{{ task.issueNumber }} {{ task.title }}</strong>
-                  <small>{{ task.acceptance }}</small>
-                  <span>{{ task.reference }}</span>
-                </div>
-                <div class="dash-pr-stat">
-                  <strong>{{ task.reward }}</strong>
-                  <small>Reward</small>
-                </div>
-                <div class="dash-pr-stat positive">
-                  <strong>{{ task.kind }}</strong>
-                  <small>Worker</small>
-                </div>
-                <div class="dash-pr-stat negative">
-                  <strong>{{ task.agent }}</strong>
-                  <small>Agent</small>
-                </div>
-                <b :class="task.statusClass">{{ task.status }}</b>
-              </article>
-            </div>
-            <article v-else class="dash-empty-state compact">
-              <strong>{{ dashboardLoading ? 'Loading tasks...' : 'No tasks yet' }}</strong>
-              <p>{{ dashboardLoading ? 'Fetching your project task split.' : 'Fund a project to generate real tasks.' }}</p>
-            </article>
+                <article class="dash-card budget-card">
+                  <h2>Budget & Payments</h2>
+                  <div class="budget-lines">
+                    <span>Total Budget <strong>{{ formatMRGFromCents(dashboardSelectedProject?.budget_cents) }}</strong></span>
+                    <span>Work Pool <strong>{{ formatMRGFromCents(dashboardSelectedProject?.work_pool_cents) }}</strong></span>
+                    <span>Released <strong>{{ formatMRGFromCents(dashboardLedgerPayoutCents || dashboardSpentCents) }}</strong></span>
+                    <span>Remaining <strong>{{ formatMRGFromCents(dashboardRemainingCents) }}</strong></span>
+                  </div>
+                  <button type="button" @click="openDashboardSection('payments')">Open Payments</button>
+                </article>
 
-            <div class="watching-line">
-              <ListTodo :size="14" />
-              {{ dashboardTaskRows.length }} real tasks loaded
-            </div>
-          </section>
+                <article class="dash-card analysis-card">
+                  <div class="card-title-row">
+                    <h2>Work Split</h2>
+                    <span>Live</span>
+                  </div>
+                  <p>Task routing is loaded from the funded project plan.</p>
+                  <div class="risk-grid">
+                    <span v-for="item in dashboardWorkSplit" :key="item.label" :class="item.className">
+                      {{ item.label }}
+                      <strong>{{ item.value }}</strong>
+                    </span>
+                  </div>
+                  <button type="button" @click="showToast('Opening task routing...')">View Routing</button>
+                </article>
+              </section>
+
+              <section class="dash-card live-pr-board">
+                <div class="card-title-row">
+                  <div>
+                    <h2>Project Tasks</h2>
+                    <p>Real tasks split from the funded project and loaded from the backend.</p>
+                  </div>
+                  <button type="button" @click="loadDashboardData">Refresh Tasks</button>
+                </div>
+
+                <div v-if="dashboardTaskRows.length" class="dash-pr-list">
+                  <article v-for="task in dashboardTaskRows" :key="task.id" class="dash-pr-row">
+                    <span class="contributor-avatar">{{ task.initials }}</span>
+                    <div class="dash-pr-main">
+                      <strong>#{{ task.issueNumber }} {{ task.title }}</strong>
+                      <small>{{ task.acceptance }}</small>
+                      <span>{{ task.reference }}</span>
+                    </div>
+                    <div class="dash-pr-stat">
+                      <strong>{{ task.reward }}</strong>
+                      <small>Reward</small>
+                    </div>
+                    <div class="dash-pr-stat positive">
+                      <strong>{{ task.kind }}</strong>
+                      <small>Worker</small>
+                    </div>
+                    <div class="dash-pr-stat negative">
+                      <strong>{{ task.agent }}</strong>
+                      <small>Agent</small>
+                    </div>
+                    <b :class="task.statusClass">{{ task.status }}</b>
+                  </article>
+                </div>
+                <article v-else class="dash-empty-state compact">
+                  <strong>{{ dashboardLoading ? 'Loading tasks...' : 'No tasks yet' }}</strong>
+                  <p>{{ dashboardLoading ? 'Fetching your project task split.' : 'Fund a project to generate real tasks.' }}</p>
+                </article>
+
+                <div class="watching-line">
+                  <ListTodo :size="14" />
+                  {{ dashboardTaskRows.length }} real tasks loaded
+                </div>
+              </section>
+            </template>
+          </template>
         </section>
 
         <aside class="dash-rail">
@@ -1272,7 +1376,7 @@
                 <span class="contributor-avatar">{{ initialsFor(project.title || project.company_name || 'MP') }}</span>
                 <div>
                   <strong>{{ project.title }}</strong>
-                  <small>{{ formatMoneyFromCents(project.budget_cents) }} - {{ (project.tasks || []).length }} tasks</small>
+                  <small>{{ formatMRGFromCents(project.budget_cents) }} - {{ (project.tasks || []).length }} tasks</small>
                 </div>
               </button>
             </div>
@@ -1307,6 +1411,30 @@
             </button>
           </section>
 
+          <section ref="dashboardNotificationCenter" class="dash-card rail-card notification-center-card" tabindex="-1">
+            <div class="card-title-row">
+              <h2>Notifications</h2>
+              <span>{{ dashboardNotificationRows.length }}</span>
+            </div>
+            <div v-if="dashboardNotificationRows.length" class="notification-center-list">
+              <article v-for="note in dashboardNotificationRows" :key="note.id">
+                <span :class="['notification-dot', note.tone]" />
+                <div>
+                  <strong>{{ note.subject }}</strong>
+                  <p>{{ note.body }}</p>
+                  <small>{{ note.meta }}</small>
+                </div>
+              </article>
+            </div>
+            <article v-else class="dash-empty-state compact">
+              <strong>{{ dashboardNotificationsLoading ? 'Loading notifications...' : 'No notifications yet' }}</strong>
+              <p>{{ dashboardNotificationsLoading ? 'Fetching delivery records.' : dashboardNotificationsError || 'Project updates and delivery notices will appear here.' }}</p>
+            </article>
+            <button class="rail-link-button" type="button" @click="loadDashboardNotifications">
+              Refresh notifications
+            </button>
+          </section>
+
           <section class="dash-card rail-card chat-card">
             <div class="card-title-row">
               <h2>Ledger Snapshot</h2>
@@ -1335,7 +1463,7 @@
   </div>
 
   <div v-else class="home-shell">
-    <div v-if="toastMessage" class="toast">
+    <div v-if="toastMessage" class="toast" role="status" aria-live="polite">
       {{ toastMessage }}
     </div>
 
@@ -1408,6 +1536,23 @@
               <article v-for="stat in homeLiveStats" :key="stat.label">
                 <strong>{{ stat.value }}</strong>
                 <span>{{ stat.label }}</span>
+              </article>
+            </div>
+            <div class="public-notification-feed" aria-live="polite">
+              <div class="public-notification-head">
+                <span>
+                  <Bell :size="15" />
+                </span>
+                <strong>Recent updates</strong>
+                <small>{{ publicNotificationRows.length }}</small>
+              </div>
+              <article v-for="note in publicNotificationRows.slice(0, 3)" :key="note.id">
+                <i :class="['notification-dot', note.tone]" />
+                <div>
+                  <strong>{{ note.subject }}</strong>
+                  <p>{{ note.body }}</p>
+                  <small>{{ note.meta }}</small>
+                </div>
               </article>
             </div>
           </aside>
@@ -1979,7 +2124,7 @@
     </main>
 
     <div v-if="authVisible" class="modal-backdrop" role="presentation" @click.self="closeAuth">
-      <section class="auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-title">
+      <section ref="authDialog" class="auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-title" tabindex="-1" @keydown.esc="closeAuth">
         <button class="auth-close-button" aria-label="Close" type="button" @click="closeAuth">
           <X :size="24" />
         </button>
@@ -2007,12 +2152,19 @@
 
             <div class="social-auth-row">
               <button type="button" @click="loginWithSocial('google')">
-                <span class="google-mark" aria-hidden="true">G</span>
+                <svg class="social-brand-logo google-mark" viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+                  <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+                  <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+                  <path fill="#FBBC05" d="M10.53 28.59A14.5 14.5 0 0 1 9.75 24c0-1.59.28-3.14.78-4.59l-7.98-6.19A23.9 23.9 0 0 0 0 24c0 3.86.92 7.5 2.56 10.78l7.97-6.19z" />
+                  <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+                </svg>
                 Continue with Google
               </button>
               <button type="button" :disabled="authBusy || !githubOAuthReady" @click="startGitHubLogin">
-                <span class="github-mark" aria-hidden="true">GH</span>
-                {{ githubOAuthReady ? 'Continue with GitHub' : 'Configure GitHub OAuth' }}
+                <svg class="social-brand-logo github-mark" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.56v-2.17c-3.2.7-3.88-1.36-3.88-1.36-.52-1.33-1.28-1.68-1.28-1.68-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.76 2.7 1.25 3.36.96.1-.75.4-1.25.73-1.54-2.55-.29-5.24-1.28-5.24-5.68 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.04 0 0 .97-.31 3.17 1.18a11.1 11.1 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.58.23 2.75.11 3.04.74.81 1.19 1.83 1.19 3.09 0 4.41-2.69 5.38-5.25 5.67.41.35.78 1.05.78 2.12v3.19c0 .31.21.67.8.56A11.51 11.51 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5z" />
+                </svg>
+                {{ githubOAuthReady ? 'Continue with GitHub' : 'Configure GitHub App' }}
               </button>
             </div>
 
@@ -2170,7 +2322,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, onUnmounted, reactive, ref } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue';
 import {
   ArrowLeft,
   ArrowRight,
@@ -2330,6 +2482,7 @@ function removeStoredToken() {
 const token = ref(readStoredToken());
 const user = ref(null);
 const authVisible = ref(false);
+const authDialog = ref(null);
 const authMode = ref('login');
 const authBusy = ref(false);
 const authRememberMe = ref(false);
@@ -2338,6 +2491,7 @@ const errorMessage = ref('');
 const showPassword = ref(false);
 const showConfirmPassword = ref(false);
 const toastMessage = ref('');
+const publicNotifications = ref([]);
 let toastTimer = 0;
 
 const initialRoutePath = props.initialPath || (hasWindow ? window.location.pathname : '/');
@@ -2374,10 +2528,15 @@ const activeMarketplaceCategory = ref('All');
 const dashboardProjects = ref([]);
 const dashboardTasks = ref([]);
 const dashboardLedgerEntries = ref([]);
+const dashboardNotifications = ref([]);
+const dashboardNotificationsLoading = ref(false);
+const dashboardNotificationsError = ref('');
 const dashboardLoading = ref(false);
 const dashboardError = ref('');
 const dashboardSearch = ref('');
+const dashboardSection = ref('projects');
 const selectedDashboardProjectID = ref('');
+const dashboardNotificationCenter = ref(null);
 const priceEvaluation = ref(null);
 const priceEvaluationBusy = ref(false);
 const priceEvaluationError = ref('');
@@ -2394,7 +2553,6 @@ const projectSetupForm = reactive({
   repoUrl: '',
   overview: '',
   requirements: '',
-  currency: 'USD',
   budgetAmount: '',
   budgetType: 'Fixed price',
   startDate: '',
@@ -2557,14 +2715,14 @@ const repoImportedEstimateCents = computed(() =>
 );
 const projectBudgetAmount = computed(() => Math.max(0, Number(projectSetupForm.budgetAmount) || 0));
 const projectBudgetLow = computed(() => {
-  if (aiEvaluationResult.value && projectSetupForm.budgetAmount === Math.round((aiEvaluationResult.value.suggested_low + aiEvaluationResult.value.suggested_high) / 2)) {
-    return aiEvaluationResult.value.suggested_low;
+  if (aiEvaluationResult.value && projectBudgetAmount.value === mrgFromUSD(Math.round((aiEvaluationResult.value.suggested_low + aiEvaluationResult.value.suggested_high) / 2))) {
+    return mrgFromUSD(aiEvaluationResult.value.suggested_low);
   }
   return Math.round(projectBudgetAmount.value * 0.85);
 });
 const projectBudgetHigh = computed(() => {
-  if (aiEvaluationResult.value && projectSetupForm.budgetAmount === Math.round((aiEvaluationResult.value.suggested_low + aiEvaluationResult.value.suggested_high) / 2)) {
-    return aiEvaluationResult.value.suggested_high;
+  if (aiEvaluationResult.value && projectBudgetAmount.value === mrgFromUSD(Math.round((aiEvaluationResult.value.suggested_low + aiEvaluationResult.value.suggested_high) / 2))) {
+    return mrgFromUSD(aiEvaluationResult.value.suggested_high);
   }
   return Math.round(projectBudgetAmount.value * 1.25);
 });
@@ -2580,14 +2738,14 @@ const projectFundingEscrowFee = computed(() => Math.round((Number(projectFunding
 const projectTokenAmount = computed(() => Math.round((Number(projectFundingAmount.value) || 0) * TOKEN_RATE_PER_USD));
 const projectInitial = computed(() => (projectSetupForm.title.trim().charAt(0) || 'M').toUpperCase());
 const projectBudgetRangeLabel = computed(() =>
-  projectBudgetAmount.value > 0 ? `${formatMoney(projectBudgetLow.value)} - ${formatMoney(projectBudgetHigh.value)}` : 'Budget not set',
+  projectBudgetAmount.value > 0 ? `${formatMRG(projectBudgetLow.value)} - ${formatMRG(projectBudgetHigh.value)}` : 'Budget not set',
 );
 const projectBudgetSummaryLabel = computed(() =>
-  projectBudgetAmount.value > 0 ? `${formatMoney(projectBudgetAmount.value)} (${projectSetupForm.budgetType})` : 'Budget not set',
+  projectBudgetAmount.value > 0 ? `${formatMRG(projectBudgetAmount.value)} (${projectSetupForm.budgetType})` : 'Budget not set',
 );
-const projectEstimatedTotalLabel = computed(() => (projectBudgetAmount.value > 0 ? formatMoney(projectEstimatedTotal.value) : 'Not calculated yet'));
+const projectEstimatedTotalLabel = computed(() => (projectBudgetAmount.value > 0 ? formatMRG(projectEstimatedTotal.value) : 'Not calculated yet'));
 const projectEstimatedRangeLabel = computed(() =>
-  projectBudgetAmount.value > 0 ? `${formatMoney(projectEstimatedLow.value)} - ${formatMoney(projectEstimatedHigh.value)}` : 'Not calculated yet',
+  projectBudgetAmount.value > 0 ? `${formatMRG(projectEstimatedLow.value)} - ${formatMRG(projectEstimatedHigh.value)}` : 'Not calculated yet',
 );
 const projectFundingAmountLabel = computed(() => (Number(projectFundingAmount.value) > 0 ? `${formatMoney(projectFundingAmount.value)} USD` : 'Choose amount'));
 const projectTokenAmountLabel = computed(() => (projectTokenAmount.value > 0 ? `${projectTokenAmount.value} ${tokenSymbol.value}` : 'Choose an amount'));
@@ -2718,6 +2876,12 @@ const authBenefits = [
     body: 'Collaborate seamlessly and ship high-quality software.',
   },
 ];
+
+watch(authVisible, async (visible) => {
+  if (!visible) return;
+  await nextTick();
+  authDialog.value?.focus();
+});
 
 const ledgerTrustItems = [
   {
@@ -2915,6 +3079,34 @@ const homeLiveStats = computed(() => [
   { value: formatPublicMRGFromCents(marketplaceStats.value.total_budget_cents), label: 'Verified escrow' },
   { value: formatPublicTokenAmount(publicMintedTokenTotal.value), label: 'Tokens minted' },
 ]);
+const publicNotificationRows = computed(() => {
+  const actionRows = publicNotifications.value.map((note) => ({
+    id: note.id,
+    subject: note.subject,
+    body: note.body,
+    meta: note.meta,
+    tone: note.tone,
+    createdAt: note.createdAt,
+  }));
+  const ledgerRows = ledgerEvents.value.slice(0, 4).map((event) => ({
+    id: `ledger-${event.key}`,
+    subject: event.type,
+    body: `${event.project} recorded ${event.amount}.`,
+    meta: event.time,
+    tone: event.tone === 'green' || event.tone === 'blue' ? event.tone : 'blue',
+    createdAt: event.createdAt,
+  }));
+  const rows = [...actionRows, ...ledgerRows].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+  if (rows.length) return rows;
+  return [{
+    id: 'empty-public-notification',
+    subject: marketplaceLoading.value ? 'Loading platform updates' : 'No live updates yet',
+    body: marketplaceLoading.value ? 'Fetching the latest ledger and marketplace status.' : 'Funding, marketplace, and ledger activity will appear here.',
+    meta: marketplaceLoading.value ? 'Syncing' : 'Waiting for activity',
+    tone: 'blue',
+    createdAt: new Date(0).toISOString(),
+  }];
+});
 
 const homeWorkflowCards = [
   {
@@ -3092,6 +3284,11 @@ const dashboardProjectList = computed(() => {
     project.repo_provider,
   ].filter(Boolean).join(' ').toLowerCase().includes(query));
 });
+const dashboardSearchPlaceholder = computed(() =>
+  dashboardSection.value === 'payments'
+    ? 'Search payments, refs, methods, or statuses...'
+    : 'Search your live projects...',
+);
 const dashboardSelectedProject = computed(() => {
   if (!dashboardSortedProjects.value.length) return null;
   return dashboardSortedProjects.value.find((project) => project.id === selectedDashboardProjectID.value) || dashboardSortedProjects.value[0];
@@ -3146,8 +3343,8 @@ const dashboardProjectView = computed(() => {
       body: dashboardLoading.value ? 'Fetching funded work from MergeOS.' : 'Start and fund a project to see real tasks, escrow, and ledger activity here.',
       initials: 'MP',
       status: dashboardLoading.value ? 'Syncing' : 'Empty',
-      budget: '$0',
-      tokenBudget: `0 ${tokenSymbol.value}`,
+      budget: `0 ${tokenSymbol.value}`,
+      budgetCaption: 'MRG budget',
       repo: 'No repo yet',
       created: '-',
       taskSummary: '0 / 0',
@@ -3160,8 +3357,8 @@ const dashboardProjectView = computed(() => {
     body: trimMarketplaceText(project.brief, 'Funded MergeOS project with escrow-backed tasks.'),
     initials: initialsFor(project.title || project.company_name || project.client_name || 'MP'),
     status: toTitleLabel(project.status || 'funded'),
-    budget: formatMoneyFromCents(project.budget_cents),
-    tokenBudget: `${formatCompactNumber(tokenAmountFromCents(project.budget_cents))} ${tokenSymbol.value}`,
+    budget: formatMRGFromCents(project.budget_cents),
+    budgetCaption: 'MRG budget',
     repo: shortRepoLabel(project),
     created: formatDashboardDate(project.created_at),
     taskSummary: `${dashboardAcceptedTasks.value.length} / ${dashboardSelectedTasks.value.length}`,
@@ -3186,14 +3383,86 @@ const dashboardLedgerRows = computed(() =>
     return {
       key: `${entry.sequence}-${entry.entry_hash || entry.reference}`,
       title: meta.type,
-      value: entry.type === 'token_mint'
-        ? `${formatCompactNumber(tokenAmountFromCents(entry.amount_cents))} ${tokenSymbol.value}`
-        : formatMoneyFromCents(entry.amount_cents),
+      value: formatMRGFromCents(entry.amount_cents),
       ref: shortLedgerReference(entry.reference || entry.entry_hash || `#${entry.sequence}`),
     };
   }),
 );
-const dashboardNotificationCount = computed(() => Math.min(9, dashboardActivityRows.value.length));
+const dashboardNotificationRows = computed(() =>
+  dashboardNotifications.value
+    .slice()
+    .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+    .slice(0, 8)
+    .map(mapDashboardNotification),
+);
+const dashboardNotificationCount = computed(() => Math.min(9, dashboardNotificationRows.value.length));
+const dashboardPaymentRows = computed(() => {
+  const project = dashboardSelectedProject.value;
+  if (!project) return [];
+  const query = dashboardSearch.value.trim().toLowerCase();
+  const rows = dashboardProjectLedger.value
+    .filter((entry) => financialLedgerTypes.has(entry.type))
+    .slice()
+    .reverse()
+    .map((entry) => mapDashboardPaymentRow(entry, project, dashboardSelectedTasks.value));
+  if (!query) return rows;
+  return rows.filter((row) => [
+    row.type,
+    row.title,
+    row.body,
+    row.method,
+    row.status,
+    row.counterparty,
+    row.reference,
+    row.rawReference,
+  ].filter(Boolean).join(' ').toLowerCase().includes(query));
+});
+const dashboardPaymentView = computed(() => {
+  const project = dashboardSelectedProject.value;
+  if (!project) {
+    return {
+      title: dashboardLoading.value ? 'Loading payment history' : 'Payment history',
+      body: dashboardLoading.value
+        ? 'Fetching funding, escrow, and payout rows from the authenticated ledger.'
+        : 'Select a funded project to inspect its payment flow after login.',
+      status: dashboardLoading.value ? 'Syncing' : 'Empty',
+    };
+  }
+  return {
+    title: project.title || 'Payment history',
+    body: `Track verified funding, escrow holds, token mints, platform fees, and payouts for ${project.title || 'this project'}.`,
+    status: dashboardPaymentRows.value.length ? 'Live' : 'Waiting',
+  };
+});
+const dashboardPaymentSummary = computed(() => {
+  const project = dashboardSelectedProject.value;
+  const projectMethod = project?.payment_method ? toTitleLabel(project.payment_method) : 'Not set';
+  const projectProvider = paymentProviderLabel(project?.payment_provider || '');
+  const projectStatus = project?.payment_status ? toTitleLabel(project.payment_status) : 'No status';
+  const latestPayment = dashboardPaymentRows.value[0];
+  return [
+    {
+      label: 'Verified Funding',
+      value: formatMRGFromCents(dashboardLedgerFundingCents.value),
+      caption: dashboardPaymentRows.value.filter((row) => row.type === 'Payment Verified').length ? 'Escrow-ready funding logs' : 'No verified funding yet',
+    },
+    {
+      label: 'Released Payouts',
+      value: formatMRGFromCents(dashboardLedgerPayoutCents.value || dashboardSpentCents.value),
+      caption: dashboardPaymentRows.value.filter((row) => row.type === 'Payout Released').length ? 'Worker payouts already logged' : 'No payouts released yet',
+    },
+    {
+      label: 'Method & Provider',
+      value: `${projectMethod} / ${projectProvider}`,
+      caption: projectStatus,
+    },
+    {
+      label: 'Latest Activity',
+      value: latestPayment ? latestPayment.amount : `0 ${tokenSymbol.value}`,
+      caption: latestPayment ? latestPayment.when : 'No financial events yet',
+    },
+  ];
+});
 
 const marketplaceBenefits = [
   {
@@ -3217,12 +3486,12 @@ const sidebarSections = [
   {
     label: 'Main',
     items: [
-      { label: 'Overview', icon: LayoutDashboard, toast: 'Opening overview...' },
-      { label: 'My Projects', icon: FolderKanban, active: true, toast: 'Opening projects...' },
-      { label: 'Tasks', icon: ListTodo, toast: 'Opening tasks...' },
+      { label: 'Overview', icon: LayoutDashboard, section: 'projects' },
+      { label: 'My Projects', icon: FolderKanban, section: 'projects' },
+      { label: 'Tasks', icon: ListTodo, section: 'projects', toast: 'Opening tasks...' },
       { label: 'Repositories', icon: GitBranch, toast: 'Opening repositories...' },
-      { label: 'Payments', icon: CreditCard, toast: 'Opening payments...' },
-      { label: 'Notifications', icon: Bell, toast: 'Opening notifications...' },
+      { label: 'Payments', icon: CreditCard, section: 'payments' },
+      { label: 'Notifications', icon: Bell, section: 'notifications' },
     ],
   },
   {
@@ -3244,11 +3513,11 @@ const sidebarSections = [
 ];
 
 const topNavItems = [
-  { label: 'Dashboard', active: true, toast: 'Opening dashboard...' },
-  { label: 'Projects', toast: 'Opening projects...' },
+  { label: 'Dashboard', section: 'projects' },
+  { label: 'Projects', section: 'projects' },
   { label: 'Marketplace', page: 'marketplace' },
   { label: 'Repos', toast: 'Opening repositories...' },
-  { label: 'Payments', toast: 'Opening payments...' },
+  { label: 'Payments', section: 'payments' },
   { label: 'Analytics', toast: 'Opening analytics...' },
 ];
 
@@ -3291,7 +3560,7 @@ async function startGitHubLogin() {
   errorMessage.value = '';
   const cfg = await loadRuntimeConfig();
   if (!cfg.github_oauth_ready || !cfg.github_oauth_client_id) {
-    errorMessage.value = 'GitHub OAuth is not configured yet.';
+    errorMessage.value = 'GitHub App login is not configured yet.';
     showToast(errorMessage.value);
     return;
   }
@@ -3303,7 +3572,6 @@ async function startGitHubLogin() {
   const params = new URLSearchParams({
     client_id: cfg.github_oauth_client_id,
     redirect_uri: redirectURI,
-    scope: 'read:user user:email',
     state,
   });
   window.location.href = `https://github.com/login/oauth/authorize?${params.toString()}`;
@@ -3347,11 +3615,29 @@ async function handleGitHubCallback() {
 
 function showToast(message) {
   toastMessage.value = message;
+  pushPublicNotification(message);
   if (!hasWindow) return;
   if (toastTimer) window.clearTimeout(toastTimer);
   toastTimer = window.setTimeout(() => {
     toastMessage.value = '';
   }, 2200);
+}
+
+function pushPublicNotification(message) {
+  if (!message || (user.value && !publicModeVisible.value && !projectWizardVisible.value)) return;
+  const createdAt = new Date().toISOString();
+  const body = projectWizardVisible.value ? 'Project setup status changed.' : 'Public session status changed.';
+  publicNotifications.value = [
+    {
+      id: `public-${Date.now()}`,
+      subject: String(message),
+      body,
+      meta: formatLedgerDateTime(createdAt).full,
+      tone: projectWizardVisible.value ? 'green' : 'blue',
+      createdAt,
+    },
+    ...publicNotifications.value,
+  ].slice(0, 6);
 }
 
 function scrollToSection(id) {
@@ -3443,6 +3729,7 @@ function handlePublicAction(action = {}) {
 
 function openDashboard() {
   publicModeVisible.value = false;
+  dashboardSection.value = 'projects';
   if (user.value) {
     void loadDashboardData({ silent: true });
   }
@@ -3457,11 +3744,38 @@ function handleDashboardNav(item) {
     openPublicPage(item.page);
     return;
   }
-  if (item.label === 'Dashboard') {
-    openDashboard();
+  if (item.section) {
+    openDashboardSection(item.section);
     return;
   }
   showToast(item.toast || `${item.label} opened.`);
+}
+
+function openDashboardSection(section) {
+  publicModeVisible.value = false;
+  if (section === 'payments' || section === 'projects') {
+    dashboardSection.value = section;
+    if (!hasWindow) return;
+    window.requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+    return;
+  }
+  dashboardSection.value = 'projects';
+  if (section === 'notifications') {
+    void loadDashboardNotifications();
+    if (!hasWindow) return;
+    window.requestAnimationFrame(() => {
+      dashboardNotificationCenter.value?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      dashboardNotificationCenter.value?.focus({ preventScroll: true });
+    });
+  }
+}
+
+function isDashboardNavActive(item = {}) {
+  if (item.section === 'payments') return dashboardSection.value === 'payments';
+  if (item.section === 'projects') return dashboardSection.value === 'projects';
+  return false;
 }
 
 function openMarketplaceSection(id) {
@@ -3563,7 +3877,10 @@ function nextProjectStep() {
     return;
   }
 
-  projectFundingAmount.value = Math.max(100, projectBudgetAmount.value || projectFundingAmount.value);
+  if (projectBudgetAmount.value > 0 && projectBudgetAmount.value < TOKEN_RATE_PER_USD * 100) {
+    projectSetupForm.budgetAmount = TOKEN_RATE_PER_USD * 100;
+  }
+  projectFundingAmount.value = Math.max(100, Math.ceil(projectBudgetAmount.value / TOKEN_RATE_PER_USD) || projectFundingAmount.value);
   projectWizardStage.value = 'funding';
   updateProjectWizardBrowserPath();
   scrollProjectFlowTop();
@@ -3581,7 +3898,7 @@ function buildPriceEvaluationPayload() {
     tech_stack: projectSetupForm.techStack,
     complexity: projectSetupForm.allowAgents ? 'moderate' : 'high',
     constraints: projectSetupForm.skills,
-    reference_budget_cents: Math.round(Math.max(0, Number(projectSetupForm.budgetAmount) || 0) * 100),
+    reference_budget_cents: centsFromMRG(projectSetupForm.budgetAmount),
   };
 }
 
@@ -3613,7 +3930,7 @@ async function runProjectPriceEvaluation() {
 
 function applyPriceEvaluation() {
   if (!priceEvaluation.value?.suggested_price_cents) return;
-  projectSetupForm.budgetAmount = Math.max(100, Math.round(priceEvaluation.value.suggested_price_cents / 100));
+  projectSetupForm.budgetAmount = Math.max(TOKEN_RATE_PER_USD * 100, tokenAmountFromCents(priceEvaluation.value.suggested_price_cents));
   projectSetupForm.budgetType = 'Range';
 }
 
@@ -3729,7 +4046,7 @@ async function triggerAiEvaluation() {
       tech_stack: projectSetupForm.techStack || '',
       complexity: projectSetupForm.complexity || 'Medium',
       constraints: projectSetupForm.constraints || '',
-      reference_budget: Math.max(0, Number(projectSetupForm.budgetAmount) || 0)
+      reference_budget: Math.round(usdFromMRG(projectSetupForm.budgetAmount))
     };
     
     const response = await api('/api/projects/evaluate', {
@@ -3749,10 +4066,9 @@ async function triggerAiEvaluation() {
 function applyAiSuggestedPrice() {
   if (aiEvaluationResult.value) {
     const avg = Math.round((aiEvaluationResult.value.suggested_low + aiEvaluationResult.value.suggested_high) / 2);
-    projectSetupForm.budgetAmount = avg;
-    showToast(`Applied AI suggested budget: ${formatMoney(avg)}`);
+    projectSetupForm.budgetAmount = mrgFromUSD(avg);
+    showToast(`Applied AI suggested budget: ${formatMRGFromUSD(avg)}`);
   }
-}
 }
 
 function formatMoney(value) {
@@ -3763,20 +4079,36 @@ function formatMoney(value) {
   }).format(Number(value) || 0);
 }
 
-function formatMoneyFromCents(cents = 0) {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 0,
-  }).format((Number(cents) || 0) / 100);
+function mrgFromUSD(value = 0) {
+  return Math.round((Number(value) || 0) * TOKEN_RATE_PER_USD);
+}
+
+function usdFromMRG(value = 0) {
+  return (Number(value) || 0) / TOKEN_RATE_PER_USD;
+}
+
+function centsFromMRG(value = 0) {
+  return Math.round(usdFromMRG(value) * 100);
+}
+
+function formatMRG(value = 0) {
+  return `${formatCompactNumber(value)} ${tokenSymbol.value}`;
+}
+
+function formatMRGFromUSD(value = 0) {
+  return formatMRG(mrgFromUSD(value));
+}
+
+function formatMRGFromCents(cents = 0) {
+  return formatMRG(tokenAmountFromCents(cents));
 }
 
 function formatLedgerMRGFromCents(cents = 0) {
-  return `${formatCompactNumber(tokenAmountFromCents(cents))} ${tokenSymbol.value}`;
+  return formatMRGFromCents(cents);
 }
 
 function formatPublicMRGFromCents(cents = 0) {
-  return `${formatCompactNumber(tokenAmountFromCents(cents))} ${tokenSymbol.value}`;
+  return formatMRGFromCents(cents);
 }
 
 function formatPublicTokenAmount(amount = 0) {
@@ -3934,6 +4266,102 @@ function dashboardLedgerEntryMatchesProject(entry = {}, project = {}, tasks = []
   return tasks.some((task) => task.id && haystack.includes(task.id));
 }
 
+const financialLedgerTypes = new Set([
+  'payment_verified',
+  'platform_fee',
+  'project_reserve',
+  'task_reserve',
+  'task_payment',
+  'token_mint',
+]);
+
+function taskForLedgerEntry(entry = {}, tasks = []) {
+  const haystack = [
+    entry.reference,
+    entry.from_account,
+    entry.to_account,
+  ].filter(Boolean).join('|');
+  return tasks.find((task) => task.id && haystack.includes(task.id)) || null;
+}
+
+function paymentProviderLabel(value = '') {
+  const normalized = String(value || '').trim().replace(/^payment:/, '');
+  if (!normalized) return 'MergeOS';
+  if (normalized === 'local-dev-verifier') return 'Local Verifier';
+  return toTitleLabel(normalized.replaceAll('-', ' '));
+}
+
+function ledgerAccountLabel(value = '') {
+  const text = String(value || '').trim();
+  if (!text) return 'MergeOS';
+  if (text.startsWith('payment:')) return `${paymentProviderLabel(text)} gateway`;
+  if (text.startsWith('wallet:')) return shortWallet(text.slice('wallet:'.length));
+  if (text.startsWith('github:')) return text;
+  if (text.startsWith('task:')) return shortLedgerReference(text.slice('task:'.length));
+  if (text.startsWith('project:')) return shortLedgerReference(text.slice('project:'.length));
+  return shortLedgerReference(text);
+}
+
+function paymentStatusForEntry(entry = {}, project = {}) {
+  if (entry.type === 'payment_verified') return project.payment_status ? toTitleLabel(project.payment_status) : 'Verified';
+  if (entry.type === 'task_payment') return 'Released';
+  if (entry.type === 'token_mint') return 'Minted';
+  if (entry.type === 'platform_fee') return 'Charged';
+  return 'Held';
+}
+
+function paymentMethodForEntry(entry = {}, project = {}, task = null) {
+  if (entry.type === 'payment_verified') {
+    return `${toTitleLabel(project.payment_method || 'payment')} / ${paymentProviderLabel(project.payment_provider || entry.from_account)}`;
+  }
+  if (entry.type === 'task_payment') {
+    return task ? `Task payout / #${task.issue_number || '-'}` : 'Task payout / wallet';
+  }
+  if (entry.type === 'token_mint') return `${tokenSymbol.value} mint / ledger`;
+  if (entry.type === 'platform_fee') return `Platform fee / ${paymentProviderLabel(project.payment_provider || entry.from_account)}`;
+  if (entry.type === 'project_reserve') return 'Escrow reserve / project';
+  return task ? `Task reserve / #${task.issue_number || '-'}` : 'Task reserve / delivery';
+}
+
+function paymentBodyForEntry(entry = {}, project = {}, task = null) {
+  if (entry.type === 'payment_verified') {
+    return `${project.title || 'This project'} was funded and verified for escrow-backed delivery.`;
+  }
+  if (entry.type === 'task_payment') {
+    return task
+      ? `Released for #${task.issue_number || '-'} ${task.title || 'project task'}.`
+      : `Released to ${ledgerAccountLabel(entry.to_account)} from the task reserve.`;
+  }
+  if (entry.type === 'token_mint') return `${tokenSymbol.value} mint recorded for the payer after funding verification.`;
+  if (entry.type === 'platform_fee') return 'Platform fee logged as part of the verified payment flow.';
+  if (entry.type === 'project_reserve') return 'Escrow reserve created to protect the full project budget.';
+  return task
+    ? `Budget reserved for #${task.issue_number || '-'} ${task.title || 'project task'}.`
+    : 'Budget reserved for task delivery.';
+}
+
+function mapDashboardPaymentRow(entry = {}, project = {}, tasks = []) {
+  const meta = ledgerMetaFor(entry.type);
+  const when = formatLedgerDateTime(entry.created_at);
+  const task = taskForLedgerEntry(entry, tasks);
+  const amount = formatMRGFromCents(entry.amount_cents);
+  return {
+    key: `${entry.sequence}-${entry.entry_hash || entry.reference}`,
+    type: meta.type,
+    tone: meta.tone,
+    title: project.title || 'MergeOS payment history',
+    body: paymentBodyForEntry(entry, project, task),
+    method: paymentMethodForEntry(entry, project, task),
+    status: paymentStatusForEntry(entry, project),
+    counterparty: entry.type === 'task_payment' ? ledgerAccountLabel(entry.to_account) : paymentProviderLabel(project.payment_provider || entry.from_account),
+    amount: meta.amountTone === 'negative' ? `- ${amount}` : meta.amountTone === 'positive' ? `+ ${amount}` : amount,
+    amountClass: meta.amountTone,
+    when: when.full,
+    reference: shortLedgerReference(entry.reference || entry.entry_hash || `#${entry.sequence}`),
+    rawReference: entry.reference || entry.entry_hash || `#${entry.sequence}`,
+  };
+}
+
 function taskIssueReference(task = {}) {
   if (task.issue_url) {
     const parts = String(task.issue_url).split(/[\\/]/).filter(Boolean);
@@ -3951,7 +4379,7 @@ function mapDashboardTask(task = {}) {
     title: task.title || 'Untitled task',
     acceptance: trimMarketplaceText(task.acceptance, 'Acceptance criteria not provided.'),
     reference: taskIssueReference(task),
-    reward: formatMoneyFromCents(task.reward_cents),
+    reward: formatMRGFromCents(task.reward_cents),
     kind: toTitleLabel(task.required_worker_kind || task.worker_kind || 'task'),
     agent: task.suggested_agent_type ? toTitleLabel(task.suggested_agent_type) : '-',
     status,
@@ -3967,6 +4395,17 @@ function mapDashboardActivity(entry = {}) {
     icon: meta.icon,
     color: meta.tone === 'amber' ? 'yellow' : meta.tone,
     time: formatLedgerDateTime(entry.created_at).full,
+  };
+}
+
+function mapDashboardNotification(note = {}) {
+  const when = formatLedgerDateTime(note.created_at);
+  return {
+    id: note.id || `${note.subject}-${note.created_at}`,
+    subject: note.subject || 'Notification',
+    body: trimMarketplaceText(note.body, 'MergeOS status update.'),
+    meta: `${toTitleLabel(note.channel || 'app')} · ${toTitleLabel(note.status || 'logged')} · ${when.full}`,
+    tone: note.status === 'failed' ? 'red' : note.project_id ? 'green' : 'blue',
   };
 }
 
@@ -4032,11 +4471,11 @@ function mapLedgerEntry(entry) {
   const tokenAmount = tokenAmountFromCents(entry.amount_cents);
   const projectTitle = project?.title || (projectID ? `Project ${projectID.slice(-6)}` : 'MergeOS ledger');
   const company = project?.company_name || project?.client_name || 'MergeOS';
-  const isFeeOrPayout = entry.type === 'platform_fee' || entry.type === 'task_payment';
   return {
     key: `${entry.sequence}-${entry.entry_hash || entry.reference}`,
     date: when.date,
     time: when.time,
+    createdAt: entry.created_at,
     type: meta.type,
     icon: meta.icon,
     tone: meta.tone,
@@ -4044,7 +4483,7 @@ function mapLedgerEntry(entry) {
     projectTone: projectToneFor(projectID || projectTitle),
     project: projectTitle,
     company,
-    amount: `${isFeeOrPayout ? '-' : '+'} ${formatCompactNumber(tokenAmount)} ${tokenSymbol.value}`,
+    amount: `${formatCompactNumber(Math.abs(tokenAmount))} ${tokenSymbol.value}`,
     secondaryAmount: entry.type === 'payment_verified' ? 'funding verified' : entry.type === 'token_mint' ? 'mint log' : '',
     amountTone: meta.amountTone,
     ref: shortLedgerReference(entry.reference || entry.entry_hash || `#${entry.sequence}`),
@@ -4217,6 +4656,7 @@ async function loadDashboardData(options = {}) {
     dashboardProjects.value = [];
     dashboardTasks.value = [];
     dashboardLedgerEntries.value = [];
+    dashboardSection.value = 'projects';
     selectedDashboardProjectID.value = '';
     return;
   }
@@ -4245,12 +4685,31 @@ async function loadDashboardData(options = {}) {
   }
 }
 
+async function loadDashboardNotifications() {
+  if (!token.value) {
+    dashboardNotifications.value = [];
+    dashboardNotificationsError.value = '';
+    return;
+  }
+  dashboardNotificationsLoading.value = true;
+  dashboardNotificationsError.value = '';
+  try {
+    const rows = await api('/api/notifications');
+    dashboardNotifications.value = Array.isArray(rows) ? rows : [];
+  } catch (error) {
+    dashboardNotificationsError.value = error.message || 'Could not load notifications';
+  } finally {
+    dashboardNotificationsLoading.value = false;
+  }
+}
+
 function startDashboardRealtime() {
   if (!hasWindow || dashboardRefreshTimer) return;
   dashboardRefreshTimer = window.setInterval(() => {
     if (!token.value || !user.value) return;
     if (document.visibilityState === 'hidden') return;
     void loadDashboardData({ silent: true });
+    void loadDashboardNotifications();
   }, DASHBOARD_REFRESH_MS);
 }
 
@@ -4294,10 +4753,12 @@ function setSession(auth) {
     void loadLedgerData({ silent: true });
   }
   void loadDashboardData({ silent: true });
+  void loadDashboardNotifications();
   startDashboardRealtime();
 }
 
 function clearSession() {
+  disconnectWebSocket();
   stopDashboardRealtime();
   token.value = '';
   user.value = null;
@@ -4306,7 +4767,10 @@ function clearSession() {
   dashboardProjects.value = [];
   dashboardTasks.value = [];
   dashboardLedgerEntries.value = [];
+  dashboardNotifications.value = [];
+  dashboardNotificationsError.value = '';
   dashboardError.value = '';
+  dashboardSection.value = 'projects';
   selectedDashboardProjectID.value = '';
   removeStoredToken();
 }
@@ -4350,6 +4814,7 @@ async function restoreSession() {
   try {
     user.value = await api('/api/auth/me');
     await loadDashboardData({ silent: true });
+    await loadDashboardNotifications();
     startDashboardRealtime();
     if (publicPage.value === 'ledger') {
       void loadLedgerData({ silent: true });
@@ -4364,11 +4829,15 @@ async function logout() {
     await api('/api/auth/logout', { method: 'POST', body: JSON.stringify({}) });
   } finally {
     clearSession();
+    publicModeVisible.value = true;
+    publicPage.value = 'home';
+    updatePublicBrowserPath('home', true);
     showToast('Logged out.');
   }
 }
 
 onMounted(async () => {
+  connectWebSocket();
   if (hasWindow) {
     const params = new URLSearchParams(window.location.search);
     const oauthToken = params.get('token');
@@ -4402,6 +4871,7 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
+  disconnectWebSocket();
   if (hasWindow) {
     window.removeEventListener('popstate', syncPublicPageFromBrowserPath);
   }
