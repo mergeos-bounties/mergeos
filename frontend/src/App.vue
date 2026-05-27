@@ -310,13 +310,13 @@
                     <small>Let our AI evaluate your scope, tech stack, and deliverables to suggest a fair budget range.</small>
                   </div>
                 </div>
-                
+
                 <div class="ai-pricing-inputs">
                   <div class="wizard-field">
                     <span>Project Complexity</span>
                     <div class="complexity-selector">
-                      <button 
-                        v-for="lvl in ['Low', 'Medium', 'High']" 
+                      <button
+                        v-for="lvl in ['Low', 'Medium', 'High']"
                         :key="lvl"
                         :class="{ selected: projectSetupForm.complexity === lvl }"
                         type="button"
@@ -327,20 +327,20 @@
                       </button>
                     </div>
                   </div>
-                  
+
                   <label class="wizard-field">
                     <span>Project Constraints & Compliance (Optional)</span>
-                    <input 
-                      v-model="projectSetupForm.constraints" 
-                      type="text" 
+                    <input
+                      v-model="projectSetupForm.constraints"
+                      type="text"
                       placeholder="Add compliance, delivery, or technical constraints"
                     />
                   </label>
                 </div>
 
                 <div class="ai-pricing-action">
-                  <button 
-                    class="primary-button compact ai-evaluate-btn" 
+                  <button
+                    class="primary-button compact ai-evaluate-btn"
                     type="button"
                     :disabled="aiEvaluationLoading"
                     @click="triggerAiEvaluation"
@@ -363,8 +363,8 @@
                       <strong>{{ formatMRGFromUSD(aiEvaluationResult.suggested_low) }} - {{ formatMRGFromUSD(aiEvaluationResult.suggested_high) }}</strong>
                       <span class="confidence-badge">Confidence: {{ Math.round(aiEvaluationResult.confidence_level * 100) }}%</span>
                     </div>
-                    <button 
-                      class="secondary-button compact apply-suggestion-btn" 
+                    <button
+                      class="secondary-button compact apply-suggestion-btn"
                       type="button"
                       @click="applyAiSuggestedPrice"
                     >
@@ -1048,7 +1048,7 @@
             <Bell :size="17" />
             <span v-if="unreadNotificationCount > 0" class="notif-badge">{{ unreadNotificationCount }}</span>
           </button>
-          
+
           <!-- Notification Panel Dropdown -->
           <div v-if="notificationPanelOpen" class="notification-panel" @click.stop>
             <div class="notification-panel-header">
@@ -1069,7 +1069,7 @@
                 <small>You'll see updates about your projects here</small>
               </div>
               <ul v-else class="notification-list">
-                <li v-for="notif in notifications" :key="notif.id" 
+                <li v-for="notif in notifications" :key="notif.id"
                     :class="['notification-item', { unread: !notif.read }]"
                     @click="markNotificationRead(notif)">
                   <div class="notif-icon" :class="`notif-${notif.channel || 'info'}`">
@@ -3777,12 +3777,12 @@ async function triggerAiEvaluation() {
       constraints: projectSetupForm.constraints || '',
       reference_budget: Math.round(usdFromMRG(projectSetupForm.budgetAmount))
     };
-    
+
     const response = await api('/api/projects/evaluate', {
       method: 'POST',
       body: JSON.stringify(payload)
     });
-    
+
     aiEvaluationResult.value = response;
   } catch (err) {
     console.error('AI evaluation failed:', err);
@@ -4483,10 +4483,10 @@ function toggleNotificationPanel() {
 async function fetchNotifications() {
   notificationsLoading.value = true;
   try {
-    const token = localStorage.getItem('auth_token');
+    const token = localStorage.getItem('mergeos_token');
     const headers = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = token;
-    
+
     const resp = await fetch('/api/notifications', { headers });
     if (resp.ok) {
       const data = await resp.json();
@@ -4518,7 +4518,7 @@ async function markAllNotificationsRead() {
   notifications.value.forEach(n => n.read = true);
   // Sync with backend if user is logged in
   try {
-    const token = localStorage.getItem('auth_token');
+    const token = localStorage.getItem('mergeos_token');
     if (token) {
       await fetch('/api/notifications/read-all', {
         method: 'POST',
