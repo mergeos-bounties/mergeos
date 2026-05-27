@@ -1585,7 +1585,8 @@ func (s *Store) snapshotLocked() persistedState {
 		SSLReviews:        make([]*SSLReviewStatus, 0, len(s.sslReviews)),
 		GeminiAPIKeys:     make([]*GeminiAPIKey, 0, len(s.geminiAPIKeys)),
 		GeminiWebhookLogs: make([]*GeminiWebhookLog, 0, len(s.geminiWebhookLogs)),
-		AdminSettings:     cloneAdminSettings(s.adminSettings),
+		USDTWebhookEvents: make([]*USDTWebhookEvent, 0, len(s.usdtWebhookEvents)),
+		AdminSettings: cloneAdminSettings(s.adminSettings),
 		Ledger:            s.ledger,
 	}
 	for _, project := range s.projects {
@@ -1633,6 +1634,13 @@ func (s *Store) snapshotLocked() persistedState {
 	}
 	sort.Slice(state.GeminiWebhookLogs, func(i, j int) bool {
 		return state.GeminiWebhookLogs[i].ReceivedAt.Before(state.GeminiWebhookLogs[j].ReceivedAt)
+	})
+	for _, event := range s.usdtWebhookEvents {
+		eventCopy := *event
+		state.USDTWebhookEvents = append(state.USDTWebhookEvents, &eventCopy)
+	}
+	sort.Slice(state.USDTWebhookEvents, func(i, j int) bool {
+		return state.USDTWebhookEvents[i].ReceivedAt.After(state.USDTWebhookEvents[j].ReceivedAt)
 	})
 	return state
 }
@@ -1945,13 +1953,17 @@ func (s *Store) IsPaymentReferenceUsed(reference string) bool {
 }
 
 // SaveUSDTWebhookEvent persists a USDT webhook event.
-func (s *Store) SaveUSDTWebhookEvent(event *USDTWebhookEvent) {
+func (s *Store) SaveUSDTWebhookEvent(event *USDTWebhookEvent) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.usdtWebhookEvents == nil {
 		s.usdtWebhookEvents = make(map[string]*USDTWebhookEvent)
 	}
 	s.usdtWebhookEvents[event.ID] = event
+	if err := s.saveLocked(); err != nil {
+		return fmt.Errorf("save usdt webhook event: %w", err)
+	}
+	return nil
 }
 
 // FindUSDTWebhookByIdempotencyKey looks up a webhook event by its idempotency key.
@@ -1993,6 +2005,15 @@ func (s *Store) ApplyUSDTWebhookPayment(event *USDTWebhookEvent) error {
 		return fmt.Errorf("project %s not found", event.ProjectID)
 	}
 
+	// Verify the webhook amount matches the project budget
+	if event.AmountCents != project.BudgetCents {
+		return fmt.Errorf("webhook amount %d cents does not match project budget %d cents", event.AmountCents, project.BudgetCents)
+	}
+	// Verify the webhook currency is USDT
+	if event.Currency != "USDT" {
+		return fmt.Errorf("webhook currency %s does not match expected USDT", event.Currency)
+	}
+
 	// Update project payment status
 	project.PaymentStatus = "verified"
 	project.PaymentProvider = "usdt-webhook:" + event.Provider
@@ -2002,5 +2023,8 @@ func (s *Store) ApplyUSDTWebhookPayment(event *USDTWebhookEvent) error {
 	clientProjectAccount := "client:" + project.ClientUserID + ":project:" + project.ID
 	s.addLedger("usdt_payment_confirmed", "payment:usdt-webhook", clientProjectAccount, project.BudgetCents, event.TxHash)
 
+	if err := s.saveLocked(); err != nil {
+		return fmt.Errorf("save usdt payment application: %w", err)
+	}
 	return nil
 }

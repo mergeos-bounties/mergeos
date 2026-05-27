@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -170,7 +171,9 @@ func (h *usdtWebhookHandler) handleUSDTWebhook(w http.ResponseWriter, r *http.Re
 		if configured != received {
 			event.Status = "receiver_mismatch"
 			event.Error = fmt.Sprintf("receiver %s does not match configured %s", event.ReceiverAddress, h.cfg.CryptoReceiver)
-			h.store.SaveUSDTWebhookEvent(event)
+			if err := h.store.SaveUSDTWebhookEvent(event); err != nil {
+				log.Printf("failed to save receiver_mismatch webhook event: %v", err)
+			}
 			writeError(w, http.StatusBadRequest, event.Error)
 			return
 		}
@@ -181,13 +184,17 @@ func (h *usdtWebhookHandler) handleUSDTWebhook(w http.ResponseWriter, r *http.Re
 		if err := h.store.ApplyUSDTWebhookPayment(event); err != nil {
 			event.Error = err.Error()
 			event.Status = "apply_failed"
-			h.store.SaveUSDTWebhookEvent(event)
+			if saveErr := h.store.SaveUSDTWebhookEvent(event); saveErr != nil {
+				log.Printf("failed to save apply_failed webhook event: %v", saveErr)
+			}
 			writeError(w, http.StatusInternalServerError, "failed to apply payment")
 			return
 		}
 	}
 
-	h.store.SaveUSDTWebhookEvent(event)
+	if err := h.store.SaveUSDTWebhookEvent(event); err != nil {
+		log.Printf("failed to save webhook event %s: %v", event.ID, err)
+	}
 
 	writeJSON(w, http.StatusOK, USDTWebhookResponse{
 		Received: true,
@@ -240,7 +247,9 @@ func (h *usdtWebhookHandler) logWebhookEvent(raw json.RawMessage, eventID, statu
 		SignatureValid: status != "signature_invalid",
 		ReceivedAt:     time.Now().UTC(),
 	}
-	h.store.SaveUSDTWebhookEvent(event)
+	if err := h.store.SaveUSDTWebhookEvent(event); err != nil {
+		log.Printf("failed to save log webhook event: %v", err)
+	}
 }
 
 // mapGatewayStatus maps a gateway-specific status to an internal payment status.

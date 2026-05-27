@@ -840,7 +840,7 @@ func (s *Server) handleUSDTWebhook(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) adminUSDTWebhookEvents(w http.ResponseWriter, r *http.Request) {
-	if _, ok := s.requireUser(w, r); !ok {
+	if _, ok := s.requireAdmin(w, r); !ok {
 		return
 	}
 	events := s.store.ListUSDTWebhookEvents()
