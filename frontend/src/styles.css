@@ -5109,6 +5109,7 @@ svg {
 }
 
 .dash-top-actions {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -5791,6 +5792,103 @@ svg {
   color: #64748b;
   font-size: 10px;
   font-weight: 740;
+}
+
+.notification-popover {
+  position: absolute;
+  top: 58px;
+  right: 148px;
+  z-index: 35;
+  width: min(360px, calc(100vw - 32px));
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
+  padding: 16px;
+}
+
+.notification-popover-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.notification-popover-head strong {
+  color: #111827;
+  font-size: 15px;
+  font-weight: 920;
+}
+
+.notification-popover-head small {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 820;
+}
+
+.notification-list {
+  display: grid;
+  gap: 10px;
+}
+
+.notification-list article {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr);
+  gap: 10px;
+  border: 1px solid #e8eef1;
+  border-radius: 14px;
+  padding: 12px;
+  background: #fbfcfb;
+}
+
+.notification-list article.unread {
+  border-color: rgba(16, 185, 129, 0.32);
+  background: #f0fdf4;
+}
+
+.notification-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  margin-top: 5px;
+  background: var(--green);
+}
+
+.notification-dot.blue { background: #3b82f6; }
+.notification-dot.green { background: var(--green); }
+.notification-dot.yellow { background: #f59e0b; }
+.notification-dot.red { background: #ef4444; }
+
+.notification-list strong,
+.notification-empty strong {
+  display: block;
+  color: #111827;
+  font-size: 12px;
+  font-weight: 920;
+}
+
+.notification-list p,
+.notification-empty p {
+  margin: 4px 0 0;
+  color: #4b5563;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.notification-list small {
+  display: block;
+  margin-top: 6px;
+  color: #7b8492;
+  font-size: 10px;
+  font-weight: 760;
+}
+
+.notification-empty {
+  border: 1px dashed #d7dee4;
+  border-radius: 14px;
+  padding: 14px;
+  background: #fbfcfb;
 }
 
 .rail-activity-list,

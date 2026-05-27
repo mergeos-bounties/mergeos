@@ -1044,10 +1044,30 @@
         </nav>
 
         <div class="dash-top-actions">
-          <button class="dash-icon-button" aria-label="Notifications" type="button" @click="showToast('Opening notifications...')">
+          <button class="dash-icon-button" aria-label="Notifications" type="button" @click="toggleNotifications">
             <Bell :size="18" />
-            <span>{{ dashboardNotificationCount }}</span>
+            <span v-if="dashboardNotificationCount">{{ dashboardNotificationCount }}</span>
           </button>
+          <section v-if="notificationsOpen" class="notification-popover" aria-label="Notifications">
+            <div class="notification-popover-head">
+              <strong>Notifications</strong>
+              <small>{{ dashboardNotificationCount }} new</small>
+            </div>
+            <div v-if="dashboardNotifications.length" class="notification-list">
+              <article v-for="notice in dashboardNotifications" :key="notice.key" :class="{ unread: notice.unread }">
+                <span :class="['notification-dot', notice.color]"></span>
+                <div>
+                  <strong>{{ notice.title }}</strong>
+                  <p>{{ notice.body }}</p>
+                  <small>{{ notice.channel }} · {{ notice.project }} · {{ notice.time }}</small>
+                </div>
+              </article>
+            </div>
+            <article v-else class="notification-empty">
+              <strong>No notifications yet</strong>
+              <p>Funding, task, payout, and ledger updates will appear here after backend events arrive.</p>
+            </article>
+          </section>
           <button class="primary-button compact" type="button" @click="openProjectWizard">
             <Plus :size="16" />
             New Project
@@ -2341,6 +2361,7 @@ const errorMessage = ref('');
 const showPassword = ref(false);
 const showConfirmPassword = ref(false);
 const toastMessage = ref('');
+const notificationsOpen = ref(false);
 let toastTimer = 0;
 
 const initialRoutePath = props.initialPath || (hasWindow ? window.location.pathname : '/');
@@ -3193,7 +3214,18 @@ const dashboardLedgerRows = computed(() =>
     };
   }),
 );
-const dashboardNotificationCount = computed(() => Math.min(9, dashboardActivityRows.value.length));
+const dashboardNotifications = computed(() => dashboardActivityRows.value.map((activity, index) => ({
+  key: `notice-${activity.key}`,
+  title: activity.title,
+  body: activity.body || 'Live project ledger update from MergeOS.',
+  channel: 'Dashboard',
+  status: index === 0 ? 'New' : 'Seen',
+  unread: index === 0,
+  project: dashboardProjectView.value.title,
+  time: activity.time,
+  color: activity.color,
+})));
+const dashboardNotificationCount = computed(() => Math.min(9, dashboardNotifications.value.filter((notice) => notice.unread).length));
 
 const marketplaceBenefits = [
   {
@@ -3342,6 +3374,11 @@ async function handleGitHubCallback() {
     authBusy.value = false;
   }
   return true;
+}
+
+function toggleNotifications() {
+  notificationsOpen.value = !notificationsOpen.value;
+  showToast(notificationsOpen.value ? 'Notifications opened.' : 'Notifications closed.');
 }
 
 function showToast(message) {
