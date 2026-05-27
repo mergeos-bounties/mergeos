@@ -7,6 +7,7 @@ type PaymentMethod string
 const (
 	PaymentPayPal PaymentMethod = "paypal"
 	PaymentCrypto PaymentMethod = "crypto"
+	PaymentUSDT  PaymentMethod = "usdt"
 )
 
 type WorkerKind string
