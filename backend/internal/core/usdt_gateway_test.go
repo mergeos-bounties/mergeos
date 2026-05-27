@@ -172,7 +172,7 @@ func TestGenericHMACProviderParsePayload(t *testing.T) {
 		t.Errorf("expected evt_1, got %s", parsed.EventID)
 	}
 	if parsed.Amount != "1000.00" {
-		t.Errorf("expected 100.00, got %s", parsed.Amount)
+		t.Errorf("expected 1000.00, got %s", parsed.Amount)
 	}
 }
 
