@@ -20,6 +20,7 @@ import (
 )
 
 const geminiReviewMarker = "<!-- mergeos-gemini-pr-review -->"
+const geminiAPIKeyTestPrompt = "Reply with exactly this short sentence: MergeOS Gemini key test ok."
 
 type GeminiReviewService struct {
 	cfg    Config
@@ -374,7 +375,7 @@ func (s *GeminiReviewService) ReviewPullRequest(ctx context.Context, req GeminiR
 	evidenceProvided := reviewEvidenceProvided(pr, comments)
 
 	prompt := buildGeminiReviewPrompt(pr, files, comments, linkedIssues, starVerified, evidenceProvided, s.cfg.GeminiReviewMaxPatchBytes)
-	review, keyID, err := s.generate(ctx, prompt)
+	review, keyID, model, err := s.generate(ctx, prompt)
 	if err != nil {
 		return GeminiReviewWebhookResponse{}, err
 	}
@@ -395,30 +396,31 @@ func (s *GeminiReviewService) ReviewPullRequest(ctx context.Context, req GeminiR
 		Labels:           labels,
 		EvidenceProvided: evidenceProvided,
 		StarVerified:     starVerified,
-		Model:            s.cfg.GeminiReviewModel,
+		Model:            model,
 		KeyID:            keyID,
 	}, nil
 }
 
-func (s *GeminiReviewService) generate(ctx context.Context, prompt string) (string, string, error) {
+func (s *GeminiReviewService) generate(ctx context.Context, prompt string) (string, string, string, error) {
 	if s.store == nil {
-		return "", "", errors.New("Gemini key store is required")
+		return "", "", "", errors.New("LLM key store is required")
 	}
-	candidates := s.store.GeminiAPIKeyCandidates()
+	provider, model := s.store.LLMReviewProviderModel()
+	candidates := s.store.GeminiAPIKeyCandidatesForProvider(provider)
 	if len(candidates) == 0 {
-		return "", "", errors.New("no active Gemini API keys are configured")
+		return "", "", "", fmt.Errorf("no active %s API keys are configured", provider)
 	}
 	var lastErr error
 	for _, candidate := range candidates {
 		if err := s.store.MarkGeminiAPIKeyAttempt(candidate.ID); err != nil {
-			return "", "", err
+			return "", "", "", err
 		}
-		text, err := s.generateWithKey(ctx, candidate.KeyValue, prompt)
+		text, err := s.generateWithKeyAndProvider(ctx, provider, candidate.KeyValue, model, prompt, 2200)
 		if err == nil {
 			if markErr := s.store.MarkGeminiAPIKeySuccess(candidate.ID, http.StatusOK); markErr != nil {
-				return "", "", markErr
+				return "", "", "", markErr
 			}
-			return text, candidate.ID, nil
+			return text, candidate.ID, model, nil
 		}
 		lastErr = err
 		statusCode := geminiErrorStatusCode(err)
@@ -431,20 +433,128 @@ func (s *GeminiReviewService) generate(ctx context.Context, prompt string) (stri
 			continue
 		}
 		_ = s.store.MarkGeminiAPIKeyError(candidate.ID, statusCode, err.Error())
-		return "", "", err
+		return "", "", "", err
 	}
 	if lastErr == nil {
-		lastErr = errors.New("Gemini review failed")
+		lastErr = errors.New("LLM review failed")
 	}
-	return "", "", lastErr
+	return "", "", "", lastErr
 }
 
 func (s *GeminiReviewService) generateWithKey(ctx context.Context, key, prompt string) (string, error) {
-	model := strings.Trim(strings.TrimSpace(s.cfg.GeminiReviewModel), "/")
+	model := strings.Trim(strings.TrimSpace(s.store.GeminiReviewModel()), "/")
 	if model == "" {
-		model = "gemini-2.5-flash"
+		model = defaultGeminiReviewModel
+	}
+	return s.generateWithKeyAndModel(ctx, key, model, prompt, 2200)
+}
+
+func (s *GeminiReviewService) generateWithKeyAndProvider(ctx context.Context, provider, key, model, prompt string, maxOutputTokens int) (string, error) {
+	provider = normalizedLLMProviderOrDefault(provider)
+	model = normalizedLLMModelOrDefault(provider, model)
+	switch provider {
+	case "gemini":
+		return s.generateWithKeyAndModel(ctx, key, model, prompt, maxOutputTokens)
+	case "openai":
+		return s.generateOpenAICompatible(ctx, "https://api.openai.com/v1/chat/completions", key, model, prompt, maxOutputTokens, nil)
+	case "groq":
+		return s.generateOpenAICompatible(ctx, "https://api.groq.com/openai/v1/chat/completions", key, model, prompt, maxOutputTokens, nil)
+	case "openrouter":
+		return s.generateOpenAICompatible(ctx, "https://openrouter.ai/api/v1/chat/completions", key, model, prompt, maxOutputTokens, map[string]string{
+			"HTTP-Referer": "https://mergeos.shop",
+			"X-Title":      "MergeOS",
+		})
+	case "deepseek":
+		return s.generateOpenAICompatible(ctx, "https://api.deepseek.com/chat/completions", key, model, prompt, maxOutputTokens, nil)
+	case "mistral":
+		return s.generateOpenAICompatible(ctx, "https://api.mistral.ai/v1/chat/completions", key, model, prompt, maxOutputTokens, nil)
+	case "anthropic":
+		return s.generateAnthropic(ctx, key, model, prompt, maxOutputTokens)
+	default:
+		return "", fmt.Errorf("unsupported LLM provider %q", provider)
+	}
+}
+
+func (s *GeminiReviewService) TestAPIKey(ctx context.Context, keyID, provider, model string) (TestGeminiAPIKeyResponse, error) {
+	if s.store == nil {
+		return TestGeminiAPIKeyResponse{}, errors.New("LLM key store is required")
+	}
+	candidate, err := s.store.GeminiAPIKeyCandidateByID(keyID)
+	if err != nil {
+		return TestGeminiAPIKeyResponse{}, err
+	}
+	provider = strings.TrimSpace(provider)
+	if provider == "" {
+		provider = candidate.Provider
+	}
+	normalizedProvider, err := normalizeLLMProvider(provider)
+	if err != nil {
+		return TestGeminiAPIKeyResponse{}, err
+	}
+	if normalizedProvider != candidate.Provider {
+		return TestGeminiAPIKeyResponse{}, errors.New("selected provider does not match this API key")
+	}
+	model = strings.TrimSpace(model)
+	if model == "" {
+		model = candidate.Model
+	}
+	normalizedModel, err := normalizeLLMModel(normalizedProvider, model)
+	if err != nil {
+		return TestGeminiAPIKeyResponse{}, err
+	}
+
+	startedAt := time.Now()
+	_, err = s.generateWithKeyAndProvider(ctx, normalizedProvider, candidate.KeyValue, normalizedModel, geminiAPIKeyTestPrompt, 48)
+	duration := time.Since(startedAt).Milliseconds()
+	if err == nil {
+		key, recordErr := s.store.RecordGeminiAPIKeyTestResult(candidate.ID, GeminiAPIKeyStatusActive, http.StatusOK, "")
+		if recordErr != nil {
+			return TestGeminiAPIKeyResponse{}, recordErr
+		}
+		message := "Key test passed"
+		if key.Status == GeminiAPIKeyStatusDisabled {
+			message = "Key test passed, but the key is still disabled"
+		}
+		return TestGeminiAPIKeyResponse{
+			OK:             true,
+			Provider:       normalizedProvider,
+			Model:          normalizedModel,
+			Key:            key,
+			StatusCode:     http.StatusOK,
+			DurationMillis: duration,
+			Message:        message,
+		}, nil
+	}
+
+	statusCode := geminiErrorStatusCode(err)
+	status := GeminiAPIKeyStatusError
+	if isGeminiQuotaError(err) {
+		status = GeminiAPIKeyStatusQuotaLimited
+	}
+	key, recordErr := s.store.RecordGeminiAPIKeyTestResult(candidate.ID, status, statusCode, err.Error())
+	if recordErr != nil {
+		return TestGeminiAPIKeyResponse{}, recordErr
+	}
+	return TestGeminiAPIKeyResponse{
+		OK:             false,
+		Provider:       normalizedProvider,
+		Model:          normalizedModel,
+		Key:            key,
+		StatusCode:     statusCode,
+		DurationMillis: duration,
+		Error:          truncateGeminiKeyError(err.Error()),
+	}, nil
+}
+
+func (s *GeminiReviewService) generateWithKeyAndModel(ctx context.Context, key, model, prompt string, maxOutputTokens int) (string, error) {
+	model = strings.Trim(strings.TrimSpace(model), "/")
+	if model == "" {
+		model = defaultGeminiReviewModel
 	}
 	model = strings.TrimPrefix(model, "models/")
+	if maxOutputTokens <= 0 {
+		maxOutputTokens = 2200
+	}
 	endpoint := "https://generativelanguage.googleapis.com/v1beta/models/" + url.PathEscape(model) + ":generateContent"
 	payload := map[string]any{
 		"contents": []map[string]any{
@@ -457,7 +567,7 @@ func (s *GeminiReviewService) generateWithKey(ctx context.Context, key, prompt s
 		},
 		"generationConfig": map[string]any{
 			"temperature":     0.2,
-			"maxOutputTokens": 2200,
+			"maxOutputTokens": maxOutputTokens,
 		},
 	}
 	var body bytes.Buffer
@@ -500,6 +610,117 @@ func (s *GeminiReviewService) generateWithKey(ctx context.Context, key, prompt s
 	return "", errors.New("Gemini returned an empty review")
 }
 
+func (s *GeminiReviewService) generateOpenAICompatible(ctx context.Context, endpoint, key, model, prompt string, maxOutputTokens int, headers map[string]string) (string, error) {
+	if maxOutputTokens <= 0 {
+		maxOutputTokens = 2200
+	}
+	payload := map[string]any{
+		"model": model,
+		"messages": []map[string]string{
+			{"role": "user", "content": prompt},
+		},
+	}
+	if openAIReasoningChatModel(model) {
+		payload["max_completion_tokens"] = maxOutputTokens
+	} else {
+		payload["temperature"] = 0.2
+		payload["max_tokens"] = maxOutputTokens
+	}
+	var body bytes.Buffer
+	if err := json.NewEncoder(&body).Encode(payload); err != nil {
+		return "", err
+	}
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, &body)
+	if err != nil {
+		return "", err
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("Authorization", "Bearer "+strings.TrimSpace(key))
+	for name, value := range headers {
+		httpReq.Header.Set(name, value)
+	}
+	resp, err := s.client.Do(httpReq)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return "", geminiAPIError{StatusCode: resp.StatusCode, Body: readBody(resp.Body)}
+	}
+	var decoded struct {
+		Choices []struct {
+			Message struct {
+				Content string `json:"content"`
+			} `json:"message"`
+		} `json:"choices"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&decoded); err != nil {
+		return "", err
+	}
+	for _, choice := range decoded.Choices {
+		if text := strings.TrimSpace(choice.Message.Content); text != "" {
+			return text, nil
+		}
+	}
+	return "", errors.New("LLM returned an empty response")
+}
+
+func (s *GeminiReviewService) generateAnthropic(ctx context.Context, key, model, prompt string, maxOutputTokens int) (string, error) {
+	if maxOutputTokens <= 0 {
+		maxOutputTokens = 2200
+	}
+	payload := map[string]any{
+		"model":       model,
+		"max_tokens":  maxOutputTokens,
+		"temperature": 0.2,
+		"messages": []map[string]string{
+			{"role": "user", "content": prompt},
+		},
+	}
+	var body bytes.Buffer
+	if err := json.NewEncoder(&body).Encode(payload); err != nil {
+		return "", err
+	}
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://api.anthropic.com/v1/messages", &body)
+	if err != nil {
+		return "", err
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("x-api-key", strings.TrimSpace(key))
+	httpReq.Header.Set("anthropic-version", "2023-06-01")
+	resp, err := s.client.Do(httpReq)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return "", geminiAPIError{StatusCode: resp.StatusCode, Body: readBody(resp.Body)}
+	}
+	var decoded struct {
+		Content []struct {
+			Type string `json:"type"`
+			Text string `json:"text"`
+		} `json:"content"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&decoded); err != nil {
+		return "", err
+	}
+	for _, part := range decoded.Content {
+		if text := strings.TrimSpace(part.Text); text != "" {
+			return text, nil
+		}
+	}
+	return "", errors.New("Anthropic returned an empty response")
+}
+
+func openAIReasoningChatModel(model string) bool {
+	model = strings.ToLower(strings.TrimSpace(model))
+	if slash := strings.LastIndex(model, "/"); slash >= 0 {
+		model = model[slash+1:]
+	}
+	return strings.HasPrefix(model, "o1") || strings.HasPrefix(model, "o3") || strings.HasPrefix(model, "o4")
+}
+
 type geminiAPIError struct {
 	StatusCode int
 	Body       string
@@ -508,9 +729,9 @@ type geminiAPIError struct {
 func (e geminiAPIError) Error() string {
 	body := strings.TrimSpace(e.Body)
 	if body == "" {
-		return fmt.Sprintf("gemini request failed with status %d", e.StatusCode)
+		return fmt.Sprintf("LLM request failed with status %d", e.StatusCode)
 	}
-	return fmt.Sprintf("gemini request failed (%d): %s", e.StatusCode, body)
+	return fmt.Sprintf("LLM request failed (%d): %s", e.StatusCode, body)
 }
 
 func isGeminiQuotaError(err error) bool {

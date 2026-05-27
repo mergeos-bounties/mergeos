@@ -19,6 +19,11 @@ This repository is the current MergeOS MVP: Go backend, Vue SSR frontend, projec
 
 - [README-INDEX.md](README-INDEX.md): docs map and bounty tracking index.
 - [BOUNTY-POLICY.md](BOUNTY-POLICY.md): bounty policy and reward rules.
+- [CONTRIBUTING.md](CONTRIBUTING.md): contributor setup, PR rules, tests, and bounty workflow.
+- [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md): community behavior expectations and enforcement.
+- [SECURITY.md](SECURITY.md): private vulnerability reporting policy.
+- [SUPPORT.md](SUPPORT.md): support channels for bugs, features, bounties, and security.
+- [LICENSE](LICENSE): MIT license.
 - [Claim Token issue #1](https://github.com/mergeos-bounties/mergeos/issues/1): public bounty claim intake.
 
 ## New Workflow
@@ -44,7 +49,7 @@ MergeOS currently supports:
 - PayPal Orders v2 adapter.
 - EVM native or ERC-20 receipt verification.
 - GitHub open issue import with heuristic scoring.
-- GitHub reward aliases. If a worker has not linked a wallet yet, payouts can still target `github:username`; once linked, payouts route to the user's `wallet:0x...` account.
+- GitHub reward aliases. If a worker has not linked a wallet yet, payouts can still target `github:username`; once linked, payouts route to the user's `0x...` wallet address.
 - Local git bounty workspaces or GitHub private bounty repos when `GITHUB_TOKEN` is configured.
 - Task reward allocation, worker kind, suggested agent type, and acceptance criteria.
 - Proof ledger entries with hash chaining.
@@ -311,8 +316,8 @@ Important backend variables:
 - `CRYPTO_RPC_URL`, `CRYPTO_RECEIVER`, `CRYPTO_ASSET`, `CRYPTO_TOKEN_CONTRACT`: crypto verifier
 - `GITHUB_TOKEN`, `GITHUB_OWNER`, `GITHUB_OWNER_TYPE`: backend runtime values for GitHub bounty repo creation and admin PR merge actions
 - `MERGEOS_GITHUB_TOKEN`: Docker Compose and GitHub Actions secret name that maps into backend `GITHUB_TOKEN`; use a personal access token with repo write access, not the automatic GitHub Actions token
-- `GEMINI_API_KEYS`: comma-separated Gemini API key pool used to seed the `gemini_api_keys` table; admins can add/disable keys later in the admin UI, while request counts and key status are tracked in the database
-- `GEMINI_REVIEW_MODEL`: Gemini reviewer model, default `gemini-2.5-flash`
+- `GEMINI_API_KEYS`: comma-separated Gemini API key pool used to seed the initial LLM key table; admins can add Gemini, OpenAI, Anthropic, Groq, OpenRouter, DeepSeek, and Mistral tokens later in the admin UI, while request counts and key status are tracked in the database
+- `GEMINI_REVIEW_MODEL`: legacy Gemini reviewer model default. Admin settings can now select the active LLM provider and model at runtime.
 - `GEMINI_REVIEW_WEBHOOK_SECRET`: GitHub webhook secret used to verify `X-Hub-Signature-256`
 - `GEMINI_REVIEW_MAX_PATCH_BYTES`: max patch context sent to Gemini, default `70000`
 - `GITHUB_APP_ID`, `GITHUB_APP_CLIENT_ID`, `GITHUB_APP_CLIENT_SECRET`: backend runtime values for GitHub App user authorization, login, and MRG wallet linking
@@ -333,7 +338,7 @@ Public:
 - `GET /api/public/ledger`
 - `GET /api/public/marketplace`
 - `POST /api/public/repo/issues`
-- `POST /api/integrations/github/pr-review` GitHub webhook receiver for Gemini PR review. Configure GitHub Webhooks with Payload URL `https://uta.mergeos.shop/api/integrations/github/pr-review`, Content type `application/json`, the same secret as `GEMINI_REVIEW_WEBHOOK_SECRET`, and events `Pull requests` plus `Issue comments`.
+- `POST /api/integrations/github/pr-review` GitHub webhook receiver for automated LLM PR review. Configure GitHub Webhooks with Payload URL `https://uta.mergeos.shop/api/integrations/github/pr-review`, Content type `application/json`, the same secret as `GEMINI_REVIEW_WEBHOOK_SECRET`, and events `Pull requests` plus `Issue comments`.
 
 Auth:
 
@@ -375,4 +380,5 @@ Admin:
 - `GET /api/admin/gemini/keys`
 - `POST /api/admin/gemini/keys`
 - `PATCH /api/admin/gemini/keys/{id}`
+- `POST /api/admin/gemini/keys/{id}/test`
 - `GET /api/admin/gemini/webhooks`
