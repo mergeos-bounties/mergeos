@@ -376,6 +376,21 @@ type RuntimeConfigResponse struct {
 	SSLReviewDomains  []string `json:"ssl_review_domains,omitempty"`
 }
 
+type AdminSettings struct {
+	GeminiReviewModel string    `json:"gemini_review_model"`
+	UpdatedAt         time.Time `json:"updated_at"`
+}
+
+type AdminSettingsResponse struct {
+	GeminiReviewModel        string    `json:"gemini_review_model"`
+	GeminiReviewModelOptions []string  `json:"gemini_review_model_options"`
+	UpdatedAt                time.Time `json:"updated_at"`
+}
+
+type UpdateAdminSettingsRequest struct {
+	GeminiReviewModel string `json:"gemini_review_model"`
+}
+
 type CreatePayPalOrderRequest struct {
 	AmountCents int64  `json:"amount_cents"`
 	Description string `json:"description"`

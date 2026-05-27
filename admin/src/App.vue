@@ -511,6 +511,56 @@
         </section>
       </section>
 
+      <section v-else-if="activeView === 'setting'" class="settings-workspace">
+        <section class="settings-panel">
+          <div class="settings-panel-head">
+            <span class="metric-icon purple"><Settings2 :size="19" /></span>
+            <div>
+              <span class="eyebrow">AI MODEL</span>
+              <h2>Review model</h2>
+              <p>Used by the Gemini reviewer for PR and issue automation.</p>
+            </div>
+          </div>
+
+          <form class="settings-form" @submit.prevent="saveAdminSettings">
+            <label>
+              <span>Gemini model</span>
+              <input
+                v-model.trim="settingsForm.gemini_review_model"
+                autocomplete="off"
+                list="gemini-review-models"
+                placeholder="gemini-2.5-flash"
+              />
+              <datalist id="gemini-review-models">
+                <option v-for="model in settingsModelOptions" :key="model" :value="model" />
+              </datalist>
+            </label>
+            <button class="primary-action" :disabled="settingsBusy" type="submit">
+              <Save :size="16" />
+              {{ settingsBusy ? 'Saving...' : 'Save model' }}
+            </button>
+          </form>
+
+          <p v-if="settingsError" class="form-error">{{ settingsError }}</p>
+          <p v-if="settingsMessage" class="form-success">{{ settingsMessage }}</p>
+        </section>
+
+        <section class="settings-summary-grid" aria-label="Current model settings">
+          <article>
+            <span>Current model</span>
+            <strong>{{ adminSettings.gemini_review_model || 'gemini-2.5-flash' }}</strong>
+          </article>
+          <article>
+            <span>Updated</span>
+            <strong>{{ formatDate(adminSettings.updated_at) }}</strong>
+          </article>
+          <article>
+            <span>Available presets</span>
+            <strong>{{ number(settingsModelOptions.length) }}</strong>
+          </article>
+        </section>
+      </section>
+
       <section v-else-if="activeView === 'gemini'" class="gemini-workspace">
         <section class="gemini-control-panel">
           <div class="gemini-panel-head">
@@ -687,6 +737,10 @@ const geminiKeyBusy = ref(false);
 const geminiKeyError = ref('');
 const geminiKeyMessage = ref('');
 const geminiActionBusy = ref({});
+const adminSettings = ref({});
+const settingsBusy = ref(false);
+const settingsError = ref('');
+const settingsMessage = ref('');
 
 const loginForm = reactive({
   email: 'admin@gmail.com',
@@ -707,6 +761,10 @@ const geminiKeyForm = reactive({
   key_value: '',
 });
 
+const settingsForm = reactive({
+  gemini_review_model: '',
+});
+
 const navItems = [
   { id: 'builder', label: 'Dashboard', title: 'Dashboard', kicker: 'DASHBOARD', icon: PanelLeft },
   { id: 'overview', label: 'Overview', title: 'Platform overview', kicker: 'DASHBOARD', icon: LayoutDashboard },
@@ -715,6 +773,7 @@ const navItems = [
   { id: 'ledger', label: 'Ledger', title: 'Proof ledger', kicker: 'LEDGER', icon: Activity },
   { id: 'users', label: 'Users', title: 'User management', kicker: 'USERS', icon: UsersRound },
   { id: 'ssl', label: 'SSL', title: 'SSL monitoring', kicker: 'SECURITY', icon: ShieldCheck },
+  { id: 'setting', label: 'Setting', title: 'Settings', kicker: 'SYSTEM', icon: Settings2 },
   { id: 'gemini', label: 'Gemini', title: 'Gemini reviewer', kicker: 'AUTOMATION', icon: KeyRound },
 ];
 
@@ -726,6 +785,7 @@ const routeByView = {
   ledger: '/ledger',
   users: '/users',
   ssl: '/ssl',
+  setting: '/setting',
   gemini: '/gemini',
 };
 const viewByRoute = Object.entries(routeByView).reduce((routes, [view, route]) => {
@@ -764,6 +824,15 @@ const sslAttentionCount = computed(() => sslRows.value.length - sslOkCount.value
 const tokenSymbol = computed(() => summary.value.token_symbol || 'MRG');
 const geminiActiveCount = computed(() => geminiKeys.value.filter((row) => row.status === 'active').length);
 const geminiAttentionCount = computed(() => geminiKeys.value.filter((row) => ['quota_limited', 'error', 'disabled'].includes(row.status)).length);
+
+const settingsModelOptions = computed(() => {
+  const options = Array.isArray(adminSettings.value.gemini_review_model_options)
+    ? [...adminSettings.value.gemini_review_model_options]
+    : [];
+  const current = settingsForm.gemini_review_model || adminSettings.value.gemini_review_model;
+  if (current && !options.includes(current)) options.unshift(current);
+  return options;
+});
 
 const summaryMetrics = computed(() => [
   { label: 'Users', value: number(summary.value.user_count), icon: UsersRound, tone: 'blue' },
@@ -946,7 +1015,18 @@ async function loadAdminData() {
   loading.value = true;
   errorMessage.value = '';
   try {
-    const [summaryData, userData, projectData, taskData, notificationData, ledgerData, sslData, geminiKeyData, geminiLogData] = await Promise.all([
+    const [
+      summaryData,
+      userData,
+      projectData,
+      taskData,
+      notificationData,
+      ledgerData,
+      sslData,
+      settingsData,
+      geminiKeyData,
+      geminiLogData,
+    ] = await Promise.all([
       api('/api/admin/summary'),
       api('/api/admin/users'),
       api('/api/admin/projects'),
@@ -954,6 +1034,7 @@ async function loadAdminData() {
       api('/api/admin/notifications'),
       api('/api/admin/ledger'),
       api('/api/admin/ssl'),
+      api('/api/admin/settings'),
       api('/api/admin/gemini/keys'),
       api('/api/admin/gemini/webhooks?limit=100'),
     ]);
@@ -964,6 +1045,8 @@ async function loadAdminData() {
     notifications.value = Array.isArray(notificationData) ? notificationData : [];
     ledgerEntries.value = Array.isArray(ledgerData) ? ledgerData : [];
     sslRows.value = Array.isArray(sslData) ? sslData : [];
+    adminSettings.value = settingsData || {};
+    syncSettingsForm();
     geminiKeys.value = Array.isArray(geminiKeyData) ? geminiKeyData : [];
     geminiWebhookLogs.value = Array.isArray(geminiLogData) ? geminiLogData : [];
     void syncTaskIssueStates(tasks.value);
@@ -1067,6 +1150,30 @@ async function reviewSSLNow() {
     sslReviewError.value = error.message;
   } finally {
     sslReviewBusy.value = false;
+  }
+}
+
+
+function syncSettingsForm() {
+  settingsForm.gemini_review_model = adminSettings.value.gemini_review_model || 'gemini-2.5-flash';
+}
+
+async function saveAdminSettings() {
+  settingsBusy.value = true;
+  settingsError.value = '';
+  settingsMessage.value = '';
+  try {
+    const updated = await api('/api/admin/settings', {
+      method: 'PATCH',
+      body: JSON.stringify({ gemini_review_model: settingsForm.gemini_review_model }),
+    });
+    adminSettings.value = updated || {};
+    syncSettingsForm();
+    settingsMessage.value = `Using ${adminSettings.value.gemini_review_model}.`;
+  } catch (error) {
+    settingsError.value = error.message;
+  } finally {
+    settingsBusy.value = false;
   }
 }
 

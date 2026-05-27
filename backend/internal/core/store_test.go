@@ -106,6 +106,48 @@ func TestCreateProjectCreatesLocalBountyRepoAndPersistsLedger(t *testing.T) {
 	}
 }
 
+func TestAdminSettingsPersistGeminiReviewModel(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:       defaultTokenSymbol,
+		StatePath:         filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:    1000,
+		DevPaymentEnabled: true,
+		DevPaymentCode:    defaultDevPaymentCode,
+		GeminiReviewModel: "gemini-2.5-pro",
+		GitHubOwner:       defaultGitHubOwner,
+		BountyRoot:        filepath.Join(tempDir, "bounties"),
+		SMTPFrom:          "noreply@mergeos.local",
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := store.AdminSettings().GeminiReviewModel; got != "gemini-2.5-pro" {
+		t.Fatalf("initial model = %q", got)
+	}
+
+	updated, err := store.UpdateAdminSettings(UpdateAdminSettingsRequest{GeminiReviewModel: "models/gemini-2.5-flash-lite"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if updated.GeminiReviewModel != "gemini-2.5-flash-lite" || store.GeminiReviewModel() != "gemini-2.5-flash-lite" {
+		t.Fatalf("updated model not applied: %#v", updated)
+	}
+	if _, err := store.UpdateAdminSettings(UpdateAdminSettingsRequest{GeminiReviewModel: "bad model name"}); err == nil {
+		t.Fatal("invalid model name accepted")
+	}
+
+	reloaded, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := reloaded.AdminSettings().GeminiReviewModel; got != "gemini-2.5-flash-lite" {
+		t.Fatalf("reloaded model = %q", got)
+	}
+}
+
 func TestGitHubAuthLinksMRGWalletAndRoutesPayouts(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := Config{

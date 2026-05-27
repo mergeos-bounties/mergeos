@@ -440,9 +440,9 @@ func (s *GeminiReviewService) generate(ctx context.Context, prompt string) (stri
 }
 
 func (s *GeminiReviewService) generateWithKey(ctx context.Context, key, prompt string) (string, error) {
-	model := strings.Trim(strings.TrimSpace(s.cfg.GeminiReviewModel), "/")
+	model := strings.Trim(strings.TrimSpace(s.store.GeminiReviewModel()), "/")
 	if model == "" {
-		model = "gemini-2.5-flash"
+		model = defaultGeminiReviewModel
 	}
 	model = strings.TrimPrefix(model, "models/")
 	endpoint := "https://generativelanguage.googleapis.com/v1beta/models/" + url.PathEscape(model) + ":generateContent"

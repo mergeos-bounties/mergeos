@@ -19,6 +19,16 @@ import (
 
 var slugClean = regexp.MustCompile(`[^a-z0-9-]+`)
 
+const defaultGeminiReviewModel = "gemini-2.5-flash"
+
+var geminiReviewModelOptions = []string{
+	"gemini-2.5-flash",
+	"gemini-2.5-pro",
+	"gemini-2.5-flash-lite",
+	"gemini-2.0-flash",
+	"gemini-2.0-flash-lite",
+}
+
 type Store struct {
 	mu       sync.RWMutex
 	cfg      Config
@@ -38,6 +48,7 @@ type Store struct {
 	sslReviews        map[string]*SSLReviewStatus
 	geminiAPIKeys     map[string]*GeminiAPIKey
 	geminiWebhookLogs map[string]*GeminiWebhookLog
+	adminSettings     AdminSettings
 	ledger            []LedgerEntry
 }
 
@@ -53,6 +64,7 @@ type persistedState struct {
 	SSLReviews        []*SSLReviewStatus  `json:"ssl_reviews"`
 	GeminiAPIKeys     []*GeminiAPIKey     `json:"gemini_api_keys"`
 	GeminiWebhookLogs []*GeminiWebhookLog `json:"gemini_webhook_logs"`
+	AdminSettings     *AdminSettings      `json:"admin_settings,omitempty"`
 	Ledger            []LedgerEntry       `json:"ledger"`
 }
 
@@ -79,6 +91,7 @@ func NewStore(cfg Config, payments *PaymentManager, repos RepoFactory, emailer *
 		sslReviews:        map[string]*SSLReviewStatus{},
 		geminiAPIKeys:     map[string]*GeminiAPIKey{},
 		geminiWebhookLogs: map[string]*GeminiWebhookLog{},
+		adminSettings:     defaultAdminSettings(cfg),
 		ledger:            []LedgerEntry{},
 	}
 	if strings.TrimSpace(cfg.DatabaseURL) != "" {
@@ -108,6 +121,34 @@ func (s *Store) Close() error {
 		return nil
 	}
 	return s.storage.Close()
+}
+
+func (s *Store) AdminSettings() AdminSettingsResponse {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return adminSettingsResponse(s.adminSettings)
+}
+
+func (s *Store) UpdateAdminSettings(req UpdateAdminSettingsRequest) (AdminSettingsResponse, error) {
+	model, err := normalizeGeminiReviewModel(req.GeminiReviewModel)
+	if err != nil {
+		return AdminSettingsResponse{}, err
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.adminSettings.GeminiReviewModel = model
+	s.adminSettings.UpdatedAt = time.Now().UTC()
+	if err := s.saveLocked(); err != nil {
+		return AdminSettingsResponse{}, err
+	}
+	return adminSettingsResponse(s.adminSettings), nil
+}
+
+func (s *Store) GeminiReviewModel() string {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return normalizedGeminiReviewModelOrDefault(s.adminSettings.GeminiReviewModel)
 }
 
 func (s *Store) Register(req RegisterRequest) (*AuthResponse, error) {
@@ -1409,6 +1450,15 @@ func (s *Store) applyState(state persistedState) {
 	if state.NextID > 0 {
 		s.nextID = state.NextID
 	}
+	s.adminSettings = defaultAdminSettings(s.cfg)
+	if state.AdminSettings != nil {
+		model := normalizedGeminiReviewModelOrDefault(state.AdminSettings.GeminiReviewModel)
+		s.adminSettings = *state.AdminSettings
+		s.adminSettings.GeminiReviewModel = model
+		if s.adminSettings.UpdatedAt.IsZero() {
+			s.adminSettings.UpdatedAt = time.Now().UTC()
+		}
+	}
 	s.ledger = state.Ledger
 	s.projects = map[string]*Project{}
 	s.tasks = map[string]*Task{}
@@ -1532,6 +1582,7 @@ func (s *Store) snapshotLocked() persistedState {
 		SSLReviews:        make([]*SSLReviewStatus, 0, len(s.sslReviews)),
 		GeminiAPIKeys:     make([]*GeminiAPIKey, 0, len(s.geminiAPIKeys)),
 		GeminiWebhookLogs: make([]*GeminiWebhookLog, 0, len(s.geminiWebhookLogs)),
+		AdminSettings:     cloneAdminSettings(s.adminSettings),
 		Ledger:            s.ledger,
 	}
 	for _, project := range s.projects {
@@ -1599,6 +1650,77 @@ func saveJSONState(path string, state persistedState) error {
 		return err
 	}
 	return os.Rename(tmp, path)
+}
+
+func defaultAdminSettings(cfg Config) AdminSettings {
+	return AdminSettings{
+		GeminiReviewModel: normalizedGeminiReviewModelOrDefault(cfg.GeminiReviewModel),
+		UpdatedAt:         time.Now().UTC(),
+	}
+}
+
+func adminSettingsResponse(settings AdminSettings) AdminSettingsResponse {
+	return AdminSettingsResponse{
+		GeminiReviewModel:        normalizedGeminiReviewModelOrDefault(settings.GeminiReviewModel),
+		GeminiReviewModelOptions: append([]string(nil), geminiReviewModelOptions...),
+		UpdatedAt:                settings.UpdatedAt,
+	}
+}
+
+func cloneAdminSettings(settings AdminSettings) *AdminSettings {
+	copy := settings
+	copy.GeminiReviewModel = normalizedGeminiReviewModelOrDefault(copy.GeminiReviewModel)
+	if copy.UpdatedAt.IsZero() {
+		copy.UpdatedAt = time.Now().UTC()
+	}
+	return &copy
+}
+
+func normalizeGeminiReviewModel(value string) (string, error) {
+	model := strings.Trim(strings.TrimSpace(value), "/")
+	model = strings.TrimPrefix(model, "models/")
+	model = strings.TrimSpace(model)
+	if model == "" {
+		return "", errors.New("Gemini review model is required")
+	}
+	for _, allowed := range geminiReviewModelOptions {
+		if model == allowed {
+			return model, nil
+		}
+	}
+	if !validGeminiReviewModelName(model) {
+		return "", errors.New("Gemini review model contains unsupported characters")
+	}
+	return model, nil
+}
+
+func normalizedGeminiReviewModelOrDefault(value string) string {
+	model, err := normalizeGeminiReviewModel(value)
+	if err == nil {
+		return model
+	}
+	return defaultGeminiReviewModel
+}
+
+func validGeminiReviewModelName(value string) bool {
+	if len(value) < 3 || len(value) > 96 {
+		return false
+	}
+	for _, char := range value {
+		if char >= 'a' && char <= 'z' {
+			continue
+		}
+		if char >= '0' && char <= '9' {
+			continue
+		}
+		switch char {
+		case '.', '_', '-':
+			continue
+		default:
+			return false
+		}
+	}
+	return true
 }
 
 func slug(value string) string {

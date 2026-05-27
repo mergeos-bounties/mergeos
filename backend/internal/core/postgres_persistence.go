@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"embed"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/fs"
 	"sort"
@@ -168,22 +167,38 @@ SELECT EXISTS (SELECT 1 FROM store_meta WHERE key = 'next_id')
 }
 
 func (p *postgresPersistence) loadMeta(ctx context.Context, state *persistedState) error {
-	var raw string
-	err := p.db.QueryRowContext(ctx, `SELECT value FROM store_meta WHERE key = 'next_id'`).Scan(&raw)
-	if errors.Is(err, sql.ErrNoRows) {
-		return nil
-	}
+	rows, err := p.db.QueryContext(ctx, `SELECT key, value, updated_at FROM store_meta WHERE key IN ('next_id', 'gemini_review_model')`)
 	if err != nil {
 		return fmt.Errorf("load store meta: %w", err)
 	}
-	nextID, err := strconv.Atoi(raw)
-	if err != nil {
-		return fmt.Errorf("parse postgres next_id %q: %w", raw, err)
+	defer rows.Close()
+
+	for rows.Next() {
+		var key string
+		var raw string
+		var updatedAt sql.NullTime
+		if err := rows.Scan(&key, &raw, &updatedAt); err != nil {
+			return fmt.Errorf("scan store meta: %w", err)
+		}
+		switch key {
+		case "next_id":
+			nextID, err := strconv.Atoi(raw)
+			if err != nil {
+				return fmt.Errorf("parse postgres next_id %q: %w", raw, err)
+			}
+			if nextID > 0 {
+				state.NextID = nextID
+			}
+		case "gemini_review_model":
+			settings := defaultAdminSettings(Config{GeminiReviewModel: raw})
+			settings.UpdatedAt = time.Now().UTC()
+			if updatedAt.Valid {
+				settings.UpdatedAt = updatedAt.Time
+			}
+			state.AdminSettings = &settings
+		}
 	}
-	if nextID > 0 {
-		state.NextID = nextID
-	}
-	return nil
+	return rows.Err()
 }
 
 func (p *postgresPersistence) loadUsers(ctx context.Context, state *persistedState) error {
@@ -515,6 +530,15 @@ func (p *postgresPersistence) Save(ctx context.Context, state persistedState) er
 INSERT INTO store_meta (key, value, updated_at)
 VALUES ('next_id', $1, now())`, strconv.Itoa(state.NextID)); err != nil {
 		return fmt.Errorf("save store meta: %w", err)
+	}
+	settings := state.AdminSettings
+	if settings == nil {
+		settings = cloneAdminSettings(defaultAdminSettings(Config{}))
+	}
+	if _, err := tx.ExecContext(ctx, `
+INSERT INTO store_meta (key, value, updated_at)
+VALUES ('gemini_review_model', $1, $2)`, normalizedGeminiReviewModelOrDefault(settings.GeminiReviewModel), settings.UpdatedAt); err != nil {
+		return fmt.Errorf("save admin settings: %w", err)
 	}
 	if err := saveUsers(ctx, tx, state.Users); err != nil {
 		return err

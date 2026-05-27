@@ -57,6 +57,8 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/admin/notifications", s.adminNotifications)
 	mux.HandleFunc("GET /api/admin/attachments", s.adminAttachments)
 	mux.HandleFunc("GET /api/admin/ledger", s.adminLedger)
+	mux.HandleFunc("GET /api/admin/settings", s.adminSettings)
+	mux.HandleFunc("PATCH /api/admin/settings", s.updateAdminSettings)
 	mux.HandleFunc("GET /api/admin/ssl", s.adminSSLReviews)
 	mux.HandleFunc("POST /api/admin/ssl/review", s.reviewAdminSSL)
 	mux.HandleFunc("GET /api/admin/gemini/keys", s.adminGeminiKeys)
@@ -340,6 +342,30 @@ func (s *Server) adminLedger(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, s.store.ListLedger())
+}
+
+func (s *Server) adminSettings(w http.ResponseWriter, r *http.Request) {
+	if _, ok := s.requireAdmin(w, r); !ok {
+		return
+	}
+	writeJSON(w, http.StatusOK, s.store.AdminSettings())
+}
+
+func (s *Server) updateAdminSettings(w http.ResponseWriter, r *http.Request) {
+	if _, ok := s.requireAdmin(w, r); !ok {
+		return
+	}
+	var req UpdateAdminSettingsRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	settings, err := s.store.UpdateAdminSettings(req)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, settings)
 }
 
 func (s *Server) adminSSLReviews(w http.ResponseWriter, r *http.Request) {
