@@ -4479,7 +4479,12 @@ function clearSession() {
   dashboardNotifications.value = [];
   dashboardNotificationsError.value = '';
   dashboardError.value = '';
+  dashboardSearch.value = '';
   selectedDashboardProjectID.value = '';
+  // Clear any pending auth flows
+  pendingProjectPaymentAfterAuth.value = false;
+  authReturnToProjectWizard.value = false;
+  errorMessage.value = '';
   removeStoredToken();
 }
 
@@ -4537,6 +4542,13 @@ async function logout() {
     await api('/api/auth/logout', { method: 'POST', body: JSON.stringify({}) });
   } finally {
     clearSession();
+    // Navigate to public home page after logout
+    publicModeVisible.value = true;
+    projectWizardVisible.value = false;
+    publicPage.value = 'home';
+    if (hasWindow) {
+      window.history.replaceState({ publicPage: 'home' }, '', '/');
+    }
     showToast('Logged out.');
   }
 }
