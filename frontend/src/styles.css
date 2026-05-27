@@ -8140,3 +8140,64 @@ svg {
     grid-template-columns: 1fr;
   }
 }
+
+/* Dashboard布局修复 - Issue #16 */
+@media (max-width: 768px) {
+  .dashboard-shell {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+  
+  .dash-sidebar {
+    position: static;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--line);
+    padding: 12px;
+  }
+  
+  .dash-content {
+    padding: 12px;
+  }
+  
+  .dash-topbar {
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+  }
+  
+  .dash-project-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .dash-overview-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
+@media (max-width: 430px) {
+  .dashboard-shell {
+    grid-template-columns: 1fr;
+  }
+  
+  .dash-sidebar {
+    padding: 8px;
+  }
+  
+  .dash-content {
+    padding: 8px;
+  }
+  
+  .dash-topbar {
+    padding: 8px;
+  }
+  
+  .mrg-card {
+    padding: 10px;
+  }
+  
+  button {
+    min-height: 44px; /* 触摸目标 */
+  }
+}
