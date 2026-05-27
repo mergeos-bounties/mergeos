@@ -453,7 +453,7 @@ func createTestUser(t *testing.T, store *Store) string {
 // newTestStore creates a minimal in-memory store for tests.
 func newTestStore(t *testing.T, cfg Config) *Store {
 	t.Helper()
-	store, err := NewStore(cfg, NewPaymentManager(cfg), nil, NewEmailSender(cfg))
+	store, err := NewStore(cfg, NewPaymentManager(cfg), NewRepoFactory(cfg), NewEmailSender(cfg))
 	if err != nil {
 		t.Fatalf("failed to create test store: %v", err)
 	}
