@@ -561,6 +561,27 @@ func (s *Server) acceptTask(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, task)
 }
 
+
+func (s *Server) handleMarkAllNotificationsRead(w http.ResponseWriter, r *http.Request) {
+	user, ok := s.requireUser(w, r)
+	if !ok {
+		return
+	}
+	notifications := s.store.ListNotifications(user.ID)
+	for _, n := range notifications {
+		if n.Status != "read" {
+			for i, existing := range s.store.state.Notifications {
+				if existing.UserID == user.ID && existing.Status != "read" {
+					s.store.state.Notifications[i].Status = "read"
+				}
+			}
+			break
+		}
+	}
+	s.store.saveLocked()
+	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
+}
+
 func (s *Server) requireUser(w http.ResponseWriter, r *http.Request) (*User, bool) {
 	user, ok := s.store.UserByToken(r.Header.Get("Authorization"))
 	if !ok {
