@@ -1078,7 +1078,7 @@
             <button class="secondary-button compact" type="button" @click="loadDashboardData">Retry</button>
           </section>
 
-          <section class="dash-project-header">
+          <section ref="dashboardProjectHeader" class="dash-project-header" tabindex="-1">
             <div class="dash-project-title">
               <span class="project-photo">{{ dashboardProjectView.initials }}</span>
               <div>
@@ -1263,7 +1263,7 @@
                 :key="project.id"
                 :class="{ active: project.id === dashboardSelectedProject?.id }"
                 type="button"
-                @click="selectedDashboardProjectID = project.id"
+                @click="selectDashboardProject(project.id)"
               >
                 <span class="contributor-avatar">{{ initialsFor(project.title || project.company_name || 'MP') }}</span>
                 <div>
@@ -2427,6 +2427,7 @@ const dashboardLoading = ref(false);
 const dashboardError = ref('');
 const dashboardSearch = ref('');
 const selectedDashboardProjectID = ref('');
+const dashboardProjectHeader = ref(null);
 const dashboardNotificationCenter = ref(null);
 const priceEvaluation = ref(null);
 const priceEvaluationBusy = ref(false);
@@ -3555,6 +3556,15 @@ function openDashboard() {
   window.requestAnimationFrame(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
+}
+
+async function selectDashboardProject(projectID) {
+  if (!projectID) return;
+  selectedDashboardProjectID.value = projectID;
+  await nextTick();
+  if (!hasWindow) return;
+  dashboardProjectHeader.value?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  dashboardProjectHeader.value?.focus({ preventScroll: true });
 }
 
 function handleDashboardNav(item) {
