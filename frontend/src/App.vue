@@ -4533,10 +4533,20 @@ async function restoreSession() {
 }
 
 async function logout() {
+  // Use direct fetch to avoid 401 loop when token is expired
   try {
-    await api('/api/auth/logout', { method: 'POST', body: JSON.stringify({}) });
+    await fetch('/api/auth/logout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+  } catch {
+    // Backend logout may fail if token expired, continue anyway
   } finally {
     clearSession();
+    publicPage.value = 'home';
+    projectWizardVisible.value = false;
+    dashboardSearch.value = '';
+    selectedDashboardProjectID.value = '';
     showToast('Logged out.');
   }
 }
