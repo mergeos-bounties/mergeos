@@ -270,8 +270,8 @@ func TestUSDTWebhookHandlerValidConfirmed(t *testing.T) {
 		PackageTier:   "basic",
 		Timeline:      "2 weeks",
 		Brief:         "Test",
-		BudgetCents:   10000,
-		PaymentMethod: PaymentUSDT,
+		BudgetCents:   100000,
+		PaymentMethod: PaymentCrypto,
 	})
 	if err != nil {
 		t.Fatalf("failed to create project: %v", err)
@@ -345,8 +345,8 @@ func TestUSDTWebhookHandlerIdempotencyDuplicate(t *testing.T) {
 		PackageTier:   "basic",
 		Timeline:      "2w",
 		Brief:         "T",
-		BudgetCents:   5000,
-		PaymentMethod: PaymentUSDT,
+		BudgetCents:   100000,
+		PaymentMethod: PaymentCrypto,
 	})
 	if err != nil {
 		t.Fatalf("create project: %v", err)
