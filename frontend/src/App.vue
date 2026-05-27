@@ -1064,7 +1064,78 @@
       </header>
 
       <main class="dash-content">
-        <section class="dash-main">
+        <!-- Payment History View -->
+        <section v-if="dashboardActiveView === 'payments'" class="dash-main">
+          <div class="dash-breadcrumb">
+            <Home :size="14" />
+            <span>Dashboard</span>
+            <ChevronDown :size="13" />
+            <strong>Payment History</strong>
+          </div>
+
+          <section class="dash-project-header">
+            <div class="dash-project-title">
+              <span class="project-photo">💰</span>
+              <div>
+                <h1>Payment History</h1>
+                <p>All your payment transactions, token mints, and ledger entries.</p>
+              </div>
+            </div>
+            <div class="dash-project-actions">
+              <button type="button" @click="loadPaymentHistory">
+                <RefreshCw :size="15" />
+                Refresh
+              </button>
+            </div>
+          </section>
+
+          <section v-if="paymentHistoryError" class="dash-empty-state">
+            <strong>Could not load payment history</strong>
+            <p>{{ paymentHistoryError }}</p>
+            <button class="secondary-button compact" type="button" @click="loadPaymentHistory">Retry</button>
+          </section>
+
+          <section v-else-if="paymentHistoryLoading" class="dash-empty-state">
+            <p>Loading payment history...</p>
+          </section>
+
+          <section v-else-if="paymentHistoryEntries.length === 0" class="dash-empty-state">
+            <strong>No payments yet</strong>
+            <p>Start a project to see your payment history here.</p>
+            <button class="primary-button compact" type="button" @click="openProjectWizard">
+              <Plus :size="16" />
+              Start a project
+            </button>
+          </section>
+
+          <section v-else class="dash-card">
+            <div class="card-title-row">
+              <h2>Ledger Entries</h2>
+              <span>{{ paymentHistoryEntries.length }} transactions</span>
+            </div>
+            <div class="dash-pr-list">
+              <article v-for="entry in paymentHistoryEntries" :key="entry.sequence" class="dash-pr-row">
+                <span class="contributor-avatar" :class="{
+                  'green-dot-bg': entry.type === 'payment_verified' || entry.type === 'escrow_release',
+                  'blue-dot-bg': entry.type === 'token_mint',
+                  'orange-dot-bg': entry.type === 'platform_fee' || entry.type === 'task_reserve',
+                }">{{ entry.sequence }}</span>
+                <div class="dash-pr-main">
+                  <strong>{{ formatPaymentType(entry.type) }}</strong>
+                  <small>{{ entry.reference || '—' }}</small>
+                </div>
+                <div class="dash-pr-meta">
+                  <span class="dash-pr-amount">{{ formatMRGFromCents(entry.amount_cents) }}</span>
+                  <small>{{ entry.from_account || '—' }} → {{ entry.to_account || '—' }}</small>
+                </div>
+                <time>{{ formatPaymentDate(entry.created_at) }}</time>
+              </article>
+            </div>
+          </section>
+        </section>
+
+        <!-- Projects View (default) -->
+        <section v-else class="dash-main">
           <div class="dash-breadcrumb">
             <Home :size="14" />
             <span>My Projects</span>
@@ -2380,6 +2451,10 @@ const dashboardLedgerEntries = ref([]);
 const dashboardLoading = ref(false);
 const dashboardError = ref('');
 const dashboardSearch = ref('');
+const dashboardActiveView = ref('projects'); // 'projects' | 'payments' | 'notifications'
+const paymentHistoryLoading = ref(false);
+const paymentHistoryError = ref('');
+const paymentHistoryEntries = ref([]);
 const selectedDashboardProjectID = ref('');
 const priceEvaluation = ref(null);
 const priceEvaluationBusy = ref(false);
@@ -3460,7 +3535,50 @@ function handleDashboardNav(item) {
     openDashboard();
     return;
   }
+  if (item.label === 'Payments') {
+    dashboardActiveView.value = 'payments';
+    loadPaymentHistory();
+    return;
+  }
+  if (item.label === 'My Projects' || item.label === 'Overview') {
+    dashboardActiveView.value = 'projects';
+  }
   showToast(item.toast || `${item.label} opened.`);
+}
+
+async function loadPaymentHistory() {
+  paymentHistoryLoading.value = true;
+  paymentHistoryError.value = '';
+  try {
+    const entries = await api('/api/ledger');
+    paymentHistoryEntries.value = Array.isArray(entries) ? entries : [];
+  } catch (error) {
+    paymentHistoryError.value = error.message || 'Could not load payment history';
+  } finally {
+    paymentHistoryLoading.value = false;
+  }
+}
+
+function formatPaymentType(type) {
+  const types = {
+    'payment_verified': 'Payment',
+    'token_mint': 'Token Mint',
+    'platform_fee': 'Platform Fee',
+    'project_reserve': 'Project Reserve',
+    'task_reserve': 'Task Reserve',
+    'task_payout': 'Task Payout',
+    'escrow_release': 'Escrow Release',
+  };
+  return types[type] || type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function formatPaymentDate(dateStr) {
+  if (!dateStr) return '—';
+  try {
+    return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  } catch {
+    return dateStr;
+  }
 }
 
 function openMarketplaceSection(id) {
