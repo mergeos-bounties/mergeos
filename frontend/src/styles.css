@@ -8221,3 +8221,193 @@ svg {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* --- Responsive QA Fixes (Issue #11) --- */
+
+/* 430px breakpoint (iPhone 14 Pro Max) */
+@media (max-width: 430px) {
+  .project-type-grid,
+  .project-type-split {
+    grid-template-columns: 1fr !important;
+  }
+
+  .project-flow-main h1 {
+    font-size: 20px !important;
+  }
+
+  .wizard-form-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .hero h1 {
+    font-size: 24px !important;
+    line-height: 1.2 !important;
+  }
+
+  .hero p {
+    font-size: 14px !important;
+  }
+
+  .public-home-page .public-workflow-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .public-card-icon {
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  .dash-topnav {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 4px;
+  }
+
+  .dash-topnav button {
+    font-size: 12px !important;
+    padding: 6px 10px !important;
+    white-space: nowrap;
+  }
+
+  .dash-sidebar .sidebar-sections button {
+    font-size: 12px !important;
+    padding: 8px 10px !important;
+  }
+
+  .toast {
+    width: calc(100% - 32px) !important;
+    font-size: 12px !important;
+    padding: 8px 12px !important;
+  }
+
+  .project-flow-shell {
+    padding: 12px !important;
+  }
+
+  .select-tile,
+  .select-tile-big {
+    min-height: 72px !important;
+    padding: 12px !important;
+  }
+}
+
+/* 390px breakpoint (iPhone 14/15) */
+@media (max-width: 390px) {
+  .public-notification-feed article {
+    flex-direction: column !important;
+    gap: 4px !important;
+  }
+
+  .public-notification-feed article div {
+    min-width: 0 !important;
+  }
+
+  .notification-center-list article {
+    flex-direction: column !important;
+    gap: 4px !important;
+  }
+
+  .ledger-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .ledger-table {
+    font-size: 11px !important;
+  }
+
+  .ledger-table th,
+  .ledger-table td {
+    padding: 6px 8px !important;
+    white-space: nowrap;
+  }
+
+  .dash-profile {
+    font-size: 0 !important;
+  }
+
+  .dash-profile::before {
+    font-size: 13px !important;
+    content: attr(data-initial);
+  }
+
+  .modal-wrapper {
+    padding: 12px !important;
+  }
+
+  .auth-modal {
+    padding: 20px 16px !important;
+  }
+}
+
+/* 360px breakpoint (smallest mobile) */
+@media (max-width: 360px) {
+  body {
+    overflow-x: hidden;
+  }
+
+  .hero-cta {
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+
+  .hero-cta button,
+  .hero-cta a {
+    width: 100% !important;
+    text-align: center !important;
+  }
+
+  .home-section-header {
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+
+  .card-title-row {
+    flex-direction: column !important;
+    gap: 4px !important;
+  }
+
+  .payment-row {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+
+  .payment-row-details {
+    align-items: flex-start !important;
+  }
+
+  .rail-card {
+    padding: 12px !important;
+  }
+}
+
+/* Fix horizontal overflow on all viewports */
+.public-home-page,
+.project-flow-shell {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+/* Ensure grid items don't overflow */
+.public-workflow-grid,
+.home-section-grid,
+.why-grid {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Improve button touch targets on mobile */
+@media (hover: none) and (pointer: coarse) {
+  button, a, .select-tile, .clickable {
+    min-height: 44px;
+  }
+
+  .select-tile {
+    min-height: 52px;
+  }
+
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
