@@ -273,7 +273,9 @@ func (s *Store) walletSummaryLocked(wallet *Wallet) WalletSummary {
 	if username := normalizeGitHubUsername(wallet.GitHubUsername); username != "" {
 		accounts = append(accounts, githubWorkerAccount(username))
 	}
-	accountSet := map[string]bool{}
+	accountSet := map[string]bool{
+		legacyWalletAccount(address): true,
+	}
 	for _, account := range accounts {
 		accountSet[account] = true
 	}
@@ -306,7 +308,7 @@ func (s *Store) walletSummaryLocked(wallet *Wallet) WalletSummary {
 }
 
 func (s *Store) payoutAccountForWorkerLocked(workerID string) string {
-	workerID = strings.TrimSpace(workerID)
+	workerID = normalizeWorkerID(workerID)
 	if workerID == "" {
 		return ""
 	}
@@ -327,6 +329,14 @@ func (s *Store) payoutAccountForWorkerLocked(workerID string) string {
 		return githubWorkerAccount(username)
 	}
 	return "worker:" + workerID
+}
+
+func normalizeWorkerID(value string) string {
+	value = strings.TrimSpace(value)
+	if address := normalizeWalletAddress(value); validWalletAddress(address) {
+		return walletAccount(address)
+	}
+	return value
 }
 
 func (s *Store) walletByGitHubLocked(username string) *Wallet {
@@ -395,6 +405,10 @@ func normalizeGitHubUsername(value string) string {
 }
 
 func walletAccount(address string) string {
+	return normalizeWalletAddress(address)
+}
+
+func legacyWalletAccount(address string) string {
 	return "wallet:" + normalizeWalletAddress(address)
 }
 

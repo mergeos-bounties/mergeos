@@ -753,6 +753,14 @@ main {
   font-size: 1.45rem;
 }
 
+.detail-head h2.full-address {
+  max-width: min(100%, 760px);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 1.12rem;
+  line-height: 1.35;
+  word-break: break-all;
+}
+
 .detail-head-actions {
   display: inline-flex;
   align-items: center;

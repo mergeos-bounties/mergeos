@@ -4,14 +4,23 @@ export function normalizeEntry(entry = {}) {
   return {
     sequence: Number(entry.sequence) || 0,
     type: String(entry.type || 'unknown'),
-    from_account: String(entry.from_account || ''),
-    to_account: String(entry.to_account || ''),
+    from_account: normalizeLedgerAccount(entry.from_account),
+    to_account: normalizeLedgerAccount(entry.to_account),
     amount_cents: Number(entry.amount_cents) || 0,
     reference: String(entry.reference || ''),
     previous_hash: String(entry.previous_hash || ''),
     entry_hash: String(entry.entry_hash || ''),
     created_at: String(entry.created_at || ''),
   };
+}
+
+export function normalizeLedgerAccount(account = '') {
+  const value = String(account || '').trim();
+  const normalized = value.toLowerCase();
+  if (/^wallet:0x[0-9a-f]{40}$/.test(normalized)) return normalized.slice('wallet:'.length);
+  if (/^0x[0-9a-f]{40}$/.test(normalized)) return normalized;
+  if (normalized.startsWith('reserve:task:')) return 'reserve:task';
+  return value;
 }
 
 export function sortLedgerEntries(entries = []) {
@@ -108,12 +117,12 @@ export function entrySearchText(entry = {}) {
 export function filterEntries(entries = [], { query = '', type = 'all', account = '' } = {}) {
   const normalizedQuery = String(query || '').trim().toLowerCase();
   const normalizedType = String(type || 'all').toLowerCase();
-  const normalizedAccount = String(account || '').trim().toLowerCase();
+  const normalizedAccount = normalizeLedgerAccount(account).toLowerCase();
   return entries.filter((entry) => {
     if (normalizedType !== 'all' && entry.type.toLowerCase() !== normalizedType) return false;
     if (normalizedAccount) {
-      const from = entry.from_account.toLowerCase();
-      const to = entry.to_account.toLowerCase();
+      const from = normalizeLedgerAccount(entry.from_account).toLowerCase();
+      const to = normalizeLedgerAccount(entry.to_account).toLowerCase();
       if (from !== normalizedAccount && to !== normalizedAccount) return false;
     }
     if (!normalizedQuery) return true;
@@ -204,7 +213,7 @@ export function findExplorerTarget(entries = [], accounts = [], rawQuery = '') {
   const query = String(rawQuery || '').trim();
   const normalized = query.toLowerCase();
   if (!normalized) return null;
-  const walletNormalized = normalized.startsWith('0x') ? `wallet:${normalized}` : normalized;
+  const accountQuery = normalizeLedgerAccount(normalized).toLowerCase();
 
   const exactHash = entries.find((entry) => entry.entry_hash.toLowerCase() === normalized);
   if (exactHash) return { kind: 'tx', value: exactHash.entry_hash, entry: exactHash };
@@ -218,10 +227,10 @@ export function findExplorerTarget(entries = [], accounts = [], rawQuery = '') {
     if (blockEntry) return { kind: 'block', value: String(sequence), entry: blockEntry };
   }
 
-  const exactAccount = accounts.find((row) => row.account.toLowerCase() === walletNormalized);
+  const exactAccount = accounts.find((row) => normalizeLedgerAccount(row.account).toLowerCase() === accountQuery);
   if (exactAccount) return { kind: 'address', value: exactAccount.account, account: exactAccount };
 
-  const accountPrefix = accounts.find((row) => row.account.toLowerCase().startsWith(walletNormalized));
+  const accountPrefix = accounts.find((row) => normalizeLedgerAccount(row.account).toLowerCase().startsWith(accountQuery));
   if (accountPrefix && normalized.length >= 4) return { kind: 'address', value: accountPrefix.account, account: accountPrefix };
 
   const referenceMatch = entries.find((entry) => entry.reference.toLowerCase() === normalized);
@@ -261,13 +270,13 @@ export function normalizeExplorerPath(path = '/') {
 
 export function accountRole(account = '') {
   const value = String(account || '').toLowerCase();
+  if (/^(wallet:)?0x[0-9a-f]{40}$/.test(value)) return 'MRG Wallet';
   if (value.startsWith('issuer:')) return 'Issuer';
   if (value.startsWith('treasury:')) return 'Treasury';
   if (value.startsWith('payment:')) return 'Payment Adapter';
   if (value.startsWith('reserve:task')) return 'Task Reserve';
   if (value.startsWith('reserve:project')) return 'Project Reserve';
   if (value.startsWith('project:')) return 'Project Account';
-  if (value.startsWith('wallet:')) return 'MRG Wallet';
   if (githubUsernameFromAccount(value)) return 'GitHub Contributor';
   if (value.startsWith('worker:')) return 'Contributor';
   if (value.startsWith('client:')) return 'Client';

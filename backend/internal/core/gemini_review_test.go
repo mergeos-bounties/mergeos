@@ -132,6 +132,27 @@ func TestGeminiAPIKeyAdminUpdates(t *testing.T) {
 	}
 }
 
+func TestGeminiAPIKeyTestResultPreservesDisabledStatus(t *testing.T) {
+	store := &Store{geminiAPIKeys: map[string]*GeminiAPIKey{}}
+	added, err := store.AddGeminiAPIKey("admin-test-key")
+	if err != nil {
+		t.Fatalf("add key: %v", err)
+	}
+	if _, err := store.UpdateGeminiAPIKey(added.ID, GeminiAPIKeyStatusDisabled, false); err != nil {
+		t.Fatalf("disable key: %v", err)
+	}
+	stats, err := store.RecordGeminiAPIKeyTestResult(added.ID, GeminiAPIKeyStatusActive, 200, "")
+	if err != nil {
+		t.Fatalf("record test: %v", err)
+	}
+	if stats.Status != GeminiAPIKeyStatusDisabled {
+		t.Fatalf("test should not re-enable disabled key: %#v", stats)
+	}
+	if stats.RequestCount != 1 || stats.SuccessCount != 1 || stats.LastStatusCode != 200 || stats.LastUsedAt == nil {
+		t.Fatalf("test counters not updated: %#v", stats)
+	}
+}
+
 func TestGeminiWebhookLogs(t *testing.T) {
 	store := &Store{geminiWebhookLogs: map[string]*GeminiWebhookLog{}}
 	if err := store.AddGeminiWebhookLog(GeminiWebhookLog{
