@@ -142,31 +142,6 @@ type persistedState struct {
 	TestSettingsConfig  *TestSettingsConfig  `json:"test_settings_config,omitempty"`
 	TestSettingsEntries []*TestSettingsEntry `json:"test_settings_entries,omitempty"`
 	Ledger              []LedgerEntry        `json:"ledger"`
-	notifications     map[string]*Notification
-	attachments       map[string]*Attachment
-	sslReviews        map[string]*SSLReviewStatus
-	geminiAPIKeys      map[string]*GeminiAPIKey
-	geminiWebhookLogs  map[string]*GeminiWebhookLog
-	usdtWebhookEvents  map[string]*USDTWebhookEvent
-	adminSettings      AdminSettings
-	ledger            []LedgerEntry
-}
-
-type persistedState struct {
-	NextID            int                 `json:"next_id"`
-	Projects          []*Project          `json:"projects"`
-	Tasks             []*Task             `json:"tasks"`
-	Users             []*User             `json:"users"`
-	Wallets           []*Wallet           `json:"wallets"`
-	Sessions          []*Session          `json:"sessions"`
-	Notifications     []*Notification     `json:"notifications"`
-	Attachments       []*Attachment       `json:"attachments"`
-	SSLReviews        []*SSLReviewStatus  `json:"ssl_reviews"`
-	GeminiAPIKeys     []*GeminiAPIKey     `json:"gemini_api_keys"`
-	GeminiWebhookLogs []*GeminiWebhookLog `json:"gemini_webhook_logs"`
-	USDTWebhookEvents []*USDTWebhookEvent   `json:"usdt_webhook_events"`
-	AdminSettings     *AdminSettings        `json:"admin_settings,omitempty"`
-	Ledger            []LedgerEntry       `json:"ledger"`
 }
 
 type statePersistence interface {
@@ -197,7 +172,6 @@ func NewStore(cfg Config, payments *PaymentManager, repos RepoFactory, emailer *
 		testSettingsEntries: map[string]*TestSettingsEntry{},
 		adminSettings:       defaultAdminSettings(cfg),
 		ledger:              []LedgerEntry{},
-	}
 	}
 	if strings.TrimSpace(cfg.DatabaseURL) != "" {
 		storage, err := newPostgresPersistence(context.Background(), cfg)
