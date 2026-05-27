@@ -1430,6 +1430,23 @@
                 <span>{{ stat.label }}</span>
               </article>
             </div>
+            <div class="public-notification-feed" aria-live="polite">
+              <div class="public-notification-head">
+                <span>
+                  <Bell :size="15" />
+                </span>
+                <strong>Recent updates</strong>
+                <small>{{ publicNotificationRows.length }}</small>
+              </div>
+              <article v-for="note in publicNotificationRows.slice(0, 3)" :key="note.id">
+                <i :class="['notification-dot', note.tone]" />
+                <div>
+                  <strong>{{ note.subject }}</strong>
+                  <p>{{ note.body }}</p>
+                  <small>{{ note.meta }}</small>
+                </div>
+              </article>
+            </div>
           </aside>
         </section>
 
@@ -2366,6 +2383,7 @@ const errorMessage = ref('');
 const showPassword = ref(false);
 const showConfirmPassword = ref(false);
 const toastMessage = ref('');
+const publicNotifications = ref([]);
 let toastTimer = 0;
 
 const initialRoutePath = props.initialPath || (hasWindow ? window.location.pathname : '/');
@@ -2966,6 +2984,34 @@ const homeLiveStats = computed(() => [
   { value: formatPublicMRGFromCents(marketplaceStats.value.total_budget_cents), label: 'Verified escrow' },
   { value: formatPublicTokenAmount(publicMintedTokenTotal.value), label: 'Tokens minted' },
 ]);
+const publicNotificationRows = computed(() => {
+  const actionRows = publicNotifications.value.map((note) => ({
+    id: note.id,
+    subject: note.subject,
+    body: note.body,
+    meta: note.meta,
+    tone: note.tone,
+    createdAt: note.createdAt,
+  }));
+  const ledgerRows = ledgerEvents.value.slice(0, 4).map((event) => ({
+    id: `ledger-${event.key}`,
+    subject: event.type,
+    body: `${event.project} recorded ${event.amount}.`,
+    meta: event.time,
+    tone: event.tone === 'green' || event.tone === 'blue' ? event.tone : 'blue',
+    createdAt: event.createdAt,
+  }));
+  const rows = [...actionRows, ...ledgerRows].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+  if (rows.length) return rows;
+  return [{
+    id: 'empty-public-notification',
+    subject: marketplaceLoading.value ? 'Loading platform updates' : 'No live updates yet',
+    body: marketplaceLoading.value ? 'Fetching the latest ledger and marketplace status.' : 'Funding, marketplace, and ledger activity will appear here.',
+    meta: marketplaceLoading.value ? 'Syncing' : 'Waiting for activity',
+    tone: 'blue',
+    createdAt: new Date(0).toISOString(),
+  }];
+});
 
 const homeWorkflowCards = [
   {
@@ -3402,11 +3448,29 @@ async function handleGitHubCallback() {
 
 function showToast(message) {
   toastMessage.value = message;
+  pushPublicNotification(message);
   if (!hasWindow) return;
   if (toastTimer) window.clearTimeout(toastTimer);
   toastTimer = window.setTimeout(() => {
     toastMessage.value = '';
   }, 2200);
+}
+
+function pushPublicNotification(message) {
+  if (!message || (user.value && !publicModeVisible.value && !projectWizardVisible.value)) return;
+  const createdAt = new Date().toISOString();
+  const body = projectWizardVisible.value ? 'Project setup status changed.' : 'Public session status changed.';
+  publicNotifications.value = [
+    {
+      id: `public-${Date.now()}`,
+      subject: String(message),
+      body,
+      meta: formatLedgerDateTime(createdAt).full,
+      tone: projectWizardVisible.value ? 'green' : 'blue',
+      createdAt,
+    },
+    ...publicNotifications.value,
+  ].slice(0, 6);
 }
 
 function scrollToSection(id) {
@@ -4136,6 +4200,7 @@ function mapLedgerEntry(entry) {
     key: `${entry.sequence}-${entry.entry_hash || entry.reference}`,
     date: when.date,
     time: when.time,
+    createdAt: entry.created_at,
     type: meta.type,
     icon: meta.icon,
     tone: meta.tone,
@@ -4532,6 +4597,22 @@ async function loadDashboardNotifications() {
   } finally {
     dashboardNotificationsLoading.value = false;
   }
+}
+
+function startDashboardRealtime() {
+  if (!hasWindow || dashboardRefreshTimer) return;
+  dashboardRefreshTimer = window.setInterval(() => {
+    if (!token.value || !user.value) return;
+    if (document.visibilityState === 'hidden') return;
+    void loadDashboardData({ silent: true });
+    void loadDashboardNotifications();
+  }, DASHBOARD_REFRESH_MS);
+}
+
+function stopDashboardRealtime() {
+  if (!hasWindow || !dashboardRefreshTimer) return;
+  window.clearInterval(dashboardRefreshTimer);
+  dashboardRefreshTimer = 0;
 }
 
 function openAuth(mode = 'login') {
