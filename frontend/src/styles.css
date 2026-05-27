@@ -6261,7 +6261,24 @@ svg {
     min-width: auto;
   }
 
-  .nav-actions .secondary-button {
+  .nav-actions {
+    min-width: 0;
+  }
+
+  .nav-actions .secondary-button,
+  .nav-actions .primary-button.compact {
+    font-size: 13px;
+    padding: 0 10px;
+    min-height: 34px;
+  }
+
+  .user-pill {
+    max-width: 100px;
+    font-size: 12px;
+    padding: 0 8px;
+  }
+
+  .nav-actions .primary-button.compact svg {
     display: none;
   }
 
@@ -6279,7 +6296,9 @@ svg {
 
   .hero-actions .primary-button,
   .hero-actions .secondary-button {
-    flex: 1 1 220px;
+    flex: 1 1 180px;
+    font-size: 14px;
+    padding: 0 12px;
   }
 
   .console-grid,
@@ -6369,7 +6388,8 @@ svg {
   }
 
   .auth-modal-main {
-    padding: 30px 20px 24px;
+    padding: 24px 16px 20px;
+    gap: 20px;
   }
 
   .auth-close-button {
@@ -6378,15 +6398,15 @@ svg {
   }
 
   .auth-copy {
-    margin-top: 28px;
+    margin-top: 20px;
   }
 
   .auth-copy h2 {
-    font-size: 28px;
+    font-size: 24px;
   }
 
   .auth-copy p {
-    font-size: 14px;
+    font-size: 13px;
   }
 
   .social-auth-row {
