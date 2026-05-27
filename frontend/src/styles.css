@@ -6443,9 +6443,37 @@ svg {
     font-size: 25px;
   }
 
-  .auth-switch-line {
-    font-size: 14px;
-  }
+ .auth-switch-line {
+ font-size: 14px;
+ }
+
+ .auth-modal-main {
+ grid-template-columns: 1fr;
+ padding: 28px 20px 24px;
+ }
+
+ .social-auth-row {
+ grid-template-columns: 1fr;
+ }
+
+ .social-auth-row button,
+ .auth-submit-button {
+ min-height: 48px;
+ }
+
+ .input-shell input {
+ font-size: 16px;
+ min-height: 48px;
+ }
+
+ .auth-close-button {
+ width: 48px;
+ height: 48px;
+ }
+
+ .auth-benefit-panel {
+ display: none;
+ }
 
   .console-actions button:first-child {
     flex: 1;
