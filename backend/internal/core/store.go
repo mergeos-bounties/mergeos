@@ -1802,3 +1802,19 @@ func publicLedgerReference(projectID, taskID string, sequence int) string {
 	}
 	return "project:" + projectID
 }
+
+func (s *Store) IsPaymentReferenceUsed(reference string) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	
+	ref := strings.TrimSpace(strings.ToLower(reference))
+	if ref == "" {
+		return false
+	}
+	for _, project := range s.projects {
+		if strings.ToLower(project.PaymentReference) == ref {
+			return true
+		}
+	}
+	return false
+}
