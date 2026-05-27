@@ -6262,7 +6262,9 @@ svg {
   }
 
   .nav-actions .secondary-button {
-    display: none;
+    padding: 0 10px;
+    font-size: 12px;
+    min-height: 34px;
   }
 
   .hero-copy h1 {
