@@ -4537,6 +4537,9 @@ async function logout() {
     await api('/api/auth/logout', { method: 'POST', body: JSON.stringify({}) });
   } finally {
     clearSession();
+    publicModeVisible.value = true;
+    publicPage.value = 'home';
+    updatePublicBrowserPath('home', true);
     showToast('Logged out.');
   }
 }
