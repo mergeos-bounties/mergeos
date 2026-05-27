@@ -8221,3 +8221,17 @@ svg {
     grid-template-columns: 1fr;
   }
 }
+
+/* Project Type Selector */
+.project-type-selector { margin-bottom: 16px; }
+.project-type-selector .wizard-card-heading h2 { margin-bottom: 4px; }
+.project-type-selector .step-kicker { font-size: 13px; color: var(--text-secondary, #a0a0b0); }
+.project-type-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+.project-type-card { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 20px 16px; border-radius: 12px; border: 2px solid var(--border-color, rgba(255,255,255,0.08)); background: var(--card-bg, #1a1a2e); cursor: pointer; text-align: center; transition: border-color 0.15s ease, background 0.15s ease; }
+.project-type-card:hover { border-color: var(--accent, #6366f1); background: var(--hover-bg, rgba(99,102,241,0.06)); }
+.project-type-card.selected { border-color: var(--accent, #6366f1); background: var(--accent-bg, rgba(99,102,241,0.12)); }
+.project-type-icon { width: 56px; height: 56px; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: var(--card-bg-secondary, rgba(255,255,255,0.06)); color: var(--text-primary, #e0e0e0); }
+.project-type-card.selected .project-type-icon { background: var(--accent, #6366f1); color: white; }
+.project-type-card h3 { margin: 0; font-size: 15px; font-weight: 600; color: var(--text-primary, #e0e0e0); }
+.project-type-card p { margin: 0; font-size: 13px; color: var(--text-secondary, #a0a0b0); line-height: 1.4; }
+@media (max-width: 768px) { .project-type-grid { grid-template-columns: 1fr; } }
