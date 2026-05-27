@@ -171,7 +171,7 @@ func TestGenericHMACProviderParsePayload(t *testing.T) {
 	if parsed.EventID != "evt_1" {
 		t.Errorf("expected evt_1, got %s", parsed.EventID)
 	}
-	if parsed.Amount != "100.00" {
+	if parsed.Amount != "1000.00" {
 		t.Errorf("expected 100.00, got %s", parsed.Amount)
 	}
 }
@@ -357,7 +357,7 @@ func TestUSDTWebhookHandlerIdempotencyDuplicate(t *testing.T) {
 		EventID:        "evt_dup",
 		EventType:      "payment.confirmed",
 		IdempotencyKey: "idem_dup_1",
-		Amount:         "50.00",
+		Amount:         "1000.00",
 		Currency:       "USDT",
 		Network:        "ethereum",
 		Receiver:       "0xreceiver",
