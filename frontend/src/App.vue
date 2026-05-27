@@ -4534,21 +4534,6 @@ async function loadDashboardNotifications() {
   }
 }
 
-function startDashboardRealtime() {
-  if (!hasWindow || dashboardRefreshTimer) return;
-  dashboardRefreshTimer = window.setInterval(() => {
-    if (!token.value || !user.value) return;
-    if (document.visibilityState === 'hidden') return;
-    void loadDashboardData({ silent: true });
-  }, DASHBOARD_REFRESH_MS);
-}
-
-function stopDashboardRealtime() {
-  if (!hasWindow || !dashboardRefreshTimer) return;
-  window.clearInterval(dashboardRefreshTimer);
-  dashboardRefreshTimer = 0;
-}
-
 function openAuth(mode = 'login') {
   setAuthMode(mode);
   authVisible.value = true;
