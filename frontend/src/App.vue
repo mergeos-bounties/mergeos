@@ -4494,11 +4494,6 @@ async function logout() {
     }
   }
 }
-  } finally {
-    clearSession();
-    showToast('Logged out.');
-  }
-}
 
 onMounted(async () => {
   if (hasWindow) {
