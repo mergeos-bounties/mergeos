@@ -4904,6 +4904,27 @@ svg {
 }
 
 .dashboard-toast {
+/* Toast类型样式 */
+.toast-info {
+  background: #1f2937;
+}
+
+.toast-success {
+  background: #059669;
+}
+
+.toast-error {
+  background: #dc2626;
+}
+
+/* 移动端优化 */
+@media (max-width: 430px) {
+  .toast {
+    max-width: calc(100vw - 16px);
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+}
   top: 70px;
 }
 
@@ -8138,5 +8159,81 @@ svg {
 
   .price-breakdown-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+/* 项目类型选择改进 */
+.project-type-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  margin: 24px 0;
+}
+
+.select-tile {
+  position: relative;
+  display: grid;
+  gap: 8px;
+  padding: 20px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  background: white;
+  cursor: pointer;
+  transition: all 160ms ease;
+  text-align: left;
+}
+
+.select-tile:hover {
+  border-color: var(--tile-color, #22c55e);
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.1);
+}
+
+.select-tile.selected {
+  border-color: var(--tile-color, #22c55e);
+  background: color-mix(in srgb, var(--tile-color, #22c55e) 10%, white);
+}
+
+.type-icon {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: #f3f4f6;
+  color: var(--tile-color, #22c55e);
+}
+
+.select-tile.selected .type-icon {
+  background: color-mix(in srgb, var(--tile-color, #22c55e) 20%, white);
+}
+
+.tile-check {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  color: var(--tile-color, #22c55e);
+}
+
+.type-example {
+  font-size: 12px;
+  color: #6b7280;
+  font-style: italic;
+  margin-top: 4px;
+}
+
+/* 移动端优化 */
+@media (max-width: 430px) {
+  .project-type-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .select-tile {
+    padding: 16px;
+  }
+  
+  .type-icon {
+    width: 40px;
+    height: 40px;
   }
 }

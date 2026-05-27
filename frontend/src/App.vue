@@ -127,7 +127,7 @@
           <div v-if="projectWizardStep === 1" class="wizard-form-grid">
             <label class="wizard-field full">
               <span>Project title <b>*</b></span>
-              <input v-model.trim="projectSetupForm.title" placeholder="Enter a clear project title" />
+              <input v-model.trim="projectSetupForm.title" :placeholder="projectSetupForm.titlePlaceholder || 'Enter a clear project title'" />
             </label>
 
             <label class="wizard-field full">
@@ -136,7 +136,7 @@
                 v-model.trim="projectSetupForm.shortDescription"
                 rows="5"
                 maxlength="1000"
-                placeholder="Describe your project, what you want to build, and the problem you're solving..."
+                :placeholder="projectSetupForm.descriptionPlaceholder || 'Describe your project, what you want to build, and the problem you\'re solving...'"
               />
               <small>{{ projectSetupForm.shortDescription.length }} / 1000</small>
             </label>
@@ -150,14 +150,17 @@
                 <button
                   v-for="type in projectTypeOptions"
                   :key="type.label"
-                  :class="{ selected: projectSetupForm.projectType === type.label }"
-                  class="select-tile"
+                  :class="['select-tile', { selected: projectSetupForm.projectType === type.label }]"
+                  :style="{ '--tile-color': type.color || '#6b7280' }"
                   type="button"
-                  @click="projectSetupForm.projectType = type.label"
+                  @click="selectProjectType(type.label)"
                 >
-                  <component :is="type.icon" :size="18" />
+                  <div class="type-icon">
+                    <component :is="type.icon" :size="24" />
+                  </div>
                   <strong>{{ type.label }}</strong>
                   <small>{{ type.caption }}</small>
+                  <small v-if="type.example" class="type-example">Example: {{ type.example }}</small>
                   <CheckCircle2 v-if="projectSetupForm.projectType === type.label" class="tile-check" :size="16" />
                 </button>
               </div>
@@ -2482,13 +2485,34 @@ const projectSetupSteps = [
   },
 ];
 
+
+// 选择项目类型，调整placeholder
+function selectProjectType(type) {
+  projectSetupForm.value.projectType = type;
+  
+  // 根据类型调整placeholder
+  if (type === 'New project') {
+    projectSetupForm.value.titlePlaceholder = 'e.g., AI-powered task management app';
+    projectSetupForm.value.descriptionPlaceholder = 'Describe your new project idea...';
+  } else if (type === 'Fix bug in existing project') {
+    projectSetupForm.value.titlePlaceholder = 'e.g., Fix login bug in React app';
+    projectSetupForm.value.descriptionPlaceholder = 'Describe the bug and your fix approach...';
+  } else {
+    projectSetupForm.value.titlePlaceholder = 'Enter a clear project title';
+    projectSetupForm.value.descriptionPlaceholder = 'Add a short project description';
+  }
+  
+  showToast('Selected: ' + type);
+}
+
 const projectTypeOptions = [
-  { label: 'Web Development', caption: 'Web apps', icon: Globe2 },
-  { label: 'Repo Issue Fix', caption: 'Existing repo', icon: Bug },
-  { label: 'Mobile Development', caption: 'iOS and Android', icon: Compass },
-  { label: 'AI / ML', caption: 'Agents and models', icon: Bot },
-  { label: 'Smart Contract', caption: 'Web3', icon: Link2 },
-  { label: 'Other', caption: 'Custom work', icon: MoreHorizontal },
+  { label: 'New project', caption: 'Start from scratch', icon: Rocket, example: 'AI-powered task manager', color: '#22c55e' },
+  { label: 'Fix bug in existing project', caption: 'Improve existing repo', icon: Bug, example: 'Fix login bug in React app', color: '#ef4444' },
+  { label: 'Web Development', caption: 'Web apps', icon: Globe2, color: '#3b82f6' },
+  { label: 'Mobile Development', caption: 'iOS and Android', icon: Compass, color: '#8b5cf6' },
+  { label: 'AI / ML', caption: 'Agents and models', icon: Bot, color: '#f59e0b' },
+  { label: 'Smart Contract', caption: 'Web3', icon: Link2, color: '#06b6d4' },
+  { label: 'Other', caption: 'Custom work', icon: MoreHorizontal, color: '#6b7280' },
 ];
 
 const budgetTypeOptions = [
