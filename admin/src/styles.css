@@ -1684,7 +1684,7 @@ button:disabled {
     justify-content: center;
   }
 
-  .admin-sidebar a.router-link, 
+  .admin-sidebar a.router-link,
   .admin-sidebar button,
   .admin-sidebar .icon-button {
     min-height: 44px; /* touch targets */
