@@ -994,14 +994,19 @@
     </div>
 
     <aside class="dash-sidebar" aria-label="Customer navigation">
-      <button class="dash-brand" type="button" @click="showToast('Opening dashboard home...')">
-        <span class="brand-mark" aria-hidden="true">
-          <img src="/favicon.svg" alt="" />
-        </span>
-        <strong>MergeOS</strong>
-      </button>
+      <div class="dash-sidebar-head">
+        <button class="dash-brand" type="button" @click="showToast('Opening dashboard home...')">
+          <span class="brand-mark" aria-hidden="true">
+            <img src="/favicon.svg" alt="" />
+          </span>
+          <strong>MergeOS</strong>
+        </button>
+        <button class="dash-sidebar-toggle" type="button" aria-label="Toggle sidebar navigation" @click="dashSidebarOpen = !dashSidebarOpen">
+          <Menu :size="18" />
+        </button>
+      </div>
 
-      <nav class="dash-side-nav">
+      <nav :class="['dash-side-nav', { 'dash-side-nav--collapsed': !dashSidebarOpen }]">
         <section v-for="section in sidebarSections" :key="section.label">
           <p>{{ section.label }}</p>
           <button
@@ -1009,13 +1014,27 @@
             :key="item.label"
             :class="{ active: isDashboardNavActive(item) }"
             type="button"
-            @click="item.section ? openDashboardSection(item.section) : handleDashboardNav(item)"
+            @click="item.section ? openDashboardSection(item.section) : handleDashboardNav(item); dashSidebarOpen = false"
           >
             <component :is="item.icon" :size="16" />
             {{ item.label }}
           </button>
         </section>
       </nav>
+
+      <div class="dash-sidebar-footer">
+        <div class="dash-mobile-profile">
+          <span class="profile-avatar">{{ initialsFor(user.name || user.email) }}</span>
+          <span class="dash-mobile-profile-info">
+            <strong>{{ user.name || user.email || 'Signed-in user' }}</strong>
+            <small>{{ user.wallet_address ? shortWallet(user.wallet_address) : 'Customer' }}</small>
+          </span>
+        </div>
+        <button class="dash-mobile-logout" type="button" @click="logout">
+          <LogOut :size="16" />
+          Log out
+        </button>
+      </div>
 
       <article class="mrg-card">
         <span class="mrg-medal">
@@ -1059,14 +1078,22 @@
             <Plus :size="16" />
             New Project
           </button>
-          <button class="dash-profile" type="button" @click="logout">
-            <span class="profile-avatar">{{ initialsFor(user.name || user.email) }}</span>
-            <span>
-              <strong>{{ user.name || user.email || 'Signed-in user' }}</strong>
-              <small>{{ user.wallet_address ? shortWallet(user.wallet_address) : 'Customer' }}</small>
-            </span>
-            <ChevronDown :size="14" />
-          </button>
+          <div class="profile-menu-wrapper">
+            <button class="dash-profile" type="button" @click="profileMenuOpen = !profileMenuOpen">
+              <span class="profile-avatar">{{ initialsFor(user.name || user.email) }}</span>
+              <span>
+                <strong>{{ user.name || user.email || 'Signed-in user' }}</strong>
+                <small>{{ user.wallet_address ? shortWallet(user.wallet_address) : 'Customer' }}</small>
+              </span>
+              <ChevronDown :size="14" />
+            </button>
+            <div v-if="profileMenuOpen" class="profile-dropdown">
+              <button type="button" @click="profileMenuOpen = false; logout()">
+                <LogOut :size="16" />
+                Log out
+              </button>
+            </div>
+          </div>
         </div>
       </header>
 
@@ -2380,6 +2407,7 @@ import {
   ListTodo,
   Lock,
   LockKeyhole,
+  LogOut,
   Mail,
   Menu,
   MessageCircle,
@@ -2518,6 +2546,14 @@ const authRememberMe = ref(false);
 const authTermsAccepted = ref(true);
 const errorMessage = ref('');
 const mobileMenuOpen = ref(false);
+const profileMenuOpen = ref(false);
+const dashSidebarOpen = ref(false);
+
+function dismissProfileMenu(event) {
+  if (!event.target?.closest?.('.profile-menu-wrapper')) {
+    profileMenuOpen.value = false;
+  }
+}
 const showPassword = ref(false);
 const showConfirmPassword = ref(false);
 const toastMessage = ref('');
@@ -4909,10 +4945,9 @@ function clearSession() {
   authReturnToProjectWizard.value = false;
   removeStoredToken();
 
-  if (!publicModeVisible.value || projectWizardVisible.value) {
-    projectWizardVisible.value = false;
-    openPublicPage('home');
-  }
+  projectWizardVisible.value = false;
+  publicModeVisible.value = true;
+  openPublicPage('home');
 }
 
 async function submitAuth() {
@@ -4972,6 +5007,7 @@ async function logout() {
     publicModeVisible.value = true;
     publicPage.value = 'home';
     updatePublicBrowserPath('home', true);
+    profileMenuOpen.value = false;
     showToast('Logged out.');
   }
 }
@@ -4993,6 +5029,7 @@ onMounted(async () => {
   const handledGitHubCallback = await handleGitHubCallback();
   if (hasWindow) {
     window.addEventListener('popstate', syncPublicPageFromBrowserPath);
+    window.addEventListener('click', dismissProfileMenu);
     if (!handledGitHubCallback) {
       if (projectWizardVisible.value) {
         updateProjectWizardBrowserPath(true);
@@ -5014,6 +5051,7 @@ onUnmounted(() => {
   disconnectWebSocket();
   if (hasWindow) {
     window.removeEventListener('popstate', syncPublicPageFromBrowserPath);
+    window.removeEventListener('click', dismissProfileMenu);
   }
   stopDashboardRealtime();
 });
