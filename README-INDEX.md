@@ -8,6 +8,11 @@ Use this index as the fast public map for MergeOS bounty docs and current bounty
 | --- | --- |
 | [README.md](README.md) | Main project overview, local setup, APIs, and maintainer checklist. |
 | [BOUNTY-POLICY.md](BOUNTY-POLICY.md) | Bounty rules, reward scale, evidence requirements, star requirement, and payout policy. |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Contributor setup, PR requirements, test commands, and bounty workflow. |
+| [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) | Community behavior expectations and enforcement policy. |
+| [SECURITY.md](SECURITY.md) | Private vulnerability reporting and supported security scope. |
+| [SUPPORT.md](SUPPORT.md) | Support channels for bugs, feature requests, bounties, and security. |
+| [LICENSE](LICENSE) | MIT license for this repository. |
 | [Claim Token issue #1](https://github.com/mergeos-bounties/mergeos/issues/1) | Intake queue for new bug bounty claims. |
 
 ## Bounty Reward Scale
@@ -32,6 +37,6 @@ Use this index as the fast public map for MergeOS bounty docs and current bounty
 
 ## Awarded Bounties
 
-No MRG bounty payouts have been recorded yet.
-
-Update this section after a bounty PR is merged and the MRG payout is released.
+| PR | Bounty | Contributor | Reward | Status |
+| --- | --- | --- | ---: | --- |
+| [#86](https://github.com/mergeos-bounties/mergeos/pull/86) | [#18 Dashboard payment history](https://github.com/mergeos-bounties/mergeos/issues/18) | [@ryzhkevichpavel-del](https://github.com/ryzhkevichpavel-del) | 25 MRG | Approved for merge |

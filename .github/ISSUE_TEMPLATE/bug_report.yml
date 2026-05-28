@@ -1,0 +1,85 @@
+name: Bug report
+description: Report a reproducible problem in MergeOS.
+title: "bug: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. For bounty work, claim the bounty first and link the claim in your PR.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What is broken?
+      placeholder: Describe the problem in one or two sentences.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Backend API
+        - Frontend
+        - Admin
+        - Scan explorer
+        - Payments
+        - Auth
+        - Bounty workflow
+        - Deployment
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Give exact steps so maintainers can reproduce the issue.
+      placeholder: |
+        1. Go to ...
+        2. Click ...
+        3. See ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What should have happened?
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: What happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Add screenshots, logs, request IDs, or command output. Redact secrets.
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Browser, OS, device size, service URL, commit SHA, or local setup details.
+      placeholder: |
+        Browser:
+        OS:
+        Viewport:
+        Commit:
+        Local or production:
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched existing issues and PRs.
+          required: true
+        - label: I did not include secrets, private keys, customer data, or sensitive production details.
+          required: true

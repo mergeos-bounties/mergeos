@@ -627,7 +627,7 @@
           },
           "account": {
             "type": "string",
-            "example": "wallet:0x1234..."
+            "example": "0x1234..."
           },
           "balance_cents": {
             "type": "integer",

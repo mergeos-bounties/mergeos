@@ -3,3 +3,6 @@ contact_links:
   - name: Claim MRG Tokens for Bug Bounty Reports
     url: https://github.com/mergeos-bounties/mergeos/issues/1
     about: Star this repository first, then claim new bounty bugs here before opening a PR.
+  - name: Report a Security Vulnerability
+    url: https://github.com/mergeos-bounties/mergeos/security/advisories/new
+    about: Please report suspected vulnerabilities privately instead of opening a public issue.

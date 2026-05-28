@@ -1,6 +1,9 @@
 package core
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -14,10 +17,11 @@ type Server struct {
 	store          *Store
 	payments       *PaymentManager
 	geminiReviewer *GeminiReviewService
+	eventHub       *eventHub
 }
 
 func NewServer(cfg Config, store *Store, payments *PaymentManager) *Server {
-	return &Server{cfg: cfg, store: store, payments: payments, geminiReviewer: NewGeminiReviewService(cfg, store)}
+	return &Server{cfg: cfg, store: store, payments: payments, geminiReviewer: NewGeminiReviewService(cfg, store), eventHub: newEventHub()}
 }
 
 func (s *Server) Routes() http.Handler {
@@ -28,6 +32,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/public/ledger", s.publicLedger)
 	mux.HandleFunc("POST /api/public/repo/issues", s.importRepoIssues)
 	mux.HandleFunc("POST /api/integrations/github/pr-review", s.geminiReviewWebhook)
+	mux.HandleFunc("POST /api/payments/crypto/webhook", s.cryptoWebhook)
 	mux.HandleFunc("POST /api/auth/register", s.register)
 	mux.HandleFunc("POST /api/auth/login", s.login)
 	mux.HandleFunc("POST /api/auth/github", s.githubLogin)
@@ -41,6 +46,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/wallets/{address}", s.wallet)
 	mux.HandleFunc("POST /api/wallets/link", s.linkWallet)
 	mux.HandleFunc("POST /api/payments/paypal/orders", s.createPayPalOrder)
+	mux.HandleFunc("POST /api/payments/paypal/webhook", s.handlePayPalWebhook)
 	mux.HandleFunc("POST /api/uploads", s.uploadAttachment)
 	mux.HandleFunc("GET /api/uploads/", s.downloadAttachment)
 	mux.HandleFunc("GET /api/admin/summary", s.adminSummary)
@@ -53,11 +59,14 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/admin/notifications", s.adminNotifications)
 	mux.HandleFunc("GET /api/admin/attachments", s.adminAttachments)
 	mux.HandleFunc("GET /api/admin/ledger", s.adminLedger)
+	mux.HandleFunc("GET /api/admin/settings", s.adminSettings)
+	mux.HandleFunc("PATCH /api/admin/settings", s.updateAdminSettings)
 	mux.HandleFunc("GET /api/admin/ssl", s.adminSSLReviews)
 	mux.HandleFunc("POST /api/admin/ssl/review", s.reviewAdminSSL)
 	mux.HandleFunc("GET /api/admin/gemini/keys", s.adminGeminiKeys)
 	mux.HandleFunc("POST /api/admin/gemini/keys", s.addAdminGeminiKey)
 	mux.HandleFunc("PATCH /api/admin/gemini/keys/{id}", s.updateAdminGeminiKey)
+	mux.HandleFunc("POST /api/admin/gemini/keys/{id}/test", s.testAdminGeminiKey)
 	mux.HandleFunc("GET /api/admin/gemini/webhooks", s.adminGeminiWebhookLogs)
 	mux.HandleFunc("GET /api/projects", s.projects)
 	mux.HandleFunc("POST /api/projects", s.createProject)
@@ -66,6 +75,9 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/tasks", s.tasks)
 	mux.HandleFunc("POST /api/tasks/", s.acceptTask)
 	mux.HandleFunc("GET /api/notifications", s.notifications)
+	mux.HandleFunc("POST /api/notifications/read", s.markNotificationRead)
+	mux.HandleFunc("POST /api/notifications/read-all", s.markAllNotificationsRead)
+	mux.HandleFunc("GET /api/ws", s.wsHandler)
 	mux.HandleFunc("GET /api/ledger", s.ledger)
 	return withCORS(mux)
 }
@@ -271,6 +283,48 @@ func (s *Server) notifications(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, s.store.ListNotifications(userID))
 }
 
+
+func (s *Server) markNotificationRead(w http.ResponseWriter, r *http.Request) {
+	user, ok := s.requireUser(w, r)
+	if !ok {
+		return
+	}
+
+	var req struct {
+		NotificationID string `json:"notification_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	note := s.store.MarkNotificationRead(user.ID, req.NotificationID)
+	if note == nil {
+		http.Error(w, "notification not found", http.StatusNotFound)
+		return
+	}
+	writeJSON(w, http.StatusOK, note)
+}
+
+func (s *Server) markAllNotificationsRead(w http.ResponseWriter, r *http.Request) {
+	user, ok := s.requireUser(w, r)
+	if !ok {
+		return
+	}
+
+	s.store.MarkAllNotificationsRead(user.ID)
+	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+}
+
+func (s *Server) wsHandler(w http.ResponseWriter, r *http.Request) {
+	conn, err := wsUpgrade(w, r)
+	if err != nil {
+		return
+	}
+	go conn.readLoop(s.eventHub)
+}
+
+
 func (s *Server) adminSummary(w http.ResponseWriter, r *http.Request) {
 	if _, ok := s.requireAdmin(w, r); !ok {
 		return
@@ -338,6 +392,30 @@ func (s *Server) adminLedger(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, s.store.ListLedger())
 }
 
+func (s *Server) adminSettings(w http.ResponseWriter, r *http.Request) {
+	if _, ok := s.requireAdmin(w, r); !ok {
+		return
+	}
+	writeJSON(w, http.StatusOK, s.store.AdminSettings())
+}
+
+func (s *Server) updateAdminSettings(w http.ResponseWriter, r *http.Request) {
+	if _, ok := s.requireAdmin(w, r); !ok {
+		return
+	}
+	var req UpdateAdminSettingsRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	settings, err := s.store.UpdateAdminSettings(req)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, settings)
+}
+
 func (s *Server) adminSSLReviews(w http.ResponseWriter, r *http.Request) {
 	if _, ok := s.requireAdmin(w, r); !ok {
 		return
@@ -377,7 +455,7 @@ func (s *Server) addAdminGeminiKey(w http.ResponseWriter, r *http.Request) {
 	if keyValue == "" {
 		keyValue = strings.TrimSpace(req.APIKey)
 	}
-	key, err := s.store.AddGeminiAPIKey(keyValue)
+	key, err := s.store.AddGeminiAPIKey(keyValue, req.Provider, req.Model)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
@@ -400,6 +478,34 @@ func (s *Server) updateAdminGeminiKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, key)
+}
+
+func (s *Server) testAdminGeminiKey(w http.ResponseWriter, r *http.Request) {
+	if _, ok := s.requireAdmin(w, r); !ok {
+		return
+	}
+	var req TestGeminiAPIKeyRequest
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	if strings.TrimSpace(string(body)) != "" {
+		if err := json.Unmarshal(body, &req); err != nil {
+			writeError(w, http.StatusBadRequest, "invalid JSON body")
+			return
+		}
+	}
+	if s.geminiReviewer == nil {
+		writeError(w, http.StatusServiceUnavailable, "LLM reviewer is not configured")
+		return
+	}
+	result, err := s.geminiReviewer.TestAPIKey(r.Context(), r.PathValue("id"), req.Provider, req.Model)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, result)
 }
 
 func (s *Server) adminGeminiWebhookLogs(w http.ResponseWriter, r *http.Request) {
@@ -511,6 +617,10 @@ func (s *Server) createProject(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	s.eventHub.broadcastAll(map[string]interface{}{
+		"type":    "project_created",
+		"project": project,
+	})
 	writeJSON(w, http.StatusCreated, project)
 }
 
@@ -721,4 +831,83 @@ func (s *Server) evaluateProject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, resp)
+}
+
+type CryptoWebhookRequest struct {
+	UserID        string   `json:"userId"`
+	Title         string   `json:"title"`
+	ClientName    string   `json:"clientName"`
+	CompanyName   string   `json:"companyName"`
+	ClientEmail   string   `json:"clientEmail"`
+	Phone         string   `json:"phone"`
+	SiteType      string   `json:"siteType"`
+	PackageTier   string   `json:"packageTier"`
+	Timeline      string   `json:"timeline"`
+	Brief         string   `json:"brief"`
+	BudgetCents   int64    `json:"budgetCents"`
+	AttachmentIDs []string `json:"attachmentIds"`
+	SourceRepoURL string   `json:"sourceRepoURL"`
+	TxHash        string   `json:"txHash"`
+}
+
+func (s *Server) cryptoWebhook(w http.ResponseWriter, r *http.Request) {
+	bodyBytes, err := io.ReadAll(r.Body)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "failed to read body")
+		return
+	}
+
+	// 1. Signature validation (HMAC-SHA256)
+	if s.cfg.CryptoWebhookSecret != "" {
+		signatureHex := r.Header.Get("X-MergeOS-Signature")
+		if signatureHex == "" {
+			writeError(w, http.StatusUnauthorized, "missing signature header")
+			return
+		}
+		expectedMac := hmac.New(sha256.New, []byte(s.cfg.CryptoWebhookSecret))
+		expectedMac.Write(bodyBytes)
+		expectedSignature := hex.EncodeToString(expectedMac.Sum(nil))
+		if !hmac.Equal([]byte(signatureHex), []byte(expectedSignature)) {
+			writeError(w, http.StatusUnauthorized, "invalid signature")
+			return
+		}
+	}
+
+	var req CryptoWebhookRequest
+	if err := json.Unmarshal(bodyBytes, &req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON payload")
+		return
+	}
+
+	// 2. Replay attack protection (unique transaction hash)
+	if s.store.IsPaymentReferenceUsed(req.TxHash) {
+		writeError(w, http.StatusConflict, "transaction hash has already been used")
+		return
+	}
+
+	// 3. Assemble and execute Verify and CreateProject
+	projectReq := CreateProjectRequest{
+		Title:            req.Title,
+		ClientName:       req.ClientName,
+		CompanyName:      req.CompanyName,
+		ClientEmail:      req.ClientEmail,
+		Phone:            req.Phone,
+		SiteType:         req.SiteType,
+		PackageTier:      req.PackageTier,
+		Timeline:         req.Timeline,
+		Brief:            req.Brief,
+		PaymentMethod:    PaymentCrypto,
+		PaymentReference: req.TxHash,
+		BudgetCents:      req.BudgetCents,
+		AttachmentIDs:    req.AttachmentIDs,
+		SourceRepoURL:    req.SourceRepoURL,
+	}
+
+	project, err := s.store.CreateProject(r.Context(), req.UserID, projectReq)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusCreated, project)
 }
