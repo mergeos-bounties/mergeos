@@ -8221,3 +8221,250 @@ svg {
     grid-template-columns: 1fr;
   }
 }
+
+/* Dashboard layout fix — Issue #16: responsive pass for mobile viewports */
+@media (max-width: 720px) {
+  .dash-top-actions .primary-button.compact {
+    font-size: 11px;
+    padding: 0 9px;
+  }
+
+  .dash-top-actions .primary-button.compact svg {
+    display: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .dash-search {
+    min-width: 0;
+  }
+
+  .dash-search kbd {
+    display: none;
+  }
+
+  .dash-topnav button:nth-child(n+4) {
+    display: none;
+  }
+
+  .dash-sidebar {
+    padding: 12px 8px;
+  }
+
+  .dash-brand {
+    padding-bottom: 14px;
+  }
+
+  .dash-side-nav {
+    gap: 14px;
+  }
+
+  .dash-side-nav button {
+    min-height: 34px;
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .dash-sidebar {
+    position: static;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--line);
+    padding: 10px 6px;
+  }
+
+  .dash-side-nav {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .mrg-card {
+    display: none;
+  }
+
+  .dash-topbar {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 6px 10px;
+  }
+
+  .dash-top-actions {
+    justify-content: space-between;
+  }
+
+  .dash-top-actions .primary-button.compact {
+    flex: 1 1 auto;
+  }
+
+  .dash-content {
+    grid-template-columns: 1fr;
+    padding: 10px;
+    gap: 12px;
+  }
+
+  .dash-project-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .dash-project-title {
+    grid-template-columns: 44px minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .dash-project-title .live-badge {
+    grid-column: 2;
+    width: max-content;
+  }
+
+  .project-photo {
+    width: 44px;
+    height: 44px;
+    font-size: 12px;
+  }
+
+  .dash-project-title h1 {
+    font-size: 20px;
+  }
+
+  .dash-project-title p {
+    font-size: 11px;
+  }
+
+  .dash-metrics,
+  .dash-overview-grid,
+  .dash-rail {
+    grid-template-columns: 1fr;
+  }
+
+  .dash-metrics {
+    gap: 10px;
+    padding-bottom: 12px;
+  }
+
+  .dash-metrics article {
+    min-width: 0;
+  }
+
+  .dash-tabs {
+    gap: 16px;
+  }
+
+  .dash-tabs button {
+    font-size: 11px;
+    min-height: 38px;
+  }
+
+  .dash-pr-row {
+    grid-template-columns: 28px minmax(0, 1fr) auto;
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .dash-pr-stat {
+    display: none;
+  }
+
+  .dash-pr-main strong {
+    font-size: 12px;
+  }
+
+  .dash-pr-main small {
+    font-size: 10px;
+  }
+
+  .dash-card {
+    padding: 10px;
+  }
+
+  .dash-empty-state {
+    padding: 16px 12px;
+  }
+
+  .dash-profile {
+    display: none;
+  }
+
+  .dash-breadcrumb {
+    flex-wrap: wrap;
+    font-size: 11px;
+  }
+
+  .budget-lines {
+    gap: 6px;
+  }
+
+  .budget-lines span {
+    font-size: 11px;
+  }
+
+  .progress-card-body {
+    grid-template-columns: 1fr;
+  }
+
+  .progress-ring.large {
+    width: 80px;
+    height: 80px;
+  }
+
+  .progress-ring.large strong {
+    font-size: 22px;
+  }
+
+  .progress-legend.compact {
+    gap: 6px;
+  }
+
+  .wallet-address-box strong {
+    font-size: 10px;
+    word-break: break-all;
+  }
+
+  .dashboard-project-list button {
+    padding: 8px 6px;
+  }
+
+  .rail-activity-list article {
+    padding: 6px 0;
+  }
+
+  .notification-center-list article {
+    padding: 6px 0;
+  }
+
+  .chat-list article {
+    padding: 6px 0;
+  }
+}
+
+/* Touch-friendly targets — dashboard only, not global */
+@media (max-width: 480px) {
+  .dashboard-shell button {
+    min-height: 44px;
+  }
+
+  .dashboard-shell .dash-icon-button {
+    min-height: 38px;
+    flex: 0 0 36px;
+    width: 36px;
+  }
+
+  .dashboard-shell .dash-side-nav button {
+    min-height: 36px;
+  }
+
+  .dashboard-shell .dash-tabs button {
+    min-height: 40px;
+  }
+
+  .dashboard-shell .secondary-button.compact,
+  .dashboard-shell .primary-button.compact {
+    min-height: 40px;
+  }
+}
