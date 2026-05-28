@@ -227,11 +227,11 @@
         <TableHeader title="Projects" :count="filteredProjects.length" />
         <DataTable :columns="['Project', 'Client', 'Budget', 'Tasks', 'Status']">
           <tr v-for="project in filteredProjects" :key="project.id">
-            <td><strong>{{ project.title }}</strong><small>{{ project.id }}</small></td>
-            <td>{{ project.client_name || project.company_name || 'Client' }}</td>
-            <td>{{ mrgFromCents(project.budget_cents) }}</td>
-            <td>{{ project.tasks?.length || 0 }}</td>
-            <td><span class="status-pill green">{{ project.status }}</span></td>
+            <td data-label="Project"><strong>{{ project.title }}</strong><small>{{ project.id }}</small></td>
+            <td data-label="Client">{{ project.client_name || project.company_name || 'Client' }}</td>
+            <td data-label="Budget">{{ mrgFromCents(project.budget_cents) }}</td>
+            <td data-label="Tasks">{{ project.tasks?.length || 0 }}</td>
+            <td data-label="Status"><span class="status-pill green">{{ project.status }}</span></td>
           </tr>
         </DataTable>
       </section>
