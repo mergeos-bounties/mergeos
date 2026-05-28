@@ -37,6 +37,6 @@ Use this index as the fast public map for MergeOS bounty docs and current bounty
 
 ## Awarded Bounties
 
-No MRG bounty payouts have been recorded yet.
-
-Update this section after a bounty PR is merged and the MRG payout is released.
+| PR | Bounty | Contributor | Reward | Status |
+| --- | --- | --- | ---: | --- |
+| [#86](https://github.com/mergeos-bounties/mergeos/pull/86) | [#18 Dashboard payment history](https://github.com/mergeos-bounties/mergeos/issues/18) | [@ryzhkevichpavel-del](https://github.com/ryzhkevichpavel-del) | 25 MRG | Approved for merge |
