@@ -1,7 +1,9 @@
 <template>
   <div v-if="projectWizardVisible" class="project-flow-shell">
-    <div v-if="toastMessage" class="toast project-flow-toast" role="status" aria-live="polite">
-      {{ toastMessage }}
+    <div v-if="toastMessages.length" class="toast-container project-flow-toast">
+      <div v-for="toast in toastMessages" :key="toast.id" class="toast" role="status" aria-live="polite">
+        {{ toast.message }}
+      </div>
     </div>
 
     <header class="project-flow-navbar">
@@ -982,8 +984,10 @@
   </div>
 
   <div v-else-if="user && !publicModeVisible" class="dashboard-shell">
-    <div v-if="toastMessage" class="toast dashboard-toast" role="status" aria-live="polite">
-      {{ toastMessage }}
+    <div v-if="toastMessages.length" class="toast-container dashboard-toast">
+      <div v-for="toast in toastMessages" :key="toast.id" class="toast" role="status" aria-live="polite">
+        {{ toast.message }}
+      </div>
     </div>
 
     <aside class="dash-sidebar" aria-label="Customer navigation">
@@ -1355,8 +1359,10 @@
   </div>
 
   <div v-else class="home-shell">
-    <div v-if="toastMessage" class="toast" role="status" aria-live="polite">
-      {{ toastMessage }}
+    <div v-if="toastMessages.length" class="toast-container">
+      <div v-for="toast in toastMessages" :key="toast.id" class="toast" role="status" aria-live="polite">
+        {{ toast.message }}
+      </div>
     </div>
 
     <header class="home-navbar">
@@ -2382,9 +2388,18 @@ const authTermsAccepted = ref(true);
 const errorMessage = ref('');
 const showPassword = ref(false);
 const showConfirmPassword = ref(false);
-const toastMessage = ref('');
+const toastMessages = ref([]);
 const publicNotifications = ref([]);
-let toastTimer = 0;
+let toastTimers = [];
+
+function addToast(message) {
+  const id = Date.now();
+  toastMessages.value = [...toastMessages.value, { id, message }].slice(-3); // Max 3 toasts
+  const timer = setTimeout(() => {
+    toastMessages.value = toastMessages.value.filter(t => t.id !== id);
+  }, 3000);
+  toastTimers.push(timer);
+}
 
 const initialRoutePath = props.initialPath || (hasWindow ? window.location.pathname : '/');
 const initialProjectWizardRoute = projectWizardRouteFromPath(initialRoutePath);
@@ -3433,13 +3448,8 @@ async function handleGitHubCallback() {
 }
 
 function showToast(message) {
-  toastMessage.value = message;
+  addToast(message);
   pushPublicNotification(message);
-  if (!hasWindow) return;
-  if (toastTimer) window.clearTimeout(toastTimer);
-  toastTimer = window.setTimeout(() => {
-    toastMessage.value = '';
-  }, 2200);
 }
 
 function pushPublicNotification(message) {
@@ -3448,7 +3458,7 @@ function pushPublicNotification(message) {
   const body = projectWizardVisible.value ? 'Project setup status changed.' : 'Public session status changed.';
   publicNotifications.value = [
     {
-      id: `public-${Date.now()}`,
+      id: `public-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       subject: String(message),
       body,
       meta: formatLedgerDateTime(createdAt).full,
@@ -3456,7 +3466,7 @@ function pushPublicNotification(message) {
       createdAt,
     },
     ...publicNotifications.value,
-  ].slice(0, 6);
+  ].slice(0, 8);
 }
 
 function scrollToSection(id) {

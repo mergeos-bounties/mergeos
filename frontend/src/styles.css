@@ -77,6 +77,8 @@ svg {
   position: fixed;
   top: 82px;
   right: 24px;
+  left: auto;
+  max-width: 420px;
   z-index: 90;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 8px;
@@ -86,6 +88,87 @@ svg {
   padding: 12px 16px;
   font-size: 14px;
   font-weight: 800;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.toast + .toast {
+  top: 140px;
+}
+
+
+.toast-container {
+  position: fixed;
+  top: 82px;
+  right: 24px;
+  left: auto;
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 420px;
+  pointer-events: none;
+}
+
+.toast-container .toast {
+  position: relative;
+  top: auto;
+  right: auto;
+  left: auto;
+  margin: 0;
+}
+
+@media (max-width: 430px) {
+  .toast-container {
+    right: 12px;
+    left: 12px;
+    max-width: none;
+  }
+}
+
+@media (max-width: 360px) {
+  .toast-container {
+    right: 8px;
+    left: 8px;
+  }
+}
+
+@media (min-width: 1366px) {
+  .toast-container {
+    right: 34px;
+    max-width: 480px;
+  }
+}
+
+@media (max-width: 430px) {
+  .toast {
+    top: 72px;
+    right: 12px;
+    left: 12px;
+    max-width: none;
+    font-size: 13px;
+    padding: 10px 14px;
+  }
+  .toast + .toast {
+    top: 130px;
+  }
+}
+
+@media (max-width: 360px) {
+  .toast {
+    top: 64px;
+    right: 8px;
+    left: 8px;
+    font-size: 12px;
+    padding: 9px 12px;
+  }
+}
+
+@media (min-width: 1366px) {
+  .toast {
+    right: 34px;
+    max-width: 480px;
+  }
 }
 
 .home-navbar {
@@ -6009,6 +6092,41 @@ svg {
   gap: 10px;
 }
 
+/* Empty/Loading/Error states for notification center */
+.notification-center-card .dash-empty-state {
+  padding: 24px 16px;
+  text-align: center;
+}
+
+.notification-center-card .dash-empty-state strong {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.notification-center-card .dash-empty-state p {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.notification-center-card .dash-empty-state button {
+  margin-top: 10px;
+  padding: 6px 14px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.notification-center-card .dash-empty-state button:hover {
+  background: var(--soft);
+}
+
 .notification-dot {
   width: 10px;
   height: 10px;
@@ -6029,13 +6147,6 @@ svg {
   background: #ef4444;
 }
 
-.notification-center-list strong,
-.notification-center-list small {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 
 .notification-center-list strong {
   color: #111827;
@@ -8219,5 +8330,40 @@ svg {
 
   .price-breakdown-grid {
     grid-template-columns: 1fr;
+  }
+}
+/* Responsive notification styles for Issue #19 */
+@media (max-width: 768px) {
+  .notification-center-list {
+    gap: 10px;
+    margin-top: 12px;
+  }
+  .notification-center-list article {
+    grid-template-columns: 8px minmax(0, 1fr);
+    gap: 8px;
+  }
+  .notification-dot {
+    width: 8px;
+    height: 8px;
+    margin-top: 2px;
+  }
+  .notification-center-list p {
+    -webkit-line-clamp: 2;
+  }
+}
+
+@media (max-width: 430px) {
+  .notification-center-card {
+    padding: 14px;
+  }
+  .notification-center-list strong {
+    font-size: 10px;
+  }
+  .notification-center-list p {
+    font-size: 10px;
+    -webkit-line-clamp: 1;
+  }
+  .notification-center-list small {
+    font-size: 9px;
   }
 }
