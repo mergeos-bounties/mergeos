@@ -4782,7 +4782,14 @@ function clearSession() {
   dashboardError.value = '';
   dashboardSection.value = 'projects';
   selectedDashboardProjectID.value = '';
+  pendingProjectPaymentAfterAuth.value = false;
+  authReturnToProjectWizard.value = false;
   removeStoredToken();
+
+  if (!publicModeVisible.value || projectWizardVisible.value) {
+    projectWizardVisible.value = false;
+    openPublicPage('home');
+  }
 }
 
 async function submitAuth() {
