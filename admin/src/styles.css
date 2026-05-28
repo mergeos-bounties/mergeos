@@ -1614,3 +1614,161 @@ button:disabled {
     justify-content: flex-start;
   }
 }
+
+/* ========================================
+   Fix: Login/Logout Modal Responsive
+   Added for bounty #13
+   ======================================== */
+
+/* Login screen: vertical stack on tablets & phones */
+@media (max-width: 600px) {
+  .login-screen {
+    grid-template-columns: 1fr;
+    min-height: 100dvh;
+  }
+
+  .login-panel {
+    padding: 24px 20px;
+    border-right: none;
+    gap: 20px;
+  }
+
+  .login-brand img,
+  .brand-mark {
+    width: 32px;
+    height: 32px;
+  }
+
+  .login-copy h1 {
+    font-size: 1.35rem;
+    line-height: 1.3;
+  }
+
+  .login-form input {
+    font-size: 16px; /* prevents iOS zoom on focus */
+    padding: 12px 14px;
+  }
+
+  .login-form .primary-action {
+    width: 100%;
+    justify-content: center;
+    padding: 14px 20px;
+    font-size: 15px;
+  }
+
+  /* Hide preview panel on small screens */
+  .login-preview {
+    display: none;
+  }
+}
+
+/* Extra small devices (< 400px) */
+@media (max-width: 400px) {
+  .login-panel {
+    padding: 18px 14px;
+  }
+
+  .login-form label span {
+    font-size: 13px;
+  }
+}
+
+/* Logout button: ensure visible and tappable on mobile */
+@media (max-width: 720px) {
+  .admin-topbar .icon-button:last-child {
+    padding: 10px;
+    min-width: 44px;
+    min-height: 44px; /* touch target */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .admin-sidebar a.router-link, 
+  .admin-sidebar button,
+  .admin-sidebar .icon-button {
+    min-height: 44px; /* touch targets */
+  }
+
+  /* Improve admin shell layout on mobile */
+  .admin-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-sidebar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    top: auto;
+    height: auto;
+    z-index: 100;
+    flex-direction: row;
+    overflow-x: auto;
+    padding: 8px 12px;
+    border-top: 1px solid var(--line);
+    border-right: none;
+    background: var(--surface);
+  }
+
+  .sidebar-brand {
+    display: none;
+  }
+
+  .admin-main {
+    padding-bottom: 70px; /* space for bottom nav */
+  }
+
+  .admin-topbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+}
+
+/* Fix logout accessibility: add text label on hover/focus */
+@media (min-width: 721px) {
+  button[aria-label="Log out"]:hover::after,
+  button[aria-label="Log out"]:focus-visible::after {
+    content: "Log out";
+    position: absolute;
+    right: 100%;
+    margin-right: 8px;
+    background: var(--text);
+    color: var(--surface);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+}
+
+/* Fix: login form error spacing on mobile */
+.form-error {
+  font-size: 13px;
+  padding: 6px 0;
+  color: var(--danger);
+}
+
+/* Ensure login form buttons have proper spacing on all screens */
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.login-form .primary-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+/* Smooth transitions for responsive changes */
+.login-screen,
+.login-panel,
+.admin-shell,
+.admin-sidebar {
+  transition: grid-template-columns 0.2s ease, padding 0.2s ease;
+}
