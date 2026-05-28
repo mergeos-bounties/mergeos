@@ -6829,6 +6829,38 @@ svg {
   }
 }
 
+/* Extra-small screens: auth modal touch optimization (< 450px) */
+@media (max-width: 450px) {
+  .auth-modal {
+    max-height: calc(100vh - 16px);
+    border-radius: 10px;
+    margin: 8px;
+    width: calc(100% - 16px);
+  }
+
+  .auth-modal-main {
+    padding: 18px 12px 16px;
+    gap: 14px;
+  }
+
+  .auth-close-button {
+    top: 10px;
+    right: 10px;
+    width: 36px;
+    height: 36px;
+  }
+
+  .social-auth-row button {
+    font-size: 13px;
+    padding: 10px 8px;
+    min-height: 44px; /* touch target */
+  }
+
+  .auth-brand {
+    font-size: 17px;
+  }
+}
+
 @media (max-width: 520px) {
   .primary-button.compact {
     padding: 0 12px;
