@@ -3647,7 +3647,7 @@ async function loadRepoIssues() {
     repoImportResult.value = result;
     projectSetupForm.repoUrl = result.repo_url || repoURL;
     if (repoImportedIssues.value.length) {
-      projectSetupForm.projectType = 'Repo Issue Fix';
+      projectSetupForm.projectType = 'Bug Fix';
       projectSetupForm.title = `Fix all issues in ${result.owner}/${result.name}`;
       projectSetupForm.shortDescription = `Fix ${repoImportedIssues.value.length} open GitHub issues in ${result.owner}/${result.name}.`;
       projectSetupForm.overview = repoImportedIssues.value
