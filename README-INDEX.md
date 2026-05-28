@@ -40,3 +40,4 @@ Use this index as the fast public map for MergeOS bounty docs and current bounty
 | PR | Bounty | Contributor | Reward | Status |
 | --- | --- | --- | ---: | --- |
 | [#86](https://github.com/mergeos-bounties/mergeos/pull/86) | [#18 Dashboard payment history](https://github.com/mergeos-bounties/mergeos/issues/18) | [@ryzhkevichpavel-del](https://github.com/ryzhkevichpavel-del) | 25 MRG | Approved for merge |
+| [#37](https://github.com/mergeos-bounties/mergeos/pull/37) | [#16 Dashboard layout after login](https://github.com/mergeos-bounties/mergeos/issues/16) | [@lb1192176991-lab](https://github.com/lb1192176991-lab) | 25 MRG | Approved for merge |
