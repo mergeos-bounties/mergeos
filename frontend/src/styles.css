@@ -702,6 +702,36 @@ svg {
   grid-template-columns: repeat(5, minmax(104px, 1fr));
 }
 
+.project-type-split {
+  grid-template-columns: repeat(2, minmax(200px, 1fr)) !important;
+  max-width: 520px;
+}
+
+.select-tile-big {
+  min-height: 110px !important;
+  padding: 18px 20px !important;
+  gap: 10px !important;
+}
+
+.select-tile-big strong {
+  font-size: 15px !important;
+  font-weight: 920 !important;
+}
+
+.select-tile-big small {
+  font-size: 12px !important;
+}
+
+.new-project-hint {
+  padding: 12px 0;
+}
+
+.new-project-hint p {
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 .budget-type-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
