@@ -2280,6 +2280,7 @@ const publicPagePaths = {
 };
 const publicPageNames = new Set(Object.keys(publicPagePaths));
 const projectWizardStepPaths = {
+  0: '/project/new/category',
   1: '/project/new',
   2: '/project/new/scope',
   3: '/project/new/budget',
@@ -2314,17 +2315,17 @@ function publicPathForPage(page = 'home') {
   return publicPagePaths[normalizePublicPage(page)] || '/';
 }
 
-function normalizeProjectWizardStep(step = 1) {
-  return Math.min(4, Math.max(1, Number(step) || 1));
+function normalizeProjectWizardStep(step = 0) {
+  return Math.min(4, Math.max(0, Number(step) || 0));
 }
 
 function projectWizardRouteFromPath(path = '/') {
   const normalizedPath = normalizeRoutePath(path);
   const stepMatch = Object.entries(projectWizardStepPaths).find(([, routePath]) => routePath === normalizedPath);
   if (stepMatch) return { stage: 'setup', step: Number(stepMatch[0]) };
-  if (normalizedPath === '/project/new/details' || normalizedPath === '/projects/new') return { stage: 'setup', step: 1 };
-  if (normalizedPath === projectWizardStagePaths.funding) return { stage: 'funding', step: 4 };
-  if (normalizedPath === projectWizardStagePaths.success) return { stage: 'success', step: 4 };
+  if (normalizedPath === '/project/new/details' || normalizedPath === '/projects/new') return { stage: 'setup', step: 0 };
+  if (normalizedPath === projectWizardStagePaths.funding) return { stage: 'funding', step: 0 };
+  if (normalizedPath === projectWizardStagePaths.success) return { stage: 'success', step: 0 };
   return null;
 }
 
@@ -2394,7 +2395,8 @@ const publicModeVisible = ref(Boolean(initialProjectWizardRoute) || initialPubli
 
 const projectWizardVisible = ref(Boolean(initialProjectWizardRoute));
 const projectWizardStage = ref(initialProjectWizardRoute?.stage || 'setup');
-const projectWizardStep = ref(initialProjectWizardRoute?.step || 1);
+const projectWizardStep = ref(initialProjectWizardRoute?.step || 0);
+const projectCategory = ref('');
 const projectFundingAmount = ref('');
 const projectPaymentMethod = ref('Credit / Debit card');
 const projectPaymentBusy = ref(false);
@@ -2470,6 +2472,13 @@ const projectDeliverablePlaceholders = [
 ];
 
 const projectSetupSteps = [
+  {
+    number: 0,
+    label: 'Project category',
+    title: 'What kind of project is this?',
+    description: 'Choose project type',
+    helper: 'Choose whether you\'re starting a new project or fixing a bug in an existing one.',
+  },
   {
     number: 1,
     label: 'Project details',
@@ -3603,7 +3612,8 @@ function openProjectWizard(options = {}) {
   publicModeVisible.value = true;
   projectWizardVisible.value = true;
   projectWizardStage.value = 'setup';
-  projectWizardStep.value = 1;
+  projectWizardStep.value = 0;
+  projectCategory.value = '';
   errorMessage.value = '';
   updateProjectWizardBrowserPath(Boolean(options.replace));
   scrollProjectFlowTop();
@@ -3613,7 +3623,8 @@ function restartProjectWizard(options = {}) {
   publicModeVisible.value = true;
   projectWizardVisible.value = true;
   projectWizardStage.value = 'setup';
-  projectWizardStep.value = 1;
+  projectWizardStep.value = 0;
+  projectCategory.value = '';
   updateProjectWizardBrowserPath(Boolean(options.replace));
   scrollProjectFlowTop();
 }
@@ -3621,7 +3632,8 @@ function restartProjectWizard(options = {}) {
 function closeProjectWizard(options = {}) {
   projectWizardVisible.value = false;
   projectWizardStage.value = 'setup';
-  projectWizardStep.value = 1;
+  projectWizardStep.value = 0;
+  projectCategory.value = '';
   if (options.updatePath !== false) {
     updatePublicBrowserPath(publicPage.value, Boolean(options.replace));
   }
@@ -3676,7 +3688,25 @@ function goProjectStep(stepNumber) {
   scrollProjectFlowTop();
 }
 
+function selectProjectCategory(category) {
+  projectCategory.value = category;
+  if (category === 'repo-fix') {
+    projectSetupForm.projectType = 'Repo Issue Fix';
+  } else {
+    projectSetupForm.projectType = '';
+  }
+  projectWizardStep.value = 1;
+  updateProjectWizardBrowserPath();
+  scrollProjectFlowTop();
+}
+
 function nextProjectStep() {
+  if (projectWizardStep.value === 0) {
+    projectWizardStep.value = 1;
+    updateProjectWizardBrowserPath();
+    scrollProjectFlowTop();
+    return;
+  }
   if (projectWizardStep.value < 4) {
     projectWizardStep.value += 1;
     updateProjectWizardBrowserPath();
@@ -3757,7 +3787,12 @@ function projectWizardBack() {
     return;
   }
 
-  if (projectWizardStep.value > 1) {
+  if (projectWizardStep.value === 0) {
+    closeProjectWizard();
+    return;
+  }
+
+  if (projectWizardStep.value > 0) {
     projectWizardStep.value -= 1;
     updateProjectWizardBrowserPath();
     scrollProjectFlowTop();
