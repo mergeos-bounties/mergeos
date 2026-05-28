@@ -4027,7 +4027,16 @@ async function createPayPalOrder() {
       body: JSON.stringify({ amount_cents: amountCents, description: projectSetupForm.title || 'MergeOS project funding' }),
     });
     paypalOrderID.value = result.order_id;
-    if (hasWindow && result.approval_url) {
+    // Persist wizard state to localStorage before redirecting to PayPal
+    if (hasWindow) {
+      const state = {
+        title: projectSetupForm.title,
+        description: projectSetupForm.description,
+        deliverables: projectDeliverables.value,
+        fundingAmount: projectFundingAmount.value,
+        paymentMethod: projectPaymentMethod.value,
+      };
+      localStorage.setItem('paypal_pending_state', JSON.stringify(state));
       window.location.href = result.approval_url;
     }
   } catch (error) {
@@ -5034,6 +5043,19 @@ onMounted(async () => {
     // Detect PayPal return: /paypal/return?token=ORDER_ID
     if (pathname === '/paypal/return' && urlToken) {
       successPaymentReference.value = urlToken;
+      // Restore wizard state from localStorage
+      const savedState = localStorage.getItem('paypal_pending_state');
+      if (savedState) {
+        try {
+          const state = JSON.parse(savedState);
+          if (state.title) projectSetupForm.title = state.title;
+          if (state.description) projectSetupForm.description = state.description;
+          if (state.deliverables) projectDeliverables.value = state.deliverables;
+          if (state.fundingAmount) projectFundingAmount.value = state.fundingAmount;
+          if (state.paymentMethod) projectPaymentMethod.value = state.paymentMethod;
+        } catch (e) { /* ignore parse errors */ }
+        localStorage.removeItem('paypal_pending_state');
+      }
       const cleanUrl = pathname + window.location.hash;
       window.history.replaceState({}, document.title, cleanUrl);
       showToast('PayPal payment approved. Completing funding...');
