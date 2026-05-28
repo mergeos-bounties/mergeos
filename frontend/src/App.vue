@@ -4793,6 +4793,103 @@ function setSession(auth) {
   startDashboardRealtime();
 }
 
+let _ws = null;
+let _wsReconnectTimer = 0;
+let _wsReconnectDelay = 1000;
+const _wsSeenProjectIDs = new Set();
+
+function wsURL() {
+  if (!hasWindow) return '';
+  const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  return `${proto}//${window.location.host}/api/ws`;
+}
+
+function connectWebSocket() {
+  if (!hasWindow || _ws) return;
+  try {
+    _ws = new WebSocket(wsURL());
+  } catch {
+    _ws = null;
+    scheduleWSReconnect();
+    return;
+  }
+  _ws.onopen = () => {
+    _wsReconnectDelay = 1000;
+  };
+  _ws.onmessage = (event) => {
+    let payload;
+    try {
+      payload = JSON.parse(event.data);
+    } catch {
+      return;
+    }
+    handleWSEvent(payload);
+  };
+  _ws.onerror = () => {};
+  _ws.onclose = () => {
+    _ws = null;
+    scheduleWSReconnect();
+  };
+}
+
+function disconnectWebSocket() {
+  if (_wsReconnectTimer) {
+    window.clearTimeout(_wsReconnectTimer);
+    _wsReconnectTimer = 0;
+  }
+  _wsReconnectDelay = 1000;
+  _wsSeenProjectIDs.clear();
+  if (!_ws) return;
+  _ws.onclose = null;
+  _ws.onerror = null;
+  _ws.onmessage = null;
+  _ws.onopen = null;
+  try {
+    _ws.close();
+  } catch {
+    // ignore close errors
+  }
+  _ws = null;
+}
+
+function scheduleWSReconnect() {
+  if (!hasWindow || _wsReconnectTimer) return;
+  _wsReconnectTimer = window.setTimeout(() => {
+    _wsReconnectTimer = 0;
+    _wsReconnectDelay = Math.min(_wsReconnectDelay * 2, 30000);
+    connectWebSocket();
+  }, _wsReconnectDelay);
+}
+
+function handleWSEvent(payload = {}) {
+  if (!payload || payload.type !== 'project_created') return;
+  const project = payload.project;
+  if (!project || !project.id) return;
+
+  if (_wsSeenProjectIDs.has(project.id)) return;
+  _wsSeenProjectIDs.add(project.id);
+
+  if (user.value) {
+    const exists = dashboardProjects.value.some((p) => p.id === project.id);
+    if (!exists) {
+      dashboardProjects.value = [project, ...dashboardProjects.value];
+      if (!selectedDashboardProjectID.value) {
+        selectedDashboardProjectID.value = project.id;
+      }
+    }
+  }
+
+  if (marketplaceData.value && Array.isArray(marketplaceData.value.projects)) {
+    const exists = marketplaceData.value.projects.some((p) => p.id === project.id);
+    if (!exists) {
+      marketplaceData.value = {
+        ...marketplaceData.value,
+        projects: [project, ...marketplaceData.value.projects],
+      };
+    }
+  }
+}
+
 function clearSession() {
   disconnectWebSocket();
   stopDashboardRealtime();
