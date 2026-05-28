@@ -1614,3 +1614,74 @@ button:disabled {
     justify-content: flex-start;
   }
 }
+
+/* ========================================
+   Fix #16: Dashboard layout after login
+   Responsive QA pass
+   ======================================== */
+
+/* Dashboard cards/metrics on mobile */
+@media (max-width: 720px) {
+  .builder-workspace {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .canvas-column {
+    overflow: hidden;
+  }
+
+  .canvas-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 12px;
+  }
+
+  .canvas-tools {
+    flex-wrap: wrap;
+  }
+
+  .canvas-tools button {
+    flex: 1;
+    min-width: 70px;
+    justify-content: center;
+    height: 38px;
+    font-size: 12px;
+  }
+
+  .metric-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    padding: 12px;
+  }
+
+  .metric-tile {
+    padding: 12px;
+  }
+
+  .metric-tile strong {
+    font-size: 20px;
+  }
+
+  .inspector-panel {
+    position: static;
+    width: 100%;
+  }
+
+  .data-grid {
+    grid-template-columns: 1fr;
+    overflow-x: auto;
+  }
+}
+
+/* Medium screens adjustments */
+@media (min-width: 721px) and (max-width: 1100px) {
+  .builder-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .metric-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
