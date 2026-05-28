@@ -1612,9 +1612,14 @@ async function mergeTaskPull(task, pull) {
 
 function logout(callApi = true) {
   const currentToken = token.value;
-  token.value = '';
+  // Clear auth state immediately so UI switches back to login screen
+  token.value = null;
   adminUser.value = null;
+  authError.value = '';
+  errorMessage.value = '';
   if (hasWindow) localStorage.removeItem(storageKey);
+
+  // Attempt server-side logout (fire-and-forget, no user-facing error)
   if (callApi && currentToken) {
     fetch('/api/auth/logout', {
       method: 'POST',
@@ -1623,7 +1628,10 @@ function logout(callApi = true) {
         Authorization: `Bearer ${currentToken}`,
       },
       body: JSON.stringify({}),
-    }).catch(() => {});
+    }).catch(() => {
+      // Silently ignore server-side logout failures;
+      // local session is already cleared.
+    });
   }
 }
 
