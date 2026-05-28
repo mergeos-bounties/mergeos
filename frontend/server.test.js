@@ -205,7 +205,7 @@ test('WebSocket proxy upgrades /api/ws to the API target', async (t) => {
         `Host: 127.0.0.1:${frontendAddress.port}`,
         'Connection: Upgrade',
         'Upgrade: websocket',
-        'Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==',
+        'Sec-WebSocket-Key: test',
         'Sec-WebSocket-Version: 13',
         '',
         '',
