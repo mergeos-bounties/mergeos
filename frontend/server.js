@@ -144,6 +144,14 @@ export async function createMergeOSServer(config) {
     }
   });
 
+  server.on('upgrade', (req, socket, head) => {
+    if (!req.url?.startsWith('/api/ws')) {
+      socket.destroy();
+      return;
+    }
+    proxyWs(req, socket, head, config.apiTarget);
+  });
+
   return server;
 }
 
