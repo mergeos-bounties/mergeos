@@ -317,6 +317,74 @@ svg {
   padding: 8px 10px;
 }
 
+.hamburger-button {
+  display: none;
+  position: relative;
+  z-index: 55;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  color: #111827;
+  padding: 0;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.mobile-nav-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  background: rgba(0, 0, 0, 0.32);
+  backdrop-filter: blur(4px);
+}
+
+.mobile-nav-panel {
+  display: none;
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 50;
+  width: min(300px, 80vw);
+  height: 100vh;
+  flex-direction: column;
+  gap: 4px;
+  border-left: 1px solid var(--line);
+  background: #ffffff;
+  box-shadow: -8px 0 32px rgba(15, 23, 42, 0.1);
+  padding: 72px 24px 24px;
+  overflow-y: auto;
+}
+
+.mobile-nav-panel a {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #273244;
+  padding: 12px 14px;
+  font-size: 14px;
+  font-weight: 750;
+  text-decoration: none;
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.mobile-nav-panel a:hover {
+  background: var(--soft);
+  color: var(--green-dark);
+}
+
+.mobile-nav-panel a.nav-active {
+  background: var(--green-soft);
+  color: var(--green-dark);
+}
+
 .dash-icon-button.light {
   border-color: var(--line);
   background: #ffffff;
@@ -6358,6 +6426,18 @@ svg {
 
   .nav-actions {
     min-width: auto;
+  }
+
+  .hamburger-button {
+    display: inline-flex;
+  }
+
+  .mobile-nav-overlay {
+    display: block;
+  }
+
+  .mobile-nav-panel {
+    display: flex;
   }
 
   .hero-section {

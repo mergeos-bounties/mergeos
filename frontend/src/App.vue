@@ -1497,6 +1497,27 @@
           <a href="/ledger" :class="{ 'nav-active': publicPage === 'ledger' }" @click.prevent="openPublicPage('ledger')">Ledger Logs</a>
         </nav>
 
+        <button
+          class="hamburger-button"
+          type="button"
+          :aria-label="mobileMenuOpen ? 'Close navigation' : 'Open navigation'"
+          :aria-expanded="mobileMenuOpen"
+          aria-controls="mobile-nav-panel"
+          @click="mobileMenuOpen = !mobileMenuOpen"
+        >
+          <Menu v-if="!mobileMenuOpen" :size="22" />
+          <X v-else :size="22" />
+        </button>
+
+        <div v-if="mobileMenuOpen" class="mobile-nav-overlay" aria-hidden="true" @click="mobileMenuOpen = false"></div>
+        <nav v-if="mobileMenuOpen" id="mobile-nav-panel" class="mobile-nav-panel" aria-label="Mobile navigation">
+          <a href="/product" :class="{ 'nav-active': publicPage === 'product' }" @click.prevent="mobileMenuOpen = false; openPublicPage('product')">Product <ChevronDown :size="13" /></a>
+          <a href="/solutions" :class="{ 'nav-active': publicPage === 'solutions' }" @click.prevent="mobileMenuOpen = false; openPublicPage('solutions')">Solutions <ChevronDown :size="13" /></a>
+          <a href="/marketplace" :class="{ 'nav-active': publicPage === 'marketplace' }" @click.prevent="mobileMenuOpen = false; openPublicPage('marketplace')">Marketplace</a>
+          <a href="/how-it-works" :class="{ 'nav-active': publicPage === 'how-it-works' }" @click.prevent="mobileMenuOpen = false; openPublicPage('how-it-works')">How it works</a>
+          <a href="/ledger" :class="{ 'nav-active': publicPage === 'ledger' }" @click.prevent="mobileMenuOpen = false; openPublicPage('ledger')">Ledger Logs</a>
+        </nav>
+
         <div class="nav-actions">
           <template v-if="user">
             <button class="secondary-button compact" type="button" @click="openDashboard">Dashboard</button>
@@ -2360,6 +2381,7 @@ import {
   Lock,
   LockKeyhole,
   Mail,
+  Menu,
   MessageCircle,
   MoreHorizontal,
   PenLine,
@@ -2495,6 +2517,7 @@ const authBusy = ref(false);
 const authRememberMe = ref(false);
 const authTermsAccepted = ref(true);
 const errorMessage = ref('');
+const mobileMenuOpen = ref(false);
 const showPassword = ref(false);
 const showConfirmPassword = ref(false);
 const toastMessage = ref('');
