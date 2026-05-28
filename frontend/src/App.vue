@@ -1325,6 +1325,33 @@
             <button class="rail-link-button" type="button" @click="loadDashboardNotifications">
               Refresh notifications
             </button>
+          
+          <section ref="dashboardPaymentSection" class="dash-card rail-card dash-section-payments" tabindex="-1">
+            <div class="card-title-row">
+              <h2>Payment History</h2>
+              <span>{{ dashboardPaymentRows.length }} records</span>
+            </div>
+            <div v-if="dashboardPaymentRows.length" class="payment-history-list">
+              <article v-for="pay in dashboardPaymentRows" :key="pay.key" class="payment-row">
+                <div class="payment-row-main">
+                  <strong>{{ pay.project }}</strong>
+                  <span class="payment-method">{{ pay.method }}</span>
+                </div>
+                <div class="payment-row-details">
+                  <span :class="['payment-status', pay.statusClass]">{{ pay.status }}</span>
+                  <span class="payment-amount">{{ pay.amount }}</span>
+                  <small class="payment-date">{{ pay.date }}</small>
+                  <small v-if="pay.txRef" class="payment-tx">{{ pay.txRef }}</small>
+                </div>
+              </article>
+            </div>
+            <article v-else class="dash-empty-state compact">
+              <strong>{{ dashboardPaymentsLoading ? 'Loading payment history...' : 'No payments yet' }}</strong>
+              <p>{{ dashboardPaymentsLoading ? 'Fetching records.' : dashboardPaymentsError || 'Payments from funded projects will appear here.' }}</p>
+            </article>
+            <button class="rail-link-button" type="button" @click="loadDashboardPayments">
+              Refresh payments
+            </button>
           </section>
 
           <section class="dash-card rail-card chat-card">
@@ -3309,7 +3336,7 @@ const sidebarSections = [
       { label: 'My Projects', icon: FolderKanban, active: true, toast: 'Opening projects...' },
       { label: 'Tasks', icon: ListTodo, toast: 'Opening tasks...' },
       { label: 'Repositories', icon: GitBranch, toast: 'Opening repositories...' },
-      { label: 'Payments', icon: CreditCard, toast: 'Opening payments...' },
+      { label: 'Payments', icon: CreditCard, section: 'payments' },
       { label: 'Notifications', icon: Bell, section: 'notifications' },
     ],
   },
@@ -3336,7 +3363,7 @@ const topNavItems = [
   { label: 'Projects', toast: 'Opening projects...' },
   { label: 'Marketplace', page: 'marketplace' },
   { label: 'Repos', toast: 'Opening repositories...' },
-  { label: 'Payments', toast: 'Opening payments...' },
+  { label: 'Payments', section: 'payments' },
   { label: 'Analytics', toast: 'Opening analytics...' },
 ];
 
@@ -3351,6 +3378,2518 @@ function initialsFor(value = '') {
     ? `${parts[0][0]}${parts[1][0]}`
     : (parts[0] || 'MR').slice(0, 2);
   return letters.toUpperCase();
+}
+
+
+const dashboardPaymentRows = ref([]);
+const dashboardPaymentsLoading = ref(false);
+const dashboardPaymentsError = ref('');
+
+function loadDashboardPayments() {
+  dashboardPaymentsLoading.value = true;
+  dashboardPaymentsError.value = '';
+  api('/api/ledger')().then(rows => {
+    const payments = Array.isArray(rows) ? rows.filter(r => r.type === 'payment_verified' || r.type === 'task_payment') : [];
+    dashboardPaymentRows.value = payments.map(p => ({
+      key: p.id || p.project_id || Math.random().toString(36).slice(2),
+      project: p.project_title || p.project_name || 'MergeOS Project',
+      method: p.type === 'payment_verified' ? 'Funding' : p.type === 'task_payment' ? 'Payout' : 'Payment',
+      status: p.type === 'payment_verified' ? 'Completed' : p.type === 'task_payment' ? 'Released' : 'Recorded',
+      statusClass: p.type === 'payment_verified' || p.type === 'task_payment' ? 'status-ok' : 'status-pending',
+      amount: p.amount ? '
+  const address = String(value || '').trim();
+  if (address.length <= 14) return address || 'MRG wallet';
+  return `${address.slice(0, 6)}...${address.slice(-6)}`;
+}
+
+function randomOAuthState() {
+  if (hasWindow && window.crypto?.getRandomValues) {
+    const bytes = new Uint8Array(16);
+    window.crypto.getRandomValues(bytes);
+    return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+  }
+  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function openWalletOnScan(address = '') {
+  const wallet = String(address || '').trim();
+  if (!wallet || !hasWindow) return;
+  window.open(`https://scan.mergeos.shop/address/${encodeURIComponent(wallet)}`, '_blank', 'noopener,noreferrer');
+}
+
+async function startGitHubLogin() {
+  if (!hasWindow) return;
+  errorMessage.value = '';
+  const cfg = await loadRuntimeConfig();
+  if (!cfg.github_oauth_ready || !cfg.github_oauth_client_id) {
+    errorMessage.value = 'GitHub App login is not configured yet.';
+    showToast(errorMessage.value);
+    return;
+  }
+
+  const state = randomOAuthState();
+  const redirectURI = `${window.location.origin}${window.location.pathname}`;
+  window.sessionStorage.setItem('mergeos_github_oauth_state', state);
+  window.sessionStorage.setItem('mergeos_github_oauth_redirect', redirectURI);
+  const params = new URLSearchParams({
+    client_id: cfg.github_oauth_client_id,
+    redirect_uri: redirectURI,
+    state,
+  });
+  window.location.href = `https://github.com/login/oauth/authorize?${params.toString()}`;
+}
+
+async function handleGitHubCallback() {
+  if (!hasWindow) return false;
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('code');
+  const state = params.get('state');
+  if (!code) return false;
+
+  const expectedState = window.sessionStorage.getItem('mergeos_github_oauth_state') || '';
+  const redirectURI = window.sessionStorage.getItem('mergeos_github_oauth_redirect') || `${window.location.origin}${window.location.pathname}`;
+  window.sessionStorage.removeItem('mergeos_github_oauth_state');
+  window.sessionStorage.removeItem('mergeos_github_oauth_redirect');
+  window.history.replaceState({ publicPage: publicPage.value }, '', window.location.pathname || '/');
+
+  if (!expectedState || state !== expectedState) {
+    errorMessage.value = 'GitHub sign-in state did not match. Please try again.';
+    showToast(errorMessage.value);
+    return true;
+  }
+
+  authBusy.value = true;
+  try {
+    const auth = await publicApi('/api/auth/github', {
+      method: 'POST',
+      body: JSON.stringify({ code, redirect_uri: redirectURI }),
+    });
+    setSession(auth);
+    showToast(auth.user?.wallet_address ? 'GitHub linked to your MRG wallet.' : 'Logged in with GitHub.');
+  } catch (error) {
+    errorMessage.value = error.message;
+    showToast(error.message);
+  } finally {
+    authBusy.value = false;
+  }
+  return true;
+}
+
+function showToast(message) {
+  toastMessage.value = message;
+  pushPublicNotification(message);
+  if (!hasWindow) return;
+  if (toastTimer) window.clearTimeout(toastTimer);
+  toastTimer = window.setTimeout(() => {
+    toastMessage.value = '';
+  }, 2200);
+}
+
+function pushPublicNotification(message) {
+  if (!message || (user.value && !publicModeVisible.value && !projectWizardVisible.value)) return;
+  const createdAt = new Date().toISOString();
+  const body = projectWizardVisible.value ? 'Project setup status changed.' : 'Public session status changed.';
+  publicNotifications.value = [
+    {
+      id: `public-${Date.now()}`,
+      subject: String(message),
+      body,
+      meta: formatLedgerDateTime(createdAt).full,
+      tone: projectWizardVisible.value ? 'green' : 'blue',
+      createdAt,
+    },
+    ...publicNotifications.value,
+  ].slice(0, 6);
+}
+
+function scrollToSection(id) {
+  if (!hasWindow) return;
+  const section = document.getElementById(id);
+  if (section) {
+    section.scrollIntoView({ behavior: 'smooth' });
+  }
+}
+
+function loadPublicPageData(page) {
+  if (page === 'ledger') {
+    void loadLedgerData();
+    return;
+  }
+  if (page === 'marketplace' || page === 'home') {
+    void loadMarketplaceData({ silent: true });
+    void loadLedgerData({ silent: true });
+  }
+}
+
+function updatePublicBrowserPath(page, replace = false) {
+  if (!hasWindow) return;
+  const targetPath = publicPathForPage(page);
+  const currentPath = normalizeRoutePath(window.location.pathname);
+  if (currentPath === targetPath && !window.location.search && !window.location.hash) {
+    return;
+  }
+  const method = replace ? 'replaceState' : 'pushState';
+  window.history[method]({ publicPage: page }, '', targetPath);
+}
+
+function updateProjectWizardBrowserPath(replace = false) {
+  if (!hasWindow) return;
+  const targetPath = projectWizardPathForState(projectWizardStage.value, projectWizardStep.value);
+  const currentPath = normalizeRoutePath(window.location.pathname);
+  if (currentPath === targetPath && !window.location.search && !window.location.hash) {
+    return;
+  }
+  const method = replace ? 'replaceState' : 'pushState';
+  window.history[method](
+    { projectWizard: true, stage: projectWizardStage.value, step: projectWizardStep.value },
+    '',
+    targetPath,
+  );
+}
+
+function openPublicPage(page, options = {}) {
+  publicModeVisible.value = true;
+  projectWizardVisible.value = false;
+  const nextPage = normalizePublicPage(page);
+  publicPage.value = nextPage;
+  loadPublicPageData(nextPage);
+  updatePublicBrowserPath(nextPage, Boolean(options.replace));
+  if (!hasWindow) return;
+  if (options.scroll === false) return;
+  window.requestAnimationFrame(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+}
+
+function syncPublicPageFromBrowserPath() {
+  if (!hasWindow) return;
+  publicModeVisible.value = true;
+  const wizardRoute = projectWizardRouteFromPath(window.location.pathname);
+  if (wizardRoute) {
+    projectWizardVisible.value = true;
+    projectWizardStage.value = wizardRoute.stage;
+    projectWizardStep.value = wizardRoute.step;
+    return;
+  }
+  projectWizardVisible.value = false;
+  const nextPage = publicPageFromPath(window.location.pathname);
+  publicPage.value = nextPage;
+  loadPublicPageData(nextPage);
+}
+
+function handlePublicAction(action = {}) {
+  if (action.command === 'project') {
+    openProjectWizard();
+    return;
+  }
+  if (action.page) {
+    openPublicPage(action.page);
+    return;
+  }
+  showToast(action.label ? `${action.label} opened.` : 'Opening page...');
+}
+
+function openDashboard() {
+  publicModeVisible.value = false;
+  if (user.value) {
+    void loadDashboardData({ silent: true });
+  }
+  if (!hasWindow) return;
+  window.requestAnimationFrame(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+}
+
+function handleDashboardNav(item) {
+  if (item.page) {
+    openPublicPage(item.page);
+    return;
+  }
+  if (item.section) {
+    openDashboardSection(item.section);
+    return;
+  }
+  if (item.label === 'Dashboard') {
+    openDashboard();
+    return;
+  }
+  showToast(item.toast || `${item.label} opened.`);
+}
+
+function openDashboardSection(section) {
+  publicModeVisible.value = false;
+  if (section === 'notifications') {
+    void loadDashboardNotifications();
+    if (!hasWindow) return;
+    window.requestAnimationFrame(() => {
+      dashboardNotificationCenter.value?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      dashboardNotificationCenter.value?.focus({ preventScroll: true });
+    });
+  }
+  if (section === 'payments') {
+    void loadDashboardPayments();
+    if (!hasWindow) return;
+    window.requestAnimationFrame(() => {
+      document.querySelector('.dash-section-payments')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }
+}
+
+function openMarketplaceSection(id) {
+  publicModeVisible.value = true;
+  publicPage.value = 'marketplace';
+  updatePublicBrowserPath('marketplace');
+  loadPublicPageData('marketplace');
+  if (!hasWindow) return;
+  window.requestAnimationFrame(() => scrollToSection(id));
+}
+
+function scrollProjectFlowTop() {
+  if (!hasWindow) return;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function openProjectWizard(options = {}) {
+  publicModeVisible.value = true;
+  projectWizardVisible.value = true;
+  projectWizardStage.value = 'setup';
+  projectWizardStep.value = 1;
+  errorMessage.value = '';
+  updateProjectWizardBrowserPath(Boolean(options.replace));
+  scrollProjectFlowTop();
+}
+
+function restartProjectWizard(options = {}) {
+  publicModeVisible.value = true;
+  projectWizardVisible.value = true;
+  projectWizardStage.value = 'setup';
+  projectWizardStep.value = 1;
+  updateProjectWizardBrowserPath(Boolean(options.replace));
+  scrollProjectFlowTop();
+}
+
+function closeProjectWizard(options = {}) {
+  projectWizardVisible.value = false;
+  projectWizardStage.value = 'setup';
+  projectWizardStep.value = 1;
+  if (options.updatePath !== false) {
+    updatePublicBrowserPath(publicPage.value, Boolean(options.replace));
+  }
+}
+
+async function loadRepoIssues() {
+  const repoURL = projectSetupForm.repoUrl.trim();
+  repoImportError.value = '';
+  if (!repoURL) {
+    repoImportError.value = 'Enter a GitHub repo URL first.';
+    return;
+  }
+
+  repoImportBusy.value = true;
+  try {
+    const result = await publicApi('/api/public/repo/issues', {
+      method: 'POST',
+      body: JSON.stringify({ repo_url: repoURL }),
+    });
+    repoImportResult.value = result;
+    projectSetupForm.repoUrl = result.repo_url || repoURL;
+    if (repoImportedIssues.value.length) {
+      projectSetupForm.projectType = 'Repo Issue Fix';
+      projectSetupForm.title = `Fix all issues in ${result.owner}/${result.name}`;
+      projectSetupForm.shortDescription = `Fix ${repoImportedIssues.value.length} open GitHub issues in ${result.owner}/${result.name}.`;
+      projectSetupForm.overview = repoImportedIssues.value
+        .map((issue) => `#${issue.number} ${issue.title} - score ${issue.score}, ${issue.complexity}`)
+        .join('\n');
+      projectDeliverables.value = repoImportedIssues.value.map((issue) => `Fix #${issue.number}: ${issue.title}`);
+      showToast(`${repoImportedIssues.value.length} issues loaded and scored.`);
+    } else {
+      showToast('No open issues found.');
+    }
+  } catch (error) {
+    repoImportResult.value = null;
+    repoImportError.value = error.message || 'Could not load repo issues.';
+    showToast(repoImportError.value);
+  } finally {
+    repoImportBusy.value = false;
+  }
+}
+
+function openAuthFromProjectWizard(mode = 'login') {
+  closeProjectWizard();
+  openAuth(mode);
+}
+
+function goProjectStep(stepNumber) {
+  projectWizardStage.value = 'setup';
+  projectWizardStep.value = normalizeProjectWizardStep(stepNumber);
+  updateProjectWizardBrowserPath();
+  scrollProjectFlowTop();
+}
+
+function nextProjectStep() {
+  if (projectWizardStep.value < 4) {
+    projectWizardStep.value += 1;
+    updateProjectWizardBrowserPath();
+    scrollProjectFlowTop();
+    return;
+  }
+
+  if (projectBudgetAmount.value > 0 && projectBudgetAmount.value < TOKEN_RATE_PER_USD * 100) {
+    projectSetupForm.budgetAmount = TOKEN_RATE_PER_USD * 100;
+  }
+  projectFundingAmount.value = Math.max(100, Math.ceil(projectBudgetAmount.value / TOKEN_RATE_PER_USD) || projectFundingAmount.value);
+  projectWizardStage.value = 'funding';
+  updateProjectWizardBrowserPath();
+  scrollProjectFlowTop();
+  showToast('Project published. Add funds to start receiving proposals.');
+}
+
+function buildPriceEvaluationPayload() {
+  return {
+    title: projectSetupForm.title,
+    description: [projectSetupForm.shortDescription, projectSetupForm.overview].filter(Boolean).join('\n\n'),
+    project_type: projectSetupForm.projectType,
+    requirements: projectSetupForm.requirements,
+    deliverables: visibleDeliverables.value,
+    timeline: projectTimelineLabel.value,
+    tech_stack: projectSetupForm.techStack,
+    complexity: projectSetupForm.allowAgents ? 'moderate' : 'high',
+    constraints: projectSetupForm.skills,
+    reference_budget_cents: centsFromMRG(projectSetupForm.budgetAmount),
+  };
+}
+
+async function runProjectPriceEvaluation() {
+  priceEvaluationError.value = '';
+  if (!user.value) {
+    authReturnToProjectWizard.value = true;
+    projectWizardVisible.value = false;
+    openAuth('login');
+    showToast('Log in to estimate this project.');
+    return;
+  }
+  if (priceEvaluationBusy.value) return;
+  priceEvaluationBusy.value = true;
+  try {
+    priceEvaluation.value = await api('/api/projects/evaluate-price', {
+      method: 'POST',
+      body: JSON.stringify(buildPriceEvaluationPayload()),
+    });
+    applyPriceEvaluation();
+    showToast('Budget estimate generated.');
+  } catch (error) {
+    priceEvaluationError.value = error.message;
+    showToast(error.message);
+  } finally {
+    priceEvaluationBusy.value = false;
+  }
+}
+
+function applyPriceEvaluation() {
+  if (!priceEvaluation.value?.suggested_price_cents) return;
+  projectSetupForm.budgetAmount = Math.max(TOKEN_RATE_PER_USD * 100, tokenAmountFromCents(priceEvaluation.value.suggested_price_cents));
+  projectSetupForm.budgetType = 'Range';
+}
+
+function projectWizardBack() {
+  if (projectWizardStage.value === 'success') {
+    projectWizardStage.value = 'funding';
+    updateProjectWizardBrowserPath();
+    scrollProjectFlowTop();
+    return;
+  }
+
+  if (projectWizardStage.value === 'funding') {
+    projectWizardStage.value = 'setup';
+    projectWizardStep.value = 4;
+    updateProjectWizardBrowserPath();
+    scrollProjectFlowTop();
+    return;
+  }
+
+  if (projectWizardStep.value > 1) {
+    projectWizardStep.value -= 1;
+    updateProjectWizardBrowserPath();
+    scrollProjectFlowTop();
+    return;
+  }
+
+  closeProjectWizard();
+}
+
+function requireLoginForProjectPayment() {
+  pendingProjectPaymentAfterAuth.value = true;
+  authReturnToProjectWizard.value = true;
+  projectPaymentError.value = '';
+  projectWizardVisible.value = false;
+  openAuth('login');
+  showToast('Log in to continue payment.');
+}
+
+async function completeProjectFunding() {
+  projectFundingAmount.value = Math.max(100, Number(projectFundingAmount.value) || 100);
+  projectPaymentError.value = '';
+
+  if (!user.value) {
+    requireLoginForProjectPayment();
+    return;
+  }
+
+  if (projectPaymentBusy.value) return;
+  projectPaymentBusy.value = true;
+  try {
+    await loadRuntimeConfig();
+    if (!paymentReferenceForProject()) {
+      throw new Error('Payment reference is missing. Configure PayPal/Crypto checkout or enable local dev payments.');
+    }
+    const project = await api('/api/projects', {
+      method: 'POST',
+      body: JSON.stringify(buildCreateProjectPayload()),
+    });
+    fundedProject.value = project;
+    projectWizardVisible.value = true;
+    projectWizardStage.value = 'success';
+    projectWizardStep.value = 4;
+    updateProjectWizardBrowserPath();
+    pendingProjectPaymentAfterAuth.value = false;
+    authReturnToProjectWizard.value = false;
+    await loadLedgerData({ silent: true });
+    await loadMarketplaceData({ silent: true });
+    await loadDashboardData({ silent: true, selectProjectID: project.id });
+    scrollProjectFlowTop();
+    showToast('Payment recorded and tokens minted.');
+  } catch (error) {
+    if (error.status === 401 || /login is required/i.test(error.message || '')) {
+      requireLoginForProjectPayment();
+      return;
+    }
+    projectPaymentError.value = error.message;
+    showToast(error.message);
+  } finally {
+    projectPaymentBusy.value = false;
+  }
+}
+
+function addDeliverable() {
+  projectDeliverables.value.push('');
+}
+
+function removeDeliverable(index) {
+  if (projectDeliverables.value.length <= 1) {
+    projectDeliverables.value = [''];
+    return;
+  }
+
+  projectDeliverables.value.splice(index, 1);
+}
+
+function loginWithSocial(provider) {
+  showToast(`Redirecting to ${provider === 'google' ? 'Google' : 'GitHub'}...`);
+  window.location.href = `/api/auth/${provider}/login`;
+}
+
+async function triggerAiEvaluation() {
+  aiEvaluationLoading.value = true;
+  aiEvaluationError.value = '';
+  aiEvaluationResult.value = null;
+  try {
+    const payload = {
+      description: projectSetupForm.overview || projectSetupForm.shortDescription || '',
+      requirements: projectSetupForm.requirements
+        ? projectSetupForm.requirements.split('\n').map(r => r.trim()).filter(Boolean)
+        : [],
+      deliverables: visibleDeliverables.value,
+      timeline: projectTimelineLabel.value,
+      tech_stack: projectSetupForm.techStack || '',
+      complexity: projectSetupForm.complexity || 'Medium',
+      constraints: projectSetupForm.constraints || '',
+      reference_budget: Math.round(usdFromMRG(projectSetupForm.budgetAmount))
+    };
+    
+    const response = await api('/api/projects/evaluate', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+    
+    aiEvaluationResult.value = response;
+  } catch (err) {
+    console.error('AI evaluation failed:', err);
+    aiEvaluationError.value = err.message || 'AI evaluation failed. Please try again.';
+  } finally {
+    aiEvaluationLoading.value = false;
+  }
+}
+
+function applyAiSuggestedPrice() {
+  if (aiEvaluationResult.value) {
+    const avg = Math.round((aiEvaluationResult.value.suggested_low + aiEvaluationResult.value.suggested_high) / 2);
+    projectSetupForm.budgetAmount = mrgFromUSD(avg);
+    showToast(`Applied AI suggested budget: ${formatMRGFromUSD(avg)}`);
+  }
+}
+
+function formatMoney(value) {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 0,
+  }).format(Number(value) || 0);
+}
+
+function mrgFromUSD(value = 0) {
+  return Math.round((Number(value) || 0) * TOKEN_RATE_PER_USD);
+}
+
+function usdFromMRG(value = 0) {
+  return (Number(value) || 0) / TOKEN_RATE_PER_USD;
+}
+
+function centsFromMRG(value = 0) {
+  return Math.round(usdFromMRG(value) * 100);
+}
+
+function formatMRG(value = 0) {
+  return `${formatCompactNumber(value)} ${tokenSymbol.value}`;
+}
+
+function formatMRGFromUSD(value = 0) {
+  return formatMRG(mrgFromUSD(value));
+}
+
+function formatMRGFromCents(cents = 0) {
+  return formatMRG(tokenAmountFromCents(cents));
+}
+
+function formatLedgerMRGFromCents(cents = 0) {
+  return formatMRGFromCents(cents);
+}
+
+function formatPublicMRGFromCents(cents = 0) {
+  return formatMRGFromCents(cents);
+}
+
+function formatPublicTokenAmount(amount = 0) {
+  return `${formatCompactNumber(amount)} ${tokenSymbol.value}`;
+}
+
+function formatCompactNumber(value = 0) {
+  return new Intl.NumberFormat('en-US', {
+    maximumFractionDigits: value >= 100 ? 0 : 1,
+  }).format(Number(value) || 0);
+}
+
+function tokenAmountFromCents(cents = 0) {
+  return Math.round(((Number(cents) || 0) / 100) * TOKEN_RATE_PER_USD);
+}
+
+function toTitleLabel(value = '') {
+  return String(value)
+    .trim()
+    .split(/[\s._:-]+/)
+    .filter(Boolean)
+    .map((word) => {
+      const lower = word.toLowerCase();
+      if (['ai', 'api', 'qa', 'ui', 'ux', 'go'].includes(lower)) return lower.toUpperCase();
+      if (lower === 'devops') return 'DevOps';
+      return `${lower.charAt(0).toUpperCase()}${lower.slice(1)}`;
+    })
+    .join(' ');
+}
+
+function paymentModeLabel(value = '') {
+  const normalized = String(value || '').trim().toLowerCase();
+  return {
+    'live-adapters': 'Live payment adapters',
+    'local-dev-verifier': 'MergeOS verifier',
+    'not-configured': 'Not configured',
+    '': 'Not loaded',
+  }[normalized] || toTitleLabel(value);
+}
+
+function repoProviderLabel(value = '') {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (!normalized) return 'Not loaded';
+  if (normalized.startsWith('github-private:')) return 'GitHub private repos';
+  if (normalized === 'local-git') return 'MergeOS repositories';
+  return toTitleLabel(value);
+}
+
+function formatMarketplaceDate(value) {
+  const date = value ? new Date(value) : null;
+  if (!date || Number.isNaN(date.getTime())) return 'Funded';
+  return `Funded ${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+}
+
+function trimMarketplaceText(value = '', fallback = 'Funded MergeOS project with escrow-backed tasks and ledger proof.') {
+  const text = String(value || '').replace(/\s+/g, ' ').trim();
+  if (!text) return fallback;
+  return text.length > 150 ? `${text.slice(0, 147).trim()}...` : text;
+}
+
+function marketplaceProjectIcon(project = {}) {
+  const text = [
+    project.title,
+    project.brief,
+    project.site_type,
+    ...(project.tags || []),
+  ].join(' ').toLowerCase();
+  if (text.includes('mobile')) return Phone;
+  if (text.includes('ai') || text.includes('agent')) return Bot;
+  if (text.includes('analytics') || text.includes('dashboard')) return BarChart3;
+  if (text.includes('payment') || text.includes('checkout') || text.includes('ledger')) return CreditCard;
+  if (text.includes('api') || text.includes('code')) return Code2;
+  return Globe2;
+}
+
+function marketplaceAgentIcon(type = '') {
+  const text = String(type).toLowerCase();
+  if (text.includes('design')) return PenLine;
+  if (text.includes('ledger') || text.includes('go')) return CreditCard;
+  if (text.includes('devops')) return GitBranch;
+  if (text.includes('qa') || text.includes('test')) return CheckCircle2;
+  if (text.includes('front')) return Code2;
+  return Bot;
+}
+
+function mapMarketplaceProject(project = {}, index = 0) {
+  const palette = marketplaceProjectPalettes[index % marketplaceProjectPalettes.length];
+  const rawTags = (project.tags || []).map(toTitleLabel).filter(Boolean);
+  const tags = rawTags.length ? rawTags : [toTitleLabel(project.site_type || 'Project')];
+  const openTasks = Number(project.open_task_count) || 0;
+  const acceptedTasks = Number(project.accepted_task_count) || 0;
+  const taskCount = Number(project.task_count) || openTasks + acceptedTasks;
+  const client = project.client_display_name || 'MergeOS client';
+  const badge = openTasks > 0 ? `${openTasks} OPEN` : (acceptedTasks > 0 ? 'PAID OUT' : toTitleLabel(project.status || 'LIVE'));
+  return {
+    id: project.id || `project-${index}`,
+    icon: marketplaceProjectIcon(project),
+    badge,
+    badgeTone: openTasks > 0 ? palette.badgeTone : 'green',
+    title: project.title || 'Untitled project',
+    body: trimMarketplaceText(project.brief),
+    tags: tags.slice(0, 3),
+    extra: Math.max(0, tags.length - 3),
+    budget: formatPublicMRGFromCents(project.budget_cents),
+    timeline: project.timeline || formatMarketplaceDate(project.created_at),
+    client,
+    clientInitials: initialsFor(client),
+    avatarTone: palette.avatarTone,
+    taskLabel: `${taskCount} tasks`,
+    verified: project.status === 'funded',
+    urgent: openTasks > 0,
+    accent: palette.accent,
+    soft: palette.soft,
+  };
+}
+
+function marketplaceSearchHaystack(project = {}) {
+  return [
+    project.title,
+    project.body,
+    project.client,
+    project.budget,
+    project.timeline,
+    ...(project.tags || []),
+  ].join(' ').toLowerCase();
+}
+
+function formatDashboardDate(value) {
+  const date = value ? new Date(value) : null;
+  if (!date || Number.isNaN(date.getTime())) return '-';
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function formatDateInputLabel(value = '') {
+  if (!value) return '';
+  const date = new Date(`${value}T00:00:00Z`);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+}
+
+function shortRepoLabel(project = {}) {
+  const repo = String(project.bounty_repo_name || project.repo_url || project.repo_provider || '').trim();
+  if (!repo) return 'No repo yet';
+  return repo.replace(/^mergeos-bounties\//, '');
+}
+
+function dashboardLedgerEntryMatchesProject(entry = {}, project = {}, tasks = []) {
+  const haystack = [
+    entry.reference,
+    entry.from_account,
+    entry.to_account,
+  ].filter(Boolean).join('|');
+  if (project.id && haystack.includes(project.id)) return true;
+  if (project.bounty_repo_name && haystack.includes(project.bounty_repo_name)) return true;
+  return tasks.some((task) => task.id && haystack.includes(task.id));
+}
+
+function taskIssueReference(task = {}) {
+  if (task.issue_url) {
+    const parts = String(task.issue_url).split(/[\\/]/).filter(Boolean);
+    return parts.slice(-2).join('/');
+  }
+  return task.suggested_agent_type ? toTitleLabel(task.suggested_agent_type) : toTitleLabel(task.required_worker_kind || 'task');
+}
+
+function mapDashboardTask(task = {}) {
+  const status = task.status === 'accepted' ? 'Accepted' : 'Open';
+  return {
+    id: task.id || `${task.project_id}-${task.issue_number}`,
+    initials: String(task.issue_number || 'T').padStart(2, '0').slice(-2),
+    issueNumber: task.issue_number || '-',
+    title: task.title || 'Untitled task',
+    acceptance: trimMarketplaceText(task.acceptance, 'Acceptance criteria not provided.'),
+    reference: taskIssueReference(task),
+    reward: formatMRGFromCents(task.reward_cents),
+    kind: toTitleLabel(task.required_worker_kind || task.worker_kind || 'task'),
+    agent: task.suggested_agent_type ? toTitleLabel(task.suggested_agent_type) : '-',
+    status,
+    statusClass: task.status === 'accepted' ? 'accepted' : 'open',
+  };
+}
+
+function mapDashboardActivity(entry = {}) {
+  const meta = ledgerMetaFor(entry.type);
+  return {
+    key: `${entry.sequence}-${entry.entry_hash || entry.reference}`,
+    title: meta.type,
+    icon: meta.icon,
+    color: meta.tone === 'amber' ? 'yellow' : meta.tone,
+    time: formatLedgerDateTime(entry.created_at).full,
+  };
+}
+
+function mapDashboardNotification(note = {}) {
+  const when = formatLedgerDateTime(note.created_at);
+  return {
+    id: note.id || `${note.subject}-${note.created_at}`,
+    subject: note.subject || 'Notification',
+    body: trimMarketplaceText(note.body, 'MergeOS status update.'),
+    meta: `${toTitleLabel(note.channel || 'app')} · ${toTitleLabel(note.status || 'logged')} · ${when.full}`,
+    tone: note.status === 'failed' ? 'red' : note.project_id ? 'green' : 'blue',
+  };
+}
+
+function formatLedgerDateTime(value) {
+  const date = value ? new Date(value) : new Date();
+  if (Number.isNaN(date.getTime())) {
+    return { date: '-', time: '-', full: '-' };
+  }
+  return {
+    date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }),
+    time: date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }),
+    full: `${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })} ${date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' })} UTC`,
+  };
+}
+
+function projectInitialFor(value = '') {
+  return (String(value).trim().charAt(0) || 'M').toUpperCase();
+}
+
+function projectToneFor(value = '') {
+  const tones = ['green', 'blue', 'purple'];
+  const total = String(value).split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  return tones[total % tones.length];
+}
+
+function extractProjectID(entry = {}) {
+  const haystack = [
+    entry.reference,
+    entry.from_account,
+    entry.to_account,
+  ].filter(Boolean).join(' ');
+  return haystack.match(/prj_[a-z0-9]+/i)?.[0] || '';
+}
+
+function ledgerMetaFor(type = '') {
+  const normalized = String(type);
+  if (normalized === 'token_mint') {
+    return { type: 'Token Minted', icon: Box, tone: 'green', amountTone: 'positive' };
+  }
+  if (normalized === 'payment_verified') {
+    return { type: 'Payment Verified', icon: ShieldCheck, tone: 'green', amountTone: 'positive' };
+  }
+  if (normalized === 'platform_fee') {
+    return { type: 'Platform Fee', icon: CircleDollarSign, tone: 'amber', amountTone: 'negative' };
+  }
+  if (normalized === 'project_reserve') {
+    return { type: 'Escrow Reserved', icon: LockKeyhole, tone: 'blue', amountTone: 'neutral' };
+  }
+  if (normalized === 'task_reserve') {
+    return { type: 'Task Reserve', icon: FileCheck2, tone: 'blue', amountTone: 'neutral' };
+  }
+  if (normalized === 'task_payment') {
+    return { type: 'Payout Released', icon: CircleDollarSign, tone: 'green', amountTone: 'negative' };
+  }
+  return { type: normalized.replaceAll('_', ' '), icon: Compass, tone: 'slate', amountTone: 'neutral' };
+}
+
+function mapLedgerEntry(entry) {
+  const projectID = extractProjectID(entry);
+  const project = ledgerProjectIndex.value.get(projectID);
+  const meta = ledgerMetaFor(entry.type);
+  const when = formatLedgerDateTime(entry.created_at);
+  const tokenAmount = tokenAmountFromCents(entry.amount_cents);
+  const projectTitle = project?.title || (projectID ? `Project ${projectID.slice(-6)}` : 'MergeOS ledger');
+  const company = project?.company_name || project?.client_name || 'MergeOS';
+  return {
+    key: `${entry.sequence}-${entry.entry_hash || entry.reference}`,
+    date: when.date,
+    time: when.time,
+    createdAt: entry.created_at,
+    type: meta.type,
+    icon: meta.icon,
+    tone: meta.tone,
+    projectInitial: projectInitialFor(projectTitle),
+    projectTone: projectToneFor(projectID || projectTitle),
+    project: projectTitle,
+    company,
+    amount: `${formatCompactNumber(Math.abs(tokenAmount))} ${tokenSymbol.value}`,
+    secondaryAmount: entry.type === 'payment_verified' ? 'funding verified' : entry.type === 'token_mint' ? 'mint log' : '',
+    amountTone: meta.amountTone,
+    ref: shortLedgerReference(entry.reference || entry.entry_hash || `#${entry.sequence}`),
+  };
+}
+
+function shortLedgerReference(value = '') {
+  const text = String(value);
+  if (text.length <= 18) return text;
+  return `${text.slice(0, 8)}...${text.slice(-6)}`;
+}
+
+function paymentMethodForProject() {
+  return projectPaymentMethod.value === 'USDC' ? 'crypto' : 'paypal';
+}
+
+function paymentReferenceForProject() {
+  if (runtimeConfig.value?.dev_payment_enabled && runtimeConfig.value?.dev_payment_code) {
+    return runtimeConfig.value.dev_payment_code;
+  }
+  return successPaymentReference.value || '';
+}
+
+function buildCreateProjectPayload() {
+  const name = user.value?.name || authForm.name || 'MergeOS Client';
+  const email = user.value?.email || authForm.email;
+  return {
+    title: projectSetupForm.title,
+    client_name: name,
+    company_name: user.value?.company_name || authForm.company_name || 'MergeOS Customer',
+    client_email: email,
+    site_type: projectSetupForm.projectType,
+    package_tier: projectSetupForm.budgetType,
+    timeline: projectTimelineLabel.value,
+    brief: buildProjectBrief(),
+    budget_cents: projectPaymentAmountCents.value,
+    payment_method: paymentMethodForProject(),
+    payment_reference: paymentReferenceForProject(),
+    attachment_ids: [],
+    source_repo_url: projectSetupForm.repoUrl || '',
+  };
+}
+
+function buildProjectBrief() {
+  return [
+    projectSetupForm.repoUrl && `Source repository: ${projectSetupForm.repoUrl}`,
+    projectSetupForm.shortDescription,
+    projectSetupForm.overview && `Overview:\n${projectSetupForm.overview}`,
+    repoImportedIssues.value.length && `Imported issues:\n${repoImportedIssues.value.map((issue) => `- #${issue.number} ${issue.title} (score ${issue.score}, ${issue.complexity})`).join('\n')}`,
+    visibleDeliverables.value.length && `Deliverables:\n${visibleDeliverables.value.map((item) => `- ${item}`).join('\n')}`,
+    projectSetupForm.requirements && `Requirements:\n${projectSetupForm.requirements}`,
+    projectSetupForm.techStack && `Tech stack: ${projectSetupForm.techStack}`,
+    `Visibility: ${projectSetupForm.visibility}`,
+    `AI agents: ${projectSetupForm.allowAgents ? 'Allowed' : 'Not allowed'}`,
+    projectSetupForm.skills && `Skills: ${projectSetupForm.skills}`,
+  ].filter(Boolean).join('\n\n');
+}
+
+function resetAuthForm(mode = authMode.value) {
+  Object.assign(authForm, mode === 'login' ? defaultLoginAuth : defaultRegisterAuth);
+  authTermsAccepted.value = mode === 'register';
+  authRememberMe.value = false;
+  showPassword.value = false;
+  showConfirmPassword.value = false;
+}
+
+function setAuthMode(mode) {
+  authMode.value = mode;
+  resetAuthForm(mode);
+  errorMessage.value = '';
+}
+
+function createRequestError(response, payload = {}) {
+  const error = new Error(payload.error || 'Request failed');
+  error.status = response.status;
+  return error;
+}
+
+async function api(path, options = {}) {
+  const response = await fetch(path, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token.value ? { Authorization: `Bearer ${token.value}` } : {}),
+      ...(options.headers || {}),
+    },
+  });
+  const payload = await response.json();
+  if (!response.ok) {
+    if (response.status === 401 && path !== '/api/auth/login' && path !== '/api/auth/register') {
+      clearSession();
+    }
+    throw createRequestError(response, payload);
+  }
+  return payload;
+}
+
+async function publicApi(path, options = {}) {
+  const response = await fetch(path, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(options.headers || {}),
+    },
+  });
+  const text = await response.text();
+  let payload = {};
+  try {
+    payload = text ? JSON.parse(text) : {};
+  } catch {
+    payload = { error: text || 'Request failed' };
+  }
+  if (!response.ok) {
+    throw createRequestError(response, payload);
+  }
+  return payload;
+}
+
+async function loadMarketplaceData(options = {}) {
+  const silent = Boolean(options.silent);
+  if (!silent) marketplaceLoading.value = true;
+  marketplaceError.value = '';
+  try {
+    const payload = await publicApi('/api/public/marketplace');
+    marketplaceData.value = {
+      stats: payload.stats || {},
+      projects: Array.isArray(payload.projects) ? payload.projects : [],
+      contributors: Array.isArray(payload.contributors) ? payload.contributors : [],
+      agents: Array.isArray(payload.agents) ? payload.agents : [],
+    };
+    if (!marketplaceCategories.value.includes(activeMarketplaceCategory.value)) {
+      activeMarketplaceCategory.value = 'All';
+    }
+  } catch (error) {
+    marketplaceError.value = error.message || 'Could not load marketplace data';
+  } finally {
+    marketplaceLoading.value = false;
+  }
+}
+
+async function loadRuntimeConfig() {
+  if (runtimeConfig.value) {
+    return runtimeConfig.value;
+  }
+  runtimeConfig.value = await api('/api/config');
+  return runtimeConfig.value;
+}
+
+async function loadLedgerData(options = {}) {
+  ledgerError.value = '';
+  if (!options.silent) {
+    ledgerLoading.value = true;
+  }
+  try {
+    const [entries, marketplace] = await Promise.all([
+      publicApi('/api/public/ledger'),
+      publicApi('/api/public/marketplace'),
+    ]);
+    ledgerRawEntries.value = Array.isArray(entries) ? entries : [];
+    ledgerProjects.value = Array.isArray(marketplace.projects) ? marketplace.projects : [];
+  } catch (error) {
+    ledgerError.value = error.message;
+  } finally {
+    ledgerLoading.value = false;
+  }
+}
+
+async function loadDashboardData(options = {}) {
+  if (!token.value) {
+    dashboardProjects.value = [];
+    dashboardTasks.value = [];
+    dashboardLedgerEntries.value = [];
+  dashboardPaymentRows.value = [];
+  dashboardPaymentsLoading.value = false;
+  dashboardPaymentsError.value = '';
+    selectedDashboardProjectID.value = '';
+    return;
+  }
+
+  const silent = Boolean(options.silent);
+  if (!silent) dashboardLoading.value = true;
+  dashboardError.value = '';
+  try {
+    const [projects, tasks, entries] = await Promise.all([
+      api('/api/projects'),
+      api('/api/tasks'),
+      api('/api/ledger'),
+    ]);
+    dashboardProjects.value = Array.isArray(projects) ? projects : [];
+    dashboardTasks.value = Array.isArray(tasks) ? tasks : [];
+    dashboardLedgerEntries.value = Array.isArray(entries) ? entries : [];
+    const requestedProjectID = options.selectProjectID || selectedDashboardProjectID.value;
+    const selectedExists = dashboardProjects.value.some((project) => project.id === requestedProjectID);
+    selectedDashboardProjectID.value = selectedExists
+      ? requestedProjectID
+      : (dashboardSortedProjects.value[0]?.id || '');
+  } catch (error) {
+    dashboardError.value = error.message || 'Could not load projects';
+  } finally {
+    dashboardLoading.value = false;
+  }
+}
+
+async function loadDashboardNotifications() {
+  if (!token.value) {
+    dashboardNotifications.value = [];
+    dashboardNotificationsError.value = '';
+    return;
+  }
+  dashboardNotificationsLoading.value = true;
+  dashboardNotificationsError.value = '';
+  try {
+    const rows = await api('/api/notifications');
+    dashboardNotifications.value = Array.isArray(rows) ? rows : [];
+  } catch (error) {
+    dashboardNotificationsError.value = error.message || 'Could not load notifications';
+  } finally {
+    dashboardNotificationsLoading.value = false;
+  }
+}
+
+function startDashboardRealtime() {
+  if (!hasWindow || dashboardRefreshTimer) return;
+  dashboardRefreshTimer = window.setInterval(() => {
+    if (!token.value || !user.value) return;
+    if (document.visibilityState === 'hidden') return;
+    void loadDashboardData({ silent: true });
+    void loadDashboardNotifications();
+  }, DASHBOARD_REFRESH_MS);
+}
+
+function stopDashboardRealtime() {
+  if (!hasWindow || !dashboardRefreshTimer) return;
+  window.clearInterval(dashboardRefreshTimer);
+  dashboardRefreshTimer = 0;
+}
+
+function openAuth(mode = 'login') {
+  setAuthMode(mode);
+  authVisible.value = true;
+}
+
+function closeAuth() {
+  if (authBusy.value) return;
+  authVisible.value = false;
+  errorMessage.value = '';
+  if (authReturnToProjectWizard.value) {
+    projectWizardVisible.value = true;
+    authReturnToProjectWizard.value = false;
+    pendingProjectPaymentAfterAuth.value = false;
+  }
+}
+
+function setSession(auth) {
+  token.value = auth.token;
+  user.value = auth.user;
+  authVisible.value = false;
+  errorMessage.value = '';
+  writeStoredToken(auth.token);
+  if (authReturnToProjectWizard.value) {
+    projectWizardVisible.value = true;
+    authReturnToProjectWizard.value = false;
+  }
+  if (pendingProjectPaymentAfterAuth.value) {
+    pendingProjectPaymentAfterAuth.value = false;
+    void completeProjectFunding();
+  }
+  if (publicPage.value === 'ledger') {
+    void loadLedgerData({ silent: true });
+  }
+  void loadDashboardData({ silent: true });
+  void loadDashboardNotifications();
+  startDashboardRealtime();
+}
+
+function clearSession() {
+  disconnectWebSocket();
+  stopDashboardRealtime();
+  token.value = '';
+  user.value = null;
+  authVisible.value = false;
+  ledgerError.value = '';
+  dashboardProjects.value = [];
+  dashboardTasks.value = [];
+  dashboardLedgerEntries.value = [];
+  dashboardNotifications.value = [];
+  dashboardNotificationsError.value = '';
+  dashboardError.value = '';
+  selectedDashboardProjectID.value = '';
+  removeStoredToken();
+}
+
+async function submitAuth() {
+  errorMessage.value = '';
+  if (authMode.value === 'register') {
+    if (!authTermsAccepted.value) {
+      errorMessage.value = 'Please accept the terms before creating an account.';
+      return;
+    }
+    if (authForm.password !== authForm.confirm_password) {
+      errorMessage.value = 'Passwords do not match.';
+      return;
+    }
+  }
+
+  authBusy.value = true;
+  try {
+    const path = authMode.value === 'register' ? '/api/auth/register' : '/api/auth/login';
+    const body = authMode.value === 'register'
+      ? {
+        name: authForm.name,
+        company_name: authForm.company_name,
+        email: authForm.email,
+        password: authForm.password,
+      }
+      : { email: authForm.email, password: authForm.password };
+    const auth = await api(path, { method: 'POST', body: JSON.stringify(body) });
+    setSession(auth);
+    showToast(authMode.value === 'register' ? 'Account created.' : 'Logged in.');
+  } catch (error) {
+    errorMessage.value = error.message;
+  } finally {
+    authBusy.value = false;
+  }
+}
+
+async function restoreSession() {
+  if (!token.value) return;
+  try {
+    user.value = await api('/api/auth/me');
+    await loadDashboardData({ silent: true });
+    await loadDashboardNotifications();
+    startDashboardRealtime();
+    if (publicPage.value === 'ledger') {
+      void loadLedgerData({ silent: true });
+    }
+  } catch {
+    clearSession();
+  }
+}
+
+async function logout() {
+  try {
+    await api('/api/auth/logout', { method: 'POST', body: JSON.stringify({}) });
+  } finally {
+    clearSession();
+    publicModeVisible.value = true;
+    publicPage.value = 'home';
+    updatePublicBrowserPath('home', true);
+    showToast('Logged out.');
+  }
+}
+
+onMounted(async () => {
+  connectWebSocket();
+  if (hasWindow) {
+    const params = new URLSearchParams(window.location.search);
+    const oauthToken = params.get('token');
+    if (oauthToken) {
+      token.value = oauthToken;
+      writeStoredToken(oauthToken);
+      const cleanUrl = window.location.pathname + window.location.hash;
+      window.history.replaceState({}, document.title, cleanUrl);
+      showToast('Successfully logged in via OAuth!');
+    }
+  }
+
+  const handledGitHubCallback = await handleGitHubCallback();
+  if (hasWindow) {
+    window.addEventListener('popstate', syncPublicPageFromBrowserPath);
+    if (!handledGitHubCallback) {
+      if (projectWizardVisible.value) {
+        updateProjectWizardBrowserPath(true);
+      } else {
+        updatePublicBrowserPath(publicPage.value, true);
+      }
+    }
+  }
+  const runtimePromise = loadRuntimeConfig().catch((error) => showToast(error.message));
+  await Promise.all([
+    runtimePromise,
+    restoreSession(),
+    loadMarketplaceData({ silent: true }),
+    loadLedgerData({ silent: true }),
+  ]);
+});
+
+onUnmounted(() => {
+  disconnectWebSocket();
+  if (hasWindow) {
+    window.removeEventListener('popstate', syncPublicPageFromBrowserPath);
+  }
+  stopDashboardRealtime();
+});
+</script>
+ + Number(p.amount).toFixed(2) : p.budget_cents ? '
+  const address = String(value || '').trim();
+  if (address.length <= 14) return address || 'MRG wallet';
+  return `${address.slice(0, 6)}...${address.slice(-6)}`;
+}
+
+function randomOAuthState() {
+  if (hasWindow && window.crypto?.getRandomValues) {
+    const bytes = new Uint8Array(16);
+    window.crypto.getRandomValues(bytes);
+    return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+  }
+  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function openWalletOnScan(address = '') {
+  const wallet = String(address || '').trim();
+  if (!wallet || !hasWindow) return;
+  window.open(`https://scan.mergeos.shop/address/${encodeURIComponent(wallet)}`, '_blank', 'noopener,noreferrer');
+}
+
+async function startGitHubLogin() {
+  if (!hasWindow) return;
+  errorMessage.value = '';
+  const cfg = await loadRuntimeConfig();
+  if (!cfg.github_oauth_ready || !cfg.github_oauth_client_id) {
+    errorMessage.value = 'GitHub App login is not configured yet.';
+    showToast(errorMessage.value);
+    return;
+  }
+
+  const state = randomOAuthState();
+  const redirectURI = `${window.location.origin}${window.location.pathname}`;
+  window.sessionStorage.setItem('mergeos_github_oauth_state', state);
+  window.sessionStorage.setItem('mergeos_github_oauth_redirect', redirectURI);
+  const params = new URLSearchParams({
+    client_id: cfg.github_oauth_client_id,
+    redirect_uri: redirectURI,
+    state,
+  });
+  window.location.href = `https://github.com/login/oauth/authorize?${params.toString()}`;
+}
+
+async function handleGitHubCallback() {
+  if (!hasWindow) return false;
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('code');
+  const state = params.get('state');
+  if (!code) return false;
+
+  const expectedState = window.sessionStorage.getItem('mergeos_github_oauth_state') || '';
+  const redirectURI = window.sessionStorage.getItem('mergeos_github_oauth_redirect') || `${window.location.origin}${window.location.pathname}`;
+  window.sessionStorage.removeItem('mergeos_github_oauth_state');
+  window.sessionStorage.removeItem('mergeos_github_oauth_redirect');
+  window.history.replaceState({ publicPage: publicPage.value }, '', window.location.pathname || '/');
+
+  if (!expectedState || state !== expectedState) {
+    errorMessage.value = 'GitHub sign-in state did not match. Please try again.';
+    showToast(errorMessage.value);
+    return true;
+  }
+
+  authBusy.value = true;
+  try {
+    const auth = await publicApi('/api/auth/github', {
+      method: 'POST',
+      body: JSON.stringify({ code, redirect_uri: redirectURI }),
+    });
+    setSession(auth);
+    showToast(auth.user?.wallet_address ? 'GitHub linked to your MRG wallet.' : 'Logged in with GitHub.');
+  } catch (error) {
+    errorMessage.value = error.message;
+    showToast(error.message);
+  } finally {
+    authBusy.value = false;
+  }
+  return true;
+}
+
+function showToast(message) {
+  toastMessage.value = message;
+  pushPublicNotification(message);
+  if (!hasWindow) return;
+  if (toastTimer) window.clearTimeout(toastTimer);
+  toastTimer = window.setTimeout(() => {
+    toastMessage.value = '';
+  }, 2200);
+}
+
+function pushPublicNotification(message) {
+  if (!message || (user.value && !publicModeVisible.value && !projectWizardVisible.value)) return;
+  const createdAt = new Date().toISOString();
+  const body = projectWizardVisible.value ? 'Project setup status changed.' : 'Public session status changed.';
+  publicNotifications.value = [
+    {
+      id: `public-${Date.now()}`,
+      subject: String(message),
+      body,
+      meta: formatLedgerDateTime(createdAt).full,
+      tone: projectWizardVisible.value ? 'green' : 'blue',
+      createdAt,
+    },
+    ...publicNotifications.value,
+  ].slice(0, 6);
+}
+
+function scrollToSection(id) {
+  if (!hasWindow) return;
+  const section = document.getElementById(id);
+  if (section) {
+    section.scrollIntoView({ behavior: 'smooth' });
+  }
+}
+
+function loadPublicPageData(page) {
+  if (page === 'ledger') {
+    void loadLedgerData();
+    return;
+  }
+  if (page === 'marketplace' || page === 'home') {
+    void loadMarketplaceData({ silent: true });
+    void loadLedgerData({ silent: true });
+  }
+}
+
+function updatePublicBrowserPath(page, replace = false) {
+  if (!hasWindow) return;
+  const targetPath = publicPathForPage(page);
+  const currentPath = normalizeRoutePath(window.location.pathname);
+  if (currentPath === targetPath && !window.location.search && !window.location.hash) {
+    return;
+  }
+  const method = replace ? 'replaceState' : 'pushState';
+  window.history[method]({ publicPage: page }, '', targetPath);
+}
+
+function updateProjectWizardBrowserPath(replace = false) {
+  if (!hasWindow) return;
+  const targetPath = projectWizardPathForState(projectWizardStage.value, projectWizardStep.value);
+  const currentPath = normalizeRoutePath(window.location.pathname);
+  if (currentPath === targetPath && !window.location.search && !window.location.hash) {
+    return;
+  }
+  const method = replace ? 'replaceState' : 'pushState';
+  window.history[method](
+    { projectWizard: true, stage: projectWizardStage.value, step: projectWizardStep.value },
+    '',
+    targetPath,
+  );
+}
+
+function openPublicPage(page, options = {}) {
+  publicModeVisible.value = true;
+  projectWizardVisible.value = false;
+  const nextPage = normalizePublicPage(page);
+  publicPage.value = nextPage;
+  loadPublicPageData(nextPage);
+  updatePublicBrowserPath(nextPage, Boolean(options.replace));
+  if (!hasWindow) return;
+  if (options.scroll === false) return;
+  window.requestAnimationFrame(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+}
+
+function syncPublicPageFromBrowserPath() {
+  if (!hasWindow) return;
+  publicModeVisible.value = true;
+  const wizardRoute = projectWizardRouteFromPath(window.location.pathname);
+  if (wizardRoute) {
+    projectWizardVisible.value = true;
+    projectWizardStage.value = wizardRoute.stage;
+    projectWizardStep.value = wizardRoute.step;
+    return;
+  }
+  projectWizardVisible.value = false;
+  const nextPage = publicPageFromPath(window.location.pathname);
+  publicPage.value = nextPage;
+  loadPublicPageData(nextPage);
+}
+
+function handlePublicAction(action = {}) {
+  if (action.command === 'project') {
+    openProjectWizard();
+    return;
+  }
+  if (action.page) {
+    openPublicPage(action.page);
+    return;
+  }
+  showToast(action.label ? `${action.label} opened.` : 'Opening page...');
+}
+
+function openDashboard() {
+  publicModeVisible.value = false;
+  if (user.value) {
+    void loadDashboardData({ silent: true });
+  }
+  if (!hasWindow) return;
+  window.requestAnimationFrame(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+}
+
+function handleDashboardNav(item) {
+  if (item.page) {
+    openPublicPage(item.page);
+    return;
+  }
+  if (item.section) {
+    openDashboardSection(item.section);
+    return;
+  }
+  if (item.label === 'Dashboard') {
+    openDashboard();
+    return;
+  }
+  showToast(item.toast || `${item.label} opened.`);
+}
+
+function openDashboardSection(section) {
+  publicModeVisible.value = false;
+  if (section === 'notifications') {
+    void loadDashboardNotifications();
+    if (!hasWindow) return;
+    window.requestAnimationFrame(() => {
+      dashboardNotificationCenter.value?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      dashboardNotificationCenter.value?.focus({ preventScroll: true });
+    });
+  }
+  if (section === 'payments') {
+    void loadDashboardPayments();
+    if (!hasWindow) return;
+    window.requestAnimationFrame(() => {
+      document.querySelector('.dash-section-payments')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }
+}
+
+function openMarketplaceSection(id) {
+  publicModeVisible.value = true;
+  publicPage.value = 'marketplace';
+  updatePublicBrowserPath('marketplace');
+  loadPublicPageData('marketplace');
+  if (!hasWindow) return;
+  window.requestAnimationFrame(() => scrollToSection(id));
+}
+
+function scrollProjectFlowTop() {
+  if (!hasWindow) return;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function openProjectWizard(options = {}) {
+  publicModeVisible.value = true;
+  projectWizardVisible.value = true;
+  projectWizardStage.value = 'setup';
+  projectWizardStep.value = 1;
+  errorMessage.value = '';
+  updateProjectWizardBrowserPath(Boolean(options.replace));
+  scrollProjectFlowTop();
+}
+
+function restartProjectWizard(options = {}) {
+  publicModeVisible.value = true;
+  projectWizardVisible.value = true;
+  projectWizardStage.value = 'setup';
+  projectWizardStep.value = 1;
+  updateProjectWizardBrowserPath(Boolean(options.replace));
+  scrollProjectFlowTop();
+}
+
+function closeProjectWizard(options = {}) {
+  projectWizardVisible.value = false;
+  projectWizardStage.value = 'setup';
+  projectWizardStep.value = 1;
+  if (options.updatePath !== false) {
+    updatePublicBrowserPath(publicPage.value, Boolean(options.replace));
+  }
+}
+
+async function loadRepoIssues() {
+  const repoURL = projectSetupForm.repoUrl.trim();
+  repoImportError.value = '';
+  if (!repoURL) {
+    repoImportError.value = 'Enter a GitHub repo URL first.';
+    return;
+  }
+
+  repoImportBusy.value = true;
+  try {
+    const result = await publicApi('/api/public/repo/issues', {
+      method: 'POST',
+      body: JSON.stringify({ repo_url: repoURL }),
+    });
+    repoImportResult.value = result;
+    projectSetupForm.repoUrl = result.repo_url || repoURL;
+    if (repoImportedIssues.value.length) {
+      projectSetupForm.projectType = 'Repo Issue Fix';
+      projectSetupForm.title = `Fix all issues in ${result.owner}/${result.name}`;
+      projectSetupForm.shortDescription = `Fix ${repoImportedIssues.value.length} open GitHub issues in ${result.owner}/${result.name}.`;
+      projectSetupForm.overview = repoImportedIssues.value
+        .map((issue) => `#${issue.number} ${issue.title} - score ${issue.score}, ${issue.complexity}`)
+        .join('\n');
+      projectDeliverables.value = repoImportedIssues.value.map((issue) => `Fix #${issue.number}: ${issue.title}`);
+      showToast(`${repoImportedIssues.value.length} issues loaded and scored.`);
+    } else {
+      showToast('No open issues found.');
+    }
+  } catch (error) {
+    repoImportResult.value = null;
+    repoImportError.value = error.message || 'Could not load repo issues.';
+    showToast(repoImportError.value);
+  } finally {
+    repoImportBusy.value = false;
+  }
+}
+
+function openAuthFromProjectWizard(mode = 'login') {
+  closeProjectWizard();
+  openAuth(mode);
+}
+
+function goProjectStep(stepNumber) {
+  projectWizardStage.value = 'setup';
+  projectWizardStep.value = normalizeProjectWizardStep(stepNumber);
+  updateProjectWizardBrowserPath();
+  scrollProjectFlowTop();
+}
+
+function nextProjectStep() {
+  if (projectWizardStep.value < 4) {
+    projectWizardStep.value += 1;
+    updateProjectWizardBrowserPath();
+    scrollProjectFlowTop();
+    return;
+  }
+
+  if (projectBudgetAmount.value > 0 && projectBudgetAmount.value < TOKEN_RATE_PER_USD * 100) {
+    projectSetupForm.budgetAmount = TOKEN_RATE_PER_USD * 100;
+  }
+  projectFundingAmount.value = Math.max(100, Math.ceil(projectBudgetAmount.value / TOKEN_RATE_PER_USD) || projectFundingAmount.value);
+  projectWizardStage.value = 'funding';
+  updateProjectWizardBrowserPath();
+  scrollProjectFlowTop();
+  showToast('Project published. Add funds to start receiving proposals.');
+}
+
+function buildPriceEvaluationPayload() {
+  return {
+    title: projectSetupForm.title,
+    description: [projectSetupForm.shortDescription, projectSetupForm.overview].filter(Boolean).join('\n\n'),
+    project_type: projectSetupForm.projectType,
+    requirements: projectSetupForm.requirements,
+    deliverables: visibleDeliverables.value,
+    timeline: projectTimelineLabel.value,
+    tech_stack: projectSetupForm.techStack,
+    complexity: projectSetupForm.allowAgents ? 'moderate' : 'high',
+    constraints: projectSetupForm.skills,
+    reference_budget_cents: centsFromMRG(projectSetupForm.budgetAmount),
+  };
+}
+
+async function runProjectPriceEvaluation() {
+  priceEvaluationError.value = '';
+  if (!user.value) {
+    authReturnToProjectWizard.value = true;
+    projectWizardVisible.value = false;
+    openAuth('login');
+    showToast('Log in to estimate this project.');
+    return;
+  }
+  if (priceEvaluationBusy.value) return;
+  priceEvaluationBusy.value = true;
+  try {
+    priceEvaluation.value = await api('/api/projects/evaluate-price', {
+      method: 'POST',
+      body: JSON.stringify(buildPriceEvaluationPayload()),
+    });
+    applyPriceEvaluation();
+    showToast('Budget estimate generated.');
+  } catch (error) {
+    priceEvaluationError.value = error.message;
+    showToast(error.message);
+  } finally {
+    priceEvaluationBusy.value = false;
+  }
+}
+
+function applyPriceEvaluation() {
+  if (!priceEvaluation.value?.suggested_price_cents) return;
+  projectSetupForm.budgetAmount = Math.max(TOKEN_RATE_PER_USD * 100, tokenAmountFromCents(priceEvaluation.value.suggested_price_cents));
+  projectSetupForm.budgetType = 'Range';
+}
+
+function projectWizardBack() {
+  if (projectWizardStage.value === 'success') {
+    projectWizardStage.value = 'funding';
+    updateProjectWizardBrowserPath();
+    scrollProjectFlowTop();
+    return;
+  }
+
+  if (projectWizardStage.value === 'funding') {
+    projectWizardStage.value = 'setup';
+    projectWizardStep.value = 4;
+    updateProjectWizardBrowserPath();
+    scrollProjectFlowTop();
+    return;
+  }
+
+  if (projectWizardStep.value > 1) {
+    projectWizardStep.value -= 1;
+    updateProjectWizardBrowserPath();
+    scrollProjectFlowTop();
+    return;
+  }
+
+  closeProjectWizard();
+}
+
+function requireLoginForProjectPayment() {
+  pendingProjectPaymentAfterAuth.value = true;
+  authReturnToProjectWizard.value = true;
+  projectPaymentError.value = '';
+  projectWizardVisible.value = false;
+  openAuth('login');
+  showToast('Log in to continue payment.');
+}
+
+async function completeProjectFunding() {
+  projectFundingAmount.value = Math.max(100, Number(projectFundingAmount.value) || 100);
+  projectPaymentError.value = '';
+
+  if (!user.value) {
+    requireLoginForProjectPayment();
+    return;
+  }
+
+  if (projectPaymentBusy.value) return;
+  projectPaymentBusy.value = true;
+  try {
+    await loadRuntimeConfig();
+    if (!paymentReferenceForProject()) {
+      throw new Error('Payment reference is missing. Configure PayPal/Crypto checkout or enable local dev payments.');
+    }
+    const project = await api('/api/projects', {
+      method: 'POST',
+      body: JSON.stringify(buildCreateProjectPayload()),
+    });
+    fundedProject.value = project;
+    projectWizardVisible.value = true;
+    projectWizardStage.value = 'success';
+    projectWizardStep.value = 4;
+    updateProjectWizardBrowserPath();
+    pendingProjectPaymentAfterAuth.value = false;
+    authReturnToProjectWizard.value = false;
+    await loadLedgerData({ silent: true });
+    await loadMarketplaceData({ silent: true });
+    await loadDashboardData({ silent: true, selectProjectID: project.id });
+    scrollProjectFlowTop();
+    showToast('Payment recorded and tokens minted.');
+  } catch (error) {
+    if (error.status === 401 || /login is required/i.test(error.message || '')) {
+      requireLoginForProjectPayment();
+      return;
+    }
+    projectPaymentError.value = error.message;
+    showToast(error.message);
+  } finally {
+    projectPaymentBusy.value = false;
+  }
+}
+
+function addDeliverable() {
+  projectDeliverables.value.push('');
+}
+
+function removeDeliverable(index) {
+  if (projectDeliverables.value.length <= 1) {
+    projectDeliverables.value = [''];
+    return;
+  }
+
+  projectDeliverables.value.splice(index, 1);
+}
+
+function loginWithSocial(provider) {
+  showToast(`Redirecting to ${provider === 'google' ? 'Google' : 'GitHub'}...`);
+  window.location.href = `/api/auth/${provider}/login`;
+}
+
+async function triggerAiEvaluation() {
+  aiEvaluationLoading.value = true;
+  aiEvaluationError.value = '';
+  aiEvaluationResult.value = null;
+  try {
+    const payload = {
+      description: projectSetupForm.overview || projectSetupForm.shortDescription || '',
+      requirements: projectSetupForm.requirements
+        ? projectSetupForm.requirements.split('\n').map(r => r.trim()).filter(Boolean)
+        : [],
+      deliverables: visibleDeliverables.value,
+      timeline: projectTimelineLabel.value,
+      tech_stack: projectSetupForm.techStack || '',
+      complexity: projectSetupForm.complexity || 'Medium',
+      constraints: projectSetupForm.constraints || '',
+      reference_budget: Math.round(usdFromMRG(projectSetupForm.budgetAmount))
+    };
+    
+    const response = await api('/api/projects/evaluate', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+    
+    aiEvaluationResult.value = response;
+  } catch (err) {
+    console.error('AI evaluation failed:', err);
+    aiEvaluationError.value = err.message || 'AI evaluation failed. Please try again.';
+  } finally {
+    aiEvaluationLoading.value = false;
+  }
+}
+
+function applyAiSuggestedPrice() {
+  if (aiEvaluationResult.value) {
+    const avg = Math.round((aiEvaluationResult.value.suggested_low + aiEvaluationResult.value.suggested_high) / 2);
+    projectSetupForm.budgetAmount = mrgFromUSD(avg);
+    showToast(`Applied AI suggested budget: ${formatMRGFromUSD(avg)}`);
+  }
+}
+
+function formatMoney(value) {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 0,
+  }).format(Number(value) || 0);
+}
+
+function mrgFromUSD(value = 0) {
+  return Math.round((Number(value) || 0) * TOKEN_RATE_PER_USD);
+}
+
+function usdFromMRG(value = 0) {
+  return (Number(value) || 0) / TOKEN_RATE_PER_USD;
+}
+
+function centsFromMRG(value = 0) {
+  return Math.round(usdFromMRG(value) * 100);
+}
+
+function formatMRG(value = 0) {
+  return `${formatCompactNumber(value)} ${tokenSymbol.value}`;
+}
+
+function formatMRGFromUSD(value = 0) {
+  return formatMRG(mrgFromUSD(value));
+}
+
+function formatMRGFromCents(cents = 0) {
+  return formatMRG(tokenAmountFromCents(cents));
+}
+
+function formatLedgerMRGFromCents(cents = 0) {
+  return formatMRGFromCents(cents);
+}
+
+function formatPublicMRGFromCents(cents = 0) {
+  return formatMRGFromCents(cents);
+}
+
+function formatPublicTokenAmount(amount = 0) {
+  return `${formatCompactNumber(amount)} ${tokenSymbol.value}`;
+}
+
+function formatCompactNumber(value = 0) {
+  return new Intl.NumberFormat('en-US', {
+    maximumFractionDigits: value >= 100 ? 0 : 1,
+  }).format(Number(value) || 0);
+}
+
+function tokenAmountFromCents(cents = 0) {
+  return Math.round(((Number(cents) || 0) / 100) * TOKEN_RATE_PER_USD);
+}
+
+function toTitleLabel(value = '') {
+  return String(value)
+    .trim()
+    .split(/[\s._:-]+/)
+    .filter(Boolean)
+    .map((word) => {
+      const lower = word.toLowerCase();
+      if (['ai', 'api', 'qa', 'ui', 'ux', 'go'].includes(lower)) return lower.toUpperCase();
+      if (lower === 'devops') return 'DevOps';
+      return `${lower.charAt(0).toUpperCase()}${lower.slice(1)}`;
+    })
+    .join(' ');
+}
+
+function paymentModeLabel(value = '') {
+  const normalized = String(value || '').trim().toLowerCase();
+  return {
+    'live-adapters': 'Live payment adapters',
+    'local-dev-verifier': 'MergeOS verifier',
+    'not-configured': 'Not configured',
+    '': 'Not loaded',
+  }[normalized] || toTitleLabel(value);
+}
+
+function repoProviderLabel(value = '') {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (!normalized) return 'Not loaded';
+  if (normalized.startsWith('github-private:')) return 'GitHub private repos';
+  if (normalized === 'local-git') return 'MergeOS repositories';
+  return toTitleLabel(value);
+}
+
+function formatMarketplaceDate(value) {
+  const date = value ? new Date(value) : null;
+  if (!date || Number.isNaN(date.getTime())) return 'Funded';
+  return `Funded ${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+}
+
+function trimMarketplaceText(value = '', fallback = 'Funded MergeOS project with escrow-backed tasks and ledger proof.') {
+  const text = String(value || '').replace(/\s+/g, ' ').trim();
+  if (!text) return fallback;
+  return text.length > 150 ? `${text.slice(0, 147).trim()}...` : text;
+}
+
+function marketplaceProjectIcon(project = {}) {
+  const text = [
+    project.title,
+    project.brief,
+    project.site_type,
+    ...(project.tags || []),
+  ].join(' ').toLowerCase();
+  if (text.includes('mobile')) return Phone;
+  if (text.includes('ai') || text.includes('agent')) return Bot;
+  if (text.includes('analytics') || text.includes('dashboard')) return BarChart3;
+  if (text.includes('payment') || text.includes('checkout') || text.includes('ledger')) return CreditCard;
+  if (text.includes('api') || text.includes('code')) return Code2;
+  return Globe2;
+}
+
+function marketplaceAgentIcon(type = '') {
+  const text = String(type).toLowerCase();
+  if (text.includes('design')) return PenLine;
+  if (text.includes('ledger') || text.includes('go')) return CreditCard;
+  if (text.includes('devops')) return GitBranch;
+  if (text.includes('qa') || text.includes('test')) return CheckCircle2;
+  if (text.includes('front')) return Code2;
+  return Bot;
+}
+
+function mapMarketplaceProject(project = {}, index = 0) {
+  const palette = marketplaceProjectPalettes[index % marketplaceProjectPalettes.length];
+  const rawTags = (project.tags || []).map(toTitleLabel).filter(Boolean);
+  const tags = rawTags.length ? rawTags : [toTitleLabel(project.site_type || 'Project')];
+  const openTasks = Number(project.open_task_count) || 0;
+  const acceptedTasks = Number(project.accepted_task_count) || 0;
+  const taskCount = Number(project.task_count) || openTasks + acceptedTasks;
+  const client = project.client_display_name || 'MergeOS client';
+  const badge = openTasks > 0 ? `${openTasks} OPEN` : (acceptedTasks > 0 ? 'PAID OUT' : toTitleLabel(project.status || 'LIVE'));
+  return {
+    id: project.id || `project-${index}`,
+    icon: marketplaceProjectIcon(project),
+    badge,
+    badgeTone: openTasks > 0 ? palette.badgeTone : 'green',
+    title: project.title || 'Untitled project',
+    body: trimMarketplaceText(project.brief),
+    tags: tags.slice(0, 3),
+    extra: Math.max(0, tags.length - 3),
+    budget: formatPublicMRGFromCents(project.budget_cents),
+    timeline: project.timeline || formatMarketplaceDate(project.created_at),
+    client,
+    clientInitials: initialsFor(client),
+    avatarTone: palette.avatarTone,
+    taskLabel: `${taskCount} tasks`,
+    verified: project.status === 'funded',
+    urgent: openTasks > 0,
+    accent: palette.accent,
+    soft: palette.soft,
+  };
+}
+
+function marketplaceSearchHaystack(project = {}) {
+  return [
+    project.title,
+    project.body,
+    project.client,
+    project.budget,
+    project.timeline,
+    ...(project.tags || []),
+  ].join(' ').toLowerCase();
+}
+
+function formatDashboardDate(value) {
+  const date = value ? new Date(value) : null;
+  if (!date || Number.isNaN(date.getTime())) return '-';
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function formatDateInputLabel(value = '') {
+  if (!value) return '';
+  const date = new Date(`${value}T00:00:00Z`);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+}
+
+function shortRepoLabel(project = {}) {
+  const repo = String(project.bounty_repo_name || project.repo_url || project.repo_provider || '').trim();
+  if (!repo) return 'No repo yet';
+  return repo.replace(/^mergeos-bounties\//, '');
+}
+
+function dashboardLedgerEntryMatchesProject(entry = {}, project = {}, tasks = []) {
+  const haystack = [
+    entry.reference,
+    entry.from_account,
+    entry.to_account,
+  ].filter(Boolean).join('|');
+  if (project.id && haystack.includes(project.id)) return true;
+  if (project.bounty_repo_name && haystack.includes(project.bounty_repo_name)) return true;
+  return tasks.some((task) => task.id && haystack.includes(task.id));
+}
+
+function taskIssueReference(task = {}) {
+  if (task.issue_url) {
+    const parts = String(task.issue_url).split(/[\\/]/).filter(Boolean);
+    return parts.slice(-2).join('/');
+  }
+  return task.suggested_agent_type ? toTitleLabel(task.suggested_agent_type) : toTitleLabel(task.required_worker_kind || 'task');
+}
+
+function mapDashboardTask(task = {}) {
+  const status = task.status === 'accepted' ? 'Accepted' : 'Open';
+  return {
+    id: task.id || `${task.project_id}-${task.issue_number}`,
+    initials: String(task.issue_number || 'T').padStart(2, '0').slice(-2),
+    issueNumber: task.issue_number || '-',
+    title: task.title || 'Untitled task',
+    acceptance: trimMarketplaceText(task.acceptance, 'Acceptance criteria not provided.'),
+    reference: taskIssueReference(task),
+    reward: formatMRGFromCents(task.reward_cents),
+    kind: toTitleLabel(task.required_worker_kind || task.worker_kind || 'task'),
+    agent: task.suggested_agent_type ? toTitleLabel(task.suggested_agent_type) : '-',
+    status,
+    statusClass: task.status === 'accepted' ? 'accepted' : 'open',
+  };
+}
+
+function mapDashboardActivity(entry = {}) {
+  const meta = ledgerMetaFor(entry.type);
+  return {
+    key: `${entry.sequence}-${entry.entry_hash || entry.reference}`,
+    title: meta.type,
+    icon: meta.icon,
+    color: meta.tone === 'amber' ? 'yellow' : meta.tone,
+    time: formatLedgerDateTime(entry.created_at).full,
+  };
+}
+
+function mapDashboardNotification(note = {}) {
+  const when = formatLedgerDateTime(note.created_at);
+  return {
+    id: note.id || `${note.subject}-${note.created_at}`,
+    subject: note.subject || 'Notification',
+    body: trimMarketplaceText(note.body, 'MergeOS status update.'),
+    meta: `${toTitleLabel(note.channel || 'app')} · ${toTitleLabel(note.status || 'logged')} · ${when.full}`,
+    tone: note.status === 'failed' ? 'red' : note.project_id ? 'green' : 'blue',
+  };
+}
+
+function formatLedgerDateTime(value) {
+  const date = value ? new Date(value) : new Date();
+  if (Number.isNaN(date.getTime())) {
+    return { date: '-', time: '-', full: '-' };
+  }
+  return {
+    date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }),
+    time: date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }),
+    full: `${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })} ${date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' })} UTC`,
+  };
+}
+
+function projectInitialFor(value = '') {
+  return (String(value).trim().charAt(0) || 'M').toUpperCase();
+}
+
+function projectToneFor(value = '') {
+  const tones = ['green', 'blue', 'purple'];
+  const total = String(value).split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  return tones[total % tones.length];
+}
+
+function extractProjectID(entry = {}) {
+  const haystack = [
+    entry.reference,
+    entry.from_account,
+    entry.to_account,
+  ].filter(Boolean).join(' ');
+  return haystack.match(/prj_[a-z0-9]+/i)?.[0] || '';
+}
+
+function ledgerMetaFor(type = '') {
+  const normalized = String(type);
+  if (normalized === 'token_mint') {
+    return { type: 'Token Minted', icon: Box, tone: 'green', amountTone: 'positive' };
+  }
+  if (normalized === 'payment_verified') {
+    return { type: 'Payment Verified', icon: ShieldCheck, tone: 'green', amountTone: 'positive' };
+  }
+  if (normalized === 'platform_fee') {
+    return { type: 'Platform Fee', icon: CircleDollarSign, tone: 'amber', amountTone: 'negative' };
+  }
+  if (normalized === 'project_reserve') {
+    return { type: 'Escrow Reserved', icon: LockKeyhole, tone: 'blue', amountTone: 'neutral' };
+  }
+  if (normalized === 'task_reserve') {
+    return { type: 'Task Reserve', icon: FileCheck2, tone: 'blue', amountTone: 'neutral' };
+  }
+  if (normalized === 'task_payment') {
+    return { type: 'Payout Released', icon: CircleDollarSign, tone: 'green', amountTone: 'negative' };
+  }
+  return { type: normalized.replaceAll('_', ' '), icon: Compass, tone: 'slate', amountTone: 'neutral' };
+}
+
+function mapLedgerEntry(entry) {
+  const projectID = extractProjectID(entry);
+  const project = ledgerProjectIndex.value.get(projectID);
+  const meta = ledgerMetaFor(entry.type);
+  const when = formatLedgerDateTime(entry.created_at);
+  const tokenAmount = tokenAmountFromCents(entry.amount_cents);
+  const projectTitle = project?.title || (projectID ? `Project ${projectID.slice(-6)}` : 'MergeOS ledger');
+  const company = project?.company_name || project?.client_name || 'MergeOS';
+  return {
+    key: `${entry.sequence}-${entry.entry_hash || entry.reference}`,
+    date: when.date,
+    time: when.time,
+    createdAt: entry.created_at,
+    type: meta.type,
+    icon: meta.icon,
+    tone: meta.tone,
+    projectInitial: projectInitialFor(projectTitle),
+    projectTone: projectToneFor(projectID || projectTitle),
+    project: projectTitle,
+    company,
+    amount: `${formatCompactNumber(Math.abs(tokenAmount))} ${tokenSymbol.value}`,
+    secondaryAmount: entry.type === 'payment_verified' ? 'funding verified' : entry.type === 'token_mint' ? 'mint log' : '',
+    amountTone: meta.amountTone,
+    ref: shortLedgerReference(entry.reference || entry.entry_hash || `#${entry.sequence}`),
+  };
+}
+
+function shortLedgerReference(value = '') {
+  const text = String(value);
+  if (text.length <= 18) return text;
+  return `${text.slice(0, 8)}...${text.slice(-6)}`;
+}
+
+function paymentMethodForProject() {
+  return projectPaymentMethod.value === 'USDC' ? 'crypto' : 'paypal';
+}
+
+function paymentReferenceForProject() {
+  if (runtimeConfig.value?.dev_payment_enabled && runtimeConfig.value?.dev_payment_code) {
+    return runtimeConfig.value.dev_payment_code;
+  }
+  return successPaymentReference.value || '';
+}
+
+function buildCreateProjectPayload() {
+  const name = user.value?.name || authForm.name || 'MergeOS Client';
+  const email = user.value?.email || authForm.email;
+  return {
+    title: projectSetupForm.title,
+    client_name: name,
+    company_name: user.value?.company_name || authForm.company_name || 'MergeOS Customer',
+    client_email: email,
+    site_type: projectSetupForm.projectType,
+    package_tier: projectSetupForm.budgetType,
+    timeline: projectTimelineLabel.value,
+    brief: buildProjectBrief(),
+    budget_cents: projectPaymentAmountCents.value,
+    payment_method: paymentMethodForProject(),
+    payment_reference: paymentReferenceForProject(),
+    attachment_ids: [],
+    source_repo_url: projectSetupForm.repoUrl || '',
+  };
+}
+
+function buildProjectBrief() {
+  return [
+    projectSetupForm.repoUrl && `Source repository: ${projectSetupForm.repoUrl}`,
+    projectSetupForm.shortDescription,
+    projectSetupForm.overview && `Overview:\n${projectSetupForm.overview}`,
+    repoImportedIssues.value.length && `Imported issues:\n${repoImportedIssues.value.map((issue) => `- #${issue.number} ${issue.title} (score ${issue.score}, ${issue.complexity})`).join('\n')}`,
+    visibleDeliverables.value.length && `Deliverables:\n${visibleDeliverables.value.map((item) => `- ${item}`).join('\n')}`,
+    projectSetupForm.requirements && `Requirements:\n${projectSetupForm.requirements}`,
+    projectSetupForm.techStack && `Tech stack: ${projectSetupForm.techStack}`,
+    `Visibility: ${projectSetupForm.visibility}`,
+    `AI agents: ${projectSetupForm.allowAgents ? 'Allowed' : 'Not allowed'}`,
+    projectSetupForm.skills && `Skills: ${projectSetupForm.skills}`,
+  ].filter(Boolean).join('\n\n');
+}
+
+function resetAuthForm(mode = authMode.value) {
+  Object.assign(authForm, mode === 'login' ? defaultLoginAuth : defaultRegisterAuth);
+  authTermsAccepted.value = mode === 'register';
+  authRememberMe.value = false;
+  showPassword.value = false;
+  showConfirmPassword.value = false;
+}
+
+function setAuthMode(mode) {
+  authMode.value = mode;
+  resetAuthForm(mode);
+  errorMessage.value = '';
+}
+
+function createRequestError(response, payload = {}) {
+  const error = new Error(payload.error || 'Request failed');
+  error.status = response.status;
+  return error;
+}
+
+async function api(path, options = {}) {
+  const response = await fetch(path, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token.value ? { Authorization: `Bearer ${token.value}` } : {}),
+      ...(options.headers || {}),
+    },
+  });
+  const payload = await response.json();
+  if (!response.ok) {
+    if (response.status === 401 && path !== '/api/auth/login' && path !== '/api/auth/register') {
+      clearSession();
+    }
+    throw createRequestError(response, payload);
+  }
+  return payload;
+}
+
+async function publicApi(path, options = {}) {
+  const response = await fetch(path, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(options.headers || {}),
+    },
+  });
+  const text = await response.text();
+  let payload = {};
+  try {
+    payload = text ? JSON.parse(text) : {};
+  } catch {
+    payload = { error: text || 'Request failed' };
+  }
+  if (!response.ok) {
+    throw createRequestError(response, payload);
+  }
+  return payload;
+}
+
+async function loadMarketplaceData(options = {}) {
+  const silent = Boolean(options.silent);
+  if (!silent) marketplaceLoading.value = true;
+  marketplaceError.value = '';
+  try {
+    const payload = await publicApi('/api/public/marketplace');
+    marketplaceData.value = {
+      stats: payload.stats || {},
+      projects: Array.isArray(payload.projects) ? payload.projects : [],
+      contributors: Array.isArray(payload.contributors) ? payload.contributors : [],
+      agents: Array.isArray(payload.agents) ? payload.agents : [],
+    };
+    if (!marketplaceCategories.value.includes(activeMarketplaceCategory.value)) {
+      activeMarketplaceCategory.value = 'All';
+    }
+  } catch (error) {
+    marketplaceError.value = error.message || 'Could not load marketplace data';
+  } finally {
+    marketplaceLoading.value = false;
+  }
+}
+
+async function loadRuntimeConfig() {
+  if (runtimeConfig.value) {
+    return runtimeConfig.value;
+  }
+  runtimeConfig.value = await api('/api/config');
+  return runtimeConfig.value;
+}
+
+async function loadLedgerData(options = {}) {
+  ledgerError.value = '';
+  if (!options.silent) {
+    ledgerLoading.value = true;
+  }
+  try {
+    const [entries, marketplace] = await Promise.all([
+      publicApi('/api/public/ledger'),
+      publicApi('/api/public/marketplace'),
+    ]);
+    ledgerRawEntries.value = Array.isArray(entries) ? entries : [];
+    ledgerProjects.value = Array.isArray(marketplace.projects) ? marketplace.projects : [];
+  } catch (error) {
+    ledgerError.value = error.message;
+  } finally {
+    ledgerLoading.value = false;
+  }
+}
+
+async function loadDashboardData(options = {}) {
+  if (!token.value) {
+    dashboardProjects.value = [];
+    dashboardTasks.value = [];
+    dashboardLedgerEntries.value = [];
+    selectedDashboardProjectID.value = '';
+    return;
+  }
+
+  const silent = Boolean(options.silent);
+  if (!silent) dashboardLoading.value = true;
+  dashboardError.value = '';
+  try {
+    const [projects, tasks, entries] = await Promise.all([
+      api('/api/projects'),
+      api('/api/tasks'),
+      api('/api/ledger'),
+    ]);
+    dashboardProjects.value = Array.isArray(projects) ? projects : [];
+    dashboardTasks.value = Array.isArray(tasks) ? tasks : [];
+    dashboardLedgerEntries.value = Array.isArray(entries) ? entries : [];
+    const requestedProjectID = options.selectProjectID || selectedDashboardProjectID.value;
+    const selectedExists = dashboardProjects.value.some((project) => project.id === requestedProjectID);
+    selectedDashboardProjectID.value = selectedExists
+      ? requestedProjectID
+      : (dashboardSortedProjects.value[0]?.id || '');
+  } catch (error) {
+    dashboardError.value = error.message || 'Could not load projects';
+  } finally {
+    dashboardLoading.value = false;
+  }
+}
+
+async function loadDashboardNotifications() {
+  if (!token.value) {
+    dashboardNotifications.value = [];
+    dashboardNotificationsError.value = '';
+    return;
+  }
+  dashboardNotificationsLoading.value = true;
+  dashboardNotificationsError.value = '';
+  try {
+    const rows = await api('/api/notifications');
+    dashboardNotifications.value = Array.isArray(rows) ? rows : [];
+  } catch (error) {
+    dashboardNotificationsError.value = error.message || 'Could not load notifications';
+  } finally {
+    dashboardNotificationsLoading.value = false;
+  }
+}
+
+function startDashboardRealtime() {
+  if (!hasWindow || dashboardRefreshTimer) return;
+  dashboardRefreshTimer = window.setInterval(() => {
+    if (!token.value || !user.value) return;
+    if (document.visibilityState === 'hidden') return;
+    void loadDashboardData({ silent: true });
+    void loadDashboardNotifications();
+  }, DASHBOARD_REFRESH_MS);
+}
+
+function stopDashboardRealtime() {
+  if (!hasWindow || !dashboardRefreshTimer) return;
+  window.clearInterval(dashboardRefreshTimer);
+  dashboardRefreshTimer = 0;
+}
+
+function openAuth(mode = 'login') {
+  setAuthMode(mode);
+  authVisible.value = true;
+}
+
+function closeAuth() {
+  if (authBusy.value) return;
+  authVisible.value = false;
+  errorMessage.value = '';
+  if (authReturnToProjectWizard.value) {
+    projectWizardVisible.value = true;
+    authReturnToProjectWizard.value = false;
+    pendingProjectPaymentAfterAuth.value = false;
+  }
+}
+
+function setSession(auth) {
+  token.value = auth.token;
+  user.value = auth.user;
+  authVisible.value = false;
+  errorMessage.value = '';
+  writeStoredToken(auth.token);
+  if (authReturnToProjectWizard.value) {
+    projectWizardVisible.value = true;
+    authReturnToProjectWizard.value = false;
+  }
+  if (pendingProjectPaymentAfterAuth.value) {
+    pendingProjectPaymentAfterAuth.value = false;
+    void completeProjectFunding();
+  }
+  if (publicPage.value === 'ledger') {
+    void loadLedgerData({ silent: true });
+  }
+  void loadDashboardData({ silent: true });
+  void loadDashboardNotifications();
+  startDashboardRealtime();
+}
+
+function clearSession() {
+  disconnectWebSocket();
+  stopDashboardRealtime();
+  token.value = '';
+  user.value = null;
+  authVisible.value = false;
+  ledgerError.value = '';
+  dashboardProjects.value = [];
+  dashboardTasks.value = [];
+  dashboardLedgerEntries.value = [];
+  dashboardNotifications.value = [];
+  dashboardNotificationsError.value = '';
+  dashboardError.value = '';
+  selectedDashboardProjectID.value = '';
+  removeStoredToken();
+}
+
+async function submitAuth() {
+  errorMessage.value = '';
+  if (authMode.value === 'register') {
+    if (!authTermsAccepted.value) {
+      errorMessage.value = 'Please accept the terms before creating an account.';
+      return;
+    }
+    if (authForm.password !== authForm.confirm_password) {
+      errorMessage.value = 'Passwords do not match.';
+      return;
+    }
+  }
+
+  authBusy.value = true;
+  try {
+    const path = authMode.value === 'register' ? '/api/auth/register' : '/api/auth/login';
+    const body = authMode.value === 'register'
+      ? {
+        name: authForm.name,
+        company_name: authForm.company_name,
+        email: authForm.email,
+        password: authForm.password,
+      }
+      : { email: authForm.email, password: authForm.password };
+    const auth = await api(path, { method: 'POST', body: JSON.stringify(body) });
+    setSession(auth);
+    showToast(authMode.value === 'register' ? 'Account created.' : 'Logged in.');
+  } catch (error) {
+    errorMessage.value = error.message;
+  } finally {
+    authBusy.value = false;
+  }
+}
+
+async function restoreSession() {
+  if (!token.value) return;
+  try {
+    user.value = await api('/api/auth/me');
+    await loadDashboardData({ silent: true });
+    await loadDashboardNotifications();
+    startDashboardRealtime();
+    if (publicPage.value === 'ledger') {
+      void loadLedgerData({ silent: true });
+    }
+  } catch {
+    clearSession();
+  }
+}
+
+async function logout() {
+  try {
+    await api('/api/auth/logout', { method: 'POST', body: JSON.stringify({}) });
+  } finally {
+    clearSession();
+    publicModeVisible.value = true;
+    publicPage.value = 'home';
+    updatePublicBrowserPath('home', true);
+    showToast('Logged out.');
+  }
+}
+
+onMounted(async () => {
+  connectWebSocket();
+  if (hasWindow) {
+    const params = new URLSearchParams(window.location.search);
+    const oauthToken = params.get('token');
+    if (oauthToken) {
+      token.value = oauthToken;
+      writeStoredToken(oauthToken);
+      const cleanUrl = window.location.pathname + window.location.hash;
+      window.history.replaceState({}, document.title, cleanUrl);
+      showToast('Successfully logged in via OAuth!');
+    }
+  }
+
+  const handledGitHubCallback = await handleGitHubCallback();
+  if (hasWindow) {
+    window.addEventListener('popstate', syncPublicPageFromBrowserPath);
+    if (!handledGitHubCallback) {
+      if (projectWizardVisible.value) {
+        updateProjectWizardBrowserPath(true);
+      } else {
+        updatePublicBrowserPath(publicPage.value, true);
+      }
+    }
+  }
+  const runtimePromise = loadRuntimeConfig().catch((error) => showToast(error.message));
+  await Promise.all([
+    runtimePromise,
+    restoreSession(),
+    loadMarketplaceData({ silent: true }),
+    loadLedgerData({ silent: true }),
+  ]);
+});
+
+onUnmounted(() => {
+  disconnectWebSocket();
+  if (hasWindow) {
+    window.removeEventListener('popstate', syncPublicPageFromBrowserPath);
+  }
+  stopDashboardRealtime();
+});
+</script>
+ + (p.budget_cents / 100).toFixed(2) : '$0.00',
+      date: p.created_at ? new Date(p.created_at).toLocaleDateString() : p.date || '',
+      txRef: p.tx_hash || p.payment_reference || ''
+    }));
+  }).catch(error => {
+    dashboardPaymentsError.value = error.message || 'Could not load payments';
+  }).finally(() => {
+    dashboardPaymentsLoading.value = false;
+  });
 }
 
 function shortWallet(value = '') {
@@ -3581,6 +6120,13 @@ function openDashboardSection(section) {
     window.requestAnimationFrame(() => {
       dashboardNotificationCenter.value?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       dashboardNotificationCenter.value?.focus({ preventScroll: true });
+    });
+  }
+  if (section === 'payments') {
+    void loadDashboardPayments();
+    if (!hasWindow) return;
+    window.requestAnimationFrame(() => {
+      document.querySelector('.dash-section-payments')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
   }
 }
