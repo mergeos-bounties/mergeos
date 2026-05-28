@@ -1,6 +1,0 @@
-.env
-.env.*
-!*.example
-node_modules/
-dist/
-*.log
