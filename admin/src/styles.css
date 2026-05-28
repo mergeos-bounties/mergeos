@@ -1614,3 +1614,105 @@ button:disabled {
     justify-content: flex-start;
   }
 }
+
+/* ========================================
+   Fix #17: Project view after login
+   Responsive table + navigation fixes
+   ======================================== */
+
+/* Project table horizontal scroll on small screens */
+@media (max-width: 900px) {
+  .table-panel {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .table-panel table,
+  .admin-table {
+    min-width: 600px;
+  }
+
+  .table-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+}
+
+/* Stack project rows on very small screens */
+@media (max-width: 720px) {
+  .table-panel {
+    padding: 0;
+    border: none;
+    box-shadow: none;
+    background: transparent;
+  }
+
+  .table-panel .table-header {
+    padding: 12px 14px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    margin-bottom: 8px;
+  }
+
+  .admin-table {
+    min-width: 0;
+  }
+
+  .admin-table thead {
+    display: none;
+  }
+
+  .admin-table tr {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px 12px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+  }
+
+  .admin-table td {
+    display: block;
+    padding: 2px 0;
+    border: none;
+  }
+
+  .admin-table td::before {
+    content: attr(data-label);
+    display: block;
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 900;
+    text-transform: uppercase;
+    margin-bottom: 1px;
+  }
+
+  .admin-table td:empty {
+    display: none;
+  }
+
+  /* Navigation between views */
+  .admin-sidebar a {
+    padding: 10px 14px;
+    font-size: 13px;
+    min-height: 44px;
+  }
+}
+
+/* Status pill in project cards */
+.status-pill {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.status-pill.green {
+  background: #d1fae5;
+  color: #065f46;
+}
