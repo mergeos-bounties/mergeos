@@ -74,6 +74,8 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/tasks", s.tasks)
 	mux.HandleFunc("POST /api/tasks/", s.acceptTask)
 	mux.HandleFunc("GET /api/notifications", s.notifications)
+	mux.HandleFunc("POST /api/notifications/read", s.markNotificationRead)
+	mux.HandleFunc("POST /api/notifications/read-all", s.markAllNotificationsRead)
 	mux.HandleFunc("GET /api/ledger", s.ledger)
 	return withCORS(mux)
 }
@@ -861,4 +863,31 @@ func (s *Server) cryptoWebhook(w http.ResponseWriter, r *http.Request) {
 
 	writeJSON(w, http.StatusCreated, project)
 }
+func (s *Server) markNotificationRead(w http.ResponseWriter, r *http.Request) {
+	user, ok := s.requireUser(w, r)
+	if !ok {
+		return
+	}
 
+	var req struct {
+		NotificationID string `json:"notification_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	note := s.store.MarkNotificationRead(user.ID, req.NotificationID)
+	if note == nil {
+		http.Error(w, "notification not found", http.StatusNotFound)
+		return
+	}
+	writeJSON(w, http.StatusOK, note)
+func (s *Server) markAllNotificationsRead(w http.ResponseWriter, r *http.Request) {
+	user, ok := s.requireUser(w, r)
+	if !ok {
+		return
+	}
+
+	s.store.MarkAllNotificationsRead(user.ID)
+	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
