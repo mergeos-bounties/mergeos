@@ -240,6 +240,55 @@ function proxyApi(req, res, apiTarget) {
   req.pipe(proxyReq);
 }
 
+function proxyWs(req, socket, head, apiTarget) {
+  const target = new URL(apiTarget);
+  const transport = target.protocol === 'https:' ? https : http;
+  const forwardedHost = req.headers['x-forwarded-host'] || req.headers.host || target.host;
+  const forwardedProto = req.headers['x-forwarded-proto'] || (req.socket.encrypted ? 'https' : 'http');
+  const proxyReq = transport.request({
+    protocol: target.protocol,
+    hostname: target.hostname,
+    port: target.port,
+    method: req.method,
+    path: req.url,
+    headers: {
+      ...req.headers,
+      host: target.host,
+      'x-forwarded-host': forwardedHost,
+      'x-forwarded-proto': forwardedProto,
+    },
+  });
+
+  proxyReq.on('upgrade', (proxyRes, proxySocket, proxyHead) => {
+    socket.write(`HTTP/${proxyRes.httpVersion} ${proxyRes.statusCode} ${proxyRes.statusMessage}\r\n`);
+    for (const [name, value] of Object.entries(proxyRes.headers)) {
+      if (Array.isArray(value)) {
+        for (const item of value) socket.write(`${name}: ${item}\r\n`);
+      } else if (value !== undefined) {
+        socket.write(`${name}: ${value}\r\n`);
+      }
+    }
+    socket.write('\r\n');
+    if (proxyHead?.length) socket.write(proxyHead);
+    if (head?.length) proxySocket.write(head);
+    proxySocket.pipe(socket);
+    socket.pipe(proxySocket);
+  });
+
+  proxyReq.on('response', (proxyRes) => {
+    socket.write(`HTTP/1.1 ${proxyRes.statusCode || 502} ${proxyRes.statusMessage || 'Bad Gateway'}\r\n\r\n`);
+    proxyRes.resume();
+    socket.destroy();
+  });
+
+  proxyReq.on('error', () => {
+    socket.write('HTTP/1.1 502 Bad Gateway\r\n\r\n');
+    socket.destroy();
+  });
+
+  proxyReq.end();
+}
+
 function readArgValue(argv, name) {
   const inline = argv.find((arg) => arg.startsWith(`${name}=`));
   if (inline) return inline.slice(name.length + 1);

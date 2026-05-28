@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import http from 'node:http';
+import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
 import {
@@ -150,6 +151,81 @@ test('API proxy forwards the public frontend host for auth redirects', async (t)
   assert.equal(headers.host, `127.0.0.1:${apiAddress.port}`);
   assert.equal(headers.forwardedHost, `127.0.0.1:${frontendAddress.port}`);
   assert.equal(headers.forwardedProto, 'http');
+});
+
+test('WebSocket proxy upgrades /api/ws to the API target', async (t) => {
+  let upgradeHeaders;
+  const api = http.createServer();
+  api.on('upgrade', (req, socket) => {
+    upgradeHeaders = req.headers;
+    socket.write([
+      'HTTP/1.1 101 Switching Protocols',
+      'Upgrade: websocket',
+      'Connection: Upgrade',
+      'Sec-WebSocket-Accept: test',
+      '',
+      '',
+    ].join('\r\n'));
+    socket.end();
+  });
+  t.after(() => api.close());
+  await new Promise((resolve) => api.listen(0, '127.0.0.1', resolve));
+  const apiAddress = api.address();
+
+  const cwd = await fs.mkdtemp(path.join(os.tmpdir(), 'mergeos-frontend-ws-proxy-'));
+  const clientDist = path.join(cwd, 'client');
+  const serverDir = path.join(cwd, 'server');
+  const serverEntry = path.join(serverDir, 'entry-server.mjs');
+  await fs.mkdir(clientDist, { recursive: true });
+  await fs.mkdir(serverDir, { recursive: true });
+  await fs.writeFile(path.join(clientDist, 'index.html'), '<!doctype html><html><body><div id="app"><!--ssr-outlet--></div></body></html>');
+  await fs.writeFile(serverEntry, "export async function render() { return '<main></main>'; }\n");
+
+  const server = await createMergeOSServer({
+    mode: 'production',
+    production: true,
+    cwd,
+    host: '127.0.0.1',
+    port: 0,
+    hmrPort: 0,
+    apiTarget: `http://127.0.0.1:${apiAddress.port}`,
+    clientDist,
+    serverEntry,
+  });
+  t.after(() => server.close());
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const frontendAddress = server.address();
+
+  const response = await new Promise((resolve, reject) => {
+    const client = net.createConnection(frontendAddress.port, '127.0.0.1');
+    let data = '';
+    client.on('connect', () => {
+      client.write([
+        'GET /api/ws HTTP/1.1',
+        `Host: 127.0.0.1:${frontendAddress.port}`,
+        'Connection: Upgrade',
+        'Upgrade: websocket',
+        'Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==',
+        'Sec-WebSocket-Version: 13',
+        '',
+        '',
+      ].join('\r\n'));
+    });
+    client.on('data', (chunk) => {
+      data += chunk.toString('utf-8');
+      if (data.includes('\r\n\r\n')) {
+        client.destroy();
+        resolve(data);
+      }
+    });
+    client.on('error', reject);
+    client.setTimeout(2500, () => reject(new Error('websocket proxy timed out')));
+  });
+
+  assert.match(response, /101 Switching Protocols/);
+  assert.equal(upgradeHeaders.host, `127.0.0.1:${apiAddress.port}`);
+  assert.equal(upgradeHeaders['x-forwarded-host'], `127.0.0.1:${frontendAddress.port}`);
+  assert.equal(upgradeHeaders['x-forwarded-proto'], 'http');
 });
 
 test('shared Vue entry leaves browser mounting to the client hydration entry', async () => {
