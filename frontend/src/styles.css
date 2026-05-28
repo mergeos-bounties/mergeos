@@ -8771,5 +8771,22 @@ svg {
   .dash-project-actions button {
     padding: 6px 10px;
     font-size: 12px;
+    min-height: 36px;
+  }
+  .dash-sidebar {
+    padding: 8px 6px;
+  }
+  .dash-side-nav button {
+    font-size: 11px;
+    padding: 6px 8px;
+    min-height: 36px;
+  }
+  .dash-card .payment-history-row {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  .dash-toast {
+    font-size: 12px;
+    padding: 8px 12px;
   }
 }
