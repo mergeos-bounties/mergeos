@@ -127,7 +127,7 @@
           <div v-if="projectWizardStep === 1" class="wizard-form-grid">
             <label class="wizard-field full">
               <span>Project title <b>*</b></span>
-              <input v-model.trim="projectSetupForm.title" placeholder="Enter a clear project title" />
+              <input v-model.trim="projectSetupForm.title" :placeholder="projectSetupForm.projectType === 'Bug Fix' ? 'Briefly describe the bug you need fixed' : 'Enter a clear project title'" />
             </label>
 
             <label class="wizard-field full">
@@ -136,7 +136,7 @@
                 v-model.trim="projectSetupForm.shortDescription"
                 rows="5"
                 maxlength="1000"
-                placeholder="Describe your project, what you want to build, and the problem you're solving..."
+                :placeholder="projectSetupForm.projectType === 'Bug Fix' ? 'Describe the bug, expected behavior, and how to reproduce it' : 'Describe your project, what you want to build, and the problem you are solving...'"
               />
               <small>{{ projectSetupForm.shortDescription.length }} / 1000</small>
             </label>
@@ -146,32 +146,33 @@
                 <strong>Project type <b>*</b></strong>
                 <small>What kind of work do you need?</small>
               </div>
-              <div class="project-type-grid">
+              <div class="project-type-grid project-type-split">
                 <button
                   v-for="type in projectTypeOptions"
                   :key="type.label"
                   :class="{ selected: projectSetupForm.projectType === type.label }"
-                  class="select-tile"
+                  class="select-tile select-tile-big"
                   type="button"
                   @click="projectSetupForm.projectType = type.label"
                 >
-                  <component :is="type.icon" :size="18" />
+                  <component :is="type.icon" :size="24" />
                   <strong>{{ type.label }}</strong>
                   <small>{{ type.caption }}</small>
-                  <CheckCircle2 v-if="projectSetupForm.projectType === type.label" class="tile-check" :size="16" />
+                  <CheckCircle2 v-if="projectSetupForm.projectType === type.label" class="tile-check" :size="20" />
                 </button>
               </div>
             </section>
 
             <label class="wizard-field full">
               <span>Tech stack <small>(optional)</small></span>
-              <input v-model.trim="projectSetupForm.techStack" placeholder="Add technologies or frameworks" />
+              <input v-model.trim="projectSetupForm.techStack"
+                :placeholder="projectSetupForm.projectType === 'Bug Fix' ? 'Technologies used in the existing project' : 'Add technologies or frameworks'" />
             </label>
 
-            <section class="wizard-section full attach-repo">
+            <section v-if="projectSetupForm.projectType === 'Bug Fix'" class="wizard-section full attach-repo">
               <div class="attach-repo-head">
                 <div>
-                  <strong>Attach repository <small>(optional)</small></strong>
+                  <strong>Attach repository <b>*</b></strong>
                   <p>Load open issues and turn them into scored fix tasks.</p>
                 </div>
                 <button class="secondary-button compact" :disabled="repoImportBusy" type="button" @click="loadRepoIssues">
@@ -200,6 +201,12 @@
                     <small>Score {{ issue.score }} · {{ issue.complexity }} · {{ formatMRGFromCents(issue.estimated_cents) }}</small>
                   </div>
                 </article>
+              </div>
+            </section>
+
+            <section v-if="projectSetupForm.projectType === 'New Project'" class="wizard-section full">
+              <div class="new-project-hint">
+                <p>Describe your idea below — we will help you scope it, price it, and find the right contributor.</p>
               </div>
             </section>
           </div>
@@ -2501,12 +2508,8 @@ const projectSetupSteps = [
 ];
 
 const projectTypeOptions = [
-  { label: 'Web Development', caption: 'Web apps', icon: Globe2 },
-  { label: 'Repo Issue Fix', caption: 'Existing repo', icon: Bug },
-  { label: 'Mobile Development', caption: 'iOS and Android', icon: Compass },
-  { label: 'AI / ML', caption: 'Agents and models', icon: Bot },
-  { label: 'Smart Contract', caption: 'Web3', icon: Link2 },
-  { label: 'Other', caption: 'Custom work', icon: MoreHorizontal },
+  { label: 'New Project', caption: 'Brand-new project or idea from scratch', icon: Sparkles },
+  { label: 'Bug Fix', caption: 'Fix an issue in an existing repository', icon: Bug },
 ];
 
 const budgetTypeOptions = [
