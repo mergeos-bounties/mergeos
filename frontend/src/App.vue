@@ -4031,10 +4031,13 @@ async function createPayPalOrder() {
     if (hasWindow) {
       const state = {
         title: projectSetupForm.title,
+        shortDescription: projectSetupForm.shortDescription,
         description: projectSetupForm.description,
         deliverables: projectDeliverables.value,
         fundingAmount: projectFundingAmount.value,
         paymentMethod: projectPaymentMethod.value,
+        category: projectSetupForm.category,
+        projectType: projectSetupForm.projectType,
       };
       localStorage.setItem('paypal_pending_state', JSON.stringify(state));
       window.location.href = result.approval_url;
@@ -5049,10 +5052,13 @@ onMounted(async () => {
         try {
           const state = JSON.parse(savedState);
           if (state.title) projectSetupForm.title = state.title;
+          if (state.shortDescription) projectSetupForm.shortDescription = state.shortDescription;
           if (state.description) projectSetupForm.description = state.description;
           if (state.deliverables) projectDeliverables.value = state.deliverables;
           if (state.fundingAmount) projectFundingAmount.value = state.fundingAmount;
           if (state.paymentMethod) projectPaymentMethod.value = state.paymentMethod;
+          if (state.category) projectSetupForm.category = state.category;
+          if (state.projectType) projectSetupForm.projectType = state.projectType;
         } catch (e) { /* ignore parse errors */ }
         localStorage.removeItem('paypal_pending_state');
       }
