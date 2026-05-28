@@ -4412,11 +4412,17 @@ svg {
   backdrop-filter: blur(12px);
 }
 
+.modal-backdrop--open {
+  overflow: hidden;
+}
+
 .auth-modal {
   position: relative;
-  width: min(1030px, 100%);
+  width: min(1030px, calc(100% - 16px));
+  max-width: 1030px;
   max-height: calc(100vh - 64px);
   overflow: auto;
+  overscroll-behavior: contain;
   border: 1px solid rgba(226, 232, 240, 0.86);
   border-radius: 18px;
   background: #ffffff;
@@ -4429,8 +4435,8 @@ svg {
   top: 24px;
   right: 24px;
   z-index: 2;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   display: grid;
   place-items: center;
   border: 0;
@@ -4514,7 +4520,7 @@ svg {
 }
 
 .social-auth-row button {
-  min-height: 46px;
+  min-height: 48px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -4527,6 +4533,7 @@ svg {
   font-size: 14px;
   font-weight: 850;
   box-shadow: 0 8px 18px rgba(15, 23, 42, 0.03);
+  touch-action: manipulation;
 }
 
 .social-auth-row button:hover {
@@ -4618,6 +4625,8 @@ svg {
   padding: 0;
   font-size: 14px;
   font-weight: 680;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .input-shell input::placeholder {
@@ -4625,14 +4634,15 @@ svg {
 }
 
 .input-shell button {
-  width: 28px;
-  height: 28px;
+  width: 36px;
+  height: 36px;
   display: grid;
   place-items: center;
   border: 0;
   border-radius: 6px;
   background: transparent;
   color: #8a94a3;
+  flex: 0 0 auto;
 }
 
 .input-shell button:hover {
@@ -6787,30 +6797,33 @@ svg {
   }
 
   .modal-backdrop {
-    padding: 16px;
+    padding: 8px;
   }
 
   .auth-modal {
-    max-height: calc(100vh - 32px);
+    width: calc(100% - 16px);
+    max-height: calc(100vh - 16px);
     border-radius: 14px;
   }
 
   .auth-modal-main {
-    padding: 24px 16px 20px;
-    gap: 20px;
+    padding: 20px 14px 16px;
+    gap: 16px;
   }
 
   .auth-close-button {
-    top: 16px;
-    right: 16px;
+    top: 12px;
+    right: 12px;
+    width: 40px;
+    height: 40px;
   }
 
   .auth-copy {
-    margin-top: 20px;
+    margin-top: 16px;
   }
 
   .auth-copy h2 {
-    font-size: 24px;
+    font-size: 22px;
   }
 
   .auth-copy p {
@@ -6820,12 +6833,34 @@ svg {
   .social-auth-row {
     grid-template-columns: 1fr;
     gap: 10px;
-    margin-top: 24px;
+    margin-top: 20px;
+  }
+
+  .social-auth-row button {
+    min-height: 48px;
+    font-size: 14px;
   }
 
   .auth-option-row {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .auth-field > span {
+    font-size: 13px;
+  }
+
+  .input-shell {
+    min-height: 48px;
+  }
+
+  .input-shell input {
+    min-height: 48px;
+  }
+
+  .auth-submit-button {
+    min-height: 48px;
+    font-size: 15px;
   }
 }
 

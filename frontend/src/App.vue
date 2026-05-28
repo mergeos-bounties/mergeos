@@ -4758,12 +4758,18 @@ function stopDashboardRealtime() {
 function openAuth(mode = 'login') {
   setAuthMode(mode);
   authVisible.value = true;
+  if (hasWindow) {
+    document.body.classList.add('modal-backdrop--open');
+  }
 }
 
 function closeAuth() {
   if (authBusy.value) return;
   authVisible.value = false;
   errorMessage.value = '';
+  if (hasWindow) {
+    document.body.classList.remove('modal-backdrop--open');
+  }
   if (authReturnToProjectWizard.value) {
     projectWizardVisible.value = true;
     authReturnToProjectWizard.value = false;
@@ -4776,6 +4782,9 @@ function setSession(auth) {
   user.value = auth.user;
   authVisible.value = false;
   errorMessage.value = '';
+  if (hasWindow) {
+    document.body.classList.remove('modal-backdrop--open');
+  }
   writeStoredToken(auth.token);
   if (authReturnToProjectWizard.value) {
     projectWizardVisible.value = true;
