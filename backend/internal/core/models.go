@@ -93,6 +93,7 @@ type Notification struct {
 	Body      string    `json:"body"`
 	Status    string    `json:"status"`
 	CreatedAt time.Time `json:"created_at"`
+	ReadAt    *time.Time `json:"read_at,omitempty"`
 }
 
 type Attachment struct {

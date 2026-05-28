@@ -859,6 +859,36 @@ func (s *Store) ListLedger() []LedgerEntry {
 	return entries
 }
 
+
+func (s *Store) MarkNotificationRead(userID, notificationID string) *Notification {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	note, ok := s.notifications[notificationID]
+	if !ok {
+		return nil
+	}
+	if note.UserID != userID {
+		return nil
+	}
+	now := time.Now().UTC()
+	note.ReadAt = &now
+	return note
+}
+
+func (s *Store) MarkAllNotificationsRead(userID string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for _, note := range s.notifications {
+		if note.UserID == userID && note.ReadAt == nil {
+			now := time.Now().UTC()
+			note.ReadAt = &now
+		}
+	}
+}
+
+
 func (s *Store) ListPublicLedger() []LedgerEntry {
 	s.mu.RLock()
 	defer s.mu.RUnlock()

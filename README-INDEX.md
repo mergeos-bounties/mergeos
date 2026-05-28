@@ -37,6 +37,8 @@ Use this index as the fast public map for MergeOS bounty docs and current bounty
 
 ## Awarded Bounties
 
-No MRG bounty payouts have been recorded yet.
-
-Update this section after a bounty PR is merged and the MRG payout is released.
+| PR | Bounty | Contributor | Reward | MRG credit URL | Status |
+| --- | --- | --- | ---: | --- | --- |
+| [#86](https://github.com/mergeos-bounties/mergeos/pull/86) | [#18 Dashboard payment history](https://github.com/mergeos-bounties/mergeos/issues/18) | [@ryzhkevichpavel-del](https://github.com/ryzhkevichpavel-del) | 25 MRG | [github:ryzhkevichpavel-del](https://scan.mergeos.shop/address/github:ryzhkevichpavel-del) | Approved for merge |
+| [#37](https://github.com/mergeos-bounties/mergeos/pull/37) | [#16 Dashboard layout after login](https://github.com/mergeos-bounties/mergeos/issues/16) | [@lb1192176991-lab](https://github.com/lb1192176991-lab) | 25 MRG | [github:lb1192176991-lab](https://scan.mergeos.shop/address/github:lb1192176991-lab) | Approved for merge |
+| [#81](https://github.com/mergeos-bounties/mergeos/pull/81) | [#17 Project view after login from dashboard](https://github.com/mergeos-bounties/mergeos/issues/17) | [@lb1192176991-lab](https://github.com/lb1192176991-lab) | 25 MRG | [github:lb1192176991-lab](https://scan.mergeos.shop/address/github:lb1192176991-lab) | Approved for merge |

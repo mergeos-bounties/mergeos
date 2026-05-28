@@ -17,10 +17,11 @@ type Server struct {
 	store          *Store
 	payments       *PaymentManager
 	geminiReviewer *GeminiReviewService
+	eventHub       *eventHub
 }
 
 func NewServer(cfg Config, store *Store, payments *PaymentManager) *Server {
-	return &Server{cfg: cfg, store: store, payments: payments, geminiReviewer: NewGeminiReviewService(cfg, store)}
+	return &Server{cfg: cfg, store: store, payments: payments, geminiReviewer: NewGeminiReviewService(cfg, store), eventHub: newEventHub()}
 }
 
 func (s *Server) Routes() http.Handler {
@@ -74,6 +75,9 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/tasks", s.tasks)
 	mux.HandleFunc("POST /api/tasks/", s.acceptTask)
 	mux.HandleFunc("GET /api/notifications", s.notifications)
+	mux.HandleFunc("POST /api/notifications/read", s.markNotificationRead)
+	mux.HandleFunc("POST /api/notifications/read-all", s.markAllNotificationsRead)
+	mux.HandleFunc("GET /api/ws", s.wsHandler)
 	mux.HandleFunc("GET /api/ledger", s.ledger)
 	return withCORS(mux)
 }
@@ -278,6 +282,48 @@ func (s *Server) notifications(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, http.StatusOK, s.store.ListNotifications(userID))
 }
+
+
+func (s *Server) markNotificationRead(w http.ResponseWriter, r *http.Request) {
+	user, ok := s.requireUser(w, r)
+	if !ok {
+		return
+	}
+
+	var req struct {
+		NotificationID string `json:"notification_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	note := s.store.MarkNotificationRead(user.ID, req.NotificationID)
+	if note == nil {
+		http.Error(w, "notification not found", http.StatusNotFound)
+		return
+	}
+	writeJSON(w, http.StatusOK, note)
+}
+
+func (s *Server) markAllNotificationsRead(w http.ResponseWriter, r *http.Request) {
+	user, ok := s.requireUser(w, r)
+	if !ok {
+		return
+	}
+
+	s.store.MarkAllNotificationsRead(user.ID)
+	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+}
+
+func (s *Server) wsHandler(w http.ResponseWriter, r *http.Request) {
+	conn, err := wsUpgrade(w, r)
+	if err != nil {
+		return
+	}
+	go conn.readLoop(s.eventHub)
+}
+
 
 func (s *Server) adminSummary(w http.ResponseWriter, r *http.Request) {
 	if _, ok := s.requireAdmin(w, r); !ok {
@@ -571,6 +617,10 @@ func (s *Server) createProject(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	s.eventHub.broadcastAll(map[string]interface{}{
+		"type":    "project_created",
+		"project": project,
+	})
 	writeJSON(w, http.StatusCreated, project)
 }
 
