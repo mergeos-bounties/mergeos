@@ -702,6 +702,69 @@ svg {
   grid-template-columns: repeat(5, minmax(104px, 1fr));
 }
 
+.project-type-selector {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.project-type-card {
+  position: relative;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+  border: 1px solid #dfe5ec;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #111827;
+  padding: 14px;
+  text-align: left;
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease, background 160ms ease;
+}
+
+.project-type-card:hover {
+  transform: translateY(-1px);
+  border-color: rgba(15, 159, 120, 0.38);
+}
+
+.project-type-card.selected {
+  border-color: var(--green);
+  background: #f1fbf6;
+  box-shadow: 0 10px 24px rgba(15, 159, 120, 0.11);
+}
+
+.ptc-icon {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  color: var(--green-dark);
+  background: #ecfdf5;
+}
+
+.ptc-body {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.ptc-body strong {
+  color: #111827;
+  font-size: 13px;
+  font-weight: 920;
+  line-height: 1.25;
+}
+
+.ptc-body small {
+  color: #6b7280;
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
 .budget-type-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
@@ -7465,6 +7528,10 @@ svg {
   .budget-type-grid,
   .funding-amount-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .project-type-selector {
+    grid-template-columns: 1fr;
   }
 
   .currency-input {

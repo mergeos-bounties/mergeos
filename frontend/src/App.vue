@@ -125,18 +125,51 @@
           </header>
 
           <div v-if="projectWizardStep === 1" class="wizard-form-grid">
+            <section class="wizard-section full">
+              <div class="wizard-section-title">
+                <strong>What type of project? <b>*</b></strong>
+                <small>Choose whether you're starting fresh or fixing an existing repo.</small>
+              </div>
+              <div class="project-type-selector">
+                <button
+                  :class="['project-type-card', { selected: projectSetupForm.projectPurpose === 'new' }]"
+                  type="button"
+                  @click="projectSetupForm.projectPurpose = 'new'"
+                >
+                  <span class="ptc-icon"><Sparkles :size="20" /></span>
+                  <span class="ptc-body">
+                    <strong>New project</strong>
+                    <small>Start a greenfield project from scratch. We'll help you scope, fund, and build it.</small>
+                  </span>
+                  <CheckCircle2 v-if="projectSetupForm.projectPurpose === 'new'" class="tile-check" :size="16" />
+                </button>
+                <button
+                  :class="['project-type-card', { selected: projectSetupForm.projectPurpose === 'fix' }]"
+                  type="button"
+                  @click="projectSetupForm.projectPurpose = 'fix'"
+                >
+                  <span class="ptc-icon"><Bug :size="20" /></span>
+                  <span class="ptc-body">
+                    <strong>Fix bug in existing project</strong>
+                    <small>Connect a repo to load existing issues and turn them into scored fix tasks.</small>
+                  </span>
+                  <CheckCircle2 v-if="projectSetupForm.projectPurpose === 'fix'" class="tile-check" :size="16" />
+                </button>
+              </div>
+            </section>
+
             <label class="wizard-field full">
-              <span>Project title <b>*</b></span>
-              <input v-model.trim="projectSetupForm.title" placeholder="Enter a clear project title" />
+              <span>{{ projectSetupForm.projectPurpose === 'fix' ? 'Project or repo name' : 'Project title' }} <b>*</b></span>
+              <input v-model.trim="projectSetupForm.title" :placeholder="projectSetupForm.projectPurpose === 'fix' ? 'Enter the project or repo name to fix' : 'Enter a clear project title'" />
             </label>
 
             <label class="wizard-field full">
-              <span>Short description <b>*</b></span>
+              <span>{{ projectSetupForm.projectPurpose === 'fix' ? 'What needs fixing?' : 'Short description' }} <b>*</b></span>
               <textarea
                 v-model.trim="projectSetupForm.shortDescription"
                 rows="5"
                 maxlength="1000"
-                placeholder="Describe your project, what you want to build, and the problem you're solving..."
+                :placeholder="projectSetupForm.projectPurpose === 'fix' ? 'Describe the bugs, issues, or problems that need to be fixed...' : 'Describe your project, what you want to build, and the problem you\'re solving...'"
               />
               <small>{{ projectSetupForm.shortDescription.length }} / 1000</small>
             </label>
@@ -2440,6 +2473,7 @@ const projectSetupForm = reactive({
   title: '',
   shortDescription: '',
   projectType: '',
+  projectPurpose: '',
   techStack: '',
   repoUrl: '',
   overview: '',
@@ -4227,6 +4261,7 @@ function buildCreateProjectPayload() {
     company_name: user.value?.company_name || authForm.company_name || 'MergeOS Customer',
     client_email: email,
     site_type: projectSetupForm.projectType,
+    project_type: projectSetupForm.projectPurpose,
     package_tier: projectSetupForm.budgetType,
     timeline: projectTimelineLabel.value,
     brief: buildProjectBrief(),
