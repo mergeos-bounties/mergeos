@@ -1229,6 +1229,49 @@
           </section>
         </section>
 
+
+      <section v-if="dashboardPaymentsVisible" class="dash-card payment-history-main-card">
+        <div class="card-title-row">
+          <h2>Payment History</h2>
+          <span class="payment-count-badge">{{ dashboardPaymentRows.length }} transactions</span>
+          <button class="rail-link-button" type="button" @click="dashboardPaymentsVisible = false">Close</button>
+        </div>
+        <div v-if="dashboardPaymentsLoading" class="payment-history-loading">
+          <span class="spinner-small" /><strong>Loading payment history...</strong>
+        </div>
+        <div v-else-if="dashboardPaymentsError" class="payment-history-error">
+          <strong>Could not load payments</strong>
+          <p>{{ dashboardPaymentsError }}</p>
+          <button class="secondary-button compact" type="button" @click="loadDashboardPayments">Retry</button>
+        </div>
+        <div v-else-if="dashboardPaymentRows.length" class="payment-history-table">
+          <div class="payment-table-header">
+            <span>Type</span>
+            <span>Amount</span>
+            <span>Reference</span>
+            <span>Date</span>
+          </div>
+          <article v-for="row in dashboardPaymentRows" :key="row.key" class="payment-table-row">
+            <span class="payment-type-cell">
+              <span :class="['payment-type-dot', row.tone]">
+                <component :is="row.icon" :size="14" />
+              </span>
+              <strong>{{ row.type }}</strong>
+            </span>
+            <span :class="['payment-amount-cell', row.amountTone]">{{ row.amount }}</span>
+            <span class="payment-ref-cell">{{ row.reference }}</span>
+            <span class="payment-date-cell">
+              <span>{{ row.date }}</span>
+              <small>{{ row.time }}</small>
+            </span>
+          </article>
+        </div>
+        <article v-else class="dash-empty-state">
+          <strong>No payment history yet</strong>
+          <p>Payments will appear here after you fund a project or receive payouts.</p>
+        </article>
+      </section>
+
         <aside class="dash-rail">
           <section class="dash-card rail-card wallet-summary-card">
             <div class="card-title-row">
@@ -1326,6 +1369,48 @@
               Refresh notifications
             </button>
           </section>
+
+        <section ref="dashboardPaymentsPanel" class="dash-card rail-card payment-history-card" tabindex="-1" v-if="dashboardPaymentsVisible">
+          <div class="card-title-row">
+            <h2>Payment History</h2>
+            <span>{{ dashboardPaymentRows.length }}</span>
+          </div>
+          <div v-if="dashboardPaymentsLoading" class="payment-history-loading">
+            <span class="spinner-small" /><strong>Loading payments...</strong>
+          </div>
+          <div v-else-if="dashboardPaymentsError" class="payment-history-error">
+            <strong>Could not load payments</strong>
+            <p>{{ dashboardPaymentsError }}</p>
+            <button class="rail-link-button" type="button" @click="loadDashboardPayments">Retry</button>
+          </div>
+          <div v-else-if="dashboardPaymentRows.length" class="payment-history-list">
+            <article v-for="row in dashboardPaymentRows" :key="row.key" class="payment-history-row">
+              <span :class="['payment-type-dot', row.tone]">
+                <component :is="row.icon" :size="14" />
+              </span>
+              <div class="payment-history-main">
+                <strong>{{ row.type }}</strong>
+                <small :class="['payment-amount', row.amountTone]">{{ row.amount }}</small>
+              </div>
+              <div class="payment-history-meta">
+                <small v-if="row.fromAccount" class="payment-account">From: {{ row.fromAccount }}</small>
+                <small v-if="row.toAccount" class="payment-account">To: {{ row.toAccount }}</small>
+                <small class="payment-ref">{{ row.reference }}</small>
+              </div>
+              <div class="payment-history-date">
+                <span>{{ row.date }}</span>
+                <small>{{ row.time }}</small>
+              </div>
+            </article>
+          </div>
+          <article v-else class="dash-empty-state compact">
+            <strong>No payment history</strong>
+            <p>Payments will appear here after funding a project.</p>
+          </article>
+          <button class="rail-link-button" type="button" @click="loadDashboardPayments">
+            Refresh payments
+          </button>
+        </section>
 
           <section class="dash-card rail-card chat-card">
             <div class="card-title-row">
@@ -2428,6 +2513,10 @@ const dashboardError = ref('');
 const dashboardSearch = ref('');
 const selectedDashboardProjectID = ref('');
 const dashboardNotificationCenter = ref(null);
+const dashboardPaymentsVisible = ref(false);
+const dashboardPaymentsLoading = ref(false);
+const dashboardPaymentsPanel = ref(null);
+const dashboardPaymentsError = ref('');
 const priceEvaluation = ref(null);
 const priceEvaluationBusy = ref(false);
 const priceEvaluationError = ref('');
@@ -3274,6 +3363,29 @@ const dashboardLedgerRows = computed(() =>
     };
   }),
 );
+const dashboardPaymentRows = computed(() =>
+  dashboardLedgerEntries.value
+    .filter((entry) => ['payment_verified', 'task_payment', 'platform_fee', 'project_reserve', 'task_reserve', 'token_mint'].includes(entry.type))
+    .slice()
+    .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+    .map((entry) => {
+      const meta = ledgerMetaFor(entry.type);
+      return {
+        key: `${entry.sequence}-${entry.entry_hash || entry.reference}`,
+        type: meta.type,
+        icon: meta.icon,
+        tone: meta.tone,
+        amountTone: meta.amountTone,
+        amount: formatMRGFromCents(entry.amount_cents),
+        reference: shortLedgerReference(entry.reference || entry.entry_hash || `#${entry.sequence}`),
+        date: formatLedgerDateTime(entry.created_at).date,
+        time: formatLedgerDateTime(entry.created_at).time,
+        fromAccount: entry.from_account || '',
+        toAccount: entry.to_account || '',
+      };
+    }),
+);
+
 const dashboardNotificationRows = computed(() =>
   dashboardNotifications.value
     .slice()
@@ -3309,7 +3421,7 @@ const sidebarSections = [
       { label: 'My Projects', icon: FolderKanban, active: true, toast: 'Opening projects...' },
       { label: 'Tasks', icon: ListTodo, toast: 'Opening tasks...' },
       { label: 'Repositories', icon: GitBranch, toast: 'Opening repositories...' },
-      { label: 'Payments', icon: CreditCard, toast: 'Opening payments...' },
+      { label: 'Payments', icon: CreditCard, section: 'payments' },
       { label: 'Notifications', icon: Bell, section: 'notifications' },
     ],
   },
@@ -3336,7 +3448,7 @@ const topNavItems = [
   { label: 'Projects', toast: 'Opening projects...' },
   { label: 'Marketplace', page: 'marketplace' },
   { label: 'Repos', toast: 'Opening repositories...' },
-  { label: 'Payments', toast: 'Opening payments...' },
+  { label: 'Payments', section: 'payments' },
   { label: 'Analytics', toast: 'Opening analytics...' },
 ];
 
@@ -3581,6 +3693,15 @@ function openDashboardSection(section) {
     window.requestAnimationFrame(() => {
       dashboardNotificationCenter.value?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       dashboardNotificationCenter.value?.focus({ preventScroll: true });
+    });
+  }
+  if (section === 'payments') {
+    dashboardPaymentsVisible.value = true;
+    void loadDashboardPayments();
+    if (!hasWindow) return;
+    window.requestAnimationFrame(() => {
+      dashboardPaymentsPanel.value?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      dashboardPaymentsPanel.value?.focus({ preventScroll: true });
     });
   }
 }
@@ -4410,6 +4531,23 @@ async function loadDashboardNotifications() {
     dashboardNotificationsError.value = error.message || 'Could not load notifications';
   } finally {
     dashboardNotificationsLoading.value = false;
+  }
+}
+
+async function loadDashboardPayments() {
+  if (!token.value) {
+    dashboardPaymentsVisible.value = false;
+    return;
+  }
+  dashboardPaymentsLoading.value = true;
+  dashboardPaymentsError.value = '';
+  try {
+    const entries = await api('/api/ledger');
+    dashboardLedgerEntries.value = Array.isArray(entries) ? entries : [];
+  } catch (error) {
+    dashboardPaymentsError.value = error.message || 'Could not load payment history';
+  } finally {
+    dashboardPaymentsLoading.value = false;
   }
 }
 
