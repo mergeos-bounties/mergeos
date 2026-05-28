@@ -1094,6 +1094,9 @@
           </div>
           <button class="primary-button compact" type="button" @click="openProjectWizard">
             <Plus :size="16" />
+            
+          <button class="primary-button compact" type="button" @click="openProjectWizard">
+            <Plus :size="16" />
             New Project
           </button>
           <button class="dash-profile" type="button" @click="logout">
@@ -3354,7 +3357,7 @@ const sidebarSections = [
       { label: 'Tasks', icon: ListTodo, toast: 'Opening tasks...' },
       { label: 'Repositories', icon: GitBranch, toast: 'Opening repositories...' },
       { label: 'Payments', icon: CreditCard, toast: 'Opening payments...' },
-      { label: 'Notifications', icon: Bell, section: 'notifications' },
+      { label: 'Notifications', icon: Bell, action: () => { toggleNotificationPanel() } },
     ],
   },
   {
@@ -4630,7 +4633,6 @@ onUnmounted(() => {
   }
   stopDashboardRealtime();
 });
-
 // --- Notification System ---
 const notificationPanelOpen = ref(false);
 const notifications = ref([]);
@@ -4697,5 +4699,7 @@ function formatNotificationTime(dateStr) {
   if (diff < 86400) return `${Math.floor(diff/3600)}h ago`;
   return `${Math.floor(diff/86400)}d ago`;
 }
+
+</script>
 
 </script>
