@@ -11,7 +11,7 @@
 
       <nav class="top-actions" aria-label="Explorer actions">
         <div class="header-account" aria-label="Wallet and GitHub">
-          <div class="wallet-address-group">
+          <div class="header-combo wallet-address-group">
             <button
               :class="['header-chip', 'wallet-chip', localWalletAddress ? 'ready' : '']"
               type="button"
@@ -19,44 +19,48 @@
               :title="localWalletAddress || 'Create MRG wallet'"
               @click="!localWalletAddress && createGuestWallet()"
             >
-              <WalletCards :size="16" />
+              <WalletCards :size="25" />
               <span>
                 <small>Wallet</small>
                 <strong>{{ localWalletAddress ? shortHash(localWalletAddress, 8, 6) : (walletBusy ? 'Creating...' : 'Create wallet') }}</strong>
               </span>
             </button>
             <button
-              v-if="localWalletAddress"
-              class="icon-mini wallet-copy-button"
+              class="chip-copy-button"
               type="button"
+              :disabled="!localWalletAddress"
               title="Copy wallet address"
-              @click="copyValue(localWalletAddress)"
+              @click="localWalletAddress && copyValue(localWalletAddress)"
             >
-              <Copy :size="15" />
+              <Copy :size="21" />
             </button>
           </div>
-          <button
-            :class="['header-chip', 'github-chip', githubLinked ? 'connected' : (canLinkGitHub ? 'ready' : '')]"
-            type="button"
-            :disabled="!canLinkGitHub"
-            :title="githubActionTitle"
-            @click="canLinkGitHub && startGitHubWalletLink()"
-          >
-            <GitPullRequest :size="17" />
-            <span>
-              <small>GitHub</small>
-              <strong>{{ githubAccountLabel }}</strong>
-            </span>
-          </button>
-          <button
-            v-if="githubLinked"
-            class="icon-mini github-copy-button"
-            type="button"
-            title="Copy GitHub account"
-            @click="copyValue(githubAccountLabel)"
-          >
-            <Copy :size="15" />
-          </button>
+          <div class="header-combo github-address-group">
+            <button
+              :class="['header-chip', 'github-chip', githubLinked ? 'connected' : (canLinkGitHub ? 'ready' : '')]"
+              type="button"
+              :disabled="!canLinkGitHub"
+              :title="githubActionTitle"
+              @click="canLinkGitHub && startGitHubWalletLink()"
+            >
+              <svg class="github-mark" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 2.25c-5.38 0-9.75 4.36-9.75 9.75 0 4.31 2.8 7.97 6.68 9.26.49.09.67-.21.67-.47 0-.23-.01-1-.01-1.81-2.72.59-3.29-1.16-3.29-1.16-.44-1.13-1.08-1.43-1.08-1.43-.88-.6.07-.59.07-.59.98.07 1.49 1 1.49 1 .86 1.48 2.26 1.05 2.81.8.09-.62.34-1.05.61-1.29-2.17-.25-4.45-1.09-4.45-4.84 0-1.07.38-1.94 1-2.62-.1-.25-.43-1.24.1-2.59 0 0 .82-.26 2.68 1 .78-.22 1.61-.33 2.44-.33.83 0 1.66.11 2.44.33 1.86-1.26 2.68-1 2.68-1 .53 1.35.2 2.34.1 2.59.62.68 1 1.55 1 2.62 0 3.76-2.29 4.59-4.47 4.83.35.3.66.9.66 1.82 0 1.31-.01 2.37-.01 2.69 0 .26.18.56.68.47A9.76 9.76 0 0 0 21.75 12c0-5.39-4.36-9.75-9.75-9.75Z" />
+              </svg>
+              <span>
+                <small>GitHub</small>
+                <strong>{{ githubAccountLabel }}</strong>
+              </span>
+            </button>
+            <button
+              class="chip-copy-button"
+              type="button"
+              :disabled="!githubLinked"
+              title="Copy GitHub account"
+              @click="githubLinked && copyValue(githubAccountLabel)"
+            >
+              <Copy :size="21" />
+            </button>
+          </div>
         </div>
         <button
           :class="['api-nav-link', route.name === 'api' ? 'active' : '']"
@@ -64,14 +68,14 @@
           title="Open API docs"
           @click="openApiDocs"
         >
-          <Braces :size="18" />
+          <Braces :size="24" />
           <span>API</span>
         </button>
         <button class="icon-button" type="button" title="Refresh" @click="loadExplorerData">
-          <RefreshCw :size="18" />
+          <RefreshCw :size="24" />
         </button>
         <a class="icon-button" title="Open MergeOS" href="https://mergeos.shop/">
-          <ExternalLink :size="18" />
+          <ExternalLink :size="24" />
         </a>
       </nav>
     </header>
@@ -262,7 +266,6 @@ import {
   ExternalLink,
   FileText,
   Fingerprint,
-  GitPullRequest,
   Keyboard,
   LoaderCircle,
   RefreshCw,
@@ -317,7 +320,7 @@ const route = ref(parseRoute());
 const tokenSymbol = computed(() => config.value?.token_symbol || marketplace.value?.stats?.token_symbol || 'MRG');
 const paymentMode = computed(() => paymentModeLabel(config.value?.payment_mode));
 const githubOAuthReady = computed(() => Boolean(config.value?.github_oauth_ready && config.value?.github_oauth_client_id));
-const networkLabel = computed(() => config.value?.environment === 'production' ? 'MergeOS main ledger' : 'MergeOS ledger');
+const networkLabel = computed(() => 'MergeOS main ledger');
 const linkedGitHubUsername = computed(() => cleanGitHubUsername(
   githubUser.value?.github_username || walletSummary.value?.github_username || githubUser.value?.name || '',
 ));

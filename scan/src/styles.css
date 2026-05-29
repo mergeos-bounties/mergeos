@@ -1,6 +1,8 @@
+@import url("https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&display=swap");
+
 :root {
   color-scheme: light;
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: "Libre Baskerville", Georgia, "Times New Roman", serif;
   background: #ead7b4;
   color: #342715;
   font-synthesis: none;
@@ -93,8 +95,8 @@ select:focus-visible {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 20px;
-  min-height: 106px;
+  gap: 22px;
+  min-height: 105px;
   padding: 24px clamp(24px, 3vw, 40px);
   border-bottom: 1px solid var(--line);
   background: rgba(248, 236, 208, 0.72);
@@ -110,8 +112,8 @@ select:focus-visible {
 .brand-mark {
   display: grid;
   place-items: center;
-  width: 60px;
-  height: 60px;
+  width: 57px;
+  height: 57px;
   flex: 0 0 auto;
 }
 
@@ -128,8 +130,8 @@ select:focus-visible {
 
 .brand strong {
   color: var(--ink);
-  font-size: 1.72rem;
-  font-weight: 900;
+  font-size: 1.78rem;
+  font-weight: 700;
   line-height: 1;
 }
 
@@ -138,7 +140,7 @@ select:focus-visible {
   margin-top: 8px;
   border-bottom: 1px solid rgba(40, 76, 39, 0.48);
   color: var(--forest);
-  font-size: 1rem;
+  font-size: 0.98rem;
   font-weight: 700;
   line-height: 1.05;
 }
@@ -146,22 +148,35 @@ select:focus-visible {
 .top-actions {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 18px;
   min-width: 0;
 }
 
 .header-account {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 18px;
   min-width: 0;
 }
 
-.wallet-address-group {
+.header-combo {
   display: flex;
   align-items: center;
-  gap: 8px;
+  min-height: 58px;
   min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  background: rgba(248, 236, 208, 0.56);
+  box-shadow: inset 0 1px 0 rgba(255, 252, 232, 0.68);
+}
+
+.wallet-address-group {
+  width: 244px;
+}
+
+.github-address-group {
+  width: 234px;
 }
 
 .header-chip,
@@ -183,14 +198,27 @@ select:focus-visible {
   align-items: center;
   gap: 14px;
   min-height: 58px;
-  max-width: 260px;
-  padding: 0 16px;
+  min-width: 0;
+  flex: 1 1 auto;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0 14px;
 }
 
-.header-chip svg {
+.header-chip svg,
+.github-mark {
   flex: 0 0 auto;
   color: var(--gold);
   stroke-width: 2.4;
+}
+
+.github-mark {
+  width: 25px;
+  height: 25px;
+  fill: currentColor;
+  stroke: none;
 }
 
 .header-chip span {
@@ -208,39 +236,50 @@ select:focus-visible {
 
 .header-chip small {
   color: #4a381f;
-  font-size: 0.77rem;
-  font-weight: 900;
+  font-size: 0.73rem;
+  font-weight: 700;
   line-height: 1;
   text-transform: uppercase;
 }
 
 .header-chip strong {
-  max-width: 170px;
+  max-width: 145px;
   overflow: hidden;
   color: var(--ink);
-  font-size: 1rem;
-  font-weight: 900;
-  line-height: 1.1;
+  font-size: 0.96rem;
+  font-weight: 700;
+  line-height: 1.16;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .header-chip.connected,
 .header-chip.ready {
-  background: rgba(248, 236, 208, 0.72);
+  background: transparent;
   color: var(--ink);
 }
 
 .header-chip:disabled {
   cursor: default;
-  opacity: 0.78;
+  opacity: 1;
 }
 
-.wallet-copy-button,
-.github-copy-button {
-  width: 42px;
-  height: 42px;
+.chip-copy-button {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  align-self: stretch;
   flex: 0 0 auto;
+  border: 0;
+  border-left: 1px solid rgba(117, 91, 52, 0.42);
+  background: transparent;
+  color: var(--gold);
+  cursor: pointer;
+}
+
+.chip-copy-button:disabled {
+  cursor: default;
+  opacity: 1;
 }
 
 .api-nav-link {
@@ -249,9 +288,10 @@ select:focus-visible {
   justify-content: center;
   gap: 10px;
   min-height: 58px;
-  padding: 0 20px;
-  font-size: 1.02rem;
-  font-weight: 900;
+  width: 100px;
+  padding: 0 16px;
+  font-size: 0.98rem;
+  font-weight: 700;
   letter-spacing: 0;
 }
 
@@ -279,7 +319,7 @@ select:focus-visible {
 .icon-button:hover,
 .icon-mini:hover,
 .api-nav-link:hover,
-.header-chip:not(:disabled):hover,
+.header-combo:hover,
 .compact-button:hover,
 .search-panel button:hover,
 .detail-actions button:hover,
@@ -324,10 +364,10 @@ main {
   max-width: 560px;
   margin: 0;
   color: var(--ink);
-  font-size: clamp(2.55rem, 3.15vw, 3.35rem);
-  font-weight: 900;
+  font-size: clamp(2.55rem, 3.05vw, 3.28rem);
+  font-weight: 700;
   letter-spacing: 0;
-  line-height: 0.98;
+  line-height: 1.02;
 }
 
 .search-panel {
@@ -1125,13 +1165,12 @@ main {
     gap: 8px;
   }
 
-  .wallet-address-group {
-    flex: 1 1 0;
-  }
-
-  .wallet-address-group .wallet-chip,
-  .github-chip {
-    flex: 1 1 0;
+  .header-combo,
+  .wallet-address-group,
+  .github-address-group {
+    flex: 1 1 calc(50% - 4px);
+    width: auto;
+    min-height: 48px;
   }
 
   .header-chip {
@@ -1143,6 +1182,10 @@ main {
   .header-chip strong {
     max-width: none;
     font-size: 0.86rem;
+  }
+
+  .chip-copy-button {
+    width: 38px;
   }
 
   .stat-card strong {
