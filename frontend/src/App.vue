@@ -1053,7 +1053,7 @@
         <div class="dash-top-actions">
           <button class="dash-icon-button" aria-label="Notifications" type="button" @click="openDashboardSection('notifications')">
             <Bell :size="18" />
-            <span>{{ dashboardNotificationCount }}</span>
+            <span v-if="dashboardNotificationCount > 0" class="notification-badge">{{ dashboardNotificationCount }}</span>
           </button>
           <button class="primary-button compact" type="button" @click="openProjectWizard">
             <Plus :size="16" />
@@ -1424,22 +1424,44 @@
               <span>{{ dashboardNotificationRows.length }}</span>
             </div>
             <div v-if="dashboardNotificationRows.length" class="notification-center-list">
-              <article v-for="note in dashboardNotificationRows" :key="note.id">
-                <span :class="['notification-dot', note.tone]" />
+              <article
+                v-for="note in dashboardNotificationRows"
+                :key="note.id"
+                :class="{ 'notification-unread': !note.isRead }"
+                role="button"
+                tabindex="0"
+                @click="handleNotificationClick(note)"
+                @keyup.enter="handleNotificationClick(note)"
+              >
+                <span :class="['notification-dot', note.tone, { 'dot-unread': !note.isRead }]" />
                 <div>
                   <strong>{{ note.subject }}</strong>
                   <p>{{ note.body }}</p>
-                  <small>{{ note.meta }}</small>
+                  <small>
+                    {{ note.meta }}
+                    <template v-if="note.projectRef"> · Project {{ note.projectRef }}</template>
+                  </small>
                 </div>
+                <span v-if="!note.isRead" class="notification-unread-badge" aria-label="Unread">New</span>
               </article>
             </div>
             <article v-else class="dash-empty-state compact">
               <strong>{{ dashboardNotificationsLoading ? 'Loading notifications...' : 'No notifications yet' }}</strong>
               <p>{{ dashboardNotificationsLoading ? 'Fetching delivery records.' : dashboardNotificationsError || 'Project updates and delivery notices will appear here.' }}</p>
             </article>
-            <button class="rail-link-button" type="button" @click="loadDashboardNotifications">
-              Refresh notifications
-            </button>
+            <div class="notification-actions">
+              <button class="rail-link-button" type="button" @click="loadDashboardNotifications">
+                Refresh notifications
+              </button>
+              <button
+                v-if="dashboardNotificationCount > 0"
+                class="rail-link-button"
+                type="button"
+                @click="markAllNotificationsRead"
+              >
+                Mark all as read
+              </button>
+            </div>
           </section>
 
           <section class="dash-card rail-card chat-card">
@@ -3422,7 +3444,10 @@ const dashboardNotificationRows = computed(() =>
     .slice(0, 8)
     .map(mapDashboardNotification),
 );
-const dashboardNotificationCount = computed(() => Math.min(9, dashboardNotificationRows.value.length));
+const dashboardNotificationCount = computed(() => {
+  const unread = dashboardNotifications.value.filter((n) => !n.read_at).length;
+  return Math.min(9, unread);
+});
 const dashboardPaymentRows = computed(() => {
   const project = dashboardSelectedProject.value;
   if (!project) return [];
@@ -4445,13 +4470,48 @@ function mapDashboardActivity(entry = {}) {
 
 function mapDashboardNotification(note = {}) {
   const when = formatLedgerDateTime(note.created_at);
+  const isRead = !!note.read_at;
   return {
     id: note.id || `${note.subject}-${note.created_at}`,
     subject: note.subject || 'Notification',
     body: trimMarketplaceText(note.body, 'MergeOS status update.'),
     meta: `${toTitleLabel(note.channel || 'app')} · ${toTitleLabel(note.status || 'logged')} · ${when.full}`,
     tone: note.status === 'failed' ? 'red' : note.project_id ? 'green' : 'blue',
+    isRead,
+    projectRef: note.project_id || '',
+    channel: note.channel || 'app',
+    rawCreatedAt: note.created_at,
   };
+}
+
+async function markNotificationAsRead(notificationId) {
+  if (!token.value || !notificationId) return;
+  try {
+    await api('/api/notifications/read', {
+      method: 'POST',
+      body: JSON.stringify({ notification_id: notificationId }),
+    });
+    const idx = dashboardNotifications.value.findIndex((n) => n.id === notificationId);
+    if (idx !== -1) {
+      dashboardNotifications.value[idx] = {
+        ...dashboardNotifications.value[idx],
+        read_at: new Date().toISOString(),
+      };
+    }
+  } catch {
+    // silently ignore — notification will refresh on next poll
+  }
+}
+
+function handleNotificationClick(note) {
+  if (!note.isRead) {
+    markNotificationAsRead(note.id);
+  }
+}
+
+async function markAllNotificationsRead() {
+  const unreadNotes = dashboardNotifications.value.filter((n) => !n.read_at);
+  await Promise.all(unreadNotes.map((n) => markNotificationAsRead(n.id)));
 }
 
 function formatLedgerDateTime(value) {

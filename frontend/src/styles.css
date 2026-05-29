@@ -6274,8 +6274,55 @@ svg {
 .notification-center-list article {
   min-width: 0;
   display: grid;
-  grid-template-columns: 10px minmax(0, 1fr);
+  grid-template-columns: 10px minmax(0, 1fr) auto;
   gap: 10px;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  transition: background 0.15s ease;
+}
+
+.notification-center-list article:hover {
+  background: rgba(15, 159, 120, 0.06);
+}
+
+.notification-center-list article:focus-visible {
+  outline: 2px solid rgba(15, 159, 120, 0.45);
+  outline-offset: 2px;
+}
+
+.notification-unread {
+  background: rgba(15, 159, 120, 0.04);
+}
+
+.notification-unread strong {
+  font-weight: 700;
+}
+
+.dot-unread {
+  transform: scale(1.3);
+}
+
+.notification-unread-badge {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--green);
+  background: rgba(15, 159, 120, 0.12);
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+  align-self: start;
+  margin-top: 2px;
+}
+
+.notification-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.notification-badge {
+  background: #ef4444 !important;
 }
 
 .notification-dot {
