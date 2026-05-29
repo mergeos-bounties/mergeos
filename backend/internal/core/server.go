@@ -18,10 +18,18 @@ type Server struct {
 	payments       *PaymentManager
 	geminiReviewer *GeminiReviewService
 	eventHub       *eventHub
+	usdtGateway    *USDTGatewayManager
 }
 
 func NewServer(cfg Config, store *Store, payments *PaymentManager) *Server {
-	return &Server{cfg: cfg, store: store, payments: payments, geminiReviewer: NewGeminiReviewService(cfg, store), eventHub: newEventHub()}
+	return &Server{
+		cfg:            cfg,
+		store:          store,
+		payments:       payments,
+		geminiReviewer: NewGeminiReviewService(cfg, store),
+		eventHub:       newEventHub(),
+		usdtGateway:    NewUSDTGatewayManager(cfg, store),
+	}
 }
 
 func (s *Server) Routes() http.Handler {
@@ -32,7 +40,6 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/public/ledger", s.publicLedger)
 	mux.HandleFunc("POST /api/public/repo/issues", s.importRepoIssues)
 	mux.HandleFunc("POST /api/integrations/github/pr-review", s.geminiReviewWebhook)
-	mux.HandleFunc("POST /api/payments/crypto/webhook", s.cryptoWebhook)
 	mux.HandleFunc("POST /api/auth/register", s.register)
 	mux.HandleFunc("POST /api/auth/login", s.login)
 	mux.HandleFunc("POST /api/auth/github", s.githubLogin)
@@ -47,6 +54,8 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("POST /api/wallets/link", s.linkWallet)
 	mux.HandleFunc("POST /api/payments/paypal/orders", s.createPayPalOrder)
 	mux.HandleFunc("POST /api/payments/paypal/webhook", s.handlePayPalWebhook)
+	mux.HandleFunc("POST /api/payments/usdt/webhook", s.handleUSDTWebhook)
+	mux.HandleFunc("GET /api/admin/usdt/webhooks", s.adminUSDTWebhookEvents)
 	mux.HandleFunc("POST /api/uploads", s.uploadAttachment)
 	mux.HandleFunc("GET /api/uploads/", s.downloadAttachment)
 	mux.HandleFunc("GET /api/admin/summary", s.adminSummary)
@@ -642,6 +651,43 @@ func (s *Server) createProject(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, project)
 }
 
+func (s *Server) handleUSDTWebhook(w http.ResponseWriter, r *http.Request) {
+	s.usdtGateway.handleWebhook(w, r)
+}
+
+func (s *Server) adminUSDTWebhookEvents(w http.ResponseWriter, r *http.Request) {
+	if _, ok := s.requireAdmin(w, r); !ok {
+		return
+	}
+	events := s.store.ListUSDTWebhookEvents()
+
+	// Sanitize: strip raw_payload to prevent leaking gateway secrets
+	sanitized := make([]map[string]interface{}, 0, len(events))
+	for _, e := range events {
+		entry := map[string]interface{}{
+			"id":               e.ID,
+			"provider":         e.Provider,
+			"event_type":       e.EventType,
+			"status":           e.Status,
+			"gateway_id":       e.GatewayID,
+			"amount_cents":     e.AmountCents,
+			"currency":         e.Currency,
+			"network":          e.Network,
+			"tx_hash":          e.TxHash,
+			"sender_address":   e.SenderAddress,
+			"receiver_address": e.ReceiverAddress,
+			"signature_valid":  e.SignatureValid,
+			"project_id":       e.ProjectID,
+			"idempotency_key":  e.IdempotencyKey,
+			"error":            e.Error,
+			"received_at":      e.ReceivedAt,
+			"processed_at":     e.ProcessedAt,
+		}
+		sanitized = append(sanitized, entry)
+	}
+	writeJSON(w, http.StatusOK, sanitized)
+}
+
 func (s *Server) createPayPalOrder(w http.ResponseWriter, r *http.Request) {
 	if _, ok := s.requireUser(w, r); !ok {
 		return
@@ -851,81 +897,4 @@ func (s *Server) evaluateProject(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, resp)
 }
 
-type CryptoWebhookRequest struct {
-	UserID        string   `json:"userId"`
-	Title         string   `json:"title"`
-	ClientName    string   `json:"clientName"`
-	CompanyName   string   `json:"companyName"`
-	ClientEmail   string   `json:"clientEmail"`
-	Phone         string   `json:"phone"`
-	SiteType      string   `json:"siteType"`
-	PackageTier   string   `json:"packageTier"`
-	Timeline      string   `json:"timeline"`
-	Brief         string   `json:"brief"`
-	BudgetCents   int64    `json:"budgetCents"`
-	AttachmentIDs []string `json:"attachmentIds"`
-	SourceRepoURL string   `json:"sourceRepoURL"`
-	TxHash        string   `json:"txHash"`
-}
 
-func (s *Server) cryptoWebhook(w http.ResponseWriter, r *http.Request) {
-	bodyBytes, err := io.ReadAll(r.Body)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "failed to read body")
-		return
-	}
-
-	// 1. Signature validation (HMAC-SHA256)
-	if s.cfg.CryptoWebhookSecret != "" {
-		signatureHex := r.Header.Get("X-MergeOS-Signature")
-		if signatureHex == "" {
-			writeError(w, http.StatusUnauthorized, "missing signature header")
-			return
-		}
-		expectedMac := hmac.New(sha256.New, []byte(s.cfg.CryptoWebhookSecret))
-		expectedMac.Write(bodyBytes)
-		expectedSignature := hex.EncodeToString(expectedMac.Sum(nil))
-		if !hmac.Equal([]byte(signatureHex), []byte(expectedSignature)) {
-			writeError(w, http.StatusUnauthorized, "invalid signature")
-			return
-		}
-	}
-
-	var req CryptoWebhookRequest
-	if err := json.Unmarshal(bodyBytes, &req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid JSON payload")
-		return
-	}
-
-	// 2. Replay attack protection (unique transaction hash)
-	if s.store.IsPaymentReferenceUsed(req.TxHash) {
-		writeError(w, http.StatusConflict, "transaction hash has already been used")
-		return
-	}
-
-	// 3. Assemble and execute Verify and CreateProject
-	projectReq := CreateProjectRequest{
-		Title:            req.Title,
-		ClientName:       req.ClientName,
-		CompanyName:      req.CompanyName,
-		ClientEmail:      req.ClientEmail,
-		Phone:            req.Phone,
-		SiteType:         req.SiteType,
-		PackageTier:      req.PackageTier,
-		Timeline:         req.Timeline,
-		Brief:            req.Brief,
-		PaymentMethod:    PaymentCrypto,
-		PaymentReference: req.TxHash,
-		BudgetCents:      req.BudgetCents,
-		AttachmentIDs:    req.AttachmentIDs,
-		SourceRepoURL:    req.SourceRepoURL,
-	}
-
-	project, err := s.store.CreateProject(r.Context(), req.UserID, projectReq)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	writeJSON(w, http.StatusCreated, project)
-}

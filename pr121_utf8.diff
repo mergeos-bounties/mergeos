@@ -1,0 +1,1080 @@
+﻿diff --git a/backend/internal/core/models.go b/backend/internal/core/models.go
+index 8bad832..dbd4103 100644
+--- a/backend/internal/core/models.go
++++ b/backend/internal/core/models.go
+@@ -7,6 +7,7 @@ type PaymentMethod string
+ const (
+ 	PaymentPayPal PaymentMethod = "paypal"
+ 	PaymentCrypto PaymentMethod = "crypto"
++	PaymentUSDT  PaymentMethod = "usdt"
+ )
+ 
+ type WorkerKind string
+diff --git a/backend/internal/core/server.go b/backend/internal/core/server.go
+index 97f4807..8b6d4bd 100644
+--- a/backend/internal/core/server.go
++++ b/backend/internal/core/server.go
+@@ -18,10 +18,18 @@ type Server struct {
+ 	payments       *PaymentManager
+ 	geminiReviewer *GeminiReviewService
+ 	eventHub       *eventHub
++	usdtGateway    *USDTGatewayManager
+ }
+ 
+ func NewServer(cfg Config, store *Store, payments *PaymentManager) *Server {
+-	return &Server{cfg: cfg, store: store, payments: payments, geminiReviewer: NewGeminiReviewService(cfg, store), eventHub: newEventHub()}
++	return &Server{
++		cfg:            cfg,
++		store:          store,
++		payments:       payments,
++		geminiReviewer: NewGeminiReviewService(cfg, store),
++		eventHub:       newEventHub(),
++		usdtGateway:    NewUSDTGatewayManager(cfg, store),
++	}
+ }
+ 
+ func (s *Server) Routes() http.Handler {
+@@ -47,6 +55,8 @@ func (s *Server) Routes() http.Handler {
+ 	mux.HandleFunc("POST /api/wallets/link", s.linkWallet)
+ 	mux.HandleFunc("POST /api/payments/paypal/orders", s.createPayPalOrder)
+ 	mux.HandleFunc("POST /api/payments/paypal/webhook", s.handlePayPalWebhook)
++	mux.HandleFunc("POST /api/payments/usdt/webhook", s.handleUSDTWebhook)
++	mux.HandleFunc("GET /api/admin/usdt/webhooks", s.adminUSDTWebhookEvents)
+ 	mux.HandleFunc("POST /api/uploads", s.uploadAttachment)
+ 	mux.HandleFunc("GET /api/uploads/", s.downloadAttachment)
+ 	mux.HandleFunc("GET /api/admin/summary", s.adminSummary)
+@@ -624,6 +634,43 @@ func (s *Server) createProject(w http.ResponseWriter, r *http.Request) {
+ 	writeJSON(w, http.StatusCreated, project)
+ }
+ 
++func (s *Server) handleUSDTWebhook(w http.ResponseWriter, r *http.Request) {
++	s.usdtGateway.handleWebhook(w, r)
++}
++
++func (s *Server) adminUSDTWebhookEvents(w http.ResponseWriter, r *http.Request) {
++	if _, ok := s.requireAdmin(w, r); !ok {
++		return
++	}
++	events := s.store.ListUSDTWebhookEvents()
++
++	// Sanitize: strip raw_payload to prevent leaking gateway secrets
++	sanitized := make([]map[string]interface{}, 0, len(events))
++	for _, e := range events {
++		entry := map[string]interface{}{
++			"id":               e.ID,
++			"provider":         e.Provider,
++			"event_type":       e.EventType,
++			"status":           e.Status,
++			"gateway_id":       e.GatewayID,
++			"amount_cents":     e.AmountCents,
++			"currency":         e.Currency,
++			"network":          e.Network,
++			"tx_hash":          e.TxHash,
++			"sender_address":   e.SenderAddress,
++			"receiver_address": e.ReceiverAddress,
++			"signature_valid":  e.SignatureValid,
++			"project_id":       e.ProjectID,
++			"idempotency_key":  e.IdempotencyKey,
++			"error":            e.Error,
++			"received_at":      e.ReceivedAt,
++			"processed_at":     e.ProcessedAt,
++		}
++		sanitized = append(sanitized, entry)
++	}
++	writeJSON(w, http.StatusOK, sanitized)
++}
++
+ func (s *Server) createPayPalOrder(w http.ResponseWriter, r *http.Request) {
+ 	if _, ok := s.requireUser(w, r); !ok {
+ 		return
+diff --git a/backend/internal/core/store.go b/backend/internal/core/store.go
+index 42b9bf6..4127b10 100644
+--- a/backend/internal/core/store.go
++++ b/backend/internal/core/store.go
+@@ -115,9 +115,10 @@ type Store struct {
+ 	notifications     map[string]*Notification
+ 	attachments       map[string]*Attachment
+ 	sslReviews        map[string]*SSLReviewStatus
+-	geminiAPIKeys     map[string]*GeminiAPIKey
+-	geminiWebhookLogs map[string]*GeminiWebhookLog
+-	adminSettings     AdminSettings
++	geminiAPIKeys      map[string]*GeminiAPIKey
++	geminiWebhookLogs  map[string]*GeminiWebhookLog
++	usdtWebhookEvents  map[string]*USDTWebhookEvent
++	adminSettings      AdminSettings
+ 	ledger            []LedgerEntry
+ }
+ 
+@@ -133,7 +134,8 @@ type persistedState struct {
+ 	SSLReviews        []*SSLReviewStatus  `json:"ssl_reviews"`
+ 	GeminiAPIKeys     []*GeminiAPIKey     `json:"gemini_api_keys"`
+ 	GeminiWebhookLogs []*GeminiWebhookLog `json:"gemini_webhook_logs"`
+-	AdminSettings     *AdminSettings      `json:"admin_settings,omitempty"`
++	USDTWebhookEvents []*USDTWebhookEvent   `json:"usdt_webhook_events"`
++	AdminSettings     *AdminSettings        `json:"admin_settings,omitempty"`
+ 	Ledger            []LedgerEntry       `json:"ledger"`
+ }
+ 
+@@ -158,9 +160,10 @@ func NewStore(cfg Config, payments *PaymentManager, repos RepoFactory, emailer *
+ 		notifications:     map[string]*Notification{},
+ 		attachments:       map[string]*Attachment{},
+ 		sslReviews:        map[string]*SSLReviewStatus{},
+-		geminiAPIKeys:     map[string]*GeminiAPIKey{},
+-		geminiWebhookLogs: map[string]*GeminiWebhookLog{},
+-		adminSettings:     defaultAdminSettings(cfg),
++		geminiAPIKeys:      map[string]*GeminiAPIKey{},
++		geminiWebhookLogs:  map[string]*GeminiWebhookLog{},
++		usdtWebhookEvents:  map[string]*USDTWebhookEvent{},
++		adminSettings:      defaultAdminSettings(cfg),
+ 		ledger:            []LedgerEntry{},
+ 	}
+ 	if strings.TrimSpace(cfg.DatabaseURL) != "" {
+@@ -1768,6 +1771,13 @@ func (s *Store) applyState(state persistedState) bool {
+ 		logCopy.Labels = append([]string(nil), log.Labels...)
+ 		s.geminiWebhookLogs[logCopy.ID] = &logCopy
+ 	}
++	for _, event := range state.USDTWebhookEvents {
++		if event == nil || event.ID == "" {
++			continue
++		}
++		eventCopy := *event
++		s.usdtWebhookEvents[eventCopy.ID] = &eventCopy
++	}
+ 	s.trimGeminiWebhookLogsLocked()
+ 	return migrated
+ }
+@@ -1794,8 +1804,9 @@ func (s *Store) snapshotLocked() persistedState {
+ 		Attachments:       make([]*Attachment, 0, len(s.attachments)),
+ 		SSLReviews:        make([]*SSLReviewStatus, 0, len(s.sslReviews)),
+ 		GeminiAPIKeys:     make([]*GeminiAPIKey, 0, len(s.geminiAPIKeys)),
+-		GeminiWebhookLogs: make([]*GeminiWebhookLog, 0, len(s.geminiWebhookLogs)),
+-		AdminSettings:     cloneAdminSettings(s.adminSettings),
++		GeminiWebhookLogs:  make([]*GeminiWebhookLog, 0, len(s.geminiWebhookLogs)),
++		USDTWebhookEvents:  make([]*USDTWebhookEvent, 0, len(s.usdtWebhookEvents)),
++		AdminSettings:      cloneAdminSettings(s.adminSettings),
+ 		Ledger:            s.ledger,
+ 	}
+ 	for _, project := range s.projects {
+@@ -1844,6 +1855,13 @@ func (s *Store) snapshotLocked() persistedState {
+ 	sort.Slice(state.GeminiWebhookLogs, func(i, j int) bool {
+ 		return state.GeminiWebhookLogs[i].ReceivedAt.Before(state.GeminiWebhookLogs[j].ReceivedAt)
+ 	})
++	for _, event := range s.usdtWebhookEvents {
++		eventCopy := *event
++		state.USDTWebhookEvents = append(state.USDTWebhookEvents, &eventCopy)
++	}
++	sort.Slice(state.USDTWebhookEvents, func(i, j int) bool {
++		return state.USDTWebhookEvents[i].ReceivedAt.After(state.USDTWebhookEvents[j].ReceivedAt)
++	})
+ 	return state
+ }
+ 
+diff --git a/backend/internal/core/usdt_gateway.go b/backend/internal/core/usdt_gateway.go
+new file mode 100644
+index 0000000..d3f4835
+--- /dev/null
++++ b/backend/internal/core/usdt_gateway.go
+@@ -0,0 +1,436 @@
++package core
++
++import (
++	"crypto/hmac"
++	"crypto/sha256"
++	"encoding/hex"
++	"encoding/json"
++	"fmt"
++	"io"
++	"log"
++	"net/http"
++	"sort"
++	"strings"
++	"time"
++)
++
++// --- Models ---
++
++// USDTWebhookEvent represents a persisted USDT payment webhook event.
++type USDTWebhookEvent struct {
++	ID              string          `json:"id"`
++	Provider        string          `json:"provider"`
++	EventType       string          `json:"event_type"`
++	Status          string          `json:"status"`
++	GatewayID       string          `json:"gateway_id"`
++	AmountCents     int64           `json:"amount_cents"`
++	Currency        string          `json:"currency"`
++	Network         string          `json:"network"`
++	TxHash          string          `json:"tx_hash"`
++	SenderAddress   string          `json:"sender_address"`
++	ReceiverAddress string          `json:"receiver_address"`
++	SignatureValid  bool            `json:"signature_valid"`
++	RawPayload      json.RawMessage `json:"raw_payload"`
++	Error           string          `json:"error,omitempty"`
++	ProjectID       string          `json:"project_id,omitempty"`
++	IdempotencyKey  string          `json:"idempotency_key"`
++	ProcessedAt     *time.Time      `json:"processed_at,omitempty"`
++	ReceivedAt      time.Time       `json:"received_at"`
++}
++
++// USDTWebhookPayload is the expected JSON structure from the crypto gateway callback.
++type USDTWebhookPayload struct {
++	EventID        string `json:"event_id"`
++	EventType      string `json:"event_type"`
++	GatewayID      string `json:"gateway_id"`
++	IdempotencyKey string `json:"idempotency_key"`
++	Amount         string `json:"amount"`
++	Currency       string `json:"currency"`
++	Network        string `json:"network"`
++	TxHash         string `json:"tx_hash"`
++	Sender         string `json:"sender_address"`
++	Receiver       string `json:"receiver_address"`
++	Status         string `json:"status"`
++	Timestamp      string `json:"timestamp"`
++	Signature      string `json:"signature"`
++	ProjectID      string `json:"project_id,omitempty"`
++}
++
++// USDTWebhookResponse is returned to the gateway after processing.
++type USDTWebhookResponse struct {
++	Received bool   `json:"received"`
++	EventID  string `json:"event_id"`
++	Status   string `json:"status"`
++	Message  string `json:"message,omitempty"`
++}
++
++// USDTGatewayProvider defines the interface for pluggable USDT payment gateway providers.
++// Each provider handles its own webhook payload parsing, signature verification, and status mapping.
++type USDTGatewayProvider interface {
++	// Name returns the provider identifier.
++	Name() string
++
++	// VerifySignature validates the webhook request authenticity.
++	VerifySignature(body []byte, r *http.Request) error
++
++	// ParsePayload extracts the standard USDTWebhookPayload from the provider-specific body.
++	ParsePayload(body []byte) (*USDTWebhookPayload, error)
++}
++
++// --- Generic HMAC Provider ---
++
++// GenericHMACProvider implements USDTGatewayProvider using a shared HMAC-SHA256 secret.
++// It supports both "sha256=<hex>" and bare "<hex>" signature formats.
++// In dev mode (no secret + DevPaymentEnabled), signature verification is skipped.
++type GenericHMACProvider struct {
++	name   string
++	secret string
++	devBypass bool
++}
++
++// NewGenericHMACProvider creates a provider that verifies webhooks via HMAC-SHA256.
++func NewGenericHMACProvider(name, secret string, devBypass bool) *GenericHMACProvider {
++	return &GenericHMACProvider{name: name, secret: secret, devBypass: devBypass}
++}
++
++func (p *GenericHMACProvider) Name() string { return p.name }
++
++func (p *GenericHMACProvider) VerifySignature(body []byte, r *http.Request) error {
++	if p.secret == "" {
++		if p.devBypass {
++			return nil // dev mode: skip verification
++		}
++		return fmt.Errorf("CRYPTO_WEBHOOK_SECRET is not configured")
++	}
++
++	rawSig := strings.TrimSpace(r.Header.Get("X-Webhook-Signature"))
++	if rawSig == "" {
++		rawSig = strings.TrimSpace(r.Header.Get("X-Signature"))
++	}
++	if rawSig == "" {
++		return fmt.Errorf("missing webhook signature header")
++	}
++
++	// Support both "sha256=<hex>" and bare "<hex>"
++	rawSig = strings.TrimPrefix(rawSig, "sha256=")
++	rawSig = strings.TrimSpace(rawSig)
++
++	mac := hmac.New(sha256.New, []byte(p.secret))
++	mac.Write(body)
++	expected := hex.EncodeToString(mac.Sum(nil))
++
++	if !hmac.Equal([]byte(strings.ToLower(rawSig)), []byte(strings.ToLower(expected))) {
++		// Constant-time compare so no leak
++		return fmt.Errorf("webhook signature mismatch")
++	}
++	return nil
++}
++
++func (p *GenericHMACProvider) ParsePayload(body []byte) (*USDTWebhookPayload, error) {
++	var payload USDTWebhookPayload
++	if err := json.Unmarshal(body, &payload); err != nil {
++		return nil, fmt.Errorf("invalid JSON payload: %w", err)
++	}
++	return &payload, nil
++}
++
++// --- USDT Gateway Manager ---
++
++// USDTGatewayManager manages USDT payment gateway providers and webhook processing.
++type USDTGatewayManager struct {
++	providers []USDTGatewayProvider
++	store     *Store
++}
++
++// NewUSDTGatewayManager creates a manager with providers registered from config.
++func NewUSDTGatewayManager(cfg Config, store *Store) *USDTGatewayManager {
++	m := &USDTGatewayManager{store: store}
++
++	// Register the default generic HMAC provider
++	devMode := cfg.DevPaymentEnabled
++	m.providers = append(m.providers, NewGenericHMACProvider("crypto-gateway", cfg.CryptoWebhookSecret, devMode))
++
++	return m
++}
++
++// RegisterProvider adds an additional gateway provider.
++func (m *USDTGatewayManager) RegisterProvider(p USDTGatewayProvider) {
++	m.providers = append(m.providers, p)
++}
++
++// handleWebhook processes an incoming USDT webhook callback.
++func (m *USDTGatewayManager) handleWebhook(w http.ResponseWriter, r *http.Request) {
++	if r.Method != http.MethodPost {
++		writeError(w, http.StatusMethodNotAllowed, "only POST is accepted")
++		return
++	}
++
++	bodyBytes, err := io.ReadAll(io.LimitReader(r.Body, 1<<20)) // 1 MB limit
++	if err != nil {
++		writeError(w, http.StatusBadRequest, "failed to read request body")
++		return
++	}
++	defer r.Body.Close()
++
++	// Try each registered provider until one verifies the signature and parses the payload
++	var payload *USDTWebhookPayload
++	var providerName string
++	var parseErr error
++
++	for _, prov := range m.providers {
++		if sigErr := prov.VerifySignature(bodyBytes, r); sigErr != nil {
++			parseErr = sigErr
++			continue
++		}
++		p, pErr := prov.ParsePayload(bodyBytes)
++		if pErr != nil {
++			parseErr = pErr
++			continue
++		}
++		payload = p
++		providerName = prov.Name()
++		parseErr = nil
++		break
++	}
++
++	if payload == nil {
++		msg := "webhook verification failed"
++		if parseErr != nil {
++			msg = parseErr.Error()
++		}
++		// Still log the event for debugging
++		m.logWebhookEvent(bodyBytes, "", "verification_failed", providerName, msg, "", "")
++		writeError(w, http.StatusUnauthorized, msg)
++		return
++	}
++
++	// Validate required fields
++	if strings.TrimSpace(payload.EventID) == "" {
++		writeError(w, http.StatusBadRequest, "event_id is required")
++		return
++	}
++	if strings.TrimSpace(payload.IdempotencyKey) == "" {
++		writeError(w, http.StatusBadRequest, "idempotency_key is required")
++		return
++	}
++
++	// Idempotency check
++	existing := m.store.FindUSDTWebhookByIdempotencyKey(payload.IdempotencyKey)
++	if existing != nil {
++		writeJSON(w, http.StatusOK, USDTWebhookResponse{
++			Received: true,
++			EventID:  existing.ID,
++			Status:   existing.Status,
++			Message:  "duplicate webhook already processed",
++		})
++		return
++	}
++
++	// Map gateway status to internal status
++	internalStatus := mapGatewayStatus(payload.Status)
++	if internalStatus == "" {
++		msg := fmt.Sprintf("unknown gateway status: %s", payload.Status)
++		m.logWebhookEvent(bodyBytes, payload.EventID, "unknown_status", providerName, msg, payload.ProjectID, payload.IdempotencyKey)
++		writeError(w, http.StatusBadRequest, msg)
++		return
++	}
++
++	// Parse amount to cents
++	amountCents, err := parseAmountToCents(payload.Amount)
++	if err != nil {
++		m.logWebhookEvent(bodyBytes, payload.EventID, "invalid_amount", providerName, err.Error(), payload.ProjectID, payload.IdempotencyKey)
++		writeError(w, http.StatusBadRequest, err.Error())
++		return
++	}
++
++	now := time.Now().UTC()
++	event := &USDTWebhookEvent{
++		ID:              payload.EventID,
++		Provider:        providerName,
++		EventType:       payload.EventType,
++		Status:          internalStatus,
++		GatewayID:       payload.GatewayID,
++		AmountCents:     amountCents,
++		Currency:        strings.ToUpper(strings.TrimSpace(payload.Currency)),
++		Network:         strings.TrimSpace(payload.Network),
++		TxHash:          strings.TrimSpace(payload.TxHash),
++		SenderAddress:   strings.ToLower(strings.TrimSpace(payload.Sender)),
++		ReceiverAddress: strings.ToLower(strings.TrimSpace(payload.Receiver)),
++		SignatureValid:  true,
++		RawPayload:      json.RawMessage(bodyBytes),
++		ProjectID:       strings.TrimSpace(payload.ProjectID),
++		IdempotencyKey:  payload.IdempotencyKey,
++		ProcessedAt:     &now,
++		ReceivedAt:      now,
++	}
++
++	// Apply payment if confirmed
++	if event.Status == "confirmed" && event.ProjectID != "" {
++		if appErr := m.store.ApplyUSDTWebhookPayment(event); appErr != nil {
++			event.Error = appErr.Error()
++			event.Status = "apply_failed"
++			if saveErr := m.store.SaveUSDTWebhookEvent(event); saveErr != nil {
++				log.Printf("[usdt-gateway] failed to save apply_failed event: %v", saveErr)
++			}
++			writeError(w, http.StatusInternalServerError, "failed to apply payment")
++			return
++		}
++	}
++
++	if err := m.store.SaveUSDTWebhookEvent(event); err != nil {
++		log.Printf("[usdt-gateway] failed to save event %s: %v", event.ID, err)
++	}
++
++	writeJSON(w, http.StatusOK, USDTWebhookResponse{
++		Received: true,
++		EventID:  event.ID,
++		Status:   event.Status,
++		Message:  "webhook processed successfully",
++	})
++}
++
++func (m *USDTGatewayManager) logWebhookEvent(raw json.RawMessage, eventID, status, provider, errMsg, projectID, idempotencyKey string) {
++	event := &USDTWebhookEvent{
++		ID:             eventID,
++		Provider:       provider,
++		EventType:      "webhook_callback",
++		Status:         status,
++		RawPayload:     raw,
++		Error:          errMsg,
++		ProjectID:      projectID,
++		IdempotencyKey: idempotencyKey,
++		SignatureValid: status != "verification_failed",
++		ReceivedAt:     time.Now().UTC(),
++	}
++	if err := m.store.SaveUSDTWebhookEvent(event); err != nil {
++		log.Printf("[usdt-gateway] failed to save log event: %v", err)
++	}
++}
++
++// --- Status Mapping ---
++
++// mapGatewayStatus maps a gateway-specific status to an internal payment status.
++// Supported: pending, confirmed, expired, failed, refunded
++func mapGatewayStatus(gatewayStatus string) string {
++	switch strings.ToLower(strings.TrimSpace(gatewayStatus)) {
++	case "pending", "waiting", "processing", "confirming":
++		return "pending"
++	case "confirmed", "completed", "success", "successful", "paid":
++		return "confirmed"
++	case "expired", "timeout", "timed_out":
++		return "expired"
++	case "failed", "error", "rejected", "cancelled", "canceled":
++		return "failed"
++	case "refunded", "reversed":
++		return "refunded"
++	default:
++		return ""
++	}
++}
++
++// --- Amount Parsing ---
++
++// parseAmountToCents converts a string amount (e.g. "100.00") to cents.
++func parseAmountToCents(amountStr string) (int64, error) {
++	amountStr = strings.TrimSpace(amountStr)
++	if amountStr == "" {
++		return 0, fmt.Errorf("amount is empty")
++	}
++
++	parts := strings.Split(amountStr, ".")
++	dollarsStr := parts[0]
++	if dollarsStr == "" {
++		dollarsStr = "0"
++	}
++
++	var dollars, cents int64
++	if _, err := fmt.Sscanf(dollarsStr, "%d", &dollars); err != nil {
++		return 0, fmt.Errorf("invalid dollar amount: %q", amountStr)
++	}
++
++	if len(parts) > 1 {
++		fraction := parts[1]
++		if len(fraction) > 2 {
++			fraction = fraction[:2]
++		}
++		for len(fraction) < 2 {
++			fraction += "0"
++		}
++		if _, err := fmt.Sscanf(fraction, "%d", &cents); err != nil {
++			return 0, fmt.Errorf("invalid cent amount: %q", amountStr)
++		}
++	}
++
++	return dollars*100 + cents, nil
++}
++
++// --- Store helpers for USDTWebhookEvent ---
++
++// SaveUSDTWebhookEvent persists a USDT webhook event.
++func (s *Store) SaveUSDTWebhookEvent(event *USDTWebhookEvent) error {
++	s.mu.Lock()
++	defer s.mu.Unlock()
++	if s.usdtWebhookEvents == nil {
++		s.usdtWebhookEvents = make(map[string]*USDTWebhookEvent)
++	}
++	s.usdtWebhookEvents[event.ID] = event
++	return s.saveLocked()
++}
++
++// FindUSDTWebhookByIdempotencyKey looks up a webhook event by its idempotency key.
++func (s *Store) FindUSDTWebhookByIdempotencyKey(key string) *USDTWebhookEvent {
++	s.mu.RLock()
++	defer s.mu.RUnlock()
++	if s.usdtWebhookEvents == nil {
++		return nil
++	}
++	for _, event := range s.usdtWebhookEvents {
++		if event.IdempotencyKey == key {
++			return event
++		}
++	}
++	return nil
++}
++
++// ListUSDTWebhookEvents returns all USDT webhook events in reverse chronological order.
++func (s *Store) ListUSDTWebhookEvents() []*USDTWebhookEvent {
++	s.mu.RLock()
++	defer s.mu.RUnlock()
++	events := make([]*USDTWebhookEvent, 0, len(s.usdtWebhookEvents))
++	for _, event := range s.usdtWebhookEvents {
++		events = append(events, event)
++	}
++	sort.Slice(events, func(i, j int) bool {
++		return events[i].ReceivedAt.After(events[j].ReceivedAt)
++	})
++	return events
++}
++
++// ApplyUSDTWebhookPayment credits a project from a confirmed USDT webhook payment.
++func (s *Store) ApplyUSDTWebhookPayment(event *USDTWebhookEvent) error {
++	s.mu.Lock()
++	defer s.mu.Unlock()
++
++	project, ok := s.projects[event.ProjectID]
++	if !ok {
++		return fmt.Errorf("project %s not found", event.ProjectID)
++	}
++
++	// Verify the webhook amount matches the project budget
++	if event.AmountCents != project.BudgetCents {
++		return fmt.Errorf("webhook amount %d cents does not match project budget %d cents",
++			event.AmountCents, project.BudgetCents)
++	}
++
++	// Update project payment state
++	project.PaymentStatus = "verified"
++	project.PaymentProvider = "usdt-webhook:" + event.Provider
++	project.PaymentReference = event.TxHash
++
++	// Add ledger entries
++	clientProjectAccount := "client:" + project.ClientUserID + ":project:" + project.ID
++	s.addLedger("usdt_payment_confirmed", "payment:usdt-webhook", clientProjectAccount,
++		project.BudgetCents, event.TxHash)
++
++	return s.saveLocked()
++}
+diff --git a/backend/internal/core/usdt_gateway_test.go b/backend/internal/core/usdt_gateway_test.go
+new file mode 100644
+index 0000000..1f043cb
+--- /dev/null
++++ b/backend/internal/core/usdt_gateway_test.go
+@@ -0,0 +1,461 @@
++package core
++
++import (
++	"bytes"
++	"context"
++	"crypto/hmac"
++	"crypto/sha256"
++	"encoding/hex"
++	"encoding/json"
++	"net/http"
++	"net/http/httptest"
++	"testing"
++	"time"
++)
++
++func TestMapGatewayStatus(t *testing.T) {
++	tests := []struct {
++		input    string
++		expected string
++	}{
++		{"pending", "pending"},
++		{"waiting", "pending"},
++		{"processing", "pending"},
++		{"confirming", "pending"},
++		{"confirmed", "confirmed"},
++		{"completed", "confirmed"},
++		{"success", "confirmed"},
++		{"successful", "confirmed"},
++		{"paid", "confirmed"},
++		{"expired", "expired"},
++		{"timeout", "expired"},
++		{"timed_out", "expired"},
++		{"failed", "failed"},
++		{"error", "failed"},
++		{"cancelled", "failed"},
++		{"canceled", "failed"},
++		{"refunded", "refunded"},
++		{"reversed", "refunded"},
++		{"unknown_status", ""},
++	}
++
++	for _, tc := range tests {
++		got := mapGatewayStatus(tc.input)
++		if got != tc.expected {
++			t.Errorf("mapGatewayStatus(%q) = %q, want %q", tc.input, got, tc.expected)
++		}
++	}
++}
++
++func TestParseAmountToCents(t *testing.T) {
++	tests := []struct {
++		input    string
++		expected int64
++		hasError bool
++	}{
++		{"100.00", 10000, false},
++		{"50.50", 5050, false},
++		{"1.99", 199, false},
++		{"0.01", 1, false},
++		{"1000", 100000, false},
++		{"0", 0, false},
++		{"", 0, true},
++		{"abc", 0, true},
++		{"10.999", 1099, false}, // truncates extra decimals
++	}
++
++	for _, tc := range tests {
++		got, err := parseAmountToCents(tc.input)
++		if tc.hasError && err == nil {
++			t.Errorf("parseAmountToCents(%q): expected error, got none", tc.input)
++		}
++		if !tc.hasError && err != nil {
++			t.Errorf("parseAmountToCents(%q): unexpected error: %v", tc.input, err)
++		}
++		if got != tc.expected {
++			t.Errorf("parseAmountToCents(%q) = %d, want %d", tc.input, got, tc.expected)
++		}
++	}
++}
++
++func TestVerifySignature(t *testing.T) {
++	secret := "test-webhook-secret"
++	body := []byte(`{"event_id":"evt_123","event_type":"payment.confirmed"}`)
++
++	// Correct signature via header
++	mac := hmac.New(sha256.New, []byte(secret))
++	mac.Write(body)
++	correctSig := hex.EncodeToString(mac.Sum(nil))
++
++	t.Run("correct signature sha256= format", func(t *testing.T) {
++		p := NewGenericHMACProvider("test", secret, false)
++		req := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(body))
++		req.Header.Set("X-Webhook-Signature", "sha256="+correctSig)
++		if err := p.VerifySignature(body, req); err != nil {
++			t.Errorf("expected pass: %v", err)
++		}
++	})
++
++	t.Run("correct signature bare format", func(t *testing.T) {
++		p := NewGenericHMACProvider("test", secret, false)
++		req := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(body))
++		req.Header.Set("X-Webhook-Signature", correctSig)
++		if err := p.VerifySignature(body, req); err != nil {
++			t.Errorf("expected pass: %v", err)
++		}
++	})
++
++	t.Run("correct signature X-Signature header", func(t *testing.T) {
++		p := NewGenericHMACProvider("test", secret, false)
++		req := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(body))
++		req.Header.Set("X-Signature", "sha256="+correctSig)
++		if err := p.VerifySignature(body, req); err != nil {
++			t.Errorf("expected pass: %v", err)
++		}
++	})
++
++	t.Run("wrong signature", func(t *testing.T) {
++		p := NewGenericHMACProvider("test", secret, false)
++		req := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(body))
++		req.Header.Set("X-Webhook-Signature", "sha256=badsignature")
++		if err := p.VerifySignature(body, req); err == nil {
++			t.Error("wrong signature should fail")
++		}
++	})
++
++	t.Run("missing signature", func(t *testing.T) {
++		p := NewGenericHMACProvider("test", secret, false)
++		req := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(body))
++		if err := p.VerifySignature(body, req); err == nil {
++			t.Error("missing signature should fail")
++		}
++	})
++}
++
++func TestVerifySignatureDevMode(t *testing.T) {
++	body := []byte(`{"event_id":"evt_123"}`)
++	p := NewGenericHMACProvider("test", "", true) // dev mode: no secret
++	req := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(body))
++	if err := p.VerifySignature(body, req); err != nil {
++		t.Errorf("dev mode should skip verification: %v", err)
++	}
++}
++
++func TestVerifySignatureNoSecretNotDev(t *testing.T) {
++	body := []byte(`{}`)
++	p := NewGenericHMACProvider("test", "", false) // no secret, no dev mode
++	req := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(body))
++	if err := p.VerifySignature(body, req); err == nil {
++		t.Error("should fail when no secret and not dev mode")
++	}
++}
++
++func TestGenericHMACProviderParsePayload(t *testing.T) {
++	p := NewGenericHMACProvider("test", "secret", false)
++	payload := USDTWebhookPayload{
++		EventID:        "evt_1",
++		EventType:      "payment.confirmed",
++		IdempotencyKey: "idem_1",
++		Amount:         "1000.00",
++		Currency:       "USDT",
++		Network:        "ethereum",
++		TxHash:         "0xabc",
++		Status:         "confirmed",
++	}
++	body, _ := json.Marshal(payload)
++
++	parsed, err := p.ParsePayload(body)
++	if err != nil {
++		t.Fatalf("ParsePayload failed: %v", err)
++	}
++	if parsed.EventID != "evt_1" {
++		t.Errorf("expected evt_1, got %s", parsed.EventID)
++	}
++	if parsed.Amount != "1000.00" {
++		t.Errorf("expected 1000.00, got %s", parsed.Amount)
++	}
++}
++
++func TestGenericHMACProviderParsePayloadInvalid(t *testing.T) {
++	p := NewGenericHMACProvider("test", "secret", false)
++	_, err := p.ParsePayload([]byte(`not json`))
++	if err == nil {
++		t.Error("expected error for invalid JSON")
++	}
++}
++
++func TestUSDTWebhookHandlerBadMethod(t *testing.T) {
++	cfg := Config{DevPaymentEnabled: true}
++	store := newTestStore(t, cfg)
++	gm := NewUSDTGatewayManager(cfg, store)
++
++	req := httptest.NewRequest(http.MethodGet, "/api/payments/usdt/webhook", nil)
++	w := httptest.NewRecorder()
++	gm.handleWebhook(w, req)
++
++	if w.Code != http.StatusMethodNotAllowed {
++		t.Errorf("expected 405, got %d", w.Code)
++	}
++}
++
++func TestUSDTWebhookHandlerMissingSignature(t *testing.T) {
++	cfg := Config{
++		CryptoWebhookSecret: "secret123",
++		DevPaymentEnabled:   false,
++	}
++	store := newTestStore(t, cfg)
++	gm := NewUSDTGatewayManager(cfg, store)
++
++	body := []byte(`{"event_id":"evt_1"}`)
++	req := httptest.NewRequest(http.MethodPost, "/api/payments/usdt/webhook", bytes.NewReader(body))
++	w := httptest.NewRecorder()
++	gm.handleWebhook(w, req)
++
++	if w.Code != http.StatusUnauthorized {
++		t.Errorf("expected 401 for missing signature, got %d: %s", w.Code, w.Body.String())
++	}
++}
++
++func TestUSDTWebhookHandlerInvalidJSON(t *testing.T) {
++	cfg := Config{DevPaymentEnabled: true}
++	store := newTestStore(t, cfg)
++	gm := NewUSDTGatewayManager(cfg, store)
++
++	body := []byte(`not json`)
++	req := httptest.NewRequest(http.MethodPost, "/api/payments/usdt/webhook", bytes.NewReader(body))
++	w := httptest.NewRecorder()
++	gm.handleWebhook(w, req)
++
++	if w.Code != http.StatusUnauthorized {
++		t.Errorf("expected 401 for invalid JSON, got %d", w.Code)
++	}
++}
++
++func TestUSDTWebhookHandlerMissingEventID(t *testing.T) {
++	cfg := Config{DevPaymentEnabled: true}
++	store := newTestStore(t, cfg)
++	gm := NewUSDTGatewayManager(cfg, store)
++
++	payload := USDTWebhookPayload{
++		IdempotencyKey: "idem_1",
++		EventType:      "payment.confirmed",
++		Status:         "confirmed",
++	}
++	body, _ := json.Marshal(payload)
++	req := httptest.NewRequest(http.MethodPost, "/api/payments/usdt/webhook", bytes.NewReader(body))
++	w := httptest.NewRecorder()
++	gm.handleWebhook(w, req)
++
++	if w.Code != http.StatusBadRequest {
++		t.Errorf("expected 400 for missing event_id, got %d: %s", w.Code, w.Body.String())
++	}
++}
++
++func TestUSDTWebhookHandlerValidConfirmed(t *testing.T) {
++	cfg := Config{
++		DevPaymentEnabled: true,
++		PlatformFeeBps:    1000,
++	}
++	store := newTestStore(t, cfg)
++	gm := NewUSDTGatewayManager(cfg, store)
++
++	// First create a project for the webhook to reference
++	userID := createTestUser(t, store)
++	project, err := store.CreateProject(context.Background(), userID, CreateProjectRequest{
++		Title:         "Test Project",
++		ClientName:    "Test",
++		CompanyName:   "TestCo",
++		ClientEmail:   "test@test.com",
++		Phone:         "123",
++		SiteType:      "web",
++		PackageTier:   "basic",
++		Timeline:      "2 weeks",
++		Brief:         "Test",
++		BudgetCents:   100000,
++		PaymentMethod: PaymentCrypto,
++	})
++	if err != nil {
++		t.Fatalf("failed to create project: %v", err)
++	}
++
++	payload := USDTWebhookPayload{
++		EventID:        "evt_confirmed_1",
++		EventType:      "payment.confirmed",
++		IdempotencyKey: "idem_confirmed_1",
++		Amount:         "1000.00",
++		Currency:       "USDT",
++		Network:        "ethereum",
++		TxHash:         "0xabc123",
++		Sender:         "0xsender",
++		Receiver:       "0xreceiver",
++		Status:         "confirmed",
++		ProjectID:      project.ID,
++	}
++	body, _ := json.Marshal(payload)
++	req := httptest.NewRequest(http.MethodPost, "/api/payments/usdt/webhook", bytes.NewReader(body))
++	w := httptest.NewRecorder()
++	gm.handleWebhook(w, req)
++
++	if w.Code != http.StatusOK {
++		t.Fatalf("expected 200, got %d: %s", w.Code, w.Body.String())
++	}
++
++	var resp USDTWebhookResponse
++	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
++		t.Fatalf("failed to parse response: %v", err)
++	}
++	if !resp.Received {
++		t.Error("expected Received=true")
++	}
++	if resp.Status != "confirmed" {
++		t.Errorf("expected status confirmed, got %s", resp.Status)
++	}
++
++	// Verify project was updated
++	projects := store.ListProjects("")
++	var found bool
++	for _, p := range projects {
++		if p.ID == project.ID {
++			found = true
++			if p.PaymentStatus != "verified" {
++				t.Errorf("expected payment_status verified, got %s", p.PaymentStatus)
++			}
++			if p.PaymentReference != "0xabc123" {
++				t.Errorf("expected payment_reference 0xabc123, got %s", p.PaymentReference)
++			}
++		}
++	}
++	if !found {
++		t.Error("project not found in listing")
++	}
++}
++
++func TestUSDTWebhookHandlerIdempotencyDuplicate(t *testing.T) {
++	cfg := Config{DevPaymentEnabled: true}
++	store := newTestStore(t, cfg)
++	gm := NewUSDTGatewayManager(cfg, store)
++
++	userID := createTestUser(t, store)
++	project, err := store.CreateProject(context.Background(), userID, CreateProjectRequest{
++		Title:         "Test",
++		ClientName:    "Test",
++		CompanyName:   "TestCo",
++		ClientEmail:   "t@t.com",
++		Phone:         "123",
++		SiteType:      "web",
++		PackageTier:   "basic",
++		Timeline:      "2w",
++		Brief:         "T",
++		BudgetCents:   100000,
++		PaymentMethod: PaymentCrypto,
++	})
++	if err != nil {
++		t.Fatalf("create project: %v", err)
++	}
++
++	payload := USDTWebhookPayload{
++		EventID:        "evt_dup",
++		EventType:      "payment.confirmed",
++		IdempotencyKey: "idem_dup_1",
++		Amount:         "1000.00",
++		Currency:       "USDT",
++		Network:        "ethereum",
++		Receiver:       "0xreceiver",
++		Status:         "confirmed",
++		ProjectID:      project.ID,
++	}
++	body1, _ := json.Marshal(payload)
++	req1 := httptest.NewRequest(http.MethodPost, "/api/payments/usdt/webhook", bytes.NewReader(body1))
++	w1 := httptest.NewRecorder()
++	gm.handleWebhook(w1, req1)
++
++	if w1.Code != http.StatusOK {
++		t.Fatalf("first request: expected 200, got %d", w1.Code)
++	}
++
++	// Duplicate with same idempotency key
++	payload2 := payload
++	payload2.EventID = "evt_dup_2"
++	body2, _ := json.Marshal(payload2)
++	req2 := httptest.NewRequest(http.MethodPost, "/api/payments/usdt/webhook", bytes.NewReader(body2))
++	w2 := httptest.NewRecorder()
++	gm.handleWebhook(w2, req2)
++
++	if w2.Code != http.StatusOK {
++		t.Fatalf("duplicate: expected 200, got %d", w2.Code)
++	}
++
++	var resp USDTWebhookResponse
++	if err := json.Unmarshal(w2.Body.Bytes(), &resp); err != nil {
++		t.Fatalf("parse response: %v", err)
++	}
++	if resp.Message != "duplicate webhook already processed" {
++		t.Errorf("expected duplicate message, got: %s", resp.Message)
++	}
++}
++
++func TestListUSDTWebhookEvents(t *testing.T) {
++	cfg := Config{DevPaymentEnabled: true}
++	store := newTestStore(t, cfg)
++
++	events := store.ListUSDTWebhookEvents()
++	if events == nil {
++		t.Error("expected non-nil slice")
++	}
++	if len(events) != 0 {
++		t.Errorf("expected 0 events, got %d", len(events))
++	}
++
++	// Add one
++	store.SaveUSDTWebhookEvent(&USDTWebhookEvent{
++		ID:         "test-1",
++		Status:     "confirmed",
++		ReceivedAt: time.Now().UTC(),
++	})
++
++	events = store.ListUSDTWebhookEvents()
++	if len(events) != 1 {
++		t.Errorf("expected 1 event, got %d", len(events))
++	}
++}
++
++func TestUSDTGatewayProviderRegistration(t *testing.T) {
++	cfg := Config{DevPaymentEnabled: true}
++	store := newTestStore(t, cfg)
++	gm := NewUSDTGatewayManager(cfg, store)
++
++	if len(gm.providers) != 1 {
++		t.Errorf("expected 1 default provider, got %d", len(gm.providers))
++	}
++
++	customProvider := NewGenericHMACProvider("custom", "custom-secret", false)
++	gm.RegisterProvider(customProvider)
++
++	if len(gm.providers) != 2 {
++		t.Errorf("expected 2 providers after registration, got %d", len(gm.providers))
++	}
++}
++
++// createTestUser is a helper to create a user in the test store.
++func createTestUser(t *testing.T, store *Store) string {
++	t.Helper()
++	auth, err := store.Register(RegisterRequest{
++		Name:     "Test User",
++		Email:    "test-" + t.Name() + "@example.com",
++		Password: "password123",
++	})
++	if err != nil {
++		t.Fatalf("failed to create test user: %v", err)
++	}
++	return auth.User.ID
++}
++
++// newTestStore creates a minimal in-memory store for tests.
++func newTestStore(t *testing.T, cfg Config) *Store {
++	t.Helper()
++	store, err := NewStore(cfg, NewPaymentManager(cfg), NewRepoFactory(cfg), NewEmailSender(cfg))
++	if err != nil {
++		t.Fatalf("failed to create test store: %v", err)
++	}
++	return store
++}
