@@ -2,7 +2,6 @@ package core
 
 import (
     "testing"
-    "time"
 )
 
 func newTestStore(t testing.TB) *Store {
