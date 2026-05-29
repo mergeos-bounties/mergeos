@@ -734,7 +734,7 @@
       </section>
     </section>
   </div>
-      <section v-else-if="activeView === 'test-settings'" class="settings-workspace">
+      <section v-if="activeView === 'test-settings'" class="settings-workspace">
         <section class="settings-panel">
           <div class="settings-panel-head">
             <span class="metric-icon purple"><Settings2 :size="19" /></span>
