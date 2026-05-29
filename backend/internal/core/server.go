@@ -81,6 +81,16 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("POST /api/notifications/read-all", s.markAllNotificationsRead)
 	mux.HandleFunc("GET /api/ws", s.wsHandler)
 	mux.HandleFunc("GET /api/ledger", s.ledger)
+	// Admin test-mode publish settings control
+	mux.HandleFunc("GET /api/admin/test-publish/status", s.adminTestPublishStatus)
+	mux.HandleFunc("PATCH /api/admin/test-publish/status", s.updateAdminTestPublishStatus)
+	mux.HandleFunc("POST /api/admin/test-publish/password", s.setAdminTestPublishPassword)
+	// Public test-mode publish settings (password-protected, no user login required)
+	mux.HandleFunc("POST /api/publish/authenticate", s.authenticateTestPublish)
+	mux.HandleFunc("GET /api/publish/settings", s.listTestPublishSettings)
+	mux.HandleFunc("POST /api/publish/settings/{type}", s.addTestPublishSetting)
+	mux.HandleFunc("PATCH /api/publish/settings/{type}/{id}", s.updateTestPublishSetting)
+	mux.HandleFunc("DELETE /api/publish/settings/{type}/{id}", s.deleteTestPublishSetting)
 	return withCORS(mux)
 }
 
@@ -927,4 +937,131 @@ func (s *Server) cryptoWebhook(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusCreated, project)
+}
+
+
+// requireTestPublishPassword reads the X-Test-Publish-Password header and verifies it.
+func (s *Server) requireTestPublishPassword(w http.ResponseWriter, r *http.Request) bool {
+	password := strings.TrimSpace(r.Header.Get("X-Test-Publish-Password"))
+	if err := s.store.VerifyTestModePassword(password); err != nil {
+		writeError(w, http.StatusUnauthorized, err.Error())
+		return false
+	}
+	return true
+}
+
+func (s *Server) adminTestPublishStatus(w http.ResponseWriter, r *http.Request) {
+	if _, ok := s.requireAdmin(w, r); !ok {
+		return
+	}
+	writeJSON(w, http.StatusOK, s.store.GetTestModeStatus())
+}
+
+func (s *Server) updateAdminTestPublishStatus(w http.ResponseWriter, r *http.Request) {
+	if _, ok := s.requireAdmin(w, r); !ok {
+		return
+	}
+	var req SetTestModeRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	result, err := s.store.SetTestModeEnabled(req.Enabled)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, result)
+}
+
+func (s *Server) setAdminTestPublishPassword(w http.ResponseWriter, r *http.Request) {
+	if _, ok := s.requireAdmin(w, r); !ok {
+		return
+	}
+	var req SetTestModePasswordRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	result, err := s.store.SetTestModePassword(req.Password)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, result)
+}
+
+func (s *Server) authenticateTestPublish(w http.ResponseWriter, r *http.Request) {
+	var req VerifyTestModePasswordRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	if err := s.store.VerifyTestModePassword(req.Password); err != nil {
+		writeError(w, http.StatusUnauthorized, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, VerifyTestModePasswordResponse{OK: true})
+}
+
+func (s *Server) listTestPublishSettings(w http.ResponseWriter, r *http.Request) {
+	if !s.requireTestPublishPassword(w, r) {
+		return
+	}
+	integrationType := strings.TrimSpace(r.URL.Query().Get("type"))
+	settings := s.store.ListTestPublishSettings(integrationType)
+	status := s.store.GetTestModeStatus()
+	writeJSON(w, http.StatusOK, TestPublishSettingsResponse{
+		TestModeEnabled: status.Enabled,
+		Settings:        settings,
+	})
+}
+
+func (s *Server) addTestPublishSetting(w http.ResponseWriter, r *http.Request) {
+	if !s.requireTestPublishPassword(w, r) {
+		return
+	}
+	integrationType := r.PathValue("type")
+	var req AddTestPublishSettingRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	req.IntegrationType = integrationType
+	setting, err := s.store.AddTestPublishSetting(req)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusCreated, setting)
+}
+
+func (s *Server) updateTestPublishSetting(w http.ResponseWriter, r *http.Request) {
+	if !s.requireTestPublishPassword(w, r) {
+		return
+	}
+	id := r.PathValue("id")
+	var req UpdateTestPublishSettingRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	setting, err := s.store.UpdateTestPublishSetting(id, req.Status)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, setting)
+}
+
+func (s *Server) deleteTestPublishSetting(w http.ResponseWriter, r *http.Request) {
+	if !s.requireTestPublishPassword(w, r) {
+		return
+	}
+	id := r.PathValue("id")
+	if err := s.store.DeleteTestPublishSetting(id); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]bool{"deleted": true})
 }
