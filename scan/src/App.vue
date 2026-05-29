@@ -42,11 +42,20 @@
             :title="githubActionTitle"
             @click="canLinkGitHub && startGitHubWalletLink()"
           >
-            <GitPullRequest :size="16" />
+            <GitPullRequest :size="17" />
             <span>
               <small>GitHub</small>
               <strong>{{ githubAccountLabel }}</strong>
             </span>
+          </button>
+          <button
+            v-if="githubLinked"
+            class="icon-mini github-copy-button"
+            type="button"
+            title="Copy GitHub account"
+            @click="copyValue(githubAccountLabel)"
+          >
+            <Copy :size="15" />
           </button>
         </div>
         <button
@@ -55,7 +64,7 @@
           title="Open API docs"
           @click="openApiDocs"
         >
-          <FileJson :size="17" />
+          <Braces :size="18" />
           <span>API</span>
         </button>
         <button class="icon-button" type="button" title="Refresh" @click="loadExplorerData">
@@ -172,12 +181,17 @@
               </div>
 
               <TransactionTable
-                :entries="visibleEntries"
+                :entries="displayedEntries"
                 :token-symbol="tokenSymbol"
                 @go-tx="openTx"
                 @go-block="openBlock"
                 @go-address="openAddress"
               />
+              <div v-if="hasMoreTransactions || showAllTransactions" class="table-more">
+                <button type="button" @click="showAllTransactions = !showAllTransactions">
+                  {{ showAllTransactions ? 'Show fewer transactions' : 'View more transactions ->' }}
+                </button>
+              </div>
             </div>
 
             <aside class="side-rail">
@@ -209,36 +223,17 @@
                 </dl>
               </section>
 
-              <section class="rail-panel">
+              <section class="rail-panel about-panel">
                 <div class="panel-head compact">
                   <div>
-                    <p>Hash Chain</p>
-                    <h2>Verification</h2>
-                  </div>
-                  <span :class="['pill', chain.ok ? 'good' : 'bad']">{{ chain.ok ? 'Valid' : 'Check' }}</span>
-                </div>
-                <div class="chain-proof">
-                  <ShieldCheck :size="28" />
-                  <strong>{{ chain.ok ? 'All links match' : `${chain.issues.length} issues found` }}</strong>
-                  <small>{{ shortHash(chain.latestHash, 12, 10) }}</small>
-                </div>
-              </section>
-
-              <section class="rail-panel">
-                <div class="panel-head compact">
-                  <div>
-                    <p>Addresses</p>
-                    <h2>Top accounts</h2>
+                    <p>About MergeOS</p>
                   </div>
                 </div>
-                <div class="account-list">
-                  <button v-for="account in topAccounts" :key="account.account" type="button" @click="openAddress(account.account)">
-                    <span>
-                      <strong>{{ shortHash(account.account, 16, 8) }}</strong>
-                      <small>{{ accountRole(account.account) }}</small>
-                    </span>
-                    <b>{{ account.tx_count }}</b>
-                  </button>
+                <div class="about-copy">
+                  <span class="about-icon" aria-hidden="true">
+                    <Keyboard :size="42" />
+                  </span>
+                  <p>MergeOS is a decentralized ledger system for verifying contributions and rewarding real work onchain.</p>
                 </div>
               </section>
             </aside>
@@ -258,22 +253,23 @@
 <script setup>
 import { computed, defineAsyncComponent, defineComponent, h, onBeforeUnmount, onMounted, ref } from 'vue';
 import {
-  Activity,
   AlertTriangle,
   ArrowDownLeft,
   ArrowUpRight,
-  Blocks,
-  CheckCircle2,
+  Braces,
+  Coins,
   Copy,
   ExternalLink,
-  FileJson,
+  FileText,
   Fingerprint,
   GitPullRequest,
+  Keyboard,
   LoaderCircle,
   RefreshCw,
   RotateCcw,
   Search,
   ShieldCheck,
+  Trophy,
   WalletCards,
 } from '@lucide/vue';
 import {
@@ -293,7 +289,6 @@ import {
   shortHash,
   sortLedgerEntries,
   tokenAmountFromCents,
-  verifyLedgerChain,
 } from './explorer.js';
 
 const ApiDocs = defineAsyncComponent(() => import('./ApiDocs.vue'));
@@ -316,6 +311,7 @@ const lastSyncAt = ref(null);
 const searchInput = ref('');
 const queryFilter = ref('');
 const typeFilter = ref('all');
+const showAllTransactions = ref(false);
 const route = ref(parseRoute());
 
 const tokenSymbol = computed(() => config.value?.token_symbol || marketplace.value?.stats?.token_symbol || 'MRG');
@@ -337,11 +333,11 @@ const githubActionTitle = computed(() => {
 const entries = computed(() => sortLedgerEntries(rawEntries.value));
 const newestEntries = computed(() => entries.value.slice().reverse());
 const accounts = computed(() => aggregateAccounts(entries.value));
-const chain = computed(() => verifyLedgerChain(entries.value));
 const stats = computed(() => buildExplorerStats(entries.value, marketplace.value, tokenSymbol.value));
 const ledgerTypes = computed(() => Array.from(new Set(entries.value.map((entry) => entry.type))).sort());
 const visibleEntries = computed(() => filterEntries(newestEntries.value, { query: queryFilter.value, type: typeFilter.value }));
-const topAccounts = computed(() => accounts.value.slice(0, 6));
+const displayedEntries = computed(() => (showAllTransactions.value ? visibleEntries.value : visibleEntries.value.slice(0, 5)));
+const hasMoreTransactions = computed(() => visibleEntries.value.length > displayedEntries.value.length);
 const lastSyncLabel = computed(() => {
   if (!lastSyncAt.value) return 'pending';
   return lastSyncAt.value.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -367,10 +363,10 @@ const selectedBlockEntry = computed(() => {
   return entries.value.find((entry) => entry.sequence === sequence);
 });
 const statCards = computed(() => [
-  { label: 'Ledger Entries', value: formatCompact(stats.value.totalTransactions), icon: Activity, tone: 'blue' },
-  { label: 'MRG Minted', value: `${formatCompact(stats.value.mintedTokens)} ${tokenSymbol.value}`, icon: WalletCards, tone: 'green' },
-  { label: 'Verified Funding', value: formatLedgerAmount(stats.value.fundingCents), icon: CheckCircle2, tone: 'teal' },
-  { label: 'Ledger Height', value: `#${formatCompact(stats.value.chainHeight)}`, icon: Blocks, tone: 'amber' },
+  { label: 'Ledger Entries', value: formatCompact(stats.value.totalTransactions), icon: FileText, tone: 'green' },
+  { label: 'MRG Minted', value: `${formatCompact(stats.value.mintedTokens)} ${tokenSymbol.value}`, icon: Coins, tone: 'green' },
+  { label: 'Verified Funding', value: formatLedgerAmount(stats.value.fundingCents), icon: ShieldCheck, tone: 'green' },
+  { label: 'Ledger Height', value: `#${formatCompact(stats.value.chainHeight)}`, icon: Trophy, tone: 'gold' },
 ]);
 
 onMounted(() => {
@@ -621,6 +617,7 @@ function normalizeMarketplace(payload = {}) {
 function submitSearch() {
   const query = searchInput.value.trim();
   queryFilter.value = query;
+  showAllTransactions.value = false;
   if (!query) {
     goHome();
     return;
@@ -640,6 +637,7 @@ function resetFilters() {
   searchInput.value = '';
   queryFilter.value = '';
   typeFilter.value = 'all';
+  showAllTransactions.value = false;
 }
 
 function openTx(hash) {
