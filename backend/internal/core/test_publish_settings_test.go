@@ -1,7 +1,6 @@
 package core
 
 import (
-    "strings"
     "testing"
     "time"
 )
@@ -38,7 +37,7 @@ func TestSettingValueMask(t *testing.T) {
         {"", "****"},
         {"a", "a****a"},
         {"abcdefghi", "abcd****fghi"},
-        {"sec_api_key_abc123xy", "sk_t****45xyz"},
+        {"sec_api_key_abc123xy", "sec_****23xy"},
     }
     for _, tt := range tests {
         got := SettingValueMask(tt.input)
