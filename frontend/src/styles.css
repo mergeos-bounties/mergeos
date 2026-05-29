@@ -1349,6 +1349,14 @@ svg {
   font-weight: 920;
 }
 
+.dash-project-title {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+}
+
 .mini-project {
   display: grid;
   grid-template-columns: 44px minmax(0, 1fr);
@@ -3996,7 +4004,7 @@ svg {
 .how-step-icon.amber,
 .why-icon.amber {
   color: #d97706;
-  background: #fff7ed;
+  background: #fffbeb;
 }
 
 .why-icon.violet {
@@ -5233,6 +5241,7 @@ svg {
   top: 0;
   z-index: 32;
   min-height: 58px;
+  min-width: 0;
   display: grid;
   grid-template-columns: minmax(220px, 320px) minmax(0, 1fr) auto;
   align-items: center;
@@ -5445,6 +5454,7 @@ svg {
 }
 
 .dash-project-header {
+  min-width: 0;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -6675,6 +6685,10 @@ svg {
   }
 
   .dash-profile {
+    grid-template-columns: 32px 14px;
+    max-width: 50px;
+  }
+  .dash-profile > span:not(.profile-avatar) {
     display: none;
   }
 
@@ -6803,6 +6817,10 @@ svg {
   }
 
   .dash-profile {
+    grid-template-columns: 32px 14px;
+    max-width: 50px;
+  }
+  .dash-profile > span:not(.profile-avatar) {
     display: none;
   }
 
@@ -8940,3 +8958,4 @@ svg {
     font-size: 12px;
   }
 }
+
