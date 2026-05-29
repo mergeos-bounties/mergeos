@@ -1,10 +1,12 @@
+@import url("https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&display=swap");
+
 :root {
   color-scheme: light;
-  font-family: Georgia, Cambria, "Times New Roman", serif;
+  font-family: "Libre Baskerville", Georgia, "Times New Roman", serif;
   background: #ead7b4;
   color: #342715;
   font-synthesis: none;
-  text-rendering: geometricPrecision;
+  text-rendering: optimizeLegibility;
   --paper: #f4e5c3;
   --paper-soft: #f8ecd0;
   --paper-warm: #ead6af;
@@ -1240,7 +1242,7 @@ main,
 }
 
 .brand strong {
-  font-size: clamp(1.72rem, 1.9vw, 2rem);
+  font-size: clamp(1.62rem, 1.72vw, 1.82rem);
   letter-spacing: 0;
   text-shadow: 0 1px 0 rgba(255, 249, 222, 0.78);
 }
@@ -1344,8 +1346,8 @@ main {
 }
 
 .search-band {
-  grid-template-columns: minmax(330px, 0.7fr) minmax(470px, 1.3fr);
-  gap: clamp(30px, 5vw, 76px);
+  grid-template-columns: minmax(540px, 0.65fr) minmax(470px, 1.35fr);
+  gap: clamp(14px, 1vw, 18px);
   padding: 6px 0 26px;
 }
 
@@ -1355,15 +1357,21 @@ main {
 .api-docs-head p {
   color: var(--forest);
   font-size: 0.86rem;
+  font-weight: 700;
   letter-spacing: 0.02em;
 }
 
 .search-copy h1 {
-  max-width: 610px;
-  font-size: clamp(3rem, 4.3vw, 4.55rem);
-  line-height: 0.98;
-  text-wrap: balance;
+  max-width: 560px;
+  font-size: clamp(2.55rem, 3.05vw, 3.28rem);
+  font-weight: 700;
+  line-height: 1.05;
+  text-wrap: auto;
   text-shadow: 0 1px 0 rgba(255, 249, 222, 0.72);
+}
+
+.title-mobile {
+  display: none;
 }
 
 .search-panel {
@@ -1380,7 +1388,8 @@ main {
 
 .search-panel input {
   color: var(--ink);
-  font-size: 1.16rem;
+  font-size: 1.22rem;
+  font-weight: 700;
 }
 
 .search-panel input::placeholder {
@@ -1460,6 +1469,7 @@ main {
 .panel-head h2,
 .detail-head h2 {
   font-size: 1.45rem;
+  font-weight: 700;
   text-shadow: 0 1px 0 rgba(255, 249, 222, 0.7);
 }
 
@@ -1597,7 +1607,7 @@ main {
   }
 }
 
-@media (max-width: 1120px) {
+@media (max-width: 1180px) {
   .topbar {
     align-items: flex-start;
     flex-wrap: wrap;
@@ -1635,6 +1645,10 @@ main {
 }
 
 @media (max-width: 620px) {
+  :root {
+    --mobile-content-width: calc(100vw - 48px);
+  }
+
   .scan-app {
     min-height: 100vh;
     margin: 0;
@@ -1661,21 +1675,30 @@ main {
   }
 
   .top-actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(46px, max-content));
     gap: 8px;
+    width: 100%;
+    min-width: 0;
   }
 
   .header-account {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-column: 1 / -1;
     flex: 1 1 100%;
     order: -1;
     width: 100%;
+    min-width: 0;
     gap: 8px;
   }
 
   .header-combo,
   .wallet-address-group,
   .github-address-group {
-    flex: 1 1 calc(50% - 4px);
-    width: auto;
+    flex: none;
+    width: 100%;
+    min-width: 0;
     min-height: 48px;
   }
 
@@ -1714,19 +1737,50 @@ main {
 
   main {
     padding: 22px 18px 24px;
+    overflow-x: hidden;
+  }
+
+  .search-band,
+  .search-copy,
+  .search-panel {
+    width: var(--mobile-content-width);
+    min-width: 0;
+    max-width: var(--mobile-content-width);
+  }
+
+  .search-band {
+    display: block;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .search-copy h1 {
-    font-size: 2.55rem;
-    line-height: 1.02;
+    width: var(--mobile-content-width);
+    max-width: var(--mobile-content-width);
+    font-size: 2.08rem;
+    line-height: 1.12;
+    text-wrap: wrap;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    white-space: normal;
+  }
+
+  .title-desktop {
+    display: none;
+  }
+
+  .title-mobile {
+    display: block;
   }
 
   .search-panel {
     grid-template-columns: auto minmax(0, 1fr);
+    width: var(--mobile-content-width);
+    max-width: var(--mobile-content-width);
+    margin-top: 28px;
   }
 
   .search-panel input {
-    font-size: 0.98rem;
+    font-size: 0.92rem;
   }
 
   .search-panel button {
@@ -1738,6 +1792,17 @@ main {
   .side-rail,
   .address-summary {
     grid-template-columns: 1fr;
+    width: var(--mobile-content-width);
+    max-width: var(--mobile-content-width);
+  }
+
+  .activity-panel,
+  .rail-panel,
+  .detail-panel,
+  .stat-card,
+  .table-wrap {
+    min-width: 0;
+    max-width: 100%;
   }
 
   .panel-head,

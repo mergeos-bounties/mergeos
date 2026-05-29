@@ -86,7 +86,15 @@
         <section class="search-band">
           <div class="search-copy">
             <p>MRG Token Explorer</p>
-            <h1>MRG token activity and proof ledger for MergeOS.</h1>
+            <h1 aria-label="MRG token activity and proof ledger for MergeOS.">
+              <span class="title-desktop">MRG token activity and proof ledger for MergeOS.</span>
+              <span class="title-mobile" aria-hidden="true">
+                MRG token<br />
+                activity and<br />
+                proof ledger<br />
+                for MergeOS.
+              </span>
+            </h1>
           </div>
 
           <form class="search-panel" @submit.prevent="submitSearch">
