@@ -2177,7 +2177,7 @@ svg {
 
 .console-grid {
   display: grid;
-  grid-template-columns: 0.9fr 1.1fr 0.95fr;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr) minmax(0, 0.95fr);
   gap: 12px;
   margin-top: 14px;
 }
@@ -2416,7 +2416,7 @@ svg {
 
 .deploy-preview {
   display: grid;
-  grid-template-columns: 1fr 0.92fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.92fr);
   gap: 0;
   overflow: hidden;
   border: 1px solid #111827;
@@ -5438,6 +5438,7 @@ svg {
   justify-content: space-between;
   gap: 14px;
   margin-top: 16px;
+  flex-wrap: wrap;
 }
 
 .dash-project-header:focus {
@@ -5496,7 +5497,7 @@ svg {
 
 .dash-metrics {
   display: grid;
-  grid-template-columns: 0.85fr 1.1fr 0.75fr 1.3fr 0.8fr;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.1fr) minmax(0, 0.75fr) minmax(0, 1.3fr) minmax(0, 0.8fr);
   gap: 14px;
   border-bottom: 1px solid var(--line);
   margin-top: 18px;
