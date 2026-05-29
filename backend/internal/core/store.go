@@ -117,6 +117,8 @@ type Store struct {
 	sslReviews        map[string]*SSLReviewStatus
 	geminiAPIKeys     map[string]*GeminiAPIKey
 	geminiWebhookLogs map[string]*GeminiWebhookLog
+	testSettingsConfig   TestSettingsConfig
+	testSettingsEntries  map[string]*TestSettingsEntry
 	adminSettings     AdminSettings
 	ledger            []LedgerEntry
 }
@@ -134,6 +136,8 @@ type persistedState struct {
 	GeminiAPIKeys     []*GeminiAPIKey     `json:"gemini_api_keys"`
 	GeminiWebhookLogs []*GeminiWebhookLog `json:"gemini_webhook_logs"`
 	AdminSettings     *AdminSettings      `json:"admin_settings,omitempty"`
+	TestSettingsConfig  *TestSettingsConfig    `json:"test_settings_config,omitempty"`
+	TestSettingsEntries []*TestSettingsEntry   `json:"test_settings_entries,omitempty"`
 	Ledger            []LedgerEntry       `json:"ledger"`
 }
 
@@ -160,6 +164,8 @@ func NewStore(cfg Config, payments *PaymentManager, repos RepoFactory, emailer *
 		sslReviews:        map[string]*SSLReviewStatus{},
 		geminiAPIKeys:     map[string]*GeminiAPIKey{},
 		geminiWebhookLogs: map[string]*GeminiWebhookLog{},
+		testSettingsConfig:   TestSettingsConfig{},
+		testSettingsEntries:  map[string]*TestSettingsEntry{},
 		adminSettings:     defaultAdminSettings(cfg),
 		ledger:            []LedgerEntry{},
 	}
@@ -1793,6 +1799,20 @@ func (s *Store) applyState(state persistedState) bool {
 		s.geminiWebhookLogs[logCopy.ID] = &logCopy
 	}
 	s.trimGeminiWebhookLogsLocked()
+
+	// Test settings
+	s.testSettingsConfig = TestSettingsConfig{}
+	if state.TestSettingsConfig != nil {
+		s.testSettingsConfig = *state.TestSettingsConfig
+	}
+	s.testSettingsEntries = map[string]*TestSettingsEntry{}
+	for _, entry := range state.TestSettingsEntries {
+		if entry == nil || entry.ID == "" {
+			continue
+		}
+		s.testSettingsEntries[entry.ID] = entry
+	}
+
 	return migrated
 }
 
@@ -1820,6 +1840,8 @@ func (s *Store) snapshotLocked() persistedState {
 		GeminiAPIKeys:     make([]*GeminiAPIKey, 0, len(s.geminiAPIKeys)),
 		GeminiWebhookLogs: make([]*GeminiWebhookLog, 0, len(s.geminiWebhookLogs)),
 		AdminSettings:     cloneAdminSettings(s.adminSettings),
+		TestSettingsConfig: &s.testSettingsConfig,
+		TestSettingsEntries: make([]*TestSettingsEntry, 0, len(s.testSettingsEntries)),
 		Ledger:            s.ledger,
 	}
 	for _, project := range s.projects {
