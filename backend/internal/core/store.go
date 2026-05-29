@@ -115,9 +115,10 @@ type Store struct {
 	notifications     map[string]*Notification
 	attachments       map[string]*Attachment
 	sslReviews        map[string]*SSLReviewStatus
-	geminiAPIKeys     map[string]*GeminiAPIKey
-	geminiWebhookLogs map[string]*GeminiWebhookLog
-	adminSettings     AdminSettings
+	geminiAPIKeys      map[string]*GeminiAPIKey
+	geminiWebhookLogs  map[string]*GeminiWebhookLog
+	usdtWebhookEvents  map[string]*USDTWebhookEvent
+	adminSettings      AdminSettings
 	ledger            []LedgerEntry
 }
 
@@ -133,7 +134,8 @@ type persistedState struct {
 	SSLReviews        []*SSLReviewStatus  `json:"ssl_reviews"`
 	GeminiAPIKeys     []*GeminiAPIKey     `json:"gemini_api_keys"`
 	GeminiWebhookLogs []*GeminiWebhookLog `json:"gemini_webhook_logs"`
-	AdminSettings     *AdminSettings      `json:"admin_settings,omitempty"`
+	USDTWebhookEvents []*USDTWebhookEvent   `json:"usdt_webhook_events"`
+	AdminSettings     *AdminSettings        `json:"admin_settings,omitempty"`
 	Ledger            []LedgerEntry       `json:"ledger"`
 }
 
@@ -158,9 +160,10 @@ func NewStore(cfg Config, payments *PaymentManager, repos RepoFactory, emailer *
 		notifications:     map[string]*Notification{},
 		attachments:       map[string]*Attachment{},
 		sslReviews:        map[string]*SSLReviewStatus{},
-		geminiAPIKeys:     map[string]*GeminiAPIKey{},
-		geminiWebhookLogs: map[string]*GeminiWebhookLog{},
-		adminSettings:     defaultAdminSettings(cfg),
+		geminiAPIKeys:      map[string]*GeminiAPIKey{},
+		geminiWebhookLogs:  map[string]*GeminiWebhookLog{},
+		usdtWebhookEvents:  map[string]*USDTWebhookEvent{},
+		adminSettings:      defaultAdminSettings(cfg),
 		ledger:            []LedgerEntry{},
 	}
 	if strings.TrimSpace(cfg.DatabaseURL) != "" {
@@ -1792,6 +1795,13 @@ func (s *Store) applyState(state persistedState) bool {
 		logCopy.Labels = append([]string(nil), log.Labels...)
 		s.geminiWebhookLogs[logCopy.ID] = &logCopy
 	}
+	for _, event := range state.USDTWebhookEvents {
+		if event == nil || event.ID == "" {
+			continue
+		}
+		eventCopy := *event
+		s.usdtWebhookEvents[eventCopy.ID] = &eventCopy
+	}
 	s.trimGeminiWebhookLogsLocked()
 	return migrated
 }
@@ -1818,8 +1828,9 @@ func (s *Store) snapshotLocked() persistedState {
 		Attachments:       make([]*Attachment, 0, len(s.attachments)),
 		SSLReviews:        make([]*SSLReviewStatus, 0, len(s.sslReviews)),
 		GeminiAPIKeys:     make([]*GeminiAPIKey, 0, len(s.geminiAPIKeys)),
-		GeminiWebhookLogs: make([]*GeminiWebhookLog, 0, len(s.geminiWebhookLogs)),
-		AdminSettings:     cloneAdminSettings(s.adminSettings),
+		GeminiWebhookLogs:  make([]*GeminiWebhookLog, 0, len(s.geminiWebhookLogs)),
+		USDTWebhookEvents:  make([]*USDTWebhookEvent, 0, len(s.usdtWebhookEvents)),
+		AdminSettings:      cloneAdminSettings(s.adminSettings),
 		Ledger:            s.ledger,
 	}
 	for _, project := range s.projects {
@@ -1867,6 +1878,13 @@ func (s *Store) snapshotLocked() persistedState {
 	}
 	sort.Slice(state.GeminiWebhookLogs, func(i, j int) bool {
 		return state.GeminiWebhookLogs[i].ReceivedAt.Before(state.GeminiWebhookLogs[j].ReceivedAt)
+	})
+	for _, event := range s.usdtWebhookEvents {
+		eventCopy := *event
+		state.USDTWebhookEvents = append(state.USDTWebhookEvents, &eventCopy)
+	}
+	sort.Slice(state.USDTWebhookEvents, func(i, j int) bool {
+		return state.USDTWebhookEvents[i].ReceivedAt.After(state.USDTWebhookEvents[j].ReceivedAt)
 	})
 	return state
 }
