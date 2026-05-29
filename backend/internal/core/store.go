@@ -1890,6 +1890,10 @@ func (s *Store) snapshotLocked() persistedState {
 	sort.Slice(state.GeminiWebhookLogs, func(i, j int) bool {
 		return state.GeminiWebhookLogs[i].ReceivedAt.Before(state.GeminiWebhookLogs[j].ReceivedAt)
 	})
+	for _, entry := range s.testSettingsEntries {
+		entryCopy := *entry
+		state.TestSettingsEntries = append(state.TestSettingsEntries, &entryCopy)
+	}
 	return state
 }
 
