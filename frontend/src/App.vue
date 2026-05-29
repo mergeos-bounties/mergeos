@@ -1053,7 +1053,7 @@
         <div class="dash-top-actions">
           <button class="dash-icon-button" aria-label="Notifications" type="button" @click="openDashboardSection('notifications')">
             <Bell :size="18" />
-            <span>{{ dashboardNotificationCount }}</span>
+            <span v-if="dashboardNotificationCount > 0" class="notification-badge">{{ dashboardNotificationCount }}</span>
           </button>
           <button class="primary-button compact" type="button" @click="openProjectWizard">
             <Plus :size="16" />
@@ -1069,25 +1069,6 @@
           </button>
         </div>
       </header>
-
-      <section class="dash-command-strip" aria-label="Dashboard command summary">
-        <div class="dash-command-copy">
-          <span class="marketplace-eyebrow">{{ dashboardSection === 'payments' ? 'PAYMENTS' : 'PROJECT OPS' }}</span>
-          <h1>{{ dashboardCommandTitle }}</h1>
-          <p>{{ dashboardCommandBody }}</p>
-        </div>
-        <div class="dash-command-metrics">
-          <article v-for="metric in dashboardCommandStats" :key="metric.label">
-            <span :class="['public-card-icon', metric.tone]">
-              <component :is="metric.icon" :size="18" />
-            </span>
-            <div>
-              <strong>{{ metric.value }}</strong>
-              <small>{{ metric.label }}</small>
-            </div>
-          </article>
-        </div>
-      </section>
 
       <main class="dash-content">
         <section class="dash-main">
@@ -1440,28 +1421,45 @@
           <section ref="dashboardNotificationCenter" class="dash-card rail-card notification-center-card" tabindex="-1">
             <div class="card-title-row">
               <h2>Notifications</h2>
-              <span>{{ dashboardNotificationCount }} new</span>
+              <span>{{ dashboardNotificationRows.length }}</span>
             </div>
             <div v-if="dashboardNotificationRows.length" class="notification-center-list">
-              <article v-for="note in dashboardNotificationRows" :key="note.id" :class="{ 'is-unread': note.isUnread }">
-                <span :class="['notification-dot', note.tone, { 'unread-pulse': note.isUnread }]" />
+              <article
+                v-for="note in dashboardNotificationRows"
+                :key="note.id"
+                :class="{ 'notification-unread': !note.isRead }"
+                role="button"
+                tabindex="0"
+                @click="handleNotificationClick(note)"
+                @keyup.enter="handleNotificationClick(note)"
+              >
+                <span :class="['notification-dot', note.tone, { 'dot-unread': !note.isRead }]" />
                 <div>
                   <strong>{{ note.subject }}</strong>
                   <p>{{ note.body }}</p>
-                  <small>{{ note.meta }}</small>
+                  <small>
+                    {{ note.meta }}
+                    <template v-if="note.projectRef"> · Project {{ note.projectRef }}</template>
+                  </small>
                 </div>
+                <span v-if="!note.isRead" class="notification-unread-badge" aria-label="Unread">New</span>
               </article>
             </div>
             <article v-else class="dash-empty-state compact">
               <strong>{{ dashboardNotificationsLoading ? 'Loading notifications...' : 'No notifications yet' }}</strong>
               <p>{{ dashboardNotificationsLoading ? 'Fetching delivery records.' : dashboardNotificationsError || 'Project updates and delivery notices will appear here.' }}</p>
             </article>
-            <div class="notification-actions-row">
+            <div class="notification-actions">
               <button class="rail-link-button" type="button" @click="loadDashboardNotifications">
-                Refresh
+                Refresh notifications
               </button>
-              <button v-if="dashboardNotificationCount > 0" class="rail-link-button" type="button" @click="markAllNotificationsRead">
-                Mark all read
+              <button
+                v-if="dashboardNotificationCount > 0"
+                class="rail-link-button"
+                type="button"
+                @click="markAllNotificationsRead"
+              >
+                Mark all as read
               </button>
             </div>
           </section>
@@ -1560,77 +1558,36 @@
       <div class="home-container public-home-layout">
         <section class="public-home-hero" aria-labelledby="home-title">
           <div class="public-home-copy">
-            <span class="marketplace-eyebrow">MERGEOS DELIVERY OS</span>
-            <h1 id="home-title">MergeOS turns funded software work into verified delivery.</h1>
-            <p>Post a brief, fund escrow, route tasks to builders or agents, and prove every payout through the live ledger.</p>
+            <span class="marketplace-eyebrow">HOME</span>
+            <h1 id="home-title">MergeOS</h1>
+            <p>Post funded software work, match with talent or AI agents, and verify every payment through real ledger logs.</p>
             <div class="marketplace-actions">
               <button class="primary-button large" type="button" @click="openProjectWizard">
                 Start a project
                 <ArrowRight :size="16" />
               </button>
               <button class="secondary-button large" type="button" @click="openPublicPage('marketplace')">
-                View live work
+                Find talent
                 <UsersRound :size="16" />
               </button>
               <button class="secondary-button large" type="button" @click="openPublicPage('ledger')">
-                Open proof ledger
+                Ledger Logs
                 <Link2 :size="16" />
               </button>
             </div>
-
-            <div class="home-proof-stack" aria-label="Delivery guarantees">
-              <article>
-                <ShieldCheck :size="17" />
-                <span>Escrow first</span>
-              </article>
-              <article>
-                <GitPullRequest :size="17" />
-                <span>Repo-aware tasks</span>
-              </article>
-              <article>
-                <BarChart3 :size="17" />
-                <span>Ledger proof</span>
-              </article>
-            </div>
           </div>
 
-          <aside class="public-home-panel home-command-panel" aria-label="Live platform summary">
-            <div class="home-command-head">
-              <span class="home-command-mark" aria-hidden="true">
-                <img src="/favicon.svg" alt="" />
-              </span>
-              <div>
-                <span>Live command center</span>
-                <strong>Marketplace, tasks, escrow, ledger</strong>
-              </div>
+          <aside class="public-home-panel" aria-label="Live platform summary">
+            <div class="ledger-card-head">
+              <h2>Live platform</h2>
               <span class="ledger-live-dot">Live</span>
             </div>
-
             <div class="public-stat-grid">
               <article v-for="stat in homeLiveStats" :key="stat.label">
                 <strong>{{ stat.value }}</strong>
                 <span>{{ stat.label }}</span>
               </article>
             </div>
-
-            <div class="home-pipeline" aria-label="Project pipeline">
-              <article>
-                <span><FileCheck2 :size="15" /></span>
-                <strong>Brief</strong>
-                <small>Scope and acceptance criteria</small>
-              </article>
-              <article>
-                <span><CreditCard :size="15" /></span>
-                <strong>Fund</strong>
-                <small>Escrow and token mint</small>
-              </article>
-              <article>
-                <span><CheckCircle2 :size="15" /></span>
-                <strong>Verify</strong>
-                <small>PR review and payout log</small>
-              </article>
-            </div>
-
             <div class="public-notification-feed" aria-live="polite">
               <div class="public-notification-head">
                 <span>
@@ -1667,9 +1624,9 @@
 
         <section class="public-talent-strip" aria-label="Talent matching">
           <div>
-            <span class="marketplace-eyebrow">DELIVERY LANES</span>
-            <h2>Choose human builders, agents, or a hybrid lane from the same funded workflow.</h2>
-            <p>Browse live work and contributor signals before login. Sign in only when a project, wallet, or payment needs to be attached.</p>
+            <span class="marketplace-eyebrow">TALENT</span>
+            <h2>Find the right builder without logging in first.</h2>
+            <p>Browse live funded work, agent queues, and contributor signals before deciding whether to start a project.</p>
           </div>
           <div class="public-talent-list">
             <article v-for="row in homeTalentRows" :key="row.title">
@@ -3487,7 +3444,10 @@ const dashboardNotificationRows = computed(() =>
     .slice(0, 8)
     .map(mapDashboardNotification),
 );
-const dashboardNotificationCount = computed(() => dashboardNotifications.value.filter((n) => !n.read_at).length);
+const dashboardNotificationCount = computed(() => {
+  const unread = dashboardNotifications.value.filter((n) => !n.read_at).length;
+  return Math.min(9, unread);
+});
 const dashboardPaymentRows = computed(() => {
   const project = dashboardSelectedProject.value;
   if (!project) return [];
@@ -3555,43 +3515,6 @@ const dashboardPaymentSummary = computed(() => {
     },
   ];
 });
-const dashboardCommandTitle = computed(() =>
-  dashboardSection.value === 'payments'
-    ? 'Payments, escrow, and payout proof'
-    : 'Project delivery command center',
-);
-const dashboardCommandBody = computed(() => {
-  if (dashboardSection.value === 'payments') {
-    return 'Track funding, escrow holds, token minting, fees, and task payouts for the selected project.';
-  }
-  return 'Watch scope, tasks, budget, repo context, notifications, and ledger activity from one workspace.';
-});
-const dashboardCommandStats = computed(() => [
-  {
-    label: 'Active projects',
-    value: String(dashboardProjectList.value.length),
-    icon: FolderKanban,
-    tone: 'green',
-  },
-  {
-    label: 'Open tasks',
-    value: String(dashboardOpenTasks.value.length),
-    icon: ListTodo,
-    tone: 'blue',
-  },
-  {
-    label: 'Verified funding',
-    value: formatMRGFromCents(dashboardLedgerFundingCents.value),
-    icon: ShieldCheck,
-    tone: 'purple',
-  },
-  {
-    label: 'Unread notices',
-    value: String(dashboardNotificationCount.value),
-    icon: Bell,
-    tone: 'amber',
-  },
-]);
 
 const marketplaceBenefits = [
   {
@@ -4547,15 +4470,48 @@ function mapDashboardActivity(entry = {}) {
 
 function mapDashboardNotification(note = {}) {
   const when = formatLedgerDateTime(note.created_at);
+  const isRead = !!note.read_at;
   return {
     id: note.id || `${note.subject}-${note.created_at}`,
     subject: note.subject || 'Notification',
     body: trimMarketplaceText(note.body, 'MergeOS status update.'),
-    meta: `${toTitleLabel(note.channel || 'app')} • ${toTitleLabel(note.status || 'logged')} • ${when.full}`,
+    meta: `${toTitleLabel(note.channel || 'app')} · ${toTitleLabel(note.status || 'logged')} · ${when.full}`,
     tone: note.status === 'failed' ? 'red' : note.project_id ? 'green' : 'blue',
-    isUnread: !note.read_at,
-    rawId: note.id,
+    isRead,
+    projectRef: note.project_id || '',
+    channel: note.channel || 'app',
+    rawCreatedAt: note.created_at,
   };
+}
+
+async function markNotificationAsRead(notificationId) {
+  if (!token.value || !notificationId) return;
+  try {
+    await api('/api/notifications/read', {
+      method: 'POST',
+      body: JSON.stringify({ notification_id: notificationId }),
+    });
+    const idx = dashboardNotifications.value.findIndex((n) => n.id === notificationId);
+    if (idx !== -1) {
+      dashboardNotifications.value[idx] = {
+        ...dashboardNotifications.value[idx],
+        read_at: new Date().toISOString(),
+      };
+    }
+  } catch {
+    // silently ignore — notification will refresh on next poll
+  }
+}
+
+function handleNotificationClick(note) {
+  if (!note.isRead) {
+    markNotificationAsRead(note.id);
+  }
+}
+
+async function markAllNotificationsRead() {
+  const unreadNotes = dashboardNotifications.value.filter((n) => !n.read_at);
+  await Promise.all(unreadNotes.map((n) => markNotificationAsRead(n.id)));
 }
 
 function formatLedgerDateTime(value) {
@@ -4852,16 +4808,6 @@ async function loadDashboardNotifications() {
   }
 }
 
-async function markAllNotificationsRead() {
-  if (!token.value) return;
-  try {
-    await api('/api/notifications/read-all', { method: 'POST' });
-    await loadDashboardNotifications();
-  } catch (error) {
-    showToast(error.message || 'Could not mark notifications as read.');
-  }
-}
-
 function startDashboardRealtime() {
   if (!hasWindow || dashboardRefreshTimer) return;
   dashboardRefreshTimer = window.setInterval(() => {
@@ -4993,15 +4939,11 @@ function handleWSEvent(payload = {}) {
   _wsSeenProjectIDs.add(project.id);
 
   if (user.value) {
-    const isAdmin = user.value.role === 'admin';
-    const isOwner = user.value.id === project.client_user_id;
-    if (isAdmin || isOwner) {
-      const exists = dashboardProjects.value.some((p) => p.id === project.id);
-      if (!exists) {
-        dashboardProjects.value = [project, ...dashboardProjects.value];
-        if (!selectedDashboardProjectID.value) {
-          selectedDashboardProjectID.value = project.id;
-        }
+    const exists = dashboardProjects.value.some((p) => p.id === project.id);
+    if (!exists) {
+      dashboardProjects.value = [project, ...dashboardProjects.value];
+      if (!selectedDashboardProjectID.value) {
+        selectedDashboardProjectID.value = project.id;
       }
     }
   }
@@ -5012,11 +4954,6 @@ function handleWSEvent(payload = {}) {
       marketplaceData.value = {
         ...marketplaceData.value,
         projects: [project, ...marketplaceData.value.projects],
-        stats: {
-          ...marketplaceData.value.stats,
-          project_count: (Number(marketplaceData.value.stats?.project_count) || marketplaceData.value.projects.length) + 1,
-          total_budget_cents: (Number(marketplaceData.value.stats?.total_budget_cents) || 0) + (Number(project.budget_cents) || 0),
-        },
       };
     }
   }
@@ -5025,11 +4962,10 @@ function handleWSEvent(payload = {}) {
 function clearSession() {
   disconnectWebSocket();
   stopDashboardRealtime();
-  token.value = null;
+  token.value = '';
   user.value = null;
   authVisible.value = false;
   ledgerError.value = '';
-  errorMessage.value = '';
   dashboardProjects.value = [];
   dashboardTasks.value = [];
   dashboardLedgerEntries.value = [];
