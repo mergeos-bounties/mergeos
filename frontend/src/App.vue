@@ -4466,13 +4466,12 @@ async function restoreSession() {
   }
 }
 
-async function logout() {
-  try {
-    await api('/api/auth/logout', { method: 'POST', body: JSON.stringify({}) });
-  } finally {
-    clearSession();
-    showToast('Logged out.');
-  }
+function logout() {
+  // 非阻塞登出：立即清本地 session，后台发请求
+  clearSession(); // 立即清本地
+  showToast('Logged out.'); // 立即提示
+  // 后台发请求，失败只 log
+  api('/api/auth/logout', { method: 'POST', body: JSON.stringify({}) }).catch(err => console.log('backend logout failed:', err));
 }
 
 onMounted(async () => {
