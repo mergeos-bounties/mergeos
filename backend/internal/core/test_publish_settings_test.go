@@ -1,7 +1,6 @@
 package core
 
 import (
-    "encoding/json"
     "strings"
     "testing"
     "time"
