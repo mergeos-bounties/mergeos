@@ -4928,10 +4928,11 @@ function handleWSEvent(payload = {}) {
 function clearSession() {
   disconnectWebSocket();
   stopDashboardRealtime();
-  token.value = '';
+  token.value = null;
   user.value = null;
   authVisible.value = false;
   ledgerError.value = '';
+  errorMessage.value = '';
   dashboardProjects.value = [];
   dashboardTasks.value = [];
   dashboardLedgerEntries.value = [];
