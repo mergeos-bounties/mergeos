@@ -254,6 +254,23 @@
       </template>
     </main>
 
+    <Transition name="copy-toast">
+      <div
+        v-if="copyToast"
+        :class="['copy-toast', copyToast.tone]"
+        :role="copyToast.tone === 'error' ? 'alert' : 'status'"
+        :aria-label="`${copyToast.title}: ${copyToast.body}`"
+        aria-live="polite"
+      >
+        <CheckCircle2 v-if="copyToast.tone === 'success'" :size="18" aria-hidden="true" />
+        <AlertTriangle v-else :size="18" aria-hidden="true" />
+        <span>
+          <strong>{{ copyToast.title }}</strong>
+          <small>{{ copyToast.body }}</small>
+        </span>
+      </div>
+    </Transition>
+
     <footer class="footer">
       <span>scan.mergeos.shop</span>
       <span>Last sync {{ lastSyncLabel }}</span>
@@ -269,6 +286,7 @@ import {
   ArrowDownLeft,
   ArrowUpRight,
   Braces,
+  CheckCircle2,
   Coins,
   Copy,
   ExternalLink,
@@ -325,6 +343,8 @@ const queryFilter = ref('');
 const typeFilter = ref('all');
 const showAllTransactions = ref(false);
 const route = ref(parseRoute());
+const copyToast = ref(null);
+let copyToastTimer = 0;
 
 const tokenSymbol = computed(() => config.value?.token_symbol || marketplace.value?.stats?.token_symbol || 'MRG');
 const paymentMode = computed(() => paymentModeLabel(config.value?.payment_mode));
@@ -391,6 +411,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('popstate', syncRoute);
+  window.clearTimeout(copyToastTimer);
 });
 
 async function loadExplorerData() {
@@ -703,16 +724,44 @@ function safeReturnPath(path = '/') {
 }
 
 async function copyValue(value) {
+  const text = String(value || '');
   try {
-    await navigator.clipboard.writeText(String(value || ''));
-  } catch {
-    const input = document.createElement('textarea');
-    input.value = String(value || '');
-    document.body.appendChild(input);
-    input.select();
-    document.execCommand('copy');
-    input.remove();
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+    } else {
+      fallbackCopyText(text);
+    }
+    showCopyToast('success', 'Copied to clipboard', copiedValueLabel(text));
+  } catch (error) {
+    showCopyToast('error', 'Copy failed', 'Please copy it manually.');
   }
+}
+
+function fallbackCopyText(text) {
+  const input = document.createElement('textarea');
+  input.value = text;
+  input.setAttribute('readonly', '');
+  input.style.position = 'fixed';
+  input.style.left = '-9999px';
+  document.body.appendChild(input);
+  input.select();
+  const copied = document.execCommand('copy');
+  input.remove();
+  if (!copied) throw new Error('Copy command failed');
+}
+
+function showCopyToast(tone, title, body) {
+  window.clearTimeout(copyToastTimer);
+  copyToast.value = { tone, title, body };
+  copyToastTimer = window.setTimeout(() => {
+    copyToast.value = null;
+  }, 2600);
+}
+
+function copiedValueLabel(value) {
+  const text = String(value || '').trim();
+  if (!text) return 'Value copied.';
+  return text.length > 34 ? shortHash(text, 12, 8) : text;
 }
 
 function typeLabel(type) {
