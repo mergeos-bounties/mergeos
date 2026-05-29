@@ -3427,7 +3427,7 @@ const dashboardNotificationRows = computed(() =>
     .slice(0, 8)
     .map(mapDashboardNotification),
 );
-const dashboardNotificationCount = computed(() => dashboardNotificationRows.value.filter((n) => n.isUnread).length);
+const dashboardNotificationCount = computed(() => dashboardNotifications.value.filter((n) => !n.read_at).length);
 const dashboardPaymentRows = computed(() => {
   const project = dashboardSelectedProject.value;
   if (!project) return [];
@@ -5035,4 +5035,3 @@ onUnmounted(() => {
   stopDashboardRealtime();
 });
 </script>
-
