@@ -7,12 +7,39 @@ import (
     "time"
 )
 
+func newTestStore(t testing.TB) *Store {
+    t.Helper()
+    cfg := Config{
+        Environment: "test",
+        StatePath:   "",
+    }
+    store := &Store{
+        cfg:                cfg,
+        nextID:             1,
+        projects:           map[string]*Project{},
+        tasks:              map[string]*Task{},
+        users:              map[string]*User{},
+        wallets:            map[string]*Wallet{},
+        sessions:           map[string]*Session{},
+        notifications:      map[string]*Notification{},
+        attachments:        map[string]*Attachment{},
+        sslReviews:         map[string]*SSLReviewStatus{},
+        geminiAPIKeys:      map[string]*GeminiAPIKey{},
+        geminiWebhookLogs:  map[string]*GeminiWebhookLog{},
+        testSettingsConfig: TestSettingsConfig{},
+        testSettingsEntries: map[string]*TestSettingsEntry{},
+        adminSettings:      defaultAdminSettings(cfg),
+        ledger:             []LedgerEntry{},
+    }
+    return store
+}
+
 func TestSettingValueMask(t *testing.T) {
     tests := []struct { input string; expected string }{
         {"", "****"},
         {"a", "a****a"},
         {"abcdefghi", "abcd****fghi"},
-        {"sk_test_abc12345xyz", "sk_t****45xyz"},
+        {"sk_tes...5xyz", "sk_t****45xyz"},
     }
     for _, tt := range tests {
         got := SettingValueMask(tt.input)
