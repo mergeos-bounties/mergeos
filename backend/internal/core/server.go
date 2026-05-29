@@ -92,7 +92,7 @@ func (s *Server) Routes() http.Handler {
 
 	// Test publish settings - public endpoints (password-gated)
 	mux.HandleFunc("POST /api/public/test-settings/auth", s.publicTestSettingsAuth)
-	mux.HandleFunc("GET /api/public/test-settings/entries", s.publicListTestEntries)
+	mux.HandleFunc("POST /api/public/test-settings/entries/list", s.publicListTestEntries)
 	mux.HandleFunc("POST /api/public/test-settings/entries", s.publicAddTestEntry)
 	mux.HandleFunc("PATCH /api/public/test-settings/entries/{id}", s.publicUpdateTestEntry)
 	mux.HandleFunc("DELETE /api/public/test-settings/entries/{id}", s.publicDeleteTestEntry)
