@@ -1,9 +1,31 @@
 package core
 
 import (
+	"path/filepath"
 	"strings"
 	"testing"
 )
+
+func newTestStoreForPublish(t *testing.T) *Store {
+	t.Helper()
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:       defaultTokenSymbol,
+		StatePath:         filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:    1000,
+		DevPaymentEnabled: true,
+		DevPaymentCode:    defaultDevPaymentCode,
+		GitHubOwner:       defaultGitHubOwner,
+		BountyRoot:        filepath.Join(tempDir, "bounties"),
+		SMTPFrom:          "noreply@mergeos.local",
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return store
+}
 
 func TestIsBlockedKeyName(t *testing.T) {
 	blocked := []string{
@@ -72,7 +94,7 @@ func TestTestPublishSettingHint(t *testing.T) {
 }
 
 func TestStoreTestPublishSettings(t *testing.T) {
-	store := newTestStore(t)
+	store := newTestStoreForPublish(t)
 
 	// Test mode disabled by default
 	status := store.GetTestModeStatus()
@@ -86,10 +108,10 @@ func TestStoreTestPublishSettings(t *testing.T) {
 		t.Fatalf("SetTestModePassword: %v", err)
 	}
 
-	// Verify wrong password fails
+	// Verify wrong password fails (mode not yet enabled)
 	err = store.VerifyTestModePassword("wrongpassword")
 	if err == nil {
-		t.Fatal("expected error for wrong password")
+		t.Fatal("expected error when test mode is disabled")
 	}
 
 	// Enable test mode
@@ -99,6 +121,12 @@ func TestStoreTestPublishSettings(t *testing.T) {
 	}
 	if !resp.Enabled {
 		t.Fatal("test mode should be enabled")
+	}
+
+	// Verify wrong password fails
+	err = store.VerifyTestModePassword("wrongpassword")
+	if err == nil {
+		t.Fatal("expected error for wrong password")
 	}
 
 	// Verify correct password succeeds
@@ -118,7 +146,9 @@ func TestStoreTestPublishSettings(t *testing.T) {
 	}
 
 	// Re-enable for CRUD tests
-	store.SetTestModeEnabled(true)
+	if _, err := store.SetTestModeEnabled(true); err != nil {
+		t.Fatal(err)
+	}
 
 	// Add LLM key
 	llmReq := AddTestPublishSettingRequest{
@@ -131,9 +161,6 @@ func TestStoreTestPublishSettings(t *testing.T) {
 	llmSetting, err := store.AddTestPublishSetting(llmReq)
 	if err != nil {
 		t.Fatalf("AddTestPublishSetting LLM: %v", err)
-	}
-	if llmSetting.KeyHint == llmSetting.KeyValue {
-		t.Fatal("key hint should not equal key value (secret must be masked)")
 	}
 	if strings.Contains(llmSetting.KeyHint, "sk-test-openai-key-value-here") {
 		t.Fatal("full key value must not appear in stats response")
@@ -231,7 +258,7 @@ func TestStoreTestPublishSettings(t *testing.T) {
 }
 
 func TestTestPublishSettingPasswordValidation(t *testing.T) {
-	store := newTestStore(t)
+	store := newTestStoreForPublish(t)
 
 	// Too short
 	_, err := store.SetTestModePassword("short")
@@ -253,11 +280,14 @@ func TestTestPublishSettingPasswordValidation(t *testing.T) {
 }
 
 func TestTestPublishSettingArrayPersistence(t *testing.T) {
-	store := newTestStore(t)
-	store.SetTestModeEnabled(true)
-	store.SetTestModePassword("testpass123")
+	store := newTestStoreForPublish(t)
+	if _, err := store.SetTestModeEnabled(true); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.SetTestModePassword("testpass123"); err != nil {
+		t.Fatal(err)
+	}
 
-	// Add 2 LLM keys
 	for i, name := range []string{"openai_key_one", "anthropic_key_two"} {
 		provider := "openai"
 		if i == 1 {
