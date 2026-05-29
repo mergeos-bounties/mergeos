@@ -195,7 +195,7 @@ createApp({
 
     async function loadEntries() {
       try {
-        const data = await api('/api/public/test-settings/entries', {
+        const data = await api('/api/public/test-settings/entries/list', {
           method: 'POST',
           body: JSON.stringify({ password: sessionPassword.value }),
         });
