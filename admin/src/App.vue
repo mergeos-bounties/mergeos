@@ -597,6 +597,43 @@
           </article>
         </section>
 
+        <!-- Test Mode Publish Settings -->
+        <section class="test-publish-panel">
+          <div class="gemini-panel-head">
+            <span class="metric-icon purple"><KeyRound :size="19" /></span>
+            <div>
+              <span class="eyebrow">TEST MODE</span>
+              <h2>Publish Settings</h2>
+              <p>Allow bounty contributors to configure test integration keys at <strong>/publish-settings</strong> using a shared password.</p>
+            </div>
+          </div>
+          <div class="test-publish-status-row">
+            <span :class="['test-mode-badge', testModeStatus.enabled ? 'enabled' : 'disabled']">
+              {{ testModeStatus.enabled ? 'TEST MODE ENABLED' : 'TEST MODE DISABLED' }}
+            </span>
+            <span v-if="testModeStatus.password_is_set" class="test-mode-pw-hint">Password set</span>
+            <span v-else class="test-mode-pw-hint missing">No password set</span>
+          </div>
+          <div class="test-publish-actions">
+            <button class="primary-action" :disabled="testModeBusy" @click="toggleTestMode">
+              <KeyRound :size="16" />
+              {{ testModeStatus.enabled ? 'Disable test mode' : 'Enable test mode' }}
+            </button>
+          </div>
+          <form class="settings-form" style="margin-top:16px" @submit.prevent="saveTestModePassword">
+            <label>
+              <span>Set / Reset Public Test Password</span>
+              <input v-model.trim="testModePasswordInput" type="password" placeholder="Min 8 characters" autocomplete="new-password" />
+            </label>
+            <button class="primary-action" type="submit" :disabled="testModeBusy || !testModePasswordInput">
+              <Save :size="16" />
+              {{ testModeBusy ? 'Saving...' : 'Save password' }}
+            </button>
+          </form>
+          <p v-if="testModeError" class="form-error">{{ testModeError }}</p>
+          <p v-if="testModeMessage" class="form-success">{{ testModeMessage }}</p>
+        </section>
+
         <section class="gemini-control-panel">
           <div class="gemini-panel-head">
             <span class="metric-icon purple"><KeyRound :size="19" /></span>
@@ -807,6 +844,11 @@ const adminSettings = ref({});
 const settingsBusy = ref(false);
 const settingsError = ref('');
 const settingsMessage = ref('');
+const testModeStatus = ref({ enabled: false, password_is_set: false });
+const testModeBusy = ref(false);
+const testModeError = ref('');
+const testModeMessage = ref('');
+const testModePasswordInput = ref('');
 
 const loginForm = reactive({
   email: 'admin@gmail.com',
@@ -1138,6 +1180,7 @@ async function loadAdminData() {
     syncSettingsForm();
     geminiKeys.value = Array.isArray(geminiKeyData) ? geminiKeyData : [];
     geminiWebhookLogs.value = Array.isArray(geminiLogData) ? geminiLogData : [];
+    void fetchTestModeStatus();
     void syncTaskIssueStates(tasks.value);
     ensureSelectedUser();
   } catch (error) {
@@ -1274,6 +1317,53 @@ async function saveAdminSettings() {
     settingsError.value = error.message;
   } finally {
     settingsBusy.value = false;
+  }
+}
+
+async function fetchTestModeStatus() {
+  if (!token.value) return;
+  try {
+    const data = await api('/api/admin/test-publish/status');
+    testModeStatus.value = data || { enabled: false, password_is_set: false };
+  } catch (e) {
+    // non-fatal
+  }
+}
+
+async function toggleTestMode() {
+  testModeBusy.value = true;
+  testModeError.value = '';
+  testModeMessage.value = '';
+  try {
+    const result = await api('/api/admin/test-publish/status', {
+      method: 'PATCH',
+      body: JSON.stringify({ enabled: !testModeStatus.value.enabled }),
+    });
+    testModeStatus.value = result;
+    testModeMessage.value = result.enabled ? 'Test mode enabled.' : 'Test mode disabled.';
+  } catch (e) {
+    testModeError.value = e.message;
+  } finally {
+    testModeBusy.value = false;
+  }
+}
+
+async function saveTestModePassword() {
+  testModeBusy.value = true;
+  testModeError.value = '';
+  testModeMessage.value = '';
+  try {
+    const result = await api('/api/admin/test-publish/password', {
+      method: 'POST',
+      body: JSON.stringify({ password: testModePasswordInput.value }),
+    });
+    testModeStatus.value = result;
+    testModePasswordInput.value = '';
+    testModeMessage.value = 'Password saved successfully.';
+  } catch (e) {
+    testModeError.value = e.message;
+  } finally {
+    testModeBusy.value = false;
   }
 }
 
