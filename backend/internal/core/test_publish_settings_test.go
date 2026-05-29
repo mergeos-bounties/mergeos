@@ -67,11 +67,11 @@ func TestTestSettingsStore(t *testing.T) {
     enabled := true
     _, err := store.UpdateTestSettingsConfig(UpdateTestSettingsRequest{
         TestModeEnabled: &enabled,
-        TestPassword:    "test123",
+        TestPassword:    "test12345",
     })
     if err != nil { t.Fatal(err) }
     if !store.GetTestSettingsConfig().TestModeEnabled { t.Error("expected enabled") }
-    if !store.VerifyTestPassword("test123") { t.Error("password should match") }
+    if !store.VerifyTestPassword("test12345") { t.Error("password should match") }
     if store.VerifyTestPassword("wrong") { t.Error("wrong pw should fail") }
 
     entry, err := store.AddTestSettingsEntry(AddTestEntryRequest{
