@@ -905,7 +905,7 @@ func timePtr(value sql.NullTime) *time.Time {
 func (p *postgresPersistence) loadTestSettingsConfig(ctx context.Context, state *persistedState) error {
 	var raw string
 	err := p.db.QueryRowContext(ctx, `SELECT value FROM store_meta WHERE key = 'test_settings_config'`).Scan(&raw)
-	if errors.Is(err, sql.ErrNoRows) {
+	if err == sql.ErrNoRows {
 		return nil
 	}
 	if err != nil {
