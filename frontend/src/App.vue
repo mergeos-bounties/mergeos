@@ -4085,12 +4085,21 @@ async function triggerAiEvaluation() {
       reference_budget: Math.round(usdFromMRG(projectSetupForm.budgetAmount))
     };
     
-    const response = await api('/api/projects/evaluate', {
-      method: 'POST',
-      body: JSON.stringify(payload)
-    });
-    
-    aiEvaluationResult.value = response;
+    // Try LLM-powered evaluation first, with fallback to rule-based
+    try {
+      const response = await api('/api/projects/evaluate-llm', {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+      aiEvaluationResult.value = response;
+    } catch (_llmErr) {
+      // LLM endpoint unavailable — use rule-based evaluation
+      const response = await api('/api/projects/evaluate', {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+      aiEvaluationResult.value = response;
+    }
   } catch (err) {
     console.error('AI evaluation failed:', err);
     aiEvaluationError.value = err.message || 'AI evaluation failed. Please try again.';
@@ -4965,15 +4974,17 @@ async function restoreSession() {
 }
 
 async function logout() {
-  try {
-    await api('/api/auth/logout', { method: 'POST', body: JSON.stringify({}) });
-  } finally {
-    clearSession();
-    publicModeVisible.value = true;
-    publicPage.value = 'home';
-    updatePublicBrowserPath('home', true);
-    showToast('Logged out.');
-  }
+  const req = api('/api/auth/logout', { method: 'POST', body: JSON.stringify({}) }).catch((err) => {
+    console.warn('Backend logout failed gracefully', err);
+  });
+
+  clearSession();
+  publicModeVisible.value = true;
+  publicPage.value = 'home';
+  updatePublicBrowserPath('home', true);
+  showToast('Logged out.');
+
+  await req;
 }
 
 onMounted(async () => {

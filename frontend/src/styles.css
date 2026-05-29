@@ -2185,7 +2185,7 @@ svg {
 
 .console-grid {
   display: grid;
-  grid-template-columns: 0.9fr 1.1fr 0.95fr;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr) minmax(0, 0.95fr);
   gap: 12px;
   margin-top: 14px;
 }
@@ -2424,7 +2424,7 @@ svg {
 
 .deploy-preview {
   display: grid;
-  grid-template-columns: 1fr 0.92fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.92fr);
   gap: 0;
   overflow: hidden;
   border: 1px solid #111827;
@@ -5082,12 +5082,14 @@ svg {
 }
 
 .dashboard-shell {
+  /* FIX #16: base dashboard layout */
   min-width: 0;
   min-height: 100vh;
   display: grid;
   grid-template-columns: 188px minmax(0, 1fr);
   background: #fbfcfb;
   overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .dashboard-toast {
@@ -5225,11 +5227,16 @@ svg {
 }
 
 .dash-workspace {
+  /* FIX #16: contain sticky topbar + content scrolling */
   min-width: 0;
   max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .dash-topbar {
+  /* FIX #16: sticky topbar with proper flex shrink */
   position: sticky;
   top: 0;
   z-index: 32;
@@ -5243,6 +5250,7 @@ svg {
   background: rgba(255, 255, 255, 0.94);
   backdrop-filter: blur(12px);
   padding: 8px 18px;
+  flex-shrink: 0;
 }
 
 .dash-search {
@@ -5406,12 +5414,17 @@ svg {
 }
 
 .dash-content {
+  /* FIX #16: content area with proper overflow handling */
   min-width: 0;
   max-width: 100%;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 286px;
   gap: 16px;
   padding: 18px;
+  overflow-x: clip;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
 }
 
 .dash-main,
@@ -5447,6 +5460,7 @@ svg {
   justify-content: space-between;
   gap: 14px;
   margin-top: 16px;
+  flex-wrap: wrap;
 }
 
 .dash-project-header:focus {
@@ -5505,7 +5519,7 @@ svg {
 
 .dash-metrics {
   display: grid;
-  grid-template-columns: 0.85fr 1.1fr 0.75fr 1.3fr 0.8fr;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.1fr) minmax(0, 0.75fr) minmax(0, 1.3fr) minmax(0, 0.8fr);
   gap: 14px;
   border-bottom: 1px solid var(--line);
   margin-top: 18px;
@@ -6392,6 +6406,7 @@ svg {
     border-left: 0;
   }
 
+  /* FIX #16: 1100px dashboard adjustments */
   .dashboard-shell {
     grid-template-columns: 176px minmax(0, 1fr);
   }
@@ -6464,6 +6479,7 @@ svg {
     width: 100%;
   }
 
+  /* FIX #16: 980px - tablet: sidebar collapses to horizontal */
   .dashboard-shell {
     grid-template-columns: 1fr;
   }
@@ -6473,19 +6489,24 @@ svg {
     height: auto;
     border-right: 0;
     border-bottom: 1px solid var(--line);
+    overflow: visible;
   }
 
   .dash-side-nav {
+    /* FIX #16: horizontal nav grid on tablet */
     grid-template-columns: repeat(3, minmax(150px, 1fr));
-    overflow: visible;
+    overflow-x: auto;
+    overflow-y: visible;
   }
 
   .mrg-card {
     display: none;
   }
 
+  /* FIX #16: 980px - topbar stacks, content single col */
   .dash-topbar {
     grid-template-columns: minmax(0, 1fr) auto;
+    flex-shrink: 0;
   }
 
   .dash-topnav {
@@ -6494,6 +6515,7 @@ svg {
 
   .dash-content {
     grid-template-columns: 1fr;
+    overflow-x: clip;
   }
 
   .dash-metrics,
@@ -6606,8 +6628,15 @@ svg {
 
   /* ---- dashboard fixes (760px breakpoint) ---- */
 
+  /* FIX #16: 760px - mobile: full responsive pass */
   .dashboard-shell {
     overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .dash-workspace {
+    flex-direction: column;
+    overflow: hidden;
   }
 
   .dash-sidebar {
@@ -6615,9 +6644,11 @@ svg {
   }
 
   .dash-topbar {
+    /* FIX #16: stack topbar vertically on mobile */
     grid-template-columns: 1fr;
     align-items: stretch;
     padding: 8px 12px;
+    flex-shrink: 0;
   }
 
   .dash-search {
@@ -6648,8 +6679,13 @@ svg {
   }
 
   .dash-content {
+    /* FIX #16: single column with scroll on mobile */
     padding: 12px;
     gap: 12px;
+    grid-template-columns: 1fr;
+    overflow-x: clip;
+    overflow-y: auto;
+    min-height: 0;
   }
 
   .dash-project-header,
@@ -6747,9 +6783,11 @@ svg {
   }
 
   .dash-topbar {
+    /* FIX #16: second 760px topbar rule - consolidate */
     grid-template-columns: 1fr;
     align-items: stretch;
     gap: 10px;
+    flex-shrink: 0;
   }
 
   .dash-top-actions {
@@ -6963,8 +7001,15 @@ svg {
 
   /* ---- dashboard fixes (520px) ---- */
 
+  /* FIX #16: 520px - small mobile final pass */
   .dashboard-shell {
     overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .dash-workspace {
+    flex-direction: column;
+    overflow: hidden;
   }
 
   .dash-search {
@@ -6980,8 +7025,12 @@ svg {
   }
 
   .dash-content {
+    /* FIX #16: small mobile content */
     padding: 10px;
     gap: 10px;
+    grid-template-columns: 1fr;
+    overflow-x: clip;
+    min-height: 0;
   }
 
   .dash-project-title h1 {
@@ -8722,6 +8771,106 @@ svg {
 
   .price-breakdown-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 430px) {
+  .auth-modal {
+    max-height: calc(100vh - 24px);
+  }
+  .auth-modal-main {
+    padding: 20px 14px 18px;
+    gap: 16px;
+  }
+  .auth-close-button {
+    top: 12px;
+    right: 12px;
+    width: 34px;
+    height: 34px;
+  }
+  .auth-copy {
+    margin-top: 16px;
+  }
+  .auth-copy h2 {
+    font-size: 22px;
+  }
+  .auth-copy p {
+    font-size: 13px;
+  }
+  .social-auth-row button {
+    min-height: 42px;
+    font-size: 13px;
+    padding: 0 10px;
+  }
+  .input-shell {
+    min-height: 42px;
+  }
+  .input-shell input {
+    min-height: 40px;
+    font-size: 14px;
+  }
+  .auth-option-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .auth-submit-button {
+    min-height: 44px;
+    font-size: 14px;
+  }
+  .auth-security-note {
+    margin-top: 24px;
+  }
+  .auth-switch-line {
+    font-size: 13px;
+    margin-top: 18px;
+  }
+}
+
+@media (max-width: 360px) {
+  .auth-modal-main {
+    padding: 18px 12px 16px;
+    gap: 14px;
+  }
+  .auth-brand {
+    font-size: 16px;
+  }
+  .auth-copy h2 {
+    font-size: 20px;
+  }
+  .auth-copy p {
+    font-size: 12px;
+  }
+  .social-auth-row {
+    gap: 8px;
+    margin-top: 18px;
+  }
+  .social-auth-row button {
+    min-height: 38px;
+    font-size: 12px;
+    gap: 6px;
+  }
+  .social-brand-logo {
+    width: 16px;
+    height: 16px;
+  }
+  .auth-field {
+    margin-bottom: 10px;
+  }
+  .auth-field > span {
+    font-size: 13px;
+  }
+  .input-shell {
+    min-height: 38px;
+    gap: 8px;
+    padding: 0 10px;
+  }
+  .input-shell input {
+    min-height: 36px;
+    font-size: 13px;
+  }
+  .auth-check span {
+    font-size: 13px;
   }
 }
 

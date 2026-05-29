@@ -85,6 +85,7 @@ export function ledgerTypeMeta(type = '') {
     project_reserve: { label: 'Project Reserve', tone: 'reserve', direction: 'neutral' },
     task_reserve: { label: 'Task Reserve', tone: 'task', direction: 'neutral' },
     task_payment: { label: 'Task Payout', tone: 'payout', direction: 'out' },
+    manual_credit: { label: 'Manual Credit', tone: 'payout', direction: 'out' },
   }[normalized] || fallback;
 }
 
@@ -292,7 +293,7 @@ export function buildExplorerStats(entries = [], marketplace = {}, tokenSymbol =
     .filter((entry) => entry.type === 'payment_verified')
     .reduce((total, entry) => total + entry.amount_cents, 0);
   const payoutCents = normalizedEntries
-    .filter((entry) => entry.type === 'task_payment')
+    .filter((entry) => entry.type === 'task_payment' || entry.type === 'manual_credit')
     .reduce((total, entry) => total + entry.amount_cents, 0);
   const accounts = aggregateAccounts(normalizedEntries);
   const chain = verifyLedgerChain(normalizedEntries);

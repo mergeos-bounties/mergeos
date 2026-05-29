@@ -1425,6 +1425,41 @@ button:disabled {
   font-weight: 900;
 }
 
+.manual-credit-form {
+  display: grid;
+  grid-template-columns: minmax(130px, 1fr) minmax(130px, 0.8fr) 82px minmax(230px, 1.4fr) minmax(180px, 1.1fr) auto;
+  gap: 10px;
+  align-items: end;
+  border-bottom: 1px solid var(--line);
+  padding: 14px 16px;
+}
+
+.manual-credit-form label {
+  min-width: 0;
+  display: grid;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.manual-credit-form input,
+.manual-credit-form select {
+  width: 100%;
+  height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--text);
+  outline: none;
+  padding: 0 12px;
+}
+
+.manual-credit-form .form-error,
+.manual-credit-form .form-success {
+  grid-column: 1 / -1;
+}
+
 .table-wrap {
   overflow: auto;
 }
@@ -1566,6 +1601,7 @@ button:disabled {
   .settings-summary-grid,
   .gemini-key-form,
   .gemini-status-grid,
+  .manual-credit-form,
   .ssl-status-grid {
     grid-template-columns: 1fr;
   }

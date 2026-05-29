@@ -151,7 +151,7 @@ func (s *Server) mergeAdminTaskPullRequest(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	accepted, err := s.store.AcceptTaskWithReview(task.ID, req, rewardMRG, bountyType)
+	accepted, err := s.store.AcceptTaskWithReviewReference(task.ID, req, rewardMRG, bountyType, buildPullLedgerReference(task.ID, pull.HTMLURL, pull.Title))
 	if err != nil {
 		writeError(w, http.StatusConflict, err.Error())
 		return
