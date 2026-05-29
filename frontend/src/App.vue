@@ -4870,11 +4870,15 @@ function handleWSEvent(payload = {}) {
   _wsSeenProjectIDs.add(project.id);
 
   if (user.value) {
-    const exists = dashboardProjects.value.some((p) => p.id === project.id);
-    if (!exists) {
-      dashboardProjects.value = [project, ...dashboardProjects.value];
-      if (!selectedDashboardProjectID.value) {
-        selectedDashboardProjectID.value = project.id;
+    const isAdmin = user.value.role === 'admin';
+    const isOwner = user.value.id === project.client_user_id;
+    if (isAdmin || isOwner) {
+      const exists = dashboardProjects.value.some((p) => p.id === project.id);
+      if (!exists) {
+        dashboardProjects.value = [project, ...dashboardProjects.value];
+        if (!selectedDashboardProjectID.value) {
+          selectedDashboardProjectID.value = project.id;
+        }
       }
     }
   }
@@ -4885,6 +4889,11 @@ function handleWSEvent(payload = {}) {
       marketplaceData.value = {
         ...marketplaceData.value,
         projects: [project, ...marketplaceData.value.projects],
+        stats: {
+          ...marketplaceData.value.stats,
+          project_count: (Number(marketplaceData.value.stats?.project_count) || marketplaceData.value.projects.length) + 1,
+          total_budget_cents: (Number(marketplaceData.value.stats?.total_budget_cents) || 0) + (Number(project.budget_cents) || 0),
+        },
       };
     }
   }
