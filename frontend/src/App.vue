@@ -1900,6 +1900,121 @@
       </div>
     </main>
 
+
+    <main v-else-if="publicPage === 'publish-settings'" id="top" class="publish-settings-page">
+      <div class="publish-settings-container">
+        <h1 class="publish-settings-title">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          Test Publish Settings
+        </h1>
+        <p class="publish-settings-subtitle">Configure test integration keys for active bounty work. Protected by the admin-set test mode password. Secret values are stored masked and never returned in full after save.</p>
+
+        <div v-if="!publishSettingsAuthed" class="publish-auth-card">
+          <h2>Enter test mode password</h2>
+          <p>Provide the shared public test password to access and configure test integration keys.</p>
+          <form @submit.prevent="authenticatePublishSettings" class="publish-auth-form">
+            <input v-model="publishSettingsPassword" type="password" placeholder="Test mode password" class="publish-auth-input" :disabled="publishSettingsLoading" autocomplete="current-password" />
+            <button type="submit" class="publish-auth-btn" :disabled="publishSettingsLoading || !publishSettingsPassword">
+              {{ publishSettingsLoading ? 'Verifying...' : 'Access Settings' }}
+            </button>
+          </form>
+          <p v-if="publishSettingsError" class="publish-auth-error">{{ publishSettingsError }}</p>
+        </div>
+
+        <template v-else>
+          <div class="publish-settings-toolbar">
+            <span class="publish-settings-mode-badge">TEST MODE ACTIVE</span>
+            <button class="publish-settings-logout-btn" @click="publishSettingsAuthed = false; publishSettingsPassword = ''; publishSettingsList = []">Lock</button>
+          </div>
+
+          <section class="publish-settings-section">
+            <div class="publish-section-header"><h2>LLM Test Keys</h2><button class="publish-add-btn" @click="openAddPublishSetting('llm')">+ Add Key</button></div>
+            <div v-if="!publishSettingsList.filter(s => s.integration_type === 'llm').length" class="publish-empty">No LLM test keys configured.</div>
+            <table v-else class="publish-settings-table">
+              <thead><tr><th>Name</th><th>Provider</th><th>Key (masked)</th><th>Status</th><th>Added</th><th></th></tr></thead>
+              <tbody>
+                <tr v-for="s in publishSettingsList.filter(s => s.integration_type === 'llm')" :key="s.id">
+                  <td>{{ s.display_name || s.key_name }}</td><td><code>{{ s.provider }}</code></td>
+                  <td><code class="publish-hint">{{ s.key_hint }}</code></td>
+                  <td><span :class="['publish-status-badge', s.status]">{{ s.status }}</span></td>
+                  <td>{{ new Date(s.created_at).toLocaleDateString() }}</td>
+                  <td class="publish-actions">
+                    <button class="publish-action-btn" @click="togglePublishSetting(s, s.status === 'active' ? 'disabled' : 'active')">{{ s.status === 'active' ? 'Disable' : 'Enable' }}</button>
+                    <button class="publish-action-btn danger" @click="deletePublishSetting(s)">Delete</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section class="publish-settings-section">
+            <div class="publish-section-header"><h2>PayPal Sandbox Accounts</h2><button class="publish-add-btn" @click="openAddPublishSetting('paypal_sandbox')">+ Add Account</button></div>
+            <div v-if="!publishSettingsList.filter(s => s.integration_type === 'paypal_sandbox').length" class="publish-empty">No PayPal sandbox accounts configured.</div>
+            <table v-else class="publish-settings-table">
+              <thead><tr><th>Name</th><th>Client ID</th><th>Secret (masked)</th><th>Status</th><th>Added</th><th></th></tr></thead>
+              <tbody>
+                <tr v-for="s in publishSettingsList.filter(s => s.integration_type === 'paypal_sandbox')" :key="s.id">
+                  <td>{{ s.display_name || s.key_name }}</td><td><code>{{ s.client_id || '—' }}</code></td>
+                  <td><code class="publish-hint">{{ s.key_hint }}</code></td>
+                  <td><span :class="['publish-status-badge', s.status]">{{ s.status }}</span></td>
+                  <td>{{ new Date(s.created_at).toLocaleDateString() }}</td>
+                  <td class="publish-actions">
+                    <button class="publish-action-btn" @click="togglePublishSetting(s, s.status === 'active' ? 'disabled' : 'active')">{{ s.status === 'active' ? 'Disable' : 'Enable' }}</button>
+                    <button class="publish-action-btn danger" @click="deletePublishSetting(s)">Delete</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section class="publish-settings-section">
+            <div class="publish-section-header"><h2>USDT Test Receivers</h2><button class="publish-add-btn" @click="openAddPublishSetting('usdt_receiver')">+ Add Receiver</button></div>
+            <div v-if="!publishSettingsList.filter(s => s.integration_type === 'usdt_receiver').length" class="publish-empty">No USDT test receivers configured.</div>
+            <table v-else class="publish-settings-table">
+              <thead><tr><th>Name</th><th>Receiver Address</th><th>Secret (masked)</th><th>Status</th><th>Added</th><th></th></tr></thead>
+              <tbody>
+                <tr v-for="s in publishSettingsList.filter(s => s.integration_type === 'usdt_receiver')" :key="s.id">
+                  <td>{{ s.display_name || s.key_name }}</td><td><code>{{ s.receiver_address || '—' }}</code></td>
+                  <td><code class="publish-hint">{{ s.key_hint }}</code></td>
+                  <td><span :class="['publish-status-badge', s.status]">{{ s.status }}</span></td>
+                  <td>{{ new Date(s.created_at).toLocaleDateString() }}</td>
+                  <td class="publish-actions">
+                    <button class="publish-action-btn" @click="togglePublishSetting(s, s.status === 'active' ? 'disabled' : 'active')">{{ s.status === 'active' ? 'Disable' : 'Enable' }}</button>
+                    <button class="publish-action-btn danger" @click="deletePublishSetting(s)">Delete</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
+        </template>
+      </div>
+
+      <div v-if="addPublishSettingOpen" class="publish-modal-backdrop" @click.self="addPublishSettingOpen = false">
+        <div class="publish-modal">
+          <button class="publish-modal-close" @click="addPublishSettingOpen = false">×</button>
+          <h2>Add {{ addPublishSettingType === 'llm' ? 'LLM Test Key' : addPublishSettingType === 'paypal_sandbox' ? 'PayPal Sandbox Account' : 'USDT Test Receiver' }}</h2>
+          <form @submit.prevent="submitAddPublishSetting" class="publish-modal-form">
+            <label>Display Name<input v-model="addPublishSettingForm.display_name" type="text" placeholder="e.g. OpenAI staging key" /></label>
+            <label>Key Name <small>(no reserved ENV/config names)</small><input v-model="addPublishSettingForm.key_name" type="text" placeholder="e.g. openai_test_key_1" required /></label>
+            <label v-if="addPublishSettingType === 'llm'">Provider
+              <select v-model="addPublishSettingForm.provider">
+                <option value="openai">OpenAI</option><option value="anthropic">Anthropic</option>
+                <option value="gemini">Gemini</option><option value="groq">Groq</option><option value="openrouter">OpenRouter</option>
+              </select>
+            </label>
+            <label v-if="addPublishSettingType === 'paypal_sandbox'">Client ID<input v-model="addPublishSettingForm.client_id" type="text" placeholder="PayPal sandbox client ID" required /></label>
+            <label v-if="addPublishSettingType === 'usdt_receiver'">Receiver Address<input v-model="addPublishSettingForm.receiver_address" type="text" placeholder="0x... or testnet address" required /></label>
+            <label>Secret Value <small>(stored masked — only hint shown after save)</small><input v-model="addPublishSettingForm.key_value" type="password" placeholder="API key, secret, or credential value" required autocomplete="new-password" /></label>
+            <p v-if="addPublishSettingError" class="publish-auth-error">{{ addPublishSettingError }}</p>
+            <div class="publish-modal-actions">
+              <button type="button" @click="addPublishSettingOpen = false">Cancel</button>
+              <button type="submit" :disabled="addPublishSettingLoading">{{ addPublishSettingLoading ? 'Saving...' : 'Save' }}</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </main>
+
     <main v-else-if="publicPage === 'marketplace'" id="top" class="marketplace-page">
       <div class="home-container marketplace-layout">
         <section class="marketplace-main">
@@ -2419,6 +2534,7 @@ const publicPagePaths = {
   marketplace: '/marketplace',
   'how-it-works': '/how-it-works',
   ledger: '/ledger',
+  'publish-settings': '/publish-settings',
 };
 const publicPageNames = new Set(Object.keys(publicPagePaths));
 const projectWizardStepPaths = {
@@ -2549,6 +2665,18 @@ const runtimeConfig = ref(null);
 const ledgerRawEntries = ref([]);
 const ledgerProjects = ref([]);
 const ledgerLoading = ref(false);
+
+const publishSettingsAuthed = ref(false);
+const publishSettingsPassword = ref('');
+const publishSettingsLoading = ref(false);
+const publishSettingsError = ref('');
+const publishSettingsList = ref([]);
+const addPublishSettingOpen = ref(false);
+const addPublishSettingType = ref('llm');
+const addPublishSettingLoading = ref(false);
+const addPublishSettingError = ref('');
+const addPublishSettingForm = ref({ display_name: '', key_name: '', key_value: '', provider: 'openai', client_id: '', receiver_address: '' });
+
 const ledgerError = ref('');
 const marketplaceData = ref({
   stats: {},
@@ -5055,4 +5183,89 @@ onUnmounted(() => {
   }
   stopDashboardRealtime();
 });
+
+
+async function authenticatePublishSettings() {
+  if (!publishSettingsPassword.value) return;
+  publishSettingsLoading.value = true;
+  publishSettingsError.value = '';
+  try {
+    const resp = await api('/api/publish/authenticate', {
+      method: 'POST',
+      body: JSON.stringify({ password: publishSettingsPassword.value })
+    });
+    if (resp && resp.ok) {
+      publishSettingsAuthed.value = true;
+      await loadPublishSettings();
+    }
+  } catch (e) {
+    publishSettingsError.value = e?.message || 'Invalid password or test mode is disabled';
+  } finally {
+    publishSettingsLoading.value = false;
+  }
+}
+
+async function loadPublishSettings() {
+  try {
+    const data = await api('/api/publish/settings', {
+      headers: { 'X-Test-Publish-Password': publishSettingsPassword.value }
+    });
+    publishSettingsList.value = data?.settings || [];
+  } catch (e) {
+    publishSettingsError.value = e?.message || 'Failed to load settings';
+    publishSettingsAuthed.value = false;
+  }
+}
+
+function openAddPublishSetting(type) {
+  addPublishSettingType.value = type;
+  addPublishSettingForm.value = { display_name: '', key_name: '', key_value: '', provider: 'openai', client_id: '', receiver_address: '' };
+  addPublishSettingError.value = '';
+  addPublishSettingOpen.value = true;
+}
+
+async function submitAddPublishSetting() {
+  addPublishSettingLoading.value = true;
+  addPublishSettingError.value = '';
+  try {
+    await api(`/api/publish/settings/${addPublishSettingType.value}`, {
+      method: 'POST',
+      headers: { 'X-Test-Publish-Password': publishSettingsPassword.value },
+      body: JSON.stringify(addPublishSettingForm.value)
+    });
+    addPublishSettingOpen.value = false;
+    await loadPublishSettings();
+  } catch (e) {
+    addPublishSettingError.value = e?.message || 'Failed to save setting';
+  } finally {
+    addPublishSettingLoading.value = false;
+  }
+}
+
+async function togglePublishSetting(setting, status) {
+  try {
+    await api(`/api/publish/settings/${setting.integration_type}/${setting.id}`, {
+      method: 'PATCH',
+      headers: { 'X-Test-Publish-Password': publishSettingsPassword.value },
+      body: JSON.stringify({ status })
+    });
+    await loadPublishSettings();
+  } catch (e) {
+    showToast(e?.message || 'Failed to update setting');
+  }
+}
+
+async function deletePublishSetting(setting) {
+  if (!confirm('Delete this test setting?')) return;
+  try {
+    await api(`/api/publish/settings/${setting.integration_type}/${setting.id}`, {
+      method: 'DELETE',
+      headers: { 'X-Test-Publish-Password': publishSettingsPassword.value }
+    });
+    await loadPublishSettings();
+  } catch (e) {
+    showToast(e?.message || 'Failed to delete setting');
+  }
+}
+
 </script>
