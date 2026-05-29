@@ -8149,20 +8149,20 @@ svg {
     margin: 0 auto;
     border-radius: 12px;
   }
-
+  
   .auth-modal-main {
     grid-template-columns: 1fr;
     gap: 24px;
     padding: 0;
   }
-
+  
   .auth-close-button {
     width: 44px;
     height: 44px;
     top: 12px;
     right: 12px;
   }
-
+  
   .auth-modal button:not(.auth-close-button) {
     min-height: 44px;
     padding: 12px 16px;
