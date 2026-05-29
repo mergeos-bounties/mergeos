@@ -85,14 +85,14 @@ type Session struct {
 }
 
 type Notification struct {
-	ID        string    `json:"id"`
-	UserID    string    `json:"user_id"`
-	ProjectID string    `json:"project_id,omitempty"`
-	Channel   string    `json:"channel"`
-	Subject   string    `json:"subject"`
-	Body      string    `json:"body"`
-	Status    string    `json:"status"`
-	CreatedAt time.Time `json:"created_at"`
+	ID        string     `json:"id"`
+	UserID    string     `json:"user_id"`
+	ProjectID string     `json:"project_id,omitempty"`
+	Channel   string     `json:"channel"`
+	Subject   string     `json:"subject"`
+	Body      string     `json:"body"`
+	Status    string     `json:"status"`
+	CreatedAt time.Time  `json:"created_at"`
 	ReadAt    *time.Time `json:"read_at,omitempty"`
 }
 
@@ -341,6 +341,27 @@ type AdminMergeTaskPullRequestResponse struct {
 	CreditURL    string               `json:"credit_url,omitempty"`
 	CommentURL   string               `json:"comment_url,omitempty"`
 	CommentError string               `json:"comment_error,omitempty"`
+}
+
+type AdminManualCreditRequest struct {
+	WorkerID    string `json:"worker_id"`
+	RewardMRG   int64  `json:"reward_mrg"`
+	AmountMRG   int64  `json:"amount_mrg,omitempty"`
+	RewardCents int64  `json:"reward_cents,omitempty"`
+	BountyType  string `json:"bounty_type"`
+	TaskID      string `json:"task_id,omitempty"`
+	PRURL       string `json:"pr_url,omitempty"`
+	PRTitle     string `json:"pr_title,omitempty"`
+	Reference   string `json:"reference,omitempty"`
+	Note        string `json:"note,omitempty"`
+}
+
+type AdminManualCreditResponse struct {
+	LedgerEntry LedgerEntry `json:"ledger_entry"`
+	WorkerID    string      `json:"worker_id"`
+	RewardMRG   int64       `json:"reward_mrg"`
+	BountyType  string      `json:"bounty_type"`
+	CreditURL   string      `json:"credit_url,omitempty"`
 }
 
 type StatusResponse struct {

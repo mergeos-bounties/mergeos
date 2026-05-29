@@ -11,7 +11,7 @@
 
       <nav class="top-actions" aria-label="Explorer actions">
         <div class="header-account" aria-label="Wallet and GitHub">
-          <div class="wallet-address-group">
+          <div class="header-combo wallet-address-group">
             <button
               :class="['header-chip', 'wallet-chip', localWalletAddress ? 'ready' : '']"
               type="button"
@@ -19,35 +19,48 @@
               :title="localWalletAddress || 'Create MRG wallet'"
               @click="!localWalletAddress && createGuestWallet()"
             >
-              <WalletCards :size="16" />
+              <WalletCards :size="25" />
               <span>
                 <small>Wallet</small>
                 <strong>{{ localWalletAddress ? shortHash(localWalletAddress, 8, 6) : (walletBusy ? 'Creating...' : 'Create wallet') }}</strong>
               </span>
             </button>
             <button
-              v-if="localWalletAddress"
-              class="icon-mini wallet-copy-button"
+              class="chip-copy-button"
               type="button"
+              :disabled="!localWalletAddress"
               title="Copy wallet address"
-              @click="copyValue(localWalletAddress)"
+              @click="localWalletAddress && copyValue(localWalletAddress)"
             >
-              <Copy :size="15" />
+              <Copy :size="21" />
             </button>
           </div>
-          <button
-            :class="['header-chip', 'github-chip', githubLinked ? 'connected' : (canLinkGitHub ? 'ready' : '')]"
-            type="button"
-            :disabled="!canLinkGitHub"
-            :title="githubActionTitle"
-            @click="canLinkGitHub && startGitHubWalletLink()"
-          >
-            <GitPullRequest :size="16" />
-            <span>
-              <small>GitHub</small>
-              <strong>{{ githubAccountLabel }}</strong>
-            </span>
-          </button>
+          <div class="header-combo github-address-group">
+            <button
+              :class="['header-chip', 'github-chip', githubLinked ? 'connected' : (canLinkGitHub ? 'ready' : '')]"
+              type="button"
+              :disabled="!canLinkGitHub"
+              :title="githubActionTitle"
+              @click="canLinkGitHub && startGitHubWalletLink()"
+            >
+              <svg class="github-mark" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 2.25c-5.38 0-9.75 4.36-9.75 9.75 0 4.31 2.8 7.97 6.68 9.26.49.09.67-.21.67-.47 0-.23-.01-1-.01-1.81-2.72.59-3.29-1.16-3.29-1.16-.44-1.13-1.08-1.43-1.08-1.43-.88-.6.07-.59.07-.59.98.07 1.49 1 1.49 1 .86 1.48 2.26 1.05 2.81.8.09-.62.34-1.05.61-1.29-2.17-.25-4.45-1.09-4.45-4.84 0-1.07.38-1.94 1-2.62-.1-.25-.43-1.24.1-2.59 0 0 .82-.26 2.68 1 .78-.22 1.61-.33 2.44-.33.83 0 1.66.11 2.44.33 1.86-1.26 2.68-1 2.68-1 .53 1.35.2 2.34.1 2.59.62.68 1 1.55 1 2.62 0 3.76-2.29 4.59-4.47 4.83.35.3.66.9.66 1.82 0 1.31-.01 2.37-.01 2.69 0 .26.18.56.68.47A9.76 9.76 0 0 0 21.75 12c0-5.39-4.36-9.75-9.75-9.75Z" />
+              </svg>
+              <span>
+                <small>GitHub</small>
+                <strong>{{ githubAccountLabel }}</strong>
+              </span>
+            </button>
+            <button
+              class="chip-copy-button"
+              type="button"
+              :disabled="!githubLinked"
+              title="Copy GitHub account"
+              @click="githubLinked && copyValue(githubAccountLabel)"
+            >
+              <Copy :size="21" />
+            </button>
+          </div>
         </div>
         <button
           :class="['api-nav-link', route.name === 'api' ? 'active' : '']"
@@ -55,14 +68,14 @@
           title="Open API docs"
           @click="openApiDocs"
         >
-          <FileJson :size="17" />
+          <Braces :size="24" />
           <span>API</span>
         </button>
         <button class="icon-button" type="button" title="Refresh" @click="loadExplorerData">
-          <RefreshCw :size="18" />
+          <RefreshCw :size="24" />
         </button>
         <a class="icon-button" title="Open MergeOS" href="https://mergeos.shop/">
-          <ExternalLink :size="18" />
+          <ExternalLink :size="24" />
         </a>
       </nav>
     </header>
@@ -73,7 +86,15 @@
         <section class="search-band">
           <div class="search-copy">
             <p>MRG Token Explorer</p>
-            <h1>MRG token activity and proof ledger for MergeOS.</h1>
+            <h1 aria-label="MRG token activity and proof ledger for MergeOS.">
+              <span class="title-desktop">MRG token activity and proof ledger for MergeOS.</span>
+              <span class="title-mobile" aria-hidden="true">
+                MRG token<br />
+                activity and<br />
+                proof ledger<br />
+                for MergeOS.
+              </span>
+            </h1>
           </div>
 
           <form class="search-panel" @submit.prevent="submitSearch">
@@ -172,12 +193,17 @@
               </div>
 
               <TransactionTable
-                :entries="visibleEntries"
+                :entries="displayedEntries"
                 :token-symbol="tokenSymbol"
                 @go-tx="openTx"
                 @go-block="openBlock"
                 @go-address="openAddress"
               />
+              <div v-if="hasMoreTransactions || showAllTransactions" class="table-more">
+                <button type="button" @click="showAllTransactions = !showAllTransactions">
+                  {{ showAllTransactions ? 'Show fewer transactions' : 'View more transactions ->' }}
+                </button>
+              </div>
             </div>
 
             <aside class="side-rail">
@@ -209,36 +235,17 @@
                 </dl>
               </section>
 
-              <section class="rail-panel">
+              <section class="rail-panel about-panel">
                 <div class="panel-head compact">
                   <div>
-                    <p>Hash Chain</p>
-                    <h2>Verification</h2>
-                  </div>
-                  <span :class="['pill', chain.ok ? 'good' : 'bad']">{{ chain.ok ? 'Valid' : 'Check' }}</span>
-                </div>
-                <div class="chain-proof">
-                  <ShieldCheck :size="28" />
-                  <strong>{{ chain.ok ? 'All links match' : `${chain.issues.length} issues found` }}</strong>
-                  <small>{{ shortHash(chain.latestHash, 12, 10) }}</small>
-                </div>
-              </section>
-
-              <section class="rail-panel">
-                <div class="panel-head compact">
-                  <div>
-                    <p>Addresses</p>
-                    <h2>Top accounts</h2>
+                    <p>About MergeOS</p>
                   </div>
                 </div>
-                <div class="account-list">
-                  <button v-for="account in topAccounts" :key="account.account" type="button" @click="openAddress(account.account)">
-                    <span>
-                      <strong>{{ shortHash(account.account, 16, 8) }}</strong>
-                      <small>{{ accountRole(account.account) }}</small>
-                    </span>
-                    <b>{{ account.tx_count }}</b>
-                  </button>
+                <div class="about-copy">
+                  <span class="about-icon" aria-hidden="true">
+                    <Keyboard :size="42" />
+                  </span>
+                  <p>MergeOS is a decentralized ledger system for verifying contributions and rewarding real work onchain.</p>
                 </div>
               </section>
             </aside>
@@ -246,6 +253,23 @@
         </template>
       </template>
     </main>
+
+    <Transition name="copy-toast">
+      <div
+        v-if="copyToast"
+        :class="['copy-toast', copyToast.tone]"
+        :role="copyToast.tone === 'error' ? 'alert' : 'status'"
+        :aria-label="`${copyToast.title}: ${copyToast.body}`"
+        aria-live="polite"
+      >
+        <CheckCircle2 v-if="copyToast.tone === 'success'" :size="18" aria-hidden="true" />
+        <AlertTriangle v-else :size="18" aria-hidden="true" />
+        <span>
+          <strong>{{ copyToast.title }}</strong>
+          <small>{{ copyToast.body }}</small>
+        </span>
+      </div>
+    </Transition>
 
     <footer class="footer">
       <span>scan.mergeos.shop</span>
@@ -258,22 +282,23 @@
 <script setup>
 import { computed, defineAsyncComponent, defineComponent, h, onBeforeUnmount, onMounted, ref } from 'vue';
 import {
-  Activity,
   AlertTriangle,
   ArrowDownLeft,
   ArrowUpRight,
-  Blocks,
+  Braces,
   CheckCircle2,
+  Coins,
   Copy,
   ExternalLink,
-  FileJson,
+  FileText,
   Fingerprint,
-  GitPullRequest,
+  Keyboard,
   LoaderCircle,
   RefreshCw,
   RotateCcw,
   Search,
   ShieldCheck,
+  Trophy,
   WalletCards,
 } from '@lucide/vue';
 import {
@@ -289,11 +314,11 @@ import {
   normalizeLedgerAccount,
   normalizeExplorerPath,
   parseExplorerRoute,
+  parseLedgerReference,
   paymentModeLabel,
   shortHash,
   sortLedgerEntries,
   tokenAmountFromCents,
-  verifyLedgerChain,
 } from './explorer.js';
 
 const ApiDocs = defineAsyncComponent(() => import('./ApiDocs.vue'));
@@ -316,12 +341,15 @@ const lastSyncAt = ref(null);
 const searchInput = ref('');
 const queryFilter = ref('');
 const typeFilter = ref('all');
+const showAllTransactions = ref(false);
 const route = ref(parseRoute());
+const copyToast = ref(null);
+let copyToastTimer = 0;
 
 const tokenSymbol = computed(() => config.value?.token_symbol || marketplace.value?.stats?.token_symbol || 'MRG');
 const paymentMode = computed(() => paymentModeLabel(config.value?.payment_mode));
 const githubOAuthReady = computed(() => Boolean(config.value?.github_oauth_ready && config.value?.github_oauth_client_id));
-const networkLabel = computed(() => config.value?.environment === 'production' ? 'MergeOS main ledger' : 'MergeOS ledger');
+const networkLabel = computed(() => 'MergeOS main ledger');
 const linkedGitHubUsername = computed(() => cleanGitHubUsername(
   githubUser.value?.github_username || walletSummary.value?.github_username || githubUser.value?.name || '',
 ));
@@ -337,11 +365,11 @@ const githubActionTitle = computed(() => {
 const entries = computed(() => sortLedgerEntries(rawEntries.value));
 const newestEntries = computed(() => entries.value.slice().reverse());
 const accounts = computed(() => aggregateAccounts(entries.value));
-const chain = computed(() => verifyLedgerChain(entries.value));
 const stats = computed(() => buildExplorerStats(entries.value, marketplace.value, tokenSymbol.value));
 const ledgerTypes = computed(() => Array.from(new Set(entries.value.map((entry) => entry.type))).sort());
 const visibleEntries = computed(() => filterEntries(newestEntries.value, { query: queryFilter.value, type: typeFilter.value }));
-const topAccounts = computed(() => accounts.value.slice(0, 6));
+const displayedEntries = computed(() => (showAllTransactions.value ? visibleEntries.value : visibleEntries.value.slice(0, 5)));
+const hasMoreTransactions = computed(() => visibleEntries.value.length > displayedEntries.value.length);
 const lastSyncLabel = computed(() => {
   if (!lastSyncAt.value) return 'pending';
   return lastSyncAt.value.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -367,10 +395,10 @@ const selectedBlockEntry = computed(() => {
   return entries.value.find((entry) => entry.sequence === sequence);
 });
 const statCards = computed(() => [
-  { label: 'Ledger Entries', value: formatCompact(stats.value.totalTransactions), icon: Activity, tone: 'blue' },
-  { label: 'MRG Minted', value: `${formatCompact(stats.value.mintedTokens)} ${tokenSymbol.value}`, icon: WalletCards, tone: 'green' },
-  { label: 'Verified Funding', value: formatLedgerAmount(stats.value.fundingCents), icon: CheckCircle2, tone: 'teal' },
-  { label: 'Ledger Height', value: `#${formatCompact(stats.value.chainHeight)}`, icon: Blocks, tone: 'amber' },
+  { label: 'Ledger Entries', value: formatCompact(stats.value.totalTransactions), icon: FileText, tone: 'green' },
+  { label: 'MRG Minted', value: `${formatCompact(stats.value.mintedTokens)} ${tokenSymbol.value}`, icon: Coins, tone: 'green' },
+  { label: 'Verified Funding', value: formatLedgerAmount(stats.value.fundingCents), icon: ShieldCheck, tone: 'green' },
+  { label: 'Ledger Height', value: `#${formatCompact(stats.value.chainHeight)}`, icon: Trophy, tone: 'gold' },
 ]);
 
 onMounted(() => {
@@ -383,6 +411,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('popstate', syncRoute);
+  window.clearTimeout(copyToastTimer);
 });
 
 async function loadExplorerData() {
@@ -621,6 +650,7 @@ function normalizeMarketplace(payload = {}) {
 function submitSearch() {
   const query = searchInput.value.trim();
   queryFilter.value = query;
+  showAllTransactions.value = false;
   if (!query) {
     goHome();
     return;
@@ -640,6 +670,7 @@ function resetFilters() {
   searchInput.value = '';
   queryFilter.value = '';
   typeFilter.value = 'all';
+  showAllTransactions.value = false;
 }
 
 function openTx(hash) {
@@ -693,16 +724,44 @@ function safeReturnPath(path = '/') {
 }
 
 async function copyValue(value) {
+  const text = String(value || '');
   try {
-    await navigator.clipboard.writeText(String(value || ''));
-  } catch {
-    const input = document.createElement('textarea');
-    input.value = String(value || '');
-    document.body.appendChild(input);
-    input.select();
-    document.execCommand('copy');
-    input.remove();
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+    } else {
+      fallbackCopyText(text);
+    }
+    showCopyToast('success', 'Copied to clipboard', copiedValueLabel(text));
+  } catch (error) {
+    showCopyToast('error', 'Copy failed', 'Please copy it manually.');
   }
+}
+
+function fallbackCopyText(text) {
+  const input = document.createElement('textarea');
+  input.value = text;
+  input.setAttribute('readonly', '');
+  input.style.position = 'fixed';
+  input.style.left = '-9999px';
+  document.body.appendChild(input);
+  input.select();
+  const copied = document.execCommand('copy');
+  input.remove();
+  if (!copied) throw new Error('Copy command failed');
+}
+
+function showCopyToast(tone, title, body) {
+  window.clearTimeout(copyToastTimer);
+  copyToast.value = { tone, title, body };
+  copyToastTimer = window.setTimeout(() => {
+    copyToast.value = null;
+  }, 2600);
+}
+
+function copiedValueLabel(value) {
+  const text = String(value || '').trim();
+  if (!text) return 'Value copied.';
+  return text.length > 34 ? shortHash(text, 12, 8) : text;
 }
 
 function typeLabel(type) {
@@ -765,7 +824,7 @@ function txRow(entry, tokenSymbolValue, emit) {
   return h('tr', { key: entry.entry_hash || entry.sequence }, [
     h('td', [
       h('button', { class: 'link-button hash-link', type: 'button', onClick: () => emit('go-tx', entry.entry_hash) }, shortHash(entry.entry_hash, 10, 8)),
-      h('small', entry.reference || '-'),
+      referenceNode(entry.reference, { compact: true }),
     ]),
     h('td', [
       h('button', { class: 'link-button block-link', type: 'button', onClick: () => emit('go-block', entry.sequence) }, `#${entry.sequence}`),
@@ -834,7 +893,7 @@ const TransactionDetail = defineComponent({
           accountField('From', entry.from_account, emit),
           accountField('To', entry.to_account, emit),
           h(DetailField, { label: 'Value', value: valueLabel(entry, props.tokenSymbol) }),
-          h(DetailField, { label: 'Reference', value: entry.reference, copyable: true, onCopy: (value) => emit('copy', value) }),
+          referenceField(entry.reference, emit),
           h(DetailField, { label: 'Previous Hash', value: entry.previous_hash, copyable: true, onCopy: (value) => emit('copy', value) }),
         ]),
         h('div', { class: 'detail-actions' }, [
@@ -920,6 +979,51 @@ function accountField(label, account, emit) {
     h('dd', [
       account ? h('button', { class: 'link-button', type: 'button', onClick: () => emit('go-address', account) }, account) : h('span', '-'),
     ]),
+  ]);
+}
+
+function referenceField(reference, emit) {
+  const raw = String(reference || '');
+  return h('div', { class: 'detail-field reference-field' }, [
+    h('dt', 'Reference'),
+    h('dd', [
+      referenceNode(raw),
+      h('button', { class: 'icon-mini', type: 'button', title: 'Copy', disabled: !raw, onClick: () => raw && emit('copy', raw) }, [h(Copy, { size: 15 })]),
+    ]),
+  ]);
+}
+
+function referenceNode(reference, options = {}) {
+  const raw = String(reference || '').trim();
+  const parsed = parseLedgerReference(raw);
+
+  if (options.compact) {
+    if (!parsed.href) return h('small', raw || '-');
+    return h('small', [
+      h('a', {
+        class: 'reference-link compact',
+        href: parsed.href,
+        target: '_blank',
+        rel: 'noreferrer',
+        title: parsed.label,
+      }, parsed.shortLabel),
+    ]);
+  }
+
+  if (!parsed.href) return h('span', raw || '-');
+
+  return h('span', { class: 'reference-value' }, [
+    h('a', {
+      class: 'reference-link',
+      href: parsed.href,
+      target: '_blank',
+      rel: 'noreferrer',
+      title: parsed.raw,
+    }, [
+      h('span', parsed.label),
+      h(ExternalLink, { size: 14 }),
+    ]),
+    parsed.title ? h('small', `${parsed.provider} ${parsed.shortLabel}`) : null,
   ]);
 }
 

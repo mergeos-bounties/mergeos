@@ -104,6 +104,25 @@
         </div>
       </header>
 
+      <section class="admin-command-strip" aria-label="Admin command summary">
+        <div class="admin-command-copy">
+          <span class="eyebrow">CONTROL ROOM</span>
+          <h2>{{ adminCommandTitle }}</h2>
+          <p>{{ adminCommandBody }}</p>
+        </div>
+        <div class="admin-command-metrics">
+          <article v-for="metric in adminCommandMetrics" :key="metric.label">
+            <span :class="['metric-icon', metric.tone]">
+              <component :is="metric.icon" :size="18" />
+            </span>
+            <div>
+              <strong>{{ metric.value }}</strong>
+              <small>{{ metric.label }}</small>
+            </div>
+          </article>
+        </div>
+      </section>
+
       <p v-if="errorMessage" class="workspace-error">{{ errorMessage }}</p>
 
       <section v-if="activeView === 'builder'" class="builder-workspace">
@@ -369,6 +388,36 @@
 
       <section v-else-if="activeView === 'ledger'" class="table-panel">
         <TableHeader title="Ledger" :count="ledgerEntries.length" />
+        <form class="manual-credit-form" @submit.prevent="createManualCredit">
+          <label>
+            <span>Worker</span>
+            <input v-model.trim="manualCreditForm.worker_id" autocomplete="off" placeholder="github:eliasx45" required />
+          </label>
+          <label>
+            <span>Type</span>
+            <select v-model.trim="manualCreditForm.bounty_type" autocomplete="off" @change="setManualCreditBounty">
+              <option v-for="option in bountyOptions" :key="option.id" :value="option.id">{{ option.label }}</option>
+            </select>
+          </label>
+          <label>
+            <span>MRG</span>
+            <input v-model.number="manualCreditForm.reward_mrg" min="1" step="1" type="number" required />
+          </label>
+          <label>
+            <span>PR URL</span>
+            <input v-model.trim="manualCreditForm.pr_url" autocomplete="off" placeholder="https://github.com/org/repo/pull/120" required />
+          </label>
+          <label>
+            <span>PR title</span>
+            <input v-model.trim="manualCreditForm.pr_title" autocomplete="off" placeholder="Timeline correction" />
+          </label>
+          <button class="primary-action" :disabled="manualCreditBusy" type="submit">
+            <CircleDollarSign :size="16" />
+            {{ manualCreditBusy ? 'Crediting...' : 'Credit MRG' }}
+          </button>
+          <p v-if="manualCreditError" class="form-error">{{ manualCreditError }}</p>
+          <p v-if="manualCreditMessage" class="form-success">{{ manualCreditMessage }}</p>
+        </form>
         <DataTable :columns="['Seq', 'Type', 'From', 'To', 'Amount', 'Reference']">
           <tr v-for="entry in ledgerEntries.slice().reverse()" :key="entry.sequence">
             <td>{{ entry.sequence }}</td>
@@ -376,7 +425,7 @@
             <td>{{ entry.from_account || '-' }}</td>
             <td>{{ entry.to_account || '-' }}</td>
             <td>{{ mrgFromCents(entry.amount_cents) }}</td>
-            <td>{{ showLedgerHashes ? shortRef(entry.entry_hash) : shortRef(entry.reference) }}</td>
+            <td :title="showLedgerHashes ? entry.entry_hash : entry.reference">{{ showLedgerHashes ? shortRef(entry.entry_hash) : shortRef(entry.reference) }}</td>
           </tr>
         </DataTable>
       </section>
@@ -760,6 +809,9 @@ const taskPullsError = ref({});
 const mergeBusy = ref({});
 const mergeMessages = ref({});
 const mergeSelections = ref({});
+const manualCreditBusy = ref(false);
+const manualCreditError = ref('');
+const manualCreditMessage = ref('');
 const taskIssueStates = ref({});
 const expandedTaskPulls = ref({});
 const geminiKeys = ref([]);
@@ -800,6 +852,14 @@ const settingsForm = reactive({
   llm_provider: 'gemini',
   llm_model: 'gemini-2.5-flash',
   gemini_review_model: '',
+});
+
+const manualCreditForm = reactive({
+  worker_id: '',
+  bounty_type: 'future-medium',
+  reward_mrg: 50,
+  pr_url: '',
+  pr_title: '',
 });
 
 const navItems = [
@@ -925,6 +985,40 @@ const filteredUsers = computed(() => {
   if (!query.value) return users.value;
   return users.value.filter((row) => haystack(row).includes(query.value));
 });
+const adminCommandTitle = computed(() => activeNav.value?.title || 'Admin workspace');
+const adminCommandBody = computed(() => {
+  if (activeView.value === 'tasks') return 'Review GitHub issues, inspect PRs, assign bounty credit, and keep payout proof aligned with the ledger.';
+  if (activeView.value === 'ledger') return 'Credit MRG, audit verified records, and switch between public references and hash evidence.';
+  if (activeView.value === 'users') return 'Inspect account activity, update roles, and keep admin access controlled from one panel.';
+  if (activeView.value === 'setting') return 'Tune review models, provider tokens, quotas, and webhook health for the automation layer.';
+  return 'Monitor funded work, task queues, SSL health, user activity, and payout records from one operations surface.';
+});
+const adminCommandMetrics = computed(() => [
+  {
+    label: 'Visible tasks',
+    value: number(filteredTasks.value.length),
+    icon: ListChecks,
+    tone: 'amber',
+  },
+  {
+    label: 'Funded projects',
+    value: number(filteredProjects.value.length),
+    icon: FolderKanban,
+    tone: 'green',
+  },
+  {
+    label: 'Ledger rows',
+    value: number(ledgerEntries.value.length),
+    icon: Activity,
+    tone: 'blue',
+  },
+  {
+    label: 'SSL attention',
+    value: number(sslAttentionCount.value),
+    icon: ShieldCheck,
+    tone: sslAttentionCount.value ? 'amber' : 'green',
+  },
+]);
 
 const TableHeader = defineComponent({
   props: {
@@ -1534,6 +1628,13 @@ function setMergeReward(task, pull, value) {
   };
 }
 
+function setManualCreditBounty(event) {
+  const value = event?.target?.value || manualCreditForm.bounty_type;
+  const option = bountyOptions.find((row) => row.id === value) || bountyOptions[1] || bountyOptions[0];
+  manualCreditForm.bounty_type = option.id;
+  manualCreditForm.reward_mrg = option.reward_mrg;
+}
+
 function pullStatus(pull) {
   if (pull.merged) return 'merged';
   if (pull.draft) return 'draft';
@@ -1607,6 +1708,39 @@ async function mergeTaskPull(task, pull) {
     taskPullsError.value = { ...taskPullsError.value, [task.id]: error.message };
   } finally {
     mergeBusy.value = { ...mergeBusy.value, [key]: false };
+  }
+}
+
+async function createManualCredit() {
+  if (!token.value || manualCreditBusy.value) return;
+  manualCreditBusy.value = true;
+  manualCreditError.value = '';
+  manualCreditMessage.value = '';
+  try {
+    const result = await api('/api/admin/ledger/credits', {
+      method: 'POST',
+      body: JSON.stringify({
+        worker_id: manualCreditForm.worker_id,
+        bounty_type: manualCreditForm.bounty_type,
+        reward_mrg: Math.max(1, Math.round(Number(manualCreditForm.reward_mrg) || 0)),
+        pr_url: manualCreditForm.pr_url,
+        pr_title: manualCreditForm.pr_title,
+      }),
+    });
+    const [summaryData, ledgerData] = await Promise.all([
+      api('/api/admin/summary'),
+      api('/api/admin/ledger'),
+    ]);
+    summary.value = summaryData || {};
+    ledgerEntries.value = Array.isArray(ledgerData) ? ledgerData : [];
+    manualCreditMessage.value = `Credited ${mrg(result.reward_mrg || manualCreditForm.reward_mrg)} to ${result.worker_id || manualCreditForm.worker_id}.`;
+    manualCreditForm.worker_id = '';
+    manualCreditForm.pr_url = '';
+    manualCreditForm.pr_title = '';
+  } catch (error) {
+    manualCreditError.value = error.message;
+  } finally {
+    manualCreditBusy.value = false;
   }
 }
 

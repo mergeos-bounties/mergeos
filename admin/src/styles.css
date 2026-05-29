@@ -1425,6 +1425,41 @@ button:disabled {
   font-weight: 900;
 }
 
+.manual-credit-form {
+  display: grid;
+  grid-template-columns: minmax(130px, 1fr) minmax(130px, 0.8fr) 82px minmax(230px, 1.4fr) minmax(180px, 1.1fr) auto;
+  gap: 10px;
+  align-items: end;
+  border-bottom: 1px solid var(--line);
+  padding: 14px 16px;
+}
+
+.manual-credit-form label {
+  min-width: 0;
+  display: grid;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.manual-credit-form input,
+.manual-credit-form select {
+  width: 100%;
+  height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--text);
+  outline: none;
+  padding: 0 12px;
+}
+
+.manual-credit-form .form-error,
+.manual-credit-form .form-success {
+  grid-column: 1 / -1;
+}
+
 .table-wrap {
   overflow: auto;
 }
@@ -1566,6 +1601,7 @@ button:disabled {
   .settings-summary-grid,
   .gemini-key-form,
   .gemini-status-grid,
+  .manual-credit-form,
   .ssl-status-grid {
     grid-template-columns: 1fr;
   }
@@ -1612,5 +1648,377 @@ button:disabled {
 
   .task-pr-actions {
     justify-content: flex-start;
+  }
+}
+
+/* ===== MergeOS admin redesign ===== */
+
+:root {
+  --display-font: "Aptos Display", "Segoe UI Variable Display", "Segoe UI", ui-sans-serif, system-ui, sans-serif;
+  --text-font: "Aptos", "Segoe UI Variable Text", "Segoe UI", ui-sans-serif, system-ui, sans-serif;
+  --mono-font: "Cascadia Code", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --bg: #f3f7f4;
+  --surface: #ffffff;
+  --surface-2: #f7faf8;
+  --line: #dbe6e0;
+  --line-strong: #c5d4ce;
+  --text: #0b1511;
+  --muted: #5f6d68;
+  --green: #0f9f78;
+  --green-dark: #075f4c;
+  --blue: #2456d6;
+  --amber: #b7791f;
+  --purple: #6745d9;
+  --danger: #dc2626;
+  font-family: var(--text-font);
+}
+
+body {
+  background:
+    linear-gradient(90deg, rgba(15, 159, 120, 0.045) 1px, transparent 1px),
+    linear-gradient(180deg, #fbfdfb 0%, var(--bg) 100%);
+  background-size: 72px 72px, auto;
+}
+
+.login-screen {
+  background:
+    linear-gradient(90deg, rgba(15, 159, 120, 0.05) 1px, transparent 1px),
+    #f3f7f4;
+  background-size: 64px 64px, auto;
+}
+
+.login-panel {
+  border-right-color: rgba(11, 21, 17, 0.1);
+  box-shadow: 22px 0 50px rgba(11, 21, 17, 0.05);
+}
+
+.login-copy h1,
+.admin-topbar h1,
+.admin-command-copy h2,
+.canvas-toolbar strong,
+.canvas-band header strong,
+.table-header h2 {
+  font-family: var(--display-font);
+}
+
+.eyebrow,
+.canvas-toolbar span,
+.canvas-band header span,
+.table-header span {
+  font-family: var(--mono-font);
+  letter-spacing: 0.1em;
+}
+
+.login-copy h1 {
+  font-size: clamp(38px, 6vw, 62px);
+  letter-spacing: 0;
+}
+
+.login-form input,
+.search-box input,
+.inspector-panel select,
+.editor-form input,
+.editor-form select,
+.manual-credit-form input,
+.manual-credit-form select,
+.settings-form input,
+.settings-form select,
+.gemini-key-form input,
+.gemini-key-form select {
+  border-radius: 8px;
+  border-color: rgba(11, 21, 17, 0.13);
+}
+
+.primary-action {
+  border-radius: 8px;
+  box-shadow: 0 12px 26px rgba(15, 159, 120, 0.18);
+}
+
+.login-preview {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.24), rgba(15, 159, 120, 0.06)),
+    transparent;
+}
+
+.preview-sidebar,
+.preview-canvas {
+  border-color: rgba(11, 21, 17, 0.1);
+  border-radius: 8px;
+  box-shadow: 0 22px 52px rgba(11, 21, 17, 0.09);
+}
+
+.preview-canvas {
+  background:
+    linear-gradient(90deg, rgba(15, 159, 120, 0.04) 1px, transparent 1px),
+    #ffffff;
+  background-size: 28px 28px, auto;
+}
+
+.admin-shell {
+  grid-template-columns: 264px minmax(0, 1fr);
+  background:
+    linear-gradient(90deg, rgba(15, 159, 120, 0.04) 1px, transparent 1px),
+    var(--bg);
+  background-size: 64px 64px, auto;
+}
+
+.admin-sidebar {
+  border-right-color: rgba(11, 21, 17, 0.1);
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(14px);
+}
+
+.sidebar-brand {
+  border-bottom: 1px solid rgba(11, 21, 17, 0.08);
+  padding-bottom: 16px;
+}
+
+.sidebar-nav {
+  gap: 5px;
+}
+
+.sidebar-nav a {
+  border-radius: 8px;
+  color: #273a34;
+}
+
+.sidebar-nav a.active,
+.sidebar-nav a:hover {
+  border-color: #0c1713;
+  background: #0c1713;
+  color: #ffffff;
+}
+
+.admin-main {
+  padding: 18px clamp(16px, 2.2vw, 28px) 28px;
+}
+
+.admin-topbar {
+  min-height: 58px;
+  margin-bottom: 14px;
+}
+
+.admin-topbar h1 {
+  font-size: clamp(26px, 3vw, 38px);
+}
+
+.topbar-actions {
+  flex-wrap: wrap;
+}
+
+.search-box,
+.device-switch,
+.icon-button {
+  border-color: rgba(11, 21, 17, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.94);
+}
+
+.device-switch button,
+.icon-button {
+  border-radius: 6px;
+}
+
+.admin-command-strip {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.84fr) minmax(0, 1.16fr);
+  gap: 16px;
+  align-items: stretch;
+  margin-bottom: 16px;
+  border: 1px solid rgba(11, 21, 17, 0.1);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(12, 23, 19, 0.97), rgba(15, 64, 54, 0.94)),
+    #0c1713;
+  color: #ffffff;
+  box-shadow: 0 22px 48px rgba(11, 21, 17, 0.14);
+  padding: clamp(16px, 2vw, 22px);
+}
+
+.admin-command-copy {
+  display: grid;
+  align-content: center;
+}
+
+.admin-command-copy .eyebrow {
+  color: #79e7bd;
+}
+
+.admin-command-copy h2 {
+  margin: 7px 0 0;
+  color: #ffffff;
+  font-size: clamp(26px, 3vw, 40px);
+  line-height: 1.05;
+  font-weight: 900;
+}
+
+.admin-command-copy p {
+  max-width: 640px;
+  margin: 10px 0 0;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 620;
+}
+
+.admin-command-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.admin-command-metrics article {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.07);
+  padding: 12px;
+}
+
+.admin-command-metrics .metric-icon {
+  width: 38px;
+  height: 38px;
+}
+
+.admin-command-metrics strong,
+.admin-command-metrics small {
+  display: block;
+}
+
+.admin-command-metrics strong {
+  overflow: hidden;
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 930;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-command-metrics small {
+  margin-top: 4px;
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 11px;
+  font-weight: 760;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.canvas-column,
+.inspector-panel,
+.user-editor-panel,
+.ssl-review-panel,
+.table-panel,
+.metric-tile,
+.settings-panel,
+.settings-summary-grid article,
+.gemini-control-panel {
+  border-color: rgba(11, 21, 17, 0.1);
+  border-radius: 8px;
+  box-shadow: 0 14px 34px rgba(11, 21, 17, 0.055);
+}
+
+.canvas-toolbar,
+.table-header {
+  border-bottom-color: rgba(11, 21, 17, 0.1);
+}
+
+.elementor-canvas {
+  background:
+    linear-gradient(90deg, rgba(15, 159, 120, 0.035) 1px, transparent 1px),
+    var(--surface-2);
+  background-size: 28px 28px, auto;
+}
+
+.canvas-band {
+  border-style: solid;
+  border-color: rgba(11, 21, 17, 0.11);
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.metric-grid article,
+.metric-tile,
+.stack-list > div,
+.ledger-stream article,
+.task-review-header,
+.task-review-stats article,
+.task-review-item,
+.task-pr-row,
+.manual-credit-form,
+.ssl-status-grid article,
+.gemini-status-grid article {
+  border-color: rgba(11, 21, 17, 0.1);
+  border-radius: 8px;
+}
+
+.admin-table th {
+  background: #f4f8f5;
+}
+
+.admin-table th,
+.admin-table td {
+  border-bottom-color: rgba(11, 21, 17, 0.09);
+}
+
+.status-pill {
+  border-radius: 999px;
+}
+
+@media (max-width: 1180px) {
+  .admin-shell,
+  .admin-command-strip,
+  .builder-workspace,
+  .users-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-sidebar {
+    position: static;
+    height: auto;
+  }
+
+  .sidebar-nav {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 820px) {
+  .admin-command-metrics,
+  .metric-grid,
+  .data-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-topbar,
+  .topbar-actions,
+  .canvas-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .search-box {
+    width: 100%;
+  }
+}
+
+@media (max-width: 560px) {
+  .admin-main {
+    padding: 14px;
+  }
+
+  .admin-command-metrics,
+  .metric-grid,
+  .data-grid,
+  .sidebar-nav,
+  .task-review-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-command-strip {
+    padding: 16px;
   }
 }

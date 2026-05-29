@@ -75,6 +75,69 @@ export function paymentModeLabel(value = '') {
   }[normalized] || toTitleLabel(value);
 }
 
+export function parseLedgerReference(reference = '') {
+  const raw = String(reference || '').trim();
+  const fallback = {
+    raw,
+    kind: raw ? 'text' : 'empty',
+    href: '',
+    title: '',
+    label: raw,
+    shortLabel: raw,
+    provider: '',
+    number: '',
+  };
+  if (!raw) return fallback;
+
+  const fields = raw.split(';').reduce((acc, part) => {
+    const index = part.indexOf(':');
+    if (index <= 0) return acc;
+    const key = part.slice(0, index).trim().toLowerCase();
+    const value = part.slice(index + 1).trim();
+    if (key && value) acc[key] = value;
+    return acc;
+  }, {});
+
+  const url = safeReferenceURL(fields.pr || fields.url || fields.link);
+  if (!url) return fallback;
+
+  const pull = githubPullRequestInfo(url);
+  const title = fields.title || '';
+  const provider = pull ? `${pull.owner}/${pull.repo}` : url.hostname.replace(/^www\./, '');
+  const shortLabel = pull ? `PR #${pull.number}` : provider;
+
+  return {
+    raw,
+    kind: pull ? 'github_pr' : 'link',
+    href: url.href,
+    title,
+    label: title || shortLabel,
+    shortLabel,
+    provider,
+    number: pull?.number || '',
+  };
+}
+
+function safeReferenceURL(value = '') {
+  try {
+    const url = new URL(String(value || '').trim());
+    return ['http:', 'https:'].includes(url.protocol) ? url : null;
+  } catch {
+    return null;
+  }
+}
+
+function githubPullRequestInfo(url) {
+  const host = url.hostname.toLowerCase().replace(/^www\./, '');
+  const parts = url.pathname.split('/').filter(Boolean);
+  if (host !== 'github.com' || parts.length < 4 || parts[2] !== 'pull' || !/^\d+$/.test(parts[3])) return null;
+  return {
+    owner: parts[0],
+    repo: parts[1],
+    number: parts[3],
+  };
+}
+
 export function ledgerTypeMeta(type = '') {
   const normalized = String(type || '').toLowerCase();
   const fallback = { label: toTitleLabel(normalized || 'Ledger Entry'), tone: 'neutral', direction: 'neutral' };
@@ -85,6 +148,7 @@ export function ledgerTypeMeta(type = '') {
     project_reserve: { label: 'Project Reserve', tone: 'reserve', direction: 'neutral' },
     task_reserve: { label: 'Task Reserve', tone: 'task', direction: 'neutral' },
     task_payment: { label: 'Task Payout', tone: 'payout', direction: 'out' },
+    manual_credit: { label: 'Manual Credit', tone: 'payout', direction: 'out' },
   }[normalized] || fallback;
 }
 
@@ -292,7 +356,7 @@ export function buildExplorerStats(entries = [], marketplace = {}, tokenSymbol =
     .filter((entry) => entry.type === 'payment_verified')
     .reduce((total, entry) => total + entry.amount_cents, 0);
   const payoutCents = normalizedEntries
-    .filter((entry) => entry.type === 'task_payment')
+    .filter((entry) => entry.type === 'task_payment' || entry.type === 'manual_credit')
     .reduce((total, entry) => total + entry.amount_cents, 0);
   const accounts = aggregateAccounts(normalizedEntries);
   const chain = verifyLedgerChain(normalizedEntries);

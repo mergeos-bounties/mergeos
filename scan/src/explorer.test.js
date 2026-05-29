@@ -11,6 +11,7 @@ import {
   normalizeLedgerAccount,
   normalizeExplorerPath,
   parseExplorerRoute,
+  parseLedgerReference,
   paymentModeLabel,
   tokenAmountFromCents,
   verifyLedgerChain,
@@ -106,10 +107,34 @@ test('filters entries by type, account and free text', () => {
 });
 
 test('builds explorer-level stats from ledger and marketplace payloads', () => {
-  const stats = buildExplorerStats(entries, { stats: { project_count: 3 }, projects: [] }, 'MRG');
+  const stats = buildExplorerStats([
+    ...entries,
+    {
+      sequence: 3,
+      type: 'manual_credit',
+      from_account: 'reserve:task',
+      to_account: 'github:eliasx45',
+      amount_cents: 50,
+      reference: 'pr:https://github.com/mergeos-bounties/mergeos/pull/120;title:Public timeline correction',
+      previous_hash: 'b'.repeat(64),
+      entry_hash: 'c'.repeat(64),
+      created_at: '2026-05-26T00:02:00Z',
+    },
+  ], { stats: { project_count: 3 }, projects: [] }, 'MRG');
 
-  assert.equal(stats.totalTransactions, 2);
+  assert.equal(stats.totalTransactions, 3);
   assert.equal(stats.mintedTokens, 100000);
+  assert.equal(stats.payoutCents, 50);
   assert.equal(stats.projectCount, 3);
   assert.equal(stats.chainOk, true);
+});
+
+test('parses pull request ledger references into safe link metadata', () => {
+  const reference = parseLedgerReference('pr:https://github.com/mergeos-bounties/mergeos/pull/132;title:fix: auth modal responsive for extra-small screens (<450px) (#13)');
+
+  assert.equal(reference.kind, 'github_pr');
+  assert.equal(reference.href, 'https://github.com/mergeos-bounties/mergeos/pull/132');
+  assert.equal(reference.title, 'fix: auth modal responsive for extra-small screens (<450px) (#13)');
+  assert.equal(reference.shortLabel, 'PR #132');
+  assert.equal(reference.provider, 'mergeos-bounties/mergeos');
 });
