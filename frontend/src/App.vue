@@ -5005,10 +5005,10 @@ async function logout() {
     console.warn('Backend logout failed gracefully', err);
   });
 
-  clearSession();
   publicModeVisible.value = true;
   publicPage.value = 'home';
   updatePublicBrowserPath('home', true);
+  clearSession();
   showToast('Logged out.');
 
   await req;
