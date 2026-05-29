@@ -2582,6 +2582,9 @@ svg {
 .marketplace-page,
 .ledger-page {
   padding: 34px 0 42px;
+  background: linear-gradient(180deg, #f4f1e8 0%, #e8e2d4 100%);
+  border-radius: 8px;
+  box-shadow: 0 4px 24px rgba(139, 119, 80, 0.15);
 }
 
 .public-home-layout,
@@ -6583,6 +6586,10 @@ svg {
   grid-template-columns: minmax(0, 1fr) minmax(340px, 420px);
   gap: 26px;
   align-items: stretch;
+  background: #faf6f0;
+  border: 1px solid #d4c9a8;
+  border-radius: 4px;
+  padding: 18px;
 }
 
 .ledger-live-card,
@@ -6622,11 +6629,12 @@ svg {
 
 .ledger-title-row h1 {
   margin: 0;
-  color: #111827;
+  color: #3e2c1a;
   font-size: 48px;
   line-height: 1.08;
   font-weight: 930;
   letter-spacing: 0;
+  font-family: 'Georgia', 'Times New Roman', serif;
 }
 
 .ledger-public-badge {
@@ -8139,4 +8147,45 @@ svg {
   .price-breakdown-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* Vintage Ledger Enhancements */
+.ledger-card {
+  background: #fffbf0;
+  border: 1px solid #d4c9a8;
+  border-radius: 4px;
+  box-shadow: inset 0 0 12px rgba(139, 119, 80, 0.1);
+}
+
+.ledger-table {
+  font-family: 'Georgia', 'Times New Roman', serif;
+}
+
+.ledger-table th {
+  background: #f0e6d3;
+  border-bottom: 2px solid #d4c9a8;
+  color: #3e2c1a;
+  font-weight: 600;
+}
+
+.ledger-table td {
+  border-bottom: 1px solid #e8e2d4;
+}
+
+.ledger-stamp {
+  display: inline-block;
+  padding: 4px 12px;
+  border: 2px solid #b8860b;
+  border-radius: 4px;
+  color: #b8860b;
+  font-family: 'Georgia', serif;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.ledger-badge {
+  background: linear-gradient(135deg, #f0e6d3, #e8d9c0);
+  color: #3e2c1a;
+  border: 1px solid #d4c9a8;
 }
