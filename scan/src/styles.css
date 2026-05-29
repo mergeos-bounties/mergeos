@@ -643,6 +643,21 @@ main {
   text-overflow: ellipsis;
 }
 
+.tx-table td small .reference-link {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--forest);
+  font-weight: 900;
+  text-decoration: none;
+  text-overflow: ellipsis;
+  vertical-align: bottom;
+}
+
+.tx-table td small .reference-link:hover {
+  text-decoration: underline;
+}
+
 .tx-table .type-badge {
   min-height: 24px;
   padding: 0 9px;
@@ -911,6 +926,44 @@ main {
   min-width: 0;
   overflow-wrap: anywhere;
   text-align: left;
+}
+
+.reference-value {
+  display: grid;
+  gap: 5px;
+}
+
+.reference-value small {
+  color: rgba(70, 53, 29, 0.72);
+  font-size: 0.78rem;
+}
+
+.reference-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: var(--forest);
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.reference-link span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.reference-link svg {
+  flex: 0 0 auto;
+}
+
+.reference-link:hover {
+  text-decoration: underline;
+}
+
+.icon-mini:disabled {
+  cursor: default;
+  opacity: 0.55;
 }
 
 .detail-actions {

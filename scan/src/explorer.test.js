@@ -11,6 +11,7 @@ import {
   normalizeLedgerAccount,
   normalizeExplorerPath,
   parseExplorerRoute,
+  parseLedgerReference,
   paymentModeLabel,
   tokenAmountFromCents,
   verifyLedgerChain,
@@ -126,4 +127,14 @@ test('builds explorer-level stats from ledger and marketplace payloads', () => {
   assert.equal(stats.payoutCents, 50);
   assert.equal(stats.projectCount, 3);
   assert.equal(stats.chainOk, true);
+});
+
+test('parses pull request ledger references into safe link metadata', () => {
+  const reference = parseLedgerReference('pr:https://github.com/mergeos-bounties/mergeos/pull/132;title:fix: auth modal responsive for extra-small screens (<450px) (#13)');
+
+  assert.equal(reference.kind, 'github_pr');
+  assert.equal(reference.href, 'https://github.com/mergeos-bounties/mergeos/pull/132');
+  assert.equal(reference.title, 'fix: auth modal responsive for extra-small screens (<450px) (#13)');
+  assert.equal(reference.shortLabel, 'PR #132');
+  assert.equal(reference.provider, 'mergeos-bounties/mergeos');
 });

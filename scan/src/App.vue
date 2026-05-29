@@ -288,6 +288,7 @@ import {
   normalizeLedgerAccount,
   normalizeExplorerPath,
   parseExplorerRoute,
+  parseLedgerReference,
   paymentModeLabel,
   shortHash,
   sortLedgerEntries,
@@ -766,7 +767,7 @@ function txRow(entry, tokenSymbolValue, emit) {
   return h('tr', { key: entry.entry_hash || entry.sequence }, [
     h('td', [
       h('button', { class: 'link-button hash-link', type: 'button', onClick: () => emit('go-tx', entry.entry_hash) }, shortHash(entry.entry_hash, 10, 8)),
-      h('small', entry.reference || '-'),
+      referenceNode(entry.reference, { compact: true }),
     ]),
     h('td', [
       h('button', { class: 'link-button block-link', type: 'button', onClick: () => emit('go-block', entry.sequence) }, `#${entry.sequence}`),
@@ -835,7 +836,7 @@ const TransactionDetail = defineComponent({
           accountField('From', entry.from_account, emit),
           accountField('To', entry.to_account, emit),
           h(DetailField, { label: 'Value', value: valueLabel(entry, props.tokenSymbol) }),
-          h(DetailField, { label: 'Reference', value: entry.reference, copyable: true, onCopy: (value) => emit('copy', value) }),
+          referenceField(entry.reference, emit),
           h(DetailField, { label: 'Previous Hash', value: entry.previous_hash, copyable: true, onCopy: (value) => emit('copy', value) }),
         ]),
         h('div', { class: 'detail-actions' }, [
@@ -921,6 +922,51 @@ function accountField(label, account, emit) {
     h('dd', [
       account ? h('button', { class: 'link-button', type: 'button', onClick: () => emit('go-address', account) }, account) : h('span', '-'),
     ]),
+  ]);
+}
+
+function referenceField(reference, emit) {
+  const raw = String(reference || '');
+  return h('div', { class: 'detail-field reference-field' }, [
+    h('dt', 'Reference'),
+    h('dd', [
+      referenceNode(raw),
+      h('button', { class: 'icon-mini', type: 'button', title: 'Copy', disabled: !raw, onClick: () => raw && emit('copy', raw) }, [h(Copy, { size: 15 })]),
+    ]),
+  ]);
+}
+
+function referenceNode(reference, options = {}) {
+  const raw = String(reference || '').trim();
+  const parsed = parseLedgerReference(raw);
+
+  if (options.compact) {
+    if (!parsed.href) return h('small', raw || '-');
+    return h('small', [
+      h('a', {
+        class: 'reference-link compact',
+        href: parsed.href,
+        target: '_blank',
+        rel: 'noreferrer',
+        title: parsed.label,
+      }, parsed.shortLabel),
+    ]);
+  }
+
+  if (!parsed.href) return h('span', raw || '-');
+
+  return h('span', { class: 'reference-value' }, [
+    h('a', {
+      class: 'reference-link',
+      href: parsed.href,
+      target: '_blank',
+      rel: 'noreferrer',
+      title: parsed.raw,
+    }, [
+      h('span', parsed.label),
+      h(ExternalLink, { size: 14 }),
+    ]),
+    parsed.title ? h('small', `${parsed.provider} ${parsed.shortLabel}`) : null,
   ]);
 }
 
