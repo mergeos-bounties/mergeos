@@ -5074,12 +5074,14 @@ svg {
 }
 
 .dashboard-shell {
+  /* FIX #16: base dashboard layout */
   min-width: 0;
   min-height: 100vh;
   display: grid;
   grid-template-columns: 188px minmax(0, 1fr);
   background: #fbfcfb;
   overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .dashboard-toast {
@@ -5217,11 +5219,16 @@ svg {
 }
 
 .dash-workspace {
+  /* FIX #16: contain sticky topbar + content scrolling */
   min-width: 0;
   max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .dash-topbar {
+  /* FIX #16: sticky topbar with proper flex shrink */
   position: sticky;
   top: 0;
   z-index: 32;
@@ -5234,6 +5241,7 @@ svg {
   background: rgba(255, 255, 255, 0.94);
   backdrop-filter: blur(12px);
   padding: 8px 18px;
+  flex-shrink: 0;
 }
 
 .dash-search {
@@ -5397,6 +5405,7 @@ svg {
 }
 
 .dash-content {
+  /* FIX #16: content area with proper overflow handling */
   min-width: 0;
   max-width: 100%;
   display: grid;
@@ -5404,6 +5413,9 @@ svg {
   gap: 16px;
   padding: 18px;
   overflow-x: clip;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
 }
 
 .dash-main,
@@ -6383,6 +6395,7 @@ svg {
     border-left: 0;
   }
 
+  /* FIX #16: 1100px dashboard adjustments */
   .dashboard-shell {
     grid-template-columns: 176px minmax(0, 1fr);
   }
@@ -6455,6 +6468,7 @@ svg {
     width: 100%;
   }
 
+  /* FIX #16: 980px - tablet: sidebar collapses to horizontal */
   .dashboard-shell {
     grid-template-columns: 1fr;
   }
@@ -6464,19 +6478,24 @@ svg {
     height: auto;
     border-right: 0;
     border-bottom: 1px solid var(--line);
+    overflow: visible;
   }
 
   .dash-side-nav {
+    /* FIX #16: horizontal nav grid on tablet */
     grid-template-columns: repeat(3, minmax(150px, 1fr));
-    overflow: visible;
+    overflow-x: auto;
+    overflow-y: visible;
   }
 
   .mrg-card {
     display: none;
   }
 
+  /* FIX #16: 980px - topbar stacks, content single col */
   .dash-topbar {
     grid-template-columns: minmax(0, 1fr) auto;
+    flex-shrink: 0;
   }
 
   .dash-topnav {
@@ -6485,6 +6504,7 @@ svg {
 
   .dash-content {
     grid-template-columns: 1fr;
+    overflow-x: clip;
   }
 
   .dash-metrics,
@@ -6597,8 +6617,15 @@ svg {
 
   /* ---- dashboard fixes (760px breakpoint) ---- */
 
+  /* FIX #16: 760px - mobile: full responsive pass */
   .dashboard-shell {
     overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .dash-workspace {
+    flex-direction: column;
+    overflow: hidden;
   }
 
   .dash-sidebar {
@@ -6606,9 +6633,11 @@ svg {
   }
 
   .dash-topbar {
+    /* FIX #16: stack topbar vertically on mobile */
     grid-template-columns: 1fr;
     align-items: stretch;
     padding: 8px 12px;
+    flex-shrink: 0;
   }
 
   .dash-search {
@@ -6635,8 +6664,13 @@ svg {
   }
 
   .dash-content {
+    /* FIX #16: single column with scroll on mobile */
     padding: 12px;
     gap: 12px;
+    grid-template-columns: 1fr;
+    overflow-x: clip;
+    overflow-y: auto;
+    min-height: 0;
   }
 
   .dash-project-header,
@@ -6734,9 +6768,11 @@ svg {
   }
 
   .dash-topbar {
+    /* FIX #16: second 760px topbar rule - consolidate */
     grid-template-columns: 1fr;
     align-items: stretch;
     gap: 10px;
+    flex-shrink: 0;
   }
 
   .dash-top-actions {
@@ -6946,8 +6982,15 @@ svg {
 
   /* ---- dashboard fixes (520px) ---- */
 
+  /* FIX #16: 520px - small mobile final pass */
   .dashboard-shell {
     overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .dash-workspace {
+    flex-direction: column;
+    overflow: hidden;
   }
 
   .dash-search {
@@ -6963,8 +7006,12 @@ svg {
   }
 
   .dash-content {
+    /* FIX #16: small mobile content */
     padding: 10px;
     gap: 10px;
+    grid-template-columns: 1fr;
+    overflow-x: clip;
+    min-height: 0;
   }
 
   .dash-project-title h1 {
