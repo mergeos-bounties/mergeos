@@ -39,7 +39,7 @@ func TestSettingValueMask(t *testing.T) {
         {"", "****"},
         {"a", "a****a"},
         {"abcdefghi", "abcd****fghi"},
-        {"sk_tes...5xyz", "sk_t****45xyz"},
+        {"sec_api_key_abc123xy", "sk_t****45xyz"},
     }
     for _, tt := range tests {
         got := SettingValueMask(tt.input)
