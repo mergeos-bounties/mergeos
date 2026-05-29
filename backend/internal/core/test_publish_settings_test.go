@@ -63,7 +63,7 @@ func TestCheckForEnvCollision(t *testing.T) {
 func TestTestSettingsStore(t *testing.T) {
     store := newTestStore(t)
     defer store.Close()
-    
+
     enabled := true
     _, err := store.UpdateTestSettingsConfig(UpdateTestSettingsRequest{
         TestModeEnabled: &enabled,

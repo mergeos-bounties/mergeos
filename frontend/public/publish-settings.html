@@ -109,11 +109,11 @@ code { font-family: 'SF Mono', 'Fira Code', monospace; background: #0f172a; padd
       <!-- Entries list -->
       <div class="card">
         <h2>📋 Current Entries <span style="font-size:0.85rem;color:#94a3b8;font-weight:400;">({{ entries.length }})</span></h2>
-        
+
         <div v-if="entries.length === 0" style="text-align:center;padding:2rem;color:#64748b;">
           No entries yet. Add your first integration key above.
         </div>
-        
+
         <table v-else>
           <thead>
             <tr><th>Key</th><th>Type</th><th>Name</th><th>Value</th><th>Status</th><th></th></tr>
