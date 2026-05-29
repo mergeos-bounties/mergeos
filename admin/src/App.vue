@@ -734,6 +734,93 @@
       </section>
     </section>
   </div>
+      <section v-else-if="activeView === 'test-settings'" class="settings-workspace">
+        <section class="settings-panel">
+          <div class="settings-panel-head">
+            <span class="metric-icon purple"><Settings2 :size="19" /></span>
+            <div>
+              <span class="eyebrow">TEST MODE</span>
+              <h2>Publish Settings</h2>
+              <p>Enable public test mode for bounty contributors. Contributors can configure integration keys without editing .env files.</p>
+            </div>
+          </div>
+
+          <form class="settings-form" @submit.prevent="saveTestSettingsConfig">
+            <div class="test-mode-toggle">
+              <label class="toggle-label">
+                <span>Test mode</span>
+                <span :class="['toggle-switch', testSettingsConfig.test_mode_enabled ? 'on' : 'off']" @click="toggleTestMode">
+                  <span class="toggle-knob"></span>
+                </span>
+                <strong>{{ testSettingsConfig.test_mode_enabled ? 'Enabled' : 'Disabled' }}</strong>
+              </label>
+              <p class="toggle-hint">When enabled, contributors with the password can access the public Publish Settings page.</p>
+            </div>
+
+            <label>
+              <span>New password</span>
+              <input v-model="testNewPassword" autocomplete="off" placeholder="Set a new public test password" type="password" />
+            </label>
+
+            <button class="primary-action" :disabled="testSettingsBusy" type="submit">
+              <Save :size="16" />
+              {{ testSettingsBusy ? 'Saving...' : 'Save settings' }}
+            </button>
+          </form>
+
+          <p v-if="testSettingsError" class="form-error">{{ testSettingsError }}</p>
+          <p v-if="testSettingsMessage" class="form-success">{{ testSettingsMessage }}</p>
+        </section>
+
+        <section class="settings-summary-grid" aria-label="Test mode status">
+          <article><span>Status</span><strong :style="{color: testSettingsConfig.test_mode_enabled ? '#22c55e' : '#f59e0b'}">{{ testSettingsConfig.test_mode_enabled ? 'ONLINE' : 'OFFLINE' }}</strong></article>
+          <article><span>Entries</span><strong>{{ testSettingsEntries.length }}</strong></article>
+        </section>
+
+        <section class="gemini-control-panel">
+          <div class="gemini-panel-head">
+            <span class="metric-icon purple"><KeyRound :size="19" /></span>
+            <div>
+              <span class="eyebrow">INTEGRATION KEYS</span>
+              <h2>Test entries</h2>
+              <p>Add LLM test keys, PayPal Sandbox credentials, and USDT test receiver settings.</p>
+            </div>
+          </div>
+
+          <form class="gemini-key-form" @submit.prevent="addTestEntry">
+            <label><span>Type</span>
+              <select v-model="testForm.integration_type">
+                <option value="llm">LLM</option>
+                <option value="paypal">PayPal Sandbox</option>
+                <option value="usdt">USDT</option>
+              </select>
+            </label>
+            <label><span>Name</span><input v-model.trim="testForm.display_name" placeholder="e.g. OpenAI Test" /></label>
+            <label><span>Key</span><input v-model.trim="testForm.setting_key" placeholder="e.g. llm_test_openai_key" /></label>
+            <label><span>Value</span><input v-model="testForm.setting_value" placeholder="Paste key" type="password" /></label>
+            <label><span>Metadata JSON</span><input v-model="testForm.key_value_json" placeholder='{"env":"sandbox"}' /></label>
+            <button class="primary-action" :disabled="testSettingsBusy" type="submit"><Save :size="16" /> Add entry</button>
+          </form>
+        </section>
+
+        <section class="table-panel">
+          <TableHeader title="Test settings entries" :count="testSettingsEntries.length" />
+          <DataTable :columns="['Key', 'Type', 'Name', 'Value (masked)', 'Status', 'Created', 'Actions']">
+            <tr v-for="entry in testSettingsEntries" :key="entry.id">
+              <td><strong>{{ entry.setting_key }}</strong><small>{{ entry.id }}</small></td>
+              <td><span class="status-pill blue">{{ entry.integration_type }}</span></td>
+              <td>{{ entry.display_name || '-' }}</td>
+              <td><code>{{ entry.setting_value_hint }}</code></td>
+              <td><span :class="['status-pill', entry.status === 'active' ? 'green' : 'amber']">{{ entry.status }}</span></td>
+              <td>{{ formatDate(entry.created_at) }}</td>
+              <td class="row-action">
+                <button class="compact-action" type="button" @click="deleteTestEntry(entry.id)"><span style="color:#ef4444;">Delete</span></button>
+              </td>
+            </tr>
+          </DataTable>
+        </section>
+      </section>
+
 </template>
 
 <script setup>
@@ -827,6 +914,21 @@ const settingsBusy = ref(false);
 const settingsError = ref('');
 const settingsMessage = ref('');
 
+// Test publish settings
+const testSettingsConfig = ref({});
+const testSettingsEntries = ref([]);
+const testSettingsBusy = ref(false);
+const testSettingsError = ref('');
+const testSettingsMessage = ref('');
+const testNewPassword = ref('');
+const testForm = reactive({
+  integration_type: 'llm',
+  display_name: '',
+  setting_key: '',
+  setting_value: '',
+  key_value_json: '{}',
+});
+
 const loginForm = reactive({
   email: 'admin@gmail.com',
   password: 'Admin123',
@@ -872,6 +974,7 @@ const navItems = [
   { id: 'ssl', label: 'SSL', title: 'SSL monitoring', kicker: 'SECURITY', icon: ShieldCheck },
   { id: 'setting', label: 'Setting', title: 'Settings', kicker: 'SYSTEM', icon: Settings2 },
   { id: 'logs', label: 'Log', title: 'Log', kicker: 'AUTOMATION', icon: KeyRound },
+  { id: 'test-settings', label: 'Test Settings', title: 'Test Publish Settings', kicker: 'TEST MODE', icon: Settings2 },
 ];
 
 const routeByView = {
@@ -884,12 +987,14 @@ const routeByView = {
   ssl: '/ssl',
   setting: '/setting',
   logs: '/logs',
+  testSettings: '/test-settings',
 };
 const viewByRoute = Object.entries(routeByView).reduce((routes, [view, route]) => {
   routes[route] = view;
   return routes;
 }, {});
 viewByRoute['/gemini'] = 'logs';
+viewByRoute['/test-settings'] = 'test-settings';
 
 const bountyOptions = [
   { id: 'future-small', label: 'Future small', reward_mrg: 25 },
@@ -991,6 +1096,7 @@ const adminCommandBody = computed(() => {
   if (activeView.value === 'ledger') return 'Credit MRG, audit verified records, and switch between public references and hash evidence.';
   if (activeView.value === 'users') return 'Inspect account activity, update roles, and keep admin access controlled from one panel.';
   if (activeView.value === 'setting') return 'Tune review models, provider tokens, quotas, and webhook health for the automation layer.';
+  if (activeView.value === 'test-settings') return 'Manage public test-mode publish settings, integration keys, and shared test password for bounty contributors.';
   return 'Monitor funded work, task queues, SSL health, user activity, and payout records from one operations surface.';
 });
 const adminCommandMetrics = computed(() => [
@@ -1168,6 +1274,8 @@ async function loadAdminData() {
       settingsData,
       geminiKeyData,
       geminiLogData,
+      testSettingsData,
+      testEntryData,
     ] = await Promise.all([
       api('/api/admin/summary'),
       api('/api/admin/users'),
@@ -1179,6 +1287,8 @@ async function loadAdminData() {
       api('/api/admin/settings'),
       api('/api/admin/gemini/keys'),
       api('/api/admin/gemini/webhooks?limit=100'),
+      api('/api/admin/test-settings'),
+      api('/api/admin/test-settings/entries'),
     ]);
     summary.value = summaryData || {};
     users.value = Array.isArray(userData) ? userData : [];
@@ -1191,6 +1301,8 @@ async function loadAdminData() {
     syncSettingsForm();
     geminiKeys.value = Array.isArray(geminiKeyData) ? geminiKeyData : [];
     geminiWebhookLogs.value = Array.isArray(geminiLogData) ? geminiLogData : [];
+    testSettingsConfig.value = testSettingsData || {};
+    testSettingsEntries.value = Array.isArray(testEntryData) ? testEntryData : [];
     void syncTaskIssueStates(tasks.value);
     ensureSelectedUser();
   } catch (error) {
@@ -1337,6 +1449,8 @@ async function loadGeminiAdminData() {
     const [keyData, logData] = await Promise.all([
       api('/api/admin/gemini/keys'),
       api('/api/admin/gemini/webhooks?limit=100'),
+      api('/api/admin/test-settings'),
+      api('/api/admin/test-settings/entries'),
     ]);
     geminiKeys.value = Array.isArray(keyData) ? keyData : [];
     geminiWebhookLogs.value = Array.isArray(logData) ? logData : [];
@@ -1836,4 +1950,56 @@ onMounted(() => {
 onBeforeUnmount(() => {
   if (hasWindow) window.removeEventListener('popstate', handlePopState);
 });
+
+// Test Settings
+async function saveTestSettingsConfig() {
+  testSettingsBusy.value = true; testSettingsError.value = ''; testSettingsMessage.value = '';
+  try {
+    const payload = {};
+    if (testNewPassword.value) payload.test_password = testNewPassword.value;
+    const updated = await api('/api/admin/test-settings', { method: 'PATCH', body: JSON.stringify(payload) });
+    testSettingsConfig.value = updated || {};
+    testSettingsMessage.value = testNewPassword.value ? 'Settings saved. Password updated.' : 'Settings saved.';
+    testNewPassword.value = '';
+  } catch (e) { testSettingsError.value = e.message; }
+  finally { testSettingsBusy.value = false; }
+}
+
+async function toggleTestMode() {
+  testSettingsBusy.value = true; testSettingsError.value = '';
+  try {
+    const updated = await api('/api/admin/test-settings', { method: 'PATCH', body: JSON.stringify({ test_mode_enabled: !testSettingsConfig.value.test_mode_enabled }) });
+    testSettingsConfig.value = updated || {};
+    testSettingsMessage.value = updated.test_mode_enabled ? 'Test mode enabled.' : 'Test mode disabled.';
+  } catch (e) { testSettingsError.value = e.message; }
+  finally { testSettingsBusy.value = false; }
+}
+
+async function addTestEntry() {
+  testSettingsBusy.value = true; testSettingsError.value = ''; testSettingsMessage.value = '';
+  try {
+    let km = {};
+    try { km = JSON.parse(testForm.key_value_json || '{}'); } catch { throw new Error('Invalid JSON metadata.'); }
+    const entry = await api('/api/admin/test-settings/entries', { method: 'POST', body: JSON.stringify({
+      integration_type: testForm.integration_type, display_name: testForm.display_name,
+      setting_key: testForm.setting_key, setting_value: testForm.setting_value, key_value_map: km }) });
+    testSettingsEntries.value = [entry, ...testSettingsEntries.value];
+    testForm.integration_type = 'llm'; testForm.display_name = ''; testForm.setting_key = '';
+    testForm.setting_value = ''; testForm.key_value_json = '{}';
+    testSettingsMessage.value = 'Added ' + entry.setting_key;
+  } catch (e) { testSettingsError.value = e.message; }
+  finally { testSettingsBusy.value = false; }
+}
+
+async function deleteTestEntry(id) {
+  if (!confirm('Delete this entry?')) return;
+  testSettingsBusy.value = true; testSettingsError.value = '';
+  try {
+    await api('/api/admin/test-settings/entries/' + encodeURIComponent(id), { method: 'DELETE' });
+    testSettingsEntries.value = testSettingsEntries.value.filter(e => e.id !== id);
+    testSettingsMessage.value = 'Entry deleted.';
+  } catch (e) { testSettingsError.value = e.message; }
+  finally { testSettingsBusy.value = false; }
+}
+
 </script>
