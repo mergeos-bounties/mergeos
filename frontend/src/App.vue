@@ -2537,6 +2537,7 @@ const projectFundingAmount = ref('');
 const projectPaymentMethod = ref('Credit / Debit card');
 const projectPaymentBusy = ref(false);
 const projectPaymentError = ref('');
+const paypalOrderToken = ref('');
 const pendingProjectPaymentAfterAuth = ref(false);
 const authReturnToProjectWizard = ref(false);
 const fundedProject = ref(null);
@@ -4018,6 +4019,37 @@ async function completeProjectFunding() {
   projectPaymentBusy.value = true;
   try {
     await loadRuntimeConfig();
+
+    if (paymentMethodForProject() === 'paypal' && !paypalOrderToken.value) {
+      const draft = {
+        projectSetupForm: JSON.parse(JSON.stringify(projectSetupForm)),
+        projectFundingAmount: projectFundingAmount.value,
+        projectPaymentMethod: projectPaymentMethod.value,
+        projectWizardStep: projectWizardStep.value,
+        projectWizardStage: projectWizardStage.value,
+        projectDeliverables: JSON.parse(JSON.stringify(projectDeliverables.value)),
+        repoImportResult: repoImportResult.value ? JSON.parse(JSON.stringify(repoImportResult.value)) : null
+      };
+      localStorage.setItem('mergeos_paypal_draft', JSON.stringify(draft));
+
+      const returnUrl = window.location.origin + '/paypal/return';
+      const cancelUrl = window.location.origin + '/paypal/cancel';
+      const orderRes = await api('/api/payments/paypal/orders', {
+        method: 'POST',
+        body: JSON.stringify({
+          amount_cents: projectPaymentAmountCents.value,
+          return_url: returnUrl,
+          cancel_url: cancelUrl
+        })
+      });
+      if (orderRes.approval_url) {
+        window.location.href = orderRes.approval_url;
+        return;
+      } else {
+        throw new Error('PayPal order creation failed.');
+      }
+    }
+
     if (!paymentReferenceForProject()) {
       throw new Error('Payment reference is missing. Configure PayPal/Crypto checkout or enable local dev payments.');
     }
@@ -4032,6 +4064,7 @@ async function completeProjectFunding() {
     updateProjectWizardBrowserPath();
     pendingProjectPaymentAfterAuth.value = false;
     authReturnToProjectWizard.value = false;
+    paypalOrderToken.value = '';
     await loadLedgerData({ silent: true });
     await loadMarketplaceData({ silent: true });
     await loadDashboardData({ silent: true, selectProjectID: project.id });
@@ -4546,6 +4579,7 @@ function paymentMethodForProject() {
 }
 
 function paymentReferenceForProject() {
+  if (paypalOrderToken.value) return paypalOrderToken.value;
   if (runtimeConfig.value?.dev_payment_enabled && runtimeConfig.value?.dev_payment_code) {
     return runtimeConfig.value.dev_payment_code;
   }
@@ -5019,6 +5053,54 @@ onMounted(async () => {
     loadMarketplaceData({ silent: true }),
     loadLedgerData({ silent: true }),
   ]);
+
+  if (hasWindow && (window.location.pathname === '/paypal/return' || window.location.pathname === '/paypal/cancel')) {
+    const isReturn = window.location.pathname === '/paypal/return';
+    const params = new URLSearchParams(window.location.search);
+    const paypalToken = params.get('token');
+    if (paypalToken && /^(EC|BA)-[A-Z0-9-]{10,50}$/i.test(paypalToken)) {
+      if (isReturn) paypalOrderToken.value = paypalToken;
+      try {
+        const draftJson = localStorage.getItem('mergeos_paypal_draft');
+        if (draftJson) {
+          const draft = JSON.parse(draftJson);
+          Object.assign(projectSetupForm, draft.projectSetupForm);
+          projectFundingAmount.value = draft.projectFundingAmount;
+          projectPaymentMethod.value = draft.projectPaymentMethod;
+          projectWizardStep.value = draft.projectWizardStep;
+          projectWizardStage.value = draft.projectWizardStage;
+          if (draft.projectDeliverables) projectDeliverables.value = draft.projectDeliverables;
+          if (draft.repoImportResult) repoImportResult.value = draft.repoImportResult;
+          projectWizardVisible.value = true;
+          
+          localStorage.removeItem('mergeos_paypal_draft');
+
+          if (isReturn) {
+            if (user.value) {
+              void completeProjectFunding();
+            } else {
+              showToast('Session expired. Please log in to complete project funding.');
+              closeProjectWizard();
+            }
+          } else {
+            closeProjectWizard();
+            showToast('PayPal payment was cancelled.');
+          }
+        }
+      } catch (err) {
+        console.error('Failed to restore paypal draft', err);
+      }
+    } else {
+      if (paypalToken) {
+        showToast('Invalid PayPal token format.');
+      } else if (!isReturn) {
+        localStorage.removeItem('mergeos_paypal_draft');
+        closeProjectWizard();
+        showToast('PayPal payment was cancelled.');
+      }
+    }
+    window.history.replaceState({}, document.title, '/');
+  }
 });
 
 onUnmounted(() => {
