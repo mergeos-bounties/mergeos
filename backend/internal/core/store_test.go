@@ -678,6 +678,75 @@ func TestPublicLedgerRouteReturnsSanitizedLiveData(t *testing.T) {
 	}
 }
 
+func TestPublicLedgerUsesPullReferenceForAdminAcceptedTask(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:       defaultTokenSymbol,
+		StatePath:         filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:    1000,
+		DevPaymentEnabled: true,
+		DevPaymentCode:    defaultDevPaymentCode,
+		GitHubOwner:       defaultGitHubOwner,
+		BountyRoot:        filepath.Join(tempDir, "bounties"),
+		SMTPFrom:          "noreply@mergeos.local",
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	auth, err := store.Register(RegisterRequest{
+		Name:        "PR Ledger Client",
+		CompanyName: "PR Ledger Co",
+		Email:       "pr-ledger@example.com",
+		Password:    "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	project, err := store.CreateProject(context.Background(), auth.User.ID, CreateProjectRequest{
+		Title:            "PR ledger proof",
+		ClientName:       "PR Ledger Client",
+		ClientEmail:      "pr-ledger@example.com",
+		Brief:            "Create a task payout whose public reference points at the merged PR.",
+		BudgetCents:      120000,
+		PaymentMethod:    PaymentPayPal,
+		PaymentReference: defaultDevPaymentCode,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	req, err := acceptRequestForPullAuthor(project.Tasks[0], "pr-author")
+	if err != nil {
+		t.Fatal(err)
+	}
+	pullReference := buildPullLedgerReference(project.Tasks[0].ID, "https://github.com/mergeos-bounties/mergeos/pull/120", "Fix PR payout reference")
+	if _, err := store.AcceptTaskWithReviewReference(project.Tasks[0].ID, req, 50, "future-medium", pullReference); err != nil {
+		t.Fatal(err)
+	}
+	account, ok := store.TaskPayoutAccount(project.Tasks[0].ID)
+	if !ok || account != "github:pr-author" {
+		t.Fatalf("task payout account = %q, %v", account, ok)
+	}
+
+	found := false
+	for _, entry := range store.ListPublicLedger() {
+		if entry.Type != "task_payment" {
+			continue
+		}
+		found = true
+		if entry.Reference != "pr:https://github.com/mergeos-bounties/mergeos/pull/120;title:Fix PR payout reference" {
+			t.Fatalf("public task payout reference = %q", entry.Reference)
+		}
+		if strings.Contains(entry.Reference, project.ID) || strings.Contains(entry.Reference, project.Tasks[0].ID) {
+			t.Fatalf("public task payout reference still exposes project/task id: %s", entry.Reference)
+		}
+	}
+	if !found {
+		t.Fatal("public ledger did not include task payout")
+	}
+}
+
 func TestAdminAutoPromoteAndRoutes(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := Config{
@@ -734,6 +803,71 @@ func TestAdminAutoPromoteAndRoutes(t *testing.T) {
 	server.Routes().ServeHTTP(adminResp, adminReq)
 	if adminResp.Code != http.StatusOK {
 		t.Fatalf("admin summary status = %d, body = %s", adminResp.Code, adminResp.Body.String())
+	}
+}
+
+func TestAdminCanCreateManualLedgerCredit(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:       defaultTokenSymbol,
+		StatePath:         filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:    1000,
+		DevPaymentEnabled: true,
+		DevPaymentCode:    defaultDevPaymentCode,
+		GitHubOwner:       defaultGitHubOwner,
+		BountyRoot:        filepath.Join(tempDir, "bounties"),
+		SMTPFrom:          "noreply@mergeos.local",
+		AdminAutoPromote:  true,
+		ScanDomain:        "scan.mergeos.shop",
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	adminAuth, err := store.Register(RegisterRequest{
+		Name:     "Admin User",
+		Email:    "credit-admin@example.com",
+		Password: "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	server := NewServer(cfg, store, payments)
+	body := strings.NewReader(`{"worker_id":"eliasx45","reward_mrg":50,"bounty_type":"future-medium","pr_url":"https://github.com/mergeos-bounties/mergeos/pull/120","pr_title":"Public timeline correction"}`)
+	req := httptest.NewRequest(http.MethodPost, "/api/admin/ledger/credits", body)
+	req.Header.Set("Authorization", "Bearer "+adminAuth.Token)
+	req.Header.Set("Content-Type", "application/json")
+	resp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(resp, req)
+	if resp.Code != http.StatusCreated {
+		t.Fatalf("manual credit status = %d, body = %s", resp.Code, resp.Body.String())
+	}
+	var payload AdminManualCreditResponse
+	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+		t.Fatal(err)
+	}
+	if payload.WorkerID != "github:eliasx45" || payload.RewardMRG != 50 || payload.LedgerEntry.Type != "manual_credit" {
+		t.Fatalf("manual credit response = %#v", payload)
+	}
+	if payload.LedgerEntry.ToAccount != "github:eliasx45" {
+		t.Fatalf("manual credit account = %q", payload.LedgerEntry.ToAccount)
+	}
+	if payload.LedgerEntry.Reference != "pr:https://github.com/mergeos-bounties/mergeos/pull/120;title:Public timeline correction" {
+		t.Fatalf("manual credit reference = %q", payload.LedgerEntry.Reference)
+	}
+	if !strings.Contains(payload.CreditURL, "/address/github:eliasx45") {
+		t.Fatalf("manual credit URL = %q", payload.CreditURL)
+	}
+	foundPublicReference := false
+	for _, entry := range store.ListPublicLedger() {
+		if entry.Type == "manual_credit" && entry.Reference == payload.LedgerEntry.Reference {
+			foundPublicReference = true
+			break
+		}
+	}
+	if !foundPublicReference {
+		t.Fatalf("manual credit missing from public ledger: %#v", store.ListPublicLedger())
 	}
 }
 

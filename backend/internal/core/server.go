@@ -59,6 +59,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/admin/notifications", s.adminNotifications)
 	mux.HandleFunc("GET /api/admin/attachments", s.adminAttachments)
 	mux.HandleFunc("GET /api/admin/ledger", s.adminLedger)
+	mux.HandleFunc("POST /api/admin/ledger/credits", s.createAdminLedgerCredit)
 	mux.HandleFunc("GET /api/admin/settings", s.adminSettings)
 	mux.HandleFunc("PATCH /api/admin/settings", s.updateAdminSettings)
 	mux.HandleFunc("GET /api/admin/ssl", s.adminSSLReviews)
@@ -284,7 +285,6 @@ func (s *Server) notifications(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, s.store.ListNotifications(userID))
 }
 
-
 func (s *Server) markNotificationRead(w http.ResponseWriter, r *http.Request) {
 	user, ok := s.requireUser(w, r)
 	if !ok {
@@ -324,7 +324,6 @@ func (s *Server) wsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	go conn.readLoop(s.eventHub)
 }
-
 
 func (s *Server) adminSummary(w http.ResponseWriter, r *http.Request) {
 	if _, ok := s.requireAdmin(w, r); !ok {

@@ -105,6 +105,24 @@ func TestRenderMergeOSPullCommentLinksScanCreditAccount(t *testing.T) {
 	}
 }
 
+func TestPullLedgerReferencePublishesPullLinkAndTitle(t *testing.T) {
+	reference := buildPullLedgerReference(
+		"tsk_0041",
+		"https://github.com/mergeos-bounties/mergeos/pull/120?utm=admin",
+		"Timeline correction; reviewer bonus",
+	)
+	if !strings.Contains(reference, "task:tsk_0041") {
+		t.Fatalf("reference missing task id: %s", reference)
+	}
+	publicReference := publicPullLedgerReference(reference)
+	if publicReference != "pr:https://github.com/mergeos-bounties/mergeos/pull/120;title:Timeline correction, reviewer bonus" {
+		t.Fatalf("public reference = %q", publicReference)
+	}
+	if strings.Contains(publicReference, "tsk_0041") {
+		t.Fatalf("public reference leaked task id: %s", publicReference)
+	}
+}
+
 func TestNeutralizeClosingIssueKeywords(t *testing.T) {
 	body, changed := neutralizeClosingIssueKeywords("Closes #3\nFixes mergeos-bounties/mergeos#4\nResolves: https://github.com/mergeos-bounties/mergeos/issues/5")
 	if !changed {

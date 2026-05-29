@@ -106,10 +106,24 @@ test('filters entries by type, account and free text', () => {
 });
 
 test('builds explorer-level stats from ledger and marketplace payloads', () => {
-  const stats = buildExplorerStats(entries, { stats: { project_count: 3 }, projects: [] }, 'MRG');
+  const stats = buildExplorerStats([
+    ...entries,
+    {
+      sequence: 3,
+      type: 'manual_credit',
+      from_account: 'reserve:task',
+      to_account: 'github:eliasx45',
+      amount_cents: 50,
+      reference: 'pr:https://github.com/mergeos-bounties/mergeos/pull/120;title:Public timeline correction',
+      previous_hash: 'b'.repeat(64),
+      entry_hash: 'c'.repeat(64),
+      created_at: '2026-05-26T00:02:00Z',
+    },
+  ], { stats: { project_count: 3 }, projects: [] }, 'MRG');
 
-  assert.equal(stats.totalTransactions, 2);
+  assert.equal(stats.totalTransactions, 3);
   assert.equal(stats.mintedTokens, 100000);
+  assert.equal(stats.payoutCents, 50);
   assert.equal(stats.projectCount, 3);
   assert.equal(stats.chainOk, true);
 });

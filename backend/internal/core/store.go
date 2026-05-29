@@ -859,7 +859,6 @@ func (s *Store) ListLedger() []LedgerEntry {
 	return entries
 }
 
-
 func (s *Store) MarkNotificationRead(userID, notificationID string) *Notification {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -888,7 +887,6 @@ func (s *Store) MarkAllNotificationsRead(userID string) {
 	}
 }
 
-
 func (s *Store) ListPublicLedger() []LedgerEntry {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -908,7 +906,7 @@ func (s *Store) ListPublicLedger() []LedgerEntry {
 		publicEntry := entry
 		publicEntry.FromAccount = publicLedgerAccount(entry.FromAccount, projectID, taskID)
 		publicEntry.ToAccount = publicLedgerAccount(entry.ToAccount, projectID, taskID)
-		publicEntry.Reference = publicLedgerReference(projectID, taskID, entry.Sequence)
+		publicEntry.Reference = publicLedgerReference(projectID, taskID, entry.Sequence, entry.Reference)
 		entries = append(entries, publicEntry)
 	}
 	return entries
@@ -1230,6 +1228,10 @@ func (s *Store) AcceptTask(taskID string, req AcceptTaskRequest) (*Task, error) 
 }
 
 func (s *Store) AcceptTaskWithReview(taskID string, req AcceptTaskRequest, rewardCents int64, bountyType string) (*Task, error) {
+	return s.AcceptTaskWithReviewReference(taskID, req, rewardCents, bountyType, "")
+}
+
+func (s *Store) AcceptTaskWithReviewReference(taskID string, req AcceptTaskRequest, rewardCents int64, bountyType, reference string) (*Task, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -1261,7 +1263,7 @@ func (s *Store) AcceptTaskWithReview(taskID string, req AcceptTaskRequest, rewar
 	}
 	task.BountyType = strings.TrimSpace(bountyType)
 	now := time.Now().UTC()
-	entry := s.addLedger("task_payment", taskReserveAccount(), s.payoutAccountForWorkerLocked(workerID), payoutCents, "task:"+task.ID)
+	entry := s.addLedger("task_payment", taskReserveAccount(), s.payoutAccountForWorkerLocked(workerID), payoutCents, ensureTaskLedgerReference(task.ID, reference))
 	task.Status = TaskAccepted
 	task.WorkerKind = req.WorkerKind
 	task.WorkerID = workerID
@@ -1297,7 +1299,7 @@ func (s *Store) TaskPayoutAccount(taskID string) (string, bool) {
 	reference := "task:" + strings.TrimSpace(taskID)
 	for index := len(s.ledger) - 1; index >= 0; index-- {
 		entry := s.ledger[index]
-		if entry.Type == "task_payment" && entry.Reference == reference {
+		if entry.Type == "task_payment" && (entry.Reference == reference || ledgerReferenceTaskID(entry.Reference) == strings.TrimSpace(taskID)) {
 			return entry.ToAccount, true
 		}
 	}
@@ -1306,6 +1308,28 @@ func (s *Store) TaskPayoutAccount(taskID string) (string, bool) {
 		return "", false
 	}
 	return s.payoutAccountForWorkerLocked(task.WorkerID), true
+}
+
+func (s *Store) AddManualCredit(workerID string, amountCents int64, reference string) (LedgerEntry, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	workerID = normalizeWorkerID(workerID)
+	if strings.TrimSpace(workerID) == "" {
+		return LedgerEntry{}, errors.New("worker id is required")
+	}
+	if amountCents <= 0 {
+		return LedgerEntry{}, errors.New("amount must be greater than zero")
+	}
+	reference = strings.TrimSpace(reference)
+	if reference == "" {
+		return LedgerEntry{}, errors.New("reference is required")
+	}
+	entry := s.addLedger("manual_credit", taskReserveAccount(), s.payoutAccountForWorkerLocked(workerID), amountCents, reference)
+	if err := s.saveLocked(); err != nil {
+		return LedgerEntry{}, err
+	}
+	return entry, nil
 }
 
 func (s *Store) userByEmailLocked(email string) *User {
@@ -2211,7 +2235,10 @@ func publicLedgerAccount(account, projectID, taskID string) string {
 	}
 }
 
-func publicLedgerReference(projectID, taskID string, sequence int) string {
+func publicLedgerReference(projectID, taskID string, sequence int, reference string) string {
+	if pullReference := publicPullLedgerReference(reference); pullReference != "" {
+		return pullReference
+	}
 	if projectID == "" {
 		return fmt.Sprintf("ledger:%d", sequence)
 	}
