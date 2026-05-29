@@ -4,8 +4,7 @@
       <a class="brand" href="/" @click.prevent="goHome">
         <span class="brand-mark" aria-hidden="true"><img src="/favicon.svg" alt="" /></span>
         <span>
-          <strong>MergeOS Scan</strong>
-          <small>{{ networkLabel }}</small>
+          <strong>MergeOS Scan</strong> - <em>Vintage Ledger</em>
         </span>
       </a>
 
