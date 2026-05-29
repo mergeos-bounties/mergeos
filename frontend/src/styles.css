@@ -6263,6 +6263,20 @@ svg {
   display: grid;
   grid-template-columns: 10px minmax(0, 1fr);
   gap: 10px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border-left: 3px solid transparent;
+}
+
+.notification-center-list article.is-unread {
+  background: #f8fafc;
+  border-left-color: #2563eb;
+}
+
+.notification-actions-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
 }
 
 .notification-dot {
@@ -6283,6 +6297,10 @@ svg {
 
 .notification-dot.red {
   background: #ef4444;
+}
+
+.notification-dot.unread-pulse {
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
 }
 
 .notification-center-list strong,
@@ -7005,7 +7023,8 @@ svg {
   .toast {
     left: 16px;
     right: 16px;
-    top: 78px;
+    top: auto;
+    bottom: 24px;
   }
 }
 

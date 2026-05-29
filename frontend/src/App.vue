@@ -1421,11 +1421,11 @@
           <section ref="dashboardNotificationCenter" class="dash-card rail-card notification-center-card" tabindex="-1">
             <div class="card-title-row">
               <h2>Notifications</h2>
-              <span>{{ dashboardNotificationRows.length }}</span>
+              <span>{{ dashboardNotificationCount }} new</span>
             </div>
             <div v-if="dashboardNotificationRows.length" class="notification-center-list">
-              <article v-for="note in dashboardNotificationRows" :key="note.id">
-                <span :class="['notification-dot', note.tone]" />
+              <article v-for="note in dashboardNotificationRows" :key="note.id" :class="{ 'is-unread': note.isUnread }">
+                <span :class="['notification-dot', note.tone, { 'unread-pulse': note.isUnread }]" />
                 <div>
                   <strong>{{ note.subject }}</strong>
                   <p>{{ note.body }}</p>
@@ -1437,9 +1437,14 @@
               <strong>{{ dashboardNotificationsLoading ? 'Loading notifications...' : 'No notifications yet' }}</strong>
               <p>{{ dashboardNotificationsLoading ? 'Fetching delivery records.' : dashboardNotificationsError || 'Project updates and delivery notices will appear here.' }}</p>
             </article>
-            <button class="rail-link-button" type="button" @click="loadDashboardNotifications">
-              Refresh notifications
-            </button>
+            <div class="notification-actions-row">
+              <button class="rail-link-button" type="button" @click="loadDashboardNotifications">
+                Refresh
+              </button>
+              <button v-if="dashboardNotificationCount > 0" class="rail-link-button" type="button" @click="markAllNotificationsRead">
+                Mark all read
+              </button>
+            </div>
           </section>
 
           <section class="dash-card rail-card chat-card">
@@ -3422,7 +3427,7 @@ const dashboardNotificationRows = computed(() =>
     .slice(0, 8)
     .map(mapDashboardNotification),
 );
-const dashboardNotificationCount = computed(() => Math.min(9, dashboardNotificationRows.value.length));
+const dashboardNotificationCount = computed(() => dashboardNotificationRows.value.filter((n) => n.isUnread).length);
 const dashboardPaymentRows = computed(() => {
   const project = dashboardSelectedProject.value;
   if (!project) return [];
@@ -4440,8 +4445,10 @@ function mapDashboardNotification(note = {}) {
     id: note.id || `${note.subject}-${note.created_at}`,
     subject: note.subject || 'Notification',
     body: trimMarketplaceText(note.body, 'MergeOS status update.'),
-    meta: `${toTitleLabel(note.channel || 'app')} · ${toTitleLabel(note.status || 'logged')} · ${when.full}`,
+    meta: `${toTitleLabel(note.channel || 'app')} • ${toTitleLabel(note.status || 'logged')} • ${when.full}`,
     tone: note.status === 'failed' ? 'red' : note.project_id ? 'green' : 'blue',
+    isUnread: !note.read_at,
+    rawId: note.id,
   };
 }
 
@@ -4739,6 +4746,16 @@ async function loadDashboardNotifications() {
   }
 }
 
+async function markAllNotificationsRead() {
+  if (!token.value) return;
+  try {
+    await api('/api/notifications/read-all', { method: 'POST' });
+    await loadDashboardNotifications();
+  } catch (error) {
+    showToast(error.message || 'Could not mark notifications as read.');
+  }
+}
+
 function startDashboardRealtime() {
   if (!hasWindow || dashboardRefreshTimer) return;
   dashboardRefreshTimer = window.setInterval(() => {
@@ -5018,3 +5035,4 @@ onUnmounted(() => {
   stopDashboardRealtime();
 });
 </script>
+
