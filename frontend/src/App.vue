@@ -4974,15 +4974,17 @@ async function restoreSession() {
 }
 
 async function logout() {
-  try {
-    await api('/api/auth/logout', { method: 'POST', body: JSON.stringify({}) });
-  } finally {
-    clearSession();
-    publicModeVisible.value = true;
-    publicPage.value = 'home';
-    updatePublicBrowserPath('home', true);
-    showToast('Logged out.');
-  }
+  const req = api('/api/auth/logout', { method: 'POST', body: JSON.stringify({}) }).catch((err) => {
+    console.warn('Backend logout failed gracefully', err);
+  });
+
+  clearSession();
+  publicModeVisible.value = true;
+  publicPage.value = 'home';
+  updatePublicBrowserPath('home', true);
+  showToast('Logged out.');
+
+  await req;
 }
 
 onMounted(async () => {
