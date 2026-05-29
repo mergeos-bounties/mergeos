@@ -4022,13 +4022,13 @@ async function completeProjectFunding() {
 
     if (paymentMethodForProject() === 'paypal' && !paypalOrderToken.value) {
       const draft = {
-        projectSetupForm,
+        projectSetupForm: JSON.parse(JSON.stringify(projectSetupForm)),
         projectFundingAmount: projectFundingAmount.value,
         projectPaymentMethod: projectPaymentMethod.value,
         projectWizardStep: projectWizardStep.value,
         projectWizardStage: projectWizardStage.value,
-        projectDeliverables: projectDeliverables.value,
-        repoImportResult: repoImportResult.value
+        projectDeliverables: JSON.parse(JSON.stringify(projectDeliverables.value)),
+        repoImportResult: repoImportResult.value ? JSON.parse(JSON.stringify(repoImportResult.value)) : null
       };
       localStorage.setItem('mergeos_paypal_draft', JSON.stringify(draft));
 
@@ -5058,7 +5058,7 @@ onMounted(async () => {
     const isReturn = window.location.pathname === '/paypal/return';
     const params = new URLSearchParams(window.location.search);
     const paypalToken = params.get('token');
-    if (paypalToken) {
+    if (paypalToken && /^(EC|BA)-[A-Z0-9-]{10,50}$/i.test(paypalToken)) {
       if (isReturn) paypalOrderToken.value = paypalToken;
       try {
         const draftJson = localStorage.getItem('mergeos_paypal_draft');
@@ -5076,13 +5076,27 @@ onMounted(async () => {
           localStorage.removeItem('mergeos_paypal_draft');
 
           if (isReturn) {
-            void completeProjectFunding();
+            if (user.value) {
+              void completeProjectFunding();
+            } else {
+              showToast('Session expired. Please log in to complete project funding.');
+              closeProjectWizard();
+            }
           } else {
+            closeProjectWizard();
             showToast('PayPal payment was cancelled.');
           }
         }
       } catch (err) {
         console.error('Failed to restore paypal draft', err);
+      }
+    } else {
+      if (paypalToken) {
+        showToast('Invalid PayPal token format.');
+      } else if (!isReturn) {
+        localStorage.removeItem('mergeos_paypal_draft');
+        closeProjectWizard();
+        showToast('PayPal payment was cancelled.');
       }
     }
     window.history.replaceState({}, document.title, '/');
