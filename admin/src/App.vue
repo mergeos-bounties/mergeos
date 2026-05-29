@@ -104,6 +104,25 @@
         </div>
       </header>
 
+      <section class="admin-command-strip" aria-label="Admin command summary">
+        <div class="admin-command-copy">
+          <span class="eyebrow">CONTROL ROOM</span>
+          <h2>{{ adminCommandTitle }}</h2>
+          <p>{{ adminCommandBody }}</p>
+        </div>
+        <div class="admin-command-metrics">
+          <article v-for="metric in adminCommandMetrics" :key="metric.label">
+            <span :class="['metric-icon', metric.tone]">
+              <component :is="metric.icon" :size="18" />
+            </span>
+            <div>
+              <strong>{{ metric.value }}</strong>
+              <small>{{ metric.label }}</small>
+            </div>
+          </article>
+        </div>
+      </section>
+
       <p v-if="errorMessage" class="workspace-error">{{ errorMessage }}</p>
 
       <section v-if="activeView === 'builder'" class="builder-workspace">
@@ -966,6 +985,40 @@ const filteredUsers = computed(() => {
   if (!query.value) return users.value;
   return users.value.filter((row) => haystack(row).includes(query.value));
 });
+const adminCommandTitle = computed(() => activeNav.value?.title || 'Admin workspace');
+const adminCommandBody = computed(() => {
+  if (activeView.value === 'tasks') return 'Review GitHub issues, inspect PRs, assign bounty credit, and keep payout proof aligned with the ledger.';
+  if (activeView.value === 'ledger') return 'Credit MRG, audit verified records, and switch between public references and hash evidence.';
+  if (activeView.value === 'users') return 'Inspect account activity, update roles, and keep admin access controlled from one panel.';
+  if (activeView.value === 'setting') return 'Tune review models, provider tokens, quotas, and webhook health for the automation layer.';
+  return 'Monitor funded work, task queues, SSL health, user activity, and payout records from one operations surface.';
+});
+const adminCommandMetrics = computed(() => [
+  {
+    label: 'Visible tasks',
+    value: number(filteredTasks.value.length),
+    icon: ListChecks,
+    tone: 'amber',
+  },
+  {
+    label: 'Funded projects',
+    value: number(filteredProjects.value.length),
+    icon: FolderKanban,
+    tone: 'green',
+  },
+  {
+    label: 'Ledger rows',
+    value: number(ledgerEntries.value.length),
+    icon: Activity,
+    tone: 'blue',
+  },
+  {
+    label: 'SSL attention',
+    value: number(sslAttentionCount.value),
+    icon: ShieldCheck,
+    tone: sslAttentionCount.value ? 'amber' : 'green',
+  },
+]);
 
 const TableHeader = defineComponent({
   props: {

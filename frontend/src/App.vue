@@ -1070,6 +1070,25 @@
         </div>
       </header>
 
+      <section class="dash-command-strip" aria-label="Dashboard command summary">
+        <div class="dash-command-copy">
+          <span class="marketplace-eyebrow">{{ dashboardSection === 'payments' ? 'PAYMENTS' : 'PROJECT OPS' }}</span>
+          <h1>{{ dashboardCommandTitle }}</h1>
+          <p>{{ dashboardCommandBody }}</p>
+        </div>
+        <div class="dash-command-metrics">
+          <article v-for="metric in dashboardCommandStats" :key="metric.label">
+            <span :class="['public-card-icon', metric.tone]">
+              <component :is="metric.icon" :size="18" />
+            </span>
+            <div>
+              <strong>{{ metric.value }}</strong>
+              <small>{{ metric.label }}</small>
+            </div>
+          </article>
+        </div>
+      </section>
+
       <main class="dash-content">
         <section class="dash-main">
           <template v-if="dashboardSection === 'payments'">
@@ -1541,36 +1560,77 @@
       <div class="home-container public-home-layout">
         <section class="public-home-hero" aria-labelledby="home-title">
           <div class="public-home-copy">
-            <span class="marketplace-eyebrow">HOME</span>
-            <h1 id="home-title">MergeOS</h1>
-            <p>Post funded software work, match with talent or AI agents, and verify every payment through real ledger logs.</p>
+            <span class="marketplace-eyebrow">MERGEOS DELIVERY OS</span>
+            <h1 id="home-title">MergeOS turns funded software work into verified delivery.</h1>
+            <p>Post a brief, fund escrow, route tasks to builders or agents, and prove every payout through the live ledger.</p>
             <div class="marketplace-actions">
               <button class="primary-button large" type="button" @click="openProjectWizard">
                 Start a project
                 <ArrowRight :size="16" />
               </button>
               <button class="secondary-button large" type="button" @click="openPublicPage('marketplace')">
-                Find talent
+                View live work
                 <UsersRound :size="16" />
               </button>
               <button class="secondary-button large" type="button" @click="openPublicPage('ledger')">
-                Ledger Logs
+                Open proof ledger
                 <Link2 :size="16" />
               </button>
             </div>
+
+            <div class="home-proof-stack" aria-label="Delivery guarantees">
+              <article>
+                <ShieldCheck :size="17" />
+                <span>Escrow first</span>
+              </article>
+              <article>
+                <GitPullRequest :size="17" />
+                <span>Repo-aware tasks</span>
+              </article>
+              <article>
+                <BarChart3 :size="17" />
+                <span>Ledger proof</span>
+              </article>
+            </div>
           </div>
 
-          <aside class="public-home-panel" aria-label="Live platform summary">
-            <div class="ledger-card-head">
-              <h2>Live platform</h2>
+          <aside class="public-home-panel home-command-panel" aria-label="Live platform summary">
+            <div class="home-command-head">
+              <span class="home-command-mark" aria-hidden="true">
+                <img src="/favicon.svg" alt="" />
+              </span>
+              <div>
+                <span>Live command center</span>
+                <strong>Marketplace, tasks, escrow, ledger</strong>
+              </div>
               <span class="ledger-live-dot">Live</span>
             </div>
+
             <div class="public-stat-grid">
               <article v-for="stat in homeLiveStats" :key="stat.label">
                 <strong>{{ stat.value }}</strong>
                 <span>{{ stat.label }}</span>
               </article>
             </div>
+
+            <div class="home-pipeline" aria-label="Project pipeline">
+              <article>
+                <span><FileCheck2 :size="15" /></span>
+                <strong>Brief</strong>
+                <small>Scope and acceptance criteria</small>
+              </article>
+              <article>
+                <span><CreditCard :size="15" /></span>
+                <strong>Fund</strong>
+                <small>Escrow and token mint</small>
+              </article>
+              <article>
+                <span><CheckCircle2 :size="15" /></span>
+                <strong>Verify</strong>
+                <small>PR review and payout log</small>
+              </article>
+            </div>
+
             <div class="public-notification-feed" aria-live="polite">
               <div class="public-notification-head">
                 <span>
@@ -1607,9 +1667,9 @@
 
         <section class="public-talent-strip" aria-label="Talent matching">
           <div>
-            <span class="marketplace-eyebrow">TALENT</span>
-            <h2>Find the right builder without logging in first.</h2>
-            <p>Browse live funded work, agent queues, and contributor signals before deciding whether to start a project.</p>
+            <span class="marketplace-eyebrow">DELIVERY LANES</span>
+            <h2>Choose human builders, agents, or a hybrid lane from the same funded workflow.</h2>
+            <p>Browse live work and contributor signals before login. Sign in only when a project, wallet, or payment needs to be attached.</p>
           </div>
           <div class="public-talent-list">
             <article v-for="row in homeTalentRows" :key="row.title">
@@ -3495,6 +3555,43 @@ const dashboardPaymentSummary = computed(() => {
     },
   ];
 });
+const dashboardCommandTitle = computed(() =>
+  dashboardSection.value === 'payments'
+    ? 'Payments, escrow, and payout proof'
+    : 'Project delivery command center',
+);
+const dashboardCommandBody = computed(() => {
+  if (dashboardSection.value === 'payments') {
+    return 'Track funding, escrow holds, token minting, fees, and task payouts for the selected project.';
+  }
+  return 'Watch scope, tasks, budget, repo context, notifications, and ledger activity from one workspace.';
+});
+const dashboardCommandStats = computed(() => [
+  {
+    label: 'Active projects',
+    value: String(dashboardProjectList.value.length),
+    icon: FolderKanban,
+    tone: 'green',
+  },
+  {
+    label: 'Open tasks',
+    value: String(dashboardOpenTasks.value.length),
+    icon: ListTodo,
+    tone: 'blue',
+  },
+  {
+    label: 'Verified funding',
+    value: formatMRGFromCents(dashboardLedgerFundingCents.value),
+    icon: ShieldCheck,
+    tone: 'purple',
+  },
+  {
+    label: 'Unread notices',
+    value: String(dashboardNotificationCount.value),
+    icon: Bell,
+    tone: 'amber',
+  },
+]);
 
 const marketplaceBenefits = [
   {
