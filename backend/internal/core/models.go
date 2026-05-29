@@ -403,6 +403,86 @@ type AdminSettings struct {
 	LLMModel          string    `json:"llm_model"`
 	GeminiReviewModel string    `json:"gemini_review_model"`
 	UpdatedAt         time.Time `json:"updated_at"`
+
+	TestModeEnabled      bool   `json:"test_mode_enabled"`
+	TestModePasswordHash string `json:"test_mode_password_hash,omitempty"`
+	TestModePasswordSalt string `json:"test_mode_password_salt,omitempty"`
+}
+
+// TestPublishSetting is a database-backed test integration key.
+// KeyValue holds the raw secret and must never appear in API list responses.
+type TestPublishSetting struct {
+	ID              string     `json:"id"`
+	IntegrationType string     `json:"integration_type"`
+	DisplayName     string     `json:"display_name"`
+	KeyName         string     `json:"key_name"`
+	KeyValue        string     `json:"key_value"`
+	KeyHint         string     `json:"key_hint"`
+	Status          string     `json:"status"`
+	Provider        string     `json:"provider,omitempty"`
+	ClientID        string     `json:"client_id,omitempty"`
+	ReceiverAddress string     `json:"receiver_address,omitempty"`
+	CreatedAt       time.Time  `json:"created_at"`
+	UpdatedAt       time.Time  `json:"updated_at"`
+	LastUsedAt      *time.Time `json:"last_used_at,omitempty"`
+}
+
+// TestPublishSettingStats is the masked view returned by API responses.
+// KeyValue is excluded; only KeyHint is exposed.
+type TestPublishSettingStats struct {
+	ID              string     `json:"id"`
+	IntegrationType string     `json:"integration_type"`
+	DisplayName     string     `json:"display_name"`
+	KeyName         string     `json:"key_name"`
+	KeyHint         string     `json:"key_hint"`
+	Status          string     `json:"status"`
+	Provider        string     `json:"provider,omitempty"`
+	ClientID        string     `json:"client_id,omitempty"`
+	ReceiverAddress string     `json:"receiver_address,omitempty"`
+	CreatedAt       time.Time  `json:"created_at"`
+	UpdatedAt       time.Time  `json:"updated_at"`
+	LastUsedAt      *time.Time `json:"last_used_at,omitempty"`
+}
+
+type TestModeStatusResponse struct {
+	Enabled       bool      `json:"enabled"`
+	PasswordIsSet bool      `json:"password_is_set"`
+	UpdatedAt     time.Time `json:"updated_at"`
+}
+
+type SetTestModeRequest struct {
+	Enabled bool `json:"enabled"`
+}
+
+type SetTestModePasswordRequest struct {
+	Password string `json:"password"`
+}
+
+type VerifyTestModePasswordRequest struct {
+	Password string `json:"password"`
+}
+
+type VerifyTestModePasswordResponse struct {
+	OK bool `json:"ok"`
+}
+
+type AddTestPublishSettingRequest struct {
+	IntegrationType string `json:"integration_type"`
+	DisplayName     string `json:"display_name"`
+	KeyName         string `json:"key_name"`
+	KeyValue        string `json:"key_value"`
+	Provider        string `json:"provider,omitempty"`
+	ClientID        string `json:"client_id,omitempty"`
+	ReceiverAddress string `json:"receiver_address,omitempty"`
+}
+
+type UpdateTestPublishSettingRequest struct {
+	Status string `json:"status"`
+}
+
+type TestPublishSettingsResponse struct {
+	TestModeEnabled bool                      `json:"test_mode_enabled"`
+	Settings        []TestPublishSettingStats  `json:"settings"`
 }
 
 type LLMProviderOption struct {
@@ -634,3 +714,4 @@ type EvaluateProjectResponse struct {
 	Risks           []string         `json:"risks"`
 	Rationale       string           `json:"rationale"`
 }
+
