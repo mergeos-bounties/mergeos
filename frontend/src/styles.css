@@ -8773,3 +8773,104 @@ svg {
     font-size: 12px;
   }
 }
+
+/* ========================================
+   Fix #17: Project view after login
+   Dashboard project view responsive fixes
+   ======================================== */
+
+/* Tablet: stack metrics in 2-3 columns */
+@media (max-width: 1100px) {
+  .dash-metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 820px) {
+  .dash-project-header {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .dash-project-title .live-badge {
+    justify-self: start;
+  }
+
+  .dash-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .dash-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .dash-tabs button {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+}
+
+/* Mobile: single column */
+@media (max-width: 600px) {
+  .dash-project-title {
+    grid-template-columns: 44px minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .dash-project-title > div h1 { font-size: 16px; }
+  .dash-project-title > div p { font-size: 12px; }
+
+  .dash-metrics {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .dash-overview-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dash-pr-row {
+    grid-template-columns: 34px minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .dash-pr-stat { display: none; }
+  .dash-pr-row b { display: none; }
+}
+
+/* Very small mobile */
+@media (max-width: 400px) {
+  .dash-metrics { grid-template-columns: 1fr; }
+  .dash-project-title { grid-template-columns: 36px minmax(0, 1fr); }
+  .dash-card { padding: 10px; }
+}
+
+/* Empty state enhancements */
+.dash-empty-state {
+  text-align: center;
+  padding: 24px 16px;
+}
+
+.dash-empty-state.compact {
+  padding: 16px 12px;
+}
+
+.dash-empty-state strong {
+  display: block;
+  color: #111827;
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.dash-empty-state p {
+  margin-top: 4px;
+  color: #7b8492;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.dash-empty-state button {
+  margin-top: 10px;
+}
