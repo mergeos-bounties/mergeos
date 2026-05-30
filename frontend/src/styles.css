@@ -9573,3 +9573,5 @@ body {
   }
 }
 
+a { color: #667eea; text-decoration: none; transition: color 0.2s; }
+a:hover { color: #764ba2; text-decoration: underline; }
