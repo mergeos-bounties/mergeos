@@ -48,15 +48,22 @@ func TestSettingValueMask(t *testing.T) {
 
 func TestCheckForEnvCollision(t *testing.T) {
     for _, name := range []string{"GITHUB_TOKEN","ADMIN_EMAIL","ADMIN_PASSWORD","PAYPAL_CLIENT_ID","GEMINI_API_KEYS"} {
-        if err := checkForEnvCollision(name); err == nil {
+        if err := checkForEnvCollision(name, nil); err == nil {
             t.Errorf("expected collision for %q", name)
         }
     }
-    if err := checkForEnvCollision("MERGEOS_FOO"); err == nil {
+    if err := checkForEnvCollision("MERGEOS_FOO", nil); err == nil {
         t.Error("expected collision for MERGEOS_* prefix")
     }
-    if err := checkForEnvCollision("my-custom-key"); err != nil {
+    if err := checkForEnvCollision("my-custom-key", nil); err != nil {
         t.Errorf("unexpected error: %v", err)
+    }
+    // Test nested key collision.
+    if err := checkForEnvCollision("my-key", []string{"GITHUB_TOKEN"}); err == nil {
+        t.Error("expected collision for nested key GITHUB_TOKEN")
+    }
+    if err := checkForEnvCollision("my-key", []string{"my-safe-key"}); err != nil {
+        t.Errorf("unexpected error for safe nested key: %v", err)
     }
 }
 
