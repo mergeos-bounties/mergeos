@@ -7126,6 +7126,83 @@ svg {
   }
 }
 
+@media (max-width: 430px) {
+  .dash-project-title {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .dash-project-title h1 {
+    font-size: 16px;
+    min-width: 0;
+    word-break: break-word;
+  }
+  .dash-project-actions {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .dash-metrics {
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  .dash-metrics article {
+    padding: 8px;
+  }
+  .dash-metrics article strong {
+    font-size: 13px;
+  }
+  .dash-overview-grid {
+    grid-template-columns: 1fr;
+  }
+  .dash-rail {
+    grid-template-columns: 1fr;
+  }
+  .dashboard-project-list {
+    max-height: 200px;
+    overflow-y: auto;
+  }
+  .dash-tabs {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+  .dash-tabs button {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .wallet-address-box strong {
+    font-size: 9px;
+  }
+  .dash-card h2 {
+    font-size: 12px;
+  }
+  .dash-pr-row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+    padding: 10px;
+  }
+  .dash-pr-stat {
+    flex-direction: row;
+    gap: 6px;
+  }
+}
+
+@media (max-width: 360px) {
+  .dash-top-actions .dash-profile span {
+    display: none;
+  }
+  .dash-top-actions .primary-button.compact {
+    font-size: 11px;
+    padding: 0 8px;
+  }
+  .dash-sidebar {
+    padding: 8px 6px;
+  }
+  .dash-content {
+    padding: 6px;
+    gap: 6px;
+  }
+}
+
 @media (max-width: 1120px) {
   .how-hero {
     grid-template-columns: 1fr;

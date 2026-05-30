@@ -3866,6 +3866,7 @@ function openDashboard() {
   window.requestAnimationFrame(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
+  updatePublicBrowserPath('dashboard', true);
 }
 
 async function selectDashboardProject(projectID) {
@@ -3875,6 +3876,7 @@ async function selectDashboardProject(projectID) {
   if (!hasWindow) return;
   dashboardProjectHeader.value?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   dashboardProjectHeader.value?.focus({ preventScroll: true });
+  updatePublicBrowserPath('projects/' + projectID, true);
 }
 
 function handleDashboardNav(item) {
