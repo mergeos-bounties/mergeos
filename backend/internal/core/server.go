@@ -81,6 +81,22 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("POST /api/notifications/read-all", s.markAllNotificationsRead)
 	mux.HandleFunc("GET /api/ws", s.wsHandler)
 	mux.HandleFunc("GET /api/ledger", s.ledger)
+
+	// Test publish settings - admin endpoints
+	mux.HandleFunc("GET /api/admin/test-settings", s.adminGetTestSettings)
+	mux.HandleFunc("PATCH /api/admin/test-settings", s.adminUpdateTestSettings)
+	mux.HandleFunc("GET /api/admin/test-settings/entries", s.adminListTestEntries)
+	mux.HandleFunc("POST /api/admin/test-settings/entries", s.adminAddTestEntry)
+	mux.HandleFunc("PATCH /api/admin/test-settings/entries/{id}", s.adminUpdateTestEntry)
+	mux.HandleFunc("DELETE /api/admin/test-settings/entries/{id}", s.adminDeleteTestEntry)
+
+	// Test publish settings - public endpoints (password-gated)
+	mux.HandleFunc("POST /api/public/test-settings/auth", s.publicTestSettingsAuth)
+	mux.HandleFunc("POST /api/public/test-settings/entries/list", s.publicListTestEntries)
+	mux.HandleFunc("POST /api/public/test-settings/entries", s.publicAddTestEntry)
+	mux.HandleFunc("PATCH /api/public/test-settings/entries/{id}", s.publicUpdateTestEntry)
+	mux.HandleFunc("DELETE /api/public/test-settings/entries/{id}", s.publicDeleteTestEntry)
+	mux.HandleFunc("GET /api/public/test-settings/status", s.publicTestStatus)
 	return withCORS(mux)
 }
 
@@ -712,7 +728,7 @@ func withCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type,Authorization,X-Hub-Signature-256,X-GitHub-Event,X-GitHub-Delivery,X-MergeOS-Signature,X-MergeOS-Event")
-		w.Header().Set("Access-Control-Allow-Methods", "GET,POST,PATCH,OPTIONS")
+		w.Header().Set("Access-Control-Allow-Methods", "GET,POST,PATCH,DELETE,OPTIONS")
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusNoContent)
 			return
