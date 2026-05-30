@@ -58,7 +58,6 @@ func (s *Server) handlePayPalWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Extract order info
 	var res paypalOrderResource
 	json.Unmarshal(event.Resource, &res)
 
@@ -66,9 +65,17 @@ func (s *Server) handlePayPalWebhook(w http.ResponseWriter, r *http.Request) {
 	status := res.Status
 	currency := ""
 	value := ""
+	captureID := ""
+	payerID := ""
+	payerEmail := ""
+	if res.Payer != nil {
+		payerID = res.Payer.PayerID
+		payerEmail = res.Payer.EmailAddress
+	}
 	for _, pu := range res.PurchaseUnits {
 		if pu.Payments != nil && len(pu.Payments.Captures) > 0 {
 			c := pu.Payments.Captures[0]
+			captureID = c.ID
 			if c.Status == "COMPLETED" {
 				currency = c.Amount.CurrencyCode
 				value = c.Amount.Value
@@ -76,35 +83,16 @@ func (s *Server) handlePayPalWebhook(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Process payment completions via existing PayPal API
-	if event.EventType == "PAYMENT.CAPTURE.COMPLETED" && s.cfg.PayPalReady() {
-		token, tokenErr := s.payments.payPalAccessToken(r.Context())
-		if tokenErr != nil {
-			log.Printf("[paypal-webhook] token error: %v", tokenErr)
+	cents := int64(0)
+	if value != "" && currency == "USD" {
+		cents, _ = payPalValueToCents(value)
+	}
+
+	if event.EventType == "PAYMENT.CAPTURE.COMPLETED" && s.cfg.PayPalReady() && cents > 0 {
+		if s.store.IsPaymentReferenceUsed(orderID) {
+			log.Printf("[paypal-webhook] duplicate order ignored: %s", orderID)
 		} else {
-			httpReq, reqErr := http.NewRequestWithContext(r.Context(), http.MethodPost,
-				s.payments.payPalBaseURL()+"/v2/checkout/orders/"+orderID+"/capture", nil)
-			if reqErr == nil {
-				httpReq.Header.Set("Authorization", "Bearer "+token)
-				httpReq.Header.Set("Content-Type", "application/json")
-				httpReq.Header.Set("PayPal-Request-Id", "mergeos-webhook-"+orderID)
-				resp, doErr := s.payments.client.Do(httpReq)
-				if doErr == nil {
-					defer resp.Body.Close()
-					if resp.StatusCode >= 200 && resp.StatusCode < 300 {
-						log.Printf("[paypal-webhook] payment verified: order %s, %s %s", orderID, currency, value)
-						// Record notification using existing store API
-						s.store.addNotificationLocked("", "", "payment",
-							"PayPal Payment Completed",
-							fmt.Sprintf("Order %s completed: %s %s", orderID, currency, value),
-							"confirmed")
-						s.store.saveLocked()
-					} else {
-						body, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
-						log.Printf("[paypal-webhook] capture verify returned %d: %s", resp.StatusCode, string(body))
-					}
-				}
-			}
+			s.processPayPalPayment(r.Context(), orderID, captureID, payerID, payerEmail, cents, value, currency)
 		}
 	}
 
@@ -115,4 +103,25 @@ func (s *Server) handlePayPalWebhook(w http.ResponseWriter, r *http.Request) {
 		"status":   "received",
 		"event_id": event.ID,
 	})
+}
+
+func (s *Server) processPayPalPayment(ctxReq interface{}, orderID, captureID, payerID, payerEmail string, cents int64, value, currency string) {
+	tokenSymbol := normalizedTokenSymbol(s.cfg.TokenSymbol)
+
+	ledgerRef := "paypal:" + orderID + ":" + captureID
+	entry := s.store.addLedger("payment_verified", "payment:paypal", "project:reserve", cents, ledgerRef)
+	log.Printf("[paypal-webhook] payment ledger created: seq=%d hash=%s", entry.Sequence, entry.EntryHash)
+
+	mintCents := cents * 8 / 10
+	mintRef := "token_mint:" + orderID
+	s.store.addLedger("token_mint", "payment:paypal", "customer:mint", mintCents, mintRef)
+	log.Printf("[paypal-webhook] MRG minted: %d cents (%s)", mintCents, tokenSymbol)
+
+	s.store.addNotificationLocked("", "", "payment",
+		"PayPal Payment Completed - MRG Minted",
+		fmt.Sprintf("Order %s completed: %s %s. %s minted: %s", orderID, value, currency, tokenSymbol, value),
+		"confirmed")
+
+	s.store.saveLocked()
+	log.Printf("[paypal-webhook] MRG minting and ledger complete for order %s", orderID)
 }
