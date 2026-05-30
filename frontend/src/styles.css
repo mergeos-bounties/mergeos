@@ -9573,3 +9573,5 @@ body {
   }
 }
 
+.hero-gradient { background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%); }
+.gradient-border { border: 1px solid; border-image: linear-gradient(135deg, #667eea, #764ba2) 1; }
