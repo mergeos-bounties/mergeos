@@ -9573,3 +9573,5 @@ body {
   }
 }
 
+button:not(:disabled):hover { filter: brightness(1.1); transition: filter 0.2s; }
+button:active { transform: scale(0.98); }
