@@ -9573,3 +9573,8 @@ body {
   }
 }
 
+@media print {
+  nav, .sidebar, button, .no-print { display: none !important; }
+  body { background: white; color: black; }
+  a { color: black; text-decoration: underline; }
+}
