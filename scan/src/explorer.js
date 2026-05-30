@@ -1,3 +1,27 @@
+
+/**
+ * Auth guard — checks if user is authenticated before navigating to projects.
+ * Returns true if authenticated, false otherwise.
+ */
+export function isAuthenticated() {
+  const token = localStorage.getItem('auth_token') || 
+                document.cookie.split('; ').find(row => row.startsWith('auth_token='));
+  return !!token;
+}
+
+/**
+ * Redirect to login if not authenticated.
+ * Call this before project-related operations.
+ */
+export function requireAuth() {
+  if (!isAuthenticated()) {
+    const returnUrl = encodeURIComponent(window.location.href);
+    window.location.href = `/login?redirect=${returnUrl}`;
+    return false;
+  }
+  return true;
+}
+
 export const TOKEN_RATE_PER_USD = 100;
 
 export function normalizeEntry(entry = {}) {
