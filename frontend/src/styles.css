@@ -9573,3 +9573,9 @@ body {
   }
 }
 
+@media (max-width: 600px) {
+  table, thead, tbody, th, td, tr { display: block; }
+  th { display: none; }
+  td { padding: 0.5rem; border-bottom: 1px solid #334155; }
+  td::before { content: attr(data-label); font-weight: 600; display: block; color: #667eea; margin-bottom: 4px; }
+}
