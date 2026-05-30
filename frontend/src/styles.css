@@ -9573,3 +9573,18 @@ body {
   }
 }
 
+
+/* Wallet connect button */
+.wallet-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.wallet-btn:hover { opacity: 0.9; }
