@@ -442,7 +442,28 @@
                   <small>{{ item.reason }}</small>
                 </article>
               </div>
-              <p v-if="priceEvaluation.risks?.length">{{ priceEvaluation.risks[0] }}</p>
+              <div v-if="priceEvaluation.assumptions?.length" class="eval-section">
+                <span class="eval-label">Assumptions</span>
+                <ul>
+                  <li v-for="a in priceEvaluation.assumptions" :key="a">{{ a }}</li>
+                </ul>
+              </div>
+              <div v-if="priceEvaluation.risks?.length" class="eval-section">
+                <span class="eval-label">Risks</span>
+                <ul>
+                  <li v-for="r in priceEvaluation.risks" :key="r">{{ r }}</li>
+                </ul>
+              </div>
+              <div class="eval-override">
+                <label>
+                  <span>Override price (MRG)</span>
+                  <input v-model.number="priceOverrideAmount" type="number" min="0" step="0.1" placeholder="Enter custom amount" />
+                </label>
+                <button class="text-action" type="button" @click="applyPriceEvaluation">
+                  <CheckCircle2 :size="14" />
+                  Use estimate
+                </button>
+              </div>
             </section>
 
             <p v-if="priceEvaluationError" class="project-payment-error full">{{ priceEvaluationError }}</p>
@@ -2636,6 +2657,7 @@ const dashboardNotificationCenter = ref(null);
 const priceEvaluation = ref(null);
 const priceEvaluationBusy = ref(false);
 const priceEvaluationError = ref('');
+const priceOverrideAmount = ref(0);
 const repoImportBusy = ref(false);
 const repoImportError = ref('');
 const repoImportResult = ref(null);
@@ -4067,9 +4089,13 @@ async function runProjectPriceEvaluation() {
 }
 
 function applyPriceEvaluation() {
-  if (!priceEvaluation.value?.suggested_price_cents) return;
-  projectSetupForm.budgetAmount = Math.max(TOKEN_RATE_PER_USD * 100, tokenAmountFromCents(priceEvaluation.value.suggested_price_cents));
+  if (priceOverrideAmount.value > 0) {
+    projectSetupForm.budgetAmount = priceOverrideAmount.value;
+  } else if (priceEvaluation.value?.suggested_price_cents) {
+    projectSetupForm.budgetAmount = Math.max(TOKEN_RATE_PER_USD * 100, tokenAmountFromCents(priceEvaluation.value.suggested_price_cents));
+  }
   projectSetupForm.budgetType = 'Range';
+  showToast('Price applied.');
 }
 
 function projectWizardBack() {
