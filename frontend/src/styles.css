@@ -9573,3 +9573,6 @@ body {
   }
 }
 
+.empty-state { text-align: center; padding: 3rem 1rem; color: #64748b; }
+.empty-state-icon { font-size: 48px; margin-bottom: 1rem; opacity: 0.5; }
+.empty-state-title { font-size: 18px; font-weight: 600; color: #94a3b8; margin-bottom: 8px; }
