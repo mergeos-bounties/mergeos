@@ -1,7 +1,0 @@
-.env
-.env.*
-!*.example
-data/
-mergeos.exe
-*.log
-tmp/
