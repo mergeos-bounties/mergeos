@@ -1916,3 +1916,5 @@ main {
     border-top: 1px solid var(--line);
   }
 }
+.toast-success { background: linear-gradient(135deg, #0d9488, #059669); color: white; }
+.toast-error { background: linear-gradient(135deg, #dc2626, #b91c1c); color: white; }
