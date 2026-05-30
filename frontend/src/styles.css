@@ -9573,3 +9573,5 @@ body {
   }
 }
 
+input, textarea, select { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 10px 14px; color: #e2e8f0; font-size: 15px; transition: border-color 0.2s; }
+input:focus, textarea:focus, select:focus { border-color: #667eea; outline: none; box-shadow: 0 0 0 2px rgba(102,126,234,0.2); }
