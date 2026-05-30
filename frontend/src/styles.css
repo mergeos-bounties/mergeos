@@ -9573,3 +9573,8 @@ body {
   }
 }
 
+.dropdown { position: relative; display: inline-block; }
+.dropdown-menu { position: absolute; top: 100%; right: 0; min-width: 200px; background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 8px 0; box-shadow: 0 10px 25px rgba(0,0,0,0.3); z-index: 50; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+.dropdown:hover .dropdown-menu { opacity: 1; pointer-events: auto; }
+.dropdown-item { padding: 8px 16px; display: block; color: #e2e8f0; transition: background 0.15s; }
+.dropdown-item:hover { background: #334155; }
