@@ -9573,3 +9573,5 @@ body {
   }
 }
 
+.card { background: #1e293b; border-radius: 12px; padding: 1.5rem; border: 1px solid #334155; transition: border-color 0.2s; }
+.card:hover { border-color: #667eea; }
