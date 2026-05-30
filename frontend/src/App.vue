@@ -5098,6 +5098,10 @@ async function restoreSession() {
 }
 
 async function logout() {
+  clearSession();
+  publicModeVisible.value = true;
+  publicPage.value = "home";
+  updatePublicBrowserPath("home", true);
   const req = api('/api/auth/logout', { method: 'POST', body: JSON.stringify({}) }).catch((err) => {
     console.warn('Backend logout failed gracefully', err);
   });
