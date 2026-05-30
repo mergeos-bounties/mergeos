@@ -1,0 +1,35 @@
+name: PR Auto Respond
+
+on:
+  issue_comment:
+    types:
+      - created
+
+permissions:
+  pull-requests: write
+  issues: write
+
+jobs:
+  respond:
+    if: |
+      github.event.issue.pull_request != '' &&
+      github.event.comment.author_association == 'MEMBER' ||
+      github.event.comment.author_association == 'COLLABORATOR' ||
+      github.event.comment.author_association == 'OWNER'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Auto-acknowledge maintainer feedback
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = context.issue.number;
+            const commentBody = context.payload.comment.body;
+            const commenter = context.payload.comment.user.login;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: `👋 Thanks for the review, @${commenter}! I'll apply any requested changes shortly and push an update.`,
+            });
