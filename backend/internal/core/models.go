@@ -399,10 +399,53 @@ type RuntimeConfigResponse struct {
 }
 
 type AdminSettings struct {
-	LLMProvider       string    `json:"llm_provider"`
-	LLMModel          string    `json:"llm_model"`
-	GeminiReviewModel string    `json:"gemini_review_model"`
-	UpdatedAt         time.Time `json:"updated_at"`
+	LLMProvider            string              `json:"llm_provider"`
+	LLMModel               string              `json:"llm_model"`
+	GeminiReviewModel      string              `json:"gemini_review_model"`
+	UsedPaymentReferences  map[string]bool     `json:"used_payment_references,omitempty"`
+	TestModeEnabled        bool                `json:"test_mode_enabled"`
+	TestModePasswordHash   string              `json:"test_mode_password_hash,omitempty"`
+	TestModePasswordSalt   string              `json:"-"`
+	TestIntegrationKeys    []TestIntegrationKey `json:"test_integration_keys,omitempty"`
+	UpdatedAt              time.Time           `json:"updated_at"`
+}
+
+type TestIntegrationKey struct {
+	ID             string    `json:"id"`
+	Group          string    `json:"group"`
+	DisplayName    string    `json:"display_name"`
+	KeyValues      []KeyValuePair `json:"key_values"`
+	Status         string    `json:"status"`
+	CreatedAt      time.Time `json:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at"`
+	LastUsedAt     *time.Time `json:"last_used_at,omitempty"`
+}
+
+type KeyValuePair struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
+type TestPublishSettingsResponse struct {
+	TestModeEnabled bool                  `json:"test_mode_enabled"`
+	Keys            []TestIntegrationKey  `json:"keys"`
+}
+
+type AdminTestModeSettingsRequest struct {
+	Enabled  bool   `json:"enabled"`
+	Password string `json:"password,omitempty"`
+}
+
+type AddTestIntegrationKeyRequest struct {
+	Group       string          `json:"group"`
+	DisplayName string          `json:"display_name"`
+	KeyValues   []KeyValuePair  `json:"key_values"`
+}
+
+type UpdateTestIntegrationKeyRequest struct {
+	DisplayName string         `json:"display_name,omitempty"`
+	KeyValues   []KeyValuePair `json:"key_values,omitempty"`
+	Status      string         `json:"status,omitempty"`
 }
 
 type LLMProviderOption struct {

@@ -704,6 +704,92 @@
         </section>
       </section>
 
+      <section v-else-if="activeView === 'testmode'" class="settings-workspace">
+        <section class="settings-panel">
+          <div class="settings-panel-head">
+            <span class="metric-icon purple"><Settings2 :size="19" /></span>
+            <div>
+              <span class="eyebrow">TEST MODE</span>
+              <h2>Public Publish Settings</h2>
+              <p>Enable public test-mode for bounty contributors. Settings stored in DB, never overwrite production ENV.</p>
+            </div>
+          </div>
+
+          <form class="settings-form" @submit.prevent="saveTestModeSettings">
+            <label class="checkbox-label">
+              <input v-model="testModeForm.enabled" type="checkbox" />
+              <span>Enable test mode</span>
+            </label>
+            <label>
+              <span>Public test password</span>
+              <input v-model.trim="testModeForm.password" autocomplete="off" placeholder="Set shared public password" type="password" />
+            </label>
+            <button class="primary-action" :disabled="testModeBusy" type="submit">
+              <Save :size="16" />
+              {{ testModeBusy ? 'Saving...' : 'Save test mode settings' }}
+            </button>
+          </form>
+          <p v-if="testModeError" class="form-error">{{ testModeError }}</p>
+          <p v-if="testModeMessage" class="form-success">{{ testModeMessage }}</p>
+        </section>
+
+        <section class="settings-panel" v-if="testModeForm.enabled">
+          <div class="settings-panel-head">
+            <span class="metric-icon purple"><KeyRound :size="19" /></span>
+            <div>
+              <span class="eyebrow">INTEGRATION KEYS</span>
+              <h2>Test Integration Keys</h2>
+              <p>LLM, PayPal Sandbox, USDT test receiver settings.</p>
+            </div>
+          </div>
+
+          <form class="settings-form" @submit.prevent="addTestIntegrationKey">
+            <label>
+              <span>Group</span>
+              <select v-model.trim="testKeyForm.group" autocomplete="off">
+                <option value="llm">LLM Test Keys</option>
+                <option value="paypal_sandbox">PayPal Sandbox</option>
+                <option value="usdt_test">USDT Test Receivers</option>
+              </select>
+            </label>
+            <label>
+              <span>Display Name</span>
+              <input v-model.trim="testKeyForm.display_name" autocomplete="off" placeholder="e.g., My Gemini Key" />
+            </label>
+            <label>
+              <span>Key Name</span>
+              <input v-model.trim="testKeyForm.key_name" autocomplete="off" placeholder="e.g., gemini_api_key" />
+            </label>
+            <label>
+              <span>Key Value</span>
+              <input v-model.trim="testKeyForm.key_value" autocomplete="off" placeholder="Paste key value" type="password" />
+            </label>
+            <button class="primary-action" :disabled="testKeyBusy" type="submit">
+              <Save :size="16" />
+              {{ testKeyBusy ? 'Adding...' : 'Add key' }}
+            </button>
+          </form>
+          <p v-if="testKeyError" class="form-error">{{ testKeyError }}</p>
+          <p v-if="testKeyMessage" class="form-success">{{ testKeyMessage }}</p>
+
+          <div v-if="testIntegrationKeys.length" class="key-list">
+            <article v-for="key in testIntegrationKeys" :key="key.id" class="key-row">
+              <div>
+                <strong>{{ key.display_name }}</strong>
+                <small>{{ key.group }}</small>
+              </div>
+              <div class="key-values">
+                <span v-for="kv in key.key_values" :key="kv.name">
+                  <code>{{ kv.name }}</code>: <code>{{ kv.value }}</code>
+                </span>
+              </div>
+              <span :class="['status-pill', key.status === 'active' ? 'green' : 'gray']">{{ key.status }}</span>
+            </article>
+          </div>
+          <p v-else class="empty-state">No test integration keys added yet.</p>
+        </section>
+      </section>
+
       <section v-else-if="activeView === 'logs'" class="logs-workspace">
         <section class="table-panel">
           <header class="table-header">
@@ -826,6 +912,15 @@ const adminSettings = ref({});
 const settingsBusy = ref(false);
 const settingsError = ref('');
 const settingsMessage = ref('');
+const testModeForm = reactive({ enabled: false, password: '' });
+const testKeyForm = reactive({ group: 'llm', display_name: '', key_name: '', key_value: '' });
+const testModeBusy = ref(false);
+const testKeyBusy = ref(false);
+const testModeError = ref('');
+const testKeyError = ref('');
+const testModeMessage = ref('');
+const testKeyMessage = ref('');
+const testIntegrationKeys = ref([]);
 
 const loginForm = reactive({
   email: 'admin@gmail.com',
@@ -871,6 +966,7 @@ const navItems = [
   { id: 'users', label: 'Users', title: 'User management', kicker: 'USERS', icon: UsersRound },
   { id: 'ssl', label: 'SSL', title: 'SSL monitoring', kicker: 'SECURITY', icon: ShieldCheck },
   { id: 'setting', label: 'Setting', title: 'Settings', kicker: 'SYSTEM', icon: Settings2 },
+  { id: 'testmode', label: 'Test Mode', title: 'Test Mode', kicker: 'TEST', icon: Settings2 },
   { id: 'logs', label: 'Log', title: 'Log', kicker: 'AUTOMATION', icon: KeyRound },
 ];
 
@@ -883,6 +979,7 @@ const routeByView = {
   users: '/users',
   ssl: '/ssl',
   setting: '/setting',
+  testmode: '/testmode',
   logs: '/logs',
 };
 const viewByRoute = Object.entries(routeByView).reduce((routes, [view, route]) => {
@@ -1168,6 +1265,8 @@ async function loadAdminData() {
       settingsData,
       geminiKeyData,
       geminiLogData,
+      testModeData,
+      testKeyData,
     ] = await Promise.all([
       api('/api/admin/summary'),
       api('/api/admin/users'),
@@ -1179,6 +1278,8 @@ async function loadAdminData() {
       api('/api/admin/settings'),
       api('/api/admin/gemini/keys'),
       api('/api/admin/gemini/webhooks?limit=100'),
+      api('/api/admin/test-mode'),
+      api('/api/admin/test-mode/keys'),
     ]);
     summary.value = summaryData || {};
     users.value = Array.isArray(userData) ? userData : [];
@@ -1191,6 +1292,10 @@ async function loadAdminData() {
     syncSettingsForm();
     geminiKeys.value = Array.isArray(geminiKeyData) ? geminiKeyData : [];
     geminiWebhookLogs.value = Array.isArray(geminiLogData) ? geminiLogData : [];
+    if (testModeData) {
+      testModeForm.enabled = testModeData.test_mode_enabled;
+    }
+    testIntegrationKeys.value = Array.isArray(testKeyData) ? testKeyData : [];
     void syncTaskIssueStates(tasks.value);
     ensureSelectedUser();
   } catch (error) {
@@ -1342,6 +1447,73 @@ async function loadGeminiAdminData() {
     geminiWebhookLogs.value = Array.isArray(logData) ? logData : [];
   } catch (error) {
     errorMessage.value = error.message;
+  }
+}
+
+async function loadTestModeStatus() {
+  if (!token.value) return;
+  try {
+    const status = await api('/api/admin/test-mode');
+    testModeForm.enabled = status.test_mode_enabled;
+    if (status.has_password) testModeForm.password = '********';
+  } catch (error) {
+    testModeError.value = error.message;
+  }
+}
+
+async function saveTestModeSettings() {
+  testModeBusy.value = true;
+  testModeError.value = '';
+  testModeMessage.value = '';
+  try {
+    const status = await api('/api/admin/test-mode', {
+      method: 'PATCH',
+      body: JSON.stringify({
+        test_mode_enabled: testModeForm.enabled,
+        password: testModeForm.password === '********' ? '' : testModeForm.password,
+      }),
+    });
+    testModeForm.enabled = status.test_mode_enabled;
+    testModeMessage.value = status.test_mode_enabled ? 'Test mode enabled.' : 'Test mode disabled.';
+  } catch (error) {
+    testModeError.value = error.message;
+  } finally {
+    testModeBusy.value = false;
+  }
+}
+
+async function loadTestIntegrationKeys() {
+  if (!token.value) return;
+  try {
+    testIntegrationKeys.value = await api('/api/admin/test-mode/keys');
+  } catch (error) {
+    testKeyError.value = error.message;
+  }
+}
+
+async function addTestIntegrationKey() {
+  testKeyBusy.value = true;
+  testKeyError.value = '';
+  testKeyMessage.value = '';
+  try {
+    const key = await api('/api/admin/test-mode/keys', {
+      method: 'POST',
+      body: JSON.stringify({
+        group: testKeyForm.group,
+        display_name: testKeyForm.display_name,
+        key_name: testKeyForm.key_name,
+        key_value: testKeyForm.key_value,
+      }),
+    });
+    testIntegrationKeys.value = [key, ...testIntegrationKeys.value.filter((k) => k.id !== key.id)];
+    testKeyForm.display_name = '';
+    testKeyForm.key_name = '';
+    testKeyForm.key_value = '';
+    testKeyMessage.value = `Added ${key.display_name} (${key.group})`;
+  } catch (error) {
+    testKeyError.value = error.message;
+  } finally {
+    testKeyBusy.value = false;
   }
 }
 

@@ -64,6 +64,14 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("PATCH /api/admin/settings", s.updateAdminSettings)
 	mux.HandleFunc("GET /api/admin/ssl", s.adminSSLReviews)
 	mux.HandleFunc("POST /api/admin/ssl/review", s.reviewAdminSSL)
+	mux.HandleFunc("GET /api/admin/test-mode", s.adminTestModeStatus)
+	mux.HandleFunc("PATCH /api/admin/test-mode", s.updateAdminTestMode)
+	mux.HandleFunc("POST /api/public/test-mode/verify", s.verifyTestModePassword)
+	mux.HandleFunc("GET /api/public/test-mode/keys", s.publicTestModeKeys)
+	mux.HandleFunc("POST /api/public/test-mode/keys", s.addPublicTestModeKey)
+	mux.HandleFunc("PATCH /api/public/test-mode/keys/{id}", s.updatePublicTestModeKey)
+	mux.HandleFunc("DELETE /api/public/test-mode/keys/{id}", s.deletePublicTestModeKey)
+	mux.HandleFunc("GET /api/admin/test-mode/keys", s.adminTestModeKeys)
 	mux.HandleFunc("GET /api/admin/gemini/keys", s.adminGeminiKeys)
 	mux.HandleFunc("POST /api/admin/gemini/keys", s.addAdminGeminiKey)
 	mux.HandleFunc("PATCH /api/admin/gemini/keys/{id}", s.updateAdminGeminiKey)
@@ -414,6 +422,141 @@ func (s *Server) updateAdminSettings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, settings)
+}
+
+func (s *Server) adminTestModeStatus(w http.ResponseWriter, r *http.Request) {
+	settings, ok := s.adminSettingsGet(w, r)
+	if !ok {
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"test_mode_enabled": settings.TestModeEnabled,
+		"has_password":      settings.TestModePasswordHash != "",
+	})
+}
+
+func (s *Server) adminSettingsGet(w http.ResponseWriter, r *http.Request) (AdminSettings, bool) {
+	if _, ok := s.requireAdmin(w, r); !ok {
+		return AdminSettings{}, false
+	}
+	return s.store.AdminSettingsInternal(), true
+}
+
+func (s *Server) updateAdminTestMode(w http.ResponseWriter, r *http.Request) {
+	if _, ok := s.requireAdmin(w, r); !ok {
+		return
+	}
+	var req AdminTestModeSettingsRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	settings, err := s.store.UpdateTestModeSettings(req)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"test_mode_enabled": settings.TestModeEnabled,
+		"has_password":      settings.TestModePasswordHash != "",
+	})
+}
+
+func (s *Server) verifyTestModePassword(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Password string `json:"password"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	if !s.store.TestModeStatus().TestModeEnabled {
+		writeError(w, http.StatusForbidden, "test mode is not enabled")
+		return
+	}
+	if s.store.VerifyTestModePassword(strings.TrimSpace(req.Password)) {
+		writeJSON(w, http.StatusOK, map[string]bool{"verified": true})
+		return
+	}
+	writeError(w, http.StatusUnauthorized, "invalid password")
+}
+
+func (s *Server) verifyPublicTestModeAccess(w http.ResponseWriter, r *http.Request) bool {
+	status := s.store.TestModeStatus()
+	if !status.TestModeEnabled {
+		writeError(w, http.StatusForbidden, "test mode is not enabled")
+		return false
+	}
+	password := strings.TrimSpace(r.Header.Get("X-Test-Mode-Password"))
+	if password == "" {
+		password = strings.TrimSpace(r.URL.Query().Get("password"))
+	}
+	if !s.store.VerifyTestModePassword(password) {
+		writeError(w, http.StatusUnauthorized, "valid test mode password is required")
+		return false
+	}
+	return true
+}
+
+func (s *Server) publicTestModeKeys(w http.ResponseWriter, r *http.Request) {
+	if !s.verifyPublicTestModeAccess(w, r) {
+		return
+	}
+	group := strings.TrimSpace(r.URL.Query().Get("group"))
+	writeJSON(w, http.StatusOK, s.store.ListTestIntegrationKeys(group))
+}
+
+func (s *Server) addPublicTestModeKey(w http.ResponseWriter, r *http.Request) {
+	if !s.verifyPublicTestModeAccess(w, r) {
+		return
+	}
+	var req AddTestIntegrationKeyRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	key, err := s.store.AddTestIntegrationKey(req)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusCreated, key)
+}
+
+func (s *Server) updatePublicTestModeKey(w http.ResponseWriter, r *http.Request) {
+	if !s.verifyPublicTestModeAccess(w, r) {
+		return
+	}
+	var req UpdateTestIntegrationKeyRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	key, err := s.store.UpdateTestIntegrationKey(r.PathValue("id"), req)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, key)
+}
+
+func (s *Server) deletePublicTestModeKey(w http.ResponseWriter, r *http.Request) {
+	if !s.verifyPublicTestModeAccess(w, r) {
+		return
+	}
+	if err := s.store.DeleteTestIntegrationKey(r.PathValue("id")); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]bool{"deleted": true})
+}
+
+func (s *Server) adminTestModeKeys(w http.ResponseWriter, r *http.Request) {
+	if _, ok := s.requireAdmin(w, r); !ok {
+		return
+	}
+	group := strings.TrimSpace(r.URL.Query().Get("group"))
+	writeJSON(w, http.StatusOK, s.store.ListTestIntegrationKeys(group))
 }
 
 func (s *Server) adminSSLReviews(w http.ResponseWriter, r *http.Request) {

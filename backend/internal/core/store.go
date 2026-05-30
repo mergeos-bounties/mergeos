@@ -198,6 +198,12 @@ func (s *Store) AdminSettings() AdminSettingsResponse {
 	return adminSettingsResponse(s.adminSettings)
 }
 
+func (s *Store) AdminSettingsInternal() AdminSettings {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.adminSettings
+}
+
 func (s *Store) UpdateAdminSettings(req UpdateAdminSettingsRequest) (AdminSettingsResponse, error) {
 	provider := strings.TrimSpace(req.LLMProvider)
 	modelValue := strings.TrimSpace(req.LLMModel)
@@ -2246,6 +2252,207 @@ func publicLedgerReference(projectID, taskID string, sequence int, reference str
 		return fmt.Sprintf("project:%s;task:%s", projectID, taskID)
 	}
 	return "project:" + projectID
+}
+
+var blockedENVNames = map[string]bool{
+	"GITHUB_TOKEN": true, "MERGEOS_GITHUB_TOKEN": true,
+	"TOKEN_SYMBOL": true, "ADMIN_EMAIL": true, "ADMIN_PASSWORD": true,
+	"PAYPAL_CLIENT_ID": true, "PAYPAL_CLIENT_SECRET": true, "PAYPAL_ENVIRONMENT": true,
+	"CRYPTO_WEBHOOK_SECRET": true, "CRYPTO_TOKEN_CONTRACT": true, "USDT_RECEIVER_ADDRESS": true,
+	"GEMINI_API_KEYS": true,
+}
+
+func isBlockedSettingName(name string) bool {
+	upper := strings.ToUpper(strings.TrimSpace(name))
+	if blockedENVNames[upper] {
+		return true
+	}
+	if strings.HasPrefix(upper, "MERGEOS_") {
+		return true
+	}
+	return false
+}
+
+func (s *Store) TestModeStatus() TestPublishSettingsResponse {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	keys := make([]TestIntegrationKey, len(s.adminSettings.TestIntegrationKeys))
+	for i, k := range s.adminSettings.TestIntegrationKeys {
+		masked := make([]KeyValuePair, len(k.KeyValues))
+		for j, kv := range k.KeyValues {
+			masked[j] = KeyValuePair{Name: kv.Name, Value: maskSecret(kv.Value)}
+		}
+		keys[i] = k
+		keys[i].KeyValues = masked
+	}
+	return TestPublishSettingsResponse{
+		TestModeEnabled: s.adminSettings.TestModeEnabled,
+		Keys:            keys,
+	}
+}
+
+func (s *Store) UpdateTestModeSettings(req AdminTestModeSettingsRequest) (AdminSettings, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.adminSettings.TestModeEnabled = req.Enabled
+	password := strings.TrimSpace(req.Password)
+	if password != "" {
+		salt, hash, err := hashPassword(password)
+		if err != nil {
+			return s.adminSettings, err
+		}
+		s.adminSettings.TestModePasswordSalt = salt
+		s.adminSettings.TestModePasswordHash = hash
+	}
+	s.adminSettings.UpdatedAt = time.Now().UTC()
+	if err := s.saveLocked(); err != nil {
+		return s.adminSettings, err
+	}
+	return s.adminSettings, nil
+}
+
+func (s *Store) VerifyTestModePassword(password string) bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	if !s.adminSettings.TestModeEnabled {
+		return false
+	}
+	if s.adminSettings.TestModePasswordHash == "" {
+		return false
+	}
+	return verifyPassword(password, s.adminSettings.TestModePasswordSalt, s.adminSettings.TestModePasswordHash)
+}
+
+func (s *Store) AddTestIntegrationKey(req AddTestIntegrationKeyRequest) (TestIntegrationKey, error) {
+	group := strings.TrimSpace(req.Group)
+	displayName := strings.TrimSpace(req.DisplayName)
+	if group == "" || displayName == "" {
+		return TestIntegrationKey{}, errors.New("group and display_name are required")
+	}
+	allowedGroups := map[string]bool{"llm": true, "paypal_sandbox": true, "usdt_test": true}
+	if !allowedGroups[group] {
+		return TestIntegrationKey{}, fmt.Errorf("group must be one of: llm, paypal_sandbox, usdt_test")
+	}
+	for _, kv := range req.KeyValues {
+		name := strings.TrimSpace(kv.Name)
+		if name == "" || strings.TrimSpace(kv.Value) == "" {
+			return TestIntegrationKey{}, errors.New("each key_value pair must have name and value")
+		}
+		if isBlockedSettingName(name) {
+			return TestIntegrationKey{}, fmt.Errorf("key name %q is blocked (matches production ENV name)", name)
+		}
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	now := time.Now().UTC()
+	key := TestIntegrationKey{
+		ID:          s.newID("tik"),
+		Group:       group,
+		DisplayName: displayName,
+		KeyValues:   append([]KeyValuePair(nil), req.KeyValues...),
+		Status:      "active",
+		CreatedAt:   now,
+		UpdatedAt:   now,
+	}
+	s.adminSettings.TestIntegrationKeys = append(s.adminSettings.TestIntegrationKeys, key)
+	s.adminSettings.UpdatedAt = now
+	if err := s.saveLocked(); err != nil {
+		return TestIntegrationKey{}, err
+	}
+	return key, nil
+}
+
+func (s *Store) ListTestIntegrationKeys(group string) []TestIntegrationKey {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	group = strings.TrimSpace(group)
+	keys := make([]TestIntegrationKey, 0)
+	for _, k := range s.adminSettings.TestIntegrationKeys {
+		if group != "" && k.Group != group {
+			continue
+		}
+		masked := make([]KeyValuePair, len(k.KeyValues))
+		for j, kv := range k.KeyValues {
+			masked[j] = KeyValuePair{Name: kv.Name, Value: maskSecret(kv.Value)}
+		}
+		entry := k
+		entry.KeyValues = masked
+		keys = append(keys, entry)
+	}
+	return keys
+}
+
+func (s *Store) UpdateTestIntegrationKey(id string, req UpdateTestIntegrationKeyRequest) (TestIntegrationKey, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	now := time.Now().UTC()
+	for i, k := range s.adminSettings.TestIntegrationKeys {
+		if k.ID != id {
+			continue
+		}
+		if req.DisplayName != "" {
+			s.adminSettings.TestIntegrationKeys[i].DisplayName = req.DisplayName
+		}
+		if len(req.KeyValues) > 0 {
+			s.adminSettings.TestIntegrationKeys[i].KeyValues = append([]KeyValuePair(nil), req.KeyValues...)
+		}
+		if req.Status != "" {
+			validStatuses := map[string]bool{"active": true, "disabled": true}
+			if !validStatuses[req.Status] {
+				return TestIntegrationKey{}, errors.New("status must be active or disabled")
+			}
+			s.adminSettings.TestIntegrationKeys[i].Status = req.Status
+		}
+		s.adminSettings.TestIntegrationKeys[i].UpdatedAt = now
+		s.adminSettings.UpdatedAt = now
+		if err := s.saveLocked(); err != nil {
+			return TestIntegrationKey{}, err
+		}
+		return s.adminSettings.TestIntegrationKeys[i], nil
+	}
+	return TestIntegrationKey{}, errors.New("integration key not found")
+}
+
+func (s *Store) DeleteTestIntegrationKey(id string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	now := time.Now().UTC()
+	for i, k := range s.adminSettings.TestIntegrationKeys {
+		if k.ID == id {
+			s.adminSettings.TestIntegrationKeys = append(s.adminSettings.TestIntegrationKeys[:i], s.adminSettings.TestIntegrationKeys[i+1:]...)
+			s.adminSettings.UpdatedAt = now
+			return s.saveLocked()
+		}
+	}
+	return errors.New("integration key not found")
+}
+
+func (s *Store) ResolveTestIntegrationKeys(group string) []TestIntegrationKey {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	group = strings.TrimSpace(group)
+	if !s.adminSettings.TestModeEnabled {
+		return nil
+	}
+	keys := make([]TestIntegrationKey, 0)
+	for _, k := range s.adminSettings.TestIntegrationKeys {
+		if group != "" && k.Group != group {
+			continue
+		}
+		if k.Status != "active" {
+			continue
+		}
+		keys = append(keys, k)
+	}
+	return keys
+}
+
+func maskSecret(value string) string {
+	if len(value) <= 8 {
+		return "****"
+	}
+	return value[:4] + "..." + value[len(value)-4:]
 }
 
 func (s *Store) IsPaymentReferenceUsed(reference string) bool {
