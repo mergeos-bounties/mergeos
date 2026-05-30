@@ -680,7 +680,7 @@
                 </span>
               </button>
             </div>
-            <div class="card-input-grid">
+            <div v-if="projectPaymentMethod !== 'PayPal'" class="card-input-grid">
               <label class="wizard-field full">
                 <span>Card number</span>
                 <input placeholder="1234 1234 1234 1234" />
@@ -698,6 +698,15 @@
                 <input placeholder="Name on card" />
               </label>
             </div>
+            <div v-else class="paypal-section">
+              <div class="paypal-info">
+                <Lock :size="14" />
+                <span>You will be redirected to PayPal to complete your payment. After approval, you will return here to finish funding your project.</span>
+              </div>
+              <div v-if="paypalOrderBusy" class="paypal-loading">
+                <span>Connecting to PayPal...</span>
+              </div>
+            </div>
           </section>
 
           <footer class="funding-actions">
@@ -705,9 +714,9 @@
             <div>
               <small>Total to pay</small>
               <strong>{{ projectFundingAmountLabel }}</strong>
-              <button class="primary-button compact" :disabled="projectPaymentBusy" type="button" @click="completeProjectFunding">
+              <button class="primary-button compact" :disabled="projectPaymentBusy || paypalOrderBusy" type="button" @click="completeProjectFunding">
                 {{ projectPaymentButtonLabel }}
-                <LockKeyhole :size="15" />
+                <LockKeyhole v-if="projectPaymentMethod !== 'PayPal'" :size="15" />
               </button>
             </div>
           </footer>
@@ -2602,6 +2611,8 @@ const projectFundingAmount = ref('');
 const projectPaymentMethod = ref('Credit / Debit card');
 const projectPaymentBusy = ref(false);
 const projectPaymentError = ref('');
+const paypalOrderBusy = ref(false);
+const paypalOrderID = ref('');
 const pendingProjectPaymentAfterAuth = ref(false);
 const authReturnToProjectWizard = ref(false);
 const fundedProject = ref(null);
@@ -3026,7 +3037,7 @@ const projectPaymentButtonLabel = computed(() => {
   return user.value ? 'Add funds & get tokens' : 'Log in to pay';
 });
 const successProjectTitle = computed(() => fundedProject.value?.title || projectTitleLabel.value);
-const successPaymentReference = computed(() => fundedProject.value?.payment_reference || '');
+const successPaymentReference = ref('');
 
 const ledgerEvents = computed(() => ledgerRawEntries.value.slice().reverse().map(mapLedgerEntry));
 const ledgerMintedTokenTotal = computed(() =>
@@ -4107,6 +4118,52 @@ function requireLoginForProjectPayment() {
   showToast('Log in to continue payment.');
 }
 
+async function createPayPalOrder() {
+  projectFundingAmount.value = Math.max(100, Number(projectFundingAmount.value) || 100);
+  projectPaymentError.value = '';
+  paypalOrderBusy.value = true;
+  try {
+    const amountCents = Math.round(Number(projectFundingAmount.value) * 100);
+    const result = await api('/api/payments/paypal/orders', {
+      method: 'POST',
+      body: JSON.stringify({ amount_cents: amountCents, description: projectSetupForm.title || 'MergeOS project funding' }),
+    });
+    paypalOrderID.value = result.order_id;
+    // Persist wizard state to localStorage before redirecting to PayPal
+    if (hasWindow) {
+      const state = {
+        title: projectSetupForm.title,
+        shortDescription: projectSetupForm.shortDescription,
+        description: projectSetupForm.description,
+        deliverables: projectDeliverables.value,
+        fundingAmount: projectFundingAmount.value,
+        paymentMethod: projectPaymentMethod.value,
+        category: projectSetupForm.category,
+        projectType: projectSetupForm.projectType,
+        repoUrl: projectSetupForm.repoUrl,
+        overview: projectSetupForm.overview,
+        requirements: projectSetupForm.requirements,
+        techStack: projectSetupForm.techStack,
+        budgetType: projectSetupForm.budgetType,
+        fundingMethod: projectSetupForm.fundingMethod,
+        visibility: projectSetupForm.visibility,
+        allowAgents: projectSetupForm.allowAgents,
+        skills: projectSetupForm.skills,
+        complexity: projectSetupForm.complexity,
+        constraints: projectSetupForm.constraints,
+        importedIssues: repoImportedIssues.value,
+      };
+      localStorage.setItem('paypal_pending_state', JSON.stringify(state));
+      window.location.href = result.approval_url;
+    }
+  } catch (error) {
+    projectPaymentError.value = error.message;
+    showToast(error.message);
+  } finally {
+    paypalOrderBusy.value = false;
+  }
+}
+
 async function completeProjectFunding() {
   projectFundingAmount.value = Math.max(100, Number(projectFundingAmount.value) || 100);
   projectPaymentError.value = '';
@@ -4117,6 +4174,13 @@ async function completeProjectFunding() {
   }
 
   if (projectPaymentBusy.value) return;
+
+  // For PayPal, create an order first and redirect to PayPal approval page
+  if (projectPaymentMethod.value === 'PayPal' && !successPaymentReference.value) {
+    await createPayPalOrder();
+    return;
+  }
+
   projectPaymentBusy.value = true;
   try {
     await loadRuntimeConfig();
@@ -4128,6 +4192,9 @@ async function completeProjectFunding() {
       body: JSON.stringify(buildCreateProjectPayload()),
     });
     fundedProject.value = project;
+    if (project.payment_reference) {
+      successPaymentReference.value = project.payment_reference;
+    }
     projectWizardVisible.value = true;
     projectWizardStage.value = 'success';
     projectWizardStep.value = 4;
@@ -4646,10 +4713,15 @@ function shortLedgerReference(value = '') {
 }
 
 function paymentMethodForProject() {
-  return projectPaymentMethod.value === 'USDC' ? 'crypto' : 'paypal';
+  if (projectPaymentMethod.value === 'USDC') return 'crypto';
+  if (projectPaymentMethod.value === 'PayPal') return 'paypal';
+  return 'paypal';
 }
 
 function paymentReferenceForProject() {
+  if (projectPaymentMethod.value === 'PayPal' && successPaymentReference.value) {
+    return successPaymentReference.value;
+  }
   if (runtimeConfig.value?.dev_payment_enabled && runtimeConfig.value?.dev_payment_code) {
     return runtimeConfig.value.dev_payment_code;
   }
@@ -5114,12 +5186,57 @@ async function logout() {
 onMounted(async () => {
   connectWebSocket();
   if (hasWindow) {
+    const pathname = window.location.pathname;
     const params = new URLSearchParams(window.location.search);
-    const oauthToken = params.get('token');
-    if (oauthToken) {
-      token.value = oauthToken;
-      writeStoredToken(oauthToken);
-      const cleanUrl = window.location.pathname + window.location.hash;
+    const urlToken = params.get('token');
+
+    // Detect PayPal return: /paypal/return?token=ORDER_ID
+    if (pathname === '/paypal/return' && urlToken) {
+      successPaymentReference.value = urlToken;
+      // Restore wizard state from localStorage
+      const savedState = localStorage.getItem('paypal_pending_state');
+      if (savedState) {
+        try {
+          const state = JSON.parse(savedState);
+          if (state.title) projectSetupForm.title = state.title;
+          if (state.shortDescription) projectSetupForm.shortDescription = state.shortDescription;
+          if (state.description) projectSetupForm.description = state.description;
+          if (state.deliverables) projectDeliverables.value = state.deliverables;
+          if (state.fundingAmount) projectFundingAmount.value = state.fundingAmount;
+          if (state.paymentMethod) projectPaymentMethod.value = state.paymentMethod;
+          if (state.category) projectSetupForm.category = state.category;
+          if (state.projectType) projectSetupForm.projectType = state.projectType;
+          if (state.repoUrl) projectSetupForm.repoUrl = state.repoUrl;
+          if (state.overview) projectSetupForm.overview = state.overview;
+          if (state.requirements) projectSetupForm.requirements = state.requirements;
+          if (state.techStack) projectSetupForm.techStack = state.techStack;
+          if (state.budgetType) projectSetupForm.budgetType = state.budgetType;
+          if (state.fundingMethod) projectSetupForm.fundingMethod = state.fundingMethod;
+          if (state.visibility) projectSetupForm.visibility = state.visibility;
+          if (state.allowAgents !== undefined) projectSetupForm.allowAgents = state.allowAgents;
+          if (state.skills) projectSetupForm.skills = state.skills;
+          if (state.complexity) projectSetupForm.complexity = state.complexity;
+          if (state.constraints) projectSetupForm.constraints = state.constraints;
+          if (state.importedIssues) repoImportedIssues.value = state.importedIssues;
+        } catch (e) { /* ignore parse errors */ }
+        localStorage.removeItem('paypal_pending_state');
+      }
+      const cleanUrl = pathname + window.location.hash;
+      window.history.replaceState({}, document.title, cleanUrl);
+      showToast('PayPal payment approved. Completing funding...');
+      if (user.value) {
+        await completeProjectFunding();
+      } else {
+        pendingProjectPaymentAfterAuth.value = true;
+        openAuth('login');
+      }
+      return;
+    }
+
+    if (urlToken) {
+      token.value = urlToken;
+      writeStoredToken(urlToken);
+      const cleanUrl = pathname + window.location.hash;
       window.history.replaceState({}, document.title, cleanUrl);
       showToast('Successfully logged in via OAuth!');
     }
