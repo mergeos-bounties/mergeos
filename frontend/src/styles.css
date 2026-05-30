@@ -9573,3 +9573,4 @@ body {
   }
 }
 
+.glass { background: rgba(15,23,42,0.8); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(102,126,234,0.15); }
