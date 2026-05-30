@@ -9573,3 +9573,8 @@ body {
   }
 }
 
+@media (max-width: 640px) {
+  .dash-container { padding: 1rem; }
+  .dash-header { flex-direction: column; gap: 1rem; text-align: center; }
+  .dash-stats { grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+}
