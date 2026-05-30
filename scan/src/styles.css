@@ -1916,3 +1916,7 @@ main {
     border-top: 1px solid var(--line);
   }
 }
+@media (max-width: 480px) {
+  .explorer-panel { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .explorer-panel table { min-width: 600px; }
+}
