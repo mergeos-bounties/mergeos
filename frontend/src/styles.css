@@ -9573,3 +9573,6 @@ body {
   }
 }
 
+.divider { border: none; border-top: 1px solid #334155; margin: 1rem 0; }
+.divider-label { display: flex; align-items: center; gap: 1rem; color: #64748b; font-size: 13px; }
+.divider-label::before, .divider-label::after { content: ''; flex: 1; border-top: 1px solid #334155; }
