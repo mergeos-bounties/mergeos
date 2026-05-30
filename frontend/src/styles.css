@@ -9573,3 +9573,4 @@ body {
   }
 }
 
+:focus-visible { outline: 2px solid #667eea; outline-offset: 2px; border-radius: 4px; }
