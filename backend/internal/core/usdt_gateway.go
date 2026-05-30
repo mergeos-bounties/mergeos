@@ -30,7 +30,7 @@ type USDTWebhookEvent struct {
 	SenderAddress   string          `json:"sender_address"`
 	ReceiverAddress string          `json:"receiver_address"`
 	SignatureValid  bool            `json:"signature_valid"`
-	RawPayload      json.RawMessage `json:"raw_payload"`
+	RedactedPayload json.RawMessage `json:"redacted_payload"`
 	Error           string          `json:"error,omitempty"`
 	ProjectID       string          `json:"project_id,omitempty"`
 	IdempotencyKey  string          `json:"idempotency_key"`
@@ -214,18 +214,6 @@ func (m *USDTGatewayManager) handleWebhook(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// Idempotency check
-	existing := m.store.FindUSDTWebhookByIdempotencyKey(payload.IdempotencyKey)
-	if existing != nil {
-		writeJSON(w, http.StatusOK, USDTWebhookResponse{
-			Received: true,
-			EventID:  existing.ID,
-			Status:   existing.Status,
-			Message:  "duplicate webhook already processed",
-		})
-		return
-	}
-
 	// Map gateway status to internal status
 	internalStatus := mapGatewayStatus(payload.Status)
 	if internalStatus == "" {
@@ -243,6 +231,9 @@ func (m *USDTGatewayManager) handleWebhook(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	// Build a redacted payload with only whitelisted fields (no secrets)
+	redactedPayload := buildRedactedPayload(bodyBytes, providerName, payload)
+
 	now := time.Now().UTC()
 	event := &USDTWebhookEvent{
 		ID:              payload.EventID,
@@ -257,28 +248,34 @@ func (m *USDTGatewayManager) handleWebhook(w http.ResponseWriter, r *http.Reques
 		SenderAddress:   strings.ToLower(strings.TrimSpace(payload.Sender)),
 		ReceiverAddress: strings.ToLower(strings.TrimSpace(payload.Receiver)),
 		SignatureValid:  true,
-		RawPayload:      json.RawMessage(bodyBytes),
+		RedactedPayload: redactedPayload,
 		ProjectID:       strings.TrimSpace(payload.ProjectID),
 		IdempotencyKey:  payload.IdempotencyKey,
 		ProcessedAt:     &now,
 		ReceivedAt:      now,
 	}
 
-	// Apply payment if confirmed
+	// Use atomic check-apply-save to prevent race conditions
 	if event.Status == "confirmed" && event.ProjectID != "" {
-		if appErr := m.store.ApplyUSDTWebhookPayment(event); appErr != nil {
-			event.Error = appErr.Error()
-			event.Status = "apply_failed"
-			if saveErr := m.store.SaveUSDTWebhookEvent(event); saveErr != nil {
-				log.Printf("[usdt-gateway] failed to save apply_failed event: %v", saveErr)
-			}
+		existing, err := m.store.AtomicWebhookCheckAndApply(event)
+		if err != nil {
 			writeError(w, http.StatusInternalServerError, "failed to apply payment")
 			return
 		}
-	}
-
-	if err := m.store.SaveUSDTWebhookEvent(event); err != nil {
-		log.Printf("[usdt-gateway] failed to save event %s: %v", event.ID, err)
+		if existing != nil {
+			writeJSON(w, http.StatusOK, USDTWebhookResponse{
+				Received: true,
+				EventID:  existing.ID,
+				Status:   existing.Status,
+				Message:  "duplicate webhook already processed",
+			})
+			return
+		}
+	} else {
+		// Non-confirmed or no project ID: just save the event
+		if err := m.store.SaveUSDTWebhookEvent(event); err != nil {
+			log.Printf("[usdt-gateway] failed to save event %s: %v", event.ID, err)
+		}
 	}
 
 	writeJSON(w, http.StatusOK, USDTWebhookResponse{
@@ -290,12 +287,27 @@ func (m *USDTGatewayManager) handleWebhook(w http.ResponseWriter, r *http.Reques
 }
 
 func (m *USDTGatewayManager) logWebhookEvent(raw json.RawMessage, eventID, status, provider, errMsg, projectID, idempotencyKey string) {
+	// Build a minimal redacted payload for logging
+	type redactedFields struct {
+		EventID   string `json:"event_id,omitempty"`
+		EventType string `json:"event_type,omitempty"`
+		Status    string `json:"status,omitempty"`
+		Error     string `json:"error,omitempty"`
+	}
+	r := redactedFields{
+		EventID:   eventID,
+		EventType: "webhook_callback",
+		Status:    status,
+		Error:     errMsg,
+	}
+	redacted, _ := json.Marshal(r)
+
 	event := &USDTWebhookEvent{
 		ID:             eventID,
 		Provider:       provider,
 		EventType:      "webhook_callback",
 		Status:         status,
-		RawPayload:     raw,
+		RedactedPayload: redacted,
 		Error:          errMsg,
 		ProjectID:      projectID,
 		IdempotencyKey: idempotencyKey,
@@ -407,10 +419,8 @@ func (s *Store) ListUSDTWebhookEvents() []*USDTWebhookEvent {
 }
 
 // ApplyUSDTWebhookPayment credits a project from a confirmed USDT webhook payment.
+// Caller MUST hold s.mu (or any write lock on the store).
 func (s *Store) ApplyUSDTWebhookPayment(event *USDTWebhookEvent) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
 	project, ok := s.projects[event.ProjectID]
 	if !ok {
 		return fmt.Errorf("project %s not found", event.ProjectID)
@@ -432,5 +442,68 @@ func (s *Store) ApplyUSDTWebhookPayment(event *USDTWebhookEvent) error {
 	s.addLedger("usdt_payment_confirmed", "payment:usdt-webhook", clientProjectAccount,
 		project.BudgetCents, event.TxHash)
 
-	return s.saveLocked()
+	return nil
+}
+
+// AtomicWebhookCheckAndApply checks idempotency, applies payment, and saves the event
+// under a single store lock, eliminating the race condition where two concurrent
+// callbacks could both pass the idempotency check before either event is saved.
+// Returns: (existingEvent, error) — existingEvent is non-nil if this was a duplicate.
+func (s *Store) AtomicWebhookCheckAndApply(event *USDTWebhookEvent) (*USDTWebhookEvent, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	// Check idempotency under the write lock
+	if s.usdtWebhookEvents == nil {
+		s.usdtWebhookEvents = make(map[string]*USDTWebhookEvent)
+	}
+	for _, ev := range s.usdtWebhookEvents {
+		if ev.IdempotencyKey == event.IdempotencyKey {
+			return ev, nil // duplicate detected under lock
+		}
+	}
+
+	// Apply payment (must be done while still holding the lock)
+	if event.Status == "confirmed" && event.ProjectID != "" {
+		if err := s.ApplyUSDTWebhookPayment(event); err != nil {
+			event.Error = err.Error()
+			event.Status = "apply_failed"
+			s.usdtWebhookEvents[event.ID] = event
+			if saveErr := s.saveLocked(); saveErr != nil {
+				log.Printf("[usdt-gateway] failed to save apply_failed event: %v", saveErr)
+			}
+			return nil, err
+		}
+	}
+
+	// Save event
+	s.usdtWebhookEvents[event.ID] = event
+	if err := s.saveLocked(); err != nil {
+		return nil, fmt.Errorf("failed to save webhook event: %w", err)
+	}
+
+	return nil, nil
+}
+
+// buildRedactedPayload creates a JSON blob with only whitelisted fields from the
+// webhook payload, ensuring no raw gateway secrets are persisted.
+func buildRedactedPayload(bodyBytes []byte, providerName string, payload *USDTWebhookPayload) json.RawMessage {
+	// Whitelist: only safe metadata fields, no raw body secrets
+	redacted := map[string]interface{}{
+		"provider":         providerName,
+		"event_id":         payload.EventID,
+		"event_type":       payload.EventType,
+		"gateway_id":       payload.GatewayID,
+		"idempotency_key":  payload.IdempotencyKey,
+		"amount":           payload.Amount,
+		"currency":         payload.Currency,
+		"network":          payload.Network,
+		"tx_hash":          payload.TxHash,
+		"sender_address":   payload.Sender,
+		"receiver_address": payload.Receiver,
+		"status":           payload.Status,
+		"project_id":       payload.ProjectID,
+	}
+	raw, _ := json.Marshal(redacted)
+	return json.RawMessage(raw)
 }

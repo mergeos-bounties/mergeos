@@ -581,8 +581,8 @@ func (s *Store) CreateProject(ctx context.Context, userID string, req CreateProj
 	if req.BudgetCents < 10000 {
 		return nil, errors.New("funding payment must be at least 100 USD")
 	}
-	if req.PaymentMethod != PaymentPayPal && req.PaymentMethod != PaymentCrypto {
-		return nil, errors.New("payment method must be paypal or crypto")
+	if req.PaymentMethod != PaymentPayPal && req.PaymentMethod != PaymentCrypto && req.PaymentMethod != PaymentUSDT {
+		return nil, errors.New("payment method must be paypal, crypto, or usdt")
 	}
 	tokenSymbol := normalizedTokenSymbol(s.cfg.TokenSymbol)
 	sourceRepoURL := strings.TrimSpace(req.SourceRepoURL)

@@ -2532,6 +2532,7 @@ const fundingAmountOptions = [
 const paymentMethodOptions = [
   { label: 'Credit / Debit card', caption: 'Visa, Mastercard, Amex', icon: CreditCard },
   { label: 'USDC', caption: 'Ethereum, Polygon, Arbitrum', icon: CircleDollarSign },
+  { label: 'USDT', caption: 'Tether on Ethereum, TRON, BNB Chain', icon: CircleDollarSign },
   { label: 'Bank transfer', caption: 'Worldwide bank transfer', icon: FileCheck2 },
   { label: 'PayPal', caption: 'Fast and secure', icon: CreditCard },
 ];
@@ -4208,7 +4209,9 @@ function shortLedgerReference(value = '') {
 }
 
 function paymentMethodForProject() {
-  return projectPaymentMethod.value === 'USDC' ? 'crypto' : 'paypal';
+  if (projectPaymentMethod.value === 'USDC') return 'crypto';
+  if (projectPaymentMethod.value === 'USDT') return 'usdt';
+  return 'paypal';
 }
 
 function paymentReferenceForProject() {
