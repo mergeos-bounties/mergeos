@@ -9573,3 +9573,7 @@ body {
   }
 }
 
+.form-group { margin-bottom: 1.25rem; }
+.form-label { display: block; margin-bottom: 6px; font-size: 14px; font-weight: 500; color: #94a3b8; }
+.form-hint { font-size: 12px; color: #64748b; margin-top: 4px; }
+.form-error { font-size: 12px; color: #ef4444; margin-top: 4px; }
