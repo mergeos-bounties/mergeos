@@ -4038,6 +4038,18 @@ async function createPayPalOrder() {
         paymentMethod: projectPaymentMethod.value,
         category: projectSetupForm.category,
         projectType: projectSetupForm.projectType,
+        repoUrl: projectSetupForm.repoUrl,
+        overview: projectSetupForm.overview,
+        requirements: projectSetupForm.requirements,
+        techStack: projectSetupForm.techStack,
+        budgetType: projectSetupForm.budgetType,
+        fundingMethod: projectSetupForm.fundingMethod,
+        visibility: projectSetupForm.visibility,
+        allowAgents: projectSetupForm.allowAgents,
+        skills: projectSetupForm.skills,
+        complexity: projectSetupForm.complexity,
+        constraints: projectSetupForm.constraints,
+        importedIssues: repoImportedIssues.value,
       };
       localStorage.setItem('paypal_pending_state', JSON.stringify(state));
       window.location.href = result.approval_url;
@@ -5059,6 +5071,18 @@ onMounted(async () => {
           if (state.paymentMethod) projectPaymentMethod.value = state.paymentMethod;
           if (state.category) projectSetupForm.category = state.category;
           if (state.projectType) projectSetupForm.projectType = state.projectType;
+          if (state.repoUrl) projectSetupForm.repoUrl = state.repoUrl;
+          if (state.overview) projectSetupForm.overview = state.overview;
+          if (state.requirements) projectSetupForm.requirements = state.requirements;
+          if (state.techStack) projectSetupForm.techStack = state.techStack;
+          if (state.budgetType) projectSetupForm.budgetType = state.budgetType;
+          if (state.fundingMethod) projectSetupForm.fundingMethod = state.fundingMethod;
+          if (state.visibility) projectSetupForm.visibility = state.visibility;
+          if (state.allowAgents !== undefined) projectSetupForm.allowAgents = state.allowAgents;
+          if (state.skills) projectSetupForm.skills = state.skills;
+          if (state.complexity) projectSetupForm.complexity = state.complexity;
+          if (state.constraints) projectSetupForm.constraints = state.constraints;
+          if (state.importedIssues) repoImportedIssues.value = state.importedIssues;
         } catch (e) { /* ignore parse errors */ }
         localStorage.removeItem('paypal_pending_state');
       }
