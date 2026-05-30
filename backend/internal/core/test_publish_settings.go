@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strings"
+	"sync"
 	"time"
 )
-
-// ---------- Models ----------
 
 type TestSettingsConfig struct {
 	TestModeEnabled  bool      `json:"test_mode_enabled"`
@@ -30,8 +30,6 @@ type TestSettingsEntry struct {
 	CreatedAt       time.Time         `json:"created_at"`
 	UpdatedAt       time.Time         `json:"updated_at"`
 }
-
-// ---------- API request/response types ----------
 
 type UpdateTestSettingsRequest struct {
 	TestModeEnabled *bool  `json:"test_mode_enabled,omitempty"`
@@ -71,24 +69,6 @@ type TestSettingsEntryResponse struct {
 	UpdatedAt        time.Time         `json:"updated_at"`
 }
 
-// ---------- Known env names for collision detection ----------
-
-var knownEnvNames = []string{
-	"GITHUB_TOKEN",
-	"MERGEOS_GITHUB_TOKEN",
-	"TOKEN_SYMBOL",
-	"ADMIN_EMAIL",
-	"ADMIN_PASSWORD",
-	"PAYPAL_CLIENT_ID",
-	"PAYPAL_CLIENT_SECRET",
-	"PAYPAL_ENVIRONMENT",
-	"CRYPTO_WEBHOOK_SECRET",
-	"CRYPTO_TOKEN_CONTRACT",
-	"USDT_RECEIVER_ADDRESS",
-	"GEMINI_API_KEYS",
-}
-
-// SettingValueMask returns a masked version of the value showing first 4 + last 4 characters.
 func SettingValueMask(value string) string {
 	if len(value) <= 8 {
 		if len(value) == 0 {
@@ -99,11 +79,115 @@ func SettingValueMask(value string) string {
 	return value[:4] + "****" + value[len(value)-4:]
 }
 
-// checkForEnvCollision checks if a setting_key collides with known env variable names.
-func checkForEnvCollision(key string) error {
+func maskKeyValueMap(m map[string]string) map[string]string {
+	if m == nil {
+		return nil
+	}
+	masked := make(map[string]string, len(m))
+	for k, v := range m {
+		masked[k] = SettingValueMask(v)
+	}
+	return masked
+}
+
+type passwordAttemptTracker struct {
+	mu       sync.Mutex
+	attempts map[string]*attemptRecord
+}
+
+type attemptRecord struct {
+	count      int
+	firstAt    time.Time
+	unlockedAt time.Time
+}
+
+const (
+	maxPasswordAttempts     = 5
+	passwordWindow          = 15 * time.Minute
+	passwordLockoutDuration = 30 * time.Minute
+)
+
+var globalPasswordTracker = &passwordAttemptTracker{
+	attempts: make(map[string]*attemptRecord),
+}
+
+func checkPasswordRateLimit(ip string) bool {
+	globalPasswordTracker.mu.Lock()
+	defer globalPasswordTracker.mu.Unlock()
+	now := time.Now().UTC()
+	rec, ok := globalPasswordTracker.attempts[ip]
+	if !ok {
+		return true
+	}
+	if now.Before(rec.unlockedAt) {
+		return false
+	}
+	if now.Sub(rec.firstAt) > passwordWindow {
+		delete(globalPasswordTracker.attempts, ip)
+		return true
+	}
+	if rec.count >= maxPasswordAttempts {
+		rec.unlockedAt = now.Add(passwordLockoutDuration)
+		return false
+	}
+	return true
+}
+
+func recordPasswordAttempt(ip string, success bool) {
+	globalPasswordTracker.mu.Lock()
+	defer globalPasswordTracker.mu.Unlock()
+	now := time.Now().UTC()
+	if success {
+		delete(globalPasswordTracker.attempts, ip)
+		return
+	}
+	rec, ok := globalPasswordTracker.attempts[ip]
+	if !ok {
+		globalPasswordTracker.attempts[ip] = &attemptRecord{count: 1, firstAt: now}
+		return
+	}
+	if now.Sub(rec.firstAt) > passwordWindow {
+		globalPasswordTracker.attempts[ip] = &attemptRecord{count: 1, firstAt: now}
+		return
+	}
+	rec.count++
+	if rec.count >= maxPasswordAttempts {
+		rec.unlockedAt = now.Add(passwordLockoutDuration)
+	}
+}
+
+var knownEnvNames = []string{
+	"GITHUB_TOKEN", "MERGEOS_GITHUB_TOKEN", "TOKEN_SYMBOL",
+	"ADMIN_EMAIL", "ADMIN_PASSWORD",
+	"PAYPAL_CLIENT_ID", "PAYPAL_CLIENT_SECRET", "PAYPAL_ENVIRONMENT",
+	"CRYPTO_WEBHOOK_SECRET", "CRYPTO_TOKEN_CONTRACT",
+	"USDT_RECEIVER_ADDRESS", "GEMINI_API_KEYS",
+}
+
+var runtimeEnvNames map[string]bool
+var runtimeEnvOnce sync.Once
+
+func getRuntimeEnvNames() map[string]bool {
+	runtimeEnvOnce.Do(func() {
+		runtimeEnvNames = make(map[string]bool)
+		for _, e := range os.Environ() {
+			parts := strings.SplitN(e, "=", 2)
+			if len(parts) > 0 && parts[0] != "" {
+				runtimeEnvNames[parts[0]] = true
+			}
+		}
+	})
+	return runtimeEnvNames
+}
+
+func checkForEnvCollision(key string, keyValueMapKeys []string) error {
 	upper := strings.ToUpper(strings.TrimSpace(key))
 	if upper == "" {
 		return nil
+	}
+	envNames := getRuntimeEnvNames()
+	if envNames[upper] {
+		return fmt.Errorf("setting key %q collides with actual runtime environment variable %s", key, upper)
 	}
 	for _, known := range knownEnvNames {
 		if upper == known {
@@ -113,10 +197,25 @@ func checkForEnvCollision(key string) error {
 	if strings.HasPrefix(upper, "MERGEOS_") {
 		return fmt.Errorf("setting key %q collides with MERGEOS_* environment variable prefix", key)
 	}
+	for _, nestedKey := range keyValueMapKeys {
+		nestedUpper := strings.ToUpper(strings.TrimSpace(nestedKey))
+		if nestedUpper == "" {
+			continue
+		}
+		if envNames[nestedUpper] {
+			return fmt.Errorf("key_value_map key %q collides with actual runtime environment variable %s", nestedKey, nestedUpper)
+		}
+		for _, known := range knownEnvNames {
+			if nestedUpper == known {
+				return fmt.Errorf("key_value_map key %q collides with known environment variable %s", nestedKey, known)
+			}
+		}
+		if strings.HasPrefix(nestedUpper, "MERGEOS_") {
+			return fmt.Errorf("key_value_map key %q collides with MERGEOS_* environment variable prefix", nestedKey)
+		}
+	}
 	return nil
 }
-
-// ---------- Store methods ----------
 
 func (s *Store) GetTestSettingsConfig() TestSettingsConfig {
 	s.mu.RLock()
@@ -127,11 +226,9 @@ func (s *Store) GetTestSettingsConfig() TestSettingsConfig {
 func (s *Store) UpdateTestSettingsConfig(req UpdateTestSettingsRequest) (TestSettingsConfig, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-
 	if req.TestModeEnabled != nil {
 		s.testSettingsConfig.TestModeEnabled = *req.TestModeEnabled
 	}
-
 	if strings.TrimSpace(req.TestPassword) != "" {
 		salt, hash, err := hashPassword(req.TestPassword)
 		if err != nil {
@@ -139,21 +236,16 @@ func (s *Store) UpdateTestSettingsConfig(req UpdateTestSettingsRequest) (TestSet
 		}
 		s.testSettingsConfig.TestPasswordHash = salt + ":" + hash
 	}
-
 	s.testSettingsConfig.UpdatedAt = time.Now().UTC()
-
 	if err := s.saveLocked(); err != nil {
 		return TestSettingsConfig{}, err
 	}
 	return s.testSettingsConfig, nil
 }
 
-// VerifyTestPassword performs constant-time comparison of the given password
-// against the stored hash salt:hash format.
 func (s *Store) VerifyTestPassword(password string) bool {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-
 	if s.testSettingsConfig.TestPasswordHash == "" {
 		return false
 	}
@@ -167,20 +259,15 @@ func (s *Store) VerifyTestPassword(password string) bool {
 func (s *Store) ListTestSettingsEntries() []*TestSettingsEntryResponse {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-
 	responses := make([]*TestSettingsEntryResponse, 0, len(s.testSettingsEntries))
 	for _, entry := range s.testSettingsEntries {
 		responses = append(responses, &TestSettingsEntryResponse{
-			ID:               entry.ID,
-			IntegrationType:  entry.IntegrationType,
-			DisplayName:      entry.DisplayName,
-			SettingKey:       entry.SettingKey,
+			ID: entry.ID, IntegrationType: entry.IntegrationType,
+			DisplayName: entry.DisplayName, SettingKey: entry.SettingKey,
 			SettingValueHint: SettingValueMask(entry.SettingValue),
-			KeyValueMap:      entry.KeyValueMap,
-			Status:           entry.Status,
-			LastUsedAt:       entry.LastUsedAt,
-			CreatedAt:        entry.CreatedAt,
-			UpdatedAt:        entry.UpdatedAt,
+			KeyValueMap:      maskKeyValueMap(entry.KeyValueMap),
+			Status: entry.Status, LastUsedAt: entry.LastUsedAt,
+			CreatedAt: entry.CreatedAt, UpdatedAt: entry.UpdatedAt,
 		})
 	}
 	return responses
@@ -196,32 +283,26 @@ func (s *Store) AddTestSettingsEntry(req AddTestEntryRequest) (*TestSettingsEntr
 	if strings.TrimSpace(req.SettingValue) == "" {
 		return nil, errors.New("setting_value is required")
 	}
-
-	// Check for env name collision.
-	if err := checkForEnvCollision(req.SettingKey); err != nil {
+	var kvMapKeys []string
+	for k := range req.KeyValueMap {
+		kvMapKeys = append(kvMapKeys, k)
+	}
+	if err := checkForEnvCollision(req.SettingKey, kvMapKeys); err != nil {
 		return nil, err
 	}
-
 	s.mu.Lock()
 	defer s.mu.Unlock()
-
 	now := time.Now().UTC()
 	entry := &TestSettingsEntry{
-		ID:              s.newID("tse"),
-		IntegrationType: strings.TrimSpace(req.IntegrationType),
-		DisplayName:     strings.TrimSpace(req.DisplayName),
-		SettingKey:      strings.TrimSpace(req.SettingKey),
-		SettingValue:    req.SettingValue,
-		KeyValueMap:     req.KeyValueMap,
-		Status:          "active",
-		CreatedAt:       now,
-		UpdatedAt:       now,
+		ID: s.newID("tse"), IntegrationType: strings.TrimSpace(req.IntegrationType),
+		DisplayName: strings.TrimSpace(req.DisplayName), SettingKey: strings.TrimSpace(req.SettingKey),
+		SettingValue: req.SettingValue, KeyValueMap: req.KeyValueMap,
+		Status: "active", CreatedAt: now, UpdatedAt: now,
 	}
 	if entry.KeyValueMap == nil {
 		entry.KeyValueMap = map[string]string{}
 	}
 	s.testSettingsEntries[entry.ID] = entry
-
 	if err := s.saveLocked(); err != nil {
 		return nil, err
 	}
@@ -231,17 +312,18 @@ func (s *Store) AddTestSettingsEntry(req AddTestEntryRequest) (*TestSettingsEntr
 func (s *Store) UpdateTestSettingsEntry(id string, req UpdateTestEntryRequest) (*TestSettingsEntryResponse, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-
 	entry, ok := s.testSettingsEntries[strings.TrimSpace(id)]
 	if !ok {
 		return nil, errors.New("test settings entry not found")
 	}
-
 	if strings.TrimSpace(req.DisplayName) != "" {
 		entry.DisplayName = strings.TrimSpace(req.DisplayName)
 	}
 	if strings.TrimSpace(req.SettingKey) != "" {
-		if err := checkForEnvCollision(req.SettingKey); err != nil {
+		var kvMapKeys []string
+		for k := range req.KeyValueMap { kvMapKeys = append(kvMapKeys, k) }
+		for k := range entry.KeyValueMap { kvMapKeys = append(kvMapKeys, k) }
+		if err := checkForEnvCollision(req.SettingKey, kvMapKeys); err != nil {
 			return nil, err
 		}
 		entry.SettingKey = strings.TrimSpace(req.SettingKey)
@@ -250,18 +332,13 @@ func (s *Store) UpdateTestSettingsEntry(id string, req UpdateTestEntryRequest) (
 		entry.SettingValue = req.SettingValue
 	}
 	if req.KeyValueMap != nil {
-		if entry.KeyValueMap == nil {
-			entry.KeyValueMap = map[string]string{}
-		}
-		for k, v := range req.KeyValueMap {
-			entry.KeyValueMap[k] = v
-		}
+		if entry.KeyValueMap == nil { entry.KeyValueMap = map[string]string{} }
+		for k, v := range req.KeyValueMap { entry.KeyValueMap[k] = v }
 	}
 	if strings.TrimSpace(req.Status) != "" {
 		entry.Status = strings.TrimSpace(req.Status)
 	}
 	entry.UpdatedAt = time.Now().UTC()
-
 	if err := s.saveLocked(); err != nil {
 		return nil, err
 	}
@@ -271,7 +348,6 @@ func (s *Store) UpdateTestSettingsEntry(id string, req UpdateTestEntryRequest) (
 func (s *Store) DeleteTestSettingsEntry(id string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-
 	id = strings.TrimSpace(id)
 	if _, ok := s.testSettingsEntries[id]; !ok {
 		return errors.New("test settings entry not found")
@@ -282,192 +358,143 @@ func (s *Store) DeleteTestSettingsEntry(id string) error {
 
 func entryToResponse(entry *TestSettingsEntry) *TestSettingsEntryResponse {
 	return &TestSettingsEntryResponse{
-		ID:               entry.ID,
-		IntegrationType:  entry.IntegrationType,
-		DisplayName:      entry.DisplayName,
-		SettingKey:       entry.SettingKey,
+		ID: entry.ID, IntegrationType: entry.IntegrationType,
+		DisplayName: entry.DisplayName, SettingKey: entry.SettingKey,
 		SettingValueHint: SettingValueMask(entry.SettingValue),
-		KeyValueMap:      entry.KeyValueMap,
-		Status:           entry.Status,
-		LastUsedAt:       entry.LastUsedAt,
-		CreatedAt:        entry.CreatedAt,
-		UpdatedAt:        entry.UpdatedAt,
+		KeyValueMap:      maskKeyValueMap(entry.KeyValueMap),
+		Status: entry.Status, LastUsedAt: entry.LastUsedAt,
+		CreatedAt: entry.CreatedAt, UpdatedAt: entry.UpdatedAt,
 	}
 }
 
-// ---------- Server handlers ----------
-
-// Admin endpoints
-
 func (s *Server) adminGetTestSettings(w http.ResponseWriter, r *http.Request) {
-	if _, ok := s.requireAdmin(w, r); !ok {
-		return
-	}
+	if _, ok := s.requireAdmin(w, r); !ok { return }
 	writeJSON(w, http.StatusOK, s.store.GetTestSettingsConfig())
 }
 
 func (s *Server) adminUpdateTestSettings(w http.ResponseWriter, r *http.Request) {
-	if _, ok := s.requireAdmin(w, r); !ok {
-		return
-	}
+	if _, ok := s.requireAdmin(w, r); !ok { return }
 	var req UpdateTestSettingsRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid JSON body")
-		return
+		writeError(w, http.StatusBadRequest, "invalid JSON body"); return
 	}
 	config, err := s.store.UpdateTestSettingsConfig(req)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
-		return
-	}
+	if err != nil { writeError(w, http.StatusBadRequest, err.Error()); return }
 	writeJSON(w, http.StatusOK, config)
 }
 
 func (s *Server) adminListTestEntries(w http.ResponseWriter, r *http.Request) {
-	if _, ok := s.requireAdmin(w, r); !ok {
-		return
-	}
+	if _, ok := s.requireAdmin(w, r); !ok { return }
 	writeJSON(w, http.StatusOK, s.store.ListTestSettingsEntries())
 }
 
 func (s *Server) adminAddTestEntry(w http.ResponseWriter, r *http.Request) {
-	if _, ok := s.requireAdmin(w, r); !ok {
-		return
-	}
+	if _, ok := s.requireAdmin(w, r); !ok { return }
 	var req AddTestEntryRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid JSON body")
-		return
+		writeError(w, http.StatusBadRequest, "invalid JSON body"); return
 	}
 	entry, err := s.store.AddTestSettingsEntry(req)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
-		return
-	}
+	if err != nil { writeError(w, http.StatusBadRequest, err.Error()); return }
 	writeJSON(w, http.StatusCreated, entry)
 }
 
 func (s *Server) adminUpdateTestEntry(w http.ResponseWriter, r *http.Request) {
-	if _, ok := s.requireAdmin(w, r); !ok {
-		return
-	}
+	if _, ok := s.requireAdmin(w, r); !ok { return }
 	var req UpdateTestEntryRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid JSON body")
-		return
+		writeError(w, http.StatusBadRequest, "invalid JSON body"); return
 	}
 	entry, err := s.store.UpdateTestSettingsEntry(r.PathValue("id"), req)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
-		return
-	}
+	if err != nil { writeError(w, http.StatusBadRequest, err.Error()); return }
 	writeJSON(w, http.StatusOK, entry)
 }
 
 func (s *Server) adminDeleteTestEntry(w http.ResponseWriter, r *http.Request) {
-	if _, ok := s.requireAdmin(w, r); !ok {
-		return
-	}
+	if _, ok := s.requireAdmin(w, r); !ok { return }
 	if err := s.store.DeleteTestSettingsEntry(r.PathValue("id")); err != nil {
-		writeError(w, http.StatusNotFound, err.Error())
-		return
+		writeError(w, http.StatusNotFound, err.Error()); return
 	}
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
-// Public endpoints (password-gated)
-
 func (s *Server) requireTestAuthBody(w http.ResponseWriter, r *http.Request) bool {
+	if !checkPasswordRateLimit(r.RemoteAddr) {
+		writeError(w, http.StatusTooManyRequests, "too many failed password attempts; try again later")
+		return false
+	}
 	cfg := s.store.GetTestSettingsConfig()
 	if !cfg.TestModeEnabled {
-		writeError(w, http.StatusForbidden, "test mode is disabled")
-		return false
+		writeError(w, http.StatusForbidden, "test mode is disabled"); return false
 	}
 	bodyBytes, err := io.ReadAll(r.Body)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "failed to read request body")
-		return false
+		writeError(w, http.StatusBadRequest, "failed to read request body"); return false
 	}
 	var req PublicTestSettingsRequest
 	if err := json.Unmarshal(bodyBytes, &req); err != nil {
-		writeError(w, http.StatusUnauthorized, "password is required")
-		return false
+		writeError(w, http.StatusUnauthorized, "password is required"); return false
 	}
-	// Re-inject body bytes so downstream handlers can decode the full payload.
 	r.Body = io.NopCloser(strings.NewReader(string(bodyBytes)))
-	if !s.store.VerifyTestPassword(req.Password) {
-		writeError(w, http.StatusUnauthorized, "invalid password")
-		return false
+	valid := s.store.VerifyTestPassword(req.Password)
+	recordPasswordAttempt(r.RemoteAddr, valid)
+	if !valid {
+		writeError(w, http.StatusUnauthorized, "invalid password"); return false
 	}
 	return true
 }
 
 func (s *Server) publicTestSettingsAuth(w http.ResponseWriter, r *http.Request) {
+	if !checkPasswordRateLimit(r.RemoteAddr) {
+		writeError(w, http.StatusTooManyRequests, "too many failed password attempts; try again later"); return
+	}
 	cfg := s.store.GetTestSettingsConfig()
 	if !cfg.TestModeEnabled {
-		writeError(w, http.StatusForbidden, "test mode is disabled")
-		return
+		writeError(w, http.StatusForbidden, "test mode is disabled"); return
 	}
 	var req PublicTestSettingsRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusUnauthorized, "password is required")
-		return
+		writeError(w, http.StatusUnauthorized, "password is required"); return
 	}
-	if !s.store.VerifyTestPassword(req.Password) {
-		writeError(w, http.StatusUnauthorized, "invalid password")
-		return
+	valid := s.store.VerifyTestPassword(req.Password)
+	recordPasswordAttempt(r.RemoteAddr, valid)
+	if !valid {
+		writeError(w, http.StatusUnauthorized, "invalid password"); return
 	}
 	writeJSON(w, http.StatusOK, map[string]bool{"authenticated": true})
 }
 
 func (s *Server) publicListTestEntries(w http.ResponseWriter, r *http.Request) {
-	if !s.requireTestAuthBody(w, r) {
-		return
-	}
+	if !s.requireTestAuthBody(w, r) { return }
 	writeJSON(w, http.StatusOK, s.store.ListTestSettingsEntries())
 }
 
 func (s *Server) publicAddTestEntry(w http.ResponseWriter, r *http.Request) {
-	if !s.requireTestAuthBody(w, r) {
-		return
-	}
+	if !s.requireTestAuthBody(w, r) { return }
 	var req AddTestEntryRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid JSON body")
-		return
+		writeError(w, http.StatusBadRequest, "invalid JSON body"); return
 	}
 	entry, err := s.store.AddTestSettingsEntry(req)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
-		return
-	}
+	if err != nil { writeError(w, http.StatusBadRequest, err.Error()); return }
 	writeJSON(w, http.StatusCreated, entry)
 }
 
 func (s *Server) publicUpdateTestEntry(w http.ResponseWriter, r *http.Request) {
-	if !s.requireTestAuthBody(w, r) {
-		return
-	}
+	if !s.requireTestAuthBody(w, r) { return }
 	var req UpdateTestEntryRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid JSON body")
-		return
+		writeError(w, http.StatusBadRequest, "invalid JSON body"); return
 	}
 	entry, err := s.store.UpdateTestSettingsEntry(r.PathValue("id"), req)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
-		return
-	}
+	if err != nil { writeError(w, http.StatusBadRequest, err.Error()); return }
 	writeJSON(w, http.StatusOK, entry)
 }
 
 func (s *Server) publicDeleteTestEntry(w http.ResponseWriter, r *http.Request) {
-	if !s.requireTestAuthBody(w, r) {
-		return
-	}
+	if !s.requireTestAuthBody(w, r) { return }
 	if err := s.store.DeleteTestSettingsEntry(r.PathValue("id")); err != nil {
-		writeError(w, http.StatusNotFound, err.Error())
-		return
+		writeError(w, http.StatusNotFound, err.Error()); return
 	}
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
