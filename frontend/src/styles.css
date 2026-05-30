@@ -9573,3 +9573,6 @@ body {
   }
 }
 
+.chip { display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; border-radius: 999px; font-size: 13px; background: rgba(102,126,234,0.1); color: #667eea; }
+.chip-close { margin-left: 4px; cursor: pointer; opacity: 0.6; font-size: 16px; }
+.chip-close:hover { opacity: 1; }
