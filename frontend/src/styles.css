@@ -8814,6 +8814,78 @@ svg {
   margin: 12px 0 0;
 }
 
+.eval-section {
+  margin-top: 14px;
+  padding: 8px 12px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.eval-label {
+  display: block;
+  color: #172033;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+
+.eval-section ul {
+  margin: 0;
+  padding: 0 0 0 18px;
+}
+
+.eval-section li {
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.55;
+  margin-bottom: 4px;
+}
+
+.eval-override {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 10px 12px;
+  border: 1px dashed rgba(37, 99, 235, 0.35);
+  border-radius: 8px;
+  background: #f0f6ff;
+}
+
+.eval-override label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.eval-override label span {
+  color: #172033;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.eval-override input {
+  width: 140px;
+  padding: 6px 10px;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+  background: #ffffff;
+}
+
+.eval-override input:focus {
+  outline: none;
+  border-color: var(--blue);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12);
+}
+
 @media (max-width: 680px) {
   .price-estimate-summary {
     align-items: flex-start;
