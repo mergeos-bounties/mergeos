@@ -9573,3 +9573,7 @@ body {
   }
 }
 
+.tabs { display: flex; gap: 0; border-bottom: 2px solid #334155; }
+.tab { padding: 10px 20px; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.2s; }
+.tab:hover { color: #667eea; }
+.tab.active { color: #667eea; border-bottom-color: #667eea; }
