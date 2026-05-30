@@ -4123,7 +4123,26 @@ async function completeProjectFunding() {
     if (!paymentReferenceForProject()) {
       throw new Error('Payment reference is missing. Configure PayPal/Crypto checkout or enable local dev payments.');
     }
-    const project = await api('/api/projects', {
+    let project;
+    if (projectPaymentMethod.value === 'PayPal' && !runtimeConfig.value?.dev_payment_enabled) {
+      const order = await api('/api/payments/paypal/orders', {
+        method: 'POST',
+        body: JSON.stringify({
+          amount_cents: projectPaymentAmountCents.value,
+          description: `MergeOS project funding: ${projectSetupForm.title}`,
+          return_url: window.location.origin + '/paypal/return',
+          cancel_url: window.location.origin + '/paypal/cancel',
+        }),
+      });
+      if (order.approval_url) {
+        successPaymentReference.value = order.order_id;
+        window.open(order.approval_url, '_blank');
+        showToast('PayPal checkout opened in new tab. Complete payment there, then return here to confirm.');
+        projectPaymentBusy.value = false;
+        return;
+      }
+    }
+    project = await api('/api/projects', {
       method: 'POST',
       body: JSON.stringify(buildCreateProjectPayload()),
     });
