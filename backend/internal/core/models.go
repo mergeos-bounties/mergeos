@@ -399,10 +399,11 @@ type RuntimeConfigResponse struct {
 }
 
 type AdminSettings struct {
-	LLMProvider       string    `json:"llm_provider"`
-	LLMModel          string    `json:"llm_model"`
-	GeminiReviewModel string    `json:"gemini_review_model"`
-	UpdatedAt         time.Time `json:"updated_at"`
+	LLMProvider            string         `json:"llm_provider"`
+	LLMModel               string         `json:"llm_model"`
+	GeminiReviewModel      string         `json:"gemini_review_model"`
+	UsedPaymentReferences  map[string]bool `json:"used_payment_references,omitempty"`
+	UpdatedAt              time.Time      `json:"updated_at"`
 }
 
 type LLMProviderOption struct {
