@@ -9573,3 +9573,126 @@ body {
   }
 }
 
+/* Auth modal: safe area inset for notched phones */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .auth-modal {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Auth modal: reduce backdrop blur on low-end devices */
+@media (prefers-reduced-motion: reduce) {
+  .modal-backdrop {
+    backdrop-filter: none;
+  }
+
+  .auth-modal {
+    animation: none;
+  }
+}
+
+/* Auth modal: landscape phone optimization */
+@media (max-height: 500px) {
+  .auth-modal {
+    max-height: calc(100vh - 8px);
+  }
+
+  .auth-modal-main {
+    padding-top: 12px;
+    padding-bottom: 8px;
+    gap: 8px;
+  }
+
+  .auth-brand {
+    display: none;
+  }
+
+  .auth-copy {
+    margin-top: 4px;
+  }
+
+  .auth-copy h2 {
+    font-size: 20px;
+  }
+
+  .auth-copy p {
+    font-size: 12px;
+    margin: 4px 0;
+  }
+
+  .auth-benefit-panel {
+    display: none;
+  }
+}
+
+/* Very small screens: ultra-compact auth modal (< 380px) */
+@media (max-width: 380px) {
+  .auth-modal {
+    max-height: calc(100vh - 8px);
+    border-radius: 8px;
+    margin: 4px;
+    width: calc(100% - 8px);
+  }
+
+  .auth-modal-main {
+    padding: 14px 8px 12px;
+    gap: 10px;
+  }
+
+  .auth-copy h2 {
+    font-size: 20px;
+  }
+
+  .auth-copy p {
+    font-size: 13px;
+  }
+
+  .auth-field > span {
+    font-size: 12px;
+  }
+
+  .input-shell {
+    min-height: 38px;
+  }
+
+  .input-shell input {
+    font-size: 13px;
+    padding: 0 8px;
+  }
+
+  .auth-close-button {
+    top: 6px;
+    right: 6px;
+    width: 32px;
+    height: 32px;
+  }
+
+  .social-auth-row {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .social-auth-row button {
+    font-size: 12px;
+    padding: 8px 6px;
+    min-height: 40px;
+  }
+
+  .auth-submit-button {
+    font-size: 14px;
+    min-height: 42px;
+  }
+
+  .auth-brand {
+    font-size: 15px;
+  }
+
+  .auth-divider {
+    margin: 8px 0;
+  }
+
+  .auth-check {
+    font-size: 12px;
+  }
+}
+
