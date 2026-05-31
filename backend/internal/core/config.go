@@ -42,6 +42,7 @@ type Config struct {
 	PayPalEnvironment  string
 	PayPalClientID     string
 	PayPalClientSecret string
+	PayPalWebhookID    string
 
 	CryptoRPCURL           string
 	CryptoReceiver         string
@@ -50,6 +51,7 @@ type Config struct {
 	CryptoTokenDecimals    int
 	CryptoWeiPerUSDCent    string
 	CryptoMinConfirmations int64
+	CryptoWebhookSecret    string
 
 	GitHubToken     string
 	GitHubOwner     string
@@ -142,6 +144,7 @@ func LoadConfig() Config {
 		PayPalEnvironment:  strings.ToLower(getenv("PAYPAL_ENV", payPalDefaultEnv)),
 		PayPalClientID:     os.Getenv("PAYPAL_CLIENT_ID"),
 		PayPalClientSecret: os.Getenv("PAYPAL_CLIENT_SECRET"),
+		PayPalWebhookID:    os.Getenv("PAYPAL_WEBHOOK_ID"),
 
 		CryptoRPCURL:           os.Getenv("CRYPTO_RPC_URL"),
 		CryptoReceiver:         strings.ToLower(os.Getenv("CRYPTO_RECEIVER")),
@@ -150,6 +153,7 @@ func LoadConfig() Config {
 		CryptoTokenDecimals:    int(getenvInt64("CRYPTO_TOKEN_DECIMALS", 6)),
 		CryptoWeiPerUSDCent:    os.Getenv("CRYPTO_WEI_PER_USD_CENT"),
 		CryptoMinConfirmations: getenvInt64("CRYPTO_MIN_CONFIRMATIONS", 1),
+		CryptoWebhookSecret:    os.Getenv("CRYPTO_WEBHOOK_SECRET"),
 
 		GitHubToken:     firstEnv("GITHUB_TOKEN", "MERGEOS_GITHUB_TOKEN"),
 		GitHubOwner:     getenv("GITHUB_OWNER", defaultGitHubOwner),
@@ -235,6 +239,10 @@ func loadEnvironmentFiles(env string) {
 
 func (c Config) PayPalReady() bool {
 	return c.PayPalClientID != "" && c.PayPalClientSecret != ""
+}
+
+func (c Config) PayPalWebhookReady() bool {
+	return c.PayPalReady() && c.PayPalWebhookID != ""
 }
 
 func (c Config) CryptoReady() bool {
