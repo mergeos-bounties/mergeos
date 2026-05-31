@@ -273,9 +273,23 @@ func (s *Store) ListTestSettingsEntries() []*TestSettingsEntryResponse {
 	return responses
 }
 
+var allowedIntegrationTypes = map[string]bool{
+	"llm":          true,
+	"paypal":       true,
+	"usdt":         true,
+}
+
+var allowedEntryStatuses = map[string]bool{
+	"active":   true,
+	"disabled": true,
+}
+
 func (s *Store) AddTestSettingsEntry(req AddTestEntryRequest) (*TestSettingsEntryResponse, error) {
 	if strings.TrimSpace(req.IntegrationType) == "" {
 		return nil, errors.New("integration_type is required")
+	}
+	if !allowedIntegrationTypes[strings.ToLower(strings.TrimSpace(req.IntegrationType))] {
+		return nil, fmt.Errorf("invalid integration_type %q: must be one of llm, paypal, usdt", req.IntegrationType)
 	}
 	if strings.TrimSpace(req.SettingKey) == "" {
 		return nil, errors.New("setting_key is required")
@@ -321,8 +335,8 @@ func (s *Store) UpdateTestSettingsEntry(id string, req UpdateTestEntryRequest) (
 	}
 	if strings.TrimSpace(req.SettingKey) != "" {
 		var kvMapKeys []string
-		for k := range req.KeyValueMap { kvMapKeys = append(kvMapKeys, k) }
 		for k := range entry.KeyValueMap { kvMapKeys = append(kvMapKeys, k) }
+		for k := range req.KeyValueMap { kvMapKeys = append(kvMapKeys, k) }
 		if err := checkForEnvCollision(req.SettingKey, kvMapKeys); err != nil {
 			return nil, err
 		}
@@ -333,9 +347,19 @@ func (s *Store) UpdateTestSettingsEntry(id string, req UpdateTestEntryRequest) (
 	}
 	if req.KeyValueMap != nil {
 		if entry.KeyValueMap == nil { entry.KeyValueMap = map[string]string{} }
+		// Check nested key_value_map keys for ENV collision even when setting_key unchanged
+		var mergedKeys []string
+		for k := range entry.KeyValueMap { mergedKeys = append(mergedKeys, k) }
+		for k := range req.KeyValueMap { mergedKeys = append(mergedKeys, k) }
+		if err := checkForEnvCollision(entry.SettingKey, mergedKeys); err != nil {
+			return nil, err
+		}
 		for k, v := range req.KeyValueMap { entry.KeyValueMap[k] = v }
 	}
 	if strings.TrimSpace(req.Status) != "" {
+		if !allowedEntryStatuses[strings.ToLower(strings.TrimSpace(req.Status))] {
+			return nil, fmt.Errorf("invalid status %q: must be one of active, disabled", req.Status)
+		}
 		entry.Status = strings.TrimSpace(req.Status)
 	}
 	entry.UpdatedAt = time.Now().UTC()
