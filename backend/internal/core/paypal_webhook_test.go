@@ -81,16 +81,9 @@ func TestHandlePayPalWebhook_InvalidSignature(t *testing.T) {
 		PayPalEnvironment:  "sandbox",
 	}
 
-	// Create a mock payments service that uses the mock server
-	mockPayments := &PaymentsService{
-		client: mockServer.Client(),
-	}
-	// Override the base URL method behavior by using a custom implementation
-	// For this test, we need to inject the mock server URL
-
 	srv := &Server{
-		cfg:      cfg,
-		payments: mockPayments,
+		cfg:           cfg,
+		paypalBaseURL: mockServer.URL,
 	}
 
 	body := map[string]interface{}{
@@ -128,19 +121,19 @@ func TestHandlePayPalWebhook_ValidEvent(t *testing.T) {
 		PayPalEnvironment:  "sandbox",
 	}
 
-	mockPayments := &PaymentsService{
-		client: mockServer.Client(),
-	}
+	payments := NewPaymentManager(cfg)
+	payments.client = mockServer.Client()
 
 	srv := &Server{
-		cfg:      cfg,
-		payments: mockPayments,
-		store:    newStore(cfg),
+		cfg:           cfg,
+		payments:      payments,
+		paypalBaseURL: mockServer.URL,
+		store:         newStore(cfg),
 	}
 
 	body := map[string]interface{}{
-		"id":           "WH-TEST",
-		"event_type":   "PAYMENT.CAPTURE.COMPLETED",
+		"id":            "WH-TEST",
+		"event_type":    "PAYMENT.CAPTURE.COMPLETED",
 		"event_version": "1.0",
 		"resource": map[string]interface{}{
 			"id":     "ORDER-123",
@@ -202,14 +195,10 @@ func TestHandlePayPalWebhook_PaymentDenied(t *testing.T) {
 		PayPalEnvironment:  "sandbox",
 	}
 
-	mockPayments := &PaymentsService{
-		client: mockServer.Client(),
-	}
-
 	srv := &Server{
-		cfg:      cfg,
-		payments: mockPayments,
-		store:    newStore(cfg),
+		cfg:           cfg,
+		paypalBaseURL: mockServer.URL,
+		store:         newStore(cfg),
 	}
 
 	body := map[string]interface{}{
@@ -249,14 +238,10 @@ func TestHandlePayPalWebhook_PaymentDeclined(t *testing.T) {
 		PayPalEnvironment:  "sandbox",
 	}
 
-	mockPayments := &PaymentsService{
-		client: mockServer.Client(),
-	}
-
 	srv := &Server{
-		cfg:      cfg,
-		payments: mockPayments,
-		store:    newStore(cfg),
+		cfg:           cfg,
+		paypalBaseURL: mockServer.URL,
+		store:         newStore(cfg),
 	}
 
 	body := map[string]interface{}{
@@ -296,14 +281,10 @@ func TestHandlePayPalWebhook_PaymentRefunded(t *testing.T) {
 		PayPalEnvironment:  "sandbox",
 	}
 
-	mockPayments := &PaymentsService{
-		client: mockServer.Client(),
-	}
-
 	srv := &Server{
-		cfg:      cfg,
-		payments: mockPayments,
-		store:    newStore(cfg),
+		cfg:           cfg,
+		paypalBaseURL: mockServer.URL,
+		store:         newStore(cfg),
 	}
 
 	body := map[string]interface{}{
