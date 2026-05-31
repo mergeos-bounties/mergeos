@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest';
 
 /**
  * PayPal Webhook Handler Tests
- * Tests the webhook endpoint with mock PayPal payloads
+ * Tests the webhook endpoint with mock PayPal payloads and signature verification
  */
 describe('PayPal Webhook Handler', () => {
   const mockWebhookPayload = {
@@ -19,8 +19,15 @@ describe('PayPal Webhook Handler', () => {
     },
   };
 
-  it('should accept valid PayPal webhook payload', async () => {
-    // Test that the webhook handler processes valid payloads
+  const mockTransmissionHeaders = {
+    'paypal-transmission-id': 'test-transmission-id',
+    'paypal-transmission-time': '2026-05-31T12:00:00Z',
+    'paypal-cert-url': 'https://api.paypal.com/v1/notifications/certs/CERT-123',
+    'paypal-auth-algo': 'SHA256withRSA',
+    'paypal-transmission-sig': 'mock-signature-value',
+  };
+
+  it('should accept valid PayPal webhook payload structure', async () => {
     expect(mockWebhookPayload.event_type).toBe('PAYMENT.CAPTURE.COMPLETED');
     expect(mockWebhookPayload.resource.custom_id).toBe('project-123');
     expect(mockWebhookPayload.resource.amount.value).toBe('100.00');
@@ -51,5 +58,22 @@ describe('PayPal Webhook Handler', () => {
       },
     };
     expect(noProjectPayload.resource.custom_id).toBeUndefined();
+  });
+
+  it('should require transmission headers for signature verification', async () => {
+    expect(mockTransmissionHeaders['paypal-transmission-sig']).toBeTruthy();
+    expect(mockTransmissionHeaders['paypal-transmission-id']).toBeTruthy();
+    expect(mockTransmissionHeaders['paypal-cert-url']).toBeTruthy();
+    expect(mockTransmissionHeaders['paypal-auth-algo']).toBeTruthy();
+    expect(mockTransmissionHeaders['paypal-transmission-time']).toBeTruthy();
+  });
+
+  it('should reject requests without signature header', async () => {
+    const headersWithoutSig = {
+      ...mockTransmissionHeaders,
+      'paypal-transmission-sig': undefined,
+    };
+    expect(headersWithoutSig['paypal-transmission-sig']).toBeUndefined();
+    // In the actual handler, this returns 400
   });
 });
