@@ -14,6 +14,7 @@ type Server struct {
 	store          *Store
 	payments       *PaymentManager
 	geminiReviewer *GeminiReviewService
+	paypalBaseURL  string // test override for PayPal API base URL
 }
 
 func NewServer(cfg Config, store *Store, payments *PaymentManager) *Server {
@@ -331,394 +332,311 @@ func (s *Server) adminAttachments(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, s.store.ListAttachments(""))
 }
 
-func (s *Server) adminLedger(w http.ResponseWriter, r *http.Request) {
-	if _, ok := s.requireAdmin(w, r); !ok {
-		return
-	}
-	writeJSON(w, http.StatusOK, s.store.ListLedger())
+func (s *Server) adminLedger(w http.ResponseWriter, r *http.Request) PayPalWebhookID    string
+
+	CryptoRPCURL           string
+	CryptoReceiver         string
+	CryptoAsset            string
+	CryptoTokenContract    string
+	CryptoTokenDecimals    int
+	CryptoWeiPerUSDCent    string
+	CryptoMinConfirmations int64
+	CryptoWebhookSecret    string
+
+	GitHubToken     string
+	GitHubOwner     string
+	GitHubOwnerType string
+
+	GeminiAPIKeys             []string
+	GeminiReviewModel         string
+	GeminiReviewWebhookSecret string
+	GeminiReviewMaxPatchBytes int64
+
+	GitHubAppID             string
+	GitHubOAuthClientID     string
+	GitHubOAuthClientSecret string
+
+	BountyRoot string
+	UploadRoot string
+
+	SMTPHost     string
+	SMTPPort     string
+	SMTPUsername string
+	SMTPPassword string
+	SMTPFrom     string
+
+	GoogleClientID     string
+	GoogleClientSecret string
+	GitHubClientID     string
+	GitHubClientSecret string
 }
 
-func (s *Server) adminSSLReviews(w http.ResponseWriter, r *http.Request) {
-	if _, ok := s.requireAdmin(w, r); !ok {
-		return
+func LoadConfig() Config {
+	env := normalizeEnvironment(os.Getenv("MERGEOS_ENV"))
+	loadEnvironmentFiles(env)
+
+	statePath := getenv("MERGEOS_STATE_PATH", filepath.Join("data", "mergeos-state.json"))
+	bountyRoot := getenv("BOUNTY_ROOT", filepath.Join("..", "bounties"))
+	uploadRoot := getenv("UPLOAD_ROOT", filepath.Join("data", "uploads"))
+	primaryDomain := cleanDomain(getenv("PRIMARY_DOMAIN", defaultPrimaryDomain))
+	adminDomain := cleanDomain(getenv("ADMIN_DOMAIN", defaultAdminDomain))
+	scanDomain := cleanDomain(getenv("SCAN_DOMAIN", defaultScanDomain))
+	devPaymentDefault := env != "production"
+	adminAutoPromoteDefault := env != "production"
+	adminEmail := os.Getenv("ADMIN_EMAIL")
+	adminPassword := os.Getenv("ADMIN_PASSWORD")
+	if env != "production" {
+		adminEmail = getenv("ADMIN_EMAIL", defaultLocalAdminEmail)
+		adminPassword = getenv("ADMIN_PASSWORD", defaultLocalAdminPassword)
 	}
-	writeJSON(w, http.StatusOK, s.store.ListSSLReviews())
+	payPalDefaultEnv := "sandbox"
+	if env == "production" {
+		payPalDefaultEnv = "live"
+	}
+	githubOAuthClientID := firstEnv(
+		"GITHUB_APP_CLIENT_ID",
+		"GITHUB_OAUTH_CLIENT_ID",
+		"GITHUB_CLIENT_ID",
+		"MERGEOS_GITHUB_APP_CLIENT_ID",
+		"MERGEOS_GITHUB_OAUTH_CLIENT_ID",
+	)
+	githubOAuthClientSecret := firstEnv(
+		"GITHUB_APP_CLIENT_SECRET",
+		"GITHUB_OAUTH_CLIENT_SECRET",
+		"GITHUB_CLIENT_SECRET",
+		"MERGEOS_GITHUB_APP_CLIENT_SECRET",
+		"MERGEOS_GITHUB_OAUTH_CLIENT_SECRET",
+	)
+	googleClientID := firstEnv("GOOGLE_CLIENT_ID", "MERGEOS_GOOGLE_CLIENT_ID")
+	googleClientSecret := firstEnv("GOOGLE_CLIENT_SECRET", "MERGEOS_GOOGLE_CLIENT_SECRET")
+
+	return Config{
+		Environment:              env,
+		TokenSymbol:              getenv("TOKEN_SYMBOL", defaultTokenSymbol),
+		StatePath:                statePath,
+		DatabaseURL:              os.Getenv("DATABASE_URL"),
+		PlatformFeeBps:           getenvInt64("PLATFORM_FEE_BPS", 1000),
+		DevPaymentEnabled:        getenvBool("DEV_PAYMENT_ENABLED", devPaymentDefault),
+		DevPaymentCode:           getenv("DEV_PAYMENT_CODE", defaultDevPaymentCode),
+		AdminEmail:               adminEmail,
+		AdminPassword:            adminPassword,
+		AdminName:                getenv("ADMIN_NAME", "MergeOS Admin"),
+		AdminCompanyName:         getenv("ADMIN_COMPANY_NAME", "MergeOS"),
+		AdminAutoPromote:         getenvBool("ADMIN_AUTO_PROMOTE_FIRST_USER", adminAutoPromoteDefault),
+		PrimaryDomain:            primaryDomain,
+		AdminDomain:              adminDomain,
+		ScanDomain:               scanDomain,
+		SSLReviewEnabled:         getenvBool("SSL_REVIEW_ENABLED", true),
+		SSLReviewDomains:         sslReviewDomains(primaryDomain, adminDomain, scanDomain),
+		SSLReviewIntervalMinutes: getenvInt64("SSL_REVIEW_INTERVAL_MINUTES", 360),
+		SSLExpiryWarnDays:        getenvInt64("SSL_EXPIRY_WARN_DAYS", 14),
+
+		PayPalEnvironment:  strings.ToLower(getenv("PAYPAL_ENV", payPalDefaultEnv)),
+		PayPalClientID:     os.Getenv("PAYPAL_CLIENT_ID"),
+		PayPalClientSecret: os.Getenv("PAYPAL_CLIENT_SECRET"),
+		PayPalWebhookID:    os.Getenv("PAYPAL_WEBHOOK_ID"),
+
+		CryptoRPCURL:           os.Getenv("CRYPTO_RPC_URL"),
+		CryptoReceiver:         strings.ToLower(os.Getenv("CRYPTO_RECEIVER")),
+		CryptoAsset:            strings.ToLower(getenv("CRYPTO_ASSET", "native")),
+		CryptoTokenContract:    strings.ToLower(os.Getenv("CRYPTO_TOKEN_CONTRACT")),
+		CryptoTokenDecimals:    int(getenvInt64("CRYPTO_TOKEN_DECIMALS", 6)),
+		CryptoWeiPerUSDCent:    os.Getenv("CRYPTO_WEI_PER_USD_CENT"),
+		CryptoMinConfirmations: getenvInt64("CRYPTO_MIN_CONFIRMATIONS", 1),
+		CryptoWebhookSecret:    os.Getenv("CRYPTO_WEBHOOK_SECRET"),
+
+		GitHubToken:     firstEnv("GITHUB_TOKEN", "MERGEOS_GITHUB_TOKEN"),
+		GitHubOwner:     getenv("GITHUB_OWNER", defaultGitHubOwner),
+		GitHubOwnerType: strings.ToLower(getenv("GITHUB_OWNER_TYPE", "org")),
+
+		GeminiAPIKeys: splitEnvList(firstEnv(
+			"GEMINI_API_KEYS",
+			"MERGEOS_GEMINI_API_KEYS",
+			"GEMINI_API_KEY",
+			"MERGEOS_GEMINI_API_KEY",
+		)),
+		GeminiReviewModel:         getenv("GEMINI_REVIEW_MODEL", "gemini-2.5-flash"),
+		GeminiReviewWebhookSecret: firstEnv("GEMINI_REVIEW_WEBHOOK_SECRET", "MERGEOS_GEMINI_REVIEW_WEBHOOK_SECRET"),
+		GeminiReviewMaxPatchBytes: getenvInt64("GEMINI_REVIEW_MAX_PATCH_BYTES", 70000),
+
+		GitHubAppID:             firstEnv("GITHUB_APP_ID", "MERGEOS_GITHUB_APP_ID"),
+		GitHubOAuthClientID:     githubOAuthClientID,
+		GitHubOAuthClientSecret: githubOAuthClientSecret,
+
+		BountyRoot: bountyRoot,
+		UploadRoot: uploadRoot,
+
+		SMTPHost:     os.Getenv("SMTP_HOST"),
+		SMTPPort:     getenv("SMTP_PORT", "587"),
+		SMTPUsername: os.Getenv("SMTP_USERNAME"),
+		SMTPPassword: os.Getenv("SMTP_PASSWORD"),
+		SMTPFrom:     getenv("SMTP_FROM", "noreply@mergeos.local"),
+
+		GoogleClientID:     googleClientID,
+		GoogleClientSecret: googleClientSecret,
+		GitHubClientID:     githubOAuthClientID,
+		GitHubClientSecret: githubOAuthClientSecret,
+	}
 }
 
-func (s *Server) reviewAdminSSL(w http.ResponseWriter, r *http.Request) {
-	if _, ok := s.requireAdmin(w, r); !ok {
-		return
+func sslReviewDomains(primaryDomain, adminDomain, scanDomain string) []string {
+	raw := strings.TrimSpace(os.Getenv("SSL_REVIEW_DOMAINS"))
+	if raw == "" {
+		raw = primaryDomain + "," + adminDomain + "," + scanDomain
 	}
-	reviews, err := s.store.ReviewSSLNow(r.Context(), "manual")
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
-		return
+	seen := map[string]bool{}
+	domains := []string{}
+	for _, item := range strings.Split(raw, ",") {
+		domain := cleanDomain(item)
+		if domain == "" || seen[domain] {
+			continue
+		}
+		seen[domain] = true
+		domains = append(domains, domain)
 	}
-	writeJSON(w, http.StatusOK, reviews)
+	return domains
 }
 
-func (s *Server) adminGeminiKeys(w http.ResponseWriter, r *http.Request) {
-	if _, ok := s.requireAdmin(w, r); !ok {
-		return
+func cleanDomain(value string) string {
+	value = strings.ToLower(strings.TrimSpace(value))
+	value = strings.TrimPrefix(value, "https://")
+	value = strings.TrimPrefix(value, "http://")
+	value = strings.Trim(value, "/")
+	if host, _, ok := strings.Cut(value, ":"); ok {
+		value = host
 	}
-	writeJSON(w, http.StatusOK, s.store.ListGeminiAPIKeyStats())
+	if host, _, ok := strings.Cut(value, "/"); ok {
+		value = host
+	}
+	return strings.TrimSpace(value)
 }
 
-func (s *Server) addAdminGeminiKey(w http.ResponseWriter, r *http.Request) {
-	if _, ok := s.requireAdmin(w, r); !ok {
-		return
+func normalizeEnvironment(value string) string {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "prod", "production":
+		return "production"
+	case "dev", "development", "local", "":
+		return "local"
+	default:
+		return "local"
 	}
-	var req AddGeminiAPIKeyRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid JSON body")
-		return
-	}
-	keyValue := strings.TrimSpace(req.KeyValue)
-	if keyValue == "" {
-		keyValue = strings.TrimSpace(req.APIKey)
-	}
-	key, err := s.store.AddGeminiAPIKey(keyValue)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
-		return
-	}
-	writeJSON(w, http.StatusCreated, key)
 }
 
-func (s *Server) updateAdminGeminiKey(w http.ResponseWriter, r *http.Request) {
-	if _, ok := s.requireAdmin(w, r); !ok {
-		return
-	}
-	var req UpdateGeminiAPIKeyRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid JSON body")
-		return
-	}
-	key, err := s.store.UpdateGeminiAPIKey(r.PathValue("id"), req.Status, req.ResetCounts)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
-		return
-	}
-	writeJSON(w, http.StatusOK, key)
+func loadEnvironmentFiles(env string) {
+	loadDotEnv(".env." + normalizeEnvironment(env))
+	loadDotEnv(".env")
 }
 
-func (s *Server) adminGeminiWebhookLogs(w http.ResponseWriter, r *http.Request) {
-	if _, ok := s.requireAdmin(w, r); !ok {
-		return
-	}
-	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
-	writeJSON(w, http.StatusOK, s.store.ListGeminiWebhookLogs(limit))
+func (c Config) PayPalReady() bool {
+	return c.PayPalClientID != "" && c.PayPalClientSecret != ""
 }
 
-func (s *Server) uploadAttachment(w http.ResponseWriter, r *http.Request) {
-	user, ok := s.requireUser(w, r)
-	if !ok {
-		return
+func (c Config) PayPalWebhookReady() bool {
+	return c.PayPalReady() && c.PayPalWebhookID != ""
+}
+
+func (c Config) CryptoReady() bool {
+	if c.CryptoRPCURL == "" || c.CryptoReceiver == "" {
+		return false
 	}
-	if err := r.ParseMultipartForm(maxUploadBytes * 3); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid multipart upload")
-		return
+	if c.CryptoAsset == "erc20" {
+		return c.CryptoTokenContract != ""
 	}
-	files := r.MultipartForm.File["files"]
-	if len(files) == 0 {
-		if file, header, err := r.FormFile("file"); err == nil {
-			_ = file.Close()
-			files = append(files, header)
+	return c.CryptoWeiPerUSDCent != ""
+}
+
+func (c Config) GitHubReady() bool {
+	return c.GitHubToken != "" && c.GitHubOwner != ""
+}
+
+func (c Config) GeminiReviewReady() bool {
+	return c.GitHubToken != "" && c.GeminiReviewWebhookSecret != ""
+}
+
+func (c Config) GitHubOAuthReady() bool {
+	return c.GitHubOAuthClientID != "" && c.GitHubOAuthClientSecret != ""
+}
+
+func (c Config) SMTPReady() bool {
+	return c.SMTPHost != "" && c.SMTPUsername != "" && c.SMTPPassword != "" && c.SMTPFrom != ""
+}
+
+func getenv(key, fallback string) string {
+	value := strings.TrimSpace(os.Getenv(key))
+	if value == "" {
+		return fallback
+	}
+	return value
+}
+
+func firstEnv(keys ...string) string {
+	for _, key := range keys {
+		value := strings.TrimSpace(os.Getenv(key))
+		if value != "" {
+			return value
 		}
 	}
-	if len(files) == 0 {
-		writeError(w, http.StatusBadRequest, "at least one file is required")
-		return
-	}
-	attachments := make([]*Attachment, 0, len(files))
-	for _, header := range files {
-		attachment, err := s.store.SaveAttachment(user.ID, header)
-		if err != nil {
-			writeError(w, http.StatusBadRequest, err.Error())
-			return
-		}
-		attachments = append(attachments, attachment)
-	}
-	writeJSON(w, http.StatusCreated, attachments)
+	return ""
 }
 
-func (s *Server) downloadAttachment(w http.ResponseWriter, r *http.Request) {
-	user, ok := s.requireUser(w, r)
-	if !ok {
-		return
-	}
-	path := strings.TrimPrefix(r.URL.Path, "/api/uploads/")
-	id := strings.TrimSuffix(path, "/download")
-	if id == "" || id == path {
-		writeError(w, http.StatusNotFound, "route not found")
-		return
-	}
-	attachment, ok := s.store.AttachmentForDownload(id)
-	if !ok {
-		writeError(w, http.StatusNotFound, "attachment not found")
-		return
-	}
-	if normalizeRole(user.Role) != RoleAdmin && attachment.UserID != user.ID {
-		writeError(w, http.StatusForbidden, "admin access is required")
-		return
-	}
-	w.Header().Set("Content-Type", attachment.ContentType)
-	w.Header().Set("Content-Disposition", "inline; filename=\""+strings.ReplaceAll(attachment.OriginalName, "\"", "")+"\"")
-	http.ServeFile(w, r, attachment.StoredPath)
-}
-
-func (s *Server) ledger(w http.ResponseWriter, r *http.Request) {
-	user, ok := s.requireUser(w, r)
-	if !ok {
-		return
-	}
-	if normalizeRole(user.Role) == RoleAdmin {
-		writeJSON(w, http.StatusOK, s.store.ListLedger())
-		return
-	}
-	writeJSON(w, http.StatusOK, s.store.ListLedgerForUser(user.ID))
-}
-
-func (s *Server) evaluateProjectPrice(w http.ResponseWriter, r *http.Request) {
-	if _, ok := s.requireUser(w, r); !ok {
-		return
-	}
-	var req ProjectPriceEvaluationRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid JSON body")
-		return
-	}
-	result, err := EvaluateProjectPrice(req)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
-		return
-	}
-	writeJSON(w, http.StatusOK, result)
-}
-
-func (s *Server) createProject(w http.ResponseWriter, r *http.Request) {
-	user, ok := s.requireUser(w, r)
-	if !ok {
-		return
-	}
-	var req CreateProjectRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid JSON body")
-		return
-	}
-	project, err := s.store.CreateProject(r.Context(), user.ID, req)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
-		return
-	}
-	writeJSON(w, http.StatusCreated, project)
-}
-
-func (s *Server) createPayPalOrder(w http.ResponseWriter, r *http.Request) {
-	if _, ok := s.requireUser(w, r); !ok {
-		return
-	}
-	var req CreatePayPalOrderRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid JSON body")
-		return
-	}
-	order, err := s.payments.CreatePayPalOrder(r.Context(), req)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
-		return
-	}
-	writeJSON(w, http.StatusCreated, order)
-}
-
-func (s *Server) acceptTask(w http.ResponseWriter, r *http.Request) {
-	user, ok := s.requireUser(w, r)
-	if !ok {
-		return
-	}
-	path := strings.TrimPrefix(r.URL.Path, "/api/tasks/")
-	taskID := strings.TrimSuffix(path, "/accept")
-	if taskID == "" || taskID == path {
-		writeError(w, http.StatusNotFound, "route not found")
-		return
-	}
-	if !s.store.CanAccessTask(user.ID, user.Role, taskID) {
-		writeError(w, http.StatusForbidden, "admin access is required")
-		return
-	}
-
-	var req AcceptTaskRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid JSON body")
-		return
-	}
-	task, err := s.store.AcceptTask(taskID, req)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
-		return
-	}
-	writeJSON(w, http.StatusOK, task)
-}
-
-func (s *Server) requireUser(w http.ResponseWriter, r *http.Request) (*User, bool) {
-	user, ok := s.store.UserByToken(r.Header.Get("Authorization"))
-	if !ok {
-		writeError(w, http.StatusUnauthorized, "login is required")
-		return nil, false
-	}
-	return user, true
-}
-
-func (s *Server) requireAdmin(w http.ResponseWriter, r *http.Request) (*User, bool) {
-	user, ok := s.requireUser(w, r)
-	if !ok {
-		return nil, false
-	}
-	if normalizeRole(user.Role) != RoleAdmin {
-		writeError(w, http.StatusForbidden, "admin access is required")
-		return nil, false
-	}
-	return user, true
-}
-
-func withCORS(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type,Authorization,X-Hub-Signature-256,X-GitHub-Event,X-GitHub-Delivery,X-MergeOS-Signature,X-MergeOS-Event")
-		w.Header().Set("Access-Control-Allow-Methods", "GET,POST,PATCH,OPTIONS")
-		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusNoContent)
-			return
-		}
-		next.ServeHTTP(w, r)
+func splitEnvList(value string) []string {
+	parts := strings.FieldsFunc(value, func(r rune) bool {
+		return r == ',' || r == ';' || r == '\n' || r == '\r'
 	})
-}
-
-func writeJSON(w http.ResponseWriter, status int, value any) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(value)
-}
-
-func writeError(w http.ResponseWriter, status int, message string) {
-	writeJSON(w, status, map[string]string{"error": message})
-}
-
-func paymentMode(cfg Config) string {
-	if cfg.PayPalReady() || cfg.CryptoReady() {
-		return "live-adapters"
+	result := []string{}
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part != "" {
+			result = append(result, part)
+		}
 	}
-	if cfg.DevPaymentEnabled {
-		return "local-dev-verifier"
-	}
-	return "not-configured"
+	return result
 }
 
-func repoProvider(cfg Config) string {
-	if cfg.GitHubReady() {
-		return "github-private:" + cfg.GitHubOwner
+func getenvBool(key string, fallback bool) bool {
+	value := strings.TrimSpace(os.Getenv(key))
+	if value == "" {
+		return fallback
 	}
-	return "local-git"
+	parsed, err := strconv.ParseBool(value)
+	if err != nil {
+		return fallback
+	}
+	return parsed
 }
 
-func (s *Server) devPaymentCode() string {
-	if !s.cfg.DevPaymentEnabled {
-		return ""
-	}
-	return s.cfg.DevPaymentCode
-}
-
-func (s *Server) evaluateProject(w http.ResponseWriter, r *http.Request) {
-	_, ok := s.requireUser(w, r)
-	if !ok {
+func loadDotEnv(path string) {
+	data, err := os.ReadFile(path)
+	if err != nil {
 		return
 	}
+	for _, line := range strings.Split(string(data), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		key, value, ok := strings.Cut(line, "=")
+		if !ok {
+			continue
+		}
+		key = strings.TrimSpace(key)
+		if key == "" || os.Getenv(key) != "" {
+			continue
+		}
+		value = strings.TrimSpace(value)
+		value = strings.Trim(value, `"'`)
+		_ = os.Setenv(key, value)
+	}
+}
 
-	var req EvaluateProjectRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid JSON body")
-		return
+func getenvInt64(key string, fallback int64) int64 {
+	value := strings.TrimSpace(os.Getenv(key))
+	if value == "" {
+		return fallback
 	}
-
-	var basePrice int64 = 1000
-
-	tech := strings.ToLower(req.TechStack)
-	if strings.Contains(tech, "react") || strings.Contains(tech, "vue") || strings.Contains(tech, "next") {
-		basePrice += 300
+	parsed, err := strconv.ParseInt(value, 10, 64)
+	if err != nil {
+		return fallback
 	}
-	if strings.Contains(tech, "go") || strings.Contains(tech, "rust") || strings.Contains(tech, "fastapi") {
-		basePrice += 400
-	}
-	if strings.Contains(tech, "ai") || strings.Contains(tech, "llm") || strings.Contains(tech, "machine learning") {
-		basePrice += 800
-	}
-	if strings.Contains(tech, "kubernetes") || strings.Contains(tech, "docker") || strings.Contains(tech, "devops") {
-		basePrice += 500
-	}
-
-	basePrice += int64(len(req.Deliverables) * 150)
-	basePrice += int64(len(req.Requirements) * 100)
-
-	complexity := strings.ToLower(req.Complexity)
-	if complexity == "high" {
-		basePrice = int64(float64(basePrice) * 1.6)
-	} else if complexity == "low" {
-		basePrice = int64(float64(basePrice) * 0.8)
-	}
-
-	if req.ReferenceBudget > 0 {
-		basePrice = (basePrice + req.ReferenceBudget) / 2
-	}
-
-	if basePrice < 150 {
-		basePrice = 150
-	}
-
-	low := int64(float64(basePrice) * 0.85)
-	high := int64(float64(basePrice) * 1.25)
-
-	low = (low / 50) * 50
-	high = (high / 50) * 50
-
-	breakdown := map[string]int64{
-		"Core Features & Logic": int64(float64(basePrice) * 0.50),
-		"Frontend Integration":  int64(float64(basePrice) * 0.25),
-		"Testing & CI/CD":       int64(float64(basePrice) * 0.15),
-		"Project Management":    int64(float64(basePrice) * 0.10),
-	}
-
-	assumptions := []string{
-		"The project has well-defined interfaces and clean design docs.",
-		"Development will be conducted in a sandbox or staging environment.",
-	}
-	if len(req.Deliverables) > 0 {
-		assumptions = append(assumptions, fmt.Sprintf("All %d listed deliverables are independent and testable.", len(req.Deliverables)))
-	}
-	if strings.Contains(tech, "go") {
-		assumptions = append(assumptions, "The project relies on native Go modules and clean standard library conventions.")
-	}
-
-	risks := []string{
-		"Scope creep due to changing or ambiguous deliverables.",
-	}
-	if strings.Contains(tech, "ai") || strings.Contains(tech, "llm") {
-		risks = append(risks, "AI model non-determinism and API latency/rate limits.")
-	}
-	if strings.Contains(tech, "kubernetes") || strings.Contains(tech, "devops") {
-		risks = append(risks, "Configuration drifts and target environment deployment discrepancies.")
-	}
-
-	rationale := fmt.Sprintf("Based on the tech stack (%s), the estimated effort is %s complexity. The price range represents core development, frontend binding, and automated testing.", req.TechStack, req.Complexity)
-
-	resp := EvaluateProjectResponse{
-		SuggestedLow:    low,
-		SuggestedHigh:   high,
-		ConfidenceLevel: 0.90,
-		TaskBreakdown:   breakdown,
-		Assumptions:     assumptions,
-		Risks:           risks,
-		Rationale:       rationale,
-	}
-
-	writeJSON(w, http.StatusOK, resp)
+	return parsed
 }
