@@ -90,7 +90,12 @@ func (s *Server) verifyPayPalSignature(ctx context.Context, headers http.Header,
 	}
 
 	// Call PayPal Verify Webhook Signature API
-	apiURL := s.payments.payPalBaseURL() + "/v1/notifications/verify-webhook-signature"
+	// Use paypalBaseURL override if set (for testing), otherwise use payments.payPalBaseURL()
+	baseURL := s.paypalBaseURL
+	if baseURL == "" {
+		baseURL = s.payments.payPalBaseURL()
+	}
+	apiURL := baseURL + "/v1/notifications/verify-webhook-signature"
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, apiURL, bytes.NewReader(reqBody))
 	if err != nil {
 		return false, fmt.Errorf("failed to create verification request: %w", err)
@@ -184,8 +189,13 @@ func (s *Server) handlePayPalWebhook(w http.ResponseWriter, r *http.Request) {
 			if tokenErr != nil {
 				log.Printf("[paypal-webhook] token error: %v", tokenErr)
 			} else {
+				// Use paypalBaseURL override if set (for testing), otherwise use payments.payPalBaseURL()
+				baseURL := s.paypalBaseURL
+				if baseURL == "" {
+					baseURL = s.payments.payPalBaseURL()
+				}
 				httpReq, reqErr := http.NewRequestWithContext(r.Context(), http.MethodPost,
-					s.payments.payPalBaseURL()+"/v2/checkout/orders/"+orderID+"/capture", nil)
+					baseURL+"/v2/checkout/orders/"+orderID+"/capture", nil)
 				if reqErr == nil {
 					httpReq.Header.Set("Authorization", "Bearer "+token)
 					httpReq.Header.Set("Content-Type", "application/json")
