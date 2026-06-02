@@ -1673,6 +1673,47 @@ svg {
   grid-column: 1 / -1;
 }
 
+.crypto-payment-instructions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #dcfce7;
+  border-radius: 8px;
+  background: #f8fffb;
+  margin-top: 12px;
+  padding: 12px;
+}
+
+.crypto-payment-instructions small {
+  display: block;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.crypto-payment-instructions strong {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  color: #111827;
+  font-size: 11px;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crypto-payment-instructions button {
+  min-height: 34px;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--green-dark);
+  padding: 0 10px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
 .funding-actions {
   display: flex;
   align-items: center;
@@ -10800,6 +10841,7 @@ svg {
   .timeline-grid,
   .review-grid,
   .card-input-grid,
+  .crypto-payment-instructions,
   .payment-detail-grid,
   .next-step-grid {
     grid-template-columns: 1fr;

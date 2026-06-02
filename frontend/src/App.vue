@@ -772,6 +772,23 @@
               <input v-model.trim="projectCryptoReference" placeholder="0x..." autocomplete="off" />
               <small>Required for production crypto verification; local dev mode can still use the configured verifier code.</small>
             </label>
+            <div v-if="projectPaymentMethod === 'USDC'" class="crypto-payment-instructions">
+              <div>
+                <small>Asset</small>
+                <strong>{{ cryptoPaymentAssetLabel }}</strong>
+              </div>
+              <div>
+                <small>Receiver</small>
+                <strong>{{ cryptoReceiverLabel }}</strong>
+              </div>
+              <div>
+                <small>Token contract</small>
+                <strong>{{ cryptoTokenContractLabel }}</strong>
+              </div>
+              <button type="button" :disabled="!cryptoReceiverAddress" @click="copyProjectCryptoReceiver">
+                Copy receiver
+              </button>
+            </div>
           </section>
 
           <footer class="funding-actions">
@@ -4565,6 +4582,13 @@ const ledgerProjectIndex = computed(() => {
 
 const tokenSymbol = computed(() => runtimeConfig.value?.token_symbol || 'MRG');
 const githubOAuthReady = computed(() => Boolean(runtimeConfig.value?.github_oauth_ready && runtimeConfig.value?.github_oauth_client_id));
+const cryptoReceiverAddress = computed(() => String(runtimeConfig.value?.crypto_receiver || '').trim());
+const cryptoReceiverLabel = computed(() => cryptoReceiverAddress.value ? shortLedgerReference(cryptoReceiverAddress.value) : 'Not configured');
+const cryptoPaymentAssetLabel = computed(() => runtimeConfig.value?.crypto_asset || 'USDC');
+const cryptoTokenContractLabel = computed(() => {
+  const value = String(runtimeConfig.value?.crypto_token_contract || '').trim();
+  return value ? shortLedgerReference(value) : 'Native / configured asset';
+});
 const projectPaymentAmountCents = computed(() => Math.round(Math.max(100, Number(projectFundingAmount.value) || 100) * 100));
 const projectPaymentButtonLabel = computed(() => {
   if (projectPaymentBusy.value) {
@@ -6869,6 +6893,24 @@ function selectProjectPaymentMethod(method = {}) {
   if (method.label !== 'PayPal') {
     projectPayPalOrderID.value = '';
   }
+}
+
+async function copyProjectCryptoReceiver() {
+  const value = cryptoReceiverAddress.value;
+  if (!value) {
+    showToast('Crypto receiver is not configured.');
+    return;
+  }
+  if (hasWindow && navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(value);
+      showToast('Crypto receiver copied.');
+      return;
+    } catch {
+      // Use visible fallback below.
+    }
+  }
+  showToast(`Crypto receiver: ${value}`);
 }
 
 async function startPayPalProjectCheckout() {
