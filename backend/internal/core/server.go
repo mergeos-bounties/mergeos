@@ -890,16 +890,21 @@ func (s *Server) acceptTask(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "route not found")
 		return
 	}
-	if !s.store.CanAccessTask(user.ID, user.Role, taskID) {
-		writeError(w, http.StatusForbidden, "admin access is required")
-		return
-	}
 
 	var req AcceptTaskRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil && err != io.EOF {
 		writeError(w, http.StatusBadRequest, "invalid JSON body")
 		return
 	}
+	if !s.store.CanAccessTask(user.ID, user.Role, taskID) {
+		selfReq, err := s.store.SelfAcceptTaskRequest(user.ID, taskID)
+		if err != nil {
+			writeError(w, http.StatusForbidden, err.Error())
+			return
+		}
+		req = selfReq
+	}
+
 	task, err := s.store.AcceptTask(taskID, req)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())

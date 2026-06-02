@@ -942,6 +942,7 @@ type WorkerReputationAudit struct {
 
 type WorkerProposal struct {
 	ID                 string     `json:"id"`
+	TaskID             string     `json:"task_id,omitempty"`
 	ProjectID          string     `json:"project_id"`
 	ProjectTitle       string     `json:"project_title"`
 	IssueNumber        int        `json:"issue_number"`

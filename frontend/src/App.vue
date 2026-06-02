@@ -1991,6 +1991,7 @@
                     <h2>Proposal Opportunities</h2>
                     <span>{{ workerProposalRows.length }}</span>
                   </div>
+                  <p v-if="workerClaimError" class="worker-claim-error">{{ workerClaimError }}</p>
                   <div v-if="workerProposalRows.length" class="worker-proposal-list">
                     <article v-for="proposal in workerProposalRows" :key="proposal.id">
                       <div>
@@ -2001,6 +2002,13 @@
                       <b>{{ proposal.matchScore }}%</b>
                       <div class="worker-proposal-actions">
                         <button v-if="proposal.url" type="button" @click="openExternalURL(proposal.url)">Issue</button>
+                        <button
+                          type="button"
+                          :disabled="!proposal.taskID || workerClaimBusyID === proposal.taskID"
+                          @click="claimWorkerProposal(proposal)"
+                        >
+                          {{ workerClaimBusyID === proposal.taskID ? 'Claiming' : 'Claim' }}
+                        </button>
                         <button type="button" :disabled="!proposal.claimCommand" @click="copyClaimCommand(proposal.claimCommand)">Copy Claim</button>
                       </div>
                     </article>
@@ -4164,6 +4172,8 @@ const workerDashboard = ref({
 });
 const workerDashboardLoading = ref(false);
 const workerDashboardError = ref('');
+const workerClaimBusyID = ref('');
+const workerClaimError = ref('');
 const dashboardLoading = ref(false);
 const dashboardError = ref('');
 const dashboardSearch = ref('');
@@ -6072,6 +6082,36 @@ async function copyClaimCommand(command = '') {
   showToast(`Claim command: ${value}`);
 }
 
+async function claimWorkerProposal(proposal = {}) {
+  const taskID = String(proposal.taskID || '').trim();
+  if (!taskID) {
+    workerClaimError.value = 'Task id is missing for this proposal.';
+    return;
+  }
+  if (!token.value) {
+    workerClaimError.value = 'Login is required to claim tasks.';
+    showToast(workerClaimError.value);
+    return;
+  }
+
+  workerClaimBusyID.value = taskID;
+  workerClaimError.value = '';
+  try {
+    await api(`/api/tasks/${encodeURIComponent(taskID)}/accept`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    });
+    showToast('Task claimed and reward ledger updated.');
+    await loadWorkerDashboardData({ silent: true });
+    await loadMarketplaceData({ silent: true });
+  } catch (error) {
+    workerClaimError.value = error.message || 'Could not claim this task.';
+    showToast(workerClaimError.value);
+  } finally {
+    workerClaimBusyID.value = '';
+  }
+}
+
 function resetLedgerFilters() {
   activeLedgerTab.value = 'All Activity';
   activeLedgerProjectFilter.value = 'All Projects';
@@ -7700,6 +7740,7 @@ function mapWorkerProposal(proposal = {}) {
   const issueNumber = Number(proposal.issue_number) || 0;
   return {
     id: proposal.id || `${proposal.project_id}-${proposal.issue_number}`,
+    taskID: proposal.task_id || '',
     title: proposal.title || 'Open bounty',
     project: proposal.project_title || 'MergeOS project',
     lane: agentType ? toTitleLabel(agentType) : toTitleLabel(proposal.required_worker_kind || 'worker'),

@@ -1686,6 +1686,108 @@ func TestWorkerDashboardRouteMatchesGitHubWorkerAndSanitizesData(t *testing.T) {
 	}
 }
 
+func TestWorkerCanSelfClaimProposalRoute(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:       defaultTokenSymbol,
+		StatePath:         filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:    1000,
+		DevPaymentEnabled: true,
+		DevPaymentCode:    defaultDevPaymentCode,
+		GitHubOwner:       defaultGitHubOwner,
+		BountyRoot:        filepath.Join(tempDir, "bounties"),
+		SMTPFrom:          "noreply@mergeos.local",
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	workerAuth, err := store.AuthenticateGitHub(GitHubAuthProfile{
+		ID:        "2001",
+		Username:  "self-claimer",
+		Name:      "Self Claimer",
+		Email:     "claimer@example.com",
+		AvatarURL: "https://avatars.githubusercontent.com/u/2001",
+	}, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	clientAuth, err := store.Register(RegisterRequest{
+		Name:        "Self Claim Client",
+		CompanyName: "Self Claim Co",
+		Email:       "self-claim-client@example.com",
+		Password:    "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	project, err := store.CreateProject(context.Background(), clientAuth.User.ID, CreateProjectRequest{
+		Title:            "Self claim route",
+		ClientName:       "Self Claim Client",
+		CompanyName:      "Self Claim Co",
+		ClientEmail:      "self-claim-client@example.com",
+		Brief:            "Create a bounty that a linked GitHub worker can claim from the dashboard.",
+		BudgetCents:      180000,
+		PaymentMethod:    PaymentPayPal,
+		PaymentReference: defaultDevPaymentCode,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var humanTask *Task
+	for _, task := range project.Tasks {
+		if task.RequiredWorkerKind == WorkerHuman {
+			humanTask = task
+			break
+		}
+	}
+	if humanTask == nil {
+		t.Fatal("project did not create a human task")
+	}
+
+	dashboard := store.WorkerDashboard(workerAuth.User.ID)
+	foundProposal := false
+	for _, proposal := range dashboard.Proposals {
+		if proposal.TaskID == humanTask.ID {
+			foundProposal = true
+			break
+		}
+	}
+	if !foundProposal {
+		t.Fatalf("worker dashboard proposal missing task id %q: %#v", humanTask.ID, dashboard.Proposals)
+	}
+
+	server := NewServer(cfg, store, payments)
+	reqHTTP := httptest.NewRequest(http.MethodPost, "/api/tasks/"+humanTask.ID+"/accept", strings.NewReader(`{"worker_kind":"agent","worker_id":"github:spoofed","agent_type":"bad"}`))
+	reqHTTP.Header.Set("Authorization", "Bearer "+workerAuth.Token)
+	resp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(resp, reqHTTP)
+	if resp.Code != http.StatusOK {
+		t.Fatalf("self claim status = %d, body = %s", resp.Code, resp.Body.String())
+	}
+
+	var accepted Task
+	if err := json.Unmarshal(resp.Body.Bytes(), &accepted); err != nil {
+		t.Fatal(err)
+	}
+	if accepted.Status != TaskAccepted || accepted.WorkerKind != WorkerHuman || accepted.WorkerID != "github:self-claimer" {
+		t.Fatalf("self claim used wrong worker identity: %#v", accepted)
+	}
+
+	ledgerCount := len(store.ListLedger())
+	repeatReq := httptest.NewRequest(http.MethodPost, "/api/tasks/"+humanTask.ID+"/accept", strings.NewReader(`{}`))
+	repeatReq.Header.Set("Authorization", "Bearer "+workerAuth.Token)
+	repeatResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(repeatResp, repeatReq)
+	if repeatResp.Code != http.StatusForbidden && repeatResp.Code != http.StatusBadRequest {
+		t.Fatalf("repeat claim status = %d, body = %s", repeatResp.Code, repeatResp.Body.String())
+	}
+	if len(store.ListLedger()) != ledgerCount {
+		t.Fatalf("repeat claim created ledger entries: before=%d after=%d", ledgerCount, len(store.ListLedger()))
+	}
+}
+
 func TestAdminAutoPromoteAndRoutes(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := Config{

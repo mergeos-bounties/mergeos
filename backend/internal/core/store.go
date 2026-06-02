@@ -1490,6 +1490,45 @@ func (s *Store) CanAccessTask(userID string, role UserRole, taskID string) bool 
 	return ok && project.ClientUserID == userID
 }
 
+func (s *Store) SelfAcceptTaskRequest(userID, taskID string) (AcceptTaskRequest, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	user := s.users[strings.TrimSpace(userID)]
+	if user == nil {
+		return AcceptTaskRequest{}, errors.New("login is required")
+	}
+	task, ok := s.tasks[strings.TrimSpace(taskID)]
+	if !ok {
+		return AcceptTaskRequest{}, errors.New("task not found")
+	}
+	if task.Status == TaskAccepted {
+		return AcceptTaskRequest{}, errors.New("task is already accepted")
+	}
+
+	workerID := ""
+	if github := normalizeGitHubUsername(user.GitHubUsername); github != "" {
+		workerID = githubWorkerAccount(github)
+	} else if wallet := normalizeWalletAddress(user.WalletAddress); validWalletAddress(wallet) {
+		workerID = walletAccount(wallet)
+	}
+	if workerID == "" {
+		return AcceptTaskRequest{}, errors.New("GitHub or wallet identity is required to claim tasks")
+	}
+
+	req := AcceptTaskRequest{
+		WorkerKind: task.RequiredWorkerKind,
+		WorkerID:   workerID,
+	}
+	if req.WorkerKind != WorkerHuman {
+		req.AgentType = strings.TrimSpace(task.SuggestedAgentType)
+		if req.AgentType == "" {
+			req.AgentType = "worker-dashboard"
+		}
+	}
+	return req, nil
+}
+
 func (s *Store) AcceptTask(taskID string, req AcceptTaskRequest) (*Task, error) {
 	return s.AcceptTaskWithReview(taskID, req, 0, "")
 }
@@ -1505,6 +1544,9 @@ func (s *Store) AcceptTaskWithReviewReference(taskID string, req AcceptTaskReque
 	task, ok := s.tasks[taskID]
 	if !ok {
 		return nil, errors.New("task not found")
+	}
+	if task.Status == TaskAccepted {
+		return nil, errors.New("task is already accepted")
 	}
 	if req.WorkerKind != WorkerHuman && req.WorkerKind != WorkerAgent && req.WorkerKind != WorkerHybrid {
 		return nil, errors.New("worker kind must be human, agent, or hybrid")
@@ -2518,6 +2560,7 @@ func workerProposalRows(projects map[string]*Project, tasks map[string]*Task, us
 		project := projects[task.ProjectID]
 		rows = append(rows, WorkerProposal{
 			ID:                 marketplaceBountyID(task.ProjectID, task.IssueNumber),
+			TaskID:             task.ID,
 			ProjectID:          task.ProjectID,
 			ProjectTitle:       marketplaceProjectTitle(project),
 			IssueNumber:        task.IssueNumber,
