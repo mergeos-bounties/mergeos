@@ -115,6 +115,78 @@ func TestCreateProjectCreatesLocalBountyRepoAndPersistsLedger(t *testing.T) {
 	}
 }
 
+func TestRuntimeConfigReturnsPaymentRails(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:          defaultTokenSymbol,
+		StatePath:            filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:       1000,
+		DevPaymentEnabled:    true,
+		DevPaymentCode:       defaultDevPaymentCode,
+		PayPalClientID:       "paypal-client",
+		PayPalClientSecret:   "paypal-secret",
+		StripePublishableKey: "pk_test_mergeos",
+		StripeSecretKey:      "sk_test_secret",
+		StripeWebhookSecret:  "whsec_secret",
+		CryptoRPCURL:         "https://rpc.example",
+		CryptoReceiver:       "0x1111111111111111111111111111111111111111",
+		CryptoAsset:          "erc20",
+		CryptoTokenContract:  "0x2222222222222222222222222222222222222222",
+		CryptoTokenDecimals:  6,
+		CryptoWeiPerUSDCent:  "10000000000000000",
+		GitHubOwner:          defaultGitHubOwner,
+		BountyRoot:           filepath.Join(tempDir, "bounties"),
+		SMTPFrom:             "noreply@mergeos.local",
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	server := NewServer(cfg, store, payments)
+	req := httptest.NewRequest(http.MethodGet, "/api/config", nil)
+	resp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(resp, req)
+	if resp.Code != http.StatusOK {
+		t.Fatalf("config status = %d, body = %s", resp.Code, resp.Body.String())
+	}
+	body := resp.Body.String()
+	for _, secret := range []string{"paypal-secret", "sk_test_secret", "whsec_secret"} {
+		if strings.Contains(body, secret) {
+			t.Fatalf("config leaked secret %q: %s", secret, body)
+		}
+	}
+
+	var payload RuntimeConfigResponse
+	if err := json.Unmarshal(resp.Body.Bytes(), &payload); err != nil {
+		t.Fatal(err)
+	}
+	if !payload.PayPalReady || !payload.CryptoReady || !payload.StripeReady || payload.StripePublicKey != "pk_test_mergeos" {
+		t.Fatalf("unexpected payment readiness: %#v", payload)
+	}
+	rails := map[string]PaymentRailOption{}
+	for _, rail := range payload.PaymentRails {
+		rails[rail.ID] = rail
+	}
+	for _, required := range []string{"paypal", "crypto", "stripe", "bank"} {
+		if rails[required].ID == "" {
+			t.Fatalf("missing payment rail %s: %#v", required, payload.PaymentRails)
+		}
+	}
+	if !rails["paypal"].Enabled || rails["paypal"].Method != string(PaymentPayPal) {
+		t.Fatalf("paypal rail not enabled: %#v", rails["paypal"])
+	}
+	if !rails["crypto"].Enabled || rails["crypto"].Label != "USDC / USDT" || rails["crypto"].TokenContract == "" {
+		t.Fatalf("crypto rail missing metadata: %#v", rails["crypto"])
+	}
+	if rails["stripe"].Enabled || !rails["stripe"].Ready || rails["stripe"].PublicKey != "pk_test_mergeos" || rails["stripe"].DisabledReason == "" {
+		t.Fatalf("stripe rail should be discoverable but disabled until verifier exists: %#v", rails["stripe"])
+	}
+	if rails["bank"].Enabled || rails["bank"].DisabledReason == "" {
+		t.Fatalf("bank rail should be disabled with reason: %#v", rails["bank"])
+	}
+}
+
 func TestAdminSettingsPersistGeminiReviewModel(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := Config{

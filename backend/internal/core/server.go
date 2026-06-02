@@ -146,6 +146,9 @@ func (s *Server) config(w http.ResponseWriter, _ *http.Request) {
 		GitHubOAuthClient: s.cfg.GitHubOAuthClientID,
 		PayPalReady:       s.cfg.PayPalReady(),
 		CryptoReady:       s.cfg.CryptoReady(),
+		StripeReady:       s.cfg.StripeReady(),
+		StripePublicKey:   s.cfg.StripePublishableKey,
+		PaymentRails:      paymentRails(s.cfg),
 		GitHubReady:       s.cfg.GitHubReady(),
 		SMTPReady:         s.cfg.SMTPReady(),
 		DevPaymentEnabled: s.cfg.DevPaymentEnabled,
@@ -1248,6 +1251,72 @@ func paymentMode(cfg Config) string {
 		return "local-dev-verifier"
 	}
 	return "not-configured"
+}
+
+func paymentRails(cfg Config) []PaymentRailOption {
+	devEnabled := cfg.DevPaymentEnabled
+	paypalEnabled := cfg.PayPalReady() || devEnabled
+	cryptoEnabled := cfg.CryptoReady() || devEnabled
+	return []PaymentRailOption{
+		{
+			ID:                "paypal",
+			Label:             "PayPal",
+			Method:            string(PaymentPayPal),
+			Caption:           "Sandbox/live checkout",
+			Enabled:           paypalEnabled,
+			Ready:             cfg.PayPalReady(),
+			DisabledReason:    disabledPaymentRailReason(paypalEnabled, "PayPal credentials are not configured."),
+			RequiresReference: !devEnabled,
+		},
+		{
+			ID:                "crypto",
+			Label:             publicCryptoRailLabel(cfg),
+			Method:            string(PaymentCrypto),
+			Caption:           "EVM native/ERC-20 transfer",
+			Enabled:           cryptoEnabled,
+			Ready:             cfg.CryptoReady(),
+			DisabledReason:    disabledPaymentRailReason(cryptoEnabled, "Crypto verifier is not configured."),
+			RequiresReference: !devEnabled,
+			Asset:             strings.ToUpper(strings.TrimSpace(cfg.CryptoAsset)),
+			Receiver:          cfg.CryptoReceiver,
+			TokenContract:     cfg.CryptoTokenContract,
+		},
+		{
+			ID:                "stripe",
+			Label:             "Credit / Debit card",
+			Method:            "stripe",
+			Caption:           "Stripe checkout",
+			Enabled:           false,
+			Ready:             cfg.StripeReady(),
+			DisabledReason:    "Stripe checkout is configured for discovery but the verifier endpoint is not enabled yet.",
+			RequiresReference: true,
+			PublicKey:         cfg.StripePublishableKey,
+		},
+		{
+			ID:                "bank",
+			Label:             "Bank transfer",
+			Method:            "bank",
+			Caption:           "Manual treasury rail",
+			Enabled:           false,
+			Ready:             false,
+			DisabledReason:    "Bank transfer requires manual treasury review.",
+			RequiresReference: true,
+		},
+	}
+}
+
+func disabledPaymentRailReason(enabled bool, reason string) string {
+	if enabled {
+		return ""
+	}
+	return reason
+}
+
+func publicCryptoRailLabel(cfg Config) string {
+	if cfg.CryptoAsset == "erc20" && strings.TrimSpace(cfg.CryptoTokenContract) != "" {
+		return "USDC / USDT"
+	}
+	return "USDC"
 }
 
 func repoProvider(cfg Config) string {

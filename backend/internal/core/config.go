@@ -43,6 +43,10 @@ type Config struct {
 	PayPalClientID     string
 	PayPalClientSecret string
 
+	StripePublishableKey string
+	StripeSecretKey      string
+	StripeWebhookSecret  string
+
 	CryptoRPCURL           string
 	CryptoReceiver         string
 	CryptoAsset            string
@@ -143,6 +147,10 @@ func LoadConfig() Config {
 		PayPalEnvironment:  strings.ToLower(getenv("PAYPAL_ENV", payPalDefaultEnv)),
 		PayPalClientID:     os.Getenv("PAYPAL_CLIENT_ID"),
 		PayPalClientSecret: os.Getenv("PAYPAL_CLIENT_SECRET"),
+
+		StripePublishableKey: os.Getenv("STRIPE_PUBLISHABLE_KEY"),
+		StripeSecretKey:      os.Getenv("STRIPE_SECRET_KEY"),
+		StripeWebhookSecret:  os.Getenv("STRIPE_WEBHOOK_SECRET"),
 
 		CryptoRPCURL:           os.Getenv("CRYPTO_RPC_URL"),
 		CryptoReceiver:         strings.ToLower(os.Getenv("CRYPTO_RECEIVER")),
@@ -247,6 +255,10 @@ func (c Config) CryptoReady() bool {
 		return c.CryptoTokenContract != ""
 	}
 	return c.CryptoWeiPerUSDCent != ""
+}
+
+func (c Config) StripeReady() bool {
+	return c.StripePublishableKey != "" && c.StripeSecretKey != "" && c.StripeWebhookSecret != ""
 }
 
 func (c Config) GitHubReady() bool {

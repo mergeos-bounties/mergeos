@@ -486,28 +486,46 @@ type StatusResponse struct {
 }
 
 type RuntimeConfigResponse struct {
-	Environment       string   `json:"environment"`
-	TokenSymbol       string   `json:"token_symbol"`
-	PaymentMode       string   `json:"payment_mode"`
-	RepoProvider      string   `json:"repo_provider"`
-	GitHubOAuthReady  bool     `json:"github_oauth_ready"`
-	GitHubOAuthClient string   `json:"github_oauth_client_id,omitempty"`
-	PayPalReady       bool     `json:"paypal_ready"`
-	CryptoReady       bool     `json:"crypto_ready"`
-	GitHubReady       bool     `json:"github_ready"`
-	SMTPReady         bool     `json:"smtp_ready"`
-	DevPaymentEnabled bool     `json:"dev_payment_enabled"`
-	DevPaymentCode    string   `json:"dev_payment_code,omitempty"`
-	CryptoReceiver    string   `json:"crypto_receiver,omitempty"`
-	CryptoAsset       string   `json:"crypto_asset,omitempty"`
-	CryptoToken       string   `json:"crypto_token,omitempty"`
-	BountyRoot        string   `json:"bounty_root,omitempty"`
-	UploadRoot        string   `json:"upload_root,omitempty"`
-	AdminBootstrap    bool     `json:"admin_bootstrap"`
-	PrimaryDomain     string   `json:"primary_domain,omitempty"`
-	AdminDomain       string   `json:"admin_domain,omitempty"`
-	ScanDomain        string   `json:"scan_domain,omitempty"`
-	SSLReviewDomains  []string `json:"ssl_review_domains,omitempty"`
+	Environment       string              `json:"environment"`
+	TokenSymbol       string              `json:"token_symbol"`
+	PaymentMode       string              `json:"payment_mode"`
+	RepoProvider      string              `json:"repo_provider"`
+	GitHubOAuthReady  bool                `json:"github_oauth_ready"`
+	GitHubOAuthClient string              `json:"github_oauth_client_id,omitempty"`
+	PayPalReady       bool                `json:"paypal_ready"`
+	CryptoReady       bool                `json:"crypto_ready"`
+	StripeReady       bool                `json:"stripe_ready"`
+	StripePublicKey   string              `json:"stripe_publishable_key,omitempty"`
+	PaymentRails      []PaymentRailOption `json:"payment_rails"`
+	GitHubReady       bool                `json:"github_ready"`
+	SMTPReady         bool                `json:"smtp_ready"`
+	DevPaymentEnabled bool                `json:"dev_payment_enabled"`
+	DevPaymentCode    string              `json:"dev_payment_code,omitempty"`
+	CryptoReceiver    string              `json:"crypto_receiver,omitempty"`
+	CryptoAsset       string              `json:"crypto_asset,omitempty"`
+	CryptoToken       string              `json:"crypto_token,omitempty"`
+	BountyRoot        string              `json:"bounty_root,omitempty"`
+	UploadRoot        string              `json:"upload_root,omitempty"`
+	AdminBootstrap    bool                `json:"admin_bootstrap"`
+	PrimaryDomain     string              `json:"primary_domain,omitempty"`
+	AdminDomain       string              `json:"admin_domain,omitempty"`
+	ScanDomain        string              `json:"scan_domain,omitempty"`
+	SSLReviewDomains  []string            `json:"ssl_review_domains,omitempty"`
+}
+
+type PaymentRailOption struct {
+	ID                string `json:"id"`
+	Label             string `json:"label"`
+	Method            string `json:"method"`
+	Caption           string `json:"caption"`
+	Enabled           bool   `json:"enabled"`
+	Ready             bool   `json:"ready"`
+	DisabledReason    string `json:"disabled_reason,omitempty"`
+	RequiresReference bool   `json:"requires_reference"`
+	PublicKey         string `json:"public_key,omitempty"`
+	Asset             string `json:"asset,omitempty"`
+	Receiver          string `json:"receiver,omitempty"`
+	TokenContract     string `json:"token_contract,omitempty"`
 }
 
 type AdminSettings struct {

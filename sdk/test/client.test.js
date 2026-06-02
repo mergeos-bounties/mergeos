@@ -91,6 +91,20 @@ test('maps typed agent action event protocol values', () => {
   assert.equal(isAgentActionEventType('task.paid'), false);
 });
 
+test('loads runtime config without auth for payment rail discovery', async () => {
+  const fetchImpl = fakeFetch([
+    { status: 200, body: { payment_rails: [{ id: 'paypal', enabled: true }, { id: 'stripe', enabled: false }] } },
+  ]);
+  const client = new MergeOSClient({ token: 'secret-token', fetchImpl });
+
+  const config = await client.runtimeConfig();
+
+  assert.equal(fetchImpl.calls[0].url, '/api/config');
+  assert.equal(fetchImpl.calls[0].options.headers.Authorization, undefined);
+  assert.equal(config.payment_rails.length, 2);
+  assert.equal(config.payment_rails[1].id, 'stripe');
+});
+
 test('maps live feed records to workflow event protocol values', () => {
   const protocolEvent = {
     protocol_version: 'mergeos.event.v1',

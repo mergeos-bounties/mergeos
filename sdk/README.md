@@ -48,6 +48,7 @@ const syncReport = await mergeos.syncProjectRepoIssues(projects[0].id);
 
 ```js
 await mergeos.publicMarketplace();
+await mergeos.runtimeConfig(); // includes payment_rails discovery
 await mergeos.publicLedger();
 await mergeos.publicLedgerVerification();
 await mergeos.publicLiveFeed({ limit: 80 });

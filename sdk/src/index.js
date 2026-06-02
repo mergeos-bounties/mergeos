@@ -92,6 +92,10 @@ export class MergeOSClient {
     return this.request('/api/public/marketplace', { auth: false });
   }
 
+  runtimeConfig() {
+    return this.request('/api/config', { auth: false });
+  }
+
   publicLedger() {
     return this.request('/api/public/ledger', { auth: false });
   }
