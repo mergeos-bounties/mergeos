@@ -8192,8 +8192,9 @@ function ledgerMetaFor(type = '') {
   return { type: normalized.replaceAll('_', ' '), icon: Compass, tone: 'slate', amountTone: 'neutral' };
 }
 
-function liveFeedMetaFor(type = '') {
+function liveFeedMetaFor(type = '', action = '') {
   const normalized = String(type);
+  const normalizedAction = String(action || '').toLowerCase();
   if (normalized.startsWith('ledger_')) {
     return ledgerMetaFor(normalized.replace(/^ledger_/, ''));
   }
@@ -8213,7 +8214,14 @@ function liveFeedMetaFor(type = '') {
     return { type: 'AI Review', icon: Bot, tone: 'purple', amountTone: 'muted' };
   }
   if (normalized === 'agent_action') {
-    return { type: 'Agent Action', icon: Bot, tone: 'purple', amountTone: 'muted' };
+    const label = {
+      review: 'Agent Reviewed',
+      test: 'Agent Tested',
+      generate: 'Agent Generated',
+      deploy: 'Agent Deployed',
+      scan: 'Agent Scanned',
+    }[normalizedAction] || 'Agent Action';
+    return { type: label, icon: Bot, tone: 'purple', amountTone: 'muted' };
   }
   if (normalized === 'repo_issues_synced') {
     return { type: 'Repo Sync', icon: RefreshCw, tone: 'blue', amountTone: 'muted' };
@@ -8222,7 +8230,7 @@ function liveFeedMetaFor(type = '') {
 }
 
 function mapPublicLiveFeedItem(item = {}) {
-  const meta = liveFeedMetaFor(item.type);
+  const meta = liveFeedMetaFor(item.type, item.action);
   const when = formatLedgerDateTime(item.created_at);
   const amountCents = Number(item.amount_cents) || 0;
   const projectTitle = item.project_title || 'MergeOS';
@@ -8238,6 +8246,7 @@ function mapPublicLiveFeedItem(item = {}) {
     body: trimMarketplaceText(item.body, 'MergeOS live activity recorded.'),
     project: projectTitle,
     actor: item.actor || 'MergeOS',
+    action: item.action || '',
     amount: amountCents ? formatPublicMRGFromCents(amountCents) : '',
     reference: shortLedgerReference(reference),
     rawReference: reference,
