@@ -3661,7 +3661,7 @@
               <div v-if="authMode === 'register'" class="auth-option-row compact">
                 <label class="auth-check">
                   <input v-model="authTermsAccepted" type="checkbox" />
-                  <span>I agree to the <button type="button" @click="showToast('Opening terms...')">Terms of Service</button> and <button type="button" @click="showToast('Opening privacy policy...')">Privacy Policy</button></span>
+                  <span>I agree to the <button type="button" @click="openPublicPage('terms')">Terms of Service</button> and <button type="button" @click="openPublicPage('privacy')">Privacy Policy</button></span>
                 </label>
               </div>
               <div v-else class="auth-option-row">
@@ -3826,6 +3826,8 @@ const publicPagePaths = {
   'how-it-works': '/how-it-works',
   ledger: '/ledger',
   'test-settings': '/test-settings',
+  terms: '/terms',
+  privacy: '/privacy',
 };
 const publicPageNames = new Set(Object.keys(publicPagePaths));
 const projectWizardStepPaths = {
@@ -4850,6 +4852,44 @@ const publicInfoPages = {
       { title: 'No forced auth upfront', body: 'Visitors can view home, marketplace, talent signals, and product pages before login.', icon: Globe2, tone: 'green' },
       { title: 'Auth before payment', body: 'Checkout gates login and attaches payment to the correct user and project.', icon: LockKeyhole, tone: 'blue' },
       { title: 'Real ledger logs', body: 'Ledger Logs shows backend payment_verified and token_mint records from the API.', icon: Link2, tone: 'purple' },
+    ],
+  },
+  terms: {
+    eyebrow: 'TERMS',
+    title: 'Terms for funded software delivery',
+    body: 'MergeOS coordinates project intake, escrow-backed funding, contributor tasks, AI review signals, and public ledger proof. Use the platform for legitimate software work with accurate scope, payment, and evidence.',
+    actions: [
+      { label: 'Start a project', primary: true, icon: ArrowRight, command: 'project' },
+      { label: 'View ledger', icon: Link2, page: 'ledger' },
+    ],
+    summary: [
+      { label: 'Escrow first', value: 'Funding and payouts are ledger-backed', icon: LockKeyhole, tone: 'green' },
+      { label: 'Evidence required', value: 'Bounty work needs proof before release', icon: FileCheck2, tone: 'blue' },
+      { label: 'Admin review', value: 'Disputes and payouts may be moderated', icon: ShieldCheck, tone: 'purple' },
+    ],
+    features: [
+      { title: 'Accurate project scope', body: 'Customers must describe work, constraints, references, and payment details truthfully before publishing or funding.', icon: FolderKanban, tone: 'green' },
+      { title: 'Contributor accountability', body: 'Contributors must keep changes scoped, avoid unsafe deletions, and provide evidence for code, payment, or security-sensitive work.', icon: GitPullRequest, tone: 'blue' },
+      { title: 'Ledger-backed decisions', body: 'Merge, payout, credit, and moderation actions should preserve auditable references for public or admin review.', icon: ShieldCheck, tone: 'purple' },
+    ],
+  },
+  privacy: {
+    eyebrow: 'PRIVACY',
+    title: 'Privacy controls for projects, payments, and test keys',
+    body: 'MergeOS stores account, project, attachment, payment, ledger, and admin-review data needed to run the delivery workflow. Public pages expose sanitized proof; sensitive keys and payment data stay gated.',
+    actions: [
+      { label: 'Open test keys', primary: true, icon: LockKeyhole, page: 'test-settings' },
+      { label: 'Browse public ledger', icon: Link2, page: 'ledger' },
+    ],
+    summary: [
+      { label: 'Account data', value: 'Used for auth, ownership, and payouts', icon: User, tone: 'green' },
+      { label: 'Public proof', value: 'Ledger rows are sanitized before display', icon: Eye, tone: 'blue' },
+      { label: 'Key safety', value: 'ENV collisions are blocked for test keys', icon: LockKeyhole, tone: 'purple' },
+    ],
+    features: [
+      { title: 'Project and attachment data', body: 'Uploaded references are attached to projects so customers and admins can review scope and delivery evidence.', icon: FileCheck2, tone: 'green' },
+      { title: 'Payment visibility', body: 'Payment and payout history is shown as proof rows without exposing secret provider credentials.', icon: CreditCard, tone: 'blue' },
+      { title: 'Password-gated test settings', body: 'Temporary LLM, PayPal, and USDT test keys require shared password access and are validated against environment-name collisions.', icon: ShieldCheck, tone: 'purple' },
     ],
   },
 };
