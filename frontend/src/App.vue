@@ -996,7 +996,7 @@
     </div>
 
     <aside class="dash-sidebar" aria-label="Customer navigation">
-      <button class="dash-brand" type="button" @click="showToast('Opening dashboard home...')">
+      <button class="dash-brand" type="button" @click="openDashboardSection('projects')">
         <span class="brand-mark" aria-hidden="true">
           <img src="/favicon.svg" alt="" />
         </span>
@@ -1025,7 +1025,7 @@
         </span>
         <strong>Earn MRG</strong>
         <p>Complete tasks and get paid in MRG tokens.</p>
-        <button type="button" @click="showToast('Opening MRG rewards...')">
+        <button type="button" @click="openDashboardSection('worker')">
           Learn more
           <ArrowRight :size="14" />
         </button>
@@ -1955,11 +1955,11 @@
                     <RefreshCw :size="15" />
                     Refresh
                   </button>
-                  <button type="button" @click="showToast('Project share link copied.')">
+                  <button type="button" @click="copyDashboardProjectLink">
                     <Share2 :size="15" />
                     Share
                   </button>
-                  <button type="button" aria-label="More project actions" @click="showToast('Opening project actions...')">
+                  <button type="button" aria-label="More project actions" @click="openDashboardProjectTab('Settings')">
                     <MoreHorizontal :size="16" />
                   </button>
                 </div>
@@ -3076,7 +3076,7 @@
             <section class="ledger-side-card">
               <div class="side-card-head">
                 <h2>Trending Projects</h2>
-                <button type="button" @click="showToast('Opening trending projects...')">View all <ArrowRight :size="13" /></button>
+                <button type="button" @click="openMarketplaceSection('marketplace-projects')">View all <ArrowRight :size="13" /></button>
               </div>
               <div class="ledger-project-list">
                 <article v-if="ledgerTrendingProjects.length === 0">
@@ -3122,7 +3122,7 @@
                   {{ check }}
                 </li>
               </ul>
-              <button type="button" @click="showToast('Opening transparency docs...')">
+              <button type="button" @click="openPublicPage('how-it-works')">
                 Learn more about transparency
                 <ArrowRight :size="13" />
               </button>
@@ -3131,7 +3131,7 @@
             <section class="ledger-side-card ledger-chain-card">
               <h2>Explore on-chain</h2>
               <p>All transactions are recorded on-chain and verifiable on the blockchain.</p>
-              <button type="button" @click="showToast('Opening block explorer...')">
+              <button type="button" @click="openExternalURL(scanBaseURL())">
                 View on Explorer
                 <Link2 :size="13" />
               </button>
@@ -3245,7 +3245,7 @@
                     <Bot :size="18" />
                   </span>
                   <small>AI Agent</small>
-                  <button aria-label="More AI agent actions" type="button" @click="showToast('Opening agent actions...')">
+                  <button aria-label="More AI agent actions" type="button" @click="openMarketplaceSection('marketplace-agents')">
                     <MoreHorizontal :size="17" />
                   </button>
                 </div>
@@ -3466,11 +3466,11 @@
           </section>
         </section>
 
-        <aside class="marketplace-rail">
+        <aside id="marketplace-contributors" class="marketplace-rail">
           <section class="marketplace-side-card">
             <div class="side-card-head">
               <h2>Top Contributors</h2>
-              <button type="button" @click="showToast('Opening contributors...')">View all</button>
+              <button type="button" @click="openMarketplaceSection('marketplace-contributors')">View all</button>
             </div>
             <div class="contributor-list">
               <article v-for="contributor in marketplaceContributorsView" :key="contributor.workerId">
@@ -5668,17 +5668,42 @@ function randomOAuthState() {
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
-function openWalletOnScan(address = '') {
-  const wallet = String(address || '').trim();
-  if (!wallet || !hasWindow) return;
-  window.open(`https://scan.mergeos.shop/address/${encodeURIComponent(wallet)}`, '_blank', 'noopener,noreferrer');
-}
-
 function openExternalURL(url = '') {
   const target = String(url || '').trim();
   if (!target || !hasWindow) return;
   if (!/^https?:\/\//i.test(target)) return;
   window.open(target, '_blank', 'noopener,noreferrer');
+}
+
+function scanBaseURL() {
+  const domain = String(runtimeConfig.value?.scan_domain || 'scan.mergeos.shop')
+    .trim()
+    .replace(/^https?:\/\//i, '')
+    .replace(/\/+$/, '');
+  return `https://${domain || 'scan.mergeos.shop'}`;
+}
+
+function openWalletOnScan(address = '') {
+  const wallet = String(address || '').trim();
+  if (!wallet || !hasWindow) return;
+  openExternalURL(`${scanBaseURL()}/address/${encodeURIComponent(wallet)}`);
+}
+
+async function copyDashboardProjectLink() {
+  const project = dashboardSelectedProject.value;
+  const projectID = String(project?.id || selectedDashboardProjectID.value || '').trim();
+  const sharePath = projectID ? `/ledger?project=${encodeURIComponent(projectID)}` : '/ledger';
+  const shareURL = hasWindow ? `${window.location.origin}${sharePath}` : sharePath;
+  if (hasWindow && navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(shareURL);
+      showToast('Project ledger link copied.');
+      return;
+    } catch {
+      // Fall through to a visible fallback.
+    }
+  }
+  showToast(`Project ledger link: ${shareURL}`);
 }
 
 async function startGitHubLogin() {
