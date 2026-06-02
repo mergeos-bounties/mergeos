@@ -1006,6 +1006,123 @@ func TestProjectDeploymentRouteReturnsDerivedStatusAndSanitizesData(t *testing.T
 	}
 }
 
+func TestProjectAIWorkflowRouteReturnsWorkflowAndSanitizesData(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:       defaultTokenSymbol,
+		StatePath:         filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:    1000,
+		DevPaymentEnabled: true,
+		DevPaymentCode:    defaultDevPaymentCode,
+		GitHubOwner:       defaultGitHubOwner,
+		BountyRoot:        filepath.Join(tempDir, "bounties"),
+		SMTPFrom:          "noreply@mergeos.local",
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	auth, err := store.Register(RegisterRequest{
+		Name:        "AI Client",
+		CompanyName: "AI Co",
+		Email:       "ai-client@example.com",
+		Password:    "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	project, err := store.CreateProject(context.Background(), auth.User.ID, CreateProjectRequest{
+		Title:            "AI workflow proof",
+		ClientName:       "Private AI Client",
+		CompanyName:      "AI Co",
+		ClientEmail:      "ai-client@example.com",
+		Phone:            "+1 555 0133",
+		Brief:            "Source repository: https://github.com/mergeos-bounties/source-demo\n\nCreate AI workflow data without leaking private customer data.",
+		BudgetCents:      230000,
+		PaymentMethod:    PaymentPayPal,
+		PaymentReference: defaultDevPaymentCode,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := store.AddGeminiWebhookLog(GeminiWebhookLog{
+		EventName:  "pull_request",
+		Action:     "opened",
+		Repository: project.BountyRepoName,
+		PullNumber: 333,
+		Sender:     "ai-author",
+		Status:     "processed",
+		StatusCode: http.StatusOK,
+		CommentURL: "https://github.com/mergeos-bounties/mergeos/pull/333#issuecomment-3",
+		ReceivedAt: time.Now().UTC(),
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	server := NewServer(cfg, store, payments)
+	reqHTTP := httptest.NewRequest(http.MethodGet, "/api/projects/"+project.ID+"/ai-workflow", nil)
+	reqHTTP.Header.Set("Authorization", "Bearer "+auth.Token)
+	resp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(resp, reqHTTP)
+	if resp.Code != http.StatusOK {
+		t.Fatalf("ai workflow status = %d, body = %s", resp.Code, resp.Body.String())
+	}
+
+	body := resp.Body.String()
+	for _, value := range []string{
+		"ai-client@example.com",
+		"+1 555 0133",
+		auth.User.ID,
+		defaultDevPaymentCode,
+		tempDir,
+		project.Tasks[0].ID,
+	} {
+		if strings.Contains(body, value) {
+			t.Fatalf("ai workflow leaked private value %q: %s", value, body)
+		}
+	}
+
+	var payload ProjectAIWorkflowResponse
+	if err := json.Unmarshal(resp.Body.Bytes(), &payload); err != nil {
+		t.Fatal(err)
+	}
+	if payload.ProjectID != project.ID || payload.Status != "orchestrating" || payload.Progress == 0 || payload.AIActionCount != 1 {
+		t.Fatalf("unexpected ai workflow summary: %#v", payload)
+	}
+	if payload.TaskCount != len(project.Tasks) || payload.AgentTaskCount == 0 || payload.HybridTaskCount == 0 || payload.HumanTaskCount == 0 {
+		t.Fatalf("unexpected ai workflow task mix: %#v", payload)
+	}
+	seenStages := map[string]bool{}
+	for _, stage := range payload.Stages {
+		seenStages[stage.ID] = true
+	}
+	for _, required := range []string{"repo_import", "issue_scan", "reward_estimation", "contributor_routing", "pr_review", "deployment_validation"} {
+		if !seenStages[required] {
+			t.Fatalf("ai workflow missing stage %s: %#v", required, payload.Stages)
+		}
+	}
+	if len(payload.Signals) == 0 {
+		t.Fatalf("ai workflow missing signals: %#v", payload.Signals)
+	}
+
+	otherAuth, err := store.Register(RegisterRequest{
+		Name:     "Other AI Client",
+		Email:    "other-ai-client@example.com",
+		Password: "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	forbiddenReq := httptest.NewRequest(http.MethodGet, "/api/projects/"+project.ID+"/ai-workflow", nil)
+	forbiddenReq.Header.Set("Authorization", "Bearer "+otherAuth.Token)
+	forbiddenResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(forbiddenResp, forbiddenReq)
+	if forbiddenResp.Code != http.StatusForbidden {
+		t.Fatalf("other client ai workflow status = %d", forbiddenResp.Code)
+	}
+}
+
 func TestWorkerDashboardRouteMatchesGitHubWorkerAndSanitizesData(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := Config{

@@ -1645,6 +1645,38 @@
             </button>
           </section>
 
+          <section class="dash-card rail-card ai-workflow-card">
+            <div class="card-title-row">
+              <h2>AI Orchestration</h2>
+              <span>{{ dashboardAIWorkflowView.status }}</span>
+            </div>
+            <div class="ai-workflow-summary">
+              <span><Bot :size="16" /></span>
+              <div>
+                <strong>{{ dashboardAIWorkflowView.progress }}%</strong>
+                <small>{{ dashboardAIWorkflowView.body }}</small>
+              </div>
+            </div>
+            <div v-if="dashboardAIWorkflowError" class="deployment-error">{{ dashboardAIWorkflowError }}</div>
+            <div v-else-if="dashboardAIWorkflowStages.length" class="ai-workflow-list">
+              <article v-for="stage in dashboardAIWorkflowStages" :key="stage.id">
+                <span :class="['notification-dot', stage.tone]" />
+                <div>
+                  <strong>{{ stage.title }}</strong>
+                  <small>{{ stage.body }}</small>
+                </div>
+                <b>{{ stage.status }}</b>
+              </article>
+            </div>
+            <article v-else class="dash-empty-state compact">
+              <strong>{{ dashboardAIWorkflowLoading ? 'Loading workflow...' : 'No AI workflow yet' }}</strong>
+              <p>{{ dashboardAIWorkflowLoading ? 'Syncing orchestration stages.' : 'Select a project to inspect AI routing.' }}</p>
+            </article>
+            <button class="rail-link-button" type="button" :disabled="dashboardAIWorkflowLoading || !dashboardSelectedProject" @click="loadDashboardAIWorkflowData(dashboardSelectedProject?.id)">
+              Refresh workflow
+            </button>
+          </section>
+
           <section ref="dashboardNotificationCenter" class="dash-card rail-card notification-center-card" tabindex="-1">
             <div class="card-title-row">
               <h2>Notifications</h2>
@@ -3042,6 +3074,9 @@ const dashboardLedgerEntries = ref([]);
 const dashboardDeployment = ref(null);
 const dashboardDeploymentLoading = ref(false);
 const dashboardDeploymentError = ref('');
+const dashboardAIWorkflow = ref(null);
+const dashboardAIWorkflowLoading = ref(false);
+const dashboardAIWorkflowError = ref('');
 const dashboardNotifications = ref([]);
 const dashboardNotificationsLoading = ref(false);
 const dashboardNotificationsError = ref('');
@@ -3969,6 +4004,31 @@ const dashboardDeploymentStages = computed(() =>
 const dashboardDeploymentSignals = computed(() =>
   (dashboardDeployment.value?.signals || []).slice(0, 3).map(mapDashboardDeploymentSignal),
 );
+const dashboardAIWorkflowView = computed(() => {
+  const workflow = dashboardAIWorkflow.value;
+  if (!dashboardSelectedProject.value) {
+    return {
+      status: dashboardAIWorkflowLoading.value ? 'Syncing' : 'Empty',
+      progress: 0,
+      body: 'AI workflow appears after a project is selected.',
+    };
+  }
+  if (!workflow) {
+    return {
+      status: dashboardAIWorkflowLoading.value ? 'Syncing' : 'Waiting',
+      progress: 0,
+      body: dashboardAIWorkflowLoading.value ? 'Fetching orchestration stages.' : 'No orchestration payload loaded.',
+    };
+  }
+  return {
+    status: toTitleLabel(workflow.status || 'queued'),
+    progress: Math.max(0, Math.min(100, Number(workflow.progress) || 0)),
+    body: `${Number(workflow.ai_action_count) || 0} AI actions - ${Number(workflow.agent_task_count) || 0} agent tasks`,
+  };
+});
+const dashboardAIWorkflowStages = computed(() =>
+  (dashboardAIWorkflow.value?.stages || []).map(mapDashboardAIWorkflowStage),
+);
 const dashboardTaskRows = computed(() => dashboardSelectedTasks.value.map(mapDashboardTask));
 const dashboardActivityRows = computed(() =>
   dashboardProjectLedger.value.slice().reverse().slice(0, 6).map(mapDashboardActivity),
@@ -4468,6 +4528,7 @@ async function selectDashboardProject(projectID) {
   if (!projectID) return;
   selectedDashboardProjectID.value = projectID;
   void loadDashboardDeploymentData(projectID, { silent: true });
+  void loadDashboardAIWorkflowData(projectID, { silent: true });
   await nextTick();
   if (!hasWindow) return;
   dashboardProjectHeader.value?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -5174,6 +5235,16 @@ function mapDashboardDeploymentSignal(signal = {}) {
   };
 }
 
+function mapDashboardAIWorkflowStage(stage = {}) {
+  return {
+    id: stage.id || stage.title || stage.reference,
+    title: stage.title || 'AI workflow stage',
+    body: trimMarketplaceText(stage.body, 'AI orchestration stage.'),
+    status: toTitleLabel(stage.status || 'pending'),
+    tone: stage.tone || (stage.status === 'complete' ? 'green' : stage.status === 'in_progress' ? 'blue' : 'amber'),
+  };
+}
+
 function mapWorkerClaimedTask(task = {}) {
   const when = formatLedgerDateTime(task.accepted_at);
   return {
@@ -5556,6 +5627,9 @@ async function loadDashboardData(options = {}) {
     dashboardDeployment.value = null;
     dashboardDeploymentLoading.value = false;
     dashboardDeploymentError.value = '';
+    dashboardAIWorkflow.value = null;
+    dashboardAIWorkflowLoading.value = false;
+    dashboardAIWorkflowError.value = '';
     dashboardSection.value = 'projects';
     selectedDashboardProjectID.value = '';
     return;
@@ -5579,10 +5653,15 @@ async function loadDashboardData(options = {}) {
       ? requestedProjectID
       : (dashboardSortedProjects.value[0]?.id || '');
     if (selectedDashboardProjectID.value) {
-      await loadDashboardDeploymentData(selectedDashboardProjectID.value, { silent: true });
+      await Promise.all([
+        loadDashboardDeploymentData(selectedDashboardProjectID.value, { silent: true }),
+        loadDashboardAIWorkflowData(selectedDashboardProjectID.value, { silent: true }),
+      ]);
     } else {
       dashboardDeployment.value = null;
       dashboardDeploymentError.value = '';
+      dashboardAIWorkflow.value = null;
+      dashboardAIWorkflowError.value = '';
     }
   } catch (error) {
     dashboardError.value = error.message || 'Could not load projects';
@@ -5620,6 +5699,43 @@ async function loadDashboardDeploymentData(projectID, options = {}) {
     }
   } finally {
     dashboardDeploymentLoading.value = false;
+  }
+}
+
+async function loadDashboardAIWorkflowData(projectID, options = {}) {
+  const targetProjectID = String(projectID || '').trim();
+  if (!token.value || !targetProjectID) {
+    dashboardAIWorkflow.value = null;
+    dashboardAIWorkflowError.value = '';
+    return;
+  }
+
+  const silent = Boolean(options.silent);
+  if (!silent) dashboardAIWorkflowLoading.value = true;
+  dashboardAIWorkflowError.value = '';
+  try {
+    const payload = await api(`/api/projects/${encodeURIComponent(targetProjectID)}/ai-workflow`);
+    dashboardAIWorkflow.value = {
+      project_id: payload.project_id || targetProjectID,
+      project_title: payload.project_title || '',
+      status: payload.status || 'queued',
+      progress: Number(payload.progress) || 0,
+      task_count: Number(payload.task_count) || 0,
+      agent_task_count: Number(payload.agent_task_count) || 0,
+      human_task_count: Number(payload.human_task_count) || 0,
+      hybrid_task_count: Number(payload.hybrid_task_count) || 0,
+      ai_action_count: Number(payload.ai_action_count) || 0,
+      updated_at: payload.updated_at,
+      stages: Array.isArray(payload.stages) ? payload.stages : [],
+      signals: Array.isArray(payload.signals) ? payload.signals : [],
+    };
+  } catch (error) {
+    if (targetProjectID === selectedDashboardProjectID.value) {
+      dashboardAIWorkflow.value = null;
+      dashboardAIWorkflowError.value = error.message || 'Could not load AI workflow';
+    }
+  } finally {
+    dashboardAIWorkflowLoading.value = false;
   }
 }
 
@@ -5895,6 +6011,9 @@ function clearSession() {
   dashboardDeployment.value = null;
   dashboardDeploymentLoading.value = false;
   dashboardDeploymentError.value = '';
+  dashboardAIWorkflow.value = null;
+  dashboardAIWorkflowLoading.value = false;
+  dashboardAIWorkflowError.value = '';
   dashboardNotifications.value = [];
   dashboardNotificationsError.value = '';
   workerDashboard.value = {

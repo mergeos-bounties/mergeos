@@ -607,6 +607,43 @@ type DeploymentSignal struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
+type ProjectAIWorkflowResponse struct {
+	ProjectID       string             `json:"project_id"`
+	ProjectTitle    string             `json:"project_title"`
+	Status          string             `json:"status"`
+	Progress        int                `json:"progress"`
+	TaskCount       int                `json:"task_count"`
+	AgentTaskCount  int                `json:"agent_task_count"`
+	HumanTaskCount  int                `json:"human_task_count"`
+	HybridTaskCount int                `json:"hybrid_task_count"`
+	AIActionCount   int                `json:"ai_action_count"`
+	UpdatedAt       time.Time          `json:"updated_at"`
+	Stages          []AIWorkflowStage  `json:"stages"`
+	Signals         []AIWorkflowSignal `json:"signals"`
+}
+
+type AIWorkflowStage struct {
+	ID        string    `json:"id"`
+	Title     string    `json:"title"`
+	Body      string    `json:"body"`
+	Status    string    `json:"status"`
+	Tone      string    `json:"tone"`
+	Reference string    `json:"reference,omitempty"`
+	URL       string    `json:"url,omitempty"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+type AIWorkflowSignal struct {
+	ID        string    `json:"id"`
+	Type      string    `json:"type"`
+	Title     string    `json:"title"`
+	Body      string    `json:"body"`
+	Status    string    `json:"status"`
+	Reference string    `json:"reference,omitempty"`
+	URL       string    `json:"url,omitempty"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
 type WorkerDashboardResponse struct {
 	Profile        WorkerProfile        `json:"profile"`
 	Stats          WorkerStats          `json:"stats"`
