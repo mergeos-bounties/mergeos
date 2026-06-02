@@ -86,7 +86,7 @@
           <Sparkles :size="17" />
           <strong>Need help?</strong>
           <p>Our AI assistant can help you structure your project.</p>
-          <button type="button" @click="showToast('AI assistant is preparing your brief...')">
+          <button type="button" @click="openScopeAssistant">
             Use AI assistant
           </button>
         </article>
@@ -604,7 +604,7 @@
               Back
             </button>
             <div>
-              <button class="secondary-button compact ghost" type="button" @click="showToast('Draft saved locally.')">Save draft</button>
+              <button class="secondary-button compact ghost" type="button" @click="saveProjectDraft">Save draft</button>
               <button class="primary-button compact" type="button" @click="nextProjectStep">
                 {{ projectWizardStep === 4 ? 'Publish project' : 'Continue' }}
                 <SendHorizontal v-if="projectWizardStep === 4" :size="15" />
@@ -811,7 +811,7 @@
         <article v-if="projectWizardStage === 'setup' && projectWizardStep === 2" class="rail-card purple">
           <h3>AI can help you</h3>
           <p>Generate a detailed scope and requirements from a simple description.</p>
-          <button type="button" @click="showToast('AI generated scope suggestions.')">Generate with AI</button>
+          <button type="button" @click="generateScopeSuggestions">Generate with AI</button>
         </article>
 
         <article v-if="projectWizardStage === 'setup' && projectWizardStep === 3" class="rail-card project-summary-mini">
@@ -3852,6 +3852,7 @@ function getBrowserStorage() {
 }
 
 const browserStorage = getBrowserStorage();
+const projectDraftStorageKey = 'mergeos_project_setup_draft';
 
 function readStoredToken() {
   try {
@@ -6128,12 +6129,118 @@ function scrollProjectFlowTop() {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+function projectSetupIsEmpty() {
+  return [
+    projectSetupForm.title,
+    projectSetupForm.shortDescription,
+    projectSetupForm.projectType,
+    projectSetupForm.techStack,
+    projectSetupForm.repoUrl,
+    projectSetupForm.overview,
+    projectSetupForm.requirements,
+    projectSetupForm.budgetAmount,
+  ].every((value) => !String(value || '').trim())
+    && projectDeliverables.value.every((item) => !String(item || '').trim());
+}
+
+function projectDraftPayload() {
+  return {
+    saved_at: new Date().toISOString(),
+    form: { ...projectSetupForm },
+    deliverables: projectDeliverables.value.slice(),
+    repo_import_result: repoImportResult.value,
+    funding_amount: projectFundingAmount.value,
+    payment_method: projectPaymentMethod.value,
+  };
+}
+
+function applyProjectDraft(draft = {}) {
+  const form = draft.form || {};
+  for (const key of Object.keys(projectSetupForm)) {
+    if (Object.prototype.hasOwnProperty.call(form, key)) {
+      projectSetupForm[key] = form[key];
+    }
+  }
+  const deliverables = Array.isArray(draft.deliverables) ? draft.deliverables : [];
+  projectDeliverables.value = deliverables.length ? deliverables : [''];
+  repoImportResult.value = draft.repo_import_result || null;
+  projectFundingAmount.value = draft.funding_amount || projectFundingAmount.value;
+  projectPaymentMethod.value = draft.payment_method || projectPaymentMethod.value;
+}
+
+function restoreProjectDraftIfEmpty() {
+  if (!browserStorage || !projectSetupIsEmpty()) return;
+  try {
+    const draft = JSON.parse(browserStorage.getItem(projectDraftStorageKey) || 'null');
+    if (draft?.form) {
+      applyProjectDraft(draft);
+      showToast('Project draft restored.');
+    }
+  } catch {
+    browserStorage.removeItem(projectDraftStorageKey);
+  }
+}
+
+function saveProjectDraft() {
+  try {
+    browserStorage?.setItem(projectDraftStorageKey, JSON.stringify(projectDraftPayload()));
+    showToast('Project draft saved locally.');
+  } catch {
+    showToast('Could not save project draft locally.');
+  }
+}
+
+function generateScopeSuggestions() {
+  const importedIssues = repoImportedIssues.value.slice(0, 5);
+  const projectName = projectSetupForm.title.trim() || 'this project';
+  const baseGoal = projectSetupForm.shortDescription.trim()
+    || projectSetupForm.overview.trim()
+    || `Deliver ${projectName} with verified scope, tests, and handoff.`;
+
+  if (!projectSetupForm.projectType && (projectSetupForm.repoUrl || importedIssues.length)) {
+    projectSetupForm.projectType = 'Bug Fix';
+  }
+  if (!projectSetupForm.overview.trim()) {
+    projectSetupForm.overview = importedIssues.length
+      ? importedIssues.map((issue) => `#${issue.number} ${issue.title} - ${issue.complexity || 'review'} priority`).join('\n')
+      : baseGoal;
+  }
+  if (!projectSetupForm.requirements.trim()) {
+    projectSetupForm.requirements = [
+      'Confirm acceptance criteria before implementation.',
+      'Keep changes scoped to the requested repository or workflow.',
+      'Add tests, screenshots, or ledger evidence for the changed path.',
+      'Document any deployment, payment, or security assumptions.',
+    ].join('\n');
+  }
+  const generatedDeliverables = importedIssues.length
+    ? importedIssues.map((issue) => `Fix #${issue.number}: ${issue.title}`)
+    : [
+      `Define implementation scope for ${projectName}`,
+      'Ship the core workflow with responsive UI and backend integration',
+      'Verify behavior with tests or runtime evidence',
+      'Provide handoff notes and public proof where applicable',
+    ];
+  if (!visibleDeliverables.value.length) {
+    projectDeliverables.value = generatedDeliverables;
+  }
+  showToast('Scope suggestions generated.');
+}
+
+function openScopeAssistant() {
+  if (projectWizardStep.value < 2) {
+    goProjectStep(2);
+  }
+  generateScopeSuggestions();
+}
+
 function openProjectWizard(options = {}) {
   publicModeVisible.value = true;
   projectWizardVisible.value = true;
   projectWizardStage.value = 'setup';
   projectWizardStep.value = 1;
   errorMessage.value = '';
+  restoreProjectDraftIfEmpty();
   updateProjectWizardBrowserPath(Boolean(options.replace));
   scrollProjectFlowTop();
 }
