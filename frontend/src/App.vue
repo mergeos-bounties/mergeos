@@ -8666,21 +8666,27 @@ async function loadDashboardData(options = {}) {
       ? requestedProjectID
       : (dashboardSortedProjects.value[0]?.id || '');
     if (selectedDashboardProjectID.value) {
-      const detailLoads = [
-        loadDashboardEscrowData(selectedDashboardProjectID.value, { silent: true }),
-        loadDashboardDeploymentData(selectedDashboardProjectID.value, { silent: true }),
-        loadDashboardAIWorkflowData(selectedDashboardProjectID.value, { silent: true }),
-      ];
-      if (!options.skipTaskGraph) {
-        detailLoads.push(loadDashboardTaskGraphData(selectedDashboardProjectID.value, { silent: true }));
+      const canUseAggregateDashboard = !options.skipTaskGraph && !options.skipPullRequests && !options.skipRepositoryScan;
+      const aggregateLoaded = canUseAggregateDashboard
+        ? await loadDashboardAggregateData(selectedDashboardProjectID.value, { silent: true, tolerateError: true })
+        : false;
+      if (!aggregateLoaded) {
+        const detailLoads = [
+          loadDashboardEscrowData(selectedDashboardProjectID.value, { silent: true }),
+          loadDashboardDeploymentData(selectedDashboardProjectID.value, { silent: true }),
+          loadDashboardAIWorkflowData(selectedDashboardProjectID.value, { silent: true }),
+        ];
+        if (!options.skipTaskGraph) {
+          detailLoads.push(loadDashboardTaskGraphData(selectedDashboardProjectID.value, { silent: true }));
+        }
+        if (!options.skipPullRequests) {
+          detailLoads.push(loadDashboardPullRequestsData(selectedDashboardProjectID.value, { silent: true }));
+        }
+        if (!options.skipRepositoryScan) {
+          detailLoads.push(loadDashboardRepositoryScanData(selectedDashboardProjectID.value, { silent: true }));
+        }
+        await Promise.all(detailLoads);
       }
-      if (!options.skipPullRequests) {
-        detailLoads.push(loadDashboardPullRequestsData(selectedDashboardProjectID.value, { silent: true }));
-      }
-      if (!options.skipRepositoryScan) {
-        detailLoads.push(loadDashboardRepositoryScanData(selectedDashboardProjectID.value, { silent: true }));
-      }
-      await Promise.all(detailLoads);
     } else {
       dashboardEscrow.value = null;
       dashboardEscrowError.value = '';
@@ -8703,6 +8709,158 @@ async function loadDashboardData(options = {}) {
   }
 }
 
+async function loadDashboardAggregateData(projectID, options = {}) {
+  const targetProjectID = String(projectID || '').trim();
+  if (!token.value || !targetProjectID) return false;
+
+  const silent = Boolean(options.silent);
+  if (!silent) {
+    dashboardEscrowLoading.value = true;
+    dashboardDeploymentLoading.value = true;
+    dashboardAIWorkflowLoading.value = true;
+    dashboardTaskGraphLoading.value = true;
+    dashboardPullRequestsLoading.value = true;
+    dashboardRepositoryScanLoading.value = true;
+  }
+  dashboardEscrowError.value = '';
+  dashboardDeploymentError.value = '';
+  dashboardAIWorkflowError.value = '';
+  dashboardTaskGraphError.value = '';
+  dashboardPullRequestsError.value = '';
+  dashboardRepositoryScanError.value = '';
+  try {
+    const payload = await api(`/api/projects/${encodeURIComponent(targetProjectID)}/dashboard`);
+    if (payload?.escrow) {
+      dashboardEscrow.value = normalizeDashboardEscrowPayload(payload.escrow, targetProjectID);
+    }
+    if (payload?.deployment) {
+      dashboardDeployment.value = normalizeDashboardDeploymentPayload(payload.deployment, targetProjectID);
+    }
+    if (payload?.ai_workflow) {
+      dashboardAIWorkflow.value = normalizeDashboardAIWorkflowPayload(payload.ai_workflow, targetProjectID);
+    }
+    if (payload?.task_graph) {
+      dashboardTaskGraph.value = normalizeDashboardTaskGraphPayload(payload.task_graph, targetProjectID);
+    }
+    if (payload?.repository_scan) {
+      dashboardRepositoryScan.value = normalizeDashboardRepositoryScanPayload(payload.repository_scan, targetProjectID);
+    }
+    if (payload?.pull_requests) {
+      dashboardPullRequests.value = normalizeDashboardPullRequestsPayload(payload.pull_requests, targetProjectID);
+    }
+    dashboardPullRequestsError.value = payload?.pull_request_error || '';
+    return true;
+  } catch (error) {
+    if (!options.tolerateError && targetProjectID === selectedDashboardProjectID.value) {
+      const message = error.message || 'Could not load project dashboard';
+      dashboardEscrowError.value = message;
+      dashboardDeploymentError.value = message;
+      dashboardAIWorkflowError.value = message;
+      dashboardTaskGraphError.value = message;
+      dashboardPullRequestsError.value = message;
+      dashboardRepositoryScanError.value = message;
+    }
+    return false;
+  } finally {
+    dashboardEscrowLoading.value = false;
+    dashboardDeploymentLoading.value = false;
+    dashboardAIWorkflowLoading.value = false;
+    dashboardTaskGraphLoading.value = false;
+    dashboardPullRequestsLoading.value = false;
+    dashboardRepositoryScanLoading.value = false;
+  }
+}
+
+function normalizeDashboardEscrowPayload(payload = {}, targetProjectID = '') {
+  return {
+    project_id: payload.project_id || targetProjectID,
+    project_title: payload.project_title || '',
+    token_symbol: payload.token_symbol || tokenSymbol.value,
+    release_status: payload.release_status || 'funded',
+    budget_cents: Number(payload.budget_cents) || 0,
+    fee_cents: Number(payload.fee_cents) || 0,
+    work_pool_cents: Number(payload.work_pool_cents) || 0,
+    project_reserve_cents: Number(payload.project_reserve_cents) || 0,
+    task_reserve_cents: Number(payload.task_reserve_cents) || 0,
+    task_payment_cents: Number(payload.task_payment_cents) || 0,
+    manual_credit_cents: Number(payload.manual_credit_cents) || 0,
+    released_cents: Number(payload.released_cents) || 0,
+    remaining_cents: Number(payload.remaining_cents) || 0,
+    overdrawn_cents: Number(payload.overdrawn_cents) || 0,
+    unallocated_cents: Number(payload.unallocated_cents) || 0,
+    paid_task_count: Number(payload.paid_task_count) || 0,
+    open_task_count: Number(payload.open_task_count) || 0,
+    updated_at: payload.updated_at,
+    tasks: Array.isArray(payload.tasks) ? payload.tasks : [],
+  };
+}
+
+function normalizeDashboardDeploymentPayload(payload = {}, targetProjectID = '') {
+  return {
+    project_id: payload.project_id || targetProjectID,
+    project_title: payload.project_title || '',
+    status: payload.status || 'queued',
+    progress: Number(payload.progress) || 0,
+    updated_at: payload.updated_at,
+    stages: Array.isArray(payload.stages) ? payload.stages : [],
+    signals: Array.isArray(payload.signals) ? payload.signals : [],
+  };
+}
+
+function normalizeDashboardAIWorkflowPayload(payload = {}, targetProjectID = '') {
+  return {
+    project_id: payload.project_id || targetProjectID,
+    project_title: payload.project_title || '',
+    status: payload.status || 'queued',
+    progress: Number(payload.progress) || 0,
+    task_count: Number(payload.task_count) || 0,
+    agent_task_count: Number(payload.agent_task_count) || 0,
+    human_task_count: Number(payload.human_task_count) || 0,
+    hybrid_task_count: Number(payload.hybrid_task_count) || 0,
+    ai_action_count: Number(payload.ai_action_count) || 0,
+    updated_at: payload.updated_at,
+    stages: Array.isArray(payload.stages) ? payload.stages : [],
+    signals: Array.isArray(payload.signals) ? payload.signals : [],
+  };
+}
+
+function normalizeDashboardTaskGraphPayload(payload = {}, targetProjectID = '') {
+  return {
+    project_id: payload.project_id || targetProjectID,
+    project_title: payload.project_title || '',
+    status: payload.status || 'planning',
+    progress: Number(payload.progress) || 0,
+    stats: payload.stats || {},
+    nodes: Array.isArray(payload.nodes) ? payload.nodes : [],
+    edges: Array.isArray(payload.edges) ? payload.edges : [],
+    updated_at: payload.updated_at,
+  };
+}
+
+function normalizeDashboardRepositoryScanPayload(payload = {}, targetProjectID = '') {
+  return {
+    project_id: payload.project_id || targetProjectID,
+    project_title: payload.project_title || '',
+    status: payload.status || 'scanned',
+    summary: payload.summary || '',
+    stats: payload.stats || {},
+    languages: Array.isArray(payload.languages) ? payload.languages : [],
+    dependencies: Array.isArray(payload.dependencies) ? payload.dependencies : [],
+    findings: Array.isArray(payload.findings) ? payload.findings : [],
+    updated_at: payload.updated_at,
+  };
+}
+
+function normalizeDashboardPullRequestsPayload(payload = {}, targetProjectID = '') {
+  return {
+    project_id: payload.project_id || targetProjectID,
+    project_title: payload.project_title || '',
+    stats: payload.stats || {},
+    tasks: Array.isArray(payload.tasks) ? payload.tasks : [],
+    updated_at: payload.updated_at,
+  };
+}
+
 async function loadDashboardEscrowData(projectID, options = {}) {
   const targetProjectID = String(projectID || '').trim();
   if (!token.value || !targetProjectID) {
@@ -8716,27 +8874,7 @@ async function loadDashboardEscrowData(projectID, options = {}) {
   dashboardEscrowError.value = '';
   try {
     const payload = await api(`/api/projects/${encodeURIComponent(targetProjectID)}/escrow`);
-    dashboardEscrow.value = {
-      project_id: payload.project_id || targetProjectID,
-      project_title: payload.project_title || '',
-      token_symbol: payload.token_symbol || tokenSymbol.value,
-      release_status: payload.release_status || 'funded',
-      budget_cents: Number(payload.budget_cents) || 0,
-      fee_cents: Number(payload.fee_cents) || 0,
-      work_pool_cents: Number(payload.work_pool_cents) || 0,
-      project_reserve_cents: Number(payload.project_reserve_cents) || 0,
-      task_reserve_cents: Number(payload.task_reserve_cents) || 0,
-      task_payment_cents: Number(payload.task_payment_cents) || 0,
-      manual_credit_cents: Number(payload.manual_credit_cents) || 0,
-      released_cents: Number(payload.released_cents) || 0,
-      remaining_cents: Number(payload.remaining_cents) || 0,
-      overdrawn_cents: Number(payload.overdrawn_cents) || 0,
-      unallocated_cents: Number(payload.unallocated_cents) || 0,
-      paid_task_count: Number(payload.paid_task_count) || 0,
-      open_task_count: Number(payload.open_task_count) || 0,
-      updated_at: payload.updated_at,
-      tasks: Array.isArray(payload.tasks) ? payload.tasks : [],
-    };
+    dashboardEscrow.value = normalizeDashboardEscrowPayload(payload, targetProjectID);
   } catch (error) {
     if (targetProjectID === selectedDashboardProjectID.value) {
       dashboardEscrow.value = null;
@@ -8760,15 +8898,7 @@ async function loadDashboardDeploymentData(projectID, options = {}) {
   dashboardDeploymentError.value = '';
   try {
     const payload = await api(`/api/projects/${encodeURIComponent(targetProjectID)}/deployment`);
-    dashboardDeployment.value = {
-      project_id: payload.project_id || targetProjectID,
-      project_title: payload.project_title || '',
-      status: payload.status || 'queued',
-      progress: Number(payload.progress) || 0,
-      updated_at: payload.updated_at,
-      stages: Array.isArray(payload.stages) ? payload.stages : [],
-      signals: Array.isArray(payload.signals) ? payload.signals : [],
-    };
+    dashboardDeployment.value = normalizeDashboardDeploymentPayload(payload, targetProjectID);
   } catch (error) {
     if (targetProjectID === selectedDashboardProjectID.value) {
       dashboardDeployment.value = null;
@@ -8792,20 +8922,7 @@ async function loadDashboardAIWorkflowData(projectID, options = {}) {
   dashboardAIWorkflowError.value = '';
   try {
     const payload = await api(`/api/projects/${encodeURIComponent(targetProjectID)}/ai-workflow`);
-    dashboardAIWorkflow.value = {
-      project_id: payload.project_id || targetProjectID,
-      project_title: payload.project_title || '',
-      status: payload.status || 'queued',
-      progress: Number(payload.progress) || 0,
-      task_count: Number(payload.task_count) || 0,
-      agent_task_count: Number(payload.agent_task_count) || 0,
-      human_task_count: Number(payload.human_task_count) || 0,
-      hybrid_task_count: Number(payload.hybrid_task_count) || 0,
-      ai_action_count: Number(payload.ai_action_count) || 0,
-      updated_at: payload.updated_at,
-      stages: Array.isArray(payload.stages) ? payload.stages : [],
-      signals: Array.isArray(payload.signals) ? payload.signals : [],
-    };
+    dashboardAIWorkflow.value = normalizeDashboardAIWorkflowPayload(payload, targetProjectID);
   } catch (error) {
     if (targetProjectID === selectedDashboardProjectID.value) {
       dashboardAIWorkflow.value = null;
@@ -8829,16 +8946,7 @@ async function loadDashboardTaskGraphData(projectID, options = {}) {
   dashboardTaskGraphError.value = '';
   try {
     const payload = await api(`/api/projects/${encodeURIComponent(targetProjectID)}/task-graph`);
-    dashboardTaskGraph.value = {
-      project_id: payload.project_id || targetProjectID,
-      project_title: payload.project_title || '',
-      status: payload.status || 'planning',
-      progress: Number(payload.progress) || 0,
-      stats: payload.stats || {},
-      nodes: Array.isArray(payload.nodes) ? payload.nodes : [],
-      edges: Array.isArray(payload.edges) ? payload.edges : [],
-      updated_at: payload.updated_at,
-    };
+    dashboardTaskGraph.value = normalizeDashboardTaskGraphPayload(payload, targetProjectID);
   } catch (error) {
     if (targetProjectID === selectedDashboardProjectID.value) {
       dashboardTaskGraph.value = null;
@@ -8862,17 +8970,7 @@ async function loadDashboardRepositoryScanData(projectID, options = {}) {
   dashboardRepositoryScanError.value = '';
   try {
     const payload = await api(`/api/projects/${encodeURIComponent(targetProjectID)}/repo-scan`);
-    dashboardRepositoryScan.value = {
-      project_id: payload.project_id || targetProjectID,
-      project_title: payload.project_title || '',
-      status: payload.status || 'scanned',
-      summary: payload.summary || '',
-      stats: payload.stats || {},
-      languages: Array.isArray(payload.languages) ? payload.languages : [],
-      dependencies: Array.isArray(payload.dependencies) ? payload.dependencies : [],
-      findings: Array.isArray(payload.findings) ? payload.findings : [],
-      updated_at: payload.updated_at,
-    };
+    dashboardRepositoryScan.value = normalizeDashboardRepositoryScanPayload(payload, targetProjectID);
   } catch (error) {
     if (targetProjectID === selectedDashboardProjectID.value) {
       dashboardRepositoryScan.value = null;
@@ -8929,13 +9027,7 @@ async function loadDashboardPullRequestsData(projectID, options = {}) {
   dashboardPullRequestsError.value = '';
   try {
     const payload = await api(`/api/projects/${encodeURIComponent(targetProjectID)}/pull-requests`);
-    dashboardPullRequests.value = {
-      project_id: payload.project_id || targetProjectID,
-      project_title: payload.project_title || '',
-      stats: payload.stats || {},
-      tasks: Array.isArray(payload.tasks) ? payload.tasks : [],
-      updated_at: payload.updated_at,
-    };
+    dashboardPullRequests.value = normalizeDashboardPullRequestsPayload(payload, targetProjectID);
   } catch (error) {
     if (targetProjectID === selectedDashboardProjectID.value) {
       dashboardPullRequests.value = null;
