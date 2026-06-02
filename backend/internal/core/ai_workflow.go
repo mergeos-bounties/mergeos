@@ -345,11 +345,40 @@ func aiWorkflowRepoReference(project *Project) string {
 		line = strings.TrimSpace(line)
 		if strings.HasPrefix(strings.ToLower(line), "source repository:") {
 			_, value, _ := strings.Cut(line, ":")
-			return strings.TrimSpace(value)
+			if reference := aiWorkflowSafeReference(strings.TrimSpace(value)); reference != "" {
+				return reference
+			}
 		}
 	}
-	if strings.TrimSpace(project.RepoURL) != "" {
-		return project.RepoURL
+	if reference := aiWorkflowSafeReference(project.RepoURL); reference != "" {
+		return reference
 	}
-	return project.BountyRepoName
+	if reference := aiWorkflowSafeReference(project.BountyRepoName); reference != "" {
+		return reference
+	}
+	if strings.TrimSpace(project.ID) != "" {
+		return "project:" + project.ID
+	}
+	return ""
+}
+
+func aiWorkflowSafeReference(value string) string {
+	value = sanitizeLedgerReferenceValue(value)
+	if value == "" {
+		return ""
+	}
+	if publicLiveFeedURL(value) != "" {
+		return value
+	}
+	lower := strings.ToLower(value)
+	if strings.HasPrefix(value, "/") || strings.HasPrefix(value, ".") || strings.HasPrefix(lower, "file:") {
+		return ""
+	}
+	if len(value) >= 2 && value[1] == ':' {
+		return ""
+	}
+	if strings.Contains(value, "\\") {
+		return ""
+	}
+	return value
 }
