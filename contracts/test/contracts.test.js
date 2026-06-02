@@ -73,10 +73,14 @@ describe("MergeOSPayouts", () => {
     assert.match(source, /function approvePayout\(/);
     assert.match(source, /function executePayout\(bytes32 payoutId\) external onlyOperator/);
     assert.match(source, /treasury\.release\(payout\.recipient, payout\.amount, payout\.reference\)/);
+    assert.match(source, /function approveAndExecutePayout\(/);
+    assert.match(source, /_approvePayout\(payoutId, recipient, amount, reference, PayoutStatus\.Executed, executedAt\)/);
+    assert.match(source, /treasury\.release\(recipient, amount, reference\)/);
     assert.match(source, /function cancelPayout\(bytes32 payoutId\) external onlyOperator/);
   });
 
   it("prevents duplicate or unapproved payout execution", () => {
+    assert.match(source, /function _approvePayout\(/);
     assert.match(source, /if \(payouts\[payoutId\]\.status != PayoutStatus\.None\) revert PayoutExists\(\)/);
     assert.match(source, /if \(reservedReferences\[reference\]\) revert ReferenceExists\(\)/);
     assert.match(source, /reservedReferences\[reference\] = true/);

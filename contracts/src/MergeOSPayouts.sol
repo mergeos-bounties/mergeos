@@ -81,23 +81,7 @@ contract MergeOSPayouts {
         uint256 amount,
         bytes32 reference
     ) external onlyOperator {
-        if (payoutId == bytes32(0) || reference == bytes32(0)) revert InvalidReference();
-        if (recipient == address(0)) revert ZeroAddress();
-        if (amount == 0) revert InvalidAmount();
-        if (payouts[payoutId].status != PayoutStatus.None) revert PayoutExists();
-        if (reservedReferences[reference]) revert ReferenceExists();
-
-        reservedReferences[reference] = true;
-        payouts[payoutId] = Payout({
-            recipient: recipient,
-            amount: amount,
-            reference: reference,
-            approvedAt: uint64(block.timestamp),
-            executedAt: 0,
-            status: PayoutStatus.Approved
-        });
-
-        emit PayoutApproved(payoutId, recipient, amount, reference);
+        _approvePayout(payoutId, recipient, amount, reference, PayoutStatus.Approved, 0);
     }
 
     function executePayout(bytes32 payoutId) external onlyOperator {
@@ -111,6 +95,19 @@ contract MergeOSPayouts {
         emit PayoutExecuted(payoutId, payout.recipient, payout.amount, payout.reference);
     }
 
+    function approveAndExecutePayout(
+        bytes32 payoutId,
+        address recipient,
+        uint256 amount,
+        bytes32 reference
+    ) external onlyOperator {
+        uint64 executedAt = uint64(block.timestamp);
+        _approvePayout(payoutId, recipient, amount, reference, PayoutStatus.Executed, executedAt);
+        treasury.release(recipient, amount, reference);
+
+        emit PayoutExecuted(payoutId, recipient, amount, reference);
+    }
+
     function cancelPayout(bytes32 payoutId) external onlyOperator {
         Payout storage payout = payouts[payoutId];
         if (payout.status != PayoutStatus.Approved) revert PayoutNotApproved();
@@ -118,5 +115,33 @@ contract MergeOSPayouts {
         payout.status = PayoutStatus.Cancelled;
         reservedReferences[payout.reference] = false;
         emit PayoutCancelled(payoutId, payout.reference);
+    }
+
+    function _approvePayout(
+        bytes32 payoutId,
+        address recipient,
+        uint256 amount,
+        bytes32 reference,
+        PayoutStatus status,
+        uint64 executedAt
+    ) private {
+        if (payoutId == bytes32(0) || reference == bytes32(0)) revert InvalidReference();
+        if (recipient == address(0)) revert ZeroAddress();
+        if (amount == 0) revert InvalidAmount();
+        if (payouts[payoutId].status != PayoutStatus.None) revert PayoutExists();
+        if (reservedReferences[reference]) revert ReferenceExists();
+
+        uint64 approvedAt = uint64(block.timestamp);
+        reservedReferences[reference] = true;
+        payouts[payoutId] = Payout({
+            recipient: recipient,
+            amount: amount,
+            reference: reference,
+            approvedAt: approvedAt,
+            executedAt: executedAt,
+            status: status
+        });
+
+        emit PayoutApproved(payoutId, recipient, amount, reference);
     }
 }
