@@ -49,6 +49,7 @@ test('exposes public repo import and password-gated test settings without auth',
     { status: 201, body: { id: 'tse_2' } },
     { status: 200, body: { id: 'tse_2', status: 'disabled' } },
     { status: 200, body: { ok: true } },
+    { status: 200, body: { id: 'tse_2', setting_value: 'secret-value' } },
   ]);
   const client = new MergeOSClient({ token: 'secret-token', fetchImpl });
 
@@ -63,6 +64,7 @@ test('exposes public repo import and password-gated test settings without auth',
   });
   await client.publicUpdateTestSettingsEntry('tse_2', 'pw', { status: 'disabled' });
   await client.publicDeleteTestSettingsEntry('tse_2', 'pw');
+  const revealed = await client.publicRevealTestSettingsEntry('tse_2', 'pw');
 
   assert.equal(fetchImpl.calls[0].url, '/api/public/repo/issues');
   assert.equal(fetchImpl.calls[1].url, '/api/public/test-settings/status');
@@ -73,6 +75,10 @@ test('exposes public repo import and password-gated test settings without auth',
   assert.equal(fetchImpl.calls[5].options.method, 'PATCH');
   assert.equal(fetchImpl.calls[6].options.method, 'DELETE');
   assert.equal(fetchImpl.calls[6].options.headers.Authorization, undefined);
+  assert.equal(fetchImpl.calls[7].url, '/api/public/test-settings/entries/tse_2/reveal');
+  assert.equal(fetchImpl.calls[7].options.method, 'POST');
+  assert.equal(fetchImpl.calls[7].options.headers.Authorization, undefined);
+  assert.equal(revealed.setting_value, 'secret-value');
   assert.equal(fetchImpl.calls[4].options.body, JSON.stringify({
     password: 'pw',
     integration_type: 'llm',

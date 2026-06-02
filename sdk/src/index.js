@@ -132,6 +132,14 @@ export class MergeOSClient {
     });
   }
 
+  publicRevealTestSettingsEntry(entryID, passwordOrPayload) {
+    return this.request(`/api/public/test-settings/entries/${encodeURIComponent(entryID)}/reveal`, {
+      method: 'POST',
+      body: passwordPayload(passwordOrPayload),
+      auth: false,
+    });
+  }
+
   createWallet(payload) {
     return this.request('/api/wallets', { method: 'POST', body: payload });
   }

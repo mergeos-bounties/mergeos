@@ -40,6 +40,7 @@ await mergeos.importRepoIssues({ repo_url: 'https://github.com/acme/repo' });
 await mergeos.publicTestSettingsStatus();
 await mergeos.publicTestSettingsAuth('shared-password');
 await mergeos.publicTestSettingsEntries('shared-password');
+await mergeos.publicRevealTestSettingsEntry('tse_0001', 'shared-password');
 ```
 
 ## Task and workflow APIs
