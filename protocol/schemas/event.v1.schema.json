@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mergeos.shop/protocol/event.v1.schema.json",
+  "title": "MergeOS Event v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["protocol_version", "kind", "id", "type", "occurred_at", "actor"],
+  "properties": {
+    "protocol_version": { "const": "mergeos.event.v1" },
+    "kind": { "const": "event" },
+    "id": { "type": "string", "minLength": 3, "maxLength": 120 },
+    "type": {
+      "enum": [
+        "project.funded",
+        "task.created",
+        "task.claimed",
+        "pr.opened",
+        "pr.reviewed",
+        "task.paid",
+        "deployment.updated",
+        "ledger.recorded",
+        "agent.action"
+      ]
+    },
+    "occurred_at": { "type": "string", "format": "date-time" },
+    "actor": { "type": "string", "minLength": 1, "maxLength": 160 },
+    "project_id": { "type": "string", "maxLength": 96 },
+    "task_id": { "type": "string", "maxLength": 96 },
+    "reference": { "type": "string", "maxLength": 512 },
+    "amount_mrg": { "type": "number", "minimum": 0 },
+    "payload": { "type": "object" }
+  }
+}

@@ -12,6 +12,7 @@ Use this index as the fast public map for MergeOS bounty docs and current bounty
 | [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) | Community behavior expectations and enforcement policy. |
 | [SECURITY.md](SECURITY.md) | Private vulnerability reporting and supported security scope. |
 | [SUPPORT.md](SUPPORT.md) | Support channels for bugs, feature requests, bounties, and security. |
+| [protocol/README.md](protocol/README.md) | Open task, workflow graph, and event schemas for agents and integrations. |
 | [LICENSE](LICENSE) | MIT license for this repository. |
 | [Claim Token issue #1](https://github.com/mergeos-bounties/mergeos/issues/1) | Intake queue for new bug bounty claims. |
 

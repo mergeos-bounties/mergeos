@@ -1,0 +1,14 @@
+{
+  "name": "@mergeos/protocol",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Open MergeOS task, workflow, and event protocol schemas for external agents and integrations.",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "scripts": {
+    "test": "node --test"
+  },
+  "license": "MIT"
+}

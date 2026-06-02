@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mergeos.shop/protocol/workflow.v1.schema.json",
+  "title": "MergeOS Workflow v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["protocol_version", "kind", "id", "project_id", "nodes", "edges"],
+  "properties": {
+    "protocol_version": { "const": "mergeos.workflow.v1" },
+    "kind": { "const": "workflow" },
+    "id": { "type": "string", "minLength": 3, "maxLength": 96 },
+    "project_id": { "type": "string", "minLength": 3, "maxLength": 96 },
+    "status": { "enum": ["planned", "active", "blocked", "ready", "released"] },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "task_id", "title", "lane", "status"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1, "maxLength": 96 },
+          "task_id": { "type": "string", "minLength": 1, "maxLength": 96 },
+          "title": { "type": "string", "minLength": 1, "maxLength": 240 },
+          "lane": { "enum": ["implementation", "backend", "design", "validation", "deployment", "agent"] },
+          "status": { "enum": ["open", "accepted", "blocked", "ready"] },
+          "reward_mrg": { "type": "number", "minimum": 0 }
+        }
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["from", "to", "relation"],
+        "properties": {
+          "from": { "type": "string", "minLength": 1, "maxLength": 96 },
+          "to": { "type": "string", "minLength": 1, "maxLength": 96 },
+          "relation": { "type": "string", "minLength": 1, "maxLength": 120 }
+        }
+      }
+    },
+    "metadata": { "type": "object" }
+  }
+}

@@ -13,6 +13,8 @@ This repository is the current MergeOS MVP: Go backend, Vue SSR frontend, projec
 
 `contracts/` contains the MRG token, treasury, and escrow contract sources used to model funded projects, platform fees, task reserves, worker payouts, and refunds.
 
+`protocol/` defines the open MergeOS task, workflow graph, and realtime event schemas used by external agents and integrations.
+
 ## Production
 
 - App: [https://mergeos.shop](https://mergeos.shop)
@@ -55,14 +57,18 @@ MergeOS currently supports:
 - GitHub open issue import with heuristic scoring.
 - GitHub reward aliases. If a worker has not linked a wallet yet, payouts can still target `github:username`; once linked, payouts route to the user's `0x...` wallet address.
 - Local git bounty workspaces or GitHub private bounty repos when `GITHUB_TOKEN` is configured.
+- Static repository scan for dependency manifests, technical-debt markers, and secret-hygiene findings.
+- Project task dependency graph generation for workflow routing and release readiness.
 - Task reward allocation, worker kind, suggested agent type, and acceptance criteria.
+- Worker reputation and risk audit signals for marketplace/admin payout review.
 - Proof ledger entries with hash chaining.
 - SMTP notifications when configured, persisted notification records when SMTP is not configured.
 - Admin APIs for users, projects, tasks, attachments, notifications, ledger, and SSL review.
 - JavaScript SDK helpers for public feeds, project deployment workflow, AI workflow, task acceptance, worker dashboards, admin ops queue, and WebSocket events.
 - MRG contract sources for token issuance, treasury release, project escrow, task reserve, payout, and refund flows.
+- Open protocol schemas for task specs, workflow graphs, and realtime events.
 
-Roadmap items include full AI codebase scanning, task dependency DAGs, automated PR verification, reputation scoring, fraud detection, and automatic real payout execution.
+Roadmap items include deeper AI codebase scanning, automated PR verification, fraud detection, and automatic real payout execution.
 
 ## Stack
 
