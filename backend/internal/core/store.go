@@ -346,6 +346,55 @@ func (s *Store) Login(req LoginRequest) (*AuthResponse, error) {
 	return &AuthResponse{Token: token, User: publicUser(user)}, nil
 }
 
+func (s *Store) RequestPasswordReset(req PasswordResetRequest) (PasswordResetResponse, error) {
+	email, err := normalizeEmail(req.Email)
+	if err != nil {
+		return PasswordResetResponse{}, err
+	}
+
+	response := PasswordResetResponse{
+		Status:  "ok",
+		Message: "If that email is registered, reset instructions have been sent.",
+	}
+	var recipient string
+	var name string
+	s.mu.Lock()
+	user := s.userByEmailLocked(email)
+	if user != nil {
+		recipient = user.Email
+		name = strings.TrimSpace(user.Name)
+		if name == "" {
+			name = user.Email
+		}
+		s.addNotificationLocked(
+			user.ID,
+			"",
+			"email",
+			"Password reset requested",
+			"Someone requested password reset instructions for your MergeOS account. If this was not you, keep your current password and contact an admin.",
+			"logged:password-reset-requested",
+		)
+		if err := s.saveLocked(); err != nil {
+			s.mu.Unlock()
+			return PasswordResetResponse{}, err
+		}
+	}
+	s.mu.Unlock()
+
+	if recipient != "" {
+		body := strings.Join([]string{
+			fmt.Sprintf("Hi %s,", name),
+			"",
+			"A password reset was requested for your MergeOS account.",
+			"Reply to the site admin or use an admin-managed password update to complete the reset.",
+			"",
+			"If you did not request this, no action is required.",
+		}, "\n")
+		s.emailer.Send(recipient, "MergeOS password reset requested", body)
+	}
+	return response, nil
+}
+
 func (s *Store) LoginOrRegisterOAuth(email, name, provider string) (*AuthResponse, error) {
 	email, err := normalizeEmail(email)
 	if err != nil {

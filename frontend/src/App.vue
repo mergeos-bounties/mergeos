@@ -3669,7 +3669,7 @@
                   <input v-model="authRememberMe" type="checkbox" />
                   <span>Remember me</span>
                 </label>
-                <button class="auth-link-button" type="button" @click="showToast('Password reset coming soon...')">Forgot password?</button>
+                <button class="auth-link-button" :disabled="authBusy" type="button" @click="requestPasswordReset">Forgot password?</button>
               </div>
 
               <p v-if="errorMessage" class="modal-error">{{ errorMessage }}</p>
@@ -7920,6 +7920,27 @@ function setAuthMode(mode) {
   authMode.value = mode;
   resetAuthForm(mode);
   errorMessage.value = '';
+}
+
+async function requestPasswordReset() {
+  const email = authForm.email.trim();
+  errorMessage.value = '';
+  if (!email) {
+    errorMessage.value = 'Enter your email before requesting reset instructions.';
+    return;
+  }
+  authBusy.value = true;
+  try {
+    const response = await api('/api/auth/password-reset', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+    showToast(response.message || 'If that email is registered, reset instructions have been sent.');
+  } catch (error) {
+    errorMessage.value = error.message || 'Could not request reset instructions.';
+  } finally {
+    authBusy.value = false;
+  }
 }
 
 function createRequestError(response, payload = {}) {

@@ -156,6 +156,52 @@ func TestAdminSettingsPersistGeminiReviewModel(t *testing.T) {
 	}
 }
 
+func TestPasswordResetRequestIsGenericAndNotifiesExistingUser(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol: defaultTokenSymbol,
+		StatePath:   filepath.Join(tempDir, "state.json"),
+		SMTPFrom:    "noreply@mergeos.local",
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	auth, err := store.Register(RegisterRequest{
+		Name:     "Reset Client",
+		Email:    "reset@example.com",
+		Password: "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	before := len(store.ListNotifications(auth.User.ID))
+
+	existing, err := store.RequestPasswordReset(PasswordResetRequest{Email: "reset@example.com"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if existing.Status != "ok" || existing.Message == "" {
+		t.Fatalf("unexpected reset response: %#v", existing)
+	}
+	afterExisting := store.ListNotifications(auth.User.ID)
+	if len(afterExisting) != before+1 {
+		t.Fatalf("notifications after existing reset = %d, want %d", len(afterExisting), before+1)
+	}
+
+	unknown, err := store.RequestPasswordReset(PasswordResetRequest{Email: "missing@example.com"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if unknown.Status != existing.Status || unknown.Message != existing.Message {
+		t.Fatalf("reset response enumerates account existence: existing=%#v unknown=%#v", existing, unknown)
+	}
+	if len(store.ListNotifications(auth.User.ID)) != len(afterExisting) {
+		t.Fatal("unknown reset request changed existing user notifications")
+	}
+}
+
 func TestAdminSettingsPersistLLMProviderModel(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := Config{

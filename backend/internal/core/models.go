@@ -195,6 +195,15 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
+type PasswordResetRequest struct {
+	Email string `json:"email"`
+}
+
+type PasswordResetResponse struct {
+	Status  string `json:"status"`
+	Message string `json:"message"`
+}
+
 type GitHubAuthRequest struct {
 	Code          string `json:"code"`
 	RedirectURI   string `json:"redirect_uri"`

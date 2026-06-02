@@ -38,6 +38,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("POST /api/payments/crypto/webhook", s.cryptoWebhook)
 	mux.HandleFunc("POST /api/auth/register", s.register)
 	mux.HandleFunc("POST /api/auth/login", s.login)
+	mux.HandleFunc("POST /api/auth/password-reset", s.requestPasswordReset)
 	mux.HandleFunc("POST /api/auth/github", s.githubLogin)
 	mux.HandleFunc("GET /api/auth/me", s.me)
 	mux.HandleFunc("POST /api/auth/logout", s.logout)
@@ -212,6 +213,20 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, auth)
+}
+
+func (s *Server) requestPasswordReset(w http.ResponseWriter, r *http.Request) {
+	var req PasswordResetRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	response, err := s.store.RequestPasswordReset(req)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, response)
 }
 
 func (s *Server) githubLogin(w http.ResponseWriter, r *http.Request) {
