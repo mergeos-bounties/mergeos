@@ -726,10 +726,11 @@ func (s *Store) CreateProject(ctx context.Context, userID string, req CreateProj
 		attachment.ProjectID = project.ID
 		project.Attachments = append(project.Attachments, cloneAttachment(attachment))
 	}
+	allowAgents := createProjectAllowsAgents(req)
 	if len(importedIssues) > 0 {
-		project.Tasks = s.tasksFromImportedIssues(project, importedIssues)
+		project.Tasks = s.tasksFromImportedIssuesWithPolicy(project, importedIssues, allowAgents)
 	} else {
-		project.Tasks = s.splitProjectTasks(project)
+		project.Tasks = s.splitProjectTasksWithPolicy(project, allowAgents)
 	}
 
 	repo, err := s.repos.CreateProjectRepo(ctx, project, project.Tasks)
@@ -1699,7 +1700,18 @@ func (s *Store) newID(prefix string) string {
 	return id
 }
 
+func createProjectAllowsAgents(req CreateProjectRequest) bool {
+	if req.AllowAgents == nil {
+		return true
+	}
+	return *req.AllowAgents
+}
+
 func (s *Store) splitProjectTasks(project *Project) []*Task {
+	return s.splitProjectTasksWithPolicy(project, true)
+}
+
+func (s *Store) splitProjectTasksWithPolicy(project *Project, allowAgents bool) []*Task {
 	tokenSymbol := normalizedTokenSymbol(s.cfg.TokenSymbol)
 	type spec struct {
 		title      string
@@ -1738,12 +1750,19 @@ func (s *Store) splitProjectTasks(project *Project) []*Task {
 			IssueState:         "open",
 			CreatedAt:          time.Now().UTC(),
 		}
+		if !allowAgents {
+			routeTaskToHuman(task)
+		}
 		tasks = append(tasks, task)
 	}
 	return tasks
 }
 
 func (s *Store) tasksFromImportedIssues(project *Project, issues []*ImportedRepoIssue) []*Task {
+	return s.tasksFromImportedIssuesWithPolicy(project, issues, true)
+}
+
+func (s *Store) tasksFromImportedIssuesWithPolicy(project *Project, issues []*ImportedRepoIssue, allowAgents bool) []*Task {
 	tasks := make([]*Task, 0, len(issues))
 	totalWeight := int64(0)
 	for _, issue := range issues {
@@ -1775,9 +1794,20 @@ func (s *Store) tasksFromImportedIssues(project *Project, issues []*ImportedRepo
 			IssueState:         normalizeIssueState(issue.State),
 			CreatedAt:          time.Now().UTC(),
 		}
+		if !allowAgents {
+			routeTaskToHuman(task)
+		}
 		tasks = append(tasks, task)
 	}
 	return tasks
+}
+
+func routeTaskToHuman(task *Task) {
+	if task == nil {
+		return
+	}
+	task.RequiredWorkerKind = WorkerHuman
+	task.SuggestedAgentType = ""
 }
 
 func issueRewardWeight(issue *ImportedRepoIssue) int64 {

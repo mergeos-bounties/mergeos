@@ -276,6 +276,7 @@ type CreateProjectRequest struct {
 	PaymentReference string        `json:"payment_reference"`
 	AttachmentIDs    []string      `json:"attachment_ids"`
 	SourceRepoURL    string        `json:"source_repo_url,omitempty"`
+	AllowAgents      *bool         `json:"allow_agents,omitempty"`
 }
 
 type ProjectPriceEvaluationRequest struct {

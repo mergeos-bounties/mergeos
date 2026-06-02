@@ -8247,6 +8247,7 @@ function buildCreateProjectPayload() {
     payment_reference: paymentReferenceForProject(),
     attachment_ids: projectAttachments.value.map((file) => file.id).filter(Boolean),
     source_repo_url: projectSetupForm.repoUrl || '',
+    allow_agents: Boolean(projectSetupForm.allowAgents),
   };
 }
 

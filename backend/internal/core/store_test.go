@@ -482,6 +482,59 @@ func TestImportedRepoIssuesBecomeFundedTasks(t *testing.T) {
 	}
 }
 
+func TestCreateProjectCanDisableAgentRouting(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:       defaultTokenSymbol,
+		StatePath:         filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:    1000,
+		DevPaymentEnabled: true,
+		DevPaymentCode:    defaultDevPaymentCode,
+		GitHubOwner:       defaultGitHubOwner,
+		BountyRoot:        filepath.Join(tempDir, "bounties"),
+		SMTPFrom:          "noreply@mergeos.local",
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	auth, err := store.Register(RegisterRequest{
+		Name:     "Human Only Client",
+		Email:    "human-only@example.com",
+		Password: "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	allowAgents := false
+	project, err := store.CreateProject(context.Background(), auth.User.ID, CreateProjectRequest{
+		Title:            "Human only routing",
+		ClientName:       "Human Only Client",
+		ClientEmail:      "human-only@example.com",
+		Brief:            "Route this funded project only to human contributors.",
+		BudgetCents:      120000,
+		PaymentMethod:    PaymentPayPal,
+		PaymentReference: defaultDevPaymentCode,
+		AllowAgents:      &allowAgents,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(project.Tasks) == 0 {
+		t.Fatal("expected funded tasks")
+	}
+	for _, task := range project.Tasks {
+		if task.RequiredWorkerKind != WorkerHuman || strings.TrimSpace(task.SuggestedAgentType) != "" {
+			t.Fatalf("task was not routed human-only: %#v", task)
+		}
+	}
+	marketplace := store.Marketplace()
+	if len(marketplace.Agents) != 0 {
+		t.Fatalf("human-only project exposed agent lanes: %#v", marketplace.Agents)
+	}
+}
+
 func TestSyncProjectImportedIssuesAddsMissingAndTracksState(t *testing.T) {
 	store := &Store{
 		cfg:      Config{StatePath: filepath.Join(t.TempDir(), "state.json")},
