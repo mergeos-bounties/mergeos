@@ -1053,7 +1053,7 @@
         <div class="dash-top-actions">
           <button class="dash-icon-button" aria-label="Notifications" type="button" @click="openDashboardSection('notifications')">
             <Bell :size="18" />
-            <span>{{ dashboardNotificationCount }}</span>
+            <span v-if="dashboardNotificationCount > 0" class="notification-badge">{{ dashboardNotificationCount }}</span>
           </button>
           <button class="primary-button compact" type="button" @click="openProjectWizard">
             <Plus :size="16" />
@@ -1443,13 +1443,22 @@
               <span>{{ dashboardNotificationCount }} new</span>
             </div>
             <div v-if="dashboardNotificationRows.length" class="notification-center-list">
-              <article v-for="note in dashboardNotificationRows" :key="note.id" :class="{ 'is-unread': note.isUnread }">
+              <article
+                v-for="note in dashboardNotificationRows"
+                :key="note.id"
+                :class="{ 'is-unread': note.isUnread }"
+                role="button"
+                tabindex="0"
+                @click="handleNotificationClick(note)"
+                @keyup.enter="handleNotificationClick(note)"
+              >
                 <span :class="['notification-dot', note.tone, { 'unread-pulse': note.isUnread }]" />
                 <div>
                   <strong>{{ note.subject }}</strong>
                   <p>{{ note.body }}</p>
                   <small>{{ note.meta }}</small>
                 </div>
+                <span v-if="note.isUnread" class="notification-new-badge" aria-label="Unread">New</span>
               </article>
             </div>
             <article v-else class="dash-empty-state compact">
@@ -4859,6 +4868,31 @@ async function markAllNotificationsRead() {
     await loadDashboardNotifications();
   } catch (error) {
     showToast(error.message || 'Could not mark notifications as read.');
+  }
+}
+
+async function markNotificationAsRead(notificationId) {
+  if (!token.value || !notificationId) return;
+  try {
+    await api('/api/notifications/read', {
+      method: 'POST',
+      body: JSON.stringify({ notification_id: notificationId }),
+    });
+    const idx = dashboardNotifications.value.findIndex((n) => n.id === notificationId);
+    if (idx !== -1) {
+      dashboardNotifications.value[idx] = {
+        ...dashboardNotifications.value[idx],
+        read_at: new Date().toISOString(),
+      };
+    }
+  } catch {
+    // silently ignore — notification will refresh on next poll
+  }
+}
+
+function handleNotificationClick(note) {
+  if (note.isUnread) {
+    markNotificationAsRead(note.id);
   }
 }
 
