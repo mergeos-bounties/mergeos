@@ -766,6 +766,11 @@
                 <input placeholder="Name on card" />
               </label>
             </div>
+            <label v-if="projectPaymentMethod === 'USDC'" class="wizard-field full crypto-reference-field">
+              <span>USDC transaction hash</span>
+              <input v-model.trim="projectCryptoReference" placeholder="0x..." autocomplete="off" />
+              <small>Required for production crypto verification; local dev mode can still use the configured verifier code.</small>
+            </label>
           </section>
 
           <footer class="funding-actions">
@@ -4007,6 +4012,7 @@ const projectWizardStage = ref(initialProjectWizardRoute?.stage || 'setup');
 const projectWizardStep = ref(initialProjectWizardRoute?.step || 1);
 const projectFundingAmount = ref('');
 const projectPaymentMethod = ref('Credit / Debit card');
+const projectCryptoReference = ref('');
 const projectPaymentBusy = ref(false);
 const projectPaymentError = ref('');
 const pendingProjectPaymentAfterAuth = ref(false);
@@ -6477,6 +6483,7 @@ function projectDraftPayload() {
     repo_import_result: repoImportResult.value,
     funding_amount: projectFundingAmount.value,
     payment_method: projectPaymentMethod.value,
+    crypto_reference: projectCryptoReference.value,
   };
 }
 
@@ -6493,6 +6500,7 @@ function applyProjectDraft(draft = {}) {
   repoImportResult.value = draft.repo_import_result || null;
   projectFundingAmount.value = draft.funding_amount || projectFundingAmount.value;
   projectPaymentMethod.value = draft.payment_method || projectPaymentMethod.value;
+  projectCryptoReference.value = draft.crypto_reference || projectCryptoReference.value;
 }
 
 function restoreProjectDraftIfEmpty() {
@@ -6849,6 +6857,9 @@ async function completeProjectFunding() {
   try {
     await loadRuntimeConfig();
     if (!paymentReferenceForProject()) {
+      if (paymentMethodForProject() === 'crypto') {
+        throw new Error('USDC transaction hash is required before funding this project.');
+      }
       throw new Error('Payment reference is missing. Configure PayPal/Crypto checkout or enable local dev payments.');
     }
     const project = await api('/api/projects', {
@@ -6857,6 +6868,7 @@ async function completeProjectFunding() {
     });
     fundedProject.value = project;
     projectAttachments.value = [];
+    projectCryptoReference.value = '';
     browserStorage?.removeItem(projectDraftStorageKey);
     projectWizardVisible.value = true;
     projectWizardStage.value = 'success';
@@ -7962,6 +7974,9 @@ function paymentMethodForProject() {
 function paymentReferenceForProject() {
   if (runtimeConfig.value?.dev_payment_enabled && runtimeConfig.value?.dev_payment_code) {
     return runtimeConfig.value.dev_payment_code;
+  }
+  if (paymentMethodForProject() === 'crypto') {
+    return projectCryptoReference.value.trim();
   }
   return successPaymentReference.value || '';
 }
