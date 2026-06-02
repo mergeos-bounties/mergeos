@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 )
 
@@ -53,7 +54,11 @@ func TestSettingValueMask(t *testing.T) {
 }
 
 func TestCheckForEnvCollision(t *testing.T) {
-	for _, name := range []string{"GITHUB_TOKEN", "ADMIN_EMAIL", "ADMIN_PASSWORD", "PAYPAL_CLIENT_ID", "GEMINI_API_KEYS"} {
+	t.Setenv("runtime_secret_name", "secret")
+	runtimeEnvNames = nil
+	runtimeEnvOnce = sync.Once{}
+
+	for _, name := range []string{"GITHUB_TOKEN", "ADMIN_EMAIL", "ADMIN_PASSWORD", "PAYPAL_CLIENT_ID", "PAYPAL_ENV", "CRYPTO_RECEIVER", "GEMINI_API_KEYS", "runtime_secret_name"} {
 		if err := checkForEnvCollision(name, nil); err == nil {
 			t.Errorf("expected collision for %q", name)
 		}
