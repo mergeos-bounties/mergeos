@@ -2004,7 +2004,7 @@
                     <article v-for="proposal in workerProposalRows" :key="proposal.id">
                       <div>
                         <strong>{{ proposal.title }}</strong>
-                        <small>{{ proposal.project }} · {{ proposal.lane }}</small>
+                        <small>{{ proposal.project }} · {{ proposal.lane }} · {{ proposal.effort }}</small>
                       </div>
                       <span>{{ proposal.reward }}</span>
                       <b>{{ proposal.matchScore }}%</b>
@@ -7851,6 +7851,7 @@ function mapWorkerProposal(proposal = {}) {
     project: proposal.project_title || 'MergeOS project',
     lane: agentType ? toTitleLabel(agentType) : toTitleLabel(proposal.required_worker_kind || 'worker'),
     reward: formatMRGFromCents(proposal.reward_cents),
+    effort: formatEstimatedHours(proposal.estimated_hours),
     matchScore: Number(proposal.match_score) || 0,
     issue: issueNumber > 0 ? `#${issueNumber}` : 'Task',
     issueNumber,

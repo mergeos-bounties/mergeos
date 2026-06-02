@@ -2371,6 +2371,9 @@ func TestWorkerDashboardRouteMatchesGitHubWorkerAndSanitizesData(t *testing.T) {
 	if len(payload.Proposals) == 0 {
 		t.Fatalf("worker dashboard missing proposal opportunities: %#v", payload.Proposals)
 	}
+	if payload.Proposals[0].EstimatedHours <= 0 {
+		t.Fatalf("worker proposal missing estimated hours: %#v", payload.Proposals[0])
+	}
 }
 
 func TestWorkerCanSelfClaimProposalRoute(t *testing.T) {

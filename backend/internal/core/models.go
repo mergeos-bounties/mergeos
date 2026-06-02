@@ -1156,6 +1156,7 @@ type WorkerProposal struct {
 	Title              string     `json:"title"`
 	Acceptance         string     `json:"acceptance"`
 	RewardCents        int64      `json:"reward_cents"`
+	EstimatedHours     float64    `json:"estimated_hours,omitempty"`
 	RequiredWorkerKind WorkerKind `json:"required_worker_kind"`
 	SuggestedAgentType string     `json:"suggested_agent_type,omitempty"`
 	MatchScore         int        `json:"match_score"`

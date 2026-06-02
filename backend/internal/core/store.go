@@ -2707,6 +2707,7 @@ func workerProposalRows(projects map[string]*Project, tasks map[string]*Task, us
 			Title:              task.Title,
 			Acceptance:         compactText(task.Acceptance),
 			RewardCents:        task.RewardCents,
+			EstimatedHours:     marketplaceEstimatedHours(task),
 			RequiredWorkerKind: task.RequiredWorkerKind,
 			SuggestedAgentType: task.SuggestedAgentType,
 			MatchScore:         workerProposalMatchScore(task, user),
