@@ -749,24 +749,11 @@
                 </span>
               </button>
             </div>
-            <div v-if="selectedPaymentRail?.id === 'stripe'" class="card-input-grid">
-              <label class="wizard-field full">
-                <span>Card number</span>
-                <input placeholder="1234 1234 1234 1234" />
-              </label>
-              <label class="wizard-field">
-                <span>Expiry date</span>
-                <input placeholder="MM / YY" />
-              </label>
-              <label class="wizard-field">
-                <span>CVC</span>
-                <input placeholder="CVC" />
-              </label>
-              <label class="wizard-field">
-                <span>Cardholder name</span>
-                <input placeholder="Name on card" />
-              </label>
-            </div>
+            <label v-if="selectedPaymentRail?.id === 'stripe'" class="wizard-field full crypto-reference-field">
+              <span>Stripe PaymentIntent ID</span>
+              <input v-model.trim="projectStripeReference" placeholder="pi_..." autocomplete="off" />
+              <small>Required for production Stripe verification; local dev mode can still use the configured verifier code.</small>
+            </label>
             <label v-if="isCryptoLikePaymentRail(selectedPaymentRail)" class="wizard-field full crypto-reference-field">
               <span>{{ cryptoPaymentAssetLabel }} transaction hash</span>
               <input v-model.trim="projectCryptoReference" placeholder="0x..." autocomplete="off" />
@@ -4077,6 +4064,7 @@ const projectFundingAmount = ref('');
 const projectPaymentMethod = ref('PayPal');
 const projectCryptoReference = ref('');
 const projectPayPalOrderID = ref('');
+const projectStripeReference = ref('');
 const projectPaymentBusy = ref(false);
 const projectPaymentError = ref('');
 const pendingProjectPaymentAfterAuth = ref(false);
@@ -4335,7 +4323,7 @@ const fallbackPaymentRails = [
   { id: 'paypal', label: 'PayPal', method: 'paypal', caption: 'Sandbox/live checkout', enabled: true },
   { id: 'crypto', label: 'USDC', method: 'crypto', caption: 'Ethereum, Polygon, Arbitrum', enabled: true },
   { id: 'usdt', label: 'USDT', method: 'usdt', caption: 'USDT ERC-20 transfer', enabled: true },
-  { id: 'stripe', label: 'Credit / Debit card', method: 'stripe', caption: 'Stripe checkout', enabled: false, disabled_reason: 'Stripe checkout is not enabled yet.' },
+  { id: 'stripe', label: 'Credit / Debit card', method: 'stripe', caption: 'Stripe PaymentIntent', enabled: false, disabled_reason: 'Stripe verifier is not enabled yet.' },
   { id: 'bank', label: 'Bank transfer', method: 'bank', caption: 'Manual treasury rail', enabled: false, disabled_reason: 'Bank transfer requires manual treasury review.' },
 ];
 
@@ -6670,6 +6658,7 @@ function projectDraftPayload() {
     payment_method: projectPaymentMethod.value,
     crypto_reference: projectCryptoReference.value,
     paypal_order_id: projectPayPalOrderID.value,
+    stripe_reference: projectStripeReference.value,
   };
 }
 
@@ -6688,6 +6677,7 @@ function applyProjectDraft(draft = {}) {
   projectPaymentMethod.value = normalizeProjectPaymentMethod(draft.payment_method || projectPaymentMethod.value);
   projectCryptoReference.value = draft.crypto_reference || projectCryptoReference.value;
   projectPayPalOrderID.value = draft.paypal_order_id || projectPayPalOrderID.value;
+  projectStripeReference.value = draft.stripe_reference || projectStripeReference.value;
 }
 
 function normalizeProjectPaymentMethod(value = '') {
@@ -7061,6 +7051,9 @@ function selectProjectPaymentMethod(method = {}) {
   if (method.method !== 'paypal') {
     projectPayPalOrderID.value = '';
   }
+  if (method.method !== 'stripe') {
+    projectStripeReference.value = '';
+  }
 }
 
 async function copyProjectCryptoReceiver() {
@@ -7184,7 +7177,10 @@ async function completeProjectFunding() {
       if (isCryptoLikePaymentRail(selectedPaymentRail.value)) {
         throw new Error(`${cryptoPaymentAssetLabel.value} transaction hash is required before funding this project.`);
       }
-      throw new Error('Payment reference is missing. Configure PayPal/Crypto checkout or enable local dev payments.');
+      if (paymentMethodForProject() === 'stripe') {
+        throw new Error('Stripe PaymentIntent ID is required before funding this project.');
+      }
+      throw new Error('Payment reference is missing. Configure PayPal/Crypto/Stripe checkout or enable local dev payments.');
     }
     const project = await api('/api/projects', {
       method: 'POST',
@@ -7194,6 +7190,7 @@ async function completeProjectFunding() {
     projectAttachments.value = [];
     projectCryptoReference.value = '';
     projectPayPalOrderID.value = '';
+    projectStripeReference.value = '';
     browserStorage?.removeItem(projectDraftStorageKey);
     browserStorage?.removeItem(payPalDraftStorageKey);
     projectWizardVisible.value = true;
@@ -8423,6 +8420,7 @@ function paymentMethodForProject() {
   const method = String(selectedPaymentRail.value?.method || '').trim();
   if (method === 'crypto') return 'crypto';
   if (method === 'usdt') return 'usdt';
+  if (method === 'stripe') return 'stripe';
   return 'paypal';
 }
 
@@ -8435,6 +8433,9 @@ function paymentReferenceForProject() {
   }
   if (paymentMethodForProject() === 'paypal') {
     return projectPayPalOrderID.value.trim();
+  }
+  if (paymentMethodForProject() === 'stripe') {
+    return projectStripeReference.value.trim();
   }
   return successPaymentReference.value || '';
 }

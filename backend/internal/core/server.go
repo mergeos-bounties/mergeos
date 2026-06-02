@@ -1281,7 +1281,7 @@ func writeError(w http.ResponseWriter, status int, message string) {
 }
 
 func paymentMode(cfg Config) string {
-	if cfg.PayPalReady() || cfg.CryptoReady() {
+	if cfg.PayPalReady() || cfg.CryptoReady() || cfg.StripeReady() {
 		return "live-adapters"
 	}
 	if cfg.DevPaymentEnabled {
@@ -1296,6 +1296,7 @@ func paymentRails(cfg Config) []PaymentRailOption {
 	cryptoEnabled := cfg.CryptoReady() || devEnabled
 	usdtReady := cfg.CryptoReady() && cfg.CryptoAsset == "erc20" && strings.TrimSpace(cfg.CryptoTokenContract) != ""
 	usdtEnabled := usdtReady || devEnabled
+	stripeEnabled := cfg.StripeReady() || devEnabled
 	return []PaymentRailOption{
 		{
 			ID:                "paypal",
@@ -1336,12 +1337,12 @@ func paymentRails(cfg Config) []PaymentRailOption {
 		{
 			ID:                "stripe",
 			Label:             "Credit / Debit card",
-			Method:            "stripe",
-			Caption:           "Stripe checkout",
-			Enabled:           false,
+			Method:            string(PaymentStripe),
+			Caption:           "Stripe PaymentIntent",
+			Enabled:           stripeEnabled,
 			Ready:             cfg.StripeReady(),
-			DisabledReason:    "Stripe checkout is configured for discovery but the verifier endpoint is not enabled yet.",
-			RequiresReference: true,
+			DisabledReason:    disabledPaymentRailReason(stripeEnabled, "Stripe verifier is not configured."),
+			RequiresReference: !devEnabled,
 			PublicKey:         cfg.StripePublishableKey,
 		},
 		{

@@ -56,8 +56,13 @@ func (p *PaymentManager) Verify(ctx context.Context, req CreateProjectRequest) (
 			return verification, nil
 		}
 		return p.verifyDev(reference, "dev-usdt")
+	case PaymentStripe:
+		if p.cfg.StripeReady() && reference != p.cfg.DevPaymentCode {
+			return p.verifyStripe(ctx, reference, req.BudgetCents)
+		}
+		return p.verifyDev(reference, "dev-stripe")
 	default:
-		return PaymentVerification{}, errors.New("payment method must be paypal, crypto, or usdt")
+		return PaymentVerification{}, errors.New("payment method must be paypal, crypto, usdt, or stripe")
 	}
 }
 
@@ -227,6 +232,61 @@ func (p *PaymentManager) verifyPayPal(ctx context.Context, orderID string, expec
 	return PaymentVerification{
 		Provider:  "paypal",
 		Reference: orderID,
+	}, nil
+}
+
+func (p *PaymentManager) verifyStripe(ctx context.Context, paymentIntentID string, expectedCents int64) (PaymentVerification, error) {
+	paymentIntentID = strings.TrimSpace(paymentIntentID)
+	if paymentIntentID == "" {
+		return PaymentVerification{}, errors.New("stripe payment intent id is required")
+	}
+	if !strings.HasPrefix(paymentIntentID, "pi_") {
+		return PaymentVerification{}, errors.New("stripe payment reference must be a PaymentIntent id")
+	}
+	endpoint := "https://api.stripe.com/v1/payment_intents/" + url.PathEscape(paymentIntentID)
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+	if err != nil {
+		return PaymentVerification{}, err
+	}
+	httpReq.Header.Set("Authorization", "Bearer "+strings.TrimSpace(p.cfg.StripeSecretKey))
+
+	resp, err := p.client.Do(httpReq)
+	if err != nil {
+		return PaymentVerification{}, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return PaymentVerification{}, fmt.Errorf("stripe payment intent lookup failed: %s", readBody(resp.Body))
+	}
+
+	var decoded struct {
+		ID             string `json:"id"`
+		Status         string `json:"status"`
+		Currency       string `json:"currency"`
+		Amount         int64  `json:"amount"`
+		AmountReceived int64  `json:"amount_received"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&decoded); err != nil {
+		return PaymentVerification{}, err
+	}
+	if decoded.ID != paymentIntentID {
+		return PaymentVerification{}, fmt.Errorf("stripe payment intent mismatch: got %s", decoded.ID)
+	}
+	if decoded.Status != "succeeded" {
+		return PaymentVerification{}, fmt.Errorf("stripe payment intent is %s, not succeeded", decoded.Status)
+	}
+	if strings.ToLower(strings.TrimSpace(decoded.Currency)) != "usd" {
+		return PaymentVerification{}, fmt.Errorf("stripe currency %s is not USD", decoded.Currency)
+	}
+	if decoded.AmountReceived != expectedCents {
+		return PaymentVerification{}, fmt.Errorf("stripe amount mismatch: got %d cents, expected %d cents", decoded.AmountReceived, expectedCents)
+	}
+	if decoded.Amount > 0 && decoded.Amount != expectedCents {
+		return PaymentVerification{}, fmt.Errorf("stripe intent amount mismatch: got %d cents, expected %d cents", decoded.Amount, expectedCents)
+	}
+	return PaymentVerification{
+		Provider:  "stripe",
+		Reference: paymentIntentID,
 	}, nil
 }
 
