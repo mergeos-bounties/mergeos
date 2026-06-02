@@ -209,6 +209,31 @@ func TestAdminPullRequestReadinessBlocksSecretFilesAndWarnsSensitiveCode(t *test
 	}
 }
 
+func TestAdminPullRequestReadinessBlocksBroadDeletionHeavyDiff(t *testing.T) {
+	readiness := adminPullRequestReadiness(
+		&Task{Title: "Small frontend fix", Acceptance: "Keep changes scoped to the issue"},
+		AdminTaskPullRequest{
+			State:          "open",
+			MergeableState: "clean",
+			Labels:         []string{"star: verified", "evidence: provided"},
+			ChangedFiles: []AdminPullRequestFile{
+				{Path: "frontend/src/App.vue", Status: "modified", Additions: 4, Deletions: 80},
+				{Path: "frontend/src/styles.css", Status: "modified", Additions: 2, Deletions: 60},
+				{Path: "README.md", Status: "modified", Deletions: 50},
+				{Path: "sdk/README.md", Status: "modified", Deletions: 30},
+				{Path: "protocol/README.md", Status: "modified", Deletions: 20},
+				{Path: "contracts/README.md", Status: "modified", Deletions: 20},
+			},
+		},
+	)
+	if readiness.CanMerge || readiness.Status != "blocked" || readiness.RiskLevel != "high" {
+		t.Fatalf("readiness should block broad deletion diff: %#v", readiness)
+	}
+	if !containsString(readiness.Blockers, "broad deletion-heavy diff requires separate maintainer approval") {
+		t.Fatalf("missing deletion-heavy blocker: %#v", readiness.Blockers)
+	}
+}
+
 func TestAdminPullRequestReadinessAllowsVerifiedLowRiskPR(t *testing.T) {
 	readiness := adminPullRequestReadiness(
 		&Task{Title: "Dashboard copy fix"},

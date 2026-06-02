@@ -495,7 +495,7 @@ func adminPullRequestReadiness(task *Task, pull AdminTaskPullRequest) AdminPullR
 		addWarning("security-sensitive code paths changed; maintainer review required")
 	}
 	if len(pull.ChangedFiles) > 5 && totalDeletions > totalAdditions*2+100 {
-		addWarning("broad deletion-heavy diff requires manual scope review")
+		addBlocker("broad deletion-heavy diff requires separate maintainer approval")
 	}
 
 	if len(readiness.Blockers) > 0 {
