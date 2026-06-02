@@ -2993,6 +2993,7 @@
                     <span>{{ item.status }}</span>
                   </div>
                   <p>{{ item.body }}</p>
+                  <small v-if="item.proofLabel" class="live-feed-proof">{{ item.proofLabel }}</small>
                   <small>{{ item.project }} · {{ item.actor }} · {{ item.meta }}</small>
                 </div>
                 <div class="live-feed-row-meta">
@@ -8239,6 +8240,8 @@ function mapPublicLiveFeedItem(item = {}) {
   const meta = liveFeedMetaFor(item.type, item.action);
   const when = formatLedgerDateTime(item.created_at);
   const amountCents = Number(item.amount_cents) || 0;
+  const ledgerSequence = Number(item.ledger_sequence) || 0;
+  const entryHash = item.entry_hash || '';
   const projectTitle = item.project_title || 'MergeOS';
   const reference = item.reference || '';
   return {
@@ -8254,6 +8257,9 @@ function mapPublicLiveFeedItem(item = {}) {
     actor: item.actor || 'MergeOS',
     action: item.action || '',
     amount: amountCents ? formatPublicMRGFromCents(amountCents) : '',
+    ledgerSequence,
+    entryHash,
+    proofLabel: entryHash ? `Proof #${ledgerSequence || '?'} ${shortLedgerReference(entryHash)}` : '',
     reference: shortLedgerReference(reference),
     rawReference: reference,
     url: item.url || '',

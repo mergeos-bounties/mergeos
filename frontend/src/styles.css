@@ -10188,6 +10188,12 @@ svg {
   font-weight: 760;
 }
 
+.live-feed-row-copy .live-feed-proof {
+  color: #475569;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-weight: 850;
+}
+
 .live-feed-row-meta {
   min-width: 0;
   display: grid;
