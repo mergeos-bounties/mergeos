@@ -1280,6 +1280,57 @@
                 </article>
               </section>
 
+              <section class="dash-card live-pr-monitor-card">
+                <div class="card-title-row">
+                  <div>
+                    <h2>Live PR Monitor</h2>
+                    <p>{{ dashboardPullRequestSummary.body }}</p>
+                  </div>
+                  <button type="button" :disabled="dashboardPullRequestsLoading || !dashboardSelectedProject" @click="loadDashboardPullRequestsData(dashboardSelectedProject?.id)">
+                    <RefreshCw :size="14" />
+                  </button>
+                </div>
+                <div class="live-pr-metrics" aria-label="Pull request monitor summary">
+                  <article>
+                    <span>Open</span>
+                    <strong>{{ dashboardPullRequestSummary.open }}</strong>
+                  </article>
+                  <article>
+                    <span>Ready</span>
+                    <strong>{{ dashboardPullRequestSummary.ready }}</strong>
+                  </article>
+                  <article>
+                    <span>Blocked</span>
+                    <strong>{{ dashboardPullRequestSummary.blocked }}</strong>
+                  </article>
+                  <article>
+                    <span>Status</span>
+                    <strong>{{ dashboardPullRequestSummary.status }}</strong>
+                  </article>
+                </div>
+                <div v-if="dashboardPullRequestsError" class="deployment-error">{{ dashboardPullRequestsError }}</div>
+                <div v-else-if="dashboardPullRequestRows.length" class="live-pr-monitor-list">
+                  <article v-for="pull in dashboardPullRequestRows" :key="pull.id">
+                    <span :class="['metric-icon', pull.tone]">
+                      <GitPullRequest :size="16" />
+                    </span>
+                    <div>
+                      <strong>#{{ pull.number }} {{ pull.title }}</strong>
+                      <small>{{ pull.task }} / {{ pull.author }} / {{ pull.risk }}</small>
+                      <b>{{ pull.updatedAt }}</b>
+                    </div>
+                    <div class="live-pr-monitor-side">
+                      <span :class="['ledger-event-type', pull.tone]">{{ pull.status }}</span>
+                      <button v-if="pull.url" type="button" @click="openExternalURL(pull.url)">Open</button>
+                    </div>
+                  </article>
+                </div>
+                <article v-else class="dash-empty-state compact">
+                  <strong>{{ dashboardPullRequestsLoading ? 'Loading pull requests...' : 'No linked PRs yet' }}</strong>
+                  <p>{{ dashboardPullRequestsLoading ? 'Syncing GitHub linked PRs.' : 'Contributor PRs linked to project issues will appear here.' }}</p>
+                </article>
+              </section>
+
               <section class="dash-card live-pr-board">
                 <div class="card-title-row">
                   <div>
@@ -3077,6 +3128,9 @@ const dashboardDeploymentError = ref('');
 const dashboardAIWorkflow = ref(null);
 const dashboardAIWorkflowLoading = ref(false);
 const dashboardAIWorkflowError = ref('');
+const dashboardPullRequests = ref(null);
+const dashboardPullRequestsLoading = ref(false);
+const dashboardPullRequestsError = ref('');
 const dashboardNotifications = ref([]);
 const dashboardNotificationsLoading = ref(false);
 const dashboardNotificationsError = ref('');
@@ -4029,6 +4083,44 @@ const dashboardAIWorkflowView = computed(() => {
 const dashboardAIWorkflowStages = computed(() =>
   (dashboardAIWorkflow.value?.stages || []).map(mapDashboardAIWorkflowStage),
 );
+const dashboardPullRequestStats = computed(() => dashboardPullRequests.value?.stats || {});
+const dashboardPullRequestSummary = computed(() => {
+  if (!dashboardSelectedProject.value) {
+    return {
+      status: dashboardPullRequestsLoading.value ? 'Syncing' : 'Empty',
+      body: 'PR monitor appears after a project is selected.',
+      open: '0',
+      ready: '0',
+      blocked: '0',
+    };
+  }
+  if (!dashboardPullRequests.value) {
+    return {
+      status: dashboardPullRequestsLoading.value ? 'Syncing' : 'Waiting',
+      body: dashboardPullRequestsLoading.value ? 'Fetching linked pull requests.' : 'No pull request monitor payload loaded.',
+      open: '0',
+      ready: '0',
+      blocked: '0',
+    };
+  }
+  const stats = dashboardPullRequestStats.value;
+  return {
+    status: `${formatCompactNumber(stats.pull_request_count)} PRs`,
+    body: `${formatCompactNumber(stats.linked_task_count)} linked tasks / ${formatCompactNumber(stats.error_count)} sync errors`,
+    open: formatCompactNumber(stats.open_pull_request_count),
+    ready: formatCompactNumber(stats.ready_count),
+    blocked: formatCompactNumber(stats.blocked_count),
+  };
+});
+const dashboardPullRequestRows = computed(() => {
+  const rows = [];
+  for (const task of dashboardPullRequests.value?.tasks || []) {
+    for (const pull of task.pull_requests || []) {
+      rows.push(mapDashboardPullRequest(task, pull));
+    }
+  }
+  return rows.sort((a, b) => new Date(b.updatedAtRaw || 0) - new Date(a.updatedAtRaw || 0)).slice(0, 5);
+});
 const dashboardTaskRows = computed(() => dashboardSelectedTasks.value.map(mapDashboardTask));
 const dashboardActivityRows = computed(() =>
   dashboardProjectLedger.value.slice().reverse().slice(0, 6).map(mapDashboardActivity),
@@ -4529,6 +4621,7 @@ async function selectDashboardProject(projectID) {
   selectedDashboardProjectID.value = projectID;
   void loadDashboardDeploymentData(projectID, { silent: true });
   void loadDashboardAIWorkflowData(projectID, { silent: true });
+  void loadDashboardPullRequestsData(projectID, { silent: true });
   await nextTick();
   if (!hasWindow) return;
   dashboardProjectHeader.value?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -5245,6 +5338,33 @@ function mapDashboardAIWorkflowStage(stage = {}) {
   };
 }
 
+function mapDashboardPullRequest(task = {}, pull = {}) {
+  const readiness = pull.readiness || {};
+  const status = readiness.status || (pull.merged ? 'merged' : pull.state || 'open');
+  const when = formatLedgerDateTime(pull.updated_at || pull.created_at);
+  return {
+    id: `${task.task_id || task.issue_number}-${pull.number}`,
+    number: pull.number || '-',
+    title: pull.title || 'Untitled pull request',
+    task: task.issue_number ? `Issue #${task.issue_number}` : (task.title || 'Task'),
+    author: pull.author ? `@${pull.author}` : 'Unknown author',
+    url: pull.html_url || '',
+    state: pull.merged ? 'Merged' : toTitleLabel(pull.state || 'open'),
+    status: toTitleLabel(status),
+    tone: dashboardPullReadinessTone(readiness, pull),
+    risk: readiness.risk_level ? `${toTitleLabel(readiness.risk_level)} risk` : 'No risk score',
+    updatedAt: when.full,
+    updatedAtRaw: pull.updated_at || pull.created_at || '',
+  };
+}
+
+function dashboardPullReadinessTone(readiness = {}, pull = {}) {
+  if (readiness.status === 'blocked' || readiness.risk_level === 'high') return 'red';
+  if (readiness.status === 'needs_review' || readiness.risk_level === 'medium') return 'amber';
+  if (readiness.status === 'ready' || pull.merged) return 'green';
+  return 'blue';
+}
+
 function mapWorkerClaimedTask(task = {}) {
   const when = formatLedgerDateTime(task.accepted_at);
   return {
@@ -5630,6 +5750,9 @@ async function loadDashboardData(options = {}) {
     dashboardAIWorkflow.value = null;
     dashboardAIWorkflowLoading.value = false;
     dashboardAIWorkflowError.value = '';
+    dashboardPullRequests.value = null;
+    dashboardPullRequestsLoading.value = false;
+    dashboardPullRequestsError.value = '';
     dashboardSection.value = 'projects';
     selectedDashboardProjectID.value = '';
     return;
@@ -5653,15 +5776,21 @@ async function loadDashboardData(options = {}) {
       ? requestedProjectID
       : (dashboardSortedProjects.value[0]?.id || '');
     if (selectedDashboardProjectID.value) {
-      await Promise.all([
+      const detailLoads = [
         loadDashboardDeploymentData(selectedDashboardProjectID.value, { silent: true }),
         loadDashboardAIWorkflowData(selectedDashboardProjectID.value, { silent: true }),
-      ]);
+      ];
+      if (!options.skipPullRequests) {
+        detailLoads.push(loadDashboardPullRequestsData(selectedDashboardProjectID.value, { silent: true }));
+      }
+      await Promise.all(detailLoads);
     } else {
       dashboardDeployment.value = null;
       dashboardDeploymentError.value = '';
       dashboardAIWorkflow.value = null;
       dashboardAIWorkflowError.value = '';
+      dashboardPullRequests.value = null;
+      dashboardPullRequestsError.value = '';
     }
   } catch (error) {
     dashboardError.value = error.message || 'Could not load projects';
@@ -5736,6 +5865,36 @@ async function loadDashboardAIWorkflowData(projectID, options = {}) {
     }
   } finally {
     dashboardAIWorkflowLoading.value = false;
+  }
+}
+
+async function loadDashboardPullRequestsData(projectID, options = {}) {
+  const targetProjectID = String(projectID || '').trim();
+  if (!token.value || !targetProjectID) {
+    dashboardPullRequests.value = null;
+    dashboardPullRequestsError.value = '';
+    return;
+  }
+
+  const silent = Boolean(options.silent);
+  if (!silent) dashboardPullRequestsLoading.value = true;
+  dashboardPullRequestsError.value = '';
+  try {
+    const payload = await api(`/api/projects/${encodeURIComponent(targetProjectID)}/pull-requests`);
+    dashboardPullRequests.value = {
+      project_id: payload.project_id || targetProjectID,
+      project_title: payload.project_title || '',
+      stats: payload.stats || {},
+      tasks: Array.isArray(payload.tasks) ? payload.tasks : [],
+      updated_at: payload.updated_at,
+    };
+  } catch (error) {
+    if (targetProjectID === selectedDashboardProjectID.value) {
+      dashboardPullRequests.value = null;
+      dashboardPullRequestsError.value = error.message || 'Could not load pull request monitor';
+    }
+  } finally {
+    dashboardPullRequestsLoading.value = false;
   }
 }
 
@@ -5833,7 +5992,7 @@ function startDashboardRealtime() {
   dashboardRefreshTimer = window.setInterval(() => {
     if (!token.value || !user.value) return;
     if (document.visibilityState === 'hidden') return;
-    void loadDashboardData({ silent: true });
+    void loadDashboardData({ silent: true, skipPullRequests: true });
     if (dashboardSection.value === 'worker') {
       void loadWorkerDashboardData({ silent: true });
     }
@@ -6014,6 +6173,9 @@ function clearSession() {
   dashboardAIWorkflow.value = null;
   dashboardAIWorkflowLoading.value = false;
   dashboardAIWorkflowError.value = '';
+  dashboardPullRequests.value = null;
+  dashboardPullRequestsLoading.value = false;
+  dashboardPullRequestsError.value = '';
   dashboardNotifications.value = [];
   dashboardNotificationsError.value = '';
   workerDashboard.value = {
