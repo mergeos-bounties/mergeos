@@ -41,6 +41,7 @@ func (s *Server) createAdminLedgerCredit(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	s.broadcastLiveFeedEvent("ledger_manual_credit")
 	writeJSON(w, http.StatusCreated, AdminManualCreditResponse{
 		LedgerEntry: entry,
 		WorkerID:    workerID,

@@ -264,6 +264,110 @@ func TestWebSocketBroadcastsSanitizedTaskAcceptedFeed(t *testing.T) {
 	}
 }
 
+func TestWebSocketBroadcastsAdminManualCreditLedgerEvent(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:       defaultTokenSymbol,
+		StatePath:         filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:    1000,
+		DevPaymentEnabled: true,
+		DevPaymentCode:    defaultDevPaymentCode,
+		GitHubOwner:       defaultGitHubOwner,
+		BountyRoot:        filepath.Join(tempDir, "bounties"),
+		SMTPFrom:          "noreply@mergeos.local",
+		AdminAutoPromote:  true,
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	adminAuth, err := store.Register(RegisterRequest{
+		Name:     "Realtime Admin",
+		Email:    "realtime-admin@example.com",
+		Password: "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	httpServer := httptest.NewServer(NewServer(cfg, store, payments).Routes())
+	defer httpServer.Close()
+	parsed, err := url.Parse(httpServer.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	conn, err := net.Dial("tcp", parsed.Host)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer conn.Close()
+
+	if _, err := conn.Write([]byte(websocketHandshake(parsed.Host))); err != nil {
+		t.Fatal(err)
+	}
+	reader := bufio.NewReader(conn)
+	if status, err := reader.ReadString('\n'); err != nil || !strings.Contains(status, "101 Switching Protocols") {
+		t.Fatalf("websocket status = %q, err = %v", status, err)
+	}
+	for {
+		line, err := reader.ReadString('\n')
+		if err != nil {
+			t.Fatal(err)
+		}
+		if line == "\r\n" {
+			break
+		}
+	}
+	_ = readWebSocketTextFrame(t, reader)
+	_ = readWebSocketTextFrame(t, reader)
+
+	body := strings.NewReader(`{"worker_id":"github:realtime-reviewer","reward_mrg":50,"bounty_type":"future-small","pr_url":"https://github.com/mergeos-bounties/mergeos/pull/777","pr_title":"Realtime ledger proof"}`)
+	req, err := http.NewRequest(http.MethodPost, httpServer.URL+"/api/admin/ledger/credits", body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Authorization", "Bearer "+adminAuth.Token)
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusCreated {
+		responseBody, _ := io.ReadAll(resp.Body)
+		t.Fatalf("manual credit status = %d, body = %s", resp.StatusCode, string(responseBody))
+	}
+
+	if err := conn.SetReadDeadline(time.Now().Add(5 * time.Second)); err != nil {
+		t.Fatal(err)
+	}
+	eventBytes := readWebSocketTextFrame(t, reader)
+	for _, value := range []string{"realtime-admin@example.com", defaultDevPaymentCode, tempDir} {
+		if strings.Contains(string(eventBytes), value) {
+			t.Fatalf("manual credit websocket leaked private value %q: %s", value, string(eventBytes))
+		}
+	}
+	var event map[string]interface{}
+	if err := json.Unmarshal(eventBytes, &event); err != nil {
+		t.Fatal(err)
+	}
+	if event["type"] != "ledger_manual_credit" {
+		t.Fatalf("unexpected websocket event: %#v", event)
+	}
+	if event["protocol_type"] != "ledger.recorded" {
+		t.Fatalf("manual credit websocket missing protocol type: %#v", event)
+	}
+	protocolEvent, ok := event["event"].(map[string]interface{})
+	if !ok || protocolEvent["type"] != "ledger.recorded" || protocolEvent["protocol_version"] != "mergeos.event.v1" {
+		t.Fatalf("manual credit websocket missing protocol event: %#v", event)
+	}
+	payload, ok := protocolEvent["payload"].(map[string]interface{})
+	if !ok || payload["ledger_sequence"] == nil || payload["entry_hash"] == "" {
+		t.Fatalf("manual credit websocket missing ledger proof payload: %#v", event)
+	}
+}
+
 func websocketHandshake(host string) string {
 	key := "dGhlIHNhbXBs" + "ZSBub25jZQ=="
 	return fmt.Sprintf("GET /api/ws HTTP/1.1\r\nHost: %s\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: %s\r\nSec-WebSocket-Version: 13\r\n\r\n", host, key)

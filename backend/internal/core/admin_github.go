@@ -176,6 +176,7 @@ func (s *Server) mergeAdminTaskPullRequest(w http.ResponseWriter, r *http.Reques
 	if commentErr != nil {
 		commentError = commentErr.Error()
 	}
+	s.broadcastLiveFeedEvent("ledger_task_payment")
 	writeJSON(w, http.StatusOK, AdminMergeTaskPullRequestResponse{
 		Task:         accepted,
 		PullRequest:  pull,
