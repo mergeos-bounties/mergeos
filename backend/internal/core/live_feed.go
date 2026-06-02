@@ -379,7 +379,16 @@ func publicLiveFeedAIType(log *GeminiWebhookLog) string {
 	if log != nil && strings.EqualFold(log.EventName, "agent_action") {
 		return "agent_action"
 	}
+	if publicLiveFeedIsPullRequestOpened(log) {
+		return "pr_opened"
+	}
 	return "ai_review"
+}
+
+func publicLiveFeedIsPullRequestOpened(log *GeminiWebhookLog) bool {
+	return log != nil &&
+		strings.EqualFold(log.EventName, "pull_request") &&
+		strings.EqualFold(strings.TrimSpace(log.Action), "opened")
 }
 
 func publicLiveFeedAIAction(log *GeminiWebhookLog) string {
@@ -453,6 +462,12 @@ func publicLiveFeedAITitle(log *GeminiWebhookLog) string {
 		}
 		return fmt.Sprintf("AI agent %s", agentActionTitleVerb(action))
 	}
+	if publicLiveFeedIsPullRequestOpened(log) {
+		if log.PullNumber > 0 {
+			return fmt.Sprintf("PR #%d opened", log.PullNumber)
+		}
+		return "Pull request opened"
+	}
 	if log.PullNumber > 0 {
 		return fmt.Sprintf("AI reviewed PR #%d", log.PullNumber)
 	}
@@ -483,6 +498,16 @@ func publicLiveFeedAIBody(log *GeminiWebhookLog) string {
 			return fmt.Sprintf("%s ran %s for %s PR #%d.", marketplaceTitle(agent), action, repo, log.PullNumber)
 		}
 		return fmt.Sprintf("%s ran %s for %s.", marketplaceTitle(agent), action, repo)
+	}
+	if publicLiveFeedIsPullRequestOpened(log) {
+		actor := publicLiveFeedGitHubActor(log.Sender)
+		if actor == "" {
+			actor = "GitHub"
+		}
+		if log.PullNumber > 0 {
+			return fmt.Sprintf("%s opened PR #%d in %s for MergeOS review.", actor, log.PullNumber, repo)
+		}
+		return fmt.Sprintf("%s opened a pull request in %s for MergeOS review.", actor, repo)
 	}
 	action := sanitizeLedgerReferenceValue(log.Action)
 	if action == "" {
@@ -603,6 +628,8 @@ func publicEventType(item PublicLiveFeedItem) string {
 		return "task.claimed"
 	case "deployment_validation":
 		return "deployment.updated"
+	case "pr_opened":
+		return "pr.opened"
 	case "ai_review":
 		return "pr.reviewed"
 	case "repo_issues_synced":

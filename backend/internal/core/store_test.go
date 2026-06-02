@@ -1275,7 +1275,7 @@ func TestPublicLiveFeedRouteReturnsSanitizedTimeline(t *testing.T) {
 			}
 		}
 	}
-	for _, required := range []string{"project_funded", "deployment_validation", "task_accepted", "ledger_task_payment", "ai_review"} {
+	for _, required := range []string{"project_funded", "deployment_validation", "task_accepted", "ledger_task_payment", "pr_opened"} {
 		if !seen[required] {
 			t.Fatalf("live feed missing %s item: %#v", required, payload.Items)
 		}
@@ -1310,7 +1310,7 @@ func TestPublicLiveFeedRouteReturnsSanitizedTimeline(t *testing.T) {
 			t.Fatalf("task paid event missing amount: %#v", event)
 		}
 	}
-	for _, required := range []string{"project.funded", "deployment.updated", "task.claimed", "task.paid", "pr.reviewed"} {
+	for _, required := range []string{"project.funded", "deployment.updated", "task.claimed", "task.paid", "pr.opened"} {
 		if !eventTypes[required] {
 			t.Fatalf("protocol events missing %s item: %#v", required, eventFeed.Events)
 		}

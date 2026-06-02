@@ -4606,7 +4606,7 @@ const ledgerTrustItems = computed(() => {
 const ledgerTabs = ['All Activity', 'Escrow & Payments', 'Tasks & PRs', 'Milestones', 'AI Actions', 'Token Events'];
 const ledgerTabTypes = {
   'Escrow & Payments': new Set(['payment_verified', 'platform_fee', 'project_reserve', 'task_reserve', 'task_payment']),
-  'Tasks & PRs': new Set(['task_reserve', 'task_payment', 'task_opened', 'task_accepted', 'ai_review']),
+  'Tasks & PRs': new Set(['task_reserve', 'task_payment', 'task_opened', 'task_accepted', 'pr_opened', 'ai_review']),
   Milestones: new Set(['project_funded', 'project_reserve', 'task_reserve', 'deployment_validation', 'repo_issues_synced']),
   'AI Actions': new Set(['ai_review', 'agent_action', 'repo_issues_synced']),
   'Token Events': new Set(['token_mint']),
@@ -8212,6 +8212,9 @@ function liveFeedMetaFor(type = '', action = '') {
   }
   if (normalized === 'deployment_validation') {
     return { type: 'Deployment Validation', icon: Rocket, tone: 'blue', amountTone: 'muted' };
+  }
+  if (normalized === 'pr_opened') {
+    return { type: 'PR Opened', icon: GitPullRequest, tone: 'blue', amountTone: 'muted' };
   }
   if (normalized === 'ai_review') {
     return { type: 'AI Review', icon: Bot, tone: 'purple', amountTone: 'muted' };
