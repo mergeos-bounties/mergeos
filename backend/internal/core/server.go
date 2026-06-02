@@ -587,6 +587,10 @@ func (s *Server) syncProjectRepoIssues(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	if err := s.store.RecordRepoIssueSyncEvent(report); err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
 	s.broadcastLiveFeedEvent("repo_issues_synced")
 	writeJSON(w, http.StatusOK, report)
 }

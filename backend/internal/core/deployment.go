@@ -337,7 +337,7 @@ func (s *Store) deploymentSignalsLocked(project *Project, tasks []*Task) []Deplo
 		reference := publicLiveFeedAIReference(log)
 		signals = append(signals, DeploymentSignal{
 			ID:        "ai:" + log.ID,
-			Type:      "ai_review",
+			Type:      publicLiveFeedAIType(log),
 			Title:     publicLiveFeedAITitle(log),
 			Body:      publicLiveFeedAIBody(log),
 			Status:    publicLiveFeedStatus(log.Status),

@@ -545,7 +545,15 @@ func TestSyncProjectImportedIssuesAddsMissingAndTracksState(t *testing.T) {
 		projects: map[string]*Project{},
 		tasks:    map[string]*Task{},
 	}
-	project := &Project{ID: "prj_0001", Title: "Repo issues", Tasks: []*Task{}}
+	project := &Project{
+		ID:             "prj_0001",
+		Title:          "Repo issues",
+		ClientEmail:    "private-repo-sync@example.com",
+		Phone:          "+1 555 0199",
+		BountyRepoName: "mergeos-bounties/mergeos",
+		RepoURL:        "https://github.com/mergeos-bounties/mergeos",
+		Tasks:          []*Task{},
+	}
 	existing := &Task{
 		ID:          "tsk_0001",
 		ProjectID:   project.ID,
@@ -594,6 +602,54 @@ func TestSyncProjectImportedIssuesAddsMissingAndTracksState(t *testing.T) {
 	}
 	if tasks[1].IssueNumber != 7 || tasks[1].IssueState != "open" || tasks[1].Status != TaskOpen {
 		t.Fatalf("missing issue not added: %#v", tasks[1])
+	}
+	if err := store.RecordRepoIssueSyncEvent(report); err != nil {
+		t.Fatal(err)
+	}
+	feed := store.PublicLiveFeed(20)
+	if feed.Stats.AIActionCount != 1 {
+		t.Fatalf("repo sync event count = %d", feed.Stats.AIActionCount)
+	}
+	seenRepoSync := false
+	for _, item := range feed.Items {
+		if item.Type == "repo_issues_synced" {
+			seenRepoSync = item.Actor == "mergeos-repo-sync" && strings.Contains(item.Body, "2 issues")
+		}
+	}
+	if !seenRepoSync {
+		t.Fatalf("public live feed missing repo sync event: %#v", feed.Items)
+	}
+	feedBody, err := json.Marshal(feed)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, value := range []string{"private-repo-sync@example.com", "+1 555 0199", existing.ID, tasks[1].ID} {
+		if strings.Contains(string(feedBody), value) {
+			t.Fatalf("repo sync live feed leaked private value %q: %s", value, string(feedBody))
+		}
+	}
+	events := store.PublicEventProtocol(20)
+	seenRepoSyncEvent := false
+	for _, event := range events.Events {
+		if event.Type == "repo.issues.synced" {
+			seenRepoSyncEvent = event.Actor == "mergeos-repo-sync"
+		}
+	}
+	if !seenRepoSyncEvent {
+		t.Fatalf("public event protocol missing repo sync event: %#v", events.Events)
+	}
+	deployment, err := store.ProjectDeployment(project.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	seenDeploymentSignal := false
+	for _, signal := range deployment.Signals {
+		if signal.Type == "repo_issues_synced" {
+			seenDeploymentSignal = true
+		}
+	}
+	if !seenDeploymentSignal {
+		t.Fatalf("deployment signals missing repo sync event: %#v", deployment.Signals)
 	}
 }
 

@@ -325,6 +325,9 @@ func publicLiveFeedGitHubActor(sender string) string {
 }
 
 func publicLiveFeedAIType(log *GeminiWebhookLog) string {
+	if log != nil && strings.EqualFold(log.EventName, "repo_issues_synced") {
+		return "repo_issues_synced"
+	}
 	if log != nil && strings.EqualFold(log.EventName, "agent_action") {
 		return "agent_action"
 	}
@@ -334,6 +337,9 @@ func publicLiveFeedAIType(log *GeminiWebhookLog) string {
 func publicLiveFeedAIActor(log *GeminiWebhookLog) string {
 	if log == nil {
 		return ""
+	}
+	if strings.EqualFold(log.EventName, "repo_issues_synced") {
+		return "mergeos-repo-sync"
 	}
 	if log != nil && strings.EqualFold(log.EventName, "agent_action") {
 		actor := sanitizeLedgerReferenceValue(strings.TrimPrefix(log.Sender, "agent:"))
@@ -375,6 +381,9 @@ func publicLiveFeedLedgerBody(entry LedgerEntry, projectTitle string) string {
 }
 
 func publicLiveFeedAITitle(log *GeminiWebhookLog) string {
+	if strings.EqualFold(log.EventName, "repo_issues_synced") {
+		return "Repository issues synced"
+	}
 	if strings.EqualFold(log.EventName, "agent_action") {
 		action := sanitizeLedgerReferenceValue(log.Action)
 		if action == "" {
@@ -395,6 +404,12 @@ func publicLiveFeedAIBody(log *GeminiWebhookLog) string {
 	repo := sanitizeLedgerReferenceValue(log.Repository)
 	if repo == "" {
 		repo = "GitHub repository"
+	}
+	if strings.EqualFold(log.EventName, "repo_issues_synced") {
+		imported := webhookLogLabelInt(log, "imported")
+		added := webhookLogLabelInt(log, "added")
+		updated := webhookLogLabelInt(log, "updated")
+		return fmt.Sprintf("MergeOS synced %d issues for %s and routed %d new tasks plus %d updates.", imported, repo, added, updated)
 	}
 	if strings.EqualFold(log.EventName, "agent_action") {
 		agent := sanitizeLedgerReferenceValue(strings.TrimPrefix(log.Sender, "agent:"))
@@ -527,6 +542,8 @@ func publicEventType(feedType string) string {
 		return "deployment.updated"
 	case "ai_review":
 		return "pr.reviewed"
+	case "repo_issues_synced":
+		return "repo.issues.synced"
 	}
 	if strings.HasPrefix(feedType, "ledger_task_payment") {
 		return "task.paid"
