@@ -1229,6 +1229,120 @@ func TestProjectTaskGraphRouteReturnsAcyclicDependencyGraph(t *testing.T) {
 	}
 }
 
+func TestProjectRepositoryScanRouteReturnsStaticFindings(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:       defaultTokenSymbol,
+		StatePath:         filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:    1000,
+		DevPaymentEnabled: true,
+		DevPaymentCode:    defaultDevPaymentCode,
+		GitHubOwner:       defaultGitHubOwner,
+		BountyRoot:        filepath.Join(tempDir, "bounties"),
+		SMTPFrom:          "noreply@mergeos.local",
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	auth, err := store.Register(RegisterRequest{
+		Name:        "Scan Client",
+		CompanyName: "Scan Co",
+		Email:       "scan-client@example.com",
+		Password:    "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	project, err := store.CreateProject(context.Background(), auth.User.ID, CreateProjectRequest{
+		Title:            "Repository scan proof",
+		ClientName:       "Private Scan Client",
+		CompanyName:      "Scan Co",
+		ClientEmail:      "scan-client@example.com",
+		Phone:            "+1 555 0155",
+		Brief:            "Create a repository scan proof.",
+		BudgetCents:      210000,
+		PaymentMethod:    PaymentPayPal,
+		PaymentReference: defaultDevPaymentCode,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(project.RepoLocalPath, "package.json"), []byte(`{"dependencies":{"vue":"^3.0.0"},"devDependencies":{"vite":"^5.0.0"}}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	srcDir := filepath.Join(project.RepoLocalPath, "src")
+	if err := os.MkdirAll(srcDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(srcDir, "config.js"), []byte("const API_SECRET = 'super-secret-token';\n// TODO tighten this test hook\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	server := NewServer(cfg, store, payments)
+	reqHTTP := httptest.NewRequest(http.MethodGet, "/api/projects/"+project.ID+"/repo-scan", nil)
+	reqHTTP.Header.Set("Authorization", "Bearer "+auth.Token)
+	resp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(resp, reqHTTP)
+	if resp.Code != http.StatusOK {
+		t.Fatalf("repo scan status = %d, body = %s", resp.Code, resp.Body.String())
+	}
+
+	body := resp.Body.String()
+	for _, value := range []string{
+		"scan-client@example.com",
+		"+1 555 0155",
+		auth.User.ID,
+		defaultDevPaymentCode,
+		tempDir,
+		"super-secret-token",
+	} {
+		if strings.Contains(body, value) {
+			t.Fatalf("repo scan leaked private value %q: %s", value, body)
+		}
+	}
+
+	var payload ProjectRepositoryScanResponse
+	if err := json.Unmarshal(resp.Body.Bytes(), &payload); err != nil {
+		t.Fatal(err)
+	}
+	if payload.Status != "ready" || payload.Stats.ScannedFiles == 0 || payload.Stats.DependencyFiles == 0 {
+		t.Fatalf("unexpected repo scan summary: %#v", payload)
+	}
+	if len(payload.Dependencies) == 0 || payload.Dependencies[0].Path != "package.json" || payload.Dependencies[0].PackageCount != 2 {
+		t.Fatalf("unexpected dependency scan: %#v", payload.Dependencies)
+	}
+	seenSignals := map[string]bool{}
+	for _, finding := range payload.Findings {
+		seenSignals[finding.Signal] = true
+		if strings.Contains(finding.Body, "super-secret-token") {
+			t.Fatalf("finding leaked raw secret: %#v", finding)
+		}
+	}
+	for _, signal := range []string{"lockfile_missing", "secret_pattern", "todo_fixme"} {
+		if !seenSignals[signal] {
+			t.Fatalf("repo scan missing signal %s: %#v", signal, payload.Findings)
+		}
+	}
+
+	otherAuth, err := store.Register(RegisterRequest{
+		Name:     "Other Scan Client",
+		Email:    "other-scan-client@example.com",
+		Password: "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	forbiddenReq := httptest.NewRequest(http.MethodGet, "/api/projects/"+project.ID+"/repo-scan", nil)
+	forbiddenReq.Header.Set("Authorization", "Bearer "+otherAuth.Token)
+	forbiddenResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(forbiddenResp, forbiddenReq)
+	if forbiddenResp.Code != http.StatusForbidden {
+		t.Fatalf("other client repo scan status = %d", forbiddenResp.Code)
+	}
+}
+
 func TestWorkerDashboardRouteMatchesGitHubWorkerAndSanitizesData(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := Config{

@@ -637,6 +637,50 @@ type ProjectTaskGraphResponse struct {
 	UpdatedAt    time.Time       `json:"updated_at"`
 }
 
+type ProjectRepositoryScanResponse struct {
+	ProjectID    string                     `json:"project_id"`
+	ProjectTitle string                     `json:"project_title"`
+	Status       string                     `json:"status"`
+	Summary      string                     `json:"summary"`
+	Stats        RepositoryScanStats        `json:"stats"`
+	Languages    []RepositoryLanguage       `json:"languages"`
+	Dependencies []RepositoryDependencyFile `json:"dependencies"`
+	Findings     []RepositoryScanFinding    `json:"findings"`
+	UpdatedAt    time.Time                  `json:"updated_at"`
+}
+
+type RepositoryScanStats struct {
+	FileCount       int `json:"file_count"`
+	ScannedFiles    int `json:"scanned_files"`
+	SkippedFiles    int `json:"skipped_files"`
+	DependencyFiles int `json:"dependency_files"`
+	FindingCount    int `json:"finding_count"`
+}
+
+type RepositoryLanguage struct {
+	Language  string `json:"language"`
+	Extension string `json:"extension"`
+	FileCount int    `json:"file_count"`
+}
+
+type RepositoryDependencyFile struct {
+	Path         string `json:"path"`
+	Ecosystem    string `json:"ecosystem"`
+	PackageCount int    `json:"package_count"`
+	HasLockfile  bool   `json:"has_lockfile"`
+}
+
+type RepositoryScanFinding struct {
+	ID       string `json:"id"`
+	Severity string `json:"severity"`
+	Category string `json:"category"`
+	Title    string `json:"title"`
+	Body     string `json:"body"`
+	Path     string `json:"path,omitempty"`
+	Line     int    `json:"line,omitempty"`
+	Signal   string `json:"signal,omitempty"`
+}
+
 type TaskGraphStats struct {
 	NodeCount     int `json:"node_count"`
 	EdgeCount     int `json:"edge_count"`

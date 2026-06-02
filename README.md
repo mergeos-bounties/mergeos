@@ -334,6 +334,7 @@ Customer:
 - `GET /api/projects/{id}/deployment`
 - `GET /api/projects/{id}/ai-workflow`
 - `GET /api/projects/{id}/task-graph`
+- `GET /api/projects/{id}/repo-scan`
 - `GET /api/tasks`
 - `POST /api/tasks/{id}/accept`
 - `GET /api/workers/me`

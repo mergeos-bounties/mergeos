@@ -76,6 +76,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/projects/{id}/deployment", s.projectDeployment)
 	mux.HandleFunc("GET /api/projects/{id}/ai-workflow", s.projectAIWorkflow)
 	mux.HandleFunc("GET /api/projects/{id}/task-graph", s.projectTaskGraph)
+	mux.HandleFunc("GET /api/projects/{id}/repo-scan", s.projectRepositoryScan)
 	mux.HandleFunc("POST /api/projects", s.createProject)
 	mux.HandleFunc("POST /api/projects/evaluate", s.evaluateProject)
 	mux.HandleFunc("POST /api/projects/evaluate-price", s.evaluateProjectPrice)
@@ -358,6 +359,24 @@ func (s *Server) projectTaskGraph(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, graph)
+}
+
+func (s *Server) projectRepositoryScan(w http.ResponseWriter, r *http.Request) {
+	user, ok := s.requireUser(w, r)
+	if !ok {
+		return
+	}
+	projectID := strings.TrimSpace(r.PathValue("id"))
+	if !s.store.CanAccessProject(user.ID, user.Role, projectID) {
+		writeError(w, http.StatusForbidden, "project access is required")
+		return
+	}
+	scan, err := s.store.ProjectRepositoryScan(projectID)
+	if err != nil {
+		writeError(w, http.StatusNotFound, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, scan)
 }
 
 func (s *Server) notifications(w http.ResponseWriter, r *http.Request) {

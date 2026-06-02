@@ -99,6 +99,10 @@ export class MergeOSClient {
     return this.request(`/api/projects/${encodeURIComponent(projectID)}/task-graph`);
   }
 
+  projectRepositoryScan(projectID) {
+    return this.request(`/api/projects/${encodeURIComponent(projectID)}/repo-scan`);
+  }
+
   listTasks() {
     return this.request('/api/tasks');
   }
