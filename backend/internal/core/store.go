@@ -19,6 +19,7 @@ import (
 )
 
 var slugClean = regexp.MustCompile(`[^a-z0-9-]+`)
+var estimatedEffortPattern = regexp.MustCompile(`(?i)estimated effort:\s*([0-9]+(?:\.[0-9]+)?)\s*hours?`)
 
 const defaultGeminiReviewModel = "gemini-2.5-flash"
 const defaultLLMProvider = "gemini"
@@ -1918,11 +1919,25 @@ func importedIssueAcceptance(issue *ImportedRepoIssue) string {
 	if issue.Complexity != "" {
 		parts = append(parts, "Complexity: "+issue.Complexity+".")
 	}
+	if issue.EstimatedHours > 0 {
+		parts = append(parts, "Estimated effort: "+formatEstimatedHours(issue.EstimatedHours)+".")
+	}
 	if len(issue.Reasons) > 0 {
 		parts = append(parts, "Scoring signals: "+strings.Join(issue.Reasons, ", ")+".")
 	}
 	parts = append(parts, "Acceptance requires passing checks, a clear fix summary, and evidence that the original issue can be closed.")
 	return strings.Join(parts, " ")
+}
+
+func formatEstimatedHours(hours float64) string {
+	if hours <= 0 {
+		return "0 hours"
+	}
+	rounded := roundHalfHour(hours)
+	if rounded == float64(int64(rounded)) {
+		return fmt.Sprintf("%d hours", int64(rounded))
+	}
+	return fmt.Sprintf("%.1f hours", rounded)
 }
 
 func (s *Store) addLedger(entryType, from, to string, amountCents int64, reference string) LedgerEntry {
@@ -2550,12 +2565,39 @@ func marketplaceBountyRow(project *Project, task *Task) *MarketplaceBounty {
 		Title:              task.Title,
 		Acceptance:         compactText(task.Acceptance),
 		RewardCents:        task.RewardCents,
+		EstimatedHours:     marketplaceEstimatedHours(task),
 		RequiredWorkerKind: task.RequiredWorkerKind,
 		SuggestedAgentType: task.SuggestedAgentType,
 		BountyType:         task.BountyType,
 		IssueURL:           marketplacePublicRepoURL(task.IssueURL),
 		CreatedAt:          task.CreatedAt,
 	}
+}
+
+func marketplaceEstimatedHours(task *Task) float64 {
+	if task == nil {
+		return 0
+	}
+	if match := estimatedEffortPattern.FindStringSubmatch(task.Acceptance); len(match) == 2 {
+		if value, err := strconv.ParseFloat(match[1], 64); err == nil && value > 0 {
+			return roundHalfHour(value)
+		}
+	}
+	return estimatedHoursFromReward(task.RewardCents)
+}
+
+func estimatedHoursFromReward(rewardCents int64) float64 {
+	if rewardCents <= 0 {
+		return 0
+	}
+	hours := float64(rewardCents) / 10000
+	if hours < 1 {
+		hours = 1
+	}
+	if hours > 80 {
+		hours = 80
+	}
+	return roundHalfHour(hours)
 }
 
 func marketplaceBountyID(projectID string, issueNumber int) string {

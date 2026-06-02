@@ -28,6 +28,15 @@ func publicTaskProtocolDocument(bounty *MarketplaceBounty) TaskProtocolDocument 
 	if workerKind == "" {
 		workerKind = WorkerHuman
 	}
+	metadata := map[string]any{
+		"claim_id":      bounty.ClaimID,
+		"issue_number":  bounty.IssueNumber,
+		"project_title": bounty.ProjectTitle,
+		"created_at":    bounty.CreatedAt,
+	}
+	if bounty.EstimatedHours > 0 {
+		metadata["estimated_hours"] = bounty.EstimatedHours
+	}
 	return TaskProtocolDocument{
 		ProtocolVersion:    "mergeos.task.v1",
 		Kind:               "task",
@@ -37,18 +46,14 @@ func publicTaskProtocolDocument(bounty *MarketplaceBounty) TaskProtocolDocument 
 		Summary:            protocolText(bounty.Acceptance, 2000, ""),
 		IssueURL:           protocolText(bounty.IssueURL, 512, ""),
 		RewardMRG:          float64(bounty.RewardCents) / 100,
+		EstimatedHours:     bounty.EstimatedHours,
 		BountyType:         protocolText(bounty.BountyType, 80, ""),
 		WorkerKind:         workerKind,
 		AgentType:          protocolText(bounty.SuggestedAgentType, 120, ""),
 		AcceptanceCriteria: publicTaskAcceptanceCriteria(bounty.Acceptance),
 		EvidenceRequired:   publicTaskEvidenceRequired(bounty),
 		Tags:               publicTaskProtocolTags(bounty),
-		Metadata: map[string]any{
-			"claim_id":      bounty.ClaimID,
-			"issue_number":  bounty.IssueNumber,
-			"project_title": bounty.ProjectTitle,
-			"created_at":    bounty.CreatedAt,
-		},
+		Metadata:           metadata,
 	}
 }
 

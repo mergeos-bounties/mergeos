@@ -850,6 +850,9 @@ func TestPublicMarketplaceRouteReturnsSanitizedLiveData(t *testing.T) {
 		if bounty.IssueURL != "" && !strings.HasPrefix(bounty.IssueURL, "http") {
 			t.Fatalf("bounty issue URL is not public: %#v", bounty)
 		}
+		if bounty.EstimatedHours <= 0 {
+			t.Fatalf("bounty missing estimated hours: %#v", bounty)
+		}
 	}
 	if len(payload.Contributors) != 1 || payload.Contributors[0].EarnedCents == 0 {
 		t.Fatalf("contributors missing real paid task data: %#v", payload.Contributors)
@@ -888,6 +891,9 @@ func TestPublicMarketplaceRouteReturnsSanitizedLiveData(t *testing.T) {
 		}
 		if document.RewardMRG <= 0 || len(document.AcceptanceCriteria) == 0 || len(document.EvidenceRequired) == 0 {
 			t.Fatalf("task protocol missing bounty requirements: %#v", document)
+		}
+		if document.EstimatedHours <= 0 {
+			t.Fatalf("task protocol missing estimated hours: %#v", document)
 		}
 	}
 

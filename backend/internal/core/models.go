@@ -553,6 +553,7 @@ type ImportRepoIssuesResponse struct {
 	RepoURL             string               `json:"repo_url"`
 	IssueCount          int                  `json:"issue_count"`
 	TotalEstimatedCents int64                `json:"total_estimated_cents"`
+	TotalEstimatedHours float64              `json:"total_estimated_hours"`
 	Issues              []*ImportedRepoIssue `json:"issues"`
 }
 
@@ -578,6 +579,7 @@ type ImportedRepoIssue struct {
 	Score              int        `json:"score"`
 	Complexity         string     `json:"complexity"`
 	EstimatedCents     int64      `json:"estimated_cents"`
+	EstimatedHours     float64    `json:"estimated_hours"`
 	RequiredWorkerKind WorkerKind `json:"required_worker_kind"`
 	SuggestedAgentType string     `json:"suggested_agent_type"`
 	Reasons            []string   `json:"reasons"`
@@ -634,6 +636,7 @@ type MarketplaceBounty struct {
 	Title              string     `json:"title"`
 	Acceptance         string     `json:"acceptance"`
 	RewardCents        int64      `json:"reward_cents"`
+	EstimatedHours     float64    `json:"estimated_hours,omitempty"`
 	RequiredWorkerKind WorkerKind `json:"required_worker_kind"`
 	SuggestedAgentType string     `json:"suggested_agent_type,omitempty"`
 	BountyType         string     `json:"bounty_type,omitempty"`
@@ -742,6 +745,7 @@ type TaskProtocolDocument struct {
 	SourceRepository   string         `json:"source_repository,omitempty"`
 	IssueURL           string         `json:"issue_url,omitempty"`
 	RewardMRG          float64        `json:"reward_mrg"`
+	EstimatedHours     float64        `json:"estimated_hours,omitempty"`
 	BountyType         string         `json:"bounty_type,omitempty"`
 	WorkerKind         WorkerKind     `json:"worker_kind"`
 	AgentType          string         `json:"agent_type,omitempty"`

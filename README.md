@@ -54,7 +54,7 @@ MergeOS currently supports:
 - Local payment verification through `LOCAL-PAID`.
 - PayPal Orders v2 adapter.
 - EVM native or ERC-20 receipt verification.
-- GitHub open issue import with heuristic scoring.
+- GitHub open issue import with heuristic complexity, estimated MRG reward, and estimated hours.
 - GitHub reward aliases. If a worker has not linked a wallet yet, payouts can still target `github:username`; once linked, payouts route to the user's `0x...` wallet address.
 - Local git bounty workspaces or GitHub private bounty repos when `GITHUB_TOKEN` is configured.
 - Static repository scan for dependency manifests, technical-debt markers, and secret-hygiene findings.

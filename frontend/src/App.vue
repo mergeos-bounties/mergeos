@@ -218,13 +218,13 @@
               <div v-if="repoImportedIssues.length" class="repo-issue-panel">
                 <div class="repo-issue-summary">
                   <strong>{{ repoImportResult.owner }}/{{ repoImportResult.name }}</strong>
-                  <span>{{ repoImportedIssues.length }} issues · {{ formatMRGFromCents(repoImportedEstimateCents) }} scored</span>
+                  <span>{{ repoImportedIssues.length }} issues · {{ formatMRGFromCents(repoImportedEstimateCents) }} · {{ formatEstimatedHours(repoImportedEstimateHours) }}</span>
                 </div>
                 <article v-for="issue in repoImportedIssues.slice(0, 4)" :key="issue.number" class="repo-issue-row">
                   <span>#{{ issue.number }}</span>
                   <div>
                     <strong>{{ issue.title }}</strong>
-                    <small>Score {{ issue.score }} · {{ issue.complexity }} · {{ formatMRGFromCents(issue.estimated_cents) }}</small>
+                    <small>Score {{ issue.score }} · {{ issue.complexity }} · {{ formatMRGFromCents(issue.estimated_cents) }} · {{ formatEstimatedHours(issue.estimated_hours) }}</small>
                   </div>
                 </article>
               </div>
@@ -3506,7 +3506,7 @@
                     <span>{{ bounty.issue }}</span>
                   </div>
                   <p>{{ bounty.acceptance }}</p>
-                  <small>{{ bounty.project }} · {{ bounty.lane }}</small>
+                  <small>{{ bounty.project }} · {{ bounty.lane }}<template v-if="bounty.effort"> · {{ bounty.effort }}</template></small>
                 </div>
                 <div class="marketplace-bounty-meta">
                   <strong>{{ bounty.reward }}</strong>
@@ -3578,7 +3578,7 @@
                 <div class="marketplace-agent-task-list">
                   <p v-if="marketplaceClaimError" class="marketplace-claim-error">{{ marketplaceClaimError }}</p>
                   <div v-for="task in agent.nextTasks" :key="task.id" class="marketplace-agent-task-row">
-                    <small>{{ task.issue }} / {{ task.title }} / {{ task.reward }}</small>
+                    <small>{{ task.issue }} / {{ task.title }} / {{ task.reward }}<template v-if="task.effort"> / {{ task.effort }}</template></small>
                     <button
                       type="button"
                       :disabled="!task.claimID || marketplaceClaimBusyID === task.claimID"
@@ -4400,6 +4400,9 @@ const projectDeliverableCountLabel = computed(() =>
 const repoImportedIssues = computed(() => Array.isArray(repoImportResult.value?.issues) ? repoImportResult.value.issues : []);
 const repoImportedEstimateCents = computed(() =>
   repoImportedIssues.value.reduce((total, issue) => total + (Number(issue.estimated_cents) || 0), 0),
+);
+const repoImportedEstimateHours = computed(() =>
+  repoImportedIssues.value.reduce((total, issue) => total + (Number(issue.estimated_hours) || 0), 0),
 );
 const projectBudgetAmount = computed(() => Math.max(0, Number(projectSetupForm.budgetAmount) || 0));
 const projectBudgetLow = computed(() => {
@@ -7281,6 +7284,15 @@ function formatCompactNumber(value = 0) {
   }).format(Number(value) || 0);
 }
 
+function formatEstimatedHours(value = 0) {
+  const hours = Number(value) || 0;
+  if (hours <= 0) return '0 hours';
+  const formatted = new Intl.NumberFormat('en-US', {
+    maximumFractionDigits: hours >= 10 ? 0 : 1,
+  }).format(hours);
+  return `${formatted} ${formatted === '1' ? 'hour' : 'hours'}`;
+}
+
 function tokenAmountFromCents(cents = 0) {
   return Math.round(((Number(cents) || 0) / 100) * TOKEN_RATE_PER_USD);
 }
@@ -7456,6 +7468,7 @@ function mapMarketplaceBounty(bounty = {}, index = 0) {
   const agentType = bounty.suggested_agent_type || '';
   const issueNumber = Number(bounty.issue_number) || 0;
   const claimCommand = issueNumber > 0 ? `/attempt #${issueNumber}` : '';
+  const estimatedHours = Number(bounty.estimated_hours) || 0;
   return {
     id: bounty.id || `${bounty.project_id || 'project'}:${issueNumber || index}`,
     claimID: bounty.claim_id || bounty.id || '',
@@ -7465,6 +7478,8 @@ function mapMarketplaceBounty(bounty = {}, index = 0) {
     project: bounty.project_title || 'MergeOS project',
     reward: formatPublicMRGFromCents(bounty.reward_cents),
     rewardCents: Number(bounty.reward_cents) || 0,
+    effort: estimatedHours > 0 ? formatEstimatedHours(estimatedHours) : '',
+    effortHours: estimatedHours,
     lane: agentType ? toTitleLabel(agentType) : toTitleLabel(workerKind),
     issue: issueNumber > 0 ? `#${issueNumber}` : 'Task',
     issueNumber,
@@ -7490,7 +7505,9 @@ function sortMarketplaceBounties(a = {}, b = {}, filter = 'Category') {
     return b.rewardCents - a.rewardCents || b.issueNumber - a.issueNumber;
   }
   if (filter === 'Delivery time') {
-    return b.issueNumber - a.issueNumber || b.rewardCents - a.rewardCents;
+    const aHours = Number(a.effortHours) || Number.POSITIVE_INFINITY;
+    const bHours = Number(b.effortHours) || Number.POSITIVE_INFINITY;
+    return aHours - bHours || b.issueNumber - a.issueNumber || b.rewardCents - a.rewardCents;
   }
   return 0;
 }
@@ -7512,6 +7529,7 @@ function marketplaceBountyHaystack(bounty = {}) {
     bounty.acceptance,
     bounty.project,
     bounty.reward,
+    bounty.effort,
     bounty.lane,
     bounty.issue,
   ].join(' ').toLowerCase();

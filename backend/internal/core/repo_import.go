@@ -40,6 +40,7 @@ func ImportRepoIssues(ctx context.Context, cfg Config, req ImportRepoIssuesReque
 
 	issues := make([]*ImportedRepoIssue, 0, len(rows))
 	var total int64
+	var totalHours float64
 	for _, row := range rows {
 		if row.PullRequest != nil {
 			continue
@@ -47,6 +48,7 @@ func ImportRepoIssues(ctx context.Context, cfg Config, req ImportRepoIssuesReque
 		issue := scoreRepoIssue(row)
 		issues = append(issues, issue)
 		total += issue.EstimatedCents
+		totalHours += issue.EstimatedHours
 	}
 	sort.SliceStable(issues, func(i, j int) bool {
 		if issues[i].Score != issues[j].Score {
@@ -61,6 +63,7 @@ func ImportRepoIssues(ctx context.Context, cfg Config, req ImportRepoIssuesReque
 		RepoURL:             "https://github.com/" + owner + "/" + name,
 		IssueCount:          len(issues),
 		TotalEstimatedCents: total,
+		TotalEstimatedHours: roundHalfHour(totalHours),
 		Issues:              issues,
 	}, nil
 }
@@ -194,6 +197,7 @@ func scoreRepoIssue(row githubIssueRow) *ImportedRepoIssue {
 
 	estimated := int64(6000 + score*450)
 	estimated = ((estimated + 999) / 1000) * 1000
+	estimatedHours := estimatedIssueHours(score, complexity)
 	kind, agent := workerForIssue(text)
 
 	return &ImportedRepoIssue{
@@ -206,12 +210,37 @@ func scoreRepoIssue(row githubIssueRow) *ImportedRepoIssue {
 		Score:              score,
 		Complexity:         complexity,
 		EstimatedCents:     estimated,
+		EstimatedHours:     estimatedHours,
 		RequiredWorkerKind: kind,
 		SuggestedAgentType: agent,
 		Reasons:            reasons,
 		CreatedAt:          row.CreatedAt,
 		UpdatedAt:          row.UpdatedAt,
 	}
+}
+
+func estimatedIssueHours(score int, complexity string) float64 {
+	hours := 2 + float64(score)/12
+	switch strings.ToLower(strings.TrimSpace(complexity)) {
+	case "high":
+		hours += 4
+	case "medium":
+		hours += 1.5
+	}
+	if hours < 1 {
+		hours = 1
+	}
+	if hours > 24 {
+		hours = 24
+	}
+	return roundHalfHour(hours)
+}
+
+func roundHalfHour(value float64) float64 {
+	if value <= 0 {
+		return 0
+	}
+	return float64(int(value*2+0.5)) / 2
 }
 
 func applyKeywordScores(text string, score *int, reasons *[]string) {

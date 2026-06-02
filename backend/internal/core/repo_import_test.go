@@ -49,4 +49,7 @@ func TestScoreRepoIssue(t *testing.T) {
 	if issue.EstimatedCents <= 0 {
 		t.Fatalf("estimated cents = %d", issue.EstimatedCents)
 	}
+	if issue.EstimatedHours <= 0 {
+		t.Fatalf("estimated hours = %.1f", issue.EstimatedHours)
+	}
 }
