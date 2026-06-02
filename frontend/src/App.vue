@@ -1678,7 +1678,7 @@
                     <Link2 :size="15" />
                     View Ledger
                   </button>
-                  <button type="button" aria-label="Copy payment history state" @click="showToast('Payment history is live and synced from your ledger.')">
+                  <button type="button" aria-label="Copy payment history state" @click="copyDashboardPaymentHistoryState">
                     <MoreHorizontal :size="16" />
                   </button>
                 </div>
@@ -5754,6 +5754,45 @@ async function copyDashboardProjectLink() {
     }
   }
   showToast(`Project ledger link: ${shareURL}`);
+}
+
+function dashboardPaymentHistoryText() {
+  const project = dashboardSelectedProject.value;
+  const projectTitle = String(project?.title || 'No project selected').trim();
+  const projectID = String(project?.id || selectedDashboardProjectID.value || '').trim();
+  const summaryLines = dashboardPaymentSummary.value.map((item) => (
+    `- ${item.label}: ${item.value}${item.caption ? ` (${item.caption})` : ''}`
+  ));
+  const ledgerLines = dashboardPaymentRows.value.length
+    ? dashboardPaymentRows.value.map((row) => (
+      `- ${row.when} | ${row.type} | ${row.amount} | ${row.method} | ${row.status} | ${row.rawReference || row.reference}`
+    ))
+    : ['- No financial ledger rows yet'];
+  return [
+    'MergeOS payment history',
+    `Project: ${projectTitle}${projectID ? ` (${projectID})` : ''}`,
+    `Status: ${dashboardPaymentView.value.status}`,
+    '',
+    'Summary:',
+    ...summaryLines,
+    '',
+    'Ledger rows:',
+    ...ledgerLines,
+  ].join('\n');
+}
+
+async function copyDashboardPaymentHistoryState() {
+  const value = dashboardPaymentHistoryText();
+  if (hasWindow && navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(value);
+      showToast('Payment history copied.');
+      return;
+    } catch {
+      // Use visible fallback below.
+    }
+  }
+  showToast(value.slice(0, 220));
 }
 
 async function handleLedgerReference(event = {}) {
