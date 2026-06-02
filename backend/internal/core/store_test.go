@@ -1468,6 +1468,103 @@ func TestProjectEscrowRouteReturnsReserveReleaseSummary(t *testing.T) {
 	}
 }
 
+func TestProjectDashboardRouteAggregatesCustomerWorkflowAndSanitizesData(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:       defaultTokenSymbol,
+		StatePath:         filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:    1000,
+		DevPaymentEnabled: true,
+		DevPaymentCode:    defaultDevPaymentCode,
+		GitHubOwner:       defaultGitHubOwner,
+		BountyRoot:        filepath.Join(tempDir, "bounties"),
+		SMTPFrom:          "noreply@mergeos.local",
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	auth, err := store.Register(RegisterRequest{
+		Name:        "Dashboard Client",
+		CompanyName: "Dashboard Co",
+		Email:       "dashboard-client@example.com",
+		Password:    "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	project, err := store.CreateProject(context.Background(), auth.User.ID, CreateProjectRequest{
+		Title:            "Dashboard aggregate proof",
+		ClientName:       "Private Dashboard Client",
+		CompanyName:      "Dashboard Co",
+		ClientEmail:      "dashboard-client@example.com",
+		Phone:            "+1 555 0166",
+		Brief:            "Create customer dashboard aggregate data without leaking private payment data.",
+		BudgetCents:      210000,
+		PaymentMethod:    PaymentPayPal,
+		PaymentReference: defaultDevPaymentCode,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	server := NewServer(cfg, store, payments)
+	reqHTTP := httptest.NewRequest(http.MethodGet, "/api/projects/"+project.ID+"/dashboard", nil)
+	reqHTTP.Header.Set("Authorization", "Bearer "+auth.Token)
+	resp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(resp, reqHTTP)
+	if resp.Code != http.StatusOK {
+		t.Fatalf("dashboard status = %d, body = %s", resp.Code, resp.Body.String())
+	}
+
+	body := resp.Body.String()
+	for _, value := range []string{
+		"dashboard-client@example.com",
+		"+1 555 0166",
+		auth.User.ID,
+		defaultDevPaymentCode,
+		tempDir,
+	} {
+		if strings.Contains(body, value) {
+			t.Fatalf("dashboard response leaked private value %q: %s", value, body)
+		}
+	}
+
+	var payload ProjectDashboardResponse
+	if err := json.Unmarshal(resp.Body.Bytes(), &payload); err != nil {
+		t.Fatal(err)
+	}
+	if payload.Project.ProjectID != project.ID || payload.Project.Title != "Dashboard aggregate proof" {
+		t.Fatalf("unexpected dashboard project overview: %#v", payload.Project)
+	}
+	if payload.Project.TaskCount != len(project.Tasks) || payload.Escrow.ProjectID != project.ID || payload.TaskGraph.Stats.NodeCount != len(project.Tasks) {
+		t.Fatalf("dashboard missing task or escrow aggregates: %#v", payload)
+	}
+	if payload.Deployment.ProjectID != project.ID || payload.AIWorkflow.ProjectID != project.ID || payload.RepositoryScan.ProjectID != project.ID {
+		t.Fatalf("dashboard missing workflow modules: %#v", payload)
+	}
+	if payload.PullRequests.ProjectID != project.ID || payload.UpdatedAt.IsZero() {
+		t.Fatalf("dashboard missing pull request monitor shell or timestamp: %#v", payload)
+	}
+
+	otherAuth, err := store.Register(RegisterRequest{
+		Name:     "Other Dashboard Client",
+		Email:    "other-dashboard-client@example.com",
+		Password: "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	forbiddenReq := httptest.NewRequest(http.MethodGet, "/api/projects/"+project.ID+"/dashboard", nil)
+	forbiddenReq.Header.Set("Authorization", "Bearer "+otherAuth.Token)
+	forbiddenResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(forbiddenResp, forbiddenReq)
+	if forbiddenResp.Code != http.StatusForbidden {
+		t.Fatalf("other client dashboard status = %d", forbiddenResp.Code)
+	}
+}
+
 func TestProjectAIWorkflowRouteReturnsWorkflowAndSanitizesData(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := Config{

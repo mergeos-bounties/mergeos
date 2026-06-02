@@ -52,6 +52,7 @@ await mergeos.publicRevealTestSettingsEntry('tse_0001', 'shared-password');
 ```js
 await mergeos.createProject(projectPayload);
 await mergeos.projectEscrow('prj_0001');
+await mergeos.projectDashboard('prj_0001');
 await mergeos.projectPullRequests('prj_0001');
 await mergeos.projectTaskGraph('prj_0001');
 await mergeos.projectWorkflowProtocol('prj_0001');

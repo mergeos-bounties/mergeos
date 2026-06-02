@@ -80,6 +80,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/admin/gemini/webhooks", s.adminGeminiWebhookLogs)
 	mux.HandleFunc("GET /api/projects", s.projects)
 	mux.HandleFunc("GET /api/projects/{id}/escrow", s.projectEscrow)
+	mux.HandleFunc("GET /api/projects/{id}/dashboard", s.projectDashboard)
 	mux.HandleFunc("GET /api/projects/{id}/pull-requests", s.projectPullRequests)
 	mux.HandleFunc("GET /api/projects/{id}/deployment", s.projectDeployment)
 	mux.HandleFunc("GET /api/projects/{id}/ai-workflow", s.projectAIWorkflow)
@@ -396,6 +397,39 @@ func (s *Server) projectEscrow(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, escrow)
+}
+
+func (s *Server) projectDashboard(w http.ResponseWriter, r *http.Request) {
+	user, ok := s.requireUser(w, r)
+	if !ok {
+		return
+	}
+	projectID := strings.TrimSpace(r.PathValue("id"))
+	if !s.store.CanAccessProject(user.ID, user.Role, projectID) {
+		writeError(w, http.StatusForbidden, "project access is required")
+		return
+	}
+	dashboard, err := s.store.ProjectDashboard(projectID)
+	if err != nil {
+		writeError(w, http.StatusNotFound, err.Error())
+		return
+	}
+	project, ok := s.store.ProjectSnapshot(projectID)
+	if !ok {
+		writeError(w, http.StatusNotFound, "project not found")
+		return
+	}
+	client, err := newAdminGitHubClient(s.cfg, false)
+	if err != nil {
+		dashboard.PullRequestError = sanitizeLedgerReferenceValue(err.Error())
+	} else {
+		dashboard.PullRequests = projectPullRequestsMonitor(r.Context(), client, project)
+		if dashboard.PullRequests.UpdatedAt.After(dashboard.UpdatedAt) {
+			dashboard.UpdatedAt = dashboard.PullRequests.UpdatedAt
+			dashboard.Project.UpdatedAt = dashboard.PullRequests.UpdatedAt
+		}
+	}
+	writeJSON(w, http.StatusOK, dashboard)
 }
 
 func (s *Server) projectPullRequests(w http.ResponseWriter, r *http.Request) {

@@ -156,6 +156,7 @@ test('supports wallet, payment, and raw upload helper routes', async () => {
 test('exposes project workflow and admin ops routes', async () => {
   const fetchImpl = fakeFetch([
     { status: 200, body: { release_status: 'funded' } },
+    { status: 200, body: { project: { project_id: 'prj_1' }, task_graph: { stats: { node_count: 2 } } } },
     { status: 200, body: { stats: { pull_request_count: 2 }, tasks: [] } },
     { status: 200, body: { status: 'validating' } },
     { status: 200, body: { status: 'orchestrating' } },
@@ -170,6 +171,7 @@ test('exposes project workflow and admin ops routes', async () => {
   const client = new MergeOSClient({ token: 'admin-token', fetchImpl });
 
   await client.projectEscrow('prj_1');
+  const dashboard = await client.projectDashboard('prj_1');
   const pulls = await client.projectPullRequests('prj_1');
   await client.projectDeployment('prj_1');
   await client.projectAIWorkflow('prj_1');
@@ -181,6 +183,7 @@ test('exposes project workflow and admin ops routes', async () => {
   const ops = await client.adminOpsQueue();
   const reputation = await client.adminReputation();
 
+  assert.equal(dashboard.project.project_id, 'prj_1');
   assert.equal(pulls.stats.pull_request_count, 2);
   assert.equal(graph.stats.node_count, 2);
   assert.equal(workflowProtocol.protocol_version, 'mergeos.workflow.v1');
@@ -190,17 +193,18 @@ test('exposes project workflow and admin ops routes', async () => {
   assert.equal(ops.stats.total_count, 1);
   assert.equal(reputation.stats.worker_count, 1);
   assert.equal(fetchImpl.calls[0].url, '/api/projects/prj_1/escrow');
-  assert.equal(fetchImpl.calls[1].url, '/api/projects/prj_1/pull-requests');
-  assert.equal(fetchImpl.calls[2].url, '/api/projects/prj_1/deployment');
-  assert.equal(fetchImpl.calls[3].url, '/api/projects/prj_1/ai-workflow');
-  assert.equal(fetchImpl.calls[4].url, '/api/projects/prj_1/task-graph');
-  assert.equal(fetchImpl.calls[5].url, '/api/projects/prj_1/protocol/workflow');
-  assert.equal(fetchImpl.calls[6].url, '/api/projects/prj_1/repo-scan');
-  assert.equal(fetchImpl.calls[7].url, '/api/projects/prj_1/protocol/scan');
-  assert.equal(fetchImpl.calls[8].url, '/api/projects/prj_1/repo-sync');
-  assert.equal(fetchImpl.calls[8].options.method, 'POST');
-  assert.equal(fetchImpl.calls[9].url, '/api/admin/ops-queue');
-  assert.equal(fetchImpl.calls[10].url, '/api/admin/reputation');
+  assert.equal(fetchImpl.calls[1].url, '/api/projects/prj_1/dashboard');
+  assert.equal(fetchImpl.calls[2].url, '/api/projects/prj_1/pull-requests');
+  assert.equal(fetchImpl.calls[3].url, '/api/projects/prj_1/deployment');
+  assert.equal(fetchImpl.calls[4].url, '/api/projects/prj_1/ai-workflow');
+  assert.equal(fetchImpl.calls[5].url, '/api/projects/prj_1/task-graph');
+  assert.equal(fetchImpl.calls[6].url, '/api/projects/prj_1/protocol/workflow');
+  assert.equal(fetchImpl.calls[7].url, '/api/projects/prj_1/repo-scan');
+  assert.equal(fetchImpl.calls[8].url, '/api/projects/prj_1/protocol/scan');
+  assert.equal(fetchImpl.calls[9].url, '/api/projects/prj_1/repo-sync');
+  assert.equal(fetchImpl.calls[9].options.method, 'POST');
+  assert.equal(fetchImpl.calls[10].url, '/api/admin/ops-queue');
+  assert.equal(fetchImpl.calls[11].url, '/api/admin/reputation');
 });
 
 test('exposes admin operations, review, settings, and integration routes', async () => {

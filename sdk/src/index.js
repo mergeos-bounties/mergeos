@@ -202,6 +202,10 @@ export class MergeOSClient {
     return this.request(`/api/projects/${encodeURIComponent(projectID)}/escrow`);
   }
 
+  projectDashboard(projectID) {
+    return this.request(`/api/projects/${encodeURIComponent(projectID)}/dashboard`);
+  }
+
   projectPullRequests(projectID) {
     return this.request(`/api/projects/${encodeURIComponent(projectID)}/pull-requests`);
   }

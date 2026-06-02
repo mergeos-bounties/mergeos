@@ -346,6 +346,7 @@ Customer:
 - `POST /api/projects`
 - `GET /api/projects`
 - `GET /api/projects/{id}/escrow`
+- `GET /api/projects/{id}/dashboard`
 - `GET /api/projects/{id}/pull-requests`
 - `GET /api/projects/{id}/deployment`
 - `GET /api/projects/{id}/ai-workflow`

@@ -832,6 +832,42 @@ type DeploymentSignal struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
+type ProjectDashboardResponse struct {
+	Project          ProjectDashboardOverview      `json:"project"`
+	Escrow           ProjectEscrowResponse         `json:"escrow"`
+	Deployment       ProjectDeploymentResponse     `json:"deployment"`
+	AIWorkflow       ProjectAIWorkflowResponse     `json:"ai_workflow"`
+	TaskGraph        ProjectTaskGraphResponse      `json:"task_graph"`
+	RepositoryScan   ProjectRepositoryScanResponse `json:"repository_scan"`
+	PullRequests     ProjectPullRequestsResponse   `json:"pull_requests"`
+	PullRequestError string                        `json:"pull_request_error,omitempty"`
+	UpdatedAt        time.Time                     `json:"updated_at"`
+}
+
+type ProjectDashboardOverview struct {
+	ProjectID         string        `json:"project_id"`
+	Title             string        `json:"title"`
+	Brief             string        `json:"brief"`
+	SiteType          string        `json:"site_type,omitempty"`
+	PackageTier       string        `json:"package_tier,omitempty"`
+	Timeline          string        `json:"timeline,omitempty"`
+	Status            ProjectStatus `json:"status"`
+	RepoProvider      string        `json:"repo_provider,omitempty"`
+	RepoURL           string        `json:"repo_url,omitempty"`
+	BountyRepoName    string        `json:"bounty_repo_name,omitempty"`
+	BudgetCents       int64         `json:"budget_cents"`
+	FeeCents          int64         `json:"fee_cents"`
+	WorkPoolCents     int64         `json:"work_pool_cents"`
+	TaskCount         int           `json:"task_count"`
+	OpenTaskCount     int           `json:"open_task_count"`
+	AcceptedTaskCount int           `json:"accepted_task_count"`
+	AgentTaskCount    int           `json:"agent_task_count"`
+	HumanTaskCount    int           `json:"human_task_count"`
+	HybridTaskCount   int           `json:"hybrid_task_count"`
+	CreatedAt         time.Time     `json:"created_at"`
+	UpdatedAt         time.Time     `json:"updated_at"`
+}
+
 type ProjectAIWorkflowResponse struct {
 	ProjectID       string             `json:"project_id"`
 	ProjectTitle    string             `json:"project_title"`
