@@ -821,7 +821,7 @@
               <p>Use your tokens to boost your project, feature it in the marketplace, or unlock premium matching.</p>
             </div>
             <button class="secondary-button compact" type="button" @click="closeProjectWizard(); openPublicPage('ledger')">Ledger Logs</button>
-            <button class="primary-button compact" type="button" @click="closeProjectWizard">
+            <button class="primary-button compact" type="button" @click="openFundedProjectDashboard('Overview')">
               View my project
               <ArrowRight :size="15" />
             </button>
@@ -1000,9 +1000,9 @@
 
         <article v-if="projectWizardStage === 'success'" class="rail-card next-action-card">
           <h3>Next steps</h3>
-          <button v-for="item in postPaymentActions" :key="item" type="button" @click="showToast(`${item} opened.`)">
+          <button v-for="item in postPaymentActions" :key="item.label" type="button" @click="handlePostPaymentAction(item)">
             <CheckCircle2 :size="15" />
-            {{ item }}
+            {{ item.label }}
             <ArrowRight :size="14" />
           </button>
         </article>
@@ -4244,10 +4244,10 @@ const successNextSteps = [
 ];
 
 const postPaymentActions = [
-  'Complete your project details',
-  'Invite team members',
-  'Boost your project',
-  'Explore your dashboard',
+  { label: 'Complete your project details', action: 'dashboard', tab: 'Overview' },
+  { label: 'Invite team members', action: 'invite', section: 'marketplace-contributors' },
+  { label: 'Boost your project', action: 'marketplace', section: 'marketplace-projects' },
+  { label: 'Explore your dashboard', action: 'dashboard', tab: 'Tasks' },
 ];
 
 const currentProjectStep = computed(() => projectSetupSteps.find((step) => step.number === projectWizardStep.value) || projectSetupSteps[0]);
@@ -6047,6 +6047,62 @@ function openDashboardProjectTab(tab = 'Overview') {
   focusDashboardPanel(dashboardProjectHeader);
 }
 
+async function openFundedProjectDashboard(tab = 'Overview') {
+  const projectID = String(fundedProject.value?.id || selectedDashboardProjectID.value || '').trim();
+  projectWizardVisible.value = false;
+  publicModeVisible.value = false;
+  dashboardSection.value = 'projects';
+  if (projectID) {
+    selectedDashboardProjectID.value = projectID;
+  }
+  if (user.value) {
+    await loadDashboardData({ silent: true, selectProjectID: projectID });
+  }
+  openDashboardProjectTab(tab);
+  showToast('Project dashboard opened.');
+}
+
+function fundedProjectShareURL(path = '/marketplace') {
+  const project = fundedProject.value || dashboardSelectedProject.value || {};
+  const projectKey = String(project.id || project.title || projectTitleLabel.value || '').trim();
+  const query = projectKey ? `?project=${encodeURIComponent(projectKey)}` : '';
+  return hasWindow ? `${window.location.origin}${path}${query}` : `${path}${query}`;
+}
+
+async function copyFundedProjectInviteLink() {
+  const shareURL = fundedProjectShareURL('/marketplace');
+  if (hasWindow && navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(shareURL);
+      showToast('Project invite link copied.');
+      return;
+    } catch {
+      // Use visible fallback below.
+    }
+  }
+  showToast(`Project invite link: ${shareURL}`);
+}
+
+async function handlePostPaymentAction(item = {}) {
+  if (item.action === 'dashboard') {
+    await openFundedProjectDashboard(item.tab || 'Overview');
+    return;
+  }
+  if (item.action === 'invite') {
+    await copyFundedProjectInviteLink();
+    openMarketplaceSection(item.section || 'marketplace-contributors');
+    return;
+  }
+  if (item.action === 'marketplace') {
+    activeMarketplaceCategory.value = 'All';
+    marketplaceSearch.value = fundedProject.value?.title || projectTitleLabel.value;
+    openMarketplaceSection(item.section || 'marketplace-projects');
+    showToast('Marketplace opened for project boosting.');
+    return;
+  }
+  showToast(item.label ? `${item.label} opened.` : 'Opening next step.');
+}
+
 function focusRepoImportField() {
   void nextTick(() => {
     if (!hasWindow) return;
@@ -6178,6 +6234,7 @@ function isDashboardNavActive(item = {}) {
 
 function openMarketplaceSection(id) {
   publicModeVisible.value = true;
+  projectWizardVisible.value = false;
   publicPage.value = 'marketplace';
   updatePublicBrowserPath('marketplace');
   loadPublicPageData('marketplace');
