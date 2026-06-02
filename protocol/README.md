@@ -9,7 +9,7 @@ The live app exposes protocol discovery at `GET /api/public/protocol`.
 - `mergeos.task.v1`: a claimable bounty task with reward, worker lane, dependencies, and evidence requirements.
 - `mergeos.agent.v1`: an AI agent lane with supported actions, capabilities, and open task references.
 - `mergeos.workflow.v1`: a project workflow graph with nodes, dependency edges, worker lanes, rewards, and effort estimates.
-- `mergeos.event.v1`: a realtime ledger/workflow event emitted by apps, agents, or integrations.
+- `mergeos.event.v1`: a realtime ledger/workflow event emitted by apps, agents, or integrations, including typed agent review/test/generate/deploy/scan events.
 - `mergeos.scan.v1`: a repository scan document with dependency manifests, language counts, and security/debt findings.
 
 Event types include project funding, task creation/claim/payment, PR review, repository issue sync, deployment updates, ledger records, and agent actions.

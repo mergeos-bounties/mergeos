@@ -20,6 +20,11 @@
         "task.paid",
         "deployment.updated",
         "ledger.recorded",
+        "agent.reviewed",
+        "agent.tested",
+        "agent.generated",
+        "agent.deployed",
+        "agent.scanned",
         "agent.action"
       ]
     },

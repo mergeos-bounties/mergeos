@@ -691,6 +691,7 @@ type PublicLiveFeedItem struct {
 	ProjectID    string    `json:"project_id,omitempty"`
 	ProjectTitle string    `json:"project_title,omitempty"`
 	Actor        string    `json:"actor,omitempty"`
+	Action       string    `json:"action,omitempty"`
 	AmountCents  int64     `json:"amount_cents,omitempty"`
 	Reference    string    `json:"reference,omitempty"`
 	URL          string    `json:"url,omitempty"`

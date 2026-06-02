@@ -1908,7 +1908,7 @@ func TestProjectAgentActionRouteRecordsWorkflowEventAndSanitizesData(t *testing.
 	}
 	seenAgentItem := false
 	for _, item := range feed.Items {
-		if item.Type == "agent_action" && item.Actor == "QA Agent" {
+		if item.Type == "agent_action" && item.Actor == "QA Agent" && item.Action == "test" {
 			seenAgentItem = true
 		}
 	}
@@ -1933,7 +1933,7 @@ func TestProjectAgentActionRouteRecordsWorkflowEventAndSanitizesData(t *testing.
 	}
 	seenAgentEvent := false
 	for _, event := range events.Events {
-		if event.Type == "agent.action" && event.Actor == "QA Agent" {
+		if event.Type == "agent.tested" && event.Actor == "QA Agent" && event.Payload["action"] == "test" {
 			seenAgentEvent = true
 		}
 	}

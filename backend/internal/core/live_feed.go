@@ -229,6 +229,7 @@ func publicAILiveFeedItem(log *GeminiWebhookLog) PublicLiveFeedItem {
 		Title:     publicLiveFeedAITitle(log),
 		Body:      publicLiveFeedAIBody(log),
 		Actor:     publicLiveFeedAIActor(log),
+		Action:    publicLiveFeedAIAction(log),
 		Reference: reference,
 		URL:       publicLiveFeedURL(log.CommentURL),
 		Status:    publicLiveFeedStatus(log.Status),
@@ -332,6 +333,17 @@ func publicLiveFeedAIType(log *GeminiWebhookLog) string {
 		return "agent_action"
 	}
 	return "ai_review"
+}
+
+func publicLiveFeedAIAction(log *GeminiWebhookLog) string {
+	if log == nil {
+		return ""
+	}
+	action := sanitizeLedgerReferenceValue(log.Action)
+	if action == "" {
+		action = sanitizeLedgerReferenceValue(log.EventName)
+	}
+	return strings.ToLower(strings.TrimSpace(action))
 }
 
 func publicLiveFeedAIActor(log *GeminiWebhookLog) string {
@@ -516,12 +528,15 @@ func publicLiveFeedProtocolEvent(item PublicLiveFeedItem) EventProtocolDocument 
 		ProtocolVersion: "mergeos.event.v1",
 		Kind:            "event",
 		ID:              publicEventID(item.ID),
-		Type:            publicEventType(item.Type),
+		Type:            publicEventType(item),
 		OccurredAt:      occurredAt,
 		Actor:           actor,
 		ProjectID:       strings.TrimSpace(item.ProjectID),
 		Reference:       reference,
 		Payload:         payload,
+	}
+	if item.Action != "" {
+		payload["action"] = item.Action
 	}
 	if item.AmountCents > 0 {
 		amount := float64(item.AmountCents) / 100
@@ -530,7 +545,8 @@ func publicLiveFeedProtocolEvent(item PublicLiveFeedItem) EventProtocolDocument 
 	return event
 }
 
-func publicEventType(feedType string) string {
+func publicEventType(item PublicLiveFeedItem) string {
+	feedType := item.Type
 	switch feedType {
 	case "project_funded":
 		return "project.funded"
@@ -544,6 +560,8 @@ func publicEventType(feedType string) string {
 		return "pr.reviewed"
 	case "repo_issues_synced":
 		return "repo.issues.synced"
+	case "agent_action":
+		return publicAgentActionEventType(item.Action)
 	}
 	if strings.HasPrefix(feedType, "ledger_task_payment") {
 		return "task.paid"
@@ -552,6 +570,23 @@ func publicEventType(feedType string) string {
 		return "ledger.recorded"
 	}
 	return "agent.action"
+}
+
+func publicAgentActionEventType(action string) string {
+	switch strings.ToLower(strings.TrimSpace(action)) {
+	case "review":
+		return "agent.reviewed"
+	case "test":
+		return "agent.tested"
+	case "generate":
+		return "agent.generated"
+	case "deploy":
+		return "agent.deployed"
+	case "scan":
+		return "agent.scanned"
+	default:
+		return "agent.action"
+	}
 }
 
 func publicEventID(feedID string) string {
