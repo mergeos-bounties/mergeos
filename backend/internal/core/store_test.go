@@ -1587,8 +1587,12 @@ func TestPublicLiveFeedRouteReturnsSanitizedTimeline(t *testing.T) {
 		t.Fatalf("live feed missing active actor stats: %#v", payload.Stats)
 	}
 	seen := map[string]bool{}
+	seenEvidence := map[string]bool{}
 	for _, item := range payload.Items {
 		seen[item.Type] = true
+		if (item.Type == "task_opened" || item.Type == "task_accepted") && containsString(item.EvidenceRequired, "tests") {
+			seenEvidence[item.Type] = true
+		}
 		if item.Type == "ledger_task_payment" {
 			if item.Reference != "pr:https://github.com/mergeos-bounties/mergeos/pull/151;title:Live feed proof" {
 				t.Fatalf("task payout feed reference = %q", item.Reference)
@@ -1604,6 +1608,11 @@ func TestPublicLiveFeedRouteReturnsSanitizedTimeline(t *testing.T) {
 	for _, required := range []string{"project_funded", "deployment_validation", "task_accepted", "ledger_task_payment", "pr_opened"} {
 		if !seen[required] {
 			t.Fatalf("live feed missing %s item: %#v", required, payload.Items)
+		}
+	}
+	for _, required := range []string{"task_opened", "task_accepted"} {
+		if !seenEvidence[required] {
+			t.Fatalf("live feed %s missing evidence requirements: %#v", required, payload.Items)
 		}
 	}
 
@@ -1639,6 +1648,9 @@ func TestPublicLiveFeedRouteReturnsSanitizedTimeline(t *testing.T) {
 			if event.Payload["ledger_sequence"] == nil || len(fmt.Sprint(event.Payload["entry_hash"])) != 64 {
 				t.Fatalf("task paid event missing ledger proof payload: %#v", event)
 			}
+		}
+		if (event.Type == "task.created" || event.Type == "task.claimed") && !protocolPayloadStringSliceContains(event.Payload["evidence_required"], "tests") {
+			t.Fatalf("task event missing evidence requirements: %#v", event)
 		}
 	}
 	for _, required := range []string{"project.funded", "deployment.updated", "task.claimed", "task.paid", "pr.opened"} {
@@ -3807,4 +3819,18 @@ func (m *memoryStatePersistence) Save(_ context.Context, state persistedState) e
 
 func (m *memoryStatePersistence) Close() error {
 	return nil
+}
+
+func protocolPayloadStringSliceContains(value any, expected string) bool {
+	switch typed := value.(type) {
+	case []string:
+		return containsString(typed, expected)
+	case []any:
+		for _, item := range typed {
+			if fmt.Sprint(item) == expected {
+				return true
+			}
+		}
+	}
+	return false
 }

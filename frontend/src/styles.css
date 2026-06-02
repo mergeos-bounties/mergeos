@@ -10233,6 +10233,25 @@ svg {
   font-weight: 760;
 }
 
+.live-feed-evidence {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 7px;
+}
+
+.live-feed-evidence em {
+  border: 1px solid #bbf7d0;
+  border-radius: 999px;
+  background: #f0fdf4;
+  color: #047857;
+  padding: 3px 7px;
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 850;
+  line-height: 1.1;
+}
+
 .live-feed-row-copy .live-feed-proof {
   color: #475569;
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;

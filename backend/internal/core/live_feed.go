@@ -208,18 +208,19 @@ func publicDeploymentLiveFeedItem(deployment ProjectDeploymentResponse) PublicLi
 func publicTaskOpenLiveFeedItem(task *Task, project *Project) PublicLiveFeedItem {
 	projectID, projectTitle := publicLiveFeedProjectScope(task, project)
 	return PublicLiveFeedItem{
-		ID:           publicLiveFeedTaskID("task-open", task),
-		Type:         "task_opened",
-		Title:        fmt.Sprintf("Task #%d opened", task.IssueNumber),
-		Body:         publicLiveFeedTaskBody(task),
-		ProjectID:    projectID,
-		ProjectTitle: projectTitle,
-		Actor:        publicLiveFeedWorkerKind(task.RequiredWorkerKind, task.SuggestedAgentType),
-		AmountCents:  task.RewardCents,
-		Reference:    publicTaskReference(task),
-		URL:          marketplacePublicRepoURL(task.IssueURL),
-		Status:       string(task.Status),
-		CreatedAt:    task.CreatedAt,
+		ID:               publicLiveFeedTaskID("task-open", task),
+		Type:             "task_opened",
+		Title:            fmt.Sprintf("Task #%d opened", task.IssueNumber),
+		Body:             publicLiveFeedTaskBody(task),
+		ProjectID:        projectID,
+		ProjectTitle:     projectTitle,
+		Actor:            publicLiveFeedWorkerKind(task.RequiredWorkerKind, task.SuggestedAgentType),
+		AmountCents:      task.RewardCents,
+		Reference:        publicTaskReference(task),
+		EvidenceRequired: publicTaskEvidenceRequiredForTask(task),
+		URL:              marketplacePublicRepoURL(task.IssueURL),
+		Status:           string(task.Status),
+		CreatedAt:        task.CreatedAt,
 	}
 }
 
@@ -230,18 +231,19 @@ func publicTaskAcceptedLiveFeedItem(task *Task, project *Project) PublicLiveFeed
 		createdAt = *task.AcceptedAt
 	}
 	return PublicLiveFeedItem{
-		ID:           publicLiveFeedTaskID("task-accepted", task),
-		Type:         "task_accepted",
-		Title:        fmt.Sprintf("Task #%d accepted", task.IssueNumber),
-		Body:         publicLiveFeedTaskBody(task),
-		ProjectID:    projectID,
-		ProjectTitle: projectTitle,
-		Actor:        publicLiveFeedActor(task.WorkerID, task.AgentType),
-		AmountCents:  task.RewardCents,
-		Reference:    publicTaskReference(task),
-		URL:          marketplacePublicRepoURL(task.IssueURL),
-		Status:       string(task.Status),
-		CreatedAt:    createdAt,
+		ID:               publicLiveFeedTaskID("task-accepted", task),
+		Type:             "task_accepted",
+		Title:            fmt.Sprintf("Task #%d accepted", task.IssueNumber),
+		Body:             publicLiveFeedTaskBody(task),
+		ProjectID:        projectID,
+		ProjectTitle:     projectTitle,
+		Actor:            publicLiveFeedActor(task.WorkerID, task.AgentType),
+		AmountCents:      task.RewardCents,
+		Reference:        publicTaskReference(task),
+		EvidenceRequired: publicTaskEvidenceRequiredForTask(task),
+		URL:              marketplacePublicRepoURL(task.IssueURL),
+		Status:           string(task.Status),
+		CreatedAt:        createdAt,
 	}
 }
 
@@ -602,6 +604,9 @@ func publicLiveFeedProtocolEvent(item PublicLiveFeedItem) EventProtocolDocument 
 	}
 	if item.EntryHash != "" {
 		payload["entry_hash"] = item.EntryHash
+	}
+	if len(item.EvidenceRequired) > 0 {
+		payload["evidence_required"] = stableStrings(item.EvidenceRequired)
 	}
 
 	event := EventProtocolDocument{

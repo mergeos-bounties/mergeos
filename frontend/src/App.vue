@@ -2987,6 +2987,9 @@
                     <span>{{ item.status }}</span>
                   </div>
                   <p>{{ item.body }}</p>
+                  <div v-if="item.evidenceRequired.length" class="live-feed-evidence" aria-label="Evidence required">
+                    <em v-for="evidence in item.evidenceRequired" :key="`${item.id}-${evidence}`">{{ evidence }}</em>
+                  </div>
                   <small v-if="item.proofLabel" class="live-feed-proof">{{ item.proofLabel }}</small>
                   <small>{{ item.project }} · {{ item.actor }} · {{ item.meta }}</small>
                 </div>
@@ -8340,6 +8343,9 @@ function mapPublicLiveFeedItem(item = {}) {
   const entryHash = item.entry_hash || '';
   const projectTitle = item.project_title || 'MergeOS';
   const reference = item.reference || '';
+  const evidenceRequired = Array.isArray(item.evidence_required)
+    ? item.evidence_required.map(toTitleLabel).filter(Boolean).slice(0, 5)
+    : [];
   return {
     id: item.id || `${item.type || 'activity'}-${item.created_at || reference || item.title || 'row'}`,
     rawType: item.type || '',
@@ -8355,6 +8361,7 @@ function mapPublicLiveFeedItem(item = {}) {
     amount: amountCents ? formatPublicMRGFromCents(amountCents) : '',
     ledgerSequence,
     entryHash,
+    evidenceRequired,
     proofLabel: entryHash ? `Proof #${ledgerSequence || '?'} ${shortLedgerReference(entryHash)}` : '',
     reference: shortLedgerReference(reference),
     rawReference: reference,
