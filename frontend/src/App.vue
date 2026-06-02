@@ -7601,14 +7601,9 @@ function shortRepoLabel(project = {}) {
 }
 
 function dashboardLedgerEntryMatchesProject(entry = {}, project = {}, tasks = []) {
-  const haystack = [
-    entry.reference,
-    entry.from_account,
-    entry.to_account,
-  ].filter(Boolean).join('|');
-  if (project.id && haystack.includes(project.id)) return true;
-  if (project.bounty_repo_name && haystack.includes(project.bounty_repo_name)) return true;
-  return tasks.some((task) => task.id && haystack.includes(task.id));
+  if (project.id && ledgerEntryReferencesValue(entry, project.id)) return true;
+  if (project.bounty_repo_name && ledgerEntryReferencesValue(entry, project.bounty_repo_name)) return true;
+  return tasks.some((task) => task.id && ledgerEntryReferencesValue(entry, task.id));
 }
 
 const financialLedgerTypes = new Set([
@@ -7621,12 +7616,41 @@ const financialLedgerTypes = new Set([
 ]);
 
 function taskForLedgerEntry(entry = {}, tasks = []) {
-  const haystack = [
+  return tasks.find((task) => task.id && ledgerEntryReferencesValue(entry, task.id)) || null;
+}
+
+function ledgerEntryReferenceValues(entry = {}) {
+  return [
     entry.reference,
     entry.from_account,
     entry.to_account,
-  ].filter(Boolean).join('|');
-  return tasks.find((task) => task.id && haystack.includes(task.id)) || null;
+  ].map((value) => String(value || '').trim()).filter(Boolean);
+}
+
+function ledgerEntryReferencesValue(entry = {}, value = '') {
+  const needle = String(value || '').trim();
+  if (!needle) return false;
+  return ledgerEntryReferenceValues(entry).some((candidate) => ledgerReferenceValueContains(candidate, needle));
+}
+
+function ledgerReferenceValueContains(candidate = '', needle = '') {
+  const text = String(candidate || '').trim();
+  if (!text || !needle) return false;
+  let index = text.indexOf(needle);
+  while (index !== -1) {
+    const before = index > 0 ? text[index - 1] : '';
+    const afterIndex = index + needle.length;
+    const after = afterIndex < text.length ? text[afterIndex] : '';
+    if (!isLedgerReferenceTokenChar(before) && !isLedgerReferenceTokenChar(after)) {
+      return true;
+    }
+    index = text.indexOf(needle, index + 1);
+  }
+  return false;
+}
+
+function isLedgerReferenceTokenChar(value = '') {
+  return /^[A-Za-z0-9_.-]$/.test(value);
 }
 
 function paymentProviderLabel(value = '') {
