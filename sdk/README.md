@@ -133,4 +133,4 @@ socket.onmessage = (event) => {
 };
 ```
 
-The stream sends `connection_ready` and `live_feed_snapshot` events immediately after connect, then broadcasts live project events. SDK helpers map live feed records such as `pr_opened`, `agent_action`, and `ledger_task_payment` to stable protocol events such as `pr.opened`, `agent.tested`, and `task.paid`.
+The stream sends `connection_ready` and `live_feed_snapshot` events immediately after connect, then broadcasts live project, PR, payout, and ledger events. SDK helpers map live feed records such as `pr_opened`, `agent_action`, `ledger_task_payment`, and `ledger_manual_credit` to stable protocol events such as `pr.opened`, `agent.tested`, `task.paid`, and `ledger.recorded`.

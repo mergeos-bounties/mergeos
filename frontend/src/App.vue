@@ -9753,7 +9753,7 @@ function handleWSEvent(payload = {}) {
   }
 
   if (payload.type === 'live_feed_snapshot') return;
-  if (payload.type === 'task_accepted' || payload.type === 'repo_issues_synced') {
+  if (payload.type === 'task_accepted' || payload.type === 'repo_issues_synced' || payload.type === 'ledger_task_payment' || payload.type === 'ledger_manual_credit') {
     void loadMarketplaceData({ silent: true });
     void loadLedgerData({ silent: true });
     if (user.value) {
