@@ -742,6 +742,39 @@ func TestPublicMarketplaceRouteReturnsSanitizedLiveData(t *testing.T) {
 	if len(payload.Agents) == 0 || payload.Agents[0].OpenTaskCount == 0 {
 		t.Fatalf("agents missing real task demand: %#v", payload.Agents)
 	}
+
+	protocolReq := httptest.NewRequest(http.MethodGet, "/api/public/protocol/tasks?limit=20", nil)
+	protocolResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(protocolResp, protocolReq)
+	if protocolResp.Code != http.StatusOK {
+		t.Fatalf("task protocol status = %d, body = %s", protocolResp.Code, protocolResp.Body.String())
+	}
+	protocolBody := protocolResp.Body.String()
+	for _, value := range []string{"client@example.com", "+1 555 0101", auth.User.ID, tempDir, defaultDevPaymentCode} {
+		if strings.Contains(protocolBody, value) {
+			t.Fatalf("task protocol leaked private value %q: %s", value, protocolBody)
+		}
+	}
+	for _, task := range project.Tasks {
+		if strings.Contains(protocolBody, task.ID) {
+			t.Fatalf("task protocol leaked internal task id %q: %s", task.ID, protocolBody)
+		}
+	}
+	var taskProtocol PublicTaskProtocolResponse
+	if err := json.Unmarshal(protocolResp.Body.Bytes(), &taskProtocol); err != nil {
+		t.Fatal(err)
+	}
+	if taskProtocol.Stats.OpenTaskCount != payload.Stats.OpenTaskCount || len(taskProtocol.Tasks) != len(payload.Bounties) {
+		t.Fatalf("unexpected task protocol feed: %#v", taskProtocol)
+	}
+	for _, document := range taskProtocol.Tasks {
+		if document.ProtocolVersion != "mergeos.task.v1" || document.Kind != "task" || document.ID == "" {
+			t.Fatalf("invalid task protocol header: %#v", document)
+		}
+		if document.RewardMRG <= 0 || len(document.AcceptanceCriteria) == 0 || len(document.EvidenceRequired) == 0 {
+			t.Fatalf("task protocol missing bounty requirements: %#v", document)
+		}
+	}
 }
 
 func TestPublicLedgerRouteReturnsSanitizedLiveData(t *testing.T) {

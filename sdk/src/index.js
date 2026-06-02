@@ -84,6 +84,11 @@ export class MergeOSClient {
     return this.request(`/api/public/live-feed${limit}`, { auth: false });
   }
 
+  publicProtocolTasks(options = {}) {
+    const limit = Number(options.limit) > 0 ? `?limit=${encodeURIComponent(Number(options.limit))}` : '';
+    return this.request(`/api/public/protocol/tasks${limit}`, { auth: false });
+  }
+
   publicProtocolEvents(options = {}) {
     const limit = Number(options.limit) > 0 ? `?limit=${encodeURIComponent(Number(options.limit))}` : '';
     return this.request(`/api/public/protocol/events${limit}`, { auth: false });

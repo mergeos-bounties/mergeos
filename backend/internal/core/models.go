@@ -688,6 +688,31 @@ type PublicEventProtocolResponse struct {
 	Events []EventProtocolDocument `json:"events"`
 }
 
+type PublicTaskProtocolResponse struct {
+	Stats MarketplaceStats       `json:"stats"`
+	Tasks []TaskProtocolDocument `json:"tasks"`
+}
+
+type TaskProtocolDocument struct {
+	ProtocolVersion    string         `json:"protocol_version"`
+	Kind               string         `json:"kind"`
+	ID                 string         `json:"id"`
+	ProjectID          string         `json:"project_id,omitempty"`
+	Title              string         `json:"title"`
+	Summary            string         `json:"summary,omitempty"`
+	SourceRepository   string         `json:"source_repository,omitempty"`
+	IssueURL           string         `json:"issue_url,omitempty"`
+	RewardMRG          float64        `json:"reward_mrg"`
+	BountyType         string         `json:"bounty_type,omitempty"`
+	WorkerKind         WorkerKind     `json:"worker_kind"`
+	AgentType          string         `json:"agent_type,omitempty"`
+	AcceptanceCriteria []string       `json:"acceptance_criteria"`
+	Dependencies       []string       `json:"dependencies,omitempty"`
+	EvidenceRequired   []string       `json:"evidence_required,omitempty"`
+	Tags               []string       `json:"tags,omitempty"`
+	Metadata           map[string]any `json:"metadata,omitempty"`
+}
+
 type EventProtocolDocument struct {
 	ProtocolVersion string         `json:"protocol_version"`
 	Kind            string         `json:"kind"`
