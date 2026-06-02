@@ -12,7 +12,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .header img { width: 32px; height: 32px; }
 .header h1 { font-size: 1.25rem; font-weight: 600; }
 .header small { color: #94a3b8; font-size: 0.8rem; }
-.container { max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
+.container { max-width: 860px; margin: 2rem auto; padding: 0 1rem; }
 .card { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 1.5rem; margin-bottom: 1rem; }
 .card h2 { font-size: 1.1rem; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem; }
 .card p { color: #94a3b8; font-size: 0.9rem; margin-bottom: 1rem; }
@@ -37,9 +37,15 @@ td { padding: 0.5rem; border-bottom: 1px solid #1e293b; }
 .status-pill.blue { background: #1e40af; color: #93c5fd; }
 code { font-family: 'SF Mono', 'Fira Code', monospace; background: #0f172a; padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.8rem; color: #c084fc; }
 .error { color: #fca5a5; background: #7f1d1d; padding: 0.5rem; border-radius: 6px; margin-bottom: 0.5rem; font-size: 0.85rem; }
-.success { color: #86efac; background: #166534; padding: 0.5rem; border-radius: 6px; margin-bottom: 0.5rem; font-size: 0.85rem; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
-@media (max-width: 640px) { .form-row { grid-template-columns: 1fr; } }
+.kv-header { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; margin: 0.5rem 0; }
+.kv-header span, .muted { color: #94a3b8; font-size: 0.8rem; }
+.kv-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 0.5rem; margin-bottom: 0.5rem; }
+.empty { text-align: center; padding: 2rem; color: #64748b; }
+@media (max-width: 640px) {
+  .form-row, .kv-row { grid-template-columns: 1fr; }
+  .header { padding: 1rem; }
+}
 </style>
 </head>
 <body>
@@ -53,65 +59,68 @@ code { font-family: 'SF Mono', 'Fira Code', monospace; background: #0f172a; padd
   </div>
 
   <div class="container">
-    <!-- Login / Password gate -->
     <div v-if="!authenticated" class="card">
-      <h2>🔑 Public Test Settings</h2>
-      <p>Enter the public test password to configure integration keys for testing.</p>
+      <h2>Public Test Settings</h2>
+      <p>Enter the shared test password to configure temporary integration keys for task testing.</p>
       <div v-if="!testModeEnabled" class="error">Test mode is currently disabled. Ask an admin to enable it.</div>
       <template v-if="testModeEnabled">
         <label><span>Password</span>
-          <input v-model="passwordInput" @keyup.enter="login" placeholder="Enter public test password" type="password" />
+          <input v-model="passwordInput" @keyup.enter="login" placeholder="Enter shared test password" type="password" />
         </label>
         <button class="btn btn-primary" :disabled="authBusy" @click="login">{{ authBusy ? 'Verifying...' : 'Access Publish Settings' }}</button>
         <p v-if="authError" class="error">{{ authError }}</p>
       </template>
     </div>
 
-    <!-- Main Publish Settings UI -->
     <template v-if="authenticated">
       <div class="card">
-        <h2>⚙️ Integration Keys</h2>
-        <p>Add temporary test credentials for LLM providers, PayPal Sandbox, and USDT receivers.</p>
+        <h2>Integration Keys</h2>
+        <p>Add temporary test credentials for LLM providers, PayPal Sandbox, and USDT received proof.</p>
       </div>
 
-      <!-- Add entry form -->
       <div class="card">
-        <h2>➕ Add Entry</h2>
+        <h2>Add Entry</h2>
         <form @submit.prevent="addEntry">
           <div class="form-row">
             <label><span>Integration Type</span>
               <select v-model="form.integration_type">
                 <option value="llm">LLM</option>
                 <option value="paypal">PayPal Sandbox</option>
-                <option value="usdt">USDT</option>
+                <option value="usdt">USDT Received</option>
               </select>
             </label>
             <label><span>Display Name</span>
-              <input v-model="form.display_name" placeholder="OpenAI Test" />
+              <input v-model="form.display_name" placeholder="OpenAI test key" />
             </label>
           </div>
           <div class="form-row">
             <label><span>Setting Key</span>
-              <input v-model="form.setting_key" placeholder="llm_test_openai_key" />
+              <input v-model="form.setting_key" placeholder="TASK_LLM_TEST_KEY" />
             </label>
-            <label><span>Setting Value</span>
-              <input v-model="form.setting_value" placeholder="sk-..." type="password" />
+            <label><span>Primary Value</span>
+              <input v-model="form.setting_value" placeholder="Paste test value" type="password" />
             </label>
           </div>
-          <label><span>Extra Metadata (JSON)</span>
-            <input v-model="form.key_value_json" placeholder='{"env":"sandbox","model":"gpt-4"}' />
-          </label>
+          <div class="kv-header">
+            <span>Extra key/value metadata</span>
+            <button class="btn btn-outline" type="button" @click="addKVRow">Add key</button>
+          </div>
+          <div v-for="(row, index) in keyValueRows" :key="index" class="kv-row">
+            <input v-model.trim="row.key" placeholder="metadata_key" />
+            <input v-model="row.value" placeholder="metadata value" />
+            <button class="btn btn-outline" type="button" @click="removeKVRow(index)">Remove</button>
+          </div>
+          <p class="muted">Primary and nested keys are rejected when they collide with ENV names.</p>
           <button class="btn btn-primary" type="submit">Add Entry</button>
         </form>
         <p v-if="entryError" class="error">{{ entryError }}</p>
       </div>
 
-      <!-- Entries list -->
       <div class="card">
-        <h2>📋 Current Entries <span style="font-size:0.85rem;color:#94a3b8;font-weight:400;">({{ entries.length }})</span></h2>
+        <h2>Current Entries <span style="font-size:0.85rem;color:#94a3b8;font-weight:400;">({{ entries.length }})</span></h2>
 
-        <div v-if="entries.length === 0" style="text-align:center;padding:2rem;color:#64748b;">
-          No entries yet. Add your first integration key above.
+        <div v-if="entries.length === 0" class="empty">
+          No entries yet. Add the first integration key above.
         </div>
 
         <table v-else>
@@ -152,8 +161,8 @@ createApp({
       display_name: '',
       setting_key: '',
       setting_value: '',
-      key_value_json: '{}',
     });
+    const keyValueRows = ref([{ key: '', value: '' }]);
 
     const API_BASE = window.location.origin;
 
@@ -203,10 +212,36 @@ createApp({
       } catch {}
     }
 
+    function addKVRow() {
+      keyValueRows.value.push({ key: '', value: '' });
+    }
+
+    function removeKVRow(index) {
+      if (keyValueRows.value.length <= 1) {
+        keyValueRows.value = [{ key: '', value: '' }];
+        return;
+      }
+      keyValueRows.value.splice(index, 1);
+    }
+
+    function keyValueMap() {
+      return keyValueRows.value.reduce((acc, row) => {
+        const key = String(row.key || '').trim();
+        if (key) acc[key] = String(row.value || '');
+        return acc;
+      }, {});
+    }
+
+    function resetForm() {
+      form.integration_type = 'llm';
+      form.display_name = '';
+      form.setting_key = '';
+      form.setting_value = '';
+      keyValueRows.value = [{ key: '', value: '' }];
+    }
+
     async function addEntry() {
       entryError.value = '';
-      let km = {};
-      try { km = JSON.parse(form.key_value_json || '{}'); } catch { entryError.value = 'Invalid JSON metadata.'; return; }
       try {
         const entry = await api('/api/public/test-settings/entries', {
           method: 'POST',
@@ -216,11 +251,11 @@ createApp({
             display_name: form.display_name,
             setting_key: form.setting_key,
             setting_value: form.setting_value,
-            key_value_map: km,
+            key_value_map: keyValueMap(),
           }),
         });
         entries.value.unshift(entry);
-        form.integration_type = 'llm'; form.display_name = ''; form.setting_key = ''; form.setting_value = ''; form.key_value_json = '{}';
+        resetForm();
       } catch(e) { entryError.value = e.message; }
     }
 
@@ -237,7 +272,22 @@ createApp({
 
     onMounted(checkStatus);
 
-    return { authenticated, testModeEnabled, passwordInput, authBusy, authError, entries, entryError, form, login, addEntry, deleteEntry };
+    return {
+      authenticated,
+      testModeEnabled,
+      passwordInput,
+      authBusy,
+      authError,
+      entries,
+      entryError,
+      form,
+      keyValueRows,
+      login,
+      addEntry,
+      deleteEntry,
+      addKVRow,
+      removeKVRow,
+    };
   }
 }).mount('#app');
 </script>
