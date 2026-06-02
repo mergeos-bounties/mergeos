@@ -15,8 +15,9 @@ npm test
 import {
   agentActionEventType,
   createMergeOSClient,
-  liveFeedTypeToProtocolEventType,
+  protocolEventFromMessage,
   protocolEventGroup,
+  protocolTypeFromMessage,
 } from '@mergeos/sdk';
 
 const mergeos = createMergeOSClient({
@@ -128,8 +129,9 @@ await mergeos.adminTestSettingsEntries();
 const socket = mergeos.connectEvents();
 socket.onmessage = (event) => {
   const message = JSON.parse(event.data);
-  const protocolType = liveFeedTypeToProtocolEventType(message.type, message.action);
-  console.log(protocolEventGroup(protocolType), protocolType, message);
+  const protocolEvent = protocolEventFromMessage(message);
+  const protocolType = protocolTypeFromMessage(message);
+  console.log(protocolEventGroup(protocolType), protocolType, protocolEvent || message);
 };
 ```
 

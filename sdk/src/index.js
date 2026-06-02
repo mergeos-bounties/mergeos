@@ -449,6 +449,24 @@ export function liveFeedTypeToProtocolEventType(type = '', action = '') {
   }[normalized] || workflowEventTypes.agentAction;
 }
 
+export function protocolEventFromMessage(message = {}) {
+  if (!message || typeof message !== 'object' || !message.event || typeof message.event !== 'object') {
+    return null;
+  }
+  return message.event;
+}
+
+export function protocolTypeFromMessage(message = {}) {
+  const event = protocolEventFromMessage(message);
+  if (event && typeof event.type === 'string' && event.type.trim()) {
+    return event.type.trim();
+  }
+  if (message && typeof message.protocol_type === 'string' && message.protocol_type.trim()) {
+    return message.protocol_type.trim();
+  }
+  return liveFeedTypeToProtocolEventType(message?.type, message?.action);
+}
+
 export function protocolEventGroup(type = '') {
   const normalized = String(type || '').trim().toLowerCase();
   if (normalized.startsWith('agent.')) return 'agent';

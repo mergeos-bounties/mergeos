@@ -8,7 +8,9 @@ import {
   isAgentActionEventType,
   isWorkflowEventType,
   liveFeedTypeToProtocolEventType,
+  protocolEventFromMessage,
   protocolEventGroup,
+  protocolTypeFromMessage,
   workflowEventTypes,
 } from '../src/index.js';
 
@@ -84,6 +86,13 @@ test('maps typed agent action event protocol values', () => {
 });
 
 test('maps live feed records to workflow event protocol values', () => {
+  const protocolEvent = {
+    protocol_version: 'mergeos.event.v1',
+    kind: 'event',
+    type: 'task.paid',
+    payload: { ledger_sequence: 7 },
+  };
+
   assert.equal(workflowEventTypes.prOpened, 'pr.opened');
   assert.equal(liveFeedTypeToProtocolEventType('project_funded'), 'project.funded');
   assert.equal(liveFeedTypeToProtocolEventType('task_opened'), 'task.created');
@@ -96,6 +105,11 @@ test('maps live feed records to workflow event protocol values', () => {
   assert.equal(liveFeedTypeToProtocolEventType('ledger_manual_credit'), 'ledger.recorded');
   assert.equal(liveFeedTypeToProtocolEventType('agent_action', 'test'), 'agent.tested');
   assert.equal(liveFeedTypeToProtocolEventType('unknown'), 'agent.action');
+  assert.equal(protocolEventFromMessage({ event: protocolEvent }), protocolEvent);
+  assert.equal(protocolEventFromMessage({ type: 'ledger_manual_credit' }), null);
+  assert.equal(protocolTypeFromMessage({ event: protocolEvent, protocol_type: 'ledger.recorded' }), 'task.paid');
+  assert.equal(protocolTypeFromMessage({ protocol_type: 'ledger.recorded', type: 'ledger_task_payment' }), 'ledger.recorded');
+  assert.equal(protocolTypeFromMessage({ type: 'ledger_manual_credit' }), 'ledger.recorded');
   assert.equal(protocolEventGroup('pr.opened'), 'pull_request');
   assert.equal(protocolEventGroup('task.paid'), 'task');
   assert.equal(protocolEventGroup('agent.tested'), 'agent');
