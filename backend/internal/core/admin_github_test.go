@@ -5,6 +5,15 @@ import (
 	"testing"
 )
 
+func containsString(values []string, expected string) bool {
+	for _, value := range values {
+		if value == expected {
+			return true
+		}
+	}
+	return false
+}
+
 func TestParseGitHubIssueURL(t *testing.T) {
 	target, err := parseGitHubIssueURL("https://github.com/mergeos-bounties/mergeos/issues/42")
 	if err != nil {
@@ -170,6 +179,33 @@ func TestAdminPullRequestReadinessBlocksMissingEvidenceAndWorkflowDeletion(t *te
 		if !found {
 			t.Fatalf("missing blocker %q in %#v", expected, readiness.Blockers)
 		}
+	}
+}
+
+func TestAdminPullRequestReadinessBlocksSecretFilesAndWarnsSensitiveCode(t *testing.T) {
+	readiness := adminPullRequestReadiness(
+		&Task{Title: "Auth payment hardening", Acceptance: "Update admin auth and PayPal validation"},
+		AdminTaskPullRequest{
+			State:          "open",
+			MergeableState: "clean",
+			Labels:         []string{"star: verified", "evidence: provided"},
+			ChangedFiles: []AdminPullRequestFile{
+				{Path: "backend/internal/core/auth.go", Status: "modified", Additions: 12, Deletions: 2},
+				{Path: "backend/secrets/paypal.pem", Status: "added", Additions: 20},
+			},
+		},
+	)
+	if readiness.CanMerge || readiness.Status != "blocked" || readiness.RiskLevel != "high" {
+		t.Fatalf("readiness should block secret file change: %#v", readiness)
+	}
+	if !containsString(readiness.Blockers, "secret or credential file changes are not allowed in bounty PRs") {
+		t.Fatalf("missing secret blocker: %#v", readiness.Blockers)
+	}
+	if !containsString(readiness.Warnings, "security-sensitive code paths changed; maintainer review required") {
+		t.Fatalf("missing sensitive-code warning: %#v", readiness.Warnings)
+	}
+	if !containsString(readiness.Signals, "security-sensitive-path") {
+		t.Fatalf("missing sensitive-code signal: %#v", readiness.Signals)
 	}
 }
 

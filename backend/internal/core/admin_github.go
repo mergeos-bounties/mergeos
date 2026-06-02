@@ -469,6 +469,7 @@ func adminPullRequestReadiness(task *Task, pull AdminTaskPullRequest) AdminPullR
 
 	totalAdditions := 0
 	totalDeletions := 0
+	securitySensitivePathChanged := false
 	for _, file := range pull.ChangedFiles {
 		path := strings.ToLower(strings.TrimSpace(file.Path))
 		status := strings.ToLower(strings.TrimSpace(file.Status))
@@ -482,9 +483,16 @@ func adminPullRequestReadiness(task *Task, pull AdminTaskPullRequest) AdminPullR
 			}
 		}
 		name := strings.ToLower(strings.TrimSpace(pathpkg.Base(path)))
-		if strings.HasPrefix(name, ".env") && !strings.Contains(name, "example") {
-			addBlocker("environment file changes are not allowed in bounty PRs")
+		if adminPullRequestSecretPath(path, name) {
+			addBlocker("secret or credential file changes are not allowed in bounty PRs")
 		}
+		if adminPullRequestSecuritySensitivePath(path, name) {
+			securitySensitivePathChanged = true
+		}
+	}
+	if securitySensitivePathChanged {
+		addSignal("security-sensitive-path")
+		addWarning("security-sensitive code paths changed; maintainer review required")
 	}
 	if len(pull.ChangedFiles) > 5 && totalDeletions > totalAdditions*2+100 {
 		addWarning("broad deletion-heavy diff requires manual scope review")
@@ -499,6 +507,41 @@ func adminPullRequestReadiness(task *Task, pull AdminTaskPullRequest) AdminPullR
 		readiness.RiskLevel = "medium"
 	}
 	return readiness
+}
+
+func adminPullRequestSecretPath(path, name string) bool {
+	if strings.HasPrefix(name, ".env") && !strings.Contains(name, "example") {
+		return true
+	}
+	switch name {
+	case "id_rsa", "id_dsa", "id_ecdsa", "id_ed25519", "known_hosts", "secrets.json", "secret.json", "credentials.json":
+		return true
+	}
+	ext := pathpkg.Ext(name)
+	switch ext {
+	case ".pem", ".key", ".p12", ".pfx", ".jks", ".keystore":
+		return true
+	}
+	for _, segment := range []string{"/secrets/", "/credentials/", "/private-keys/"} {
+		if strings.Contains("/"+strings.Trim(path, "/")+"/", segment) {
+			return true
+		}
+	}
+	return false
+}
+
+func adminPullRequestSecuritySensitivePath(path, name string) bool {
+	value := strings.Join([]string{path, name}, " ")
+	for _, keyword := range []string{
+		"admin", "auth", "oauth", "session", "token", "permission", "rbac",
+		"payment", "paypal", "usdt", "crypto", "webhook", "ledger", "escrow", "payout",
+		"security", "middleware", "cors", "csrf", "password",
+	} {
+		if strings.Contains(value, keyword) {
+			return true
+		}
+	}
+	return false
 }
 
 func adminPullRequestLabelSet(labels []string) map[string]bool {
