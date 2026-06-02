@@ -16,6 +16,7 @@
         "task.claimed",
         "pr.opened",
         "pr.reviewed",
+        "repo.issues.synced",
         "task.paid",
         "deployment.updated",
         "ledger.recorded",

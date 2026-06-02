@@ -196,6 +196,10 @@ export class MergeOSClient {
     return this.request(`/api/projects/${encodeURIComponent(projectID)}/repo-scan`);
   }
 
+  syncProjectRepoIssues(projectID) {
+    return this.request(`/api/projects/${encodeURIComponent(projectID)}/repo-sync`, { method: 'POST' });
+  }
+
   listTasks() {
     return this.request('/api/tasks');
   }

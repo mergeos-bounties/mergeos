@@ -90,3 +90,24 @@ test('validates event protocol documents and assertion helper', () => {
   assert.equal(assertProtocolDocument(event), event);
   assert.throws(() => assertProtocolDocument({ ...event, occurred_at: 'not-a-date' }), /date-time/);
 });
+
+test('validates repository issue sync events', () => {
+  const result = validateProtocolDocument({
+    protocol_version: 'mergeos.event.v1',
+    kind: 'event',
+    id: 'evt_repo_sync_1',
+    type: 'repo.issues.synced',
+    occurred_at: '2026-06-03T00:00:00.000Z',
+    actor: 'mergeos-api',
+    project_id: 'prj_0001',
+    reference: 'https://github.com/mergeos-bounties/mergeos',
+    payload: {
+      imported_issue_count: 8,
+      added_task_count: 2,
+      updated_task_count: 1,
+    },
+  });
+
+  assert.equal(result.valid, true);
+  assert.deepEqual(result.errors, []);
+});

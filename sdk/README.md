@@ -26,6 +26,7 @@ const deployment = await mergeos.projectDeployment(projects[0].id);
 const workflow = await mergeos.projectAIWorkflow(projects[0].id);
 const graph = await mergeos.projectTaskGraph(projects[0].id);
 const scan = await mergeos.projectRepositoryScan(projects[0].id);
+const syncReport = await mergeos.syncProjectRepoIssues(projects[0].id);
 ```
 
 ## Public APIs
@@ -49,6 +50,7 @@ await mergeos.projectEscrow('prj_0001');
 await mergeos.projectPullRequests('prj_0001');
 await mergeos.projectTaskGraph('prj_0001');
 await mergeos.projectRepositoryScan('prj_0001');
+await mergeos.syncProjectRepoIssues('prj_0001');
 await mergeos.listTasks();
 await mergeos.acceptTask('tsk_0001', {
   worker_kind: 'human',
