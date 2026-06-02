@@ -184,6 +184,7 @@
               <label class="wizard-field full repo-url-field">
                 <span>GitHub repository</span>
                 <input
+                  ref="repoImportInput"
                   v-model.trim="projectSetupForm.repoUrl"
                   placeholder="https://github.com/owner/repo"
                   @keyup.enter="loadRepoIssues"
@@ -1010,7 +1011,7 @@
             :key="item.label"
             :class="{ active: isDashboardNavActive(item) }"
             type="button"
-            @click="item.section ? openDashboardSection(item.section) : handleDashboardNav(item)"
+            @click="handleDashboardNav(item)"
           >
             <component :is="item.icon" :size="16" />
             {{ item.label }}
@@ -1045,7 +1046,7 @@
             :key="item.label"
             :class="{ active: isDashboardNavActive(item) }"
             type="button"
-            @click="item.section ? openDashboardSection(item.section) : handleDashboardNav(item)"
+            @click="handleDashboardNav(item)"
           >
             {{ item.label }}
           </button>
@@ -2084,7 +2085,7 @@
                   <button type="button" :disabled="dashboardTaskGraphLoading || !dashboardSelectedProject" @click="loadDashboardTaskGraphData(dashboardSelectedProject?.id)">Refresh Graph</button>
                 </article>
 
-                <article class="dash-card repository-scan-card">
+                <article ref="dashboardRepositoryScanCard" class="dash-card repository-scan-card" tabindex="-1">
                   <div class="card-title-row">
                     <div>
                       <h2>Repository Scan</h2>
@@ -4013,7 +4014,9 @@ const dashboardSearch = ref('');
 const dashboardSection = ref('projects');
 const selectedDashboardProjectID = ref('');
 const dashboardProjectHeader = ref(null);
+const dashboardRepositoryScanCard = ref(null);
 const dashboardNotificationCenter = ref(null);
+const repoImportInput = ref(null);
 const priceEvaluation = ref(null);
 const priceEvaluationBusy = ref(false);
 const priceEvaluationError = ref('');
@@ -5511,7 +5514,7 @@ const sidebarSections = computed(() => {
     { label: 'My Projects', icon: FolderKanban, section: 'projects' },
     { label: 'Tasks', icon: ListTodo, section: 'projects', toast: 'Opening tasks...' },
     { label: 'Worker Dashboard', icon: User, section: 'worker' },
-    { label: 'Repositories', icon: GitBranch, toast: 'Opening repositories...' },
+    { label: 'Repositories', icon: GitBranch, action: 'issue-scanner' },
     { label: 'Payments', icon: CreditCard, section: 'payments' },
     { label: 'Notifications', icon: Bell, section: 'notifications' },
   ];
@@ -5531,9 +5534,9 @@ const sidebarSections = computed(() => {
     {
       label: 'Tools',
       items: [
-        { label: 'Repo Import', icon: UploadCloud, toast: 'Opening repo import...' },
-        { label: 'AI Issue Scanner', icon: Search, toast: 'Opening AI issue scanner...' },
-        { label: 'Estimate Cost', icon: Calculator, toast: 'Opening cost estimator...' },
+        { label: 'Repo Import', icon: UploadCloud, action: 'repo-import' },
+        { label: 'AI Issue Scanner', icon: Search, action: 'issue-scanner' },
+        { label: 'Estimate Cost', icon: Calculator, action: 'cost-estimator' },
       ],
     },
   ];
@@ -5545,7 +5548,7 @@ const topNavItems = computed(() => {
     { label: 'Projects', section: 'projects' },
     { label: 'Worker', section: 'worker' },
     { label: 'Marketplace', page: 'marketplace' },
-    { label: 'Repos', toast: 'Opening repositories...' },
+    { label: 'Repos', action: 'issue-scanner' },
     { label: 'Payments', section: 'payments' },
     { label: 'Analytics', toast: 'Opening analytics...' },
   ];
@@ -5827,6 +5830,63 @@ async function selectDashboardProject(projectID) {
   dashboardProjectHeader.value?.focus({ preventScroll: true });
 }
 
+function focusRepoImportField() {
+  void nextTick(() => {
+    if (!hasWindow) return;
+    window.requestAnimationFrame(() => {
+      repoImportInput.value?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      repoImportInput.value?.focus({ preventScroll: true });
+    });
+  });
+}
+
+function focusDashboardRepositoryScan() {
+  void nextTick(() => {
+    if (!hasWindow) return;
+    window.requestAnimationFrame(() => {
+      dashboardRepositoryScanCard.value?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      dashboardRepositoryScanCard.value?.focus({ preventScroll: true });
+    });
+  });
+}
+
+function openRepoImportTool() {
+  openProjectWizard();
+  projectSetupForm.projectType = 'Bug Fix';
+  repoImportError.value = '';
+  focusRepoImportField();
+  showToast('Repo import opened. Paste a GitHub repository URL.');
+}
+
+async function openIssueScannerTool() {
+  openDashboardSection('projects');
+  if (!dashboardProjects.value.length && token.value) {
+    await loadDashboardData({ silent: true });
+  }
+
+  const targetProjectID = selectedDashboardProjectID.value || dashboardSelectedProject.value?.id || dashboardSortedProjects.value[0]?.id || '';
+  if (!targetProjectID) {
+    showToast('Create or import a project before running repository scan.');
+    return;
+  }
+
+  selectedDashboardProjectID.value = targetProjectID;
+  void loadDashboardRepositoryScanData(targetProjectID);
+  focusDashboardRepositoryScan();
+  showToast('Repository scan opened.');
+}
+
+function openCostEstimatorTool() {
+  publicModeVisible.value = true;
+  projectWizardVisible.value = true;
+  projectWizardStage.value = 'setup';
+  projectWizardStep.value = 3;
+  errorMessage.value = '';
+  updateProjectWizardBrowserPath();
+  scrollProjectFlowTop();
+  showToast('Cost estimator opened. Set budget, deadline, and funding method.');
+}
+
 function handleDashboardNav(item) {
   if (item.page) {
     openPublicPage(item.page);
@@ -5834,6 +5894,18 @@ function handleDashboardNav(item) {
   }
   if (item.section) {
     openDashboardSection(item.section);
+    return;
+  }
+  if (item.action === 'repo-import') {
+    openRepoImportTool();
+    return;
+  }
+  if (item.action === 'issue-scanner') {
+    void openIssueScannerTool();
+    return;
+  }
+  if (item.action === 'cost-estimator') {
+    openCostEstimatorTool();
     return;
   }
   showToast(item.toast || `${item.label} opened.`);
