@@ -1,0 +1,10 @@
+{
+  "name": "@mergeos/contracts",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "MergeOS MRG token, escrow, treasury, and payout contract sources.",
+  "scripts": {
+    "test": "node --test"
+  },
+  "license": "MIT"
+}

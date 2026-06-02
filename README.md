@@ -11,6 +11,8 @@ This repository is the current MergeOS MVP: Go backend, Vue SSR frontend, projec
 
 `sdk/` is the lightweight JavaScript MergeOS SDK for public marketplace/ledger feeds, authenticated task and workflow APIs, admin ops queue calls, and WebSocket event stream helpers.
 
+`contracts/` contains the MRG token, treasury, and escrow contract sources used to model funded projects, platform fees, task reserves, worker payouts, and refunds.
+
 ## Production
 
 - App: [https://mergeos.shop](https://mergeos.shop)
@@ -58,6 +60,7 @@ MergeOS currently supports:
 - SMTP notifications when configured, persisted notification records when SMTP is not configured.
 - Admin APIs for users, projects, tasks, attachments, notifications, ledger, and SSL review.
 - JavaScript SDK helpers for public feeds, project deployment workflow, AI workflow, task acceptance, worker dashboards, admin ops queue, and WebSocket events.
+- MRG contract sources for token issuance, treasury release, project escrow, task reserve, payout, and refund flows.
 
 Roadmap items include full AI codebase scanning, task dependency DAGs, automated PR verification, reputation scoring, fraud detection, and automatic real payout execution.
 

@@ -1,0 +1,85 @@
+import { describe, it } from "node:test";
+import assert from "node:assert/strict";
+import { readFileSync, readdirSync } from "node:fs";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const root = fileURLToPath(new URL("..", import.meta.url));
+const src = join(root, "src");
+const sources = Object.fromEntries(
+  readdirSync(src)
+    .filter((file) => file.endsWith(".sol"))
+    .map((file) => [file, readFileSync(join(src, file), "utf8")]),
+);
+
+describe("contract package", () => {
+  it("contains the required MergeOS contract sources", () => {
+    assert.deepEqual(Object.keys(sources).sort(), [
+      "MergeOSEscrow.sol",
+      "MergeOSToken.sol",
+      "MergeOSTreasury.sol",
+    ]);
+  });
+
+  it("uses Solidity 0.8.24 and avoids banned low-level primitives", () => {
+    const banned = [/\btx\.origin\b/, /\bselfdestruct\b/, /\bdelegatecall\b/, /\bcallcode\b/];
+
+    for (const [file, source] of Object.entries(sources)) {
+      assert.match(source, /pragma solidity \^0\.8\.24;/, `${file} should pin compiler family`);
+      for (const pattern of banned) {
+        assert.doesNotMatch(source, pattern, `${file} must not include ${pattern}`);
+      }
+    }
+  });
+});
+
+describe("MergeOSToken", () => {
+  const source = sources["MergeOSToken.sol"];
+
+  it("exposes ERC20-compatible surface and controlled minting", () => {
+    assert.match(source, /contract MergeOSToken/);
+    assert.match(source, /event Transfer\(address indexed from, address indexed to, uint256 amount\)/);
+    assert.match(source, /event Approval\(address indexed owner, address indexed spender, uint256 amount\)/);
+    assert.match(source, /function mint\(address to, uint256 amount\) external onlyMinter/);
+    assert.match(source, /function setMinter\(address account, bool enabled\) external onlyOwner/);
+    assert.match(source, /function burn\(uint256 amount\) external/);
+  });
+});
+
+describe("MergeOSTreasury", () => {
+  const source = sources["MergeOSTreasury.sol"];
+
+  it("requires operators for payout release", () => {
+    assert.match(source, /contract MergeOSTreasury/);
+    assert.match(source, /event TreasuryRelease\(address indexed recipient, uint256 amount, bytes32 indexed reference\)/);
+    assert.match(source, /function release\(address recipient, uint256 amount, bytes32 reference\) external onlyOperator/);
+    assert.match(source, /function setOperator\(address account, bool enabled\) external onlyOwner/);
+    assert.match(source, /function _safeTransfer\(address recipient, uint256 amount\) private/);
+  });
+});
+
+describe("MergeOSEscrow", () => {
+  const source = sources["MergeOSEscrow.sol"];
+
+  it("tracks project funding, task reserves, release, and refund flows", () => {
+    assert.match(source, /contract MergeOSEscrow/);
+    assert.match(source, /enum ProjectStatus/);
+    assert.match(source, /struct ProjectEscrow/);
+    assert.match(source, /function fundProject\(/);
+    assert.match(source, /_safeTransferFrom\(client, address\(this\), amount\)/);
+    assert.match(source, /function reserveTask\(/);
+    assert.match(source, /function releaseTask\(bytes32 taskId\) external onlyOperator nonReentrant/);
+    assert.match(source, /function refundTask\(bytes32 taskId, address recipient\) external onlyOperator nonReentrant/);
+    assert.match(source, /function refundProjectRemainder\(/);
+  });
+
+  it("guards external value movement", () => {
+    assert.match(source, /modifier nonReentrant\(\)/);
+    assert.match(source, /function _safeTransfer\(address recipient, uint256 amount\) private/);
+    assert.match(source, /function _safeTransferFrom\(address from, address recipient, uint256 amount\) private/);
+    assert.match(source, /event ProjectFunded\(/);
+    assert.match(source, /event TaskReserved\(/);
+    assert.match(source, /event TaskPaid\(/);
+    assert.match(source, /event ProjectRefunded\(/);
+  });
+});
