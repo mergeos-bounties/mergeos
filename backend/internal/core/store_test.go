@@ -747,6 +747,117 @@ func TestPublicLedgerUsesPullReferenceForAdminAcceptedTask(t *testing.T) {
 	}
 }
 
+func TestPublicLiveFeedRouteReturnsSanitizedTimeline(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:       defaultTokenSymbol,
+		StatePath:         filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:    1000,
+		DevPaymentEnabled: true,
+		DevPaymentCode:    defaultDevPaymentCode,
+		GitHubOwner:       defaultGitHubOwner,
+		BountyRoot:        filepath.Join(tempDir, "bounties"),
+		SMTPFrom:          "noreply@mergeos.local",
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	auth, err := store.Register(RegisterRequest{
+		Name:        "Feed Client",
+		CompanyName: "Feed Co",
+		Email:       "feed@example.com",
+		Password:    "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	project, err := store.CreateProject(context.Background(), auth.User.ID, CreateProjectRequest{
+		Title:            "Live feed proof",
+		ClientName:       "Private Feed Client",
+		CompanyName:      "Feed Co",
+		ClientEmail:      "feed@example.com",
+		Phone:            "+1 555 0177",
+		Brief:            "Create public live feed data without leaking private customer data.",
+		BudgetCents:      180000,
+		PaymentMethod:    PaymentPayPal,
+		PaymentReference: defaultDevPaymentCode,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	req, err := acceptRequestForPullAuthor(project.Tasks[0], "feed-author")
+	if err != nil {
+		t.Fatal(err)
+	}
+	pullReference := buildPullLedgerReference(project.Tasks[0].ID, "https://github.com/mergeos-bounties/mergeos/pull/151", "Live feed proof")
+	if _, err := store.AcceptTaskWithReviewReference(project.Tasks[0].ID, req, 5000, "future-medium", pullReference); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.AddGeminiWebhookLog(GeminiWebhookLog{
+		EventName:  "pull_request",
+		Action:     "opened",
+		Repository: "mergeos-bounties/mergeos",
+		PullNumber: 151,
+		Sender:     "ai-reviewer",
+		Status:     "processed",
+		StatusCode: http.StatusOK,
+		CommentURL: "https://github.com/mergeos-bounties/mergeos/pull/151#issuecomment-1",
+		ReceivedAt: time.Now().UTC(),
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	server := NewServer(cfg, store, payments)
+	reqHTTP := httptest.NewRequest(http.MethodGet, "/api/public/live-feed?limit=50", nil)
+	resp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(resp, reqHTTP)
+	if resp.Code != http.StatusOK {
+		t.Fatalf("live feed status = %d, body = %s", resp.Code, resp.Body.String())
+	}
+
+	body := resp.Body.String()
+	privateValues := []string{
+		"feed@example.com",
+		"+1 555 0177",
+		auth.User.ID,
+		tempDir,
+		defaultDevPaymentCode,
+		project.Tasks[0].ID,
+	}
+	for _, value := range privateValues {
+		if strings.Contains(body, value) {
+			t.Fatalf("public live feed leaked private value %q: %s", value, body)
+		}
+	}
+
+	var payload PublicLiveFeedResponse
+	if err := json.Unmarshal(resp.Body.Bytes(), &payload); err != nil {
+		t.Fatal(err)
+	}
+	if payload.Stats.ProjectCount != 1 || payload.Stats.AIActionCount != 1 || payload.Stats.LedgerEntryCount == 0 {
+		t.Fatalf("unexpected live feed stats: %#v", payload.Stats)
+	}
+	seen := map[string]bool{}
+	for _, item := range payload.Items {
+		seen[item.Type] = true
+		if item.Type == "ledger_task_payment" {
+			if item.Reference != "pr:https://github.com/mergeos-bounties/mergeos/pull/151;title:Live feed proof" {
+				t.Fatalf("task payout feed reference = %q", item.Reference)
+			}
+			if item.URL != "https://github.com/mergeos-bounties/mergeos/pull/151" {
+				t.Fatalf("task payout feed url = %q", item.URL)
+			}
+		}
+	}
+	for _, required := range []string{"project_funded", "task_accepted", "ledger_task_payment", "ai_review"} {
+		if !seen[required] {
+			t.Fatalf("live feed missing %s item: %#v", required, payload.Items)
+		}
+	}
+}
+
 func TestAdminAutoPromoteAndRoutes(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := Config{

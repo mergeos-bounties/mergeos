@@ -22,6 +22,7 @@
           <ChevronDown :size="13" />
         </a>
         <a href="/marketplace" @click.prevent="closeProjectWizard(); openPublicPage('marketplace')">Marketplace</a>
+        <a href="/live" @click.prevent="closeProjectWizard(); openPublicPage('live')">Live Feed</a>
         <a href="/how-it-works" @click.prevent="closeProjectWizard(); openPublicPage('how-it-works')">How it works</a>
         <a href="/ledger" @click.prevent="closeProjectWizard(); openPublicPage('ledger')">Ledger Logs</a>
       </nav>
@@ -1526,6 +1527,7 @@
             <ChevronDown :size="13" />
           </a>
           <a href="/marketplace" :class="{ 'nav-active': publicPage === 'marketplace' }" @click.prevent="openPublicPage('marketplace')">Marketplace</a>
+          <a href="/live" :class="{ 'nav-active': publicPage === 'live' }" @click.prevent="openPublicPage('live')">Live Feed</a>
           <a href="/how-it-works" :class="{ 'nav-active': publicPage === 'how-it-works' }" @click.prevent="openPublicPage('how-it-works')">How it works</a>
           <a href="/ledger" :class="{ 'nav-active': publicPage === 'ledger' }" @click.prevent="openPublicPage('ledger')">Ledger Logs</a>
         </nav>
@@ -1547,6 +1549,7 @@
           <a href="/product" :class="{ 'nav-active': publicPage === 'product' }" @click.prevent="mobileMenuOpen = false; openPublicPage('product')">Product <ChevronDown :size="13" /></a>
           <a href="/solutions" :class="{ 'nav-active': publicPage === 'solutions' }" @click.prevent="mobileMenuOpen = false; openPublicPage('solutions')">Solutions <ChevronDown :size="13" /></a>
           <a href="/marketplace" :class="{ 'nav-active': publicPage === 'marketplace' }" @click.prevent="mobileMenuOpen = false; openPublicPage('marketplace')">Marketplace</a>
+          <a href="/live" :class="{ 'nav-active': publicPage === 'live' }" @click.prevent="mobileMenuOpen = false; openPublicPage('live')">Live Feed</a>
           <a href="/how-it-works" :class="{ 'nav-active': publicPage === 'how-it-works' }" @click.prevent="mobileMenuOpen = false; openPublicPage('how-it-works')">How it works</a>
           <a href="/ledger" :class="{ 'nav-active': publicPage === 'ledger' }" @click.prevent="mobileMenuOpen = false; openPublicPage('ledger')">Ledger Logs</a>
         </nav>
@@ -1736,6 +1739,156 @@
             <strong>{{ item.title }}</strong>
             <p>{{ item.body }}</p>
           </article>
+        </section>
+      </div>
+    </main>
+
+    <main v-else-if="publicPage === 'live'" id="top" class="ledger-page live-feed-page">
+      <div class="home-container ledger-shell live-feed-shell">
+        <section class="ledger-hero">
+          <div class="ledger-hero-copy">
+            <span class="marketplace-eyebrow">LIVE FEED</span>
+            <div class="ledger-title-row">
+              <h1>Live Feed</h1>
+              <span class="ledger-public-badge">
+                <Zap :size="14" />
+                Realtime
+              </span>
+            </div>
+            <p>Public MergeOS activity from funded projects, open bounty tasks, PR payouts, AI review webhooks, and ledger-backed payment events.</p>
+
+            <div class="ledger-trust-row" aria-label="Live feed trust signals">
+              <article>
+                <span class="ledger-trust-icon green">
+                  <GitPullRequest :size="16" />
+                </span>
+                <div>
+                  <strong>PR and task events</strong>
+                  <small>Accepted work and open tasks</small>
+                </div>
+              </article>
+              <article>
+                <span class="ledger-trust-icon blue">
+                  <Bot :size="16" />
+                </span>
+                <div>
+                  <strong>AI actions</strong>
+                  <small>Review webhook status</small>
+                </div>
+              </article>
+              <article>
+                <span class="ledger-trust-icon green">
+                  <ShieldCheck :size="16" />
+                </span>
+                <div>
+                  <strong>Ledger proof</strong>
+                  <small>Sanitized public references</small>
+                </div>
+              </article>
+            </div>
+          </div>
+
+          <aside class="ledger-live-card" aria-label="Live feed metrics">
+            <div class="ledger-card-head">
+              <h2>Realtime Snapshot</h2>
+              <span class="ledger-live-dot">Live</span>
+            </div>
+            <div class="ledger-live-grid">
+              <article v-for="stat in liveFeedStats" :key="stat.label">
+                <strong>{{ stat.value }}</strong>
+                <span>{{ stat.label }}</span>
+              </article>
+            </div>
+            <button type="button" @click="loadLiveFeedData">
+              <RefreshCw :size="14" />
+              Refresh live feed
+              <ArrowRight :size="14" />
+            </button>
+          </aside>
+        </section>
+
+        <section class="live-feed-content">
+          <div class="ledger-main-card live-feed-main-card">
+            <div class="live-feed-toolbar">
+              <div>
+                <span class="marketplace-eyebrow">PUBLIC TIMELINE</span>
+                <h2>Delivery activity</h2>
+              </div>
+              <div class="ledger-table-actions">
+                <button type="button" @click="loadLiveFeedData">
+                  <RefreshCw :size="14" />
+                  Refresh
+                </button>
+                <button type="button" @click="openPublicPage('ledger')">
+                  Ledger Logs
+                  <ArrowRight :size="13" />
+                </button>
+              </div>
+            </div>
+
+            <div v-if="liveFeedLoading" class="live-feed-state">Loading public activity...</div>
+            <div v-else-if="liveFeedError" class="live-feed-state error">{{ liveFeedError }}</div>
+            <div v-else-if="!liveFeedItemsView.length" class="live-feed-state">No live activity yet. Fund a project to create the first public events.</div>
+            <div v-else class="live-feed-list">
+              <article v-for="item in liveFeedItemsView" :key="item.id" class="live-feed-row">
+                <span :class="['ledger-event-type', item.tone]">
+                  <component :is="item.icon" :size="15" />
+                  {{ item.typeLabel }}
+                </span>
+                <div class="live-feed-row-copy">
+                  <div>
+                    <strong>{{ item.title }}</strong>
+                    <span>{{ item.status }}</span>
+                  </div>
+                  <p>{{ item.body }}</p>
+                  <small>{{ item.project }} · {{ item.actor }} · {{ item.meta }}</small>
+                </div>
+                <div class="live-feed-row-meta">
+                  <strong v-if="item.amount" :class="['ledger-amount', item.amountTone]">{{ item.amount }}</strong>
+                  <span v-else>{{ item.date }}</span>
+                  <button v-if="item.url" class="ledger-ref-button" type="button" @click="openExternalURL(item.url)">
+                    {{ item.reference || 'Open' }}
+                    <Link2 :size="12" />
+                  </button>
+                  <span v-else-if="item.reference">{{ item.reference }}</span>
+                </div>
+              </article>
+            </div>
+          </div>
+
+          <aside class="ledger-rail">
+            <section class="ledger-side-card">
+              <div class="side-card-head">
+                <h2>Activity Types</h2>
+                <button type="button" @click="loadLiveFeedData">Refresh</button>
+              </div>
+              <div class="live-feed-type-list">
+                <article v-for="row in liveFeedActivityTypes" :key="row.label">
+                  <span :class="['notification-dot', row.tone]" />
+                  <strong>{{ row.label }}</strong>
+                  <small>{{ row.count }}</small>
+                </article>
+                <article v-if="!liveFeedActivityTypes.length">
+                  <span class="notification-dot blue" />
+                  <strong>Waiting for events</strong>
+                  <small>0</small>
+                </article>
+              </div>
+            </section>
+
+            <section class="ledger-side-card">
+              <h2>Latest Signal</h2>
+              <div v-if="liveFeedLatestProject" class="live-feed-latest">
+                <span :class="['ledger-project-logo', liveFeedLatestProject.tone]">{{ projectInitialFor(liveFeedLatestProject.project) }}</span>
+                <div>
+                  <strong>{{ liveFeedLatestProject.title }}</strong>
+                  <p>{{ liveFeedLatestProject.body }}</p>
+                  <small>{{ liveFeedLatestProject.meta }}</small>
+                </div>
+              </div>
+              <p v-else class="live-feed-empty-copy">No current signal.</p>
+            </section>
+          </aside>
         </section>
       </div>
     </main>
@@ -2486,6 +2639,7 @@ const publicPagePaths = {
   product: '/product',
   solutions: '/solutions',
   marketplace: '/marketplace',
+  live: '/live',
   'how-it-works': '/how-it-works',
   ledger: '/ledger',
 };
@@ -2619,6 +2773,12 @@ const ledgerRawEntries = ref([]);
 const ledgerProjects = ref([]);
 const ledgerLoading = ref(false);
 const ledgerError = ref('');
+const liveFeedData = ref({
+  stats: {},
+  items: [],
+});
+const liveFeedLoading = ref(true);
+const liveFeedError = ref('');
 const marketplaceData = ref({
   stats: {},
   projects: [],
@@ -3121,6 +3281,33 @@ const ledgerFooterStats = computed(() => [
   { value: String(ledgerRawEntries.value.length), label: 'Ledger entries' },
 ]);
 
+const liveFeedStats = computed(() => {
+  const stats = liveFeedData.value?.stats || {};
+  return [
+    { value: String(Number(stats.project_count) || publicProjectCount.value), label: 'Projects' },
+    { value: String(Number(stats.open_task_count) || 0), label: 'Open tasks' },
+    { value: String(Number(stats.ai_action_count) || 0), label: 'AI actions' },
+    { value: formatPublicMRGFromCents(stats.total_budget_cents || publicVerifiedFundingCents.value), label: 'Escrow' },
+  ];
+});
+const liveFeedItemsView = computed(() =>
+  (liveFeedData.value.items || []).map(mapPublicLiveFeedItem),
+);
+const liveFeedActivityTypes = computed(() => {
+  const counts = new Map();
+  for (const item of liveFeedItemsView.value) {
+    counts.set(item.typeLabel, (counts.get(item.typeLabel) || 0) + 1);
+  }
+  return Array.from(counts.entries()).slice(0, 6).map(([label, count], index) => ({
+    label,
+    count,
+    tone: ['green', 'blue', 'purple', 'amber', 'slate', 'green'][index % 6],
+  }));
+});
+const liveFeedLatestProject = computed(() =>
+  liveFeedItemsView.value.find((item) => item.rawType === 'project_funded') || liveFeedItemsView.value[0] || null,
+);
+
 const marketplaceFilters = ['Category', 'Budget', 'Delivery time'];
 
 const marketplaceProjectPalettes = [
@@ -3189,6 +3376,14 @@ const publicNotificationRows = computed(() => {
     tone: note.tone,
     createdAt: note.createdAt,
   }));
+  const liveRows = liveFeedItemsView.value.slice(0, 4).map((item) => ({
+    id: `live-${item.id}`,
+    subject: item.title,
+    body: item.body,
+    meta: item.meta,
+    tone: item.tone === 'green' || item.tone === 'blue' ? item.tone : 'blue',
+    createdAt: item.createdAt,
+  }));
   const ledgerRows = ledgerEvents.value.slice(0, 4).map((event) => ({
     id: `ledger-${event.key}`,
     subject: event.type,
@@ -3197,7 +3392,7 @@ const publicNotificationRows = computed(() => {
     tone: event.tone === 'green' || event.tone === 'blue' ? event.tone : 'blue',
     createdAt: event.createdAt,
   }));
-  const rows = [...actionRows, ...ledgerRows].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+  const rows = [...actionRows, ...liveRows, ...ledgerRows].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
   if (rows.length) return rows;
   return [{
     id: 'empty-public-notification',
@@ -3693,6 +3888,13 @@ function openWalletOnScan(address = '') {
   window.open(`https://scan.mergeos.shop/address/${encodeURIComponent(wallet)}`, '_blank', 'noopener,noreferrer');
 }
 
+function openExternalURL(url = '') {
+  const target = String(url || '').trim();
+  if (!target || !hasWindow) return;
+  if (!/^https?:\/\//i.test(target)) return;
+  window.open(target, '_blank', 'noopener,noreferrer');
+}
+
 async function startGitHubLogin() {
   if (!hasWindow) return;
   errorMessage.value = '';
@@ -3791,9 +3993,15 @@ function loadPublicPageData(page) {
     void loadLedgerData();
     return;
   }
+  if (page === 'live') {
+    void loadLiveFeedData();
+    void loadMarketplaceData({ silent: true });
+    return;
+  }
   if (page === 'marketplace' || page === 'home') {
     void loadMarketplaceData({ silent: true });
     void loadLedgerData({ silent: true });
+    void loadLiveFeedData({ silent: true });
   }
 }
 
@@ -4621,6 +4829,55 @@ function ledgerMetaFor(type = '') {
   return { type: normalized.replaceAll('_', ' '), icon: Compass, tone: 'slate', amountTone: 'neutral' };
 }
 
+function liveFeedMetaFor(type = '') {
+  const normalized = String(type);
+  if (normalized.startsWith('ledger_')) {
+    return ledgerMetaFor(normalized.replace(/^ledger_/, ''));
+  }
+  if (normalized === 'project_funded') {
+    return { type: 'Project Funded', icon: FolderKanban, tone: 'green', amountTone: 'positive' };
+  }
+  if (normalized === 'task_opened') {
+    return { type: 'Task Opened', icon: ListTodo, tone: 'blue', amountTone: 'neutral' };
+  }
+  if (normalized === 'task_accepted') {
+    return { type: 'PR Accepted', icon: GitPullRequest, tone: 'green', amountTone: 'positive' };
+  }
+  if (normalized === 'ai_review') {
+    return { type: 'AI Review', icon: Bot, tone: 'purple', amountTone: 'muted' };
+  }
+  return { type: toTitleLabel(normalized || 'Activity'), icon: Compass, tone: 'slate', amountTone: 'neutral' };
+}
+
+function mapPublicLiveFeedItem(item = {}) {
+  const meta = liveFeedMetaFor(item.type);
+  const when = formatLedgerDateTime(item.created_at);
+  const amountCents = Number(item.amount_cents) || 0;
+  const projectTitle = item.project_title || 'MergeOS';
+  const reference = item.reference || '';
+  return {
+    id: item.id || `${item.type || 'activity'}-${item.created_at || reference || item.title || 'row'}`,
+    rawType: item.type || '',
+    typeLabel: meta.type,
+    icon: meta.icon,
+    tone: meta.tone,
+    amountTone: meta.amountTone,
+    title: item.title || meta.type,
+    body: trimMarketplaceText(item.body, 'MergeOS live activity recorded.'),
+    project: projectTitle,
+    actor: item.actor || 'MergeOS',
+    amount: amountCents ? formatPublicMRGFromCents(amountCents) : '',
+    reference: shortLedgerReference(reference),
+    rawReference: reference,
+    url: item.url || '',
+    status: toTitleLabel(item.status || 'live'),
+    date: when.date,
+    time: when.time,
+    meta: `${when.full} • ${toTitleLabel(item.status || 'live')}`,
+    createdAt: item.created_at,
+  };
+}
+
 function mapLedgerEntry(entry) {
   const projectID = extractProjectID(entry);
   const project = ledgerProjectIndex.value.get(projectID);
@@ -4779,6 +5036,23 @@ async function loadMarketplaceData(options = {}) {
     marketplaceError.value = error.message || 'Could not load marketplace data';
   } finally {
     marketplaceLoading.value = false;
+  }
+}
+
+async function loadLiveFeedData(options = {}) {
+  const silent = Boolean(options.silent);
+  if (!silent) liveFeedLoading.value = true;
+  liveFeedError.value = '';
+  try {
+    const payload = await publicApi('/api/public/live-feed?limit=80');
+    liveFeedData.value = {
+      stats: payload.stats || {},
+      items: Array.isArray(payload.items) ? payload.items : [],
+    };
+  } catch (error) {
+    liveFeedError.value = error.message || 'Could not load live feed';
+  } finally {
+    liveFeedLoading.value = false;
   }
 }
 
@@ -4945,6 +5219,9 @@ function setSession(auth) {
   if (publicPage.value === 'ledger') {
     void loadLedgerData({ silent: true });
   }
+  if (publicPage.value === 'live') {
+    void loadLiveFeedData({ silent: true });
+  }
   void loadDashboardData({ silent: true });
   void loadDashboardNotifications();
   startDashboardRealtime();
@@ -5054,6 +5331,7 @@ function handleWSEvent(payload = {}) {
       };
     }
   }
+  void loadLiveFeedData({ silent: true });
 }
 
 function clearSession() {
@@ -5176,6 +5454,7 @@ onMounted(async () => {
     restoreSession(),
     loadMarketplaceData({ silent: true }),
     loadLedgerData({ silent: true }),
+    loadLiveFeedData({ silent: true }),
   ]);
 });
 

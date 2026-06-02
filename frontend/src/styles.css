@@ -6318,6 +6318,18 @@ svg {
   background: #2563eb;
 }
 
+.notification-dot.purple {
+  background: #7c3aed;
+}
+
+.notification-dot.amber {
+  background: #d97706;
+}
+
+.notification-dot.slate {
+  background: #64748b;
+}
+
 .notification-dot.red {
   background: #ef4444;
 }
@@ -7538,6 +7550,197 @@ svg {
   align-items: start;
 }
 
+.live-feed-content {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 292px;
+  gap: 18px;
+  align-items: start;
+}
+
+.live-feed-main-card {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.live-feed-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid #eef0f2;
+  padding: 16px;
+}
+
+.live-feed-toolbar h2 {
+  margin: 4px 0 0;
+  color: #111827;
+  font-size: 18px;
+  line-height: 1.2;
+  font-weight: 930;
+}
+
+.live-feed-state {
+  padding: 34px 18px;
+  color: #64748b;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.live-feed-state.error {
+  color: #b91c1c;
+  background: #fef2f2;
+}
+
+.live-feed-list {
+  display: grid;
+}
+
+.live-feed-row {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 132px minmax(0, 1fr) minmax(130px, 190px);
+  gap: 14px;
+  align-items: center;
+  border-bottom: 1px solid #eef0f2;
+  padding: 14px 16px;
+}
+
+.live-feed-row-copy,
+.live-feed-row-copy div {
+  min-width: 0;
+}
+
+.live-feed-row-copy div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.live-feed-row-copy strong {
+  min-width: 0;
+  overflow: hidden;
+  color: #111827;
+  font-size: 13px;
+  line-height: 1.25;
+  font-weight: 930;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.live-feed-row-copy div span {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #475569;
+  padding: 4px 7px;
+  font-size: 9px;
+  font-weight: 900;
+}
+
+.live-feed-row-copy p {
+  margin: 5px 0 0;
+  color: #475569;
+  font-size: 12px;
+  line-height: 1.45;
+  font-weight: 700;
+}
+
+.live-feed-row-copy small {
+  display: block;
+  margin-top: 5px;
+  color: #7b8492;
+  font-size: 10px;
+  font-weight: 760;
+}
+
+.live-feed-row-meta {
+  min-width: 0;
+  display: grid;
+  justify-items: end;
+  gap: 7px;
+}
+
+.live-feed-row-meta > span {
+  max-width: 100%;
+  overflow: hidden;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.live-feed-type-list {
+  display: grid;
+  gap: 10px;
+}
+
+.live-feed-type-list article {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto;
+  gap: 9px;
+  align-items: center;
+}
+
+.live-feed-type-list strong,
+.live-feed-type-list small {
+  min-width: 0;
+  font-size: 11px;
+  line-height: 1.25;
+  font-weight: 900;
+}
+
+.live-feed-type-list strong {
+  overflow: hidden;
+  color: #111827;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.live-feed-type-list small {
+  color: #64748b;
+}
+
+.live-feed-latest {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.live-feed-latest div {
+  min-width: 0;
+}
+
+.live-feed-latest strong {
+  display: block;
+  overflow: hidden;
+  color: #111827;
+  font-size: 13px;
+  line-height: 1.25;
+  font-weight: 930;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.live-feed-latest p,
+.live-feed-empty-copy {
+  margin: 5px 0 0;
+  color: #475569;
+  font-size: 11px;
+  line-height: 1.45;
+  font-weight: 720;
+}
+
+.live-feed-latest small {
+  display: block;
+  margin-top: 5px;
+  color: #7b8492;
+  font-size: 10px;
+  font-weight: 760;
+}
+
 .ledger-main-card {
   min-width: 0;
   overflow: hidden;
@@ -8400,7 +8603,8 @@ svg {
 
 @media (max-width: 1180px) {
   .ledger-hero,
-  .ledger-content {
+  .ledger-content,
+  .live-feed-content {
     grid-template-columns: 1fr;
   }
 
@@ -8431,6 +8635,15 @@ svg {
     align-items: stretch;
     flex-direction: column;
     padding: 0 14px 12px;
+  }
+
+  .live-feed-row {
+    grid-template-columns: 118px minmax(0, 1fr);
+  }
+
+  .live-feed-row-meta {
+    grid-column: 2 / -1;
+    justify-items: start;
   }
 
   .ledger-table-actions {
@@ -8468,6 +8681,19 @@ svg {
 
   .ledger-table-actions button {
     width: 100%;
+  }
+
+  .live-feed-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .live-feed-row {
+    grid-template-columns: 1fr;
+  }
+
+  .live-feed-row-meta {
+    grid-column: auto;
   }
 
   .ledger-footer-stats {

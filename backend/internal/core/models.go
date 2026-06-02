@@ -527,6 +527,37 @@ type MarketplaceAgent struct {
 	BudgetCents   int64      `json:"budget_cents"`
 }
 
+type PublicLiveFeedResponse struct {
+	Stats PublicLiveFeedStats  `json:"stats"`
+	Items []PublicLiveFeedItem `json:"items"`
+}
+
+type PublicLiveFeedStats struct {
+	ProjectCount      int        `json:"project_count"`
+	OpenTaskCount     int        `json:"open_task_count"`
+	AcceptedTaskCount int        `json:"accepted_task_count"`
+	LedgerEntryCount  int        `json:"ledger_entry_count"`
+	AIActionCount     int        `json:"ai_action_count"`
+	TotalBudgetCents  int64      `json:"total_budget_cents"`
+	TokenSymbol       string     `json:"token_symbol"`
+	UpdatedAt         *time.Time `json:"updated_at,omitempty"`
+}
+
+type PublicLiveFeedItem struct {
+	ID           string    `json:"id"`
+	Type         string    `json:"type"`
+	Title        string    `json:"title"`
+	Body         string    `json:"body"`
+	ProjectID    string    `json:"project_id,omitempty"`
+	ProjectTitle string    `json:"project_title,omitempty"`
+	Actor        string    `json:"actor,omitempty"`
+	AmountCents  int64     `json:"amount_cents,omitempty"`
+	Reference    string    `json:"reference,omitempty"`
+	URL          string    `json:"url,omitempty"`
+	Status       string    `json:"status"`
+	CreatedAt    time.Time `json:"created_at"`
+}
+
 type AdminSummary struct {
 	UserCount         int                `json:"user_count"`
 	AdminCount        int                `json:"admin_count"`
