@@ -3262,13 +3262,20 @@
             </label>
 
             <div class="marketplace-selects">
-              <button v-for="filter in marketplaceFilters" :key="filter" type="button" @click="showToast(`Filtering by ${filter}...`)">
+              <button
+                v-for="filter in marketplaceFilters"
+                :key="filter"
+                :class="{ active: filter === activeMarketplaceFilter }"
+                type="button"
+                :aria-pressed="filter === activeMarketplaceFilter"
+                @click="activeMarketplaceFilter = filter"
+              >
                 {{ filter }}
                 <ChevronDown :size="14" />
               </button>
-              <button class="more-filter-button" type="button" @click="showToast('Opening more filters...')">
+              <button class="more-filter-button" type="button" @click="resetMarketplaceFilters">
                 <Filter :size="15" />
-                More filters
+                Reset filters
               </button>
             </div>
 
@@ -3339,7 +3346,7 @@
             <article v-else class="marketplace-empty-state">
               <strong>{{ marketplaceLoading ? 'Loading projects...' : 'No matching live projects' }}</strong>
               <p>{{ marketplaceLoading ? 'Fetching current marketplace data from MergeOS.' : 'Try another search or post a funded project to create the first marketplace listing.' }}</p>
-              <button v-if="!marketplaceLoading" class="secondary-button compact" type="button" @click="marketplaceSearch = ''; activeMarketplaceCategory = 'All'">
+              <button v-if="!marketplaceLoading" class="secondary-button compact" type="button" @click="resetMarketplaceFilters">
                 Clear filters
               </button>
             </article>
@@ -3925,6 +3932,7 @@ const marketplaceLoading = ref(true);
 const marketplaceError = ref('');
 const marketplaceSearch = ref('');
 const activeMarketplaceCategory = ref('All');
+const activeMarketplaceFilter = ref('Category');
 const activeLedgerTab = ref('All Activity');
 const activeLedgerProjectFilter = ref('All Projects');
 const publicTestSettingsStatus = ref({ test_mode_enabled: false });
@@ -4834,18 +4842,21 @@ const marketplaceCategories = computed(() => {
 const marketplaceProjectsView = computed(() => {
   const query = marketplaceSearch.value.toLowerCase();
   const active = activeMarketplaceCategory.value;
-  return (marketplaceData.value.projects || [])
+  const projects = (marketplaceData.value.projects || [])
     .map(mapMarketplaceProject)
     .filter((project) => {
       const matchesCategory = active === 'All' || project.tags.some((tag) => toTitleLabel(tag) === active);
       const matchesSearch = !query || marketplaceSearchHaystack(project).includes(query);
       return matchesCategory && matchesSearch;
     });
+  return sortMarketplaceRows(projects, activeMarketplaceFilter.value);
 });
 const marketplaceBountiesView = computed(() =>
   (marketplaceData.value.bounties || [])
-    .slice(0, 8)
-    .map(mapMarketplaceBounty),
+    .map(mapMarketplaceBounty)
+    .filter((bounty) => !marketplaceSearch.value || marketplaceBountyHaystack(bounty).includes(marketplaceSearch.value.toLowerCase()))
+    .sort((a, b) => sortMarketplaceBounties(a, b, activeMarketplaceFilter.value))
+    .slice(0, 8),
 );
 const marketplaceSummaryLabel = computed(() => {
   const stats = marketplaceStats.value;
@@ -5758,6 +5769,12 @@ function resetLedgerFilters() {
   activeLedgerProjectFilter.value = 'All Projects';
 }
 
+function resetMarketplaceFilters() {
+  marketplaceSearch.value = '';
+  activeMarketplaceCategory.value = 'All';
+  activeMarketplaceFilter.value = 'Category';
+}
+
 function pushPublicNotification(message) {
   if (!message || (user.value && !publicModeVisible.value && !projectWizardVisible.value)) return;
   const createdAt = new Date().toISOString();
@@ -6565,6 +6582,9 @@ function mapMarketplaceProject(project = {}, index = 0) {
     clientInitials: initialsFor(client),
     avatarTone: palette.avatarTone,
     taskLabel: `${taskCount} tasks`,
+    openTasks,
+    budgetCents: Number(project.budget_cents) || 0,
+    createdTime: Date.parse(project.created_at || '') || 0,
     verified: project.status === 'funded',
     urgent: openTasks > 0,
     accent: palette.accent,
@@ -6584,6 +6604,7 @@ function mapMarketplaceBounty(bounty = {}, index = 0) {
     acceptance: trimMarketplaceText(bounty.acceptance, 'Acceptance criteria will appear after task generation.'),
     project: bounty.project_title || 'MergeOS project',
     reward: formatPublicMRGFromCents(bounty.reward_cents),
+    rewardCents: Number(bounty.reward_cents) || 0,
     lane: agentType ? toTitleLabel(agentType) : toTitleLabel(workerKind),
     issue: issueNumber > 0 ? `#${issueNumber}` : 'Task',
     issueNumber,
@@ -6591,6 +6612,27 @@ function mapMarketplaceBounty(bounty = {}, index = 0) {
     url: bounty.issue_url || '',
     tone: ['green', 'blue', 'purple', 'amber'][index % 4],
   };
+}
+
+function sortMarketplaceRows(rows = [], filter = 'Category') {
+  const sorted = rows.slice();
+  if (filter === 'Budget') {
+    return sorted.sort((a, b) => b.budgetCents - a.budgetCents || b.openTasks - a.openTasks || b.createdTime - a.createdTime);
+  }
+  if (filter === 'Delivery time') {
+    return sorted.sort((a, b) => b.openTasks - a.openTasks || b.createdTime - a.createdTime || b.budgetCents - a.budgetCents);
+  }
+  return sorted;
+}
+
+function sortMarketplaceBounties(a = {}, b = {}, filter = 'Category') {
+  if (filter === 'Budget') {
+    return b.rewardCents - a.rewardCents || b.issueNumber - a.issueNumber;
+  }
+  if (filter === 'Delivery time') {
+    return b.issueNumber - a.issueNumber || b.rewardCents - a.rewardCents;
+  }
+  return 0;
 }
 
 function marketplaceSearchHaystack(project = {}) {
@@ -6601,6 +6643,17 @@ function marketplaceSearchHaystack(project = {}) {
     project.budget,
     project.timeline,
     ...(project.tags || []),
+  ].join(' ').toLowerCase();
+}
+
+function marketplaceBountyHaystack(bounty = {}) {
+  return [
+    bounty.title,
+    bounty.acceptance,
+    bounty.project,
+    bounty.reward,
+    bounty.lane,
+    bounty.issue,
   ].join(' ').toLowerCase();
 }
 

@@ -3738,6 +3738,12 @@ svg {
   justify-content: space-between;
 }
 
+.marketplace-selects button.active {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+  color: #047857;
+}
+
 .marketplace-selects .more-filter-button {
   min-width: 132px;
   justify-content: center;
