@@ -42,6 +42,7 @@ jobs:
             frontend/package-lock.json
             admin/package-lock.json
             scan/package-lock.json
+            MergeIDE/package-lock.json
 
       - name: Install frontend dependencies
         working-directory: frontend
@@ -66,6 +67,18 @@ jobs:
       - name: Build scan
         working-directory: scan
         run: npm run build
+
+      - name: Install MergeIDE dependencies
+        working-directory: MergeIDE
+        run: npm ci
+
+      - name: Test MergeIDE
+        working-directory: MergeIDE
+        run: npm test
+
+      - name: Smoke MergeIDE CLI
+        working-directory: MergeIDE
+        run: node ./bin/mergeide.js --help
 
       - name: Package release
         run: |
