@@ -6,6 +6,8 @@ admin/node_modules/
 admin/dist/
 scan/node_modules/
 scan/dist/
+MergeIDE/.mergeide/
+MergeIDE/task-artifacts/
 *.log
 backend.log
 backend.err.log
