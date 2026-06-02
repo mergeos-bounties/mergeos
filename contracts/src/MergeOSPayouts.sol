@@ -29,6 +29,7 @@ contract MergeOSPayouts {
 
     mapping(address => bool) public operators;
     mapping(bytes32 => Payout) public payouts;
+    mapping(bytes32 => bool) public reservedReferences;
 
     event PayoutApproved(bytes32 indexed payoutId, address indexed recipient, uint256 amount, bytes32 indexed reference);
     event PayoutExecuted(bytes32 indexed payoutId, address indexed recipient, uint256 amount, bytes32 indexed reference);
@@ -42,6 +43,7 @@ contract MergeOSPayouts {
     error InvalidAmount();
     error InvalidReference();
     error PayoutExists();
+    error ReferenceExists();
     error PayoutNotApproved();
 
     modifier onlyOwner() {
@@ -83,7 +85,9 @@ contract MergeOSPayouts {
         if (recipient == address(0)) revert ZeroAddress();
         if (amount == 0) revert InvalidAmount();
         if (payouts[payoutId].status != PayoutStatus.None) revert PayoutExists();
+        if (reservedReferences[reference]) revert ReferenceExists();
 
+        reservedReferences[reference] = true;
         payouts[payoutId] = Payout({
             recipient: recipient,
             amount: amount,
@@ -112,6 +116,7 @@ contract MergeOSPayouts {
         if (payout.status != PayoutStatus.Approved) revert PayoutNotApproved();
 
         payout.status = PayoutStatus.Cancelled;
+        reservedReferences[payout.reference] = false;
         emit PayoutCancelled(payoutId, payout.reference);
     }
 }
