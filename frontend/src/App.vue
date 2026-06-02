@@ -1623,7 +1623,15 @@
                       </div>
                       <div class="admin-ops-side">
                         <em :class="item.tone">{{ item.severity }}</em>
-                        <button v-if="item.url" type="button" @click="openExternalURL(item.url)">Open</button>
+                        <button
+                          v-for="action in item.actions"
+                          :key="action.id"
+                          type="button"
+                          @click="handleAdminOpsAction(item, action)"
+                        >
+                          {{ action.label }}
+                        </button>
+                        <button v-if="item.url && !item.hasOpenURLAction" type="button" @click="openExternalURL(item.url)">Open</button>
                       </div>
                     </article>
                   </div>
@@ -7817,6 +7825,16 @@ function mapAdminOpsItem(item = {}) {
     reference: item.reference || (item.issue_number ? `Issue #${item.issue_number}` : ''),
     status: toTitleLabel(item.status || 'open'),
     url: item.url || '',
+    taskID: item.task_id || '',
+    actions: Array.isArray(item.actions)
+      ? item.actions.map((action = {}, index) => ({
+        id: action.id || `${item.id || 'ops'}-${index}`,
+        label: action.label || toTitleLabel(action.type || 'Action'),
+        type: action.type || '',
+        url: action.url || item.url || '',
+      }))
+      : [],
+    hasOpenURLAction: Array.isArray(item.actions) && item.actions.some((action) => action?.type === 'open_url'),
     tone,
     when: when.full,
   };
@@ -9024,6 +9042,35 @@ async function runAdminSSLReview() {
     adminSSLReviewError.value = error.message || 'Could not run SSL review';
   } finally {
     adminSSLReviewBusy.value = false;
+  }
+}
+
+async function handleAdminOpsAction(item = {}, action = {}) {
+  const actionType = String(action.type || '').trim();
+  if (actionType === 'open_url') {
+    openExternalURL(action.url || item.url);
+    return;
+  }
+  if (actionType === 'review_task_pulls') {
+    if (!item.taskID) {
+      adminTaskPullsError.value = 'Task id is missing for this ops item.';
+      return;
+    }
+    await loadAdminTaskPulls(item.taskID);
+    showToast('Linked pull requests loaded for payout review.');
+    return;
+  }
+  if (actionType === 'run_ssl_review') {
+    await runAdminSSLReview();
+    return;
+  }
+  if (actionType === 'refresh_admin_ops') {
+    await loadAdminConsoleData({ silent: true, skipTasks: true });
+    showToast('Ops queue refreshed.');
+    return;
+  }
+  if (action.url || item.url) {
+    openExternalURL(action.url || item.url);
   }
 }
 

@@ -1022,20 +1022,28 @@ type AdminOpsQueueStats struct {
 }
 
 type AdminOpsQueueItem struct {
-	ID           string    `json:"id"`
-	Type         string    `json:"type"`
-	Severity     string    `json:"severity"`
-	Title        string    `json:"title"`
-	Body         string    `json:"body"`
-	ProjectID    string    `json:"project_id,omitempty"`
-	ProjectTitle string    `json:"project_title,omitempty"`
-	TaskID       string    `json:"task_id,omitempty"`
-	IssueNumber  int       `json:"issue_number,omitempty"`
-	UserID       string    `json:"user_id,omitempty"`
-	Reference    string    `json:"reference,omitempty"`
-	URL          string    `json:"url,omitempty"`
-	Status       string    `json:"status"`
-	CreatedAt    time.Time `json:"created_at"`
+	ID           string                `json:"id"`
+	Type         string                `json:"type"`
+	Severity     string                `json:"severity"`
+	Title        string                `json:"title"`
+	Body         string                `json:"body"`
+	ProjectID    string                `json:"project_id,omitempty"`
+	ProjectTitle string                `json:"project_title,omitempty"`
+	TaskID       string                `json:"task_id,omitempty"`
+	IssueNumber  int                   `json:"issue_number,omitempty"`
+	UserID       string                `json:"user_id,omitempty"`
+	Reference    string                `json:"reference,omitempty"`
+	URL          string                `json:"url,omitempty"`
+	Status       string                `json:"status"`
+	Actions      []AdminOpsQueueAction `json:"actions,omitempty"`
+	CreatedAt    time.Time             `json:"created_at"`
+}
+
+type AdminOpsQueueAction struct {
+	ID    string `json:"id"`
+	Label string `json:"label"`
+	Type  string `json:"type"`
+	URL   string `json:"url,omitempty"`
 }
 
 type AdminUser struct {

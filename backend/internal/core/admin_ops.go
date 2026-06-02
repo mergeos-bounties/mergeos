@@ -51,6 +51,7 @@ func (s *Store) AdminOpsQueue() AdminOpsQueueResponse {
 			Reference:    adminOpsTaskReference(task),
 			URL:          marketplacePublicRepoURL(task.IssueURL),
 			Status:       "needs_payout_review",
+			Actions:      adminOpsActions("payout_review", task.ID, marketplacePublicRepoURL(task.IssueURL)),
 			CreatedAt:    adminOpsTaskUpdatedAt(task),
 		})
 	}
@@ -71,6 +72,7 @@ func (s *Store) AdminOpsQueue() AdminOpsQueueResponse {
 			UserID:       note.UserID,
 			Reference:    note.Channel,
 			Status:       sanitizeLedgerReferenceValue(note.Status),
+			Actions:      adminOpsActions("dispute", "", ""),
 			CreatedAt:    note.CreatedAt,
 		})
 	}
@@ -88,6 +90,7 @@ func (s *Store) AdminOpsQueue() AdminOpsQueueResponse {
 			Reference: publicLiveFeedAIReference(log),
 			URL:       publicLiveFeedURL(log.CommentURL),
 			Status:    publicLiveFeedStatus(log.Status),
+			Actions:   adminOpsActions("moderation", "", publicLiveFeedURL(log.CommentURL)),
 			CreatedAt: log.ReceivedAt,
 		})
 	}
@@ -108,6 +111,7 @@ func (s *Store) AdminOpsQueue() AdminOpsQueueResponse {
 			Body:      adminOpsSSLBody(review),
 			Reference: review.Domain,
 			Status:    sanitizeLedgerReferenceValue(review.Status),
+			Actions:   adminOpsActions("security_moderation", "", ""),
 			CreatedAt: createdAt,
 		})
 	}
@@ -125,6 +129,7 @@ func (s *Store) AdminOpsQueue() AdminOpsQueueResponse {
 			Reference: publicPullLedgerReference(entry.Reference),
 			URL:       publicLiveFeedReferenceURL(entry.Reference),
 			Status:    "recorded",
+			Actions:   adminOpsActions("payout_audit", "", publicLiveFeedReferenceURL(entry.Reference)),
 			CreatedAt: entry.CreatedAt,
 		})
 	}
@@ -183,6 +188,41 @@ func adminOpsItemID(prefix, id string) string {
 		id = "unknown"
 	}
 	return prefix + ":" + id
+}
+
+func adminOpsActions(itemType, taskID, url string) []AdminOpsQueueAction {
+	actions := []AdminOpsQueueAction{}
+	add := func(id, label, actionType, actionURL string) {
+		actions = append(actions, AdminOpsQueueAction{
+			ID:    id,
+			Label: label,
+			Type:  actionType,
+			URL:   publicLiveFeedURL(actionURL),
+		})
+	}
+	switch itemType {
+	case "payout_review":
+		if strings.TrimSpace(taskID) != "" {
+			add("review-prs", "Review PRs", "review_task_pulls", "")
+		}
+		if publicLiveFeedURL(url) != "" {
+			add("open-issue", "Open Issue", "open_url", url)
+		}
+	case "security_moderation":
+		add("run-ssl-review", "Run SSL Review", "run_ssl_review", "")
+	case "moderation", "payout_audit":
+		if publicLiveFeedURL(url) != "" {
+			add("open-proof", "Open Proof", "open_url", url)
+		}
+	case "dispute":
+		add("refresh-queue", "Refresh Queue", "refresh_admin_ops", "")
+	case "fraud_review":
+		if publicLiveFeedURL(url) != "" {
+			add("open-proof", "Open Proof", "open_url", url)
+		}
+		add("refresh-queue", "Refresh Queue", "refresh_admin_ops", "")
+	}
+	return actions
 }
 
 func adminOpsTaskReference(task *Task) string {
@@ -302,6 +342,7 @@ func (s *Store) adminOpsFraudItemsLocked() []AdminOpsQueueItem {
 			Reference: displayReference,
 			URL:       publicLiveFeedReferenceURL(rows[0].Reference),
 			Status:    "duplicate_payout_reference",
+			Actions:   adminOpsActions("fraud_review", "", publicLiveFeedReferenceURL(rows[0].Reference)),
 			CreatedAt: adminOpsLatestLedgerCreatedAt(rows),
 		})
 	}
@@ -320,6 +361,7 @@ func (s *Store) adminOpsFraudItemsLocked() []AdminOpsQueueItem {
 			Body:      fmt.Sprintf("%s received %d payouts inside 10 minutes. Review payout intent and duplicate work before approving more credits.", accountLabel, count),
 			Reference: accountLabel,
 			Status:    "rapid_payout_burst",
+			Actions:   adminOpsActions("fraud_review", "", ""),
 			CreatedAt: latest,
 		})
 	}
@@ -449,6 +491,7 @@ func (s *Store) adminOpsDuplicateIdentityItemsLocked() []AdminOpsQueueItem {
 			UserID:    users[0].ID,
 			Reference: reference,
 			Status:    "duplicate_identity",
+			Actions:   adminOpsActions("fraud_review", "", ""),
 			CreatedAt: adminOpsLatestUserCreatedAt(users),
 		})
 	}
@@ -466,6 +509,7 @@ func (s *Store) adminOpsDuplicateIdentityItemsLocked() []AdminOpsQueueItem {
 			UserID:    users[0].ID,
 			Reference: reference,
 			Status:    "duplicate_identity",
+			Actions:   adminOpsActions("fraud_review", "", ""),
 			CreatedAt: adminOpsLatestUserCreatedAt(users),
 		})
 	}

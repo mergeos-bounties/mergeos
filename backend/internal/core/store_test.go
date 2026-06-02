@@ -2033,12 +2033,28 @@ func TestAdminOpsQueueReturnsDisputeModerationAndPayoutItems(t *testing.T) {
 		t.Fatalf("unexpected ops queue stats: %#v", payload.Stats)
 	}
 	seen := map[string]bool{}
+	actionSeen := map[string]bool{}
 	for _, item := range payload.Items {
 		seen[item.Type] = true
+		for _, action := range item.Actions {
+			actionSeen[item.Type+":"+action.Type] = true
+		}
 	}
 	for _, required := range []string{"payout_review", "payout_audit", "dispute", "moderation", "security_moderation", "fraud_review"} {
 		if !seen[required] {
 			t.Fatalf("ops queue missing %s item: %#v", required, payload.Items)
+		}
+	}
+	for _, required := range []string{
+		"payout_review:review_task_pulls",
+		"payout_audit:open_url",
+		"security_moderation:run_ssl_review",
+		"dispute:refresh_admin_ops",
+		"fraud_review:open_url",
+		"fraud_review:refresh_admin_ops",
+	} {
+		if !actionSeen[required] {
+			t.Fatalf("ops queue missing action %s: %#v", required, payload.Items)
 		}
 	}
 }
