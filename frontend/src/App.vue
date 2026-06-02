@@ -1994,16 +1994,18 @@
                 <button
                   v-for="tabItem in dashboardTabs"
                   :key="tabItem"
-                  :class="{ active: tabItem === 'Overview' }"
+                  :class="{ active: tabItem === activeDashboardTab }"
                   type="button"
                   role="tab"
+                  :aria-selected="tabItem === activeDashboardTab"
+                  @click="openDashboardProjectTab(tabItem)"
                 >
                   {{ tabItem }}
                   <span v-if="tabItem === 'Tasks'">{{ dashboardTaskRows.length }}</span>
                 </button>
               </div>
 
-              <section class="dash-overview-grid">
+              <section ref="dashboardOverviewPanel" class="dash-overview-grid" tabindex="-1">
                 <article class="dash-card progress-overview-card">
                   <h2>Progress Overview</h2>
                   <div class="progress-card-body">
@@ -2175,7 +2177,7 @@
                 </article>
               </section>
 
-              <section class="dash-card live-pr-board">
+              <section ref="dashboardTasksPanel" class="dash-card live-pr-board" tabindex="-1">
                 <div class="card-title-row">
                   <div>
                     <h2>Project Tasks</h2>
@@ -2270,7 +2272,7 @@
             </article>
           </section>
 
-          <section class="dash-card rail-card">
+          <section ref="dashboardActivityPanel" class="dash-card rail-card" tabindex="-1">
             <div class="card-title-row">
               <h2>Live Activity</h2>
               <span class="recording-dot">Live</span>
@@ -2365,7 +2367,7 @@
             </div>
           </section>
 
-          <section class="dash-card rail-card chat-card">
+          <section ref="dashboardLedgerPanel" class="dash-card rail-card chat-card" tabindex="-1">
             <div class="card-title-row">
               <h2>Ledger Snapshot</h2>
               <span class="online-dot">{{ dashboardLedgerRows.length }} rows</span>
@@ -4014,9 +4016,14 @@ const dashboardLoading = ref(false);
 const dashboardError = ref('');
 const dashboardSearch = ref('');
 const dashboardSection = ref('projects');
+const activeDashboardTab = ref('Overview');
 const selectedDashboardProjectID = ref('');
 const dashboardProjectHeader = ref(null);
+const dashboardOverviewPanel = ref(null);
+const dashboardTasksPanel = ref(null);
 const dashboardRepositoryScanCard = ref(null);
+const dashboardActivityPanel = ref(null);
+const dashboardLedgerPanel = ref(null);
 const dashboardNotificationCenter = ref(null);
 const repoImportInput = ref(null);
 const priceEvaluation = ref(null);
@@ -5573,7 +5580,7 @@ const topNavItems = computed(() => {
     { label: 'Marketplace', page: 'marketplace' },
     { label: 'Repos', action: 'issue-scanner' },
     { label: 'Payments', section: 'payments' },
-    { label: 'Analytics', toast: 'Opening analytics...' },
+    { label: 'Analytics', action: 'project-analytics' },
   ];
   if (isAdminUser.value) {
     items.splice(2, 0, { label: 'Admin', section: 'admin' });
@@ -5841,6 +5848,7 @@ function openDashboard() {
 async function selectDashboardProject(projectID) {
   if (!projectID) return;
   selectedDashboardProjectID.value = projectID;
+  activeDashboardTab.value = 'Overview';
   void loadDashboardEscrowData(projectID, { silent: true });
   void loadDashboardDeploymentData(projectID, { silent: true });
   void loadDashboardAIWorkflowData(projectID, { silent: true });
@@ -5851,6 +5859,42 @@ async function selectDashboardProject(projectID) {
   if (!hasWindow) return;
   dashboardProjectHeader.value?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   dashboardProjectHeader.value?.focus({ preventScroll: true });
+}
+
+function focusDashboardPanel(panelRef, block = 'start') {
+  void nextTick(() => {
+    if (!hasWindow) return;
+    window.requestAnimationFrame(() => {
+      panelRef.value?.scrollIntoView({ behavior: 'smooth', block });
+      panelRef.value?.focus?.({ preventScroll: true });
+    });
+  });
+}
+
+function openDashboardProjectTab(tab = 'Overview') {
+  const nextTab = dashboardTabs.includes(tab) ? tab : 'Overview';
+  activeDashboardTab.value = nextTab;
+  if (nextTab === 'Overview') {
+    focusDashboardPanel(dashboardOverviewPanel);
+    return;
+  }
+  if (nextTab === 'Tasks') {
+    focusDashboardPanel(dashboardTasksPanel);
+    return;
+  }
+  if (nextTab === 'Activity') {
+    focusDashboardPanel(dashboardActivityPanel);
+    return;
+  }
+  if (nextTab === 'Ledger') {
+    focusDashboardPanel(dashboardLedgerPanel);
+    return;
+  }
+  if (nextTab === 'Files') {
+    focusDashboardPanel(dashboardRepositoryScanCard, 'center');
+    return;
+  }
+  focusDashboardPanel(dashboardProjectHeader);
 }
 
 function focusRepoImportField() {
@@ -5933,6 +5977,11 @@ function handleDashboardNav(item) {
   }
   if (item.action === 'cost-estimator') {
     openCostEstimatorTool();
+    return;
+  }
+  if (item.action === 'project-analytics') {
+    openDashboardSection('projects');
+    openDashboardProjectTab('Overview');
     return;
   }
   showToast(item.toast || `${item.label} opened.`);
