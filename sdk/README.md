@@ -22,6 +22,7 @@ const mergeos = createMergeOSClient({
 const projects = await mergeos.listProjects();
 const deployment = await mergeos.projectDeployment(projects[0].id);
 const workflow = await mergeos.projectAIWorkflow(projects[0].id);
+const graph = await mergeos.projectTaskGraph(projects[0].id);
 ```
 
 ## Public APIs
@@ -36,6 +37,7 @@ await mergeos.publicLiveFeed({ limit: 80 });
 
 ```js
 await mergeos.createProject(projectPayload);
+await mergeos.projectTaskGraph('prj_0001');
 await mergeos.listTasks();
 await mergeos.acceptTask('tsk_0001', {
   worker_kind: 'human',

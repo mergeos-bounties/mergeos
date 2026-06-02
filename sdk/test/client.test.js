@@ -51,6 +51,7 @@ test('exposes project workflow and admin ops routes', async () => {
   const fetchImpl = fakeFetch([
     { status: 200, body: { status: 'validating' } },
     { status: 200, body: { status: 'orchestrating' } },
+    { status: 200, body: { stats: { node_count: 2 }, nodes: [], edges: [] } },
     { status: 200, body: { stats: { total_count: 1 }, items: [] } },
     { status: 200, body: { stats: { worker_count: 1 }, workers: [] } },
   ]);
@@ -58,15 +59,18 @@ test('exposes project workflow and admin ops routes', async () => {
 
   await client.projectDeployment('prj_1');
   await client.projectAIWorkflow('prj_1');
+  const graph = await client.projectTaskGraph('prj_1');
   const ops = await client.adminOpsQueue();
   const reputation = await client.adminReputation();
 
+  assert.equal(graph.stats.node_count, 2);
   assert.equal(ops.stats.total_count, 1);
   assert.equal(reputation.stats.worker_count, 1);
   assert.equal(fetchImpl.calls[0].url, '/api/projects/prj_1/deployment');
   assert.equal(fetchImpl.calls[1].url, '/api/projects/prj_1/ai-workflow');
-  assert.equal(fetchImpl.calls[2].url, '/api/admin/ops-queue');
-  assert.equal(fetchImpl.calls[3].url, '/api/admin/reputation');
+  assert.equal(fetchImpl.calls[2].url, '/api/projects/prj_1/task-graph');
+  assert.equal(fetchImpl.calls[3].url, '/api/admin/ops-queue');
+  assert.equal(fetchImpl.calls[4].url, '/api/admin/reputation');
 });
 
 test('throws response errors with status and payload', async () => {

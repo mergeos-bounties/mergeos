@@ -1123,6 +1123,112 @@ func TestProjectAIWorkflowRouteReturnsWorkflowAndSanitizesData(t *testing.T) {
 	}
 }
 
+func TestProjectTaskGraphRouteReturnsAcyclicDependencyGraph(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:       defaultTokenSymbol,
+		StatePath:         filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:    1000,
+		DevPaymentEnabled: true,
+		DevPaymentCode:    defaultDevPaymentCode,
+		GitHubOwner:       defaultGitHubOwner,
+		BountyRoot:        filepath.Join(tempDir, "bounties"),
+		SMTPFrom:          "noreply@mergeos.local",
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	auth, err := store.Register(RegisterRequest{
+		Name:        "Graph Client",
+		CompanyName: "Graph Co",
+		Email:       "graph-client@example.com",
+		Password:    "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	project, err := store.CreateProject(context.Background(), auth.User.ID, CreateProjectRequest{
+		Title:            "Task graph proof",
+		ClientName:       "Private Graph Client",
+		CompanyName:      "Graph Co",
+		ClientEmail:      "graph-client@example.com",
+		Phone:            "+1 555 0144",
+		Brief:            "Create a task dependency graph for AI routing.",
+		BudgetCents:      210000,
+		PaymentMethod:    PaymentPayPal,
+		PaymentReference: defaultDevPaymentCode,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	server := NewServer(cfg, store, payments)
+	reqHTTP := httptest.NewRequest(http.MethodGet, "/api/projects/"+project.ID+"/task-graph", nil)
+	reqHTTP.Header.Set("Authorization", "Bearer "+auth.Token)
+	resp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(resp, reqHTTP)
+	if resp.Code != http.StatusOK {
+		t.Fatalf("task graph status = %d, body = %s", resp.Code, resp.Body.String())
+	}
+
+	body := resp.Body.String()
+	for _, value := range []string{
+		"graph-client@example.com",
+		"+1 555 0144",
+		auth.User.ID,
+		defaultDevPaymentCode,
+		tempDir,
+	} {
+		if strings.Contains(body, value) {
+			t.Fatalf("task graph leaked private value %q: %s", value, body)
+		}
+	}
+
+	var payload ProjectTaskGraphResponse
+	if err := json.Unmarshal(resp.Body.Bytes(), &payload); err != nil {
+		t.Fatal(err)
+	}
+	if payload.ProjectID != project.ID || payload.Stats.NodeCount != len(project.Tasks) || len(payload.Nodes) != len(project.Tasks) {
+		t.Fatalf("unexpected task graph nodes: %#v", payload)
+	}
+	if payload.Stats.EdgeCount == 0 || len(payload.Edges) == 0 {
+		t.Fatalf("task graph missing edges: %#v", payload)
+	}
+	if payload.Stats.ReadyCount != 1 || payload.Stats.BlockedCount == 0 {
+		t.Fatalf("unexpected task graph readiness: %#v", payload.Stats)
+	}
+	issueByTaskID := map[string]int{}
+	for _, node := range payload.Nodes {
+		issueByTaskID[node.TaskID] = node.IssueNumber
+	}
+	for _, edge := range payload.Edges {
+		if issueByTaskID[edge.From] >= issueByTaskID[edge.To] {
+			t.Fatalf("task graph edge is not acyclic by issue order: %#v", edge)
+		}
+	}
+	if !payload.Nodes[0].Ready || len(payload.Nodes[0].BlockedBy) != 0 {
+		t.Fatalf("first task should be ready: %#v", payload.Nodes[0])
+	}
+
+	otherAuth, err := store.Register(RegisterRequest{
+		Name:     "Other Graph Client",
+		Email:    "other-graph-client@example.com",
+		Password: "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	forbiddenReq := httptest.NewRequest(http.MethodGet, "/api/projects/"+project.ID+"/task-graph", nil)
+	forbiddenReq.Header.Set("Authorization", "Bearer "+otherAuth.Token)
+	forbiddenResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(forbiddenResp, forbiddenReq)
+	if forbiddenResp.Code != http.StatusForbidden {
+		t.Fatalf("other client task graph status = %d", forbiddenResp.Code)
+	}
+}
+
 func TestWorkerDashboardRouteMatchesGitHubWorkerAndSanitizesData(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := Config{

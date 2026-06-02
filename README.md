@@ -333,6 +333,7 @@ Customer:
 - `GET /api/projects`
 - `GET /api/projects/{id}/deployment`
 - `GET /api/projects/{id}/ai-workflow`
+- `GET /api/projects/{id}/task-graph`
 - `GET /api/tasks`
 - `POST /api/tasks/{id}/accept`
 - `GET /api/workers/me`

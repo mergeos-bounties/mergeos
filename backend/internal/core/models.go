@@ -626,6 +626,49 @@ type ProjectAIWorkflowResponse struct {
 	Signals         []AIWorkflowSignal `json:"signals"`
 }
 
+type ProjectTaskGraphResponse struct {
+	ProjectID    string          `json:"project_id"`
+	ProjectTitle string          `json:"project_title"`
+	Status       string          `json:"status"`
+	Progress     int             `json:"progress"`
+	Stats        TaskGraphStats  `json:"stats"`
+	Nodes        []TaskGraphNode `json:"nodes"`
+	Edges        []TaskGraphEdge `json:"edges"`
+	UpdatedAt    time.Time       `json:"updated_at"`
+}
+
+type TaskGraphStats struct {
+	NodeCount     int `json:"node_count"`
+	EdgeCount     int `json:"edge_count"`
+	ReadyCount    int `json:"ready_count"`
+	BlockedCount  int `json:"blocked_count"`
+	CompleteCount int `json:"complete_count"`
+	OpenCount     int `json:"open_count"`
+}
+
+type TaskGraphNode struct {
+	ID                 string     `json:"id"`
+	TaskID             string     `json:"task_id"`
+	IssueNumber        int        `json:"issue_number"`
+	Title              string     `json:"title"`
+	Lane               string     `json:"lane"`
+	Status             string     `json:"status"`
+	Ready              bool       `json:"ready"`
+	BlockedBy          []string   `json:"blocked_by,omitempty"`
+	RewardCents        int64      `json:"reward_cents"`
+	RequiredWorkerKind WorkerKind `json:"required_worker_kind"`
+	SuggestedAgentType string     `json:"suggested_agent_type,omitempty"`
+	IssueURL           string     `json:"issue_url,omitempty"`
+	UpdatedAt          time.Time  `json:"updated_at"`
+}
+
+type TaskGraphEdge struct {
+	ID       string `json:"id"`
+	From     string `json:"from"`
+	To       string `json:"to"`
+	Relation string `json:"relation"`
+}
+
 type AIWorkflowStage struct {
 	ID        string    `json:"id"`
 	Title     string    `json:"title"`

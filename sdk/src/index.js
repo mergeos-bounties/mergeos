@@ -95,6 +95,10 @@ export class MergeOSClient {
     return this.request(`/api/projects/${encodeURIComponent(projectID)}/ai-workflow`);
   }
 
+  projectTaskGraph(projectID) {
+    return this.request(`/api/projects/${encodeURIComponent(projectID)}/task-graph`);
+  }
+
   listTasks() {
     return this.request('/api/tasks');
   }
