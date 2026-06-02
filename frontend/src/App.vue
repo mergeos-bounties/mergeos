@@ -1509,13 +1509,24 @@
                 </article>
 
                 <article class="dash-card budget-card">
-                  <h2>Budget & Payments</h2>
-                  <div class="budget-lines">
-                    <span>Total Budget <strong>{{ formatMRGFromCents(dashboardSelectedProject?.budget_cents) }}</strong></span>
-                    <span>Work Pool <strong>{{ formatMRGFromCents(dashboardSelectedProject?.work_pool_cents) }}</strong></span>
-                    <span>Released <strong>{{ formatMRGFromCents(dashboardLedgerPayoutCents || dashboardSpentCents) }}</strong></span>
-                    <span>Remaining <strong>{{ formatMRGFromCents(dashboardRemainingCents) }}</strong></span>
+                  <div class="card-title-row">
+                    <div>
+                      <h2>Budget & Payments</h2>
+                      <p>{{ dashboardEscrowView.paidTasks }} paid / {{ dashboardEscrowView.openTasks }} open tasks</p>
+                    </div>
+                    <span>{{ dashboardEscrowView.status }}</span>
                   </div>
+                  <div class="budget-lines">
+                    <span>Total Budget <strong>{{ dashboardEscrowView.budget }}</strong></span>
+                    <span>Work Pool <strong>{{ dashboardEscrowView.workPool }}</strong></span>
+                    <span>Escrow Reserve <strong>{{ dashboardEscrowView.reserve }}</strong></span>
+                    <span>Task Reserve <strong>{{ dashboardEscrowView.taskReserve }}</strong></span>
+                    <span>Released <strong>{{ dashboardEscrowView.released }}</strong></span>
+                    <span>Remaining <strong>{{ dashboardEscrowView.remaining }}</strong></span>
+                  </div>
+                  <p v-if="dashboardEscrowError" class="budget-warning red">{{ dashboardEscrowError }}</p>
+                  <p v-else-if="dashboardEscrowView.hasOverdrawn" class="budget-warning red">Overdrawn by {{ dashboardEscrowView.overdrawn }}</p>
+                  <p v-else-if="dashboardEscrowView.hasUnallocated" class="budget-warning">Unallocated pool: {{ dashboardEscrowView.unallocated }}</p>
                   <button type="button" @click="openDashboardSection('payments')">Open Payments</button>
                 </article>
 
@@ -3122,6 +3133,9 @@ const activeMarketplaceCategory = ref('All');
 const dashboardProjects = ref([]);
 const dashboardTasks = ref([]);
 const dashboardLedgerEntries = ref([]);
+const dashboardEscrow = ref(null);
+const dashboardEscrowLoading = ref(false);
+const dashboardEscrowError = ref('');
 const dashboardDeployment = ref(null);
 const dashboardDeploymentLoading = ref(false);
 const dashboardDeploymentError = ref('');
@@ -3968,7 +3982,7 @@ const dashboardProgress = computed(() => {
   return Math.round((dashboardAcceptedTasks.value.length / total) * 100);
 });
 const dashboardSpentCents = computed(() => dashboardAcceptedTasks.value.reduce((total, task) => total + (Number(task.reward_cents) || 0), 0));
-const dashboardRemainingCents = computed(() => Math.max(0, (Number(dashboardSelectedProject.value?.work_pool_cents) || 0) - dashboardSpentCents.value));
+const dashboardRemainingCents = computed(() => Math.max(0, Number(dashboardEscrow.value?.remaining_cents ?? ((Number(dashboardSelectedProject.value?.work_pool_cents) || 0) - dashboardSpentCents.value)) || 0));
 const dashboardRingStyle = computed(() => ({
   background: `conic-gradient(var(--green) 0 ${dashboardProgress.value}%, #e8eef1 ${dashboardProgress.value}% 100%)`,
 }));
@@ -3987,6 +4001,33 @@ const dashboardLedgerPayoutCents = computed(() =>
     .filter((entry) => entry.type === 'task_payment')
     .reduce((total, entry) => total + (Number(entry.amount_cents) || 0), 0),
 );
+const dashboardEscrowView = computed(() => {
+  const project = dashboardSelectedProject.value;
+  const escrow = dashboardEscrow.value;
+  const workPool = Number(escrow?.work_pool_cents ?? project?.work_pool_cents) || 0;
+  const reserve = Number(escrow?.project_reserve_cents ?? project?.work_pool_cents) || 0;
+  const released = Number(escrow?.released_cents ?? (dashboardLedgerPayoutCents.value || dashboardSpentCents.value)) || 0;
+  const remaining = Math.max(0, Number(escrow?.remaining_cents ?? (workPool - released)) || 0);
+  const overdrawn = Math.max(0, Number(escrow?.overdrawn_cents) || 0);
+  const unallocated = Math.max(0, Number(escrow?.unallocated_cents) || 0);
+  return {
+    status: toTitleLabel(escrow?.release_status || (dashboardEscrowLoading.value ? 'syncing' : project ? 'funded' : 'empty')),
+    budget: formatMRGFromCents(escrow?.budget_cents ?? project?.budget_cents),
+    fee: formatMRGFromCents(escrow?.fee_cents ?? project?.fee_cents),
+    workPool: formatMRGFromCents(workPool),
+    reserve: formatMRGFromCents(reserve),
+    taskReserve: formatMRGFromCents(escrow?.task_reserve_cents ?? workPool),
+    released: formatMRGFromCents(released),
+    remaining: formatMRGFromCents(remaining),
+    overdrawn: formatMRGFromCents(overdrawn),
+    unallocated: formatMRGFromCents(unallocated),
+    paidTasks: Number(escrow?.paid_task_count) || dashboardAcceptedTasks.value.length,
+    openTasks: Number(escrow?.open_task_count) || dashboardOpenTasks.value.length,
+    hasOverdrawn: overdrawn > 0,
+    hasUnallocated: unallocated > 0,
+    updatedAt: escrow?.updated_at ? formatLedgerDateTime(escrow.updated_at).full : '-',
+  };
+});
 const dashboardProjectView = computed(() => {
   const project = dashboardSelectedProject.value;
   if (!project) {
@@ -4196,8 +4237,8 @@ const dashboardPaymentSummary = computed(() => {
     },
     {
       label: 'Released Payouts',
-      value: formatMRGFromCents(dashboardLedgerPayoutCents.value || dashboardSpentCents.value),
-      caption: dashboardPaymentRows.value.filter((row) => row.type === 'Payout Released').length ? 'Worker payouts already logged' : 'No payouts released yet',
+      value: dashboardEscrowView.value.released,
+      caption: dashboardPaymentRows.value.filter((row) => row.type === 'Payout Released').length ? `${dashboardEscrowView.value.remaining} still reserved` : 'No payouts released yet',
     },
     {
       label: 'Method & Provider',
@@ -4619,6 +4660,7 @@ function openDashboard() {
 async function selectDashboardProject(projectID) {
   if (!projectID) return;
   selectedDashboardProjectID.value = projectID;
+  void loadDashboardEscrowData(projectID, { silent: true });
   void loadDashboardDeploymentData(projectID, { silent: true });
   void loadDashboardAIWorkflowData(projectID, { silent: true });
   void loadDashboardPullRequestsData(projectID, { silent: true });
@@ -5744,6 +5786,9 @@ async function loadDashboardData(options = {}) {
     dashboardProjects.value = [];
     dashboardTasks.value = [];
     dashboardLedgerEntries.value = [];
+    dashboardEscrow.value = null;
+    dashboardEscrowLoading.value = false;
+    dashboardEscrowError.value = '';
     dashboardDeployment.value = null;
     dashboardDeploymentLoading.value = false;
     dashboardDeploymentError.value = '';
@@ -5777,6 +5822,7 @@ async function loadDashboardData(options = {}) {
       : (dashboardSortedProjects.value[0]?.id || '');
     if (selectedDashboardProjectID.value) {
       const detailLoads = [
+        loadDashboardEscrowData(selectedDashboardProjectID.value, { silent: true }),
         loadDashboardDeploymentData(selectedDashboardProjectID.value, { silent: true }),
         loadDashboardAIWorkflowData(selectedDashboardProjectID.value, { silent: true }),
       ];
@@ -5785,6 +5831,8 @@ async function loadDashboardData(options = {}) {
       }
       await Promise.all(detailLoads);
     } else {
+      dashboardEscrow.value = null;
+      dashboardEscrowError.value = '';
       dashboardDeployment.value = null;
       dashboardDeploymentError.value = '';
       dashboardAIWorkflow.value = null;
@@ -5796,6 +5844,50 @@ async function loadDashboardData(options = {}) {
     dashboardError.value = error.message || 'Could not load projects';
   } finally {
     dashboardLoading.value = false;
+  }
+}
+
+async function loadDashboardEscrowData(projectID, options = {}) {
+  const targetProjectID = String(projectID || '').trim();
+  if (!token.value || !targetProjectID) {
+    dashboardEscrow.value = null;
+    dashboardEscrowError.value = '';
+    return;
+  }
+
+  const silent = Boolean(options.silent);
+  if (!silent) dashboardEscrowLoading.value = true;
+  dashboardEscrowError.value = '';
+  try {
+    const payload = await api(`/api/projects/${encodeURIComponent(targetProjectID)}/escrow`);
+    dashboardEscrow.value = {
+      project_id: payload.project_id || targetProjectID,
+      project_title: payload.project_title || '',
+      token_symbol: payload.token_symbol || tokenSymbol.value,
+      release_status: payload.release_status || 'funded',
+      budget_cents: Number(payload.budget_cents) || 0,
+      fee_cents: Number(payload.fee_cents) || 0,
+      work_pool_cents: Number(payload.work_pool_cents) || 0,
+      project_reserve_cents: Number(payload.project_reserve_cents) || 0,
+      task_reserve_cents: Number(payload.task_reserve_cents) || 0,
+      task_payment_cents: Number(payload.task_payment_cents) || 0,
+      manual_credit_cents: Number(payload.manual_credit_cents) || 0,
+      released_cents: Number(payload.released_cents) || 0,
+      remaining_cents: Number(payload.remaining_cents) || 0,
+      overdrawn_cents: Number(payload.overdrawn_cents) || 0,
+      unallocated_cents: Number(payload.unallocated_cents) || 0,
+      paid_task_count: Number(payload.paid_task_count) || 0,
+      open_task_count: Number(payload.open_task_count) || 0,
+      updated_at: payload.updated_at,
+      tasks: Array.isArray(payload.tasks) ? payload.tasks : [],
+    };
+  } catch (error) {
+    if (targetProjectID === selectedDashboardProjectID.value) {
+      dashboardEscrow.value = null;
+      dashboardEscrowError.value = error.message || 'Could not load escrow summary';
+    }
+  } finally {
+    dashboardEscrowLoading.value = false;
   }
 }
 
@@ -6167,6 +6259,9 @@ function clearSession() {
   dashboardProjects.value = [];
   dashboardTasks.value = [];
   dashboardLedgerEntries.value = [];
+  dashboardEscrow.value = null;
+  dashboardEscrowLoading.value = false;
+  dashboardEscrowError.value = '';
   dashboardDeployment.value = null;
   dashboardDeploymentLoading.value = false;
   dashboardDeploymentError.value = '';

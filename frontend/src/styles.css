@@ -5872,6 +5872,24 @@ svg {
   overflow-wrap: anywhere;
 }
 
+.budget-warning {
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+  background: #fffbeb;
+  color: #b45309;
+  margin: 12px 0 0;
+  padding: 8px 10px;
+  font-size: 11px;
+  line-height: 1.35;
+  font-weight: 820;
+}
+
+.budget-warning.red {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
 .budget-card button,
 .analysis-card button,
 .live-pr-board .card-title-row button,
