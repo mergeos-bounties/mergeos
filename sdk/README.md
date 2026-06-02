@@ -35,6 +35,8 @@ const agentAction = await mergeos.createProjectAgentAction(projects[0].id, {
 });
 const eventType = agentActionEventType(agentAction.log.action); // "agent.tested"
 const graph = await mergeos.projectTaskGraph(projects[0].id);
+const workflowProtocol = await mergeos.projectWorkflowProtocol(projects[0].id);
+console.log(workflowProtocol.current_step, workflowProtocol.progress);
 const scan = await mergeos.projectRepositoryScan(projects[0].id);
 const scanProtocol = await mergeos.projectRepositoryScanProtocol(projects[0].id);
 const syncReport = await mergeos.syncProjectRepoIssues(projects[0].id);

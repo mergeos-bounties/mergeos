@@ -724,13 +724,18 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 		t.Fatalf("manifest schemas = %d: %#v", len(payload.Schemas), payload.Schemas)
 	}
 	schemas := map[string]bool{}
+	descriptions := map[string]string{}
 	for _, schema := range payload.Schemas {
 		schemas[schema.Version] = true
+		descriptions[schema.Version] = schema.Description
 	}
 	for _, required := range []string{"mergeos.task.v1", "mergeos.agent.v1", "mergeos.workflow.v1", "mergeos.event.v1", "mergeos.scan.v1"} {
 		if !schemas[required] {
 			t.Fatalf("manifest missing schema %s: %#v", required, payload.Schemas)
 		}
+	}
+	if !strings.Contains(descriptions["mergeos.workflow.v1"], "current AI workflow step") {
+		t.Fatalf("workflow schema description missing current step contract: %#v", descriptions["mergeos.workflow.v1"])
 	}
 	endpoints := map[string]bool{}
 	for _, endpoint := range payload.Endpoints {

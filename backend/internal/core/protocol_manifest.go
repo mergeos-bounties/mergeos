@@ -21,7 +21,7 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Version:     "mergeos.workflow.v1",
 				Kind:        "workflow",
 				SchemaURL:   "https://mergeos.shop/protocol/workflow.v1.schema.json",
-				Description: "Project workflow graph with task nodes, dependency edges, readiness, and release status.",
+				Description: "Project workflow graph with progress, current AI workflow step, task nodes, dependency edges, readiness, and release status.",
 			},
 			{
 				Version:     "mergeos.event.v1",

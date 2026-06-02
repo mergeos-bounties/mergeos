@@ -212,7 +212,7 @@ test('exposes project workflow and admin ops routes', async () => {
     { status: 200, body: { status: 'orchestrating' } },
     { status: 201, body: { log: { event_name: 'agent_action', action: 'test' } } },
     { status: 200, body: { stats: { node_count: 2 }, nodes: [], edges: [] } },
-    { status: 200, body: { protocol_version: 'mergeos.workflow.v1', nodes: [], edges: [] } },
+    { status: 200, body: { protocol_version: 'mergeos.workflow.v1', progress: 25, current_step: 'contributor_routing', nodes: [], edges: [] } },
     { status: 200, body: { status: 'ready', stats: { scanned_files: 3 }, findings: [] } },
     { status: 200, body: { protocol_version: 'mergeos.scan.v1', findings: [] } },
     { status: 200, body: { added_task_count: 1, updated_task_count: 2 } },
@@ -240,6 +240,8 @@ test('exposes project workflow and admin ops routes', async () => {
   assert.equal(agentAction.log.action, 'test');
   assert.equal(graph.stats.node_count, 2);
   assert.equal(workflowProtocol.protocol_version, 'mergeos.workflow.v1');
+  assert.equal(workflowProtocol.progress, 25);
+  assert.equal(workflowProtocol.current_step, 'contributor_routing');
   assert.equal(scan.stats.scanned_files, 3);
   assert.equal(scanProtocol.protocol_version, 'mergeos.scan.v1');
   assert.equal(sync.added_task_count, 1);
