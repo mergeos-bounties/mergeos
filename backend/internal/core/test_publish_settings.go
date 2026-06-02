@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -353,6 +354,31 @@ func (s *Store) ListTestSettingsEntries() []*TestSettingsEntryResponse {
 	return responses
 }
 
+func (s *Store) ResolveActiveTestSettings(integrationType string) ([]*TestSettingsEntrySecretResponse, error) {
+	integrationType = strings.ToLower(strings.TrimSpace(integrationType))
+	if !allowedIntegrationTypes[integrationType] {
+		return nil, fmt.Errorf("invalid integration_type %q: must be one of llm, paypal, usdt", integrationType)
+	}
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	if !s.testSettingsConfig.TestModeEnabled {
+		return nil, errors.New("test mode is disabled")
+	}
+
+	responses := make([]*TestSettingsEntrySecretResponse, 0)
+	for _, entry := range s.testSettingsEntries {
+		if !strings.EqualFold(entry.IntegrationType, integrationType) || !strings.EqualFold(entry.Status, "active") {
+			continue
+		}
+		responses = append(responses, entryToSecretResponse(entry))
+	}
+	sort.Slice(responses, func(i, j int) bool {
+		return responses[i].ID < responses[j].ID
+	})
+	return responses, nil
+}
+
 var allowedIntegrationTypes = map[string]bool{
 	"llm":    true,
 	"paypal": true,
@@ -488,16 +514,7 @@ func (s *Store) RevealTestSettingsEntry(id string) (*TestSettingsEntrySecretResp
 	if err := s.saveLocked(); err != nil {
 		return nil, err
 	}
-	kv := make(map[string]string, len(entry.KeyValueMap))
-	for k, v := range entry.KeyValueMap {
-		kv[k] = v
-	}
-	return &TestSettingsEntrySecretResponse{
-		ID: entry.ID, IntegrationType: entry.IntegrationType,
-		DisplayName: entry.DisplayName, SettingKey: entry.SettingKey,
-		SettingValue: entry.SettingValue, KeyValueMap: kv,
-		Status: entry.Status, LastUsedAt: entry.LastUsedAt,
-	}, nil
+	return entryToSecretResponse(entry), nil
 }
 
 func entryToResponse(entry *TestSettingsEntry) *TestSettingsEntryResponse {
@@ -508,6 +525,19 @@ func entryToResponse(entry *TestSettingsEntry) *TestSettingsEntryResponse {
 		KeyValueMap:      maskKeyValueMap(entry.KeyValueMap),
 		Status:           entry.Status, LastUsedAt: entry.LastUsedAt,
 		CreatedAt: entry.CreatedAt, UpdatedAt: entry.UpdatedAt,
+	}
+}
+
+func entryToSecretResponse(entry *TestSettingsEntry) *TestSettingsEntrySecretResponse {
+	kv := make(map[string]string, len(entry.KeyValueMap))
+	for k, v := range entry.KeyValueMap {
+		kv[k] = v
+	}
+	return &TestSettingsEntrySecretResponse{
+		ID: entry.ID, IntegrationType: entry.IntegrationType,
+		DisplayName: entry.DisplayName, SettingKey: entry.SettingKey,
+		SettingValue: entry.SettingValue, KeyValueMap: kv,
+		Status: entry.Status, LastUsedAt: entry.LastUsedAt,
 	}
 }
 

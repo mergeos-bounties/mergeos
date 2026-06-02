@@ -155,6 +155,72 @@ func TestRevealTestSettingsEntryReturnsSecretAndTracksUsage(t *testing.T) {
 	}
 }
 
+func TestResolveActiveTestSettingsRequiresTestModeAndFiltersEntries(t *testing.T) {
+	store := newTestStore(t)
+	defer store.Close()
+
+	if _, err := store.ResolveActiveTestSettings("llm"); err == nil {
+		t.Fatal("expected disabled test mode to block runtime resolution")
+	}
+
+	enabled := true
+	if _, err := store.UpdateTestSettingsConfig(UpdateTestSettingsRequest{
+		TestModeEnabled: &enabled,
+		TestPassword:    "runtime-test-123",
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	llmEntry, err := store.AddTestSettingsEntry(AddTestEntryRequest{
+		IntegrationType: "llm",
+		DisplayName:     "LLM runtime",
+		SettingKey:      "TASK_LLM_RUNTIME_KEY",
+		SettingValue:    "llm-secret",
+		KeyValueMap: map[string]string{
+			"model": "test-model",
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	paypalEntry, err := store.AddTestSettingsEntry(AddTestEntryRequest{
+		IntegrationType: "paypal",
+		DisplayName:     "PayPal runtime",
+		SettingKey:      "TASK_PAYPAL_RUNTIME_KEY",
+		SettingValue:    "paypal-secret",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.UpdateTestSettingsEntry(paypalEntry.ID, UpdateTestEntryRequest{Status: "disabled"}); err != nil {
+		t.Fatal(err)
+	}
+
+	resolved, err := store.ResolveActiveTestSettings("LLM")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(resolved) != 1 || resolved[0].ID != llmEntry.ID || resolved[0].SettingValue != "llm-secret" || resolved[0].KeyValueMap["model"] != "test-model" {
+		t.Fatalf("unexpected resolved entries: %#v", resolved)
+	}
+	resolved[0].KeyValueMap["model"] = "mutated"
+	again, err := store.ResolveActiveTestSettings("llm")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if again[0].KeyValueMap["model"] != "test-model" {
+		t.Fatalf("runtime resolver leaked mutable map reference: %#v", again[0].KeyValueMap)
+	}
+
+	paypalEntries, err := store.ResolveActiveTestSettings("paypal")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(paypalEntries) != 0 {
+		t.Fatalf("disabled paypal entry should not resolve: %#v", paypalEntries)
+	}
+}
+
 func TestTestSettingsConfigPersistencePreservesPasswordHash(t *testing.T) {
 	store := newTestStore(t)
 	defer store.Close()
