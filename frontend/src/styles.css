@@ -10058,6 +10058,49 @@ svg {
   padding: 0 10px;
 }
 
+.ledger-project-filter {
+  position: relative;
+  min-height: 33px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 0 9px;
+}
+
+.ledger-project-filter span {
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.ledger-project-filter select {
+  max-width: 170px;
+  border: 0;
+  background: transparent;
+  color: #111827;
+  font-size: 11px;
+  font-weight: 850;
+  outline: 0;
+  appearance: none;
+  padding-right: 18px;
+}
+
+.ledger-project-filter svg {
+  position: absolute;
+  right: 8px;
+  color: #64748b;
+  pointer-events: none;
+}
+
+.ledger-table-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 .ledger-table-wrap {
   overflow-x: auto;
 }

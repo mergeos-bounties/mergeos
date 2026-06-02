@@ -2983,13 +2983,16 @@
               </div>
 
               <div class="ledger-table-actions">
-                <button type="button" @click="showToast('Project filter opened.')">
-                  All Projects
+                <label class="ledger-project-filter">
+                  <span>Project</span>
+                  <select v-model="activeLedgerProjectFilter" aria-label="Filter ledger by project">
+                    <option v-for="project in ledgerProjectFilterOptions" :key="project" :value="project">{{ project }}</option>
+                  </select>
                   <ChevronDown :size="13" />
-                </button>
-                <button type="button" @click="showToast('Advanced filters opened.')">
+                </label>
+                <button type="button" :disabled="!ledgerFiltersActive" @click="resetLedgerFilters">
                   <Filter :size="14" />
-                  Filters
+                  Reset
                 </button>
               </div>
             </div>
@@ -3915,6 +3918,7 @@ const marketplaceError = ref('');
 const marketplaceSearch = ref('');
 const activeMarketplaceCategory = ref('All');
 const activeLedgerTab = ref('All Activity');
+const activeLedgerProjectFilter = ref('All Projects');
 const publicTestSettingsStatus = ref({ test_mode_enabled: false });
 const publicTestSettingsEntries = ref([]);
 const publicTestSettingsPassword = ref('');
@@ -4428,7 +4432,7 @@ const successProjectTitle = computed(() => fundedProject.value?.title || project
 const successPaymentReference = computed(() => fundedProject.value?.payment_reference || '');
 
 const ledgerEvents = computed(() => ledgerRawEntries.value.slice().reverse().map(mapLedgerEntry));
-const filteredLedgerEvents = computed(() => {
+const ledgerTabFilteredEvents = computed(() => {
   const activeTab = activeLedgerTab.value;
   if (activeTab === 'All Activity') return ledgerEvents.value;
   if (activeTab === 'AI Actions') {
@@ -4438,8 +4442,24 @@ const filteredLedgerEvents = computed(() => {
   if (!allowedTypes) return ledgerEvents.value;
   return ledgerEvents.value.filter((event) => allowedTypes.has(event.rawType));
 });
+const ledgerProjectFilterOptions = computed(() => {
+  const projects = new Set(['All Projects']);
+  for (const event of ledgerEvents.value) {
+    if (event.project) projects.add(event.project);
+  }
+  return Array.from(projects);
+});
+const filteredLedgerEvents = computed(() => {
+  if (activeLedgerProjectFilter.value === 'All Projects') return ledgerTabFilteredEvents.value;
+  return ledgerTabFilteredEvents.value.filter((event) => event.project === activeLedgerProjectFilter.value);
+});
+const ledgerFiltersActive = computed(() =>
+  activeLedgerTab.value !== 'All Activity' || activeLedgerProjectFilter.value !== 'All Projects',
+);
 const ledgerEmptyStateCopy = computed(() =>
-  activeLedgerTab.value === 'All Activity'
+  activeLedgerProjectFilter.value !== 'All Projects'
+    ? `No ${activeLedgerTab.value.toLowerCase()} entries for ${activeLedgerProjectFilter.value}.`
+    : activeLedgerTab.value === 'All Activity'
     ? 'No ledger entries yet. Fund a project to mint tokens and create the first logs.'
     : `No ${activeLedgerTab.value.toLowerCase()} entries yet.`,
 );
@@ -5710,6 +5730,11 @@ async function copyClaimCommand(command = '') {
     }
   }
   showToast(`Claim command: ${value}`);
+}
+
+function resetLedgerFilters() {
+  activeLedgerTab.value = 'All Activity';
+  activeLedgerProjectFilter.value = 'All Projects';
 }
 
 function pushPublicNotification(message) {
