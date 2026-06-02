@@ -6,6 +6,10 @@ import {
   agentActionEventTypes,
   createMergeOSClient,
   isAgentActionEventType,
+  isWorkflowEventType,
+  liveFeedTypeToProtocolEventType,
+  protocolEventGroup,
+  workflowEventTypes,
 } from '../src/index.js';
 
 function fakeFetch(responses = []) {
@@ -77,6 +81,28 @@ test('maps typed agent action event protocol values', () => {
   assert.equal(isAgentActionEventType('agent.generated'), true);
   assert.equal(isAgentActionEventType('agent.action'), true);
   assert.equal(isAgentActionEventType('task.paid'), false);
+});
+
+test('maps live feed records to workflow event protocol values', () => {
+  assert.equal(workflowEventTypes.prOpened, 'pr.opened');
+  assert.equal(liveFeedTypeToProtocolEventType('project_funded'), 'project.funded');
+  assert.equal(liveFeedTypeToProtocolEventType('task_opened'), 'task.created');
+  assert.equal(liveFeedTypeToProtocolEventType('task_accepted'), 'task.claimed');
+  assert.equal(liveFeedTypeToProtocolEventType('pr_opened'), 'pr.opened');
+  assert.equal(liveFeedTypeToProtocolEventType('ai_review'), 'pr.reviewed');
+  assert.equal(liveFeedTypeToProtocolEventType('deployment_validation'), 'deployment.updated');
+  assert.equal(liveFeedTypeToProtocolEventType('repo_issues_synced'), 'repo.issues.synced');
+  assert.equal(liveFeedTypeToProtocolEventType('ledger_task_payment'), 'task.paid');
+  assert.equal(liveFeedTypeToProtocolEventType('ledger_manual_credit'), 'ledger.recorded');
+  assert.equal(liveFeedTypeToProtocolEventType('agent_action', 'test'), 'agent.tested');
+  assert.equal(liveFeedTypeToProtocolEventType('unknown'), 'agent.action');
+  assert.equal(protocolEventGroup('pr.opened'), 'pull_request');
+  assert.equal(protocolEventGroup('task.paid'), 'task');
+  assert.equal(protocolEventGroup('agent.tested'), 'agent');
+  assert.equal(protocolEventGroup('repo.issues.synced'), 'repository');
+  assert.equal(isWorkflowEventType('deployment.updated'), true);
+  assert.equal(isWorkflowEventType('agent.scanned'), true);
+  assert.equal(isWorkflowEventType('unknown.event'), false);
 });
 
 test('exposes public repo import and password-gated test settings without auth', async () => {

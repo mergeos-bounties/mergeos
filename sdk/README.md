@@ -12,7 +12,12 @@ npm test
 ## Usage
 
 ```js
-import { agentActionEventType, createMergeOSClient } from '@mergeos/sdk';
+import {
+  agentActionEventType,
+  createMergeOSClient,
+  liveFeedTypeToProtocolEventType,
+  protocolEventGroup,
+} from '@mergeos/sdk';
 
 const mergeos = createMergeOSClient({
   baseURL: 'https://mergeos.shop',
@@ -120,8 +125,10 @@ await mergeos.adminTestSettingsEntries();
 ```js
 const socket = mergeos.connectEvents();
 socket.onmessage = (event) => {
-  console.log(JSON.parse(event.data));
+  const message = JSON.parse(event.data);
+  const protocolType = liveFeedTypeToProtocolEventType(message.type, message.action);
+  console.log(protocolEventGroup(protocolType), protocolType, message);
 };
 ```
 
-The stream sends `connection_ready` and `live_feed_snapshot` events immediately after connect, then broadcasts live project events.
+The stream sends `connection_ready` and `live_feed_snapshot` events immediately after connect, then broadcasts live project events. SDK helpers map live feed records such as `pr_opened`, `agent_action`, and `ledger_task_payment` to stable protocol events such as `pr.opened`, `agent.tested`, and `task.paid`.

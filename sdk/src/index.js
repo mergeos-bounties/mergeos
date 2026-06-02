@@ -8,6 +8,19 @@ export const agentActionEventTypes = Object.freeze({
   scan: 'agent.scanned',
 });
 
+export const workflowEventTypes = Object.freeze({
+  projectFunded: 'project.funded',
+  taskCreated: 'task.created',
+  taskClaimed: 'task.claimed',
+  taskPaid: 'task.paid',
+  prOpened: 'pr.opened',
+  prReviewed: 'pr.reviewed',
+  deploymentUpdated: 'deployment.updated',
+  repoIssuesSynced: 'repo.issues.synced',
+  ledgerRecorded: 'ledger.recorded',
+  agentAction: 'agent.action',
+});
+
 export class MergeOSClient {
   constructor(options = {}) {
     this.baseURL = normalizeBaseURL(options.baseURL || '');
@@ -418,6 +431,39 @@ export function agentActionEventType(action = '') {
 export function isAgentActionEventType(type = '') {
   const normalized = String(type || '').trim().toLowerCase();
   return normalized === 'agent.action' || Object.values(agentActionEventTypes).includes(normalized);
+}
+
+export function liveFeedTypeToProtocolEventType(type = '', action = '') {
+  const normalized = String(type || '').trim().toLowerCase();
+  if (normalized.startsWith('ledger_task_payment')) return workflowEventTypes.taskPaid;
+  if (normalized.startsWith('ledger_')) return workflowEventTypes.ledgerRecorded;
+  if (normalized === 'agent_action') return agentActionEventType(action);
+  return {
+    project_funded: workflowEventTypes.projectFunded,
+    task_opened: workflowEventTypes.taskCreated,
+    task_accepted: workflowEventTypes.taskClaimed,
+    pr_opened: workflowEventTypes.prOpened,
+    ai_review: workflowEventTypes.prReviewed,
+    deployment_validation: workflowEventTypes.deploymentUpdated,
+    repo_issues_synced: workflowEventTypes.repoIssuesSynced,
+  }[normalized] || workflowEventTypes.agentAction;
+}
+
+export function protocolEventGroup(type = '') {
+  const normalized = String(type || '').trim().toLowerCase();
+  if (normalized.startsWith('agent.')) return 'agent';
+  if (normalized.startsWith('pr.')) return 'pull_request';
+  if (normalized.startsWith('task.')) return 'task';
+  if (normalized.startsWith('project.')) return 'project';
+  if (normalized.startsWith('deployment.')) return 'deployment';
+  if (normalized.startsWith('repo.')) return 'repository';
+  if (normalized.startsWith('ledger.')) return 'ledger';
+  return 'unknown';
+}
+
+export function isWorkflowEventType(type = '') {
+  const normalized = String(type || '').trim().toLowerCase();
+  return Object.values(workflowEventTypes).includes(normalized) || isAgentActionEventType(normalized);
 }
 
 function normalizeBaseURL(value) {
