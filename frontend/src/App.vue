@@ -736,10 +736,11 @@
               <button
                 v-for="method in paymentMethodOptions"
                 :key="method.label"
-                :class="{ selected: projectPaymentMethod === method.label }"
+                :class="{ selected: projectPaymentMethod === method.label, disabled: method.disabled }"
                 class="select-tile horizontal rich"
+                :disabled="method.disabled"
                 type="button"
-                @click="projectPaymentMethod = method.label"
+                @click="selectProjectPaymentMethod(method)"
               >
                 <component :is="method.icon" :size="18" />
                 <span>
@@ -748,7 +749,7 @@
                 </span>
               </button>
             </div>
-            <div class="card-input-grid">
+            <div v-if="projectPaymentMethod === 'Credit / Debit card'" class="card-input-grid">
               <label class="wizard-field full">
                 <span>Card number</span>
                 <input placeholder="1234 1234 1234 1234" />
@@ -3943,6 +3944,7 @@ function getBrowserStorage() {
 
 const browserStorage = getBrowserStorage();
 const projectDraftStorageKey = 'mergeos_project_setup_draft';
+const payPalDraftStorageKey = 'mergeos_paypal_project_draft';
 const localeStorageKey = 'mergeos_locale';
 const localeOptions = [
   { code: 'EN', label: 'English', region: 'United States', lang: 'en-US' },
@@ -4011,8 +4013,9 @@ const projectWizardVisible = ref(Boolean(initialProjectWizardRoute));
 const projectWizardStage = ref(initialProjectWizardRoute?.stage || 'setup');
 const projectWizardStep = ref(initialProjectWizardRoute?.step || 1);
 const projectFundingAmount = ref('');
-const projectPaymentMethod = ref('Credit / Debit card');
+const projectPaymentMethod = ref('PayPal');
 const projectCryptoReference = ref('');
+const projectPayPalOrderID = ref('');
 const projectPaymentBusy = ref(false);
 const projectPaymentError = ref('');
 const pendingProjectPaymentAfterAuth = ref(false);
@@ -4261,10 +4264,10 @@ const fundingAmountOptions = [
 ];
 
 const paymentMethodOptions = [
-  { label: 'Credit / Debit card', caption: 'Visa, Mastercard, Amex', icon: CreditCard },
+  { label: 'PayPal', caption: 'Sandbox/live checkout', icon: CreditCard },
   { label: 'USDC', caption: 'Ethereum, Polygon, Arbitrum', icon: CircleDollarSign },
-  { label: 'Bank transfer', caption: 'Worldwide bank transfer', icon: FileCheck2 },
-  { label: 'PayPal', caption: 'Fast and secure', icon: CreditCard },
+  { label: 'Credit / Debit card', caption: 'Stripe rail coming soon', icon: CreditCard, disabled: true },
+  { label: 'Bank transfer', caption: 'Manual rail coming soon', icon: FileCheck2, disabled: true },
 ];
 
 const howItWorks = [
@@ -4565,9 +4568,13 @@ const githubOAuthReady = computed(() => Boolean(runtimeConfig.value?.github_oaut
 const projectPaymentAmountCents = computed(() => Math.round(Math.max(100, Number(projectFundingAmount.value) || 100) * 100));
 const projectPaymentButtonLabel = computed(() => {
   if (projectPaymentBusy.value) {
-    return 'Recording payment...';
+    return paymentMethodForProject() === 'paypal' && !projectPayPalOrderID.value ? 'Opening PayPal...' : 'Recording payment...';
   }
-  return user.value ? 'Add funds & get tokens' : 'Log in to pay';
+  if (!user.value) return 'Log in to pay';
+  if (paymentMethodForProject() === 'paypal' && !runtimeConfig.value?.dev_payment_enabled && !projectPayPalOrderID.value) {
+    return 'Continue to PayPal';
+  }
+  return 'Add funds & get tokens';
 });
 const successProjectTitle = computed(() => fundedProject.value?.title || projectTitleLabel.value);
 const successPaymentReference = computed(() => fundedProject.value?.payment_reference || '');
@@ -6484,6 +6491,7 @@ function projectDraftPayload() {
     funding_amount: projectFundingAmount.value,
     payment_method: projectPaymentMethod.value,
     crypto_reference: projectCryptoReference.value,
+    paypal_order_id: projectPayPalOrderID.value,
   };
 }
 
@@ -6499,8 +6507,14 @@ function applyProjectDraft(draft = {}) {
   projectAttachments.value = Array.isArray(draft.attachments) ? draft.attachments.filter((file) => file?.id) : [];
   repoImportResult.value = draft.repo_import_result || null;
   projectFundingAmount.value = draft.funding_amount || projectFundingAmount.value;
-  projectPaymentMethod.value = draft.payment_method || projectPaymentMethod.value;
+  projectPaymentMethod.value = normalizeProjectPaymentMethod(draft.payment_method || projectPaymentMethod.value);
   projectCryptoReference.value = draft.crypto_reference || projectCryptoReference.value;
+  projectPayPalOrderID.value = draft.paypal_order_id || projectPayPalOrderID.value;
+}
+
+function normalizeProjectPaymentMethod(value = '') {
+  const match = paymentMethodOptions.find((method) => method.label === value && !method.disabled);
+  return match?.label || 'PayPal';
 }
 
 function restoreProjectDraftIfEmpty() {
@@ -6843,6 +6857,102 @@ function requireLoginForProjectPayment() {
   showToast('Log in to continue payment.');
 }
 
+function selectProjectPaymentMethod(method = {}) {
+  if (method.disabled) {
+    showToast(`${method.label} is coming soon.`);
+    return;
+  }
+  projectPaymentMethod.value = method.label;
+  if (method.label !== 'USDC') {
+    projectCryptoReference.value = '';
+  }
+  if (method.label !== 'PayPal') {
+    projectPayPalOrderID.value = '';
+  }
+}
+
+async function startPayPalProjectCheckout() {
+  if (!hasWindow) {
+    throw new Error('PayPal checkout requires a browser session.');
+  }
+  if (!runtimeConfig.value?.paypal_ready) {
+    throw new Error('PayPal checkout is not configured yet.');
+  }
+  const returnURL = `${window.location.origin}/paypal/return`;
+  const cancelURL = `${window.location.origin}/paypal/cancel`;
+  const order = await api('/api/payments/paypal/orders', {
+    method: 'POST',
+    body: JSON.stringify({
+      amount_cents: projectPaymentAmountCents.value,
+      return_url: returnURL,
+      cancel_url: cancelURL,
+    }),
+  });
+  const orderID = String(order?.id || '').trim();
+  const approvalURL = String(order?.approval_url || '').trim();
+  if (!orderID || !approvalURL) {
+    throw new Error('PayPal did not return a checkout approval URL.');
+  }
+  projectPayPalOrderID.value = orderID;
+  browserStorage?.setItem(payPalDraftStorageKey, JSON.stringify({
+    ...projectDraftPayload(),
+    paypal_order_id: orderID,
+  }));
+  window.location.href = approvalURL;
+}
+
+function isPayPalProjectCallbackPath() {
+  if (!hasWindow) return false;
+  const path = normalizeRoutePath(window.location.pathname);
+  return path === '/paypal/return' || path === '/paypal/cancel';
+}
+
+function readPayPalProjectDraft() {
+  try {
+    return JSON.parse(browserStorage?.getItem(payPalDraftStorageKey) || 'null');
+  } catch {
+    browserStorage?.removeItem(payPalDraftStorageKey);
+    return null;
+  }
+}
+
+async function handlePayPalProjectCallback() {
+  if (!isPayPalProjectCallbackPath()) return false;
+  const path = normalizeRoutePath(window.location.pathname);
+  const params = new URLSearchParams(window.location.search);
+  const returnedOrderID = String(params.get('token') || params.get('orderID') || '').trim();
+  const draft = readPayPalProjectDraft();
+  if (draft?.form) {
+    applyProjectDraft(draft);
+  }
+  projectPaymentMethod.value = 'PayPal';
+  projectWizardVisible.value = true;
+  projectWizardStage.value = 'funding';
+  projectWizardStep.value = 4;
+  updateProjectWizardBrowserPath(true);
+
+  if (path === '/paypal/cancel') {
+    projectPayPalOrderID.value = '';
+    projectPaymentError.value = 'PayPal checkout was canceled. Your project draft is still available.';
+    showToast('PayPal checkout canceled.');
+    return true;
+  }
+  if (!returnedOrderID) {
+    projectPaymentError.value = 'PayPal return did not include an order token.';
+    showToast(projectPaymentError.value);
+    return true;
+  }
+  const expectedOrderID = String(draft?.paypal_order_id || '').trim();
+  if (expectedOrderID && expectedOrderID !== returnedOrderID) {
+    projectPaymentError.value = 'PayPal return did not match the checkout order.';
+    showToast(projectPaymentError.value);
+    return true;
+  }
+  projectPayPalOrderID.value = returnedOrderID;
+  await completeProjectFunding();
+  return true;
+}
+
 async function completeProjectFunding() {
   projectFundingAmount.value = Math.max(100, Number(projectFundingAmount.value) || 100);
   projectPaymentError.value = '';
@@ -6856,6 +6966,10 @@ async function completeProjectFunding() {
   projectPaymentBusy.value = true;
   try {
     await loadRuntimeConfig();
+    if (paymentMethodForProject() === 'paypal' && !projectPayPalOrderID.value && !runtimeConfig.value?.dev_payment_enabled) {
+      await startPayPalProjectCheckout();
+      return;
+    }
     if (!paymentReferenceForProject()) {
       if (paymentMethodForProject() === 'crypto') {
         throw new Error('USDC transaction hash is required before funding this project.');
@@ -6869,7 +6983,9 @@ async function completeProjectFunding() {
     fundedProject.value = project;
     projectAttachments.value = [];
     projectCryptoReference.value = '';
+    projectPayPalOrderID.value = '';
     browserStorage?.removeItem(projectDraftStorageKey);
+    browserStorage?.removeItem(payPalDraftStorageKey);
     projectWizardVisible.value = true;
     projectWizardStage.value = 'success';
     projectWizardStep.value = 4;
@@ -7977,6 +8093,9 @@ function paymentReferenceForProject() {
   }
   if (paymentMethodForProject() === 'crypto') {
     return projectCryptoReference.value.trim();
+  }
+  if (paymentMethodForProject() === 'paypal') {
+    return projectPayPalOrderID.value.trim();
   }
   return successPaymentReference.value || '';
 }
@@ -9401,10 +9520,11 @@ async function logout() {
 onMounted(async () => {
   connectWebSocket();
   applyLocalePreference();
+  const payPalCallbackPending = isPayPalProjectCallbackPath();
   if (hasWindow) {
     const params = new URLSearchParams(window.location.search);
     const oauthToken = params.get('token');
-    if (oauthToken) {
+    if (oauthToken && !payPalCallbackPending) {
       token.value = oauthToken;
       writeStoredToken(oauthToken);
       const cleanUrl = window.location.pathname + window.location.hash;
@@ -9416,7 +9536,7 @@ onMounted(async () => {
   const handledGitHubCallback = await handleGitHubCallback();
   if (hasWindow) {
     window.addEventListener('popstate', syncPublicPageFromBrowserPath);
-    if (!handledGitHubCallback) {
+    if (!handledGitHubCallback && !payPalCallbackPending) {
       if (projectWizardVisible.value) {
         updateProjectWizardBrowserPath(true);
       } else {
@@ -9433,6 +9553,9 @@ onMounted(async () => {
     loadLiveFeedData({ silent: true }),
     publicPage.value === 'test-settings' ? loadPublicTestSettingsStatus({ silent: true }) : Promise.resolve(),
   ]);
+  if (payPalCallbackPending) {
+    await handlePayPalProjectCallback();
+  }
 });
 
 onUnmounted(() => {

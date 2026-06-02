@@ -901,8 +901,22 @@ svg {
   box-shadow: 0 10px 24px rgba(15, 159, 120, 0.11);
 }
 
+.select-tile.disabled,
+.select-tile:disabled {
+  border-color: #e5e7eb;
+  background: #f8fafc;
+  color: #94a3b8;
+  transform: none;
+  box-shadow: none;
+}
+
 .select-tile svg:not(.tile-check) {
   color: var(--green-dark);
+}
+
+.select-tile.disabled svg:not(.tile-check),
+.select-tile:disabled svg:not(.tile-check) {
+  color: #94a3b8;
 }
 
 .select-tile strong,
