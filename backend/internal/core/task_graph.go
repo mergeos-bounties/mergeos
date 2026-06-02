@@ -262,18 +262,21 @@ func workflowProtocolDocument(project *Project, graph ProjectTaskGraphResponse) 
 		})
 	}
 
+	currentStep := workflowProtocolCurrentStep(graph)
 	return WorkflowProtocolDocument{
 		ProtocolVersion: "mergeos.workflow.v1",
 		Kind:            "workflow",
 		ID:              project.ID + ":workflow",
 		ProjectID:       project.ID,
 		Status:          workflowProtocolStatus(graph),
+		Progress:        graph.Progress,
+		CurrentStep:     currentStep,
 		Nodes:           nodes,
 		Edges:           edges,
 		Metadata: map[string]any{
 			"project_title":  graph.ProjectTitle,
 			"workflow_steps": workflowProtocolSteps(),
-			"current_step":   workflowProtocolCurrentStep(graph),
+			"current_step":   currentStep,
 			"progress":       graph.Progress,
 			"node_count":     graph.Stats.NodeCount,
 			"edge_count":     graph.Stats.EdgeCount,

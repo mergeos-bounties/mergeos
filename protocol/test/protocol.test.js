@@ -98,6 +98,8 @@ test('validates workflow node and edge references', () => {
     id: 'wf_0001',
     project_id: 'prj_0001',
     status: 'active',
+    progress: 25,
+    current_step: 'contributor_routing',
     nodes: [
       { id: 'n1', task_id: 'tsk_1', issue_number: 1, title: 'Implement', lane: 'implementation', status: 'open', reward_mrg: 40, estimated_hours: 5, worker_kind: 'human' },
       { id: 'n2', task_id: 'tsk_2', issue_number: 2, title: 'Validate', lane: 'validation', status: 'ready', reward_mrg: 10, estimated_hours: 1.5, worker_kind: 'agent', agent_type: 'qa-agent', dependencies: ['tsk_1'] },
@@ -111,10 +113,14 @@ test('validates workflow node and edge references', () => {
     kind: 'workflow',
     id: 'wf_0001',
     project_id: 'prj_0001',
+    progress: 101,
+    current_step: 'unknown',
     nodes: [{ id: 'n1', task_id: 'tsk_1', title: 'Implement', lane: 'implementation', status: 'open' }],
     edges: [{ from: 'n1', to: 'missing', relation: 'sequence' }],
   });
   assert.equal(invalid.valid, false);
+  assert(invalid.errors.some((error) => error.path === 'progress'));
+  assert(invalid.errors.some((error) => error.path === 'current_step'));
   assert(invalid.errors.some((error) => error.path === 'edges[0].to'));
 });
 

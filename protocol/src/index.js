@@ -139,6 +139,9 @@ function validateNumber(value, schema, path, errors) {
   if (schema.minimum !== undefined && value < schema.minimum) {
     errors.push({ path, message: `must be greater than or equal to ${schema.minimum}` });
   }
+  if (schema.maximum !== undefined && value > schema.maximum) {
+    errors.push({ path, message: `must be less than or equal to ${schema.maximum}` });
+  }
 }
 
 function validateWorkflowEdges(document, errors) {

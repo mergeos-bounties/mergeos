@@ -11,6 +11,18 @@
     "id": { "type": "string", "minLength": 3, "maxLength": 96 },
     "project_id": { "type": "string", "minLength": 3, "maxLength": 96 },
     "status": { "enum": ["planned", "active", "blocked", "ready", "released"] },
+    "progress": { "type": "integer", "minimum": 0, "maximum": 100 },
+    "current_step": {
+      "enum": [
+        "repo_import",
+        "issue_scan",
+        "task_generation",
+        "reward_estimation",
+        "contributor_routing",
+        "pr_review",
+        "deployment_validation"
+      ]
+    },
     "nodes": {
       "type": "array",
       "items": {

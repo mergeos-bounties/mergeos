@@ -932,6 +932,8 @@ type WorkflowProtocolDocument struct {
 	ID              string                 `json:"id"`
 	ProjectID       string                 `json:"project_id"`
 	Status          string                 `json:"status,omitempty"`
+	Progress        int                    `json:"progress,omitempty"`
+	CurrentStep     string                 `json:"current_step,omitempty"`
 	Nodes           []WorkflowProtocolNode `json:"nodes"`
 	Edges           []WorkflowProtocolEdge `json:"edges"`
 	Metadata        map[string]any         `json:"metadata,omitempty"`
