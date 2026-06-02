@@ -173,6 +173,16 @@ type LedgerEntry struct {
 	CreatedAt    time.Time `json:"created_at"`
 }
 
+type LedgerVerificationResponse struct {
+	Valid          bool       `json:"valid"`
+	EntryCount     int        `json:"entry_count"`
+	LastSequence   int        `json:"last_sequence"`
+	LastHash       string     `json:"last_hash"`
+	BrokenSequence int        `json:"broken_sequence,omitempty"`
+	Error          string     `json:"error,omitempty"`
+	UpdatedAt      *time.Time `json:"updated_at,omitempty"`
+}
+
 type RegisterRequest struct {
 	Name        string `json:"name"`
 	CompanyName string `json:"company_name"`

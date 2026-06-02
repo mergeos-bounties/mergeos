@@ -691,6 +691,77 @@ func TestPublicLedgerRouteReturnsSanitizedLiveData(t *testing.T) {
 	}
 }
 
+func TestPublicLedgerVerifyRouteDetectsTampering(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:       defaultTokenSymbol,
+		StatePath:         filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:    1000,
+		DevPaymentEnabled: true,
+		DevPaymentCode:    defaultDevPaymentCode,
+		GitHubOwner:       defaultGitHubOwner,
+		BountyRoot:        filepath.Join(tempDir, "bounties"),
+		SMTPFrom:          "noreply@mergeos.local",
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	auth, err := store.Register(RegisterRequest{
+		Name:     "Verify Client",
+		Email:    "verify-client@example.com",
+		Password: "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.CreateProject(context.Background(), auth.User.ID, CreateProjectRequest{
+		Title:            "Ledger verify proof",
+		ClientName:       "Verify Client",
+		ClientEmail:      "verify-client@example.com",
+		Brief:            "Create ledger entries for hash-chain verification.",
+		BudgetCents:      120000,
+		PaymentMethod:    PaymentPayPal,
+		PaymentReference: defaultDevPaymentCode,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	server := NewServer(cfg, store, payments)
+	req := httptest.NewRequest(http.MethodGet, "/api/public/ledger/verify", nil)
+	resp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(resp, req)
+	if resp.Code != http.StatusOK {
+		t.Fatalf("ledger verify status = %d, body = %s", resp.Code, resp.Body.String())
+	}
+	var validPayload LedgerVerificationResponse
+	if err := json.Unmarshal(resp.Body.Bytes(), &validPayload); err != nil {
+		t.Fatal(err)
+	}
+	if !validPayload.Valid || validPayload.EntryCount == 0 || validPayload.LastHash == "" {
+		t.Fatalf("expected valid ledger verification: %#v", validPayload)
+	}
+
+	store.mu.Lock()
+	store.ledger[0].AmountCents++
+	store.mu.Unlock()
+
+	tamperedReq := httptest.NewRequest(http.MethodGet, "/api/public/ledger/verify", nil)
+	tamperedResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(tamperedResp, tamperedReq)
+	if tamperedResp.Code != http.StatusOK {
+		t.Fatalf("tampered ledger verify status = %d, body = %s", tamperedResp.Code, tamperedResp.Body.String())
+	}
+	var tamperedPayload LedgerVerificationResponse
+	if err := json.Unmarshal(tamperedResp.Body.Bytes(), &tamperedPayload); err != nil {
+		t.Fatal(err)
+	}
+	if tamperedPayload.Valid || tamperedPayload.BrokenSequence != 1 || !strings.Contains(tamperedPayload.Error, "hash") {
+		t.Fatalf("expected tampered ledger verification failure: %#v", tamperedPayload)
+	}
+}
+
 func TestPublicLedgerUsesPullReferenceForAdminAcceptedTask(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := Config{

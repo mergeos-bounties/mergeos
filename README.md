@@ -63,6 +63,7 @@ MergeOS currently supports:
 - Task reward allocation, worker kind, suggested agent type, and acceptance criteria.
 - Worker reputation and risk audit signals for marketplace/admin payout review.
 - Proof ledger entries with hash chaining.
+- Public ledger hash-chain verification API for Scan and external auditors.
 - SMTP notifications when configured, persisted notification records when SMTP is not configured.
 - Admin APIs for users, projects, tasks, attachments, notifications, ledger, and SSL review.
 - JavaScript SDK helpers for public feeds, project deployment workflow, AI workflow, task acceptance, worker dashboards, admin ops queue, and WebSocket events.
@@ -313,6 +314,7 @@ Public:
 - `GET /api/health`
 - `GET /api/config`
 - `GET /api/public/ledger`
+- `GET /api/public/ledger/verify`
 - `GET /api/public/marketplace`
 - `GET /api/public/live-feed`
 - `POST /api/public/repo/issues`

@@ -31,6 +31,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/config", s.config)
 	mux.HandleFunc("GET /api/public/marketplace", s.marketplace)
 	mux.HandleFunc("GET /api/public/ledger", s.publicLedger)
+	mux.HandleFunc("GET /api/public/ledger/verify", s.publicLedgerVerify)
 	mux.HandleFunc("GET /api/public/live-feed", s.publicLiveFeed)
 	mux.HandleFunc("POST /api/public/repo/issues", s.importRepoIssues)
 	mux.HandleFunc("POST /api/integrations/github/pr-review", s.geminiReviewWebhook)
@@ -168,6 +169,10 @@ func (s *Server) marketplace(w http.ResponseWriter, _ *http.Request) {
 
 func (s *Server) publicLedger(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, s.store.ListPublicLedger())
+}
+
+func (s *Server) publicLedgerVerify(w http.ResponseWriter, _ *http.Request) {
+	writeJSON(w, http.StatusOK, s.store.VerifyLedger())
 }
 
 func (s *Server) publicLiveFeed(w http.ResponseWriter, r *http.Request) {

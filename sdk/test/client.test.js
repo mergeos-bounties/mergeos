@@ -18,8 +18,11 @@ function fakeFetch(responses = []) {
   return fetchImpl;
 }
 
-test('creates public live feed requests without auth', async () => {
-  const fetchImpl = fakeFetch([{ status: 200, body: { items: [] } }]);
+test('creates public feed and ledger verification requests without auth', async () => {
+  const fetchImpl = fakeFetch([
+    { status: 200, body: { items: [] } },
+    { status: 200, body: { valid: true } },
+  ]);
   const client = new MergeOSClient({
     baseURL: 'https://mergeos.shop/',
     token: 'secret-token',
@@ -27,10 +30,14 @@ test('creates public live feed requests without auth', async () => {
   });
 
   const payload = await client.publicLiveFeed({ limit: 80 });
+  const verification = await client.publicLedgerVerification();
 
   assert.deepEqual(payload, { items: [] });
+  assert.deepEqual(verification, { valid: true });
   assert.equal(fetchImpl.calls[0].url, 'https://mergeos.shop/api/public/live-feed?limit=80');
   assert.equal(fetchImpl.calls[0].options.headers.Authorization, undefined);
+  assert.equal(fetchImpl.calls[1].url, 'https://mergeos.shop/api/public/ledger/verify');
+  assert.equal(fetchImpl.calls[1].options.headers.Authorization, undefined);
 });
 
 test('sends bearer token and JSON body for task acceptance', async () => {

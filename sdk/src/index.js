@@ -66,6 +66,10 @@ export class MergeOSClient {
     return this.request('/api/public/ledger', { auth: false });
   }
 
+  publicLedgerVerification() {
+    return this.request('/api/public/ledger/verify', { auth: false });
+  }
+
   publicLiveFeed(options = {}) {
     const limit = Number(options.limit) > 0 ? `?limit=${encodeURIComponent(Number(options.limit))}` : '';
     return this.request(`/api/public/live-feed${limit}`, { auth: false });

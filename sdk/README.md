@@ -32,6 +32,7 @@ const scan = await mergeos.projectRepositoryScan(projects[0].id);
 ```js
 await mergeos.publicMarketplace();
 await mergeos.publicLedger();
+await mergeos.publicLedgerVerification();
 await mergeos.publicLiveFeed({ limit: 80 });
 ```
 
