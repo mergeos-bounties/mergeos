@@ -1294,6 +1294,8 @@ func paymentRails(cfg Config) []PaymentRailOption {
 	devEnabled := cfg.DevPaymentEnabled
 	paypalEnabled := cfg.PayPalReady() || devEnabled
 	cryptoEnabled := cfg.CryptoReady() || devEnabled
+	usdtReady := cfg.CryptoReady() && cfg.CryptoAsset == "erc20" && strings.TrimSpace(cfg.CryptoTokenContract) != ""
+	usdtEnabled := usdtReady || devEnabled
 	return []PaymentRailOption{
 		{
 			ID:                "paypal",
@@ -1315,6 +1317,19 @@ func paymentRails(cfg Config) []PaymentRailOption {
 			DisabledReason:    disabledPaymentRailReason(cryptoEnabled, "Crypto verifier is not configured."),
 			RequiresReference: !devEnabled,
 			Asset:             strings.ToUpper(strings.TrimSpace(cfg.CryptoAsset)),
+			Receiver:          cfg.CryptoReceiver,
+			TokenContract:     cfg.CryptoTokenContract,
+		},
+		{
+			ID:                "usdt",
+			Label:             "USDT",
+			Method:            string(PaymentUSDT),
+			Caption:           "USDT ERC-20 transfer",
+			Enabled:           usdtEnabled,
+			Ready:             usdtReady,
+			DisabledReason:    disabledPaymentRailReason(usdtEnabled, "USDT ERC-20 verifier is not configured."),
+			RequiresReference: !devEnabled,
+			Asset:             "USDT",
 			Receiver:          cfg.CryptoReceiver,
 			TokenContract:     cfg.CryptoTokenContract,
 		},

@@ -767,12 +767,12 @@
                 <input placeholder="Name on card" />
               </label>
             </div>
-            <label v-if="selectedPaymentRail?.method === 'crypto'" class="wizard-field full crypto-reference-field">
-              <span>USDC transaction hash</span>
+            <label v-if="isCryptoLikePaymentRail(selectedPaymentRail)" class="wizard-field full crypto-reference-field">
+              <span>{{ cryptoPaymentAssetLabel }} transaction hash</span>
               <input v-model.trim="projectCryptoReference" placeholder="0x..." autocomplete="off" />
               <small>Required for production crypto verification; local dev mode can still use the configured verifier code.</small>
             </label>
-            <div v-if="selectedPaymentRail?.method === 'crypto'" class="crypto-payment-instructions">
+            <div v-if="isCryptoLikePaymentRail(selectedPaymentRail)" class="crypto-payment-instructions">
               <div>
                 <small>Asset</small>
                 <strong>{{ cryptoPaymentAssetLabel }}</strong>
@@ -4333,6 +4333,7 @@ const fundingAmountOptions = [
 const fallbackPaymentRails = [
   { id: 'paypal', label: 'PayPal', method: 'paypal', caption: 'Sandbox/live checkout', enabled: true },
   { id: 'crypto', label: 'USDC', method: 'crypto', caption: 'Ethereum, Polygon, Arbitrum', enabled: true },
+  { id: 'usdt', label: 'USDT', method: 'usdt', caption: 'USDT ERC-20 transfer', enabled: true },
   { id: 'stripe', label: 'Credit / Debit card', method: 'stripe', caption: 'Stripe checkout', enabled: false, disabled_reason: 'Stripe checkout is not enabled yet.' },
   { id: 'bank', label: 'Bank transfer', method: 'bank', caption: 'Manual treasury rail', enabled: false, disabled_reason: 'Bank transfer requires manual treasury review.' },
 ];
@@ -4351,6 +4352,7 @@ const paymentMethodOptions = computed(() => {
     disabledReason: rail.disabled_reason || '',
     requiresReference: Boolean(rail.requires_reference),
     ready: Boolean(rail.ready),
+    asset: rail.asset || '',
     receiver: rail.receiver || '',
     tokenContract: rail.token_contract || '',
   }));
@@ -4658,14 +4660,23 @@ const ledgerProjectIndex = computed(() => {
 
 const tokenSymbol = computed(() => runtimeConfig.value?.token_symbol || 'MRG');
 const githubOAuthReady = computed(() => Boolean(runtimeConfig.value?.github_oauth_ready && runtimeConfig.value?.github_oauth_client_id));
+function isCryptoLikePaymentRail(rail = {}) {
+  const method = String(rail?.method || rail?.id || '').trim();
+  return method === 'crypto' || method === 'usdt';
+}
+const selectedCryptoPaymentRail = computed(() =>
+  isCryptoLikePaymentRail(selectedPaymentRail.value)
+    ? selectedPaymentRail.value
+    : paymentMethodOptions.value.find((method) => isCryptoLikePaymentRail(method)),
+);
 const cryptoReceiverAddress = computed(() => {
-  const cryptoRail = paymentMethodOptions.value.find((method) => method.method === 'crypto');
+  const cryptoRail = selectedCryptoPaymentRail.value;
   return String(cryptoRail?.receiver || runtimeConfig.value?.crypto_receiver || '').trim();
 });
 const cryptoReceiverLabel = computed(() => cryptoReceiverAddress.value ? shortLedgerReference(cryptoReceiverAddress.value) : 'Not configured');
-const cryptoPaymentAssetLabel = computed(() => runtimeConfig.value?.crypto_asset || 'USDC');
+const cryptoPaymentAssetLabel = computed(() => selectedCryptoPaymentRail.value?.asset || selectedCryptoPaymentRail.value?.label || runtimeConfig.value?.crypto_asset || 'USDC');
 const cryptoTokenContractLabel = computed(() => {
-  const cryptoRail = paymentMethodOptions.value.find((method) => method.method === 'crypto');
+  const cryptoRail = selectedCryptoPaymentRail.value;
   const value = String(cryptoRail?.tokenContract || runtimeConfig.value?.crypto_token_contract || runtimeConfig.value?.crypto_token || '').trim();
   return value ? shortLedgerReference(value) : 'Native / configured asset';
 });
@@ -7168,8 +7179,8 @@ async function completeProjectFunding() {
       return;
     }
     if (!paymentReferenceForProject()) {
-      if (paymentMethodForProject() === 'crypto') {
-        throw new Error('USDC transaction hash is required before funding this project.');
+      if (isCryptoLikePaymentRail(selectedPaymentRail.value)) {
+        throw new Error(`${cryptoPaymentAssetLabel.value} transaction hash is required before funding this project.`);
       }
       throw new Error('Payment reference is missing. Configure PayPal/Crypto checkout or enable local dev payments.');
     }
@@ -8409,6 +8420,7 @@ function shortLedgerReference(value = '') {
 function paymentMethodForProject() {
   const method = String(selectedPaymentRail.value?.method || '').trim();
   if (method === 'crypto') return 'crypto';
+  if (method === 'usdt') return 'usdt';
   return 'paypal';
 }
 
@@ -8416,7 +8428,7 @@ function paymentReferenceForProject() {
   if (runtimeConfig.value?.dev_payment_enabled && runtimeConfig.value?.dev_payment_code) {
     return runtimeConfig.value.dev_payment_code;
   }
-  if (paymentMethodForProject() === 'crypto') {
+  if (isCryptoLikePaymentRail(selectedPaymentRail.value)) {
     return projectCryptoReference.value.trim();
   }
   if (paymentMethodForProject() === 'paypal') {

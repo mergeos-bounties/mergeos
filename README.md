@@ -295,7 +295,7 @@ Important backend variables:
 - `DEV_PAYMENT_ENABLED` and `DEV_PAYMENT_CODE`: local verifier
 - `PAYPAL_ENV`, `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`: PayPal Orders v2
 - `STRIPE_PUBLISHABLE_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`: Stripe rail discovery metadata; checkout verifier remains disabled until the Stripe endpoint is implemented.
-- `CRYPTO_RPC_URL`, `CRYPTO_RECEIVER`, `CRYPTO_ASSET`, `CRYPTO_TOKEN_CONTRACT`: crypto verifier
+- `CRYPTO_RPC_URL`, `CRYPTO_RECEIVER`, `CRYPTO_ASSET`, `CRYPTO_TOKEN_CONTRACT`: EVM crypto verifier. `CRYPTO_ASSET=erc20` exposes both the generic crypto rail and the USDT rail; project intake accepts `payment_method: "usdt"` as a crypto-backed ERC-20 transfer alias.
 - `GITHUB_TOKEN`, `GITHUB_OWNER`, `GITHUB_OWNER_TYPE`: backend runtime values for GitHub bounty repo creation and admin PR merge actions
 - `MERGEOS_GITHUB_TOKEN`: Docker Compose and GitHub Actions secret name that maps into backend `GITHUB_TOKEN`; use a personal access token with repo write access, not the automatic GitHub Actions token
 - `GEMINI_API_KEYS`: comma-separated Gemini API key pool used to seed the initial LLM key table; admins can add Gemini, OpenAI, Anthropic, Groq, OpenRouter, DeepSeek, and Mistral tokens later in the admin UI, while request counts and key status are tracked in the database

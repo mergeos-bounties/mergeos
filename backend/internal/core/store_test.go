@@ -168,7 +168,7 @@ func TestRuntimeConfigReturnsPaymentRails(t *testing.T) {
 	for _, rail := range payload.PaymentRails {
 		rails[rail.ID] = rail
 	}
-	for _, required := range []string{"paypal", "crypto", "stripe", "bank"} {
+	for _, required := range []string{"paypal", "crypto", "usdt", "stripe", "bank"} {
 		if rails[required].ID == "" {
 			t.Fatalf("missing payment rail %s: %#v", required, payload.PaymentRails)
 		}
@@ -179,11 +179,58 @@ func TestRuntimeConfigReturnsPaymentRails(t *testing.T) {
 	if !rails["crypto"].Enabled || rails["crypto"].Label != "USDC / USDT" || rails["crypto"].TokenContract == "" {
 		t.Fatalf("crypto rail missing metadata: %#v", rails["crypto"])
 	}
+	if !rails["usdt"].Enabled || rails["usdt"].Method != string(PaymentUSDT) || rails["usdt"].TokenContract == "" {
+		t.Fatalf("usdt rail missing metadata: %#v", rails["usdt"])
+	}
 	if rails["stripe"].Enabled || !rails["stripe"].Ready || rails["stripe"].PublicKey != "pk_test_mergeos" || rails["stripe"].DisabledReason == "" {
 		t.Fatalf("stripe rail should be discoverable but disabled until verifier exists: %#v", rails["stripe"])
 	}
 	if rails["bank"].Enabled || rails["bank"].DisabledReason == "" {
 		t.Fatalf("bank rail should be disabled with reason: %#v", rails["bank"])
+	}
+}
+
+func TestCreateProjectAcceptsUSDTPaymentMethod(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:       defaultTokenSymbol,
+		StatePath:         filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:    1000,
+		DevPaymentEnabled: true,
+		DevPaymentCode:    defaultDevPaymentCode,
+		GitHubOwner:       defaultGitHubOwner,
+		BountyRoot:        filepath.Join(tempDir, "bounties"),
+		SMTPFrom:          "noreply@mergeos.local",
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	auth, err := store.Register(RegisterRequest{
+		Name:        "USDT Client",
+		CompanyName: "USDT Co",
+		Email:       "usdt-client@example.com",
+		Password:    "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	project, err := store.CreateProject(context.Background(), auth.User.ID, CreateProjectRequest{
+		Title:            "USDT funded project",
+		ClientName:       "USDT Client",
+		CompanyName:      "USDT Co",
+		ClientEmail:      "usdt-client@example.com",
+		Brief:            "Fund a project through the USDT payment rail alias.",
+		BudgetCents:      120000,
+		PaymentMethod:    PaymentUSDT,
+		PaymentReference: defaultDevPaymentCode,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if project.PaymentMethod != PaymentUSDT || project.PaymentProvider != "dev-usdt" || project.PaymentStatus != "verified" {
+		t.Fatalf("unexpected usdt project payment fields: %#v", project)
 	}
 }
 
