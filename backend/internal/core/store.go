@@ -686,6 +686,7 @@ func (s *Store) CreateProject(ctx context.Context, userID string, req CreateProj
 	fee := req.BudgetCents * s.cfg.PlatformFeeBps / 10000
 	workPool := req.BudgetCents - fee
 	now := time.Now().UTC()
+	allowAgents := createProjectAllowsAgents(req)
 	project := &Project{
 		ID:               projectID,
 		ClientUserID:     user.ID,
@@ -703,6 +704,7 @@ func (s *Store) CreateProject(ctx context.Context, userID string, req CreateProj
 		PaymentProvider:  verification.Provider,
 		PaymentReference: verification.Reference,
 		RepoVisibility:   "private-child-bounty-repo",
+		AllowAgents:      &allowAgents,
 		BudgetCents:      req.BudgetCents,
 		FeeCents:         fee,
 		WorkPoolCents:    workPool,
@@ -726,7 +728,6 @@ func (s *Store) CreateProject(ctx context.Context, userID string, req CreateProj
 		attachment.ProjectID = project.ID
 		project.Attachments = append(project.Attachments, cloneAttachment(attachment))
 	}
-	allowAgents := createProjectAllowsAgents(req)
 	if len(importedIssues) > 0 {
 		project.Tasks = s.tasksFromImportedIssuesWithPolicy(project, importedIssues, allowAgents)
 	} else {
@@ -891,6 +892,9 @@ func (s *Store) SyncProjectImportedIssuesReport(projectID, sourceRepoURL string,
 			IssueURL:           strings.TrimSpace(issue.URL),
 			IssueState:         state,
 			CreatedAt:          now,
+		}
+		if !projectAllowsAgents(project) {
+			routeTaskToHuman(task)
 		}
 		s.tasks[task.ID] = task
 		existing[issue.Number] = task
@@ -1726,6 +1730,13 @@ func createProjectAllowsAgents(req CreateProjectRequest) bool {
 	return *req.AllowAgents
 }
 
+func projectAllowsAgents(project *Project) bool {
+	if project == nil || project.AllowAgents == nil {
+		return true
+	}
+	return *project.AllowAgents
+}
+
 func (s *Store) splitProjectTasks(project *Project) []*Task {
 	return s.splitProjectTasksWithPolicy(project, true)
 }
@@ -2077,6 +2088,11 @@ func (s *Store) applyState(state persistedState) bool {
 	for _, project := range state.Projects {
 		if project == nil || project.ID == "" {
 			continue
+		}
+		if project.AllowAgents == nil {
+			allowAgents := true
+			project.AllowAgents = &allowAgents
+			migrated = true
 		}
 		for _, task := range project.Tasks {
 			if task == nil {

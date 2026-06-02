@@ -290,7 +290,7 @@ func (p *postgresPersistence) loadProjects(ctx context.Context, state *persisted
 	rows, err := p.db.QueryContext(ctx, `
 SELECT id, client_user_id, title, client_name, company_name, client_email, phone, site_type, package_tier, timeline,
        brief, payment_method, payment_status, payment_provider, payment_reference, bounty_repo_name, repo_visibility,
-       repo_provider, repo_url, repo_local_path, budget_cents, fee_cents, work_pool_cents, status, created_at
+       repo_provider, repo_url, repo_local_path, allow_agents, budget_cents, fee_cents, work_pool_cents, status, created_at
 FROM projects
 ORDER BY created_at, id`)
 	if err != nil {
@@ -301,16 +301,18 @@ ORDER BY created_at, id`)
 	projects := map[string]*Project{}
 	for rows.Next() {
 		project := &Project{}
+		var allowAgents bool
 		if err := rows.Scan(
 			&project.ID, &project.ClientUserID, &project.Title, &project.ClientName, &project.CompanyName,
 			&project.ClientEmail, &project.Phone, &project.SiteType, &project.PackageTier, &project.Timeline,
 			&project.Brief, &project.PaymentMethod, &project.PaymentStatus, &project.PaymentProvider,
 			&project.PaymentReference, &project.BountyRepoName, &project.RepoVisibility, &project.RepoProvider,
-			&project.RepoURL, &project.RepoLocalPath, &project.BudgetCents, &project.FeeCents,
+			&project.RepoURL, &project.RepoLocalPath, &allowAgents, &project.BudgetCents, &project.FeeCents,
 			&project.WorkPoolCents, &project.Status, &project.CreatedAt,
 		); err != nil {
 			return nil, fmt.Errorf("scan project: %w", err)
 		}
+		project.AllowAgents = &allowAgents
 		project.Tasks = []*Task{}
 		project.Attachments = []*Attachment{}
 		projects[project.ID] = project
@@ -683,17 +685,18 @@ func saveProjects(ctx context.Context, tx *sql.Tx, projects []*Project) error {
 INSERT INTO projects (
   id, client_user_id, title, client_name, company_name, client_email, phone, site_type, package_tier, timeline,
   brief, payment_method, payment_status, payment_provider, payment_reference, bounty_repo_name, repo_visibility,
-  repo_provider, repo_url, repo_local_path, budget_cents, fee_cents, work_pool_cents, status, created_at
+  repo_provider, repo_url, repo_local_path, allow_agents, budget_cents, fee_cents, work_pool_cents, status, created_at
 ) VALUES (
   $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
   $11, $12, $13, $14, $15, $16, $17,
-  $18, $19, $20, $21, $22, $23, $24, $25
+  $18, $19, $20, $21, $22, $23, $24, $25, $26
 )`,
 			project.ID, project.ClientUserID, project.Title, project.ClientName, project.CompanyName, project.ClientEmail,
 			project.Phone, project.SiteType, project.PackageTier, project.Timeline, project.Brief, project.PaymentMethod,
 			project.PaymentStatus, project.PaymentProvider, project.PaymentReference, project.BountyRepoName,
-			project.RepoVisibility, project.RepoProvider, project.RepoURL, project.RepoLocalPath, project.BudgetCents,
-			project.FeeCents, project.WorkPoolCents, project.Status, project.CreatedAt,
+			project.RepoVisibility, project.RepoProvider, project.RepoURL, project.RepoLocalPath,
+			projectAllowsAgents(project), project.BudgetCents, project.FeeCents, project.WorkPoolCents, project.Status,
+			project.CreatedAt,
 		); err != nil {
 			return fmt.Errorf("save project %s: %w", project.ID, err)
 		}

@@ -521,6 +521,9 @@ func TestCreateProjectCanDisableAgentRouting(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if project.AllowAgents == nil || *project.AllowAgents {
+		t.Fatalf("allow_agents was not persisted as false: %#v", project.AllowAgents)
+	}
 	if len(project.Tasks) == 0 {
 		t.Fatal("expected funded tasks")
 	}
@@ -591,6 +594,43 @@ func TestSyncProjectImportedIssuesAddsMissingAndTracksState(t *testing.T) {
 	}
 	if tasks[1].IssueNumber != 7 || tasks[1].IssueState != "open" || tasks[1].Status != TaskOpen {
 		t.Fatalf("missing issue not added: %#v", tasks[1])
+	}
+}
+
+func TestSyncProjectImportedIssuesHonorsHumanOnlyPolicy(t *testing.T) {
+	allowAgents := false
+	store := &Store{
+		cfg:      Config{StatePath: filepath.Join(t.TempDir(), "state.json")},
+		nextID:   1,
+		projects: map[string]*Project{},
+		tasks:    map[string]*Task{},
+	}
+	project := &Project{
+		ID:          "prj_0001",
+		Title:       "Human only sync",
+		AllowAgents: &allowAgents,
+		Tasks:       []*Task{},
+	}
+	store.projects[project.ID] = project
+
+	if _, err := store.SyncProjectImportedIssuesReport(project.ID, "https://github.com/mergeos-bounties/mergeos", []*ImportedRepoIssue{{
+		Number:             8,
+		Title:              "Agent-looking issue",
+		State:              "open",
+		URL:                "https://github.com/mergeos-bounties/mergeos/issues/8",
+		EstimatedCents:     100,
+		RequiredWorkerKind: WorkerAgent,
+		SuggestedAgentType: "backend-agent",
+	}}); err != nil {
+		t.Fatal(err)
+	}
+
+	tasks := store.ListTasks("")
+	if len(tasks) != 1 {
+		t.Fatalf("tasks = %d, want 1", len(tasks))
+	}
+	if tasks[0].RequiredWorkerKind != WorkerHuman || strings.TrimSpace(tasks[0].SuggestedAgentType) != "" {
+		t.Fatalf("synced task did not honor human-only policy: %#v", tasks[0])
 	}
 }
 

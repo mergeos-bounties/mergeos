@@ -65,6 +65,7 @@ CREATE TABLE IF NOT EXISTS projects (
   repo_provider text NOT NULL DEFAULT '',
   repo_url text NOT NULL DEFAULT '',
   repo_local_path text NOT NULL DEFAULT '',
+  allow_agents boolean NOT NULL DEFAULT true,
   budget_cents bigint NOT NULL,
   fee_cents bigint NOT NULL,
   work_pool_cents bigint NOT NULL,

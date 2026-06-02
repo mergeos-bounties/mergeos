@@ -131,6 +131,7 @@ type Project struct {
 	RepoProvider     string        `json:"repo_provider"`
 	RepoURL          string        `json:"repo_url"`
 	RepoLocalPath    string        `json:"repo_local_path,omitempty"`
+	AllowAgents      *bool         `json:"allow_agents,omitempty"`
 	BudgetCents      int64         `json:"budget_cents"`
 	FeeCents         int64         `json:"fee_cents"`
 	WorkPoolCents    int64         `json:"work_pool_cents"`
