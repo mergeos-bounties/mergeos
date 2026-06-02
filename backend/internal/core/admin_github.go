@@ -448,6 +448,9 @@ func adminPullRequestReadiness(task *Task, pull AdminTaskPullRequest) AdminPullR
 	}
 
 	labels := adminPullRequestLabelSet(pull.Labels)
+	if labels["spam"] || labels["invalid"] || labels["blocked: spam"] {
+		addBlocker("pull request is marked spam or invalid")
+	}
 	if labels["evidence: missing"] || !labels["evidence: provided"] {
 		addBlocker("evidence: provided label is required")
 	} else {

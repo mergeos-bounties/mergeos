@@ -234,6 +234,24 @@ func TestAdminPullRequestReadinessBlocksBroadDeletionHeavyDiff(t *testing.T) {
 	}
 }
 
+func TestAdminPullRequestReadinessBlocksSpamLabel(t *testing.T) {
+	readiness := adminPullRequestReadiness(
+		&Task{Title: "Dashboard copy fix"},
+		AdminTaskPullRequest{
+			State:          "open",
+			MergeableState: "clean",
+			Labels:         []string{"star: verified", "evidence: provided", "spam"},
+			ChangedFiles:   []AdminPullRequestFile{{Path: "frontend/src/App.vue", Status: "modified", Additions: 3}},
+		},
+	)
+	if readiness.CanMerge || readiness.Status != "blocked" || readiness.RiskLevel != "high" {
+		t.Fatalf("readiness should block spam label: %#v", readiness)
+	}
+	if !containsString(readiness.Blockers, "pull request is marked spam or invalid") {
+		t.Fatalf("missing spam blocker: %#v", readiness.Blockers)
+	}
+}
+
 func TestAdminPullRequestReadinessAllowsVerifiedLowRiskPR(t *testing.T) {
 	readiness := adminPullRequestReadiness(
 		&Task{Title: "Dashboard copy fix"},
