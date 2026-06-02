@@ -2686,7 +2686,8 @@ svg {
 .public-home-page,
 .public-info-page,
 .marketplace-page,
-.ledger-page {
+.ledger-page,
+.test-settings-page {
   padding: 34px 0 42px;
 }
 
@@ -2929,6 +2930,249 @@ svg {
   font-size: 13px;
   line-height: 1.52;
   font-weight: 650;
+}
+
+.test-settings-shell {
+  display: grid;
+  gap: 18px;
+}
+
+.test-settings-hero,
+.test-settings-card {
+  min-width: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.05);
+  padding: 20px;
+}
+
+.test-settings-hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.test-settings-hero h1 {
+  margin: 10px 0 0;
+  color: #0f172a;
+  font-size: 44px;
+  line-height: 1.08;
+  font-weight: 940;
+}
+
+.test-settings-hero p,
+.test-settings-card p {
+  margin: 8px 0 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.5;
+  font-weight: 680;
+}
+
+.test-settings-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.86fr) minmax(360px, 1.14fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.test-settings-form {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.test-settings-form label {
+  display: grid;
+  gap: 7px;
+}
+
+.test-settings-form label span,
+.test-settings-kv-head span {
+  color: #475569;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.test-settings-form input {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid #dbe3ea;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #111827;
+  padding: 0 12px;
+  font-size: 13px;
+  font-weight: 720;
+}
+
+.test-settings-type-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.test-settings-type-row button,
+.test-settings-kv-head button,
+.test-settings-kv-row button,
+.test-settings-entry-side button {
+  min-height: 34px;
+  border: 1px solid #dbe3ea;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #273244;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.test-settings-type-row button.active {
+  border-color: rgba(15, 159, 120, 0.42);
+  background: #ecfdf5;
+  color: var(--green-dark);
+}
+
+.test-settings-kv-list {
+  display: grid;
+  gap: 8px;
+}
+
+.test-settings-kv-head,
+.test-settings-kv-row {
+  display: grid;
+  align-items: center;
+  gap: 8px;
+}
+
+.test-settings-kv-head {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.test-settings-kv-head button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 10px;
+}
+
+.test-settings-kv-row {
+  grid-template-columns: minmax(0, 0.72fr) minmax(0, 1fr) 34px;
+}
+
+.test-settings-kv-row button {
+  width: 34px;
+  display: grid;
+  place-items: center;
+}
+
+.test-settings-list-card {
+  display: grid;
+  gap: 14px;
+}
+
+.test-settings-list-card .card-title-row > button {
+  width: auto;
+}
+
+.test-settings-entry-list {
+  display: grid;
+  gap: 10px;
+}
+
+.test-settings-entry-list article {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) minmax(150px, auto);
+  align-items: start;
+  gap: 12px;
+  border: 1px solid #e8eef1;
+  border-radius: 8px;
+  background: #fbfcfd;
+  padding: 12px;
+}
+
+.test-settings-entry-icon {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: #ecfdf5;
+  color: var(--green);
+}
+
+.test-settings-entry-list strong,
+.test-settings-entry-list small,
+.test-settings-entry-list span {
+  display: block;
+  min-width: 0;
+}
+
+.test-settings-entry-list strong {
+  overflow: hidden;
+  color: #111827;
+  font-size: 13px;
+  font-weight: 920;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.test-settings-entry-list small,
+.test-settings-entry-list span {
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 10px;
+  line-height: 1.4;
+  font-weight: 740;
+  overflow-wrap: anywhere;
+}
+
+.test-settings-entry-side {
+  display: grid;
+  justify-items: end;
+  gap: 6px;
+}
+
+.test-settings-entry-side b {
+  border-radius: 999px;
+  background: #ecfdf5;
+  color: #047857;
+  padding: 4px 8px;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.test-settings-entry-side button {
+  padding: 0 10px;
+}
+
+@media (max-width: 760px) {
+  .test-settings-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .test-settings-hero {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .test-settings-hero h1 {
+    font-size: 32px;
+  }
+
+  .test-settings-kv-row,
+  .test-settings-entry-list article {
+    grid-template-columns: 1fr;
+  }
+
+  .test-settings-kv-row button {
+    width: 100%;
+  }
+
+  .test-settings-entry-side {
+    justify-items: start;
+  }
 }
 
 .public-workflow-grid small {

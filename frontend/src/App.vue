@@ -1907,6 +1907,7 @@
           <a href="/live" :class="{ 'nav-active': publicPage === 'live' }" @click.prevent="openPublicPage('live')">Live Feed</a>
           <a href="/how-it-works" :class="{ 'nav-active': publicPage === 'how-it-works' }" @click.prevent="openPublicPage('how-it-works')">How it works</a>
           <a href="/ledger" :class="{ 'nav-active': publicPage === 'ledger' }" @click.prevent="openPublicPage('ledger')">Ledger Logs</a>
+          <a href="/test-settings" :class="{ 'nav-active': publicPage === 'test-settings' }" @click.prevent="openPublicPage('test-settings')">Test Keys</a>
         </nav>
 
         <button
@@ -1929,6 +1930,7 @@
           <a href="/live" :class="{ 'nav-active': publicPage === 'live' }" @click.prevent="mobileMenuOpen = false; openPublicPage('live')">Live Feed</a>
           <a href="/how-it-works" :class="{ 'nav-active': publicPage === 'how-it-works' }" @click.prevent="mobileMenuOpen = false; openPublicPage('how-it-works')">How it works</a>
           <a href="/ledger" :class="{ 'nav-active': publicPage === 'ledger' }" @click.prevent="mobileMenuOpen = false; openPublicPage('ledger')">Ledger Logs</a>
+          <a href="/test-settings" :class="{ 'nav-active': publicPage === 'test-settings' }" @click.prevent="mobileMenuOpen = false; openPublicPage('test-settings')">Test Keys</a>
         </nav>
 
         <div class="nav-actions">
@@ -2115,6 +2117,139 @@
             </span>
             <strong>{{ item.title }}</strong>
             <p>{{ item.body }}</p>
+          </article>
+        </section>
+      </div>
+    </main>
+
+    <main v-else-if="publicPage === 'test-settings'" id="top" class="test-settings-page">
+      <div class="home-container test-settings-shell">
+        <section class="test-settings-hero">
+          <div>
+            <span class="marketplace-eyebrow">TEST PUBLISH SETTINGS</span>
+            <div class="ledger-title-row">
+              <h1>Public Test Keys</h1>
+              <span class="ledger-public-badge">
+                <LockKeyhole :size="14" />
+                {{ publicTestSettingsModeLabel }}
+              </span>
+            </div>
+            <p>Password-gated test keys for temporary LLM, PayPal, and USDT task integrations.</p>
+          </div>
+          <button class="secondary-button compact" type="button" @click="loadPublicTestSettingsStatus">
+            <RefreshCw :size="14" />
+            Refresh status
+          </button>
+        </section>
+
+        <section class="test-settings-grid">
+          <article class="test-settings-card">
+            <div class="card-title-row">
+              <div>
+                <h2>Access</h2>
+                <p>{{ publicTestSettingsStatus.test_mode_enabled ? 'Enter the shared test password.' : 'Test mode is currently disabled.' }}</p>
+              </div>
+              <span>{{ publicTestSettingsAuthenticated ? 'Unlocked' : 'Locked' }}</span>
+            </div>
+            <form class="test-settings-form" @submit.prevent="unlockPublicTestSettings">
+              <label>
+                <span>Password</span>
+                <input v-model="publicTestSettingsPassword" type="password" autocomplete="current-password" placeholder="Shared test password" />
+              </label>
+              <button class="primary-button compact" :disabled="publicTestSettingsBusy || !publicTestSettingsStatus.test_mode_enabled" type="submit">
+                {{ publicTestSettingsBusy ? 'Checking...' : 'Unlock' }}
+              </button>
+            </form>
+            <p v-if="publicTestSettingsError" class="modal-error">{{ publicTestSettingsError }}</p>
+          </article>
+
+          <article class="test-settings-card">
+            <div class="card-title-row">
+              <div>
+                <h2>Add Test Key</h2>
+                <p>Saved to database and rejected if the key collides with ENV names.</p>
+              </div>
+              <span>{{ publicTestSettingsRows.length }} keys</span>
+            </div>
+            <form class="test-settings-form" @submit.prevent="addPublicTestSettingsEntry">
+              <div class="test-settings-type-row" role="radiogroup" aria-label="Integration type">
+                <button
+                  v-for="option in publicTestSettingsIntegrationOptions"
+                  :key="option.value"
+                  :class="{ active: publicTestSettingsForm.integrationType === option.value }"
+                  type="button"
+                  @click="publicTestSettingsForm.integrationType = option.value"
+                >
+                  {{ option.label }}
+                </button>
+              </div>
+              <label>
+                <span>Display name</span>
+                <input v-model.trim="publicTestSettingsForm.displayName" placeholder="Task LLM key" />
+              </label>
+              <label>
+                <span>Setting key</span>
+                <input v-model.trim="publicTestSettingsForm.settingKey" placeholder="TASK_LLM_TEST_KEY" />
+              </label>
+              <label>
+                <span>Primary value</span>
+                <input v-model="publicTestSettingsForm.settingValue" placeholder="Paste test value" />
+              </label>
+              <div class="test-settings-kv-list">
+                <div class="test-settings-kv-head">
+                  <span>Key value map</span>
+                  <button type="button" @click="addPublicTestSettingsKVRow">
+                    <Plus :size="13" />
+                    Add
+                  </button>
+                </div>
+                <div v-for="(row, index) in publicTestSettingsKeyValueRows" :key="index" class="test-settings-kv-row">
+                  <input v-model.trim="row.key" placeholder="name" />
+                  <input v-model="row.value" placeholder="value" />
+                  <button type="button" :aria-label="`Remove key ${index + 1}`" @click="removePublicTestSettingsKVRow(index)">
+                    <X :size="13" />
+                  </button>
+                </div>
+              </div>
+              <button class="primary-button compact" :disabled="publicTestSettingsBusy || !publicTestSettingsAuthenticated" type="submit">
+                {{ publicTestSettingsBusy ? 'Saving...' : 'Save Test Key' }}
+              </button>
+            </form>
+          </article>
+        </section>
+
+        <section class="test-settings-card test-settings-list-card">
+          <div class="card-title-row">
+            <div>
+              <h2>Published Test Keys</h2>
+              <p>{{ publicTestSettingsAuthenticated ? 'Values are masked after save.' : 'Unlock to load database entries.' }}</p>
+            </div>
+            <button class="secondary-button compact" :disabled="publicTestSettingsBusy || !publicTestSettingsAuthenticated" type="button" @click="loadPublicTestSettingsEntries">
+              <RefreshCw :size="14" />
+              Refresh
+            </button>
+          </div>
+          <div v-if="publicTestSettingsLoading" class="live-feed-state">Loading test keys...</div>
+          <div v-else-if="publicTestSettingsRows.length" class="test-settings-entry-list">
+            <article v-for="entry in publicTestSettingsRows" :key="entry.id">
+              <span class="test-settings-entry-icon">
+                <LockKeyhole :size="16" />
+              </span>
+              <div>
+                <strong>{{ entry.displayName }}</strong>
+                <small>{{ entry.integrationType }} / {{ entry.settingKey }} / {{ entry.valueHint }}</small>
+                <span v-if="entry.mapKeys.length">{{ entry.mapKeys.join(', ') }}</span>
+              </div>
+              <div class="test-settings-entry-side">
+                <b>{{ entry.status }}</b>
+                <small>{{ entry.updatedAt }}</small>
+                <button type="button" @click="deletePublicTestSettingsEntry(entry.id)">Delete</button>
+              </div>
+            </article>
+          </div>
+          <article v-else class="marketplace-empty-state compact">
+            <strong>{{ publicTestSettingsAuthenticated ? 'No test keys yet' : 'Locked' }}</strong>
+            <p>{{ publicTestSettingsAuthenticated ? 'Add the first test integration key above.' : 'Enter the public test password to view entries.' }}</p>
           </article>
         </section>
       </div>
@@ -3058,6 +3193,7 @@ const publicPagePaths = {
   live: '/live',
   'how-it-works': '/how-it-works',
   ledger: '/ledger',
+  'test-settings': '/test-settings',
 };
 const publicPageNames = new Set(Object.keys(publicPagePaths));
 const projectWizardStepPaths = {
@@ -3206,6 +3342,20 @@ const marketplaceLoading = ref(true);
 const marketplaceError = ref('');
 const marketplaceSearch = ref('');
 const activeMarketplaceCategory = ref('All');
+const publicTestSettingsStatus = ref({ test_mode_enabled: false });
+const publicTestSettingsEntries = ref([]);
+const publicTestSettingsPassword = ref('');
+const publicTestSettingsAuthenticated = ref(false);
+const publicTestSettingsLoading = ref(false);
+const publicTestSettingsBusy = ref(false);
+const publicTestSettingsError = ref('');
+const publicTestSettingsForm = reactive({
+  integrationType: 'llm',
+  displayName: '',
+  settingKey: '',
+  settingValue: '',
+});
+const publicTestSettingsKeyValueRows = ref([{ key: '', value: '' }]);
 const dashboardProjects = ref([]);
 const dashboardTasks = ref([]);
 const dashboardLedgerEntries = ref([]);
@@ -3756,6 +3906,12 @@ const liveFeedLatestProject = computed(() =>
 
 const marketplaceFilters = ['Category', 'Budget', 'Delivery time'];
 
+const publicTestSettingsIntegrationOptions = [
+  { label: 'LLM', value: 'llm' },
+  { label: 'PayPal', value: 'paypal' },
+  { label: 'USDT', value: 'usdt' },
+];
+
 const marketplaceProjectPalettes = [
   { accent: '#0f9f78', soft: '#e9f8f1', icon: Globe2, badgeTone: 'green', avatarTone: 'avatar-green' },
   { accent: '#2563eb', soft: '#eff6ff', icon: BarChart3, badgeTone: 'purple', avatarTone: 'avatar-blue' },
@@ -3952,6 +4108,25 @@ const publicInfoPages = {
 };
 
 const publicInfoPage = computed(() => publicInfoPages[publicPage.value] || null);
+const publicTestSettingsModeLabel = computed(() =>
+  publicTestSettingsStatus.value?.test_mode_enabled ? 'Test mode active' : 'Test mode disabled',
+);
+const publicTestSettingsRows = computed(() =>
+  (publicTestSettingsEntries.value || []).map((entry) => {
+    const mapKeys = Object.keys(entry.key_value_map || {});
+    const when = formatLedgerDateTime(entry.updated_at);
+    return {
+      id: entry.id,
+      integrationType: toTitleLabel(entry.integration_type || 'test'),
+      displayName: entry.display_name || entry.setting_key || 'Test key',
+      settingKey: entry.setting_key || '-',
+      valueHint: entry.setting_value_hint || '****',
+      mapKeys,
+      status: toTitleLabel(entry.status || 'active'),
+      updatedAt: when.full,
+    };
+  }),
+);
 
 const marketplaceCategories = computed(() => {
   const categories = ['All'];
@@ -4731,6 +4906,13 @@ function scrollToSection(id) {
 function loadPublicPageData(page) {
   if (page === 'ledger') {
     void loadLedgerData();
+    return;
+  }
+  if (page === 'test-settings') {
+    void loadPublicTestSettingsStatus();
+    if (publicTestSettingsAuthenticated.value) {
+      void loadPublicTestSettingsEntries();
+    }
     return;
   }
   if (page === 'live') {
@@ -5954,6 +6136,155 @@ async function publicApi(path, options = {}) {
   return payload;
 }
 
+function addPublicTestSettingsKVRow() {
+  publicTestSettingsKeyValueRows.value.push({ key: '', value: '' });
+}
+
+function removePublicTestSettingsKVRow(index) {
+  if (publicTestSettingsKeyValueRows.value.length <= 1) {
+    publicTestSettingsKeyValueRows.value = [{ key: '', value: '' }];
+    return;
+  }
+  publicTestSettingsKeyValueRows.value.splice(index, 1);
+}
+
+function resetPublicTestSettingsForm() {
+  publicTestSettingsForm.displayName = '';
+  publicTestSettingsForm.settingKey = '';
+  publicTestSettingsForm.settingValue = '';
+  publicTestSettingsKeyValueRows.value = [{ key: '', value: '' }];
+}
+
+function publicTestSettingsKeyValueMap() {
+  return publicTestSettingsKeyValueRows.value.reduce((acc, row) => {
+    const key = String(row.key || '').trim();
+    if (!key) return acc;
+    acc[key] = String(row.value || '');
+    return acc;
+  }, {});
+}
+
+function publicTestSettingsPasswordPayload(extra = {}) {
+  return {
+    password: publicTestSettingsPassword.value,
+    ...extra,
+  };
+}
+
+async function loadPublicTestSettingsStatus(options = {}) {
+  const silent = Boolean(options.silent);
+  if (!silent) publicTestSettingsLoading.value = true;
+  publicTestSettingsError.value = '';
+  try {
+    const payload = await publicApi('/api/public/test-settings/status');
+    publicTestSettingsStatus.value = {
+      test_mode_enabled: Boolean(payload.test_mode_enabled),
+    };
+    if (!publicTestSettingsStatus.value.test_mode_enabled) {
+      publicTestSettingsAuthenticated.value = false;
+      publicTestSettingsEntries.value = [];
+    }
+  } catch (error) {
+    publicTestSettingsError.value = error.message || 'Could not load test settings status';
+  } finally {
+    if (!silent) publicTestSettingsLoading.value = false;
+  }
+}
+
+async function unlockPublicTestSettings() {
+  publicTestSettingsError.value = '';
+  if (!publicTestSettingsPassword.value.trim()) {
+    publicTestSettingsError.value = 'Password is required.';
+    return;
+  }
+  publicTestSettingsBusy.value = true;
+  try {
+    await publicApi('/api/public/test-settings/auth', {
+      method: 'POST',
+      body: JSON.stringify(publicTestSettingsPasswordPayload()),
+    });
+    publicTestSettingsAuthenticated.value = true;
+    await loadPublicTestSettingsEntries({ silent: true });
+    showToast('Test keys unlocked.');
+  } catch (error) {
+    publicTestSettingsAuthenticated.value = false;
+    publicTestSettingsError.value = error.message || 'Could not unlock test keys';
+  } finally {
+    publicTestSettingsBusy.value = false;
+  }
+}
+
+async function loadPublicTestSettingsEntries(options = {}) {
+  if (!publicTestSettingsPassword.value.trim()) {
+    publicTestSettingsError.value = 'Password is required.';
+    return;
+  }
+  const silent = Boolean(options.silent);
+  if (!silent) publicTestSettingsLoading.value = true;
+  publicTestSettingsError.value = '';
+  try {
+    const rows = await publicApi('/api/public/test-settings/entries/list', {
+      method: 'POST',
+      body: JSON.stringify(publicTestSettingsPasswordPayload()),
+    });
+    publicTestSettingsEntries.value = Array.isArray(rows) ? rows : [];
+  } catch (error) {
+    publicTestSettingsError.value = error.message || 'Could not load test keys';
+  } finally {
+    if (!silent) publicTestSettingsLoading.value = false;
+  }
+}
+
+async function addPublicTestSettingsEntry() {
+  publicTestSettingsError.value = '';
+  if (!publicTestSettingsAuthenticated.value) {
+    publicTestSettingsError.value = 'Unlock with the shared password first.';
+    return;
+  }
+  if (!publicTestSettingsForm.settingKey.trim() || !publicTestSettingsForm.settingValue.trim()) {
+    publicTestSettingsError.value = 'Setting key and primary value are required.';
+    return;
+  }
+  publicTestSettingsBusy.value = true;
+  try {
+    const entry = await publicApi('/api/public/test-settings/entries', {
+      method: 'POST',
+      body: JSON.stringify(publicTestSettingsPasswordPayload({
+        integration_type: publicTestSettingsForm.integrationType,
+        display_name: publicTestSettingsForm.displayName || publicTestSettingsForm.settingKey,
+        setting_key: publicTestSettingsForm.settingKey,
+        setting_value: publicTestSettingsForm.settingValue,
+        key_value_map: publicTestSettingsKeyValueMap(),
+      })),
+    });
+    publicTestSettingsEntries.value = [entry, ...publicTestSettingsEntries.value];
+    resetPublicTestSettingsForm();
+    showToast('Test key saved.');
+  } catch (error) {
+    publicTestSettingsError.value = error.message || 'Could not save test key';
+  } finally {
+    publicTestSettingsBusy.value = false;
+  }
+}
+
+async function deletePublicTestSettingsEntry(entryID) {
+  if (!entryID || !publicTestSettingsAuthenticated.value) return;
+  publicTestSettingsBusy.value = true;
+  publicTestSettingsError.value = '';
+  try {
+    await publicApi(`/api/public/test-settings/entries/${encodeURIComponent(entryID)}`, {
+      method: 'DELETE',
+      body: JSON.stringify(publicTestSettingsPasswordPayload()),
+    });
+    publicTestSettingsEntries.value = publicTestSettingsEntries.value.filter((entry) => entry.id !== entryID);
+    showToast('Test key deleted.');
+  } catch (error) {
+    publicTestSettingsError.value = error.message || 'Could not delete test key';
+  } finally {
+    publicTestSettingsBusy.value = false;
+  }
+}
+
 async function loadMarketplaceData(options = {}) {
   const silent = Boolean(options.silent);
   if (!silent) marketplaceLoading.value = true;
@@ -6721,6 +7052,7 @@ onMounted(async () => {
     loadMarketplaceData({ silent: true }),
     loadLedgerData({ silent: true }),
     loadLiveFeedData({ silent: true }),
+    publicPage.value === 'test-settings' ? loadPublicTestSettingsStatus({ silent: true }) : Promise.resolve(),
   ]);
 });
 
