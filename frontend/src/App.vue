@@ -2832,6 +2832,13 @@
               <div class="test-settings-entry-side">
                 <b>{{ entry.status }}</b>
                 <small>{{ entry.updatedAt }}</small>
+                <button
+                  type="button"
+                  :disabled="publicTestSettingsRevealBusyID === entry.id"
+                  @click="copyPublicTestSettingsEntrySecret(entry.id)"
+                >
+                  {{ publicTestSettingsRevealBusyID === entry.id ? 'Copying...' : 'Copy value' }}
+                </button>
                 <button type="button" @click="deletePublicTestSettingsEntry(entry.id)">Delete</button>
               </div>
             </article>
@@ -4039,6 +4046,7 @@ const publicTestSettingsPassword = ref('');
 const publicTestSettingsAuthenticated = ref(false);
 const publicTestSettingsLoading = ref(false);
 const publicTestSettingsBusy = ref(false);
+const publicTestSettingsRevealBusyID = ref('');
 const publicTestSettingsError = ref('');
 const publicTestSettingsForm = reactive({
   integrationType: 'llm',
@@ -8110,6 +8118,18 @@ function publicTestSettingsPasswordPayload(extra = {}) {
   };
 }
 
+function publicTestSettingsSecretText(entry = {}) {
+  const lines = [];
+  if (entry.setting_key && entry.setting_value) {
+    lines.push(`${entry.setting_key}=${entry.setting_value}`);
+  }
+  const kv = entry.key_value_map && typeof entry.key_value_map === 'object' ? entry.key_value_map : {};
+  for (const key of Object.keys(kv).sort()) {
+    lines.push(`${key}=${kv[key]}`);
+  }
+  return lines.join('\n');
+}
+
 async function loadPublicTestSettingsStatus(options = {}) {
   const silent = Boolean(options.silent);
   if (!silent) publicTestSettingsLoading.value = true;
@@ -8221,6 +8241,33 @@ async function deletePublicTestSettingsEntry(entryID) {
     publicTestSettingsError.value = error.message || 'Could not delete test key';
   } finally {
     publicTestSettingsBusy.value = false;
+  }
+}
+
+async function copyPublicTestSettingsEntrySecret(entryID) {
+  if (!entryID || !publicTestSettingsAuthenticated.value) return;
+  if (!hasWindow || !navigator.clipboard?.writeText) {
+    publicTestSettingsError.value = 'Clipboard access is unavailable in this browser.';
+    return;
+  }
+  publicTestSettingsRevealBusyID.value = entryID;
+  publicTestSettingsError.value = '';
+  try {
+    const entry = await publicApi(`/api/public/test-settings/entries/${encodeURIComponent(entryID)}/reveal`, {
+      method: 'POST',
+      body: JSON.stringify(publicTestSettingsPasswordPayload()),
+    });
+    const secretText = publicTestSettingsSecretText(entry);
+    if (!secretText) {
+      throw new Error('No test value is available for this entry.');
+    }
+    await navigator.clipboard.writeText(secretText);
+    await loadPublicTestSettingsEntries({ silent: true });
+    showToast('Test key copied.');
+  } catch (error) {
+    publicTestSettingsError.value = error.message || 'Could not copy test key';
+  } finally {
+    publicTestSettingsRevealBusyID.value = '';
   }
 }
 

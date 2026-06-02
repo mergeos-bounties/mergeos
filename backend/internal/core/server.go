@@ -107,6 +107,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("POST /api/public/test-settings/auth", s.publicTestSettingsAuth)
 	mux.HandleFunc("POST /api/public/test-settings/entries/list", s.publicListTestEntries)
 	mux.HandleFunc("POST /api/public/test-settings/entries", s.publicAddTestEntry)
+	mux.HandleFunc("POST /api/public/test-settings/entries/{id}/reveal", s.publicRevealTestEntry)
 	mux.HandleFunc("PATCH /api/public/test-settings/entries/{id}", s.publicUpdateTestEntry)
 	mux.HandleFunc("DELETE /api/public/test-settings/entries/{id}", s.publicDeleteTestEntry)
 	mux.HandleFunc("GET /api/public/test-settings/status", s.publicTestStatus)

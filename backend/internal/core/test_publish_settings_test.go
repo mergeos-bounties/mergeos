@@ -113,6 +113,43 @@ func TestTestSettingsStore(t *testing.T) {
 	}
 }
 
+func TestRevealTestSettingsEntryReturnsSecretAndTracksUsage(t *testing.T) {
+	store := newTestStore(t)
+	defer store.Close()
+
+	entry, err := store.AddTestSettingsEntry(AddTestEntryRequest{
+		IntegrationType: "paypal",
+		DisplayName:     "PayPal Sandbox",
+		SettingKey:      "TASK_PAYPAL_SANDBOX",
+		SettingValue:    "sandbox-secret",
+		KeyValueMap: map[string]string{
+			"client_id": "client-123",
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if entry.SettingValueHint == "sandbox-secret" {
+		t.Fatal("normal list response should not expose the primary secret")
+	}
+
+	revealed, err := store.RevealTestSettingsEntry(entry.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if revealed.SettingValue != "sandbox-secret" || revealed.KeyValueMap["client_id"] != "client-123" {
+		t.Fatalf("reveal did not return stored secret values: %#v", revealed)
+	}
+	if revealed.LastUsedAt == nil {
+		t.Fatal("expected reveal to update last_used_at")
+	}
+
+	rows := store.ListTestSettingsEntries()
+	if len(rows) != 1 || rows[0].SettingValueHint == "sandbox-secret" || rows[0].KeyValueMap["client_id"] == "client-123" {
+		t.Fatalf("masked list response leaked secret values: %#v", rows)
+	}
+}
+
 func TestTestSettingsConfigPersistencePreservesPasswordHash(t *testing.T) {
 	store := newTestStore(t)
 	defer store.Close()

@@ -75,6 +75,17 @@ type TestSettingsEntryResponse struct {
 	UpdatedAt        time.Time         `json:"updated_at"`
 }
 
+type TestSettingsEntrySecretResponse struct {
+	ID              string            `json:"id"`
+	IntegrationType string            `json:"integration_type"`
+	DisplayName     string            `json:"display_name"`
+	SettingKey      string            `json:"setting_key"`
+	SettingValue    string            `json:"setting_value"`
+	KeyValueMap     map[string]string `json:"key_value_map"`
+	Status          string            `json:"status"`
+	LastUsedAt      *time.Time        `json:"last_used_at,omitempty"`
+}
+
 func SettingValueMask(value string) string {
 	if len(value) <= 8 {
 		if len(value) == 0 {
@@ -448,6 +459,34 @@ func (s *Store) DeleteTestSettingsEntry(id string) error {
 	return s.saveLocked()
 }
 
+func (s *Store) RevealTestSettingsEntry(id string) (*TestSettingsEntrySecretResponse, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	entry, ok := s.testSettingsEntries[strings.TrimSpace(id)]
+	if !ok {
+		return nil, errors.New("test settings entry not found")
+	}
+	if strings.EqualFold(entry.Status, "disabled") {
+		return nil, errors.New("test settings entry is disabled")
+	}
+	now := time.Now().UTC()
+	entry.LastUsedAt = &now
+	entry.UpdatedAt = now
+	if err := s.saveLocked(); err != nil {
+		return nil, err
+	}
+	kv := make(map[string]string, len(entry.KeyValueMap))
+	for k, v := range entry.KeyValueMap {
+		kv[k] = v
+	}
+	return &TestSettingsEntrySecretResponse{
+		ID: entry.ID, IntegrationType: entry.IntegrationType,
+		DisplayName: entry.DisplayName, SettingKey: entry.SettingKey,
+		SettingValue: entry.SettingValue, KeyValueMap: kv,
+		Status: entry.Status, LastUsedAt: entry.LastUsedAt,
+	}, nil
+}
+
 func entryToResponse(entry *TestSettingsEntry) *TestSettingsEntryResponse {
 	return &TestSettingsEntryResponse{
 		ID: entry.ID, IntegrationType: entry.IntegrationType,
@@ -641,6 +680,18 @@ func (s *Server) publicDeleteTestEntry(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
+}
+
+func (s *Server) publicRevealTestEntry(w http.ResponseWriter, r *http.Request) {
+	if !s.requireTestAuthBody(w, r) {
+		return
+	}
+	entry, err := s.store.RevealTestSettingsEntry(r.PathValue("id"))
+	if err != nil {
+		writeError(w, http.StatusNotFound, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, entry)
 }
 
 func (s *Server) publicTestStatus(w http.ResponseWriter, r *http.Request) {
