@@ -9,6 +9,8 @@ This repository is the current MergeOS MVP: Go backend, Vue SSR frontend, projec
 
 `scan/` is the public MergeOS Scan explorer for `scan.mergeos.shop`. It reads the public ledger API and presents MRG token mints, escrow movements, task reserves, payouts, addresses, transaction hashes, and hash-chain proof in a BscScan-style interface.
 
+`sdk/` is the lightweight JavaScript MergeOS SDK for public marketplace/ledger feeds, authenticated task and workflow APIs, admin ops queue calls, and WebSocket event stream helpers.
+
 ## Production
 
 - App: [https://mergeos.shop](https://mergeos.shop)
@@ -55,6 +57,7 @@ MergeOS currently supports:
 - Proof ledger entries with hash chaining.
 - SMTP notifications when configured, persisted notification records when SMTP is not configured.
 - Admin APIs for users, projects, tasks, attachments, notifications, ledger, and SSL review.
+- JavaScript SDK helpers for public feeds, project deployment workflow, AI workflow, task acceptance, worker dashboards, admin ops queue, and WebSocket events.
 
 Roadmap items include full AI codebase scanning, task dependency DAGs, automated PR verification, reputation scoring, fraud detection, and automatic real payout execution.
 

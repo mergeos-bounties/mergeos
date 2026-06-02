@@ -1,0 +1,14 @@
+{
+  "name": "@mergeos/sdk",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Small JavaScript client for MergeOS task, workflow, ledger, and event APIs.",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "scripts": {
+    "test": "node --test"
+  },
+  "license": "MIT"
+}
