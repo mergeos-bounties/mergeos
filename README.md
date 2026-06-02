@@ -318,6 +318,7 @@ Public:
 - `GET /api/public/ledger/verify`
 - `GET /api/public/marketplace`
 - `GET /api/public/live-feed`
+- `GET /api/public/protocol`
 - `GET /api/public/protocol/tasks`
 - `GET /api/public/protocol/events`
 - `POST /api/public/repo/issues`

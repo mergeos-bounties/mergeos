@@ -2,6 +2,8 @@
 
 Open protocol definitions for MergeOS tasks, workflow graphs, and realtime events.
 
+The live app exposes protocol discovery at `GET /api/public/protocol`.
+
 ## Documents
 
 - `mergeos.task.v1`: a claimable bounty task with reward, worker lane, dependencies, and evidence requirements.

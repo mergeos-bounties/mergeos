@@ -705,6 +705,28 @@ type PublicTaskProtocolResponse struct {
 	Tasks []TaskProtocolDocument `json:"tasks"`
 }
 
+type ProtocolManifestResponse struct {
+	ProtocolVersion string                     `json:"protocol_version"`
+	Kind            string                     `json:"kind"`
+	Schemas         []ProtocolManifestSchema   `json:"schemas"`
+	Endpoints       []ProtocolManifestEndpoint `json:"endpoints"`
+}
+
+type ProtocolManifestSchema struct {
+	Version     string `json:"version"`
+	Kind        string `json:"kind"`
+	SchemaURL   string `json:"schema_url"`
+	Description string `json:"description"`
+}
+
+type ProtocolManifestEndpoint struct {
+	Method      string `json:"method"`
+	Path        string `json:"path"`
+	Protocol    string `json:"protocol,omitempty"`
+	Auth        string `json:"auth"`
+	Description string `json:"description"`
+}
+
 type TaskProtocolDocument struct {
 	ProtocolVersion    string         `json:"protocol_version"`
 	Kind               string         `json:"kind"`

@@ -33,6 +33,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/public/ledger", s.publicLedger)
 	mux.HandleFunc("GET /api/public/ledger/verify", s.publicLedgerVerify)
 	mux.HandleFunc("GET /api/public/live-feed", s.publicLiveFeed)
+	mux.HandleFunc("GET /api/public/protocol", s.publicProtocolManifest)
 	mux.HandleFunc("GET /api/public/protocol/tasks", s.publicProtocolTasks)
 	mux.HandleFunc("GET /api/public/protocol/events", s.publicProtocolEvents)
 	mux.HandleFunc("POST /api/public/repo/issues", s.importRepoIssues)
@@ -192,6 +193,10 @@ func (s *Server) publicLiveFeed(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	writeJSON(w, http.StatusOK, s.store.PublicLiveFeed(limit))
+}
+
+func (s *Server) publicProtocolManifest(w http.ResponseWriter, _ *http.Request) {
+	writeJSON(w, http.StatusOK, ProtocolManifest())
 }
 
 func (s *Server) publicProtocolEvents(w http.ResponseWriter, r *http.Request) {

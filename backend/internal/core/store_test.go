@@ -634,6 +634,64 @@ func TestSyncProjectImportedIssuesHonorsHumanOnlyPolicy(t *testing.T) {
 	}
 }
 
+func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:       defaultTokenSymbol,
+		StatePath:         filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:    1000,
+		DevPaymentEnabled: true,
+		DevPaymentCode:    defaultDevPaymentCode,
+		BountyRoot:        filepath.Join(tempDir, "bounties"),
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	server := NewServer(cfg, store, payments)
+	req := httptest.NewRequest(http.MethodGet, "/api/public/protocol", nil)
+	resp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(resp, req)
+	if resp.Code != http.StatusOK {
+		t.Fatalf("protocol manifest status = %d, body = %s", resp.Code, resp.Body.String())
+	}
+
+	var payload ProtocolManifestResponse
+	if err := json.Unmarshal(resp.Body.Bytes(), &payload); err != nil {
+		t.Fatal(err)
+	}
+	if payload.ProtocolVersion != "mergeos.protocol.manifest.v1" || payload.Kind != "protocol_manifest" {
+		t.Fatalf("unexpected manifest header: %#v", payload)
+	}
+	if len(payload.Schemas) != 4 {
+		t.Fatalf("manifest schemas = %d: %#v", len(payload.Schemas), payload.Schemas)
+	}
+	schemas := map[string]bool{}
+	for _, schema := range payload.Schemas {
+		schemas[schema.Version] = true
+	}
+	for _, required := range []string{"mergeos.task.v1", "mergeos.workflow.v1", "mergeos.event.v1", "mergeos.scan.v1"} {
+		if !schemas[required] {
+			t.Fatalf("manifest missing schema %s: %#v", required, payload.Schemas)
+		}
+	}
+	endpoints := map[string]bool{}
+	for _, endpoint := range payload.Endpoints {
+		endpoints[endpoint.Method+" "+endpoint.Path] = true
+	}
+	for _, required := range []string{
+		"GET /api/public/protocol/tasks",
+		"GET /api/public/protocol/events",
+		"GET /api/projects/{id}/protocol/workflow",
+		"GET /api/projects/{id}/protocol/scan",
+	} {
+		if !endpoints[required] {
+			t.Fatalf("manifest missing endpoint %s: %#v", required, payload.Endpoints)
+		}
+	}
+}
+
 func TestPublicMarketplaceRouteReturnsSanitizedLiveData(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := Config{
