@@ -54,6 +54,20 @@ test('loads mode env before fallback without overriding real env', async () => {
   assert.equal(env.SSR_PORT, '6000');
 });
 
+test('public protocol schemas mirror the protocol package schemas', async () => {
+  const sourceDir = new URL('../protocol/schemas/', import.meta.url);
+  const publicDir = new URL('./public/protocol/', import.meta.url);
+  const sourceFiles = (await fs.readdir(sourceDir)).filter((file) => file.endsWith('.schema.json')).sort();
+  const publicFiles = (await fs.readdir(publicDir)).filter((file) => file.endsWith('.schema.json')).sort();
+
+  assert.deepEqual(publicFiles, sourceFiles);
+  for (const file of sourceFiles) {
+    const sourceSchema = JSON.parse(await fs.readFile(new URL(file, sourceDir), 'utf-8'));
+    const publicSchema = JSON.parse(await fs.readFile(new URL(file, publicDir), 'utf-8'));
+    assert.deepEqual(publicSchema, sourceSchema);
+  }
+});
+
 test('creates runtime config for production defaults', () => {
   const env = {
     NODE_ENV: 'production',
@@ -106,6 +120,47 @@ test('production server injects SSR HTML into the app shell', async (t) => {
   assert.match(html, />\/admin</);
   assert.doesNotMatch(html, /ssr-outlet/);
   assert.doesNotMatch(html, /<div id="app"><\/div>/);
+});
+
+test('production server serves protocol schema assets as JSON', async (t) => {
+  const cwd = await fs.mkdtemp(path.join(os.tmpdir(), 'mergeos-frontend-schema-'));
+  const clientDist = path.join(cwd, 'client');
+  const protocolDir = path.join(clientDist, 'protocol');
+  const serverDir = path.join(cwd, 'server');
+  const serverEntry = path.join(serverDir, 'entry-server.mjs');
+  await fs.mkdir(protocolDir, { recursive: true });
+  await fs.mkdir(serverDir, { recursive: true });
+  await fs.writeFile(
+    path.join(clientDist, 'index.html'),
+    '<!doctype html><html><body><div id="app"><!--ssr-outlet--></div></body></html>',
+  );
+  await fs.writeFile(
+    path.join(protocolDir, 'ledger.v1.schema.json'),
+    JSON.stringify({ title: 'MergeOS Ledger v1' }),
+  );
+  await fs.writeFile(serverEntry, "export async function render() { return '<main></main>'; }\n");
+
+  const server = await createMergeOSServer({
+    mode: 'production',
+    production: true,
+    cwd,
+    host: '127.0.0.1',
+    port: 0,
+    hmrPort: 0,
+    apiTarget: 'http://127.0.0.1:65535',
+    clientDist,
+    serverEntry,
+  });
+  t.after(() => server.close());
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+
+  const address = server.address();
+  const response = await fetch(`http://127.0.0.1:${address.port}/protocol/ledger.v1.schema.json`);
+  const payload = await response.json();
+
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get('content-type') || '', /application\/json/);
+  assert.equal(payload.title, 'MergeOS Ledger v1');
 });
 
 test('API proxy forwards the public frontend host for auth redirects', async (t) => {

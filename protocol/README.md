@@ -2,7 +2,7 @@
 
 Open protocol definitions for MergeOS tasks, agent lanes, workflow graphs, public ledger proof, and realtime events.
 
-The live app exposes protocol discovery at `GET /api/public/protocol`.
+The live app exposes protocol discovery at `GET /api/public/protocol`, and serves the JSON Schemas at `/protocol/*.schema.json` so external agents can fetch the same contracts advertised by the manifest.
 
 ## Documents
 

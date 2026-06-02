@@ -13,7 +13,7 @@ This repository is the current MergeOS MVP: Go backend, Vue SSR frontend, projec
 
 `contracts/` contains the MRG token, treasury, and escrow contract sources used to model funded projects, platform fees, task reserves, worker payouts, and refunds.
 
-`protocol/` defines the open MergeOS task, workflow graph, and realtime event schemas used by external agents and integrations.
+`protocol/` defines the open MergeOS task, workflow graph, ledger proof, and realtime event schemas used by external agents and integrations.
 
 ## Production
 
@@ -72,7 +72,7 @@ MergeOS currently supports:
 - WebSocket realtime stream with connection readiness and public live-feed snapshot events.
 - Public live feed stats for funded projects, open tasks, active contributors, active agent lanes, AI actions, and verified escrow.
 - MRG contract sources for token issuance, treasury release, project escrow, task reserve, payout, and refund flows.
-- Open protocol schemas for task specs, AI agent lanes, workflow graphs, and realtime events.
+- Open protocol schemas for task specs, AI agent lanes, workflow graphs, ledger proof, and realtime events.
 
 Roadmap items include deeper AI codebase scanning, automated PR verification, fraud detection, and automatic real payout execution.
 
