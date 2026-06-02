@@ -3958,6 +3958,8 @@ const fundedProject = ref(null);
 const runtimeConfig = ref(null);
 const ledgerRawEntries = ref([]);
 const ledgerProjects = ref([]);
+const ledgerVerification = ref(null);
+const ledgerVerificationError = ref('');
 const ledgerLoading = ref(false);
 const ledgerError = ref('');
 const liveFeedData = ref({
@@ -4439,26 +4441,33 @@ watch(authVisible, async (visible) => {
   authDialog.value?.focus();
 });
 
-const ledgerTrustItems = [
-  {
-    icon: ShieldCheck,
-    tone: 'green',
-    title: '100% Transparent',
-    body: 'On-chain verified',
-  },
-  {
-    icon: Bell,
-    tone: 'blue',
-    title: 'Real-time Updates',
-    body: 'Live activity stream',
-  },
-  {
-    icon: LockKeyhole,
-    tone: 'green',
-    title: 'Verified by MergeOS',
-    body: 'Escrow-protected',
-  },
-];
+const ledgerTrustItems = computed(() => {
+  const verification = ledgerVerification.value;
+  const valid = verification?.valid !== false;
+  const chainBody = verification
+    ? `${Number(verification.entry_count) || 0} entries / seq ${Number(verification.last_sequence) || 0}`
+    : ledgerVerificationError.value || 'Awaiting chain check';
+  return [
+    {
+      icon: ShieldCheck,
+      tone: valid ? 'green' : 'red',
+      title: valid ? 'Chain valid' : 'Chain warning',
+      body: valid ? chainBody : (verification?.error || ledgerVerificationError.value || 'Verification failed'),
+    },
+    {
+      icon: Bell,
+      tone: 'blue',
+      title: 'Real-time Updates',
+      body: 'Live activity stream',
+    },
+    {
+      icon: LockKeyhole,
+      tone: 'green',
+      title: 'Verified by MergeOS',
+      body: 'Escrow-protected',
+    },
+  ];
+});
 
 const ledgerTabs = ['All Activity', 'Escrow & Payments', 'Tasks & PRs', 'Milestones', 'AI Actions', 'Token Events'];
 const ledgerTabTypes = {
@@ -4566,9 +4575,9 @@ const publicProjectCount = computed(() =>
 );
 const ledgerLiveStats = computed(() => [
   { value: String(ledgerRawEntries.value.length), label: 'Ledger entries' },
+  { value: ledgerVerification.value?.valid === false ? 'Warning' : 'Valid', label: 'Chain status' },
   { value: formatPublicTokenAmount(publicMintedTokenTotal.value), label: 'Tokens minted' },
   { value: formatLedgerMRGFromCents(publicVerifiedFundingCents.value), label: 'Verified funding' },
-  { value: String(ledgerRawEntries.value.filter((entry) => entry.type === 'task_payment').length), label: 'Payments released' },
 ]);
 const ledgerTrendingProjects = computed(() => {
   const grouped = new Map();
@@ -8191,19 +8200,23 @@ async function loadRuntimeConfig() {
 
 async function loadLedgerData(options = {}) {
   ledgerError.value = '';
+  ledgerVerificationError.value = '';
   if (!options.silent) {
     ledgerLoading.value = true;
   }
   try {
-    const [entries, marketplace] = await Promise.all([
+    const [entries, marketplace, verification] = await Promise.all([
       publicApi('/api/public/ledger'),
       publicApi('/api/public/marketplace'),
+      publicApi('/api/public/ledger/verify'),
     ]);
     ledgerRawEntries.value = Array.isArray(entries) ? entries : [];
     ledgerProjects.value = Array.isArray(marketplace.projects) ? marketplace.projects : [];
+    ledgerVerification.value = verification && typeof verification === 'object' ? verification : null;
     applyLedgerProjectQueryFilter();
   } catch (error) {
     ledgerError.value = error.message;
+    ledgerVerificationError.value = error.message || 'Could not verify ledger chain';
   } finally {
     ledgerLoading.value = false;
   }

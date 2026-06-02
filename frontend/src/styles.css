@@ -9771,6 +9771,11 @@ svg {
   background: #eff6ff;
 }
 
+.ledger-trust-icon.red {
+  color: #dc2626;
+  background: #fee2e2;
+}
+
 .ledger-trust-row strong {
   display: block;
   color: #111827;
