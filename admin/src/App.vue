@@ -430,6 +430,66 @@
         </DataTable>
       </section>
 
+      <section v-else-if="activeView === 'ops'" class="ops-workspace">
+        <section class="ops-summary-grid" aria-label="Operations queue summary">
+          <article v-for="metric in opsQueueMetrics" :key="metric.label">
+            <span :class="['metric-icon', metric.tone]">
+              <component :is="metric.icon" :size="18" />
+            </span>
+            <div>
+              <strong>{{ metric.value }}</strong>
+              <small>{{ metric.label }}</small>
+            </div>
+          </article>
+        </section>
+
+        <section class="ops-queue-panel">
+          <header class="task-review-header">
+            <div>
+              <span class="eyebrow">OPS QUEUE</span>
+              <h2>Disputes, moderation, and payout attention</h2>
+              <p>Review closed unpaid issues, delivery failures, AI webhook failures, SSL security items, and manual credit audit rows.</p>
+            </div>
+            <button class="compact-action" :disabled="loading" type="button" @click="loadAdminData">
+              <RefreshCw :size="14" />
+              Refresh
+            </button>
+          </header>
+
+          <div v-if="!filteredOpsQueueItems.length" class="task-empty-state">
+            <span class="metric-icon green"><CheckCircle2 :size="19" /></span>
+            <strong>No ops queue items</strong>
+            <small>Disputes, moderation alerts, and payout review rows will appear here when they need admin attention.</small>
+          </div>
+
+          <div v-else class="ops-queue-list">
+            <article v-for="item in filteredOpsQueueItems" :key="item.id" class="ops-queue-item">
+              <span :class="['metric-icon', opsSeverityTone(item.severity)]">
+                <component :is="opsIcon(item.type)" :size="17" />
+              </span>
+              <div class="ops-queue-main">
+                <div class="ops-title-line">
+                  <strong>{{ item.title }}</strong>
+                  <span :class="['status-pill', opsSeverityTone(item.severity)]">{{ item.severity }}</span>
+                  <span class="status-pill blue">{{ opsTypeLabel(item.type) }}</span>
+                </div>
+                <p>{{ item.body }}</p>
+                <small>
+                  {{ item.project_title || item.reference || 'MergeOS ops' }}
+                  <template v-if="item.issue_number"> / Issue #{{ item.issue_number }}</template>
+                  / {{ formatDate(item.created_at) }}
+                </small>
+              </div>
+              <div class="ops-queue-side">
+                <span>{{ titleize(item.status || 'needs_review') }}</span>
+                <a v-if="item.url" class="compact-action link-action" :href="item.url" target="_blank" rel="noreferrer">Open</a>
+                <small>{{ shortRef(opsReference(item)) }}</small>
+              </div>
+            </article>
+          </div>
+        </section>
+      </section>
+
       <section v-else-if="activeView === 'users'" class="users-workspace">
         <section class="table-panel users-table-panel">
           <TableHeader title="Users" :count="filteredUsers.length" />
@@ -888,6 +948,7 @@ const projects = ref([]);
 const tasks = ref([]);
 const notifications = ref([]);
 const ledgerEntries = ref([]);
+const opsQueue = ref({ stats: {}, items: [] });
 const sslRows = ref([]);
 const taskPulls = ref({});
 const taskPullsLoaded = ref({});
@@ -970,6 +1031,7 @@ const navItems = [
   { id: 'projects', label: 'Projects', title: 'Funded projects', kicker: 'PROJECTS', icon: FolderKanban },
   { id: 'tasks', label: 'Tasks', title: 'Task operations', kicker: 'TASKS', icon: ListChecks },
   { id: 'ledger', label: 'Ledger', title: 'Proof ledger', kicker: 'LEDGER', icon: Activity },
+  { id: 'ops', label: 'Ops Queue', title: 'Operations queue', kicker: 'OPS', icon: AlertTriangle },
   { id: 'users', label: 'Users', title: 'User management', kicker: 'USERS', icon: UsersRound },
   { id: 'ssl', label: 'SSL', title: 'SSL monitoring', kicker: 'SECURITY', icon: ShieldCheck },
   { id: 'setting', label: 'Setting', title: 'Settings', kicker: 'SYSTEM', icon: Settings2 },
@@ -983,6 +1045,7 @@ const routeByView = {
   projects: '/projects',
   tasks: '/tasks',
   ledger: '/ledger',
+  ops: '/ops',
   users: '/users',
   ssl: '/ssl',
   setting: '/setting',
@@ -1090,10 +1153,23 @@ const filteredUsers = computed(() => {
   if (!query.value) return users.value;
   return users.value.filter((row) => haystack(row).includes(query.value));
 });
+const opsQueueStats = computed(() => opsQueue.value?.stats || {});
+const opsQueueItems = computed(() => Array.isArray(opsQueue.value?.items) ? opsQueue.value.items : []);
+const filteredOpsQueueItems = computed(() => {
+  if (!query.value) return opsQueueItems.value;
+  return opsQueueItems.value.filter((item) => haystack(item).includes(query.value));
+});
+const opsQueueMetrics = computed(() => [
+  { label: 'Open items', value: number(opsQueueStats.value.total_count), icon: AlertTriangle, tone: opsQueueStats.value.critical_count ? 'red' : 'amber' },
+  { label: 'Disputes', value: number(opsQueueStats.value.dispute_count), icon: AlertTriangle, tone: opsQueueStats.value.dispute_count ? 'amber' : 'green' },
+  { label: 'Moderation', value: number(opsQueueStats.value.moderation_count), icon: ShieldCheck, tone: opsQueueStats.value.moderation_count ? 'red' : 'green' },
+  { label: 'Payout review', value: number(opsQueueStats.value.payout_review_count), icon: CircleDollarSign, tone: opsQueueStats.value.payout_review_count ? 'blue' : 'green' },
+]);
 const adminCommandTitle = computed(() => activeNav.value?.title || 'Admin workspace');
 const adminCommandBody = computed(() => {
   if (activeView.value === 'tasks') return 'Review GitHub issues, inspect PRs, assign bounty credit, and keep payout proof aligned with the ledger.';
   if (activeView.value === 'ledger') return 'Credit MRG, audit verified records, and switch between public references and hash evidence.';
+  if (activeView.value === 'ops') return 'Triage disputes, moderation alerts, payout review items, SSL security attention, and manual credit audit rows.';
   if (activeView.value === 'users') return 'Inspect account activity, update roles, and keep admin access controlled from one panel.';
   if (activeView.value === 'setting') return 'Tune review models, provider tokens, quotas, and webhook health for the automation layer.';
   if (activeView.value === 'test-settings') return 'Manage public test-mode publish settings, integration keys, and shared test password for bounty contributors.';
@@ -1119,10 +1195,10 @@ const adminCommandMetrics = computed(() => [
     tone: 'blue',
   },
   {
-    label: 'SSL attention',
-    value: number(sslAttentionCount.value),
-    icon: ShieldCheck,
-    tone: sslAttentionCount.value ? 'amber' : 'green',
+    label: 'Ops attention',
+    value: number(opsQueueStats.value.total_count),
+    icon: AlertTriangle,
+    tone: opsQueueStats.value.critical_count ? 'red' : opsQueueStats.value.total_count ? 'amber' : 'green',
   },
 ]);
 
@@ -1270,6 +1346,7 @@ async function loadAdminData() {
       taskData,
       notificationData,
       ledgerData,
+      opsQueueData,
       sslData,
       settingsData,
       geminiKeyData,
@@ -1283,6 +1360,7 @@ async function loadAdminData() {
       api('/api/admin/tasks'),
       api('/api/admin/notifications'),
       api('/api/admin/ledger'),
+      api('/api/admin/ops-queue'),
       api('/api/admin/ssl'),
       api('/api/admin/settings'),
       api('/api/admin/gemini/keys'),
@@ -1296,6 +1374,10 @@ async function loadAdminData() {
     tasks.value = Array.isArray(taskData) ? taskData : [];
     notifications.value = Array.isArray(notificationData) ? notificationData : [];
     ledgerEntries.value = Array.isArray(ledgerData) ? ledgerData : [];
+    opsQueue.value = {
+      stats: opsQueueData?.stats || {},
+      items: Array.isArray(opsQueueData?.items) ? opsQueueData.items : [],
+    };
     sslRows.value = Array.isArray(sslData) ? sslData : [];
     adminSettings.value = settingsData || {};
     syncSettingsForm();
@@ -1918,6 +2000,32 @@ function geminiWebhookStatusTone(status = '') {
   if (status === 'received') return 'blue';
   if (status === 'failed' || status === 'unauthorized' || status === 'bad_request' || status === 'service_unavailable') return 'red';
   return 'amber';
+}
+
+function opsSeverityTone(severity = '') {
+  if (severity === 'critical' || severity === 'high') return 'red';
+  if (severity === 'medium') return 'amber';
+  if (severity === 'low') return 'blue';
+  return 'green';
+}
+
+function opsIcon(type = '') {
+  if (type.includes('payout')) return CircleDollarSign;
+  if (type.includes('security')) return ShieldCheck;
+  if (type.includes('moderation')) return AlertTriangle;
+  if (type.includes('dispute')) return AlertTriangle;
+  return Activity;
+}
+
+function opsTypeLabel(type = '') {
+  if (type === 'payout_review') return 'Payout';
+  if (type === 'payout_audit') return 'Audit';
+  if (type === 'security_moderation') return 'Security';
+  return titleize(type || 'ops');
+}
+
+function opsReference(item = {}) {
+  return item.reference || item.task_id || item.project_id || item.user_id || item.id || '';
 }
 
 function formatDate(value) {

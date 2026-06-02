@@ -1358,6 +1358,124 @@ func TestAdminCanCreateManualLedgerCredit(t *testing.T) {
 	}
 }
 
+func TestAdminOpsQueueReturnsDisputeModerationAndPayoutItems(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:       defaultTokenSymbol,
+		StatePath:         filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:    1000,
+		DevPaymentEnabled: true,
+		DevPaymentCode:    defaultDevPaymentCode,
+		GitHubOwner:       defaultGitHubOwner,
+		BountyRoot:        filepath.Join(tempDir, "bounties"),
+		SMTPFrom:          "noreply@mergeos.local",
+		AdminAutoPromote:  true,
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	adminAuth, err := store.Register(RegisterRequest{
+		Name:     "Ops Admin",
+		Email:    "ops-admin@example.com",
+		Password: "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	clientAuth, err := store.Register(RegisterRequest{
+		Name:     "Ops Client",
+		Email:    "ops-client@example.com",
+		Password: "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	project, err := store.CreateProject(context.Background(), clientAuth.User.ID, CreateProjectRequest{
+		Title:            "Ops queue proof",
+		ClientName:       "Ops Client",
+		ClientEmail:      "ops-client@example.com",
+		Brief:            "Create admin ops queue evidence.",
+		BudgetCents:      160000,
+		PaymentMethod:    PaymentPayPal,
+		PaymentReference: defaultDevPaymentCode,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	store.mu.Lock()
+	closedTask := store.tasks[project.Tasks[0].ID]
+	closedTask.IssueState = "closed"
+	store.syncProjectTaskSnapshotLocked(store.projects[project.ID], closedTask)
+	store.addNotificationLocked(clientAuth.User.ID, project.ID, "email", "Delivery notice failed", "Customer update could not be sent.", "error:smtp refused")
+	store.sslReviews["expired.mergeos.local"] = &SSLReviewStatus{
+		Domain:        "expired.mergeos.local",
+		Status:        "expired",
+		DaysRemaining: -1,
+		LastCheckedAt: &closedTask.CreatedAt,
+		Error:         "certificate expired",
+	}
+	store.mu.Unlock()
+
+	if err := store.AddGeminiWebhookLog(GeminiWebhookLog{
+		EventName:  "pull_request",
+		Action:     "opened",
+		Repository: project.BountyRepoName,
+		PullNumber: 404,
+		Sender:     "ops-reviewer",
+		Status:     "unauthorized",
+		StatusCode: http.StatusUnauthorized,
+		Error:      "bad signature",
+		ReceivedAt: time.Now().UTC(),
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.AddManualCredit("github:ops-reviewer", 5000, "pr:https://github.com/mergeos-bounties/mergeos/pull/404;title:Ops queue proof"); err != nil {
+		t.Fatal(err)
+	}
+
+	server := NewServer(cfg, store, payments)
+	clientReq := httptest.NewRequest(http.MethodGet, "/api/admin/ops-queue", nil)
+	clientReq.Header.Set("Authorization", "Bearer "+clientAuth.Token)
+	clientResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(clientResp, clientReq)
+	if clientResp.Code != http.StatusForbidden {
+		t.Fatalf("client ops queue status = %d", clientResp.Code)
+	}
+
+	adminReq := httptest.NewRequest(http.MethodGet, "/api/admin/ops-queue", nil)
+	adminReq.Header.Set("Authorization", "Bearer "+adminAuth.Token)
+	adminResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(adminResp, adminReq)
+	if adminResp.Code != http.StatusOK {
+		t.Fatalf("admin ops queue status = %d, body = %s", adminResp.Code, adminResp.Body.String())
+	}
+
+	body := adminResp.Body.String()
+	if strings.Contains(body, defaultDevPaymentCode) || strings.Contains(body, tempDir) {
+		t.Fatalf("admin ops queue leaked hidden implementation value: %s", body)
+	}
+
+	var payload AdminOpsQueueResponse
+	if err := json.Unmarshal(adminResp.Body.Bytes(), &payload); err != nil {
+		t.Fatal(err)
+	}
+	if payload.Stats.TotalCount < 5 || payload.Stats.DisputeCount < 1 || payload.Stats.ModerationCount < 2 || payload.Stats.PayoutReviewCount < 2 || payload.Stats.SecurityCount < 1 || payload.Stats.CriticalCount < 1 {
+		t.Fatalf("unexpected ops queue stats: %#v", payload.Stats)
+	}
+	seen := map[string]bool{}
+	for _, item := range payload.Items {
+		seen[item.Type] = true
+	}
+	for _, required := range []string{"payout_review", "payout_audit", "dispute", "moderation", "security_moderation"} {
+		if !seen[required] {
+			t.Fatalf("ops queue missing %s item: %#v", required, payload.Items)
+		}
+	}
+}
+
 func TestAdminTasksRouteIncludesAcceptedTasksForAudit(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := Config{

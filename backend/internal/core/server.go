@@ -60,6 +60,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/admin/notifications", s.adminNotifications)
 	mux.HandleFunc("GET /api/admin/attachments", s.adminAttachments)
 	mux.HandleFunc("GET /api/admin/ledger", s.adminLedger)
+	mux.HandleFunc("GET /api/admin/ops-queue", s.adminOpsQueue)
 	mux.HandleFunc("POST /api/admin/ledger/credits", s.createAdminLedgerCredit)
 	mux.HandleFunc("GET /api/admin/settings", s.adminSettings)
 	mux.HandleFunc("PATCH /api/admin/settings", s.updateAdminSettings)
@@ -456,6 +457,13 @@ func (s *Server) adminLedger(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, s.store.ListLedger())
+}
+
+func (s *Server) adminOpsQueue(w http.ResponseWriter, r *http.Request) {
+	if _, ok := s.requireAdmin(w, r); !ok {
+		return
+	}
+	writeJSON(w, http.StatusOK, s.store.AdminOpsQueue())
 }
 
 func (s *Server) adminSettings(w http.ResponseWriter, r *http.Request) {

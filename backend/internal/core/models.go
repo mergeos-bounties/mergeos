@@ -749,6 +749,38 @@ type AdminSummary struct {
 	SSLReviews        []*SSLReviewStatus `json:"ssl_reviews,omitempty"`
 }
 
+type AdminOpsQueueResponse struct {
+	Stats AdminOpsQueueStats  `json:"stats"`
+	Items []AdminOpsQueueItem `json:"items"`
+}
+
+type AdminOpsQueueStats struct {
+	TotalCount        int        `json:"total_count"`
+	DisputeCount      int        `json:"dispute_count"`
+	ModerationCount   int        `json:"moderation_count"`
+	PayoutReviewCount int        `json:"payout_review_count"`
+	SecurityCount     int        `json:"security_count"`
+	CriticalCount     int        `json:"critical_count"`
+	UpdatedAt         *time.Time `json:"updated_at,omitempty"`
+}
+
+type AdminOpsQueueItem struct {
+	ID           string    `json:"id"`
+	Type         string    `json:"type"`
+	Severity     string    `json:"severity"`
+	Title        string    `json:"title"`
+	Body         string    `json:"body"`
+	ProjectID    string    `json:"project_id,omitempty"`
+	ProjectTitle string    `json:"project_title,omitempty"`
+	TaskID       string    `json:"task_id,omitempty"`
+	IssueNumber  int       `json:"issue_number,omitempty"`
+	UserID       string    `json:"user_id,omitempty"`
+	Reference    string    `json:"reference,omitempty"`
+	URL          string    `json:"url,omitempty"`
+	Status       string    `json:"status"`
+	CreatedAt    time.Time `json:"created_at"`
+}
+
 type AdminUser struct {
 	PublicUser
 	ProjectCount     int        `json:"project_count"`
