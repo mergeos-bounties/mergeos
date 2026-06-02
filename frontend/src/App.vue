@@ -3337,7 +3337,7 @@
             </button>
           </section>
 
-          <section class="marketplace-bounty-section" aria-label="Open bounties">
+          <section id="marketplace-bounties" class="marketplace-bounty-section" aria-label="Open bounties">
             <div class="section-heading-row">
               <h2>
                 <ListTodo :size="17" />
@@ -3381,7 +3381,7 @@
             </article>
           </section>
 
-          <section class="marketplace-agent-section" aria-label="AI agent operations">
+          <section id="marketplace-agents" class="marketplace-agent-section" aria-label="AI agent operations">
             <div class="section-heading-row">
               <h2>
                 <Bot :size="17" />
@@ -5527,8 +5527,8 @@ const sidebarSections = computed(() => {
       label: 'Discover',
       items: [
         { label: 'Talent Marketplace', icon: UsersRound, page: 'marketplace' },
-        { label: 'Bounty Explorer', icon: Compass, toast: 'Opening bounty explorer...' },
-        { label: 'AI Agents', icon: Bot, toast: 'Opening AI agents...' },
+        { label: 'Bounty Explorer', icon: Compass, marketplaceSection: 'marketplace-bounties' },
+        { label: 'AI Agents', icon: Bot, marketplaceSection: 'marketplace-agents' },
       ],
     },
     {
@@ -5890,6 +5890,10 @@ function openCostEstimatorTool() {
 function handleDashboardNav(item) {
   if (item.page) {
     openPublicPage(item.page);
+    return;
+  }
+  if (item.marketplaceSection) {
+    openMarketplaceSection(item.marketplaceSection);
     return;
   }
   if (item.section) {
