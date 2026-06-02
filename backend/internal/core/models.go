@@ -673,14 +673,16 @@ type PublicLiveFeedResponse struct {
 }
 
 type PublicLiveFeedStats struct {
-	ProjectCount      int        `json:"project_count"`
-	OpenTaskCount     int        `json:"open_task_count"`
-	AcceptedTaskCount int        `json:"accepted_task_count"`
-	LedgerEntryCount  int        `json:"ledger_entry_count"`
-	AIActionCount     int        `json:"ai_action_count"`
-	TotalBudgetCents  int64      `json:"total_budget_cents"`
-	TokenSymbol       string     `json:"token_symbol"`
-	UpdatedAt         *time.Time `json:"updated_at,omitempty"`
+	ProjectCount           int        `json:"project_count"`
+	OpenTaskCount          int        `json:"open_task_count"`
+	AcceptedTaskCount      int        `json:"accepted_task_count"`
+	ActiveContributorCount int        `json:"active_contributor_count"`
+	ActiveAgentCount       int        `json:"active_agent_count"`
+	LedgerEntryCount       int        `json:"ledger_entry_count"`
+	AIActionCount          int        `json:"ai_action_count"`
+	TotalBudgetCents       int64      `json:"total_budget_cents"`
+	TokenSymbol            string     `json:"token_symbol"`
+	UpdatedAt              *time.Time `json:"updated_at,omitempty"`
 }
 
 type PublicLiveFeedItem struct {

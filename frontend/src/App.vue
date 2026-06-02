@@ -4780,6 +4780,8 @@ const liveFeedStats = computed(() => {
   return [
     { value: String(Number(stats.project_count) || publicProjectCount.value), label: 'Projects' },
     { value: String(Number(stats.open_task_count) || 0), label: 'Open tasks' },
+    { value: String(Number(stats.active_contributor_count) || 0), label: 'Contributors' },
+    { value: String(Number(stats.active_agent_count) || 0), label: 'Agents' },
     { value: String(Number(stats.ai_action_count) || 0), label: 'AI actions' },
     { value: formatPublicMRGFromCents(stats.total_budget_cents || publicVerifiedFundingCents.value), label: 'Escrow' },
   ];

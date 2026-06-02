@@ -22,6 +22,8 @@ func (s *Store) PublicLiveFeed(limit int) PublicLiveFeedResponse {
 
 	projectIDs := map[string]bool{}
 	taskProjectIDs := map[string]string{}
+	activeContributors := map[string]bool{}
+	activeAgents := map[string]bool{}
 	response := PublicLiveFeedResponse{
 		Stats: PublicLiveFeedStats{
 			ProjectCount:     len(s.projects),
@@ -55,9 +57,13 @@ func (s *Store) PublicLiveFeed(limit int) PublicLiveFeedResponse {
 	}
 
 	for _, task := range s.tasks {
+		publicLiveFeedTrackAgent(activeAgents, task.RequiredWorkerKind, task.SuggestedAgentType, task.AgentType)
 		project := s.projects[task.ProjectID]
 		if task.Status == TaskAccepted {
 			response.Stats.AcceptedTaskCount++
+			if workerID := strings.ToLower(strings.TrimSpace(normalizeWorkerID(task.WorkerID))); workerID != "" {
+				activeContributors[workerID] = true
+			}
 			if task.AcceptedAt != nil {
 				touch(*task.AcceptedAt)
 			}
@@ -71,13 +77,21 @@ func (s *Store) PublicLiveFeed(limit int) PublicLiveFeedResponse {
 
 	for _, entry := range s.ledger {
 		touch(entry.CreatedAt)
+		if entry.Type == "task_payment" || entry.Type == "manual_credit" {
+			if account := strings.ToLower(strings.TrimSpace(entry.ToAccount)); account != "" {
+				activeContributors[account] = true
+			}
+		}
 		response.Items = append(response.Items, publicLedgerLiveFeedItem(entry, projectIDs, taskProjectIDs, s.projects))
 	}
 
 	for _, log := range s.geminiWebhookLogs {
 		touch(log.ReceivedAt)
+		publicLiveFeedTrackAgentLog(activeAgents, log)
 		response.Items = append(response.Items, publicAILiveFeedItem(log))
 	}
+	response.Stats.ActiveContributorCount = len(activeContributors)
+	response.Stats.ActiveAgentCount = len(activeAgents)
 
 	sort.Slice(response.Items, func(i, j int) bool {
 		if response.Items[i].CreatedAt.Equal(response.Items[j].CreatedAt) {
@@ -89,6 +103,39 @@ func (s *Store) PublicLiveFeed(limit int) PublicLiveFeedResponse {
 		response.Items = response.Items[:limit]
 	}
 	return response
+}
+
+func publicLiveFeedTrackAgent(activeAgents map[string]bool, kinds ...any) {
+	for _, value := range kinds {
+		switch typed := value.(type) {
+		case WorkerKind:
+			if typed == WorkerAgent || typed == WorkerHybrid {
+				activeAgents[string(typed)] = true
+			}
+		case string:
+			normalized := strings.ToLower(strings.TrimSpace(typed))
+			if normalized != "" {
+				activeAgents[normalized] = true
+			}
+		}
+	}
+}
+
+func publicLiveFeedTrackAgentLog(activeAgents map[string]bool, log *GeminiWebhookLog) {
+	if log == nil {
+		return
+	}
+	if strings.EqualFold(log.EventName, "agent_action") {
+		agent := strings.ToLower(strings.TrimSpace(strings.TrimPrefix(log.Sender, "agent:")))
+		if agent == "" {
+			agent = defaultAgentActionActor
+		}
+		activeAgents[agent] = true
+		return
+	}
+	if strings.TrimSpace(log.Action) != "" {
+		activeAgents[defaultGeminiReviewModel] = true
+	}
 }
 
 func (s *Store) PublicEventProtocol(limit int) PublicEventProtocolResponse {

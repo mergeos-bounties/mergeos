@@ -1260,6 +1260,9 @@ func TestPublicLiveFeedRouteReturnsSanitizedTimeline(t *testing.T) {
 	if payload.Stats.ProjectCount != 1 || payload.Stats.AIActionCount != 1 || payload.Stats.LedgerEntryCount == 0 {
 		t.Fatalf("unexpected live feed stats: %#v", payload.Stats)
 	}
+	if payload.Stats.ActiveContributorCount == 0 || payload.Stats.ActiveAgentCount == 0 {
+		t.Fatalf("live feed missing active actor stats: %#v", payload.Stats)
+	}
 	seen := map[string]bool{}
 	for _, item := range payload.Items {
 		seen[item.Type] = true

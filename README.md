@@ -70,6 +70,7 @@ MergeOS currently supports:
 - Admin APIs for users, projects, tasks, attachments, notifications, ledger, and SSL review.
 - JavaScript SDK helpers for public feeds, project deployment workflow, AI workflow, task acceptance, worker dashboards, admin ops queue, and WebSocket events.
 - WebSocket realtime stream with connection readiness and public live-feed snapshot events.
+- Public live feed stats for funded projects, open tasks, active contributors, active agent lanes, AI actions, and verified escrow.
 - MRG contract sources for token issuance, treasury release, project escrow, task reserve, payout, and refund flows.
 - Open protocol schemas for task specs, AI agent lanes, workflow graphs, and realtime events.
 
