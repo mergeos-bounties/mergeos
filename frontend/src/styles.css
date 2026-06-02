@@ -9935,11 +9935,26 @@ svg {
   gap: 10px;
 }
 
-.live-feed-type-list article {
+.live-feed-type-list article,
+.live-feed-type-list button {
   display: grid;
   grid-template-columns: 10px minmax(0, 1fr) auto;
   gap: 9px;
   align-items: center;
+}
+
+.live-feed-type-list button {
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  padding: 8px;
+  text-align: left;
+}
+
+.live-feed-type-list button.active {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
 }
 
 .live-feed-type-list strong,

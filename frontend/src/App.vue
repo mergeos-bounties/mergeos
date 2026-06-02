@@ -2854,9 +2854,9 @@
 
             <div v-if="liveFeedLoading" class="live-feed-state">Loading public activity...</div>
             <div v-else-if="liveFeedError" class="live-feed-state error">{{ liveFeedError }}</div>
-            <div v-else-if="!liveFeedItemsView.length" class="live-feed-state">No live activity yet. Fund a project to create the first public events.</div>
+            <div v-else-if="!filteredLiveFeedItems.length" class="live-feed-state">{{ liveFeedEmptyStateCopy }}</div>
             <div v-else class="live-feed-list">
-              <article v-for="item in liveFeedItemsView" :key="item.id" class="live-feed-row">
+              <article v-for="item in filteredLiveFeedItems" :key="item.id" class="live-feed-row">
                 <span :class="['ledger-event-type', item.tone]">
                   <component :is="item.icon" :size="15" />
                   {{ item.typeLabel }}
@@ -2889,12 +2889,19 @@
                 <button type="button" @click="loadLiveFeedData">Refresh</button>
               </div>
               <div class="live-feed-type-list">
-                <article v-for="row in liveFeedActivityTypes" :key="row.label">
+                <button
+                  v-for="row in liveFeedActivityTypes"
+                  :key="row.label"
+                  :class="{ active: row.label === activeLiveFeedType }"
+                  type="button"
+                  :aria-pressed="row.label === activeLiveFeedType"
+                  @click="activeLiveFeedType = row.label"
+                >
                   <span :class="['notification-dot', row.tone]" />
                   <strong>{{ row.label }}</strong>
                   <small>{{ row.count }}</small>
-                </article>
-                <article v-if="!liveFeedActivityTypes.length">
+                </button>
+                <article v-if="!liveFeedItemsView.length">
                   <span class="notification-dot blue" />
                   <strong>Waiting for events</strong>
                   <small>0</small>
@@ -3906,6 +3913,7 @@ const liveFeedData = ref({
 });
 const liveFeedLoading = ref(true);
 const liveFeedError = ref('');
+const activeLiveFeedType = ref('All Activity');
 const marketplaceData = ref({
   stats: {},
   projects: [],
@@ -4563,14 +4571,27 @@ const liveFeedActivityTypes = computed(() => {
   for (const item of liveFeedItemsView.value) {
     counts.set(item.typeLabel, (counts.get(item.typeLabel) || 0) + 1);
   }
-  return Array.from(counts.entries()).slice(0, 6).map(([label, count], index) => ({
+  const rows = Array.from(counts.entries()).slice(0, 6).map(([label, count], index) => ({
     label,
     count,
     tone: ['green', 'blue', 'purple', 'amber', 'slate', 'green'][index % 6],
   }));
+  return [
+    { label: 'All Activity', count: liveFeedItemsView.value.length, tone: 'blue' },
+    ...rows,
+  ];
 });
+const filteredLiveFeedItems = computed(() => {
+  if (activeLiveFeedType.value === 'All Activity') return liveFeedItemsView.value;
+  return liveFeedItemsView.value.filter((item) => item.typeLabel === activeLiveFeedType.value);
+});
+const liveFeedEmptyStateCopy = computed(() =>
+  activeLiveFeedType.value === 'All Activity'
+    ? 'No live activity yet. Fund a project to create the first public events.'
+    : `No ${activeLiveFeedType.value.toLowerCase()} events yet.`,
+);
 const liveFeedLatestProject = computed(() =>
-  liveFeedItemsView.value.find((item) => item.rawType === 'project_funded') || liveFeedItemsView.value[0] || null,
+  filteredLiveFeedItems.value.find((item) => item.rawType === 'project_funded') || filteredLiveFeedItems.value[0] || null,
 );
 
 const marketplaceFilters = ['Category', 'Budget', 'Delivery time'];
@@ -7601,6 +7622,9 @@ async function loadLiveFeedData(options = {}) {
       stats: payload.stats || {},
       items: Array.isArray(payload.items) ? payload.items : [],
     };
+    if (!liveFeedActivityTypes.value.some((row) => row.label === activeLiveFeedType.value)) {
+      activeLiveFeedType.value = 'All Activity';
+    }
   } catch (error) {
     liveFeedError.value = error.message || 'Could not load live feed';
   } finally {
