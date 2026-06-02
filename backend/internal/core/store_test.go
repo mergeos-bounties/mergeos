@@ -2392,6 +2392,33 @@ func TestProjectTaskGraphRouteReturnsAcyclicDependencyGraph(t *testing.T) {
 	if !ok || len(workflowSteps) != 7 || document.Metadata["current_step"] != "contributor_routing" {
 		t.Fatalf("workflow protocol missing AI workflow stage metadata: %#v", document.Metadata)
 	}
+	if err := store.AddGeminiWebhookLog(GeminiWebhookLog{
+		EventName:  "pull_request",
+		Action:     "opened",
+		Repository: project.BountyRepoName,
+		PullNumber: 444,
+		Sender:     "graph-author",
+		Status:     "processed",
+		StatusCode: http.StatusOK,
+		CommentURL: "https://github.com/mergeos-bounties/mergeos/pull/444",
+		ReceivedAt: time.Now().UTC(),
+	}); err != nil {
+		t.Fatal(err)
+	}
+	activeProtocolReq := httptest.NewRequest(http.MethodGet, "/api/projects/"+project.ID+"/protocol/workflow", nil)
+	activeProtocolReq.Header.Set("Authorization", "Bearer "+auth.Token)
+	activeProtocolResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(activeProtocolResp, activeProtocolReq)
+	if activeProtocolResp.Code != http.StatusOK {
+		t.Fatalf("active workflow protocol status = %d, body = %s", activeProtocolResp.Code, activeProtocolResp.Body.String())
+	}
+	var activeDocument WorkflowProtocolDocument
+	if err := json.Unmarshal(activeProtocolResp.Body.Bytes(), &activeDocument); err != nil {
+		t.Fatal(err)
+	}
+	if activeDocument.CurrentStep != "pr_review" || activeDocument.Metadata["current_step"] != "pr_review" {
+		t.Fatalf("workflow protocol did not use active AI workflow step: %#v", activeDocument)
+	}
 
 	otherAuth, err := store.Register(RegisterRequest{
 		Name:     "Other Graph Client",

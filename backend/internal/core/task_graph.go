@@ -27,7 +27,7 @@ func (s *Store) ProjectWorkflowProtocol(projectID string) (WorkflowProtocolDocum
 	if !ok {
 		return WorkflowProtocolDocument{}, errors.New("project not found")
 	}
-	return workflowProtocolDocument(project, s.projectTaskGraphLocked(project)), nil
+	return workflowProtocolDocument(project, s.projectTaskGraphLocked(project), s.projectAIWorkflowLocked(project)), nil
 }
 
 func (s *Store) projectTaskGraphLocked(project *Project) ProjectTaskGraphResponse {
@@ -229,7 +229,7 @@ func taskGraphUpdatedAt(tasks []*Task, fallback time.Time) time.Time {
 	return updatedAt
 }
 
-func workflowProtocolDocument(project *Project, graph ProjectTaskGraphResponse) WorkflowProtocolDocument {
+func workflowProtocolDocument(project *Project, graph ProjectTaskGraphResponse, aiWorkflow ProjectAIWorkflowResponse) WorkflowProtocolDocument {
 	dependenciesByTaskID := map[string][]string{}
 	for _, edge := range graph.Edges {
 		dependenciesByTaskID[edge.To] = append(dependenciesByTaskID[edge.To], edge.From)
@@ -262,7 +262,7 @@ func workflowProtocolDocument(project *Project, graph ProjectTaskGraphResponse) 
 		})
 	}
 
-	currentStep := workflowProtocolCurrentStep(graph)
+	currentStep := workflowProtocolCurrentStepWithAI(graph, aiWorkflow)
 	return WorkflowProtocolDocument{
 		ProtocolVersion: "mergeos.workflow.v1",
 		Kind:            "workflow",
@@ -314,6 +314,18 @@ func workflowProtocolCurrentStep(graph ProjectTaskGraphResponse) string {
 		return "contributor_routing"
 	}
 	return "task_generation"
+}
+
+func workflowProtocolCurrentStepWithAI(graph ProjectTaskGraphResponse, aiWorkflow ProjectAIWorkflowResponse) string {
+	graphStep := workflowProtocolCurrentStep(graph)
+	aiStep := strings.TrimSpace(aiWorkflow.CurrentStep)
+	if aiStep == "" {
+		return graphStep
+	}
+	if aiStep == "deployment_validation" && graph.Stats.NodeCount > 0 && graph.Stats.CompleteCount < graph.Stats.NodeCount {
+		return graphStep
+	}
+	return aiStep
 }
 
 func workflowProtocolStatus(graph ProjectTaskGraphResponse) string {
