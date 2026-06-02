@@ -7437,6 +7437,10 @@ svg {
   grid-row: span 2;
 }
 
+.admin-pr-review-card {
+  grid-column: 1 / -1;
+}
+
 .admin-users-card {
   grid-column: 1 / -1;
 }
@@ -7445,6 +7449,8 @@ svg {
 .admin-ops-stats,
 .admin-ops-list,
 .admin-users-list,
+.admin-pr-task-list,
+.admin-pr-pull-list,
 .admin-test-key-list,
 .admin-reputation-list {
   display: grid;
@@ -7505,6 +7511,8 @@ svg {
 
 .admin-ops-list article,
 .admin-users-list article,
+.admin-pr-task-list article,
+.admin-pr-pull-list article,
 .admin-test-key-list article,
 .admin-reputation-list article {
   min-width: 0;
@@ -7524,6 +7532,14 @@ svg {
 }
 
 .admin-users-list article {
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+}
+
+.admin-pr-task-list article {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.admin-pr-pull-list article {
   grid-template-columns: 34px minmax(0, 1fr) auto;
 }
 
@@ -7565,6 +7581,12 @@ svg {
 .admin-users-list strong,
 .admin-users-list small,
 .admin-users-list b,
+.admin-pr-task-list strong,
+.admin-pr-task-list small,
+.admin-pr-task-list b,
+.admin-pr-pull-list strong,
+.admin-pr-pull-list small,
+.admin-pr-pull-list b,
 .admin-test-key-list strong,
 .admin-test-key-list small,
 .admin-test-key-list b,
@@ -7577,6 +7599,8 @@ svg {
 
 .admin-ops-list strong,
 .admin-users-list strong,
+.admin-pr-task-list strong,
+.admin-pr-pull-list strong,
 .admin-test-key-list strong,
 .admin-reputation-list strong {
   overflow: hidden;
@@ -7589,6 +7613,8 @@ svg {
 
 .admin-ops-list small,
 .admin-users-list small,
+.admin-pr-task-list small,
+.admin-pr-pull-list small,
 .admin-test-key-list small,
 .admin-reputation-list small {
   margin-top: 4px;
@@ -7600,6 +7626,8 @@ svg {
 
 .admin-ops-list b,
 .admin-users-list b,
+.admin-pr-task-list b,
+.admin-pr-pull-list b,
 .admin-test-key-list b,
 .admin-reputation-list b {
   width: max-content;
@@ -7618,6 +7646,8 @@ svg {
 
 .admin-ops-side,
 .admin-user-side,
+.admin-pr-task-actions,
+.admin-pr-side,
 .admin-reputation-list em {
   display: grid;
   justify-items: end;
@@ -7626,6 +7656,7 @@ svg {
 
 .admin-ops-side em,
 .admin-user-side em,
+.admin-pr-side em,
 .admin-test-key-list em,
 .admin-reputation-list em {
   border-radius: 999px;
@@ -7637,6 +7668,7 @@ svg {
 
 .admin-ops-side em.red,
 .admin-user-side em.red,
+.admin-pr-side em.red,
 .admin-reputation-list em.red {
   background: #fef2f2;
   color: #b91c1c;
@@ -7644,6 +7676,7 @@ svg {
 
 .admin-ops-side em.amber,
 .admin-user-side em.amber,
+.admin-pr-side em.amber,
 .admin-reputation-list em.amber {
   background: #fffbeb;
   color: #b45309;
@@ -7651,6 +7684,7 @@ svg {
 
 .admin-ops-side em.blue,
 .admin-user-side em.blue,
+.admin-pr-side em.blue,
 .admin-reputation-list em.blue {
   background: #eff6ff;
   color: #1d4ed8;
@@ -7658,6 +7692,7 @@ svg {
 
 .admin-ops-side em.green,
 .admin-user-side em.green,
+.admin-pr-side em.green,
 .admin-reputation-list em.green {
   background: #ecfdf5;
   color: #047857;
@@ -7665,6 +7700,9 @@ svg {
 
 .admin-ops-side button,
 .admin-user-side button,
+.admin-pr-task-actions button,
+.admin-pr-side button,
+.admin-merge-result-actions button,
 .admin-test-settings-actions button,
 .admin-credit-form > button,
 .admin-credit-result button {
@@ -7752,6 +7790,139 @@ svg {
   line-height: 1.35;
   font-weight: 740;
   overflow-wrap: anywhere;
+}
+
+.admin-merge-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.admin-merge-form label {
+  display: grid;
+  gap: 6px;
+}
+
+.admin-merge-form label span {
+  color: #475569;
+  font-size: 10px;
+  font-weight: 850;
+}
+
+.admin-merge-form input,
+.admin-merge-form select {
+  width: 100%;
+  min-height: 36px;
+  border: 1px solid #dbe3ea;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #111827;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 720;
+}
+
+.admin-merge-result-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.admin-pr-review-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  align-items: start;
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.admin-pr-task-list,
+.admin-pr-pull-list {
+  margin-top: 0;
+}
+
+.admin-pr-group {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-pr-group + .admin-pr-group {
+  border-top: 1px solid #eef0f2;
+  padding-top: 12px;
+}
+
+.admin-pr-group header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.admin-pr-group header strong {
+  min-width: 0;
+  overflow: hidden;
+  color: #111827;
+  font-size: 12px;
+  font-weight: 920;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-pr-group header button {
+  min-height: 26px;
+  border: 1px solid #dbe3ea;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #273244;
+  padding: 0 8px;
+  font-size: 10px;
+  font-weight: 850;
+}
+
+.admin-pr-signal-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 7px;
+}
+
+.admin-pr-signal-row span {
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #64748b;
+  padding: 4px 7px;
+  font-size: 9px;
+  font-weight: 900;
+}
+
+.admin-pr-signal-row span.ready,
+.admin-pr-signal-row span.green {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.admin-pr-signal-row span.amber {
+  background: #fffbeb;
+  color: #b45309;
+}
+
+.admin-pr-signal-row span.red {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.admin-pr-blockers {
+  color: #b91c1c !important;
+}
+
+.admin-pr-warnings {
+  color: #b45309 !important;
+}
+
+.admin-pr-side button:disabled,
+.admin-pr-task-actions button:disabled {
+  opacity: 0.55;
 }
 
 .admin-test-settings-form {
@@ -8284,6 +8455,10 @@ svg {
     grid-row: auto;
   }
 
+  .admin-pr-review-layout {
+    grid-template-columns: 1fr;
+  }
+
   .admin-users-card {
     grid-column: auto;
   }
@@ -8631,6 +8806,8 @@ svg {
   .admin-readiness-list,
   .admin-ops-stats,
   .admin-credit-row,
+  .admin-merge-form,
+  .admin-pr-review-layout,
   .admin-test-settings-actions,
   .payment-summary-grid,
   .payment-history-meta {
@@ -8639,17 +8816,30 @@ svg {
 
   .admin-ops-list article,
   .admin-users-list article,
+  .admin-pr-task-list article,
+  .admin-pr-pull-list article,
   .admin-test-key-list article,
   .admin-reputation-list article {
     grid-template-columns: 34px minmax(0, 1fr);
   }
 
+  .admin-pr-task-list article {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .admin-ops-side,
   .admin-user-side,
+  .admin-pr-task-actions,
+  .admin-pr-side,
   .admin-test-key-list em,
   .admin-reputation-list em {
     grid-column: 2;
     justify-items: start;
+  }
+
+  .admin-pr-task-actions {
+    grid-column: 1;
+    grid-template-columns: repeat(2, max-content);
   }
 
   .dash-pr-row {

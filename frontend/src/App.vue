@@ -1276,6 +1276,108 @@
                   </article>
                 </article>
 
+                <article class="dash-card admin-pr-review-card">
+                  <div class="card-title-row">
+                    <div>
+                      <h2>PR Review & Merge</h2>
+                      <p>Check evidence, repository star, conflict, scope, and security blockers before payout.</p>
+                    </div>
+                    <span>{{ adminTaskReviewRows.length }} tasks</span>
+                  </div>
+
+                  <form class="admin-merge-form" @submit.prevent>
+                    <label>
+                      <span>Reward MRG</span>
+                      <input v-model.number="adminMergeForm.rewardMRG" min="1" type="number" />
+                    </label>
+                    <label>
+                      <span>Bounty type</span>
+                      <select v-model="adminMergeForm.bountyType">
+                        <option value="future-small">Future small</option>
+                        <option value="future-medium">Future medium</option>
+                        <option value="bug-large">Bug large</option>
+                        <option value="major-feature">Major feature</option>
+                      </select>
+                    </label>
+                  </form>
+
+                  <p v-if="adminTaskPullsError" class="deployment-error">{{ adminTaskPullsError }}</p>
+                  <p v-if="adminMergeError" class="deployment-error">{{ adminMergeError }}</p>
+                  <div v-if="adminMergeResultView" class="admin-credit-result admin-merge-result">
+                    <strong>{{ adminMergeResultView.reward }} credited</strong>
+                    <small>{{ adminMergeResultView.workerID }} / {{ adminMergeResultView.title }} / {{ adminMergeResultView.bountyType }}</small>
+                    <div class="admin-merge-result-actions">
+                      <button v-if="adminMergeResultView.creditURL" type="button" @click="openExternalURL(adminMergeResultView.creditURL)">Open Scan</button>
+                      <button v-if="adminMergeResultView.commentURL" type="button" @click="openExternalURL(adminMergeResultView.commentURL)">Open Comment</button>
+                    </div>
+                    <small v-if="adminMergeResultView.commentError">Comment failed: {{ adminMergeResultView.commentError }}</small>
+                  </div>
+
+                  <div class="admin-pr-review-layout">
+                    <div v-if="adminTaskReviewRows.length" class="admin-pr-task-list">
+                      <article v-for="row in adminTaskReviewRows" :key="row.id">
+                        <div>
+                          <strong>#{{ row.issueNumber || '-' }} {{ row.title }}</strong>
+                          <small>{{ row.status }} / {{ row.workerKind }} / {{ row.reward }} / {{ row.bountyType }}</small>
+                          <b>{{ row.projectID }} / {{ row.id }}</b>
+                        </div>
+                        <div class="admin-pr-task-actions">
+                          <button type="button" :disabled="adminTaskPullsLoadingID === row.id" @click="loadAdminTaskPulls(row.id)">
+                            {{ adminTaskPullsLoadingID === row.id ? 'Loading...' : 'Load PRs' }}
+                          </button>
+                          <button v-if="row.issueURL" type="button" @click="openExternalURL(row.issueURL)">Issue</button>
+                        </div>
+                      </article>
+                    </div>
+                    <article v-else class="dash-empty-state compact">
+                      <strong>{{ adminConsoleLoading ? 'Loading tasks...' : 'No GitHub-linked tasks' }}</strong>
+                      <p>{{ adminConsoleLoading ? 'Fetching admin task rows.' : 'Tasks with GitHub issue links will appear here.' }}</p>
+                    </article>
+
+                    <div v-if="adminLoadedPullGroups.length" class="admin-pr-pull-list">
+                      <section v-for="group in adminLoadedPullGroups" :key="group.taskID" class="admin-pr-group">
+                        <header>
+                          <strong>{{ group.title }}</strong>
+                          <button v-if="group.issueURL" type="button" @click="openExternalURL(group.issueURL)">Issue #{{ group.issueNumber }}</button>
+                        </header>
+                        <article v-for="pull in group.pullRequests" :key="pull.key">
+                          <span :class="['admin-ops-icon', pull.tone]">
+                            <GitPullRequest :size="15" />
+                          </span>
+                          <div>
+                            <strong>#{{ pull.number }} {{ pull.title }}</strong>
+                            <small>@{{ pull.author }} / {{ pull.state }} / {{ pull.riskLevel }} risk / {{ pull.fileCount }} files</small>
+                            <div class="admin-pr-signal-row">
+                              <span :class="{ ready: pull.evidenceReady }">Evidence</span>
+                              <span :class="{ ready: pull.starReady }">Star</span>
+                              <span :class="pull.tone">{{ pull.status }}</span>
+                            </div>
+                            <b v-if="pull.labels.length">{{ pull.labels.join(', ') }}</b>
+                            <small v-if="pull.blockers.length" class="admin-pr-blockers">Blockers: {{ pull.blockers.slice(0, 2).join('; ') }}</small>
+                            <small v-else-if="pull.warnings.length" class="admin-pr-warnings">Warnings: {{ pull.warnings.slice(0, 2).join('; ') }}</small>
+                            <small v-else-if="pull.signals.length">Signals: {{ pull.signals.join(', ') }}</small>
+                          </div>
+                          <div class="admin-pr-side">
+                            <em :class="pull.tone">{{ pull.canMerge ? 'Ready' : 'Blocked' }}</em>
+                            <button v-if="pull.htmlURL" type="button" @click="openExternalURL(pull.htmlURL)">Open</button>
+                            <button
+                              type="button"
+                              :disabled="!pull.canMerge || !adminMergeReady || adminMergeBusyID === pull.key"
+                              @click="mergeAdminTaskPull(group.taskID, pull)"
+                            >
+                              {{ adminMergeBusyID === pull.key ? 'Merging...' : pull.merged ? 'Credit' : 'Merge' }}
+                            </button>
+                          </div>
+                        </article>
+                      </section>
+                    </div>
+                    <article v-else class="dash-empty-state compact">
+                      <strong>No loaded PRs</strong>
+                      <p>Load a task to review linked pull requests and readiness evidence.</p>
+                    </article>
+                  </div>
+                </article>
+
                 <article class="dash-card admin-ops-card">
                   <div class="card-title-row">
                     <div>
@@ -3660,6 +3762,13 @@ const adminSummary = ref(null);
 const adminOpsQueue = ref({ stats: {}, items: [] });
 const adminReputation = ref({ stats: {}, workers: [] });
 const adminUsers = ref([]);
+const adminTasks = ref([]);
+const adminTaskPulls = ref({});
+const adminTaskPullsLoadingID = ref('');
+const adminTaskPullsError = ref('');
+const adminMergeBusyID = ref('');
+const adminMergeError = ref('');
+const adminMergeResult = ref(null);
 const adminTestSettings = ref({ test_mode_enabled: false, updated_at: '' });
 const adminTestSettingsEntries = ref([]);
 const adminTestSettingsPassword = ref('');
@@ -3678,6 +3787,10 @@ const adminCreditForm = reactive({
   prURL: '',
   prTitle: '',
   reference: '',
+});
+const adminMergeForm = reactive({
+  rewardMRG: 50,
+  bountyType: 'future-small',
 });
 const workerDashboard = ref({
   profile: {},
@@ -4996,6 +5109,39 @@ const adminReputationStats = computed(() => adminReputation.value?.stats || {});
 const adminUserRows = computed(() =>
   (adminUsers.value || []).slice(0, 8).map(mapAdminUserRow),
 );
+const adminTaskReviewRows = computed(() =>
+  (adminTasks.value || [])
+    .filter((task) => task?.issue_url || task?.issue_number)
+    .sort((a, b) => {
+      const aOpen = String(a?.status || '').toLowerCase() === 'open' ? 0 : 1;
+      const bOpen = String(b?.status || '').toLowerCase() === 'open' ? 0 : 1;
+      return aOpen - bOpen || Number(b?.issue_number || 0) - Number(a?.issue_number || 0);
+    })
+    .slice(0, 8)
+    .map(mapAdminTaskReviewRow),
+);
+const adminLoadedPullGroups = computed(() =>
+  Object.values(adminTaskPulls.value || {})
+    .filter((group) => group?.task_id)
+    .map(mapAdminTaskPullGroup)
+    .filter((group) => group.pullRequests.length),
+);
+const adminMergeReady = computed(() =>
+  Number(adminMergeForm.rewardMRG) > 0 && Boolean(adminMergeForm.bountyType),
+);
+const adminMergeResultView = computed(() => {
+  const result = adminMergeResult.value;
+  if (!result) return null;
+  return {
+    title: result.pull_request?.title || `PR #${result.pull_request?.number || ''}`,
+    workerID: result.worker_id || '',
+    reward: `${formatCompactNumber(result.reward_mrg)} ${tokenSymbol.value}`,
+    bountyType: toTitleLabel(result.bounty_type || ''),
+    creditURL: result.credit_url || '',
+    commentURL: result.comment_url || '',
+    commentError: result.comment_error || '',
+  };
+});
 const adminTestSettingsRows = computed(() =>
   (adminTestSettingsEntries.value || []).slice(0, 5).map(mapAdminTestSettingsEntry),
 );
@@ -6369,6 +6515,84 @@ function mapAdminTestSettingsEntry(entry = {}) {
   };
 }
 
+function adminTaskRewardMRG(task = {}) {
+  const reward = tokenAmountFromCents(task.reward_cents);
+  return reward > 0 ? reward : 50;
+}
+
+function mapAdminTaskReviewRow(task = {}) {
+  const title = task.title || `Task ${task.id || ''}`;
+  return {
+    id: task.id || `${task.project_id || 'task'}-${task.issue_number || title}`,
+    issueNumber: Number(task.issue_number) || 0,
+    title,
+    projectID: task.project_id || '',
+    issueURL: task.issue_url || '',
+    status: toTitleLabel(task.status || 'open'),
+    workerKind: toTitleLabel(task.required_worker_kind || task.worker_kind || 'worker'),
+    bountyType: toTitleLabel(task.bounty_type || 'future-small'),
+    reward: formatMRGFromCents(task.reward_cents),
+    rewardMRG: adminTaskRewardMRG(task),
+    acceptedWorker: task.worker_id || '',
+  };
+}
+
+function adminPullTone(readiness = {}) {
+  const risk = String(readiness.risk_level || readiness.status || '').toLowerCase();
+  if (risk.includes('high') || risk.includes('blocked')) return 'red';
+  if (risk.includes('medium') || risk.includes('review')) return 'amber';
+  return 'green';
+}
+
+function mapAdminTaskPullGroup(group = {}) {
+  const issueNumber = Number(group.issue_number) || 0;
+  return {
+    taskID: group.task_id || '',
+    issueNumber,
+    title: group.repository || `Issue #${issueNumber || '-'}`,
+    issueURL: group.issue_url || '',
+    repository: group.repository || '',
+    pullRequests: (group.pull_requests || []).map((pull) => mapAdminTaskPullRow(group, pull)),
+  };
+}
+
+function mapAdminTaskPullRow(group = {}, pull = {}) {
+  const readiness = pull.readiness || {};
+  const blockers = Array.isArray(readiness.blockers) ? readiness.blockers : [];
+  const warnings = Array.isArray(readiness.warnings) ? readiness.warnings : [];
+  const signals = Array.isArray(readiness.signals) ? readiness.signals : [];
+  const labels = Array.isArray(pull.labels) ? pull.labels : [];
+  const files = Array.isArray(pull.changed_files) ? pull.changed_files : [];
+  const updated = formatLedgerDateTime(pull.updated_at || pull.created_at);
+  const tone = adminPullTone(readiness);
+  return {
+    key: `${group.task_id || 'task'}:${pull.number || pull.html_url || pull.title}`,
+    taskID: group.task_id || '',
+    number: Number(pull.number) || 0,
+    title: pull.title || `Pull request #${pull.number || ''}`,
+    author: pull.author || 'unknown',
+    state: toTitleLabel(pull.merged ? 'merged' : pull.state || 'open'),
+    htmlURL: pull.html_url || '',
+    mergeURL: pull.merge_url || '',
+    draft: Boolean(pull.draft),
+    merged: Boolean(pull.merged),
+    baseRef: pull.base_ref || '-',
+    headRef: pull.head_ref || '-',
+    labels: labels.slice(0, 5),
+    fileCount: files.length,
+    status: toTitleLabel(readiness.status || 'review'),
+    canMerge: Boolean(readiness.can_merge),
+    riskLevel: toTitleLabel(readiness.risk_level || 'low'),
+    blockers,
+    warnings,
+    signals,
+    evidenceReady: signals.includes('evidence: provided'),
+    starReady: signals.includes('star: verified'),
+    tone,
+    updatedAt: updated.full,
+  };
+}
+
 function formatLedgerDateTime(value) {
   const date = value ? new Date(value) : new Date();
   if (Number.isNaN(date.getTime())) {
@@ -7164,6 +7388,12 @@ async function loadAdminConsoleData(options = {}) {
     adminOpsQueue.value = { stats: {}, items: [] };
     adminReputation.value = { stats: {}, workers: [] };
     adminUsers.value = [];
+    adminTasks.value = [];
+    adminTaskPulls.value = {};
+    adminTaskPullsLoadingID.value = '';
+    adminTaskPullsError.value = '';
+    adminMergeError.value = '';
+    adminMergeResult.value = null;
     adminTestSettings.value = { test_mode_enabled: false, updated_at: '' };
     adminTestSettingsEntries.value = [];
     adminConsoleError.value = '';
@@ -7171,14 +7401,16 @@ async function loadAdminConsoleData(options = {}) {
   }
 
   const silent = Boolean(options.silent);
+  const shouldLoadTasks = !silent || !adminTasks.value.length || Boolean(options.refreshTasks);
   if (!silent) adminConsoleLoading.value = true;
   adminConsoleError.value = '';
   try {
-    const [summary, opsQueue, reputation, users, testSettings, testEntries] = await Promise.all([
+    const [summary, opsQueue, reputation, users, tasks, testSettings, testEntries] = await Promise.all([
       api('/api/admin/summary'),
       api('/api/admin/ops-queue'),
       api('/api/admin/reputation'),
       api('/api/admin/users'),
+      shouldLoadTasks ? api('/api/admin/tasks') : Promise.resolve(adminTasks.value),
       api('/api/admin/test-settings'),
       api('/api/admin/test-settings/entries'),
     ]);
@@ -7192,6 +7424,7 @@ async function loadAdminConsoleData(options = {}) {
       workers: Array.isArray(reputation?.workers) ? reputation.workers : [],
     };
     adminUsers.value = Array.isArray(users) ? users : [];
+    adminTasks.value = Array.isArray(tasks) ? tasks : [];
     adminTestSettings.value = {
       test_mode_enabled: Boolean(testSettings?.test_mode_enabled),
       updated_at: testSettings?.updated_at || '',
@@ -7227,6 +7460,70 @@ async function submitAdminTestSettings() {
     adminTestSettingsError.value = error.message || 'Could not update test settings';
   } finally {
     adminTestSettingsBusy.value = false;
+  }
+}
+
+async function loadAdminTaskPulls(taskID, options = {}) {
+  const id = String(taskID || '').trim();
+  if (!id) return;
+  const silent = Boolean(options.silent);
+  adminTaskPullsError.value = '';
+  if (!silent) adminTaskPullsLoadingID.value = id;
+  try {
+    const payload = await api(`/api/admin/tasks/${encodeURIComponent(id)}/pulls`);
+    adminTaskPulls.value = {
+      ...adminTaskPulls.value,
+      [id]: {
+        task_id: payload?.task_id || id,
+        issue_number: payload?.issue_number || 0,
+        issue_url: payload?.issue_url || '',
+        repository: payload?.repository || '',
+        pull_requests: Array.isArray(payload?.pull_requests) ? payload.pull_requests : [],
+      },
+    };
+    const taskRow = adminTaskReviewRows.value.find((row) => row.id === id);
+    if (taskRow?.rewardMRG && Number(adminMergeForm.rewardMRG) <= 0) {
+      adminMergeForm.rewardMRG = taskRow.rewardMRG;
+    }
+  } catch (error) {
+    adminTaskPullsError.value = error.message || 'Could not load linked pull requests';
+  } finally {
+    if (adminTaskPullsLoadingID.value === id) {
+      adminTaskPullsLoadingID.value = '';
+    }
+  }
+}
+
+async function mergeAdminTaskPull(taskID, pull = {}) {
+  const id = String(taskID || '').trim();
+  const number = Number(pull.number) || 0;
+  if (!id || number <= 0) return;
+  adminMergeError.value = '';
+  adminMergeResult.value = null;
+  if (!adminMergeReady.value) {
+    adminMergeError.value = 'Reward MRG and bounty type are required before merging.';
+    return;
+  }
+  const key = `${id}:${number}`;
+  adminMergeBusyID.value = key;
+  try {
+    const result = await api(`/api/admin/tasks/${encodeURIComponent(id)}/pulls/${number}/merge`, {
+      method: 'POST',
+      body: JSON.stringify({
+        reward_mrg: Number(adminMergeForm.rewardMRG) || 0,
+        bounty_type: adminMergeForm.bountyType,
+      }),
+    });
+    adminMergeResult.value = result;
+    showToast(`Merged PR #${number} and credited ${formatCompactNumber(result.reward_mrg)} ${tokenSymbol.value}.`);
+    await loadAdminTaskPulls(id, { silent: true });
+    await loadAdminConsoleData({ silent: true, refreshTasks: true });
+  } catch (error) {
+    adminMergeError.value = error.message || 'Could not merge pull request';
+  } finally {
+    if (adminMergeBusyID.value === key) {
+      adminMergeBusyID.value = '';
+    }
   }
 }
 
@@ -7546,6 +7843,13 @@ function clearSession() {
   adminOpsQueue.value = { stats: {}, items: [] };
   adminReputation.value = { stats: {}, workers: [] };
   adminUsers.value = [];
+  adminTasks.value = [];
+  adminTaskPulls.value = {};
+  adminTaskPullsLoadingID.value = '';
+  adminTaskPullsError.value = '';
+  adminMergeBusyID.value = '';
+  adminMergeError.value = '';
+  adminMergeResult.value = null;
   adminTestSettings.value = { test_mode_enabled: false, updated_at: '' };
   adminTestSettingsEntries.value = [];
   adminTestSettingsPassword.value = '';
