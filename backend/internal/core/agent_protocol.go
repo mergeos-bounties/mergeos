@@ -63,6 +63,7 @@ func publicAgentProtocolDocument(agent *MarketplaceAgent, openTaskIDs []string, 
 		Tags:             publicAgentProtocolTags(agent, status, capabilities),
 		Metadata: map[string]any{
 			"event_protocol":         "mergeos.event.v1",
+			"event_stream_endpoint":  "WS /api/ws",
 			"task_protocol_endpoint": "GET /api/public/protocol/tasks",
 			"token_symbol":           normalizedTokenSymbol(tokenSymbol),
 			"queue_depth":            len(openTaskIDs),

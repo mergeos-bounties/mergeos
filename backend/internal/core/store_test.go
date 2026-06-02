@@ -944,7 +944,7 @@ func TestPublicMarketplaceRouteReturnsSanitizedLiveData(t *testing.T) {
 		if len(document.SupportedActions) == 0 || len(document.Capabilities) == 0 || document.TaskCount == 0 || len(document.OpenTaskIDs) == 0 {
 			t.Fatalf("agent protocol missing routing metadata: %#v", document)
 		}
-		if document.Metadata["event_protocol"] != "mergeos.event.v1" || int(document.Metadata["queue_depth"].(float64)) != len(document.OpenTaskIDs) {
+		if document.Metadata["event_protocol"] != "mergeos.event.v1" || document.Metadata["event_stream_endpoint"] != "WS /api/ws" || int(document.Metadata["queue_depth"].(float64)) != len(document.OpenTaskIDs) {
 			t.Fatalf("agent protocol missing event routing metadata: %#v", document.Metadata)
 		}
 	}
