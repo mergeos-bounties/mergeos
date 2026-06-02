@@ -456,6 +456,14 @@ export function protocolEventFromMessage(message = {}) {
   return message.event;
 }
 
+export function protocolEventsFromMessage(message = {}) {
+  const event = protocolEventFromMessage(message);
+  if (event) return [event];
+  const events = message && typeof message === 'object' ? message.events?.events : null;
+  if (!Array.isArray(events)) return [];
+  return events.filter((item) => item && typeof item === 'object');
+}
+
 export function protocolTypeFromMessage(message = {}) {
   const event = protocolEventFromMessage(message);
   if (event && typeof event.type === 'string' && event.type.trim()) {
@@ -463,6 +471,10 @@ export function protocolTypeFromMessage(message = {}) {
   }
   if (message && typeof message.protocol_type === 'string' && message.protocol_type.trim()) {
     return message.protocol_type.trim();
+  }
+  const messageType = String(message?.type || '').trim();
+  if (!messageType || messageType === 'connection_ready' || messageType === 'live_feed_snapshot') {
+    return '';
   }
   return liveFeedTypeToProtocolEventType(message?.type, message?.action);
 }

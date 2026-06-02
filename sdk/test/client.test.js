@@ -9,6 +9,7 @@ import {
   isWorkflowEventType,
   liveFeedTypeToProtocolEventType,
   protocolEventFromMessage,
+  protocolEventsFromMessage,
   protocolEventGroup,
   protocolTypeFromMessage,
   workflowEventTypes,
@@ -107,9 +108,14 @@ test('maps live feed records to workflow event protocol values', () => {
   assert.equal(liveFeedTypeToProtocolEventType('unknown'), 'agent.action');
   assert.equal(protocolEventFromMessage({ event: protocolEvent }), protocolEvent);
   assert.equal(protocolEventFromMessage({ type: 'ledger_manual_credit' }), null);
+  assert.deepEqual(protocolEventsFromMessage({ event: protocolEvent }), [protocolEvent]);
+  assert.deepEqual(protocolEventsFromMessage({ events: { events: [protocolEvent, null, 'bad'] } }), [protocolEvent]);
+  assert.deepEqual(protocolEventsFromMessage({ type: 'connection_ready' }), []);
   assert.equal(protocolTypeFromMessage({ event: protocolEvent, protocol_type: 'ledger.recorded' }), 'task.paid');
   assert.equal(protocolTypeFromMessage({ protocol_type: 'ledger.recorded', type: 'ledger_task_payment' }), 'ledger.recorded');
   assert.equal(protocolTypeFromMessage({ type: 'ledger_manual_credit' }), 'ledger.recorded');
+  assert.equal(protocolTypeFromMessage({ type: 'connection_ready' }), '');
+  assert.equal(protocolTypeFromMessage({ type: 'live_feed_snapshot', events: { events: [protocolEvent] } }), '');
   assert.equal(protocolEventGroup('pr.opened'), 'pull_request');
   assert.equal(protocolEventGroup('task.paid'), 'task');
   assert.equal(protocolEventGroup('agent.tested'), 'agent');
