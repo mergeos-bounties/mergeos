@@ -935,6 +935,7 @@ type ProjectAIWorkflowResponse struct {
 	ProjectTitle    string             `json:"project_title"`
 	Status          string             `json:"status"`
 	Progress        int                `json:"progress"`
+	CurrentStep     string             `json:"current_step,omitempty"`
 	TaskCount       int                `json:"task_count"`
 	AgentTaskCount  int                `json:"agent_task_count"`
 	HumanTaskCount  int                `json:"human_task_count"`

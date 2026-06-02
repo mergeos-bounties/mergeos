@@ -69,6 +69,7 @@ func (s *Store) projectAIWorkflowLocked(project *Project) ProjectAIWorkflowRespo
 		ProjectTitle:  publicLiveFeedProjectTitle(project),
 		Status:        status,
 		Progress:      progress,
+		CurrentStep:   aiWorkflowCurrentStep(stages),
 		TaskCount:     len(tasks),
 		AIActionCount: len(logs),
 		UpdatedAt:     updatedAt,
@@ -86,6 +87,23 @@ func (s *Store) projectAIWorkflowLocked(project *Project) ProjectAIWorkflowRespo
 		}
 	}
 	return response
+}
+
+func aiWorkflowCurrentStep(stages []AIWorkflowStage) string {
+	for _, stage := range stages {
+		if stage.Status == deploymentStageInProgress {
+			return stage.ID
+		}
+	}
+	for _, stage := range stages {
+		if stage.Status == deploymentStagePending {
+			return stage.ID
+		}
+	}
+	if len(stages) > 0 {
+		return stages[len(stages)-1].ID
+	}
+	return ""
 }
 
 func aiWorkflowRepoStage(project *Project) AIWorkflowStage {

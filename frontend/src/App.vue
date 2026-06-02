@@ -2420,6 +2420,7 @@
               <div>
                 <strong>{{ dashboardAIWorkflowView.progress }}%</strong>
                 <small>{{ dashboardAIWorkflowView.body }}</small>
+                <small v-if="dashboardAIWorkflowView.currentStep">Current step: {{ dashboardAIWorkflowView.currentStep }}</small>
               </div>
             </div>
             <div v-if="dashboardAIWorkflowError" class="deployment-error">{{ dashboardAIWorkflowError }}</div>
@@ -5434,6 +5435,7 @@ const dashboardAIWorkflowView = computed(() => {
   return {
     status: toTitleLabel(workflow.status || 'queued'),
     progress: Math.max(0, Math.min(100, Number(workflow.progress) || 0)),
+    currentStep: toTitleLabel(workflow.current_step || ''),
     body: `${Number(workflow.ai_action_count) || 0} AI actions - ${Number(workflow.agent_task_count) || 0} agent tasks`,
   };
 });
@@ -9028,6 +9030,7 @@ function normalizeDashboardAIWorkflowPayload(payload = {}, targetProjectID = '')
     human_task_count: Number(payload.human_task_count) || 0,
     hybrid_task_count: Number(payload.hybrid_task_count) || 0,
     ai_action_count: Number(payload.ai_action_count) || 0,
+    current_step: payload.current_step || '',
     updated_at: payload.updated_at,
     stages: Array.isArray(payload.stages) ? payload.stages : [],
     signals: Array.isArray(payload.signals) ? payload.signals : [],

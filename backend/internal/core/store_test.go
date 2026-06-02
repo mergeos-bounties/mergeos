@@ -2032,6 +2032,9 @@ func TestProjectAIWorkflowRouteReturnsWorkflowAndSanitizesData(t *testing.T) {
 	if payload.ProjectID != project.ID || payload.Status != "orchestrating" || payload.Progress == 0 || payload.AIActionCount != 1 {
 		t.Fatalf("unexpected ai workflow summary: %#v", payload)
 	}
+	if payload.CurrentStep != "pr_review" {
+		t.Fatalf("expected current AI workflow step pr_review, got %q", payload.CurrentStep)
+	}
 	if payload.TaskCount != len(project.Tasks) || payload.AgentTaskCount == 0 || payload.HybridTaskCount == 0 || payload.HumanTaskCount == 0 {
 		t.Fatalf("unexpected ai workflow task mix: %#v", payload)
 	}
