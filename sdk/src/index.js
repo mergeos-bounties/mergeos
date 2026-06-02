@@ -252,8 +252,24 @@ export class MergeOSClient {
     return this.request(`/api/projects/${encodeURIComponent(projectID)}/agent-actions`, { method: 'POST', body: payload });
   }
 
+  recordAgentReview(projectID, payload = {}) {
+    return this.createProjectAgentAction(projectID, agentActionPayload('review', payload));
+  }
+
+  recordAgentTest(projectID, payload = {}) {
+    return this.createProjectAgentAction(projectID, agentActionPayload('test', payload));
+  }
+
+  recordAgentGeneration(projectID, payload = {}) {
+    return this.createProjectAgentAction(projectID, agentActionPayload('generate', payload));
+  }
+
   recordDeployment(projectID, payload = {}) {
-    return this.createProjectAgentAction(projectID, deploymentAgentActionPayload(payload));
+    return this.createProjectAgentAction(projectID, agentActionPayload('deploy', payload));
+  }
+
+  recordAgentScan(projectID, payload = {}) {
+    return this.createProjectAgentAction(projectID, agentActionPayload('scan', payload));
   }
 
   projectTaskGraph(projectID) {
@@ -441,18 +457,40 @@ export function agentActionEventType(action = '') {
 }
 
 export function deploymentAgentActionPayload(payload = {}) {
+  return agentActionPayload('deploy', payload);
+}
+
+export function agentActionPayload(action, payload = {}) {
+  const normalizedAction = normalizeAgentAction(action);
   const referenceURL = payload.reference_url || payload.referenceURL || payload.deployment_url || payload.deploymentURL || payload.url || '';
   const durationMillis = payload.duration_millis ?? payload.durationMillis;
   const pullNumber = payload.pull_number ?? payload.pullNumber;
   return {
-    action: 'deploy',
-    agent_type: payload.agent_type || payload.agentType || 'deployment-agent',
+    action: normalizedAction,
+    agent_type: payload.agent_type || payload.agentType || defaultAgentTypeForAction(normalizedAction),
     status: payload.status || 'processed',
     reference_url: referenceURL,
     duration_millis: Number(durationMillis) > 0 ? Number(durationMillis) : 0,
     pull_number: Number(pullNumber) > 0 ? Number(pullNumber) : 0,
     labels: Array.isArray(payload.labels) ? payload.labels : [],
   };
+}
+
+export function normalizeAgentAction(action = '') {
+  const normalized = String(action || '').trim().toLowerCase();
+  if (normalized === 'gen') return 'generate';
+  if (['review', 'test', 'generate', 'deploy', 'scan'].includes(normalized)) return normalized;
+  return 'review';
+}
+
+function defaultAgentTypeForAction(action = '') {
+  return {
+    review: 'review-agent',
+    test: 'qa-agent',
+    generate: 'coding-agent',
+    deploy: 'deployment-agent',
+    scan: 'scan-agent',
+  }[action] || 'ai-agent';
 }
 
 export function isAgentActionEventType(type = '') {

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   MergeOSClient,
+  agentActionPayload,
   agentActionEventType,
   agentActionEventTypes,
   createMergeOSClient,
@@ -9,6 +10,7 @@ import {
   isAgentActionEventType,
   isWorkflowEventType,
   liveFeedTypeToProtocolEventType,
+  normalizeAgentAction,
   protocolEventFromMessage,
   protocolEventsFromMessage,
   protocolEventGroup,
@@ -125,6 +127,75 @@ test('builds deployment agent action payloads for deployment evidence', async ()
     agent_type: 'deployment-agent',
     status: 'processed',
     reference_url: 'https://vercel.example/deployments/mergeos-preview',
+    duration_millis: 0,
+    pull_number: 0,
+    labels: [],
+  }));
+});
+
+test('builds and sends typed AI agent action helpers', async () => {
+  assert.equal(normalizeAgentAction('gen'), 'generate');
+  assert.equal(normalizeAgentAction('bad'), 'review');
+  assert.deepEqual(agentActionPayload('test', {
+    referenceURL: 'https://github.com/acme/repo/pull/12',
+    status: 'running',
+    pullNumber: 12,
+    labels: ['smoke'],
+  }), {
+    action: 'test',
+    agent_type: 'qa-agent',
+    status: 'running',
+    reference_url: 'https://github.com/acme/repo/pull/12',
+    duration_millis: 0,
+    pull_number: 12,
+    labels: ['smoke'],
+  });
+
+  const fetchImpl = fakeFetch([
+    { status: 201, body: { log: { action: 'review' } } },
+    { status: 201, body: { log: { action: 'test' } } },
+    { status: 201, body: { log: { action: 'generate' } } },
+    { status: 201, body: { log: { action: 'scan' } } },
+  ]);
+  const client = new MergeOSClient({ token: 'agent-token', fetchImpl });
+  await client.recordAgentReview('prj_1', { pullNumber: 10 });
+  await client.recordAgentTest('prj_1', { status: 'running' });
+  await client.recordAgentGeneration('prj_1', { agentType: 'code-agent' });
+  await client.recordAgentScan('prj_1', { url: 'https://scan.example/report' });
+
+  assert.equal(fetchImpl.calls.length, 4);
+  assert.equal(fetchImpl.calls[0].options.body, JSON.stringify({
+    action: 'review',
+    agent_type: 'review-agent',
+    status: 'processed',
+    reference_url: '',
+    duration_millis: 0,
+    pull_number: 10,
+    labels: [],
+  }));
+  assert.equal(fetchImpl.calls[1].options.body, JSON.stringify({
+    action: 'test',
+    agent_type: 'qa-agent',
+    status: 'running',
+    reference_url: '',
+    duration_millis: 0,
+    pull_number: 0,
+    labels: [],
+  }));
+  assert.equal(fetchImpl.calls[2].options.body, JSON.stringify({
+    action: 'generate',
+    agent_type: 'code-agent',
+    status: 'processed',
+    reference_url: '',
+    duration_millis: 0,
+    pull_number: 0,
+    labels: [],
+  }));
+  assert.equal(fetchImpl.calls[3].options.body, JSON.stringify({
+    action: 'scan',
+    agent_type: 'scan-agent',
+    status: 'processed',
+    reference_url: 'https://scan.example/report',
     duration_millis: 0,
     pull_number: 0,
     labels: [],
