@@ -4433,6 +4433,14 @@ svg {
   padding-top: 10px;
 }
 
+.marketplace-agent-task-row {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+
 .marketplace-agent-task-list small {
   overflow: hidden;
   color: #64748b;
@@ -4441,6 +4449,21 @@ svg {
   font-weight: 760;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.marketplace-agent-task-row button {
+  min-height: 26px;
+  border: 1px solid #dbe3ea;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #273244;
+  padding: 0 8px;
+  font-size: 10px;
+  font-weight: 850;
+}
+
+.marketplace-agent-task-row button:disabled {
+  opacity: 0.55;
 }
 
 .marketplace-benefit-strip {

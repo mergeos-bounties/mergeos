@@ -3571,7 +3571,17 @@
                   <span v-for="capability in agent.capabilities" :key="capability">{{ capability }}</span>
                 </div>
                 <div class="marketplace-agent-task-list">
-                  <small v-for="task in agent.nextTasks" :key="task.id">{{ task.issue }} / {{ task.title }} / {{ task.reward }}</small>
+                  <p v-if="marketplaceClaimError" class="marketplace-claim-error">{{ marketplaceClaimError }}</p>
+                  <div v-for="task in agent.nextTasks" :key="task.id" class="marketplace-agent-task-row">
+                    <small>{{ task.issue }} / {{ task.title }} / {{ task.reward }}</small>
+                    <button
+                      type="button"
+                      :disabled="!task.claimID || marketplaceClaimBusyID === task.claimID"
+                      @click="claimMarketplaceBounty(task)"
+                    >
+                      {{ marketplaceClaimBusyID === task.claimID ? 'Claiming' : 'Claim' }}
+                    </button>
+                  </div>
                   <small v-if="!agent.nextTasks.length">No open task attached to this lane yet.</small>
                 </div>
               </article>
