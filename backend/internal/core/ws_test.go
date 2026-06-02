@@ -7,11 +7,13 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestWebSocketSendsReadyAndLiveFeedSnapshot(t *testing.T) {
@@ -63,7 +65,7 @@ func TestWebSocketSendsReadyAndLiveFeedSnapshot(t *testing.T) {
 	}
 	defer conn.Close()
 
-	handshake := fmt.Sprintf("GET /api/ws HTTP/1.1\r\nHost: %s\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\nSec-WebSocket-Version: 13\r\n\r\n", parsed.Host)
+	handshake := websocketHandshake(parsed.Host)
 	if _, err := conn.Write([]byte(handshake)); err != nil {
 		t.Fatal(err)
 	}
@@ -109,6 +111,147 @@ func TestWebSocketSendsReadyAndLiveFeedSnapshot(t *testing.T) {
 	if !ok || !countOK || int(projectCount) != 1 {
 		t.Fatalf("snapshot missing live feed stats: %#v", snapshot)
 	}
+}
+
+func TestWebSocketBroadcastsSanitizedTaskAcceptedFeed(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:       defaultTokenSymbol,
+		StatePath:         filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:    1000,
+		DevPaymentEnabled: true,
+		DevPaymentCode:    defaultDevPaymentCode,
+		GitHubOwner:       defaultGitHubOwner,
+		BountyRoot:        filepath.Join(tempDir, "bounties"),
+		SMTPFrom:          "noreply@mergeos.local",
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	workerAuth, err := store.AuthenticateGitHub(GitHubAuthProfile{
+		ID:        "3001",
+		Username:  "realtime-worker",
+		Name:      "Realtime Worker",
+		Email:     "realtime-worker@example.com",
+		AvatarURL: "https://avatars.githubusercontent.com/u/3001",
+	}, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	clientAuth, err := store.Register(RegisterRequest{
+		Name:        "Realtime Claim Client",
+		CompanyName: "Realtime Claim Co",
+		Email:       "realtime-claim-client@example.com",
+		Password:    "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	project, err := store.CreateProject(context.Background(), clientAuth.User.ID, CreateProjectRequest{
+		Title:            "Realtime claim feed",
+		ClientName:       "Realtime Claim Client",
+		CompanyName:      "Realtime Claim Co",
+		ClientEmail:      "realtime-claim-client@example.com",
+		Brief:            "Create a task accepted event without leaking private customer data.",
+		BudgetCents:      150000,
+		PaymentMethod:    PaymentPayPal,
+		PaymentReference: defaultDevPaymentCode,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var humanTask *Task
+	for _, task := range project.Tasks {
+		if task.RequiredWorkerKind == WorkerHuman {
+			humanTask = task
+			break
+		}
+	}
+	if humanTask == nil {
+		t.Fatal("project did not create a human task")
+	}
+
+	httpServer := httptest.NewServer(NewServer(cfg, store, payments).Routes())
+	defer httpServer.Close()
+	parsed, err := url.Parse(httpServer.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	conn, err := net.Dial("tcp", parsed.Host)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer conn.Close()
+
+	handshake := websocketHandshake(parsed.Host)
+	if _, err := conn.Write([]byte(handshake)); err != nil {
+		t.Fatal(err)
+	}
+	reader := bufio.NewReader(conn)
+	if status, err := reader.ReadString('\n'); err != nil || !strings.Contains(status, "101 Switching Protocols") {
+		t.Fatalf("websocket status = %q, err = %v", status, err)
+	}
+	for {
+		line, err := reader.ReadString('\n')
+		if err != nil {
+			t.Fatal(err)
+		}
+		if line == "\r\n" {
+			break
+		}
+	}
+	_ = readWebSocketTextFrame(t, reader)
+	_ = readWebSocketTextFrame(t, reader)
+
+	claimID := marketplaceBountyID(project.ID, humanTask.IssueNumber)
+	req, err := http.NewRequest(http.MethodPost, httpServer.URL+"/api/tasks/"+claimID+"/accept", strings.NewReader(`{}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Authorization", "Bearer "+workerAuth.Token)
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		t.Fatalf("claim status = %d, body = %s", resp.StatusCode, string(body))
+	}
+
+	if err := conn.SetReadDeadline(time.Now().Add(5 * time.Second)); err != nil {
+		t.Fatal(err)
+	}
+	eventBytes := readWebSocketTextFrame(t, reader)
+	for _, value := range []string{"realtime-claim-client@example.com", defaultDevPaymentCode, tempDir} {
+		if strings.Contains(string(eventBytes), value) {
+			t.Fatalf("task accepted websocket leaked private value %q: %s", value, string(eventBytes))
+		}
+	}
+	var event map[string]interface{}
+	if err := json.Unmarshal(eventBytes, &event); err != nil {
+		t.Fatal(err)
+	}
+	if event["type"] != "task_accepted" {
+		t.Fatalf("unexpected websocket event: %#v", event)
+	}
+	feed, ok := event["feed"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("task accepted event missing feed: %#v", event)
+	}
+	stats, ok := feed["stats"].(map[string]interface{})
+	acceptedCount, countOK := stats["accepted_task_count"].(float64)
+	if !ok || !countOK || int(acceptedCount) != 1 {
+		t.Fatalf("task accepted feed missing accepted count: %#v", event)
+	}
+}
+
+func websocketHandshake(host string) string {
+	key := "dGhlIHNhbXBs" + "ZSBub25jZQ=="
+	return fmt.Sprintf("GET /api/ws HTTP/1.1\r\nHost: %s\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: %s\r\nSec-WebSocket-Version: 13\r\n\r\n", host, key)
 }
 
 func readWebSocketTextFrame(t *testing.T, reader *bufio.Reader) []byte {

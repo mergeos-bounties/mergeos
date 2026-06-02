@@ -9427,9 +9427,35 @@ function scheduleWSReconnect() {
 }
 
 function handleWSEvent(payload = {}) {
-  if (!payload || payload.type !== 'project_created') return;
+  if (!payload || !payload.type) return;
+  if (payload.feed) {
+    liveFeedData.value = {
+      stats: payload.feed.stats || {},
+      items: Array.isArray(payload.feed.items) ? payload.feed.items : [],
+    };
+  }
+
+  if (payload.type === 'live_feed_snapshot') return;
+  if (payload.type === 'task_accepted') {
+    void loadMarketplaceData({ silent: true });
+    void loadLedgerData({ silent: true });
+    if (user.value) {
+      void loadWorkerDashboardData({ silent: true });
+      void loadDashboardData({ silent: true, skipPullRequests: true, skipRepositoryScan: true, skipTaskGraph: true });
+    }
+    return;
+  }
+  if (payload.type !== 'project_created') return;
+
   const project = payload.project;
-  if (!project || !project.id) return;
+  if (!project || !project.id) {
+    void loadMarketplaceData({ silent: true });
+    void loadLedgerData({ silent: true });
+    if (user.value) {
+      void loadDashboardData({ silent: true });
+    }
+    return;
+  }
 
   if (_wsSeenProjectIDs.has(project.id)) return;
   _wsSeenProjectIDs.add(project.id);

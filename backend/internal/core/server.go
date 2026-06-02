@@ -532,6 +532,14 @@ func (s *Server) wsInitialEvents() []map[string]interface{} {
 	}
 }
 
+func (s *Server) broadcastLiveFeedEvent(eventType string) {
+	s.eventHub.broadcastAll(map[string]interface{}{
+		"type":       eventType,
+		"feed":       s.store.PublicLiveFeed(20),
+		"created_at": time.Now().UTC(),
+	})
+}
+
 func (s *Server) adminSummary(w http.ResponseWriter, r *http.Request) {
 	if _, ok := s.requireAdmin(w, r); !ok {
 		return
@@ -855,10 +863,7 @@ func (s *Server) createProject(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	s.eventHub.broadcastAll(map[string]interface{}{
-		"type":    "project_created",
-		"project": project,
-	})
+	s.broadcastLiveFeedEvent("project_created")
 	writeJSON(w, http.StatusCreated, project)
 }
 
@@ -916,6 +921,7 @@ func (s *Server) acceptTask(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	s.broadcastLiveFeedEvent("task_accepted")
 	writeJSON(w, http.StatusOK, task)
 }
 
