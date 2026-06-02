@@ -306,6 +306,7 @@ Public:
 - `GET /api/config`
 - `GET /api/public/ledger`
 - `GET /api/public/marketplace`
+- `GET /api/public/live-feed`
 - `POST /api/public/repo/issues`
 - `POST /api/integrations/github/pr-review` GitHub webhook receiver for automated LLM PR review. Configure GitHub Webhooks with Payload URL `https://uta.mergeos.shop/api/integrations/github/pr-review`, Content type `application/json`, the same secret as `GEMINI_REVIEW_WEBHOOK_SECRET`, and events `Pull requests` plus `Issue comments`.
 
@@ -330,8 +331,11 @@ Customer:
 - `GET /api/uploads/{id}/download`
 - `POST /api/projects`
 - `GET /api/projects`
+- `GET /api/projects/{id}/deployment`
+- `GET /api/projects/{id}/ai-workflow`
 - `GET /api/tasks`
 - `POST /api/tasks/{id}/accept`
+- `GET /api/workers/me`
 - `GET /api/notifications`
 - `GET /api/ledger`
 
@@ -344,6 +348,9 @@ Admin:
 - `GET /api/admin/notifications`
 - `GET /api/admin/attachments`
 - `GET /api/admin/ledger`
+- `GET /api/admin/ops-queue`
+- `GET /api/admin/reputation`
+- `POST /api/admin/ledger/credits`
 - `GET /api/admin/ssl`
 - `POST /api/admin/ssl/review`
 - `GET /api/admin/gemini/keys`

@@ -49,6 +49,7 @@ await mergeos.workerDashboard();
 ```js
 await mergeos.adminSummary();
 await mergeos.adminOpsQueue();
+await mergeos.adminReputation();
 await mergeos.creditMRG({
   worker_id: 'github:contributor',
   reward_mrg: 50,

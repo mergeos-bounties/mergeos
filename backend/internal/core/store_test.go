@@ -1730,6 +1730,116 @@ func TestStoreImportsLegacyJSONWhenPostgresStateIsEmpty(t *testing.T) {
 	}
 }
 
+func TestWorkerReputationAuditSurfacesLinkedWalletRisk(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:       defaultTokenSymbol,
+		StatePath:         filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:    1000,
+		DevPaymentEnabled: true,
+		DevPaymentCode:    defaultDevPaymentCode,
+		GitHubOwner:       defaultGitHubOwner,
+		BountyRoot:        filepath.Join(tempDir, "bounties"),
+		SMTPFrom:          "noreply@mergeos.local",
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	client, err := store.Register(RegisterRequest{
+		Name:        "Risk Client",
+		CompanyName: "Risk Co",
+		Email:       "risk-client@example.com",
+		Password:    "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	project, err := store.CreateProject(context.Background(), client.User.ID, CreateProjectRequest{
+		Title:            "Reputation audit project",
+		ClientName:       "Risk Client",
+		ClientEmail:      "risk-client@example.com",
+		Brief:            "Create one payable task for reputation scoring.",
+		BudgetCents:      200000,
+		PaymentMethod:    PaymentPayPal,
+		PaymentReference: defaultDevPaymentCode,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	wallet, err := store.CreateGuestWallet(CreateWalletRequest{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	worker, err := store.AuthenticateGitHub(GitHubAuthProfile{
+		ID:       "9876",
+		Username: "Builder",
+		Name:     "Builder",
+		Email:    "builder@example.com",
+	}, wallet.Address, wallet.RecoveryCode)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var task *Task
+	for _, candidate := range project.Tasks {
+		if candidate.RequiredWorkerKind == WorkerHuman {
+			task = candidate
+			break
+		}
+	}
+	if task == nil {
+		t.Fatal("expected at least one human task")
+	}
+	if _, err := store.AcceptTask(task.ID, AcceptTaskRequest{
+		WorkerKind: WorkerHuman,
+		WorkerID:   "github:builder",
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	dashboard := store.WorkerDashboard(worker.User.ID)
+	if dashboard.ReputationAudit.RiskLevel != "low" || !dashboard.ReputationAudit.HasGitHub || !dashboard.ReputationAudit.HasWallet {
+		t.Fatalf("worker reputation audit = %#v", dashboard.ReputationAudit)
+	}
+	if dashboard.Stats.ReputationScore != dashboard.ReputationAudit.Score || dashboard.Stats.RiskLevel != "low" {
+		t.Fatalf("worker stats did not mirror audit: %#v", dashboard.Stats)
+	}
+
+	marketplace := store.Marketplace()
+	var contributor *MarketplaceContributor
+	for _, candidate := range marketplace.Contributors {
+		if candidate.WorkerID == "github:builder" {
+			contributor = candidate
+			break
+		}
+	}
+	if contributor == nil {
+		t.Fatal("missing marketplace contributor")
+	}
+	if contributor.RiskLevel != "low" || contributor.ReputationScore == 0 {
+		t.Fatalf("marketplace contributor reputation = %#v", contributor)
+	}
+
+	adminReputation := store.AdminReputation()
+	if adminReputation.Stats.WorkerCount == 0 || adminReputation.Stats.LowRiskCount == 0 {
+		t.Fatalf("admin reputation stats = %#v", adminReputation.Stats)
+	}
+	found := false
+	for _, audit := range adminReputation.Workers {
+		if audit.WorkerID == "github:builder" {
+			found = true
+			if audit.RiskLevel != "low" || audit.CompletedTaskCount != 1 {
+				t.Fatalf("admin worker audit = %#v", audit)
+			}
+		}
+	}
+	if !found {
+		t.Fatal("missing admin worker audit for github:builder")
+	}
+}
+
 func TestPostgresPersistenceRoundTrip(t *testing.T) {
 	databaseURL := os.Getenv("MERGEOS_TEST_DATABASE_URL")
 	if databaseURL == "" {

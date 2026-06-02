@@ -52,17 +52,21 @@ test('exposes project workflow and admin ops routes', async () => {
     { status: 200, body: { status: 'validating' } },
     { status: 200, body: { status: 'orchestrating' } },
     { status: 200, body: { stats: { total_count: 1 }, items: [] } },
+    { status: 200, body: { stats: { worker_count: 1 }, workers: [] } },
   ]);
   const client = new MergeOSClient({ token: 'admin-token', fetchImpl });
 
   await client.projectDeployment('prj_1');
   await client.projectAIWorkflow('prj_1');
   const ops = await client.adminOpsQueue();
+  const reputation = await client.adminReputation();
 
   assert.equal(ops.stats.total_count, 1);
+  assert.equal(reputation.stats.worker_count, 1);
   assert.equal(fetchImpl.calls[0].url, '/api/projects/prj_1/deployment');
   assert.equal(fetchImpl.calls[1].url, '/api/projects/prj_1/ai-workflow');
   assert.equal(fetchImpl.calls[2].url, '/api/admin/ops-queue');
+  assert.equal(fetchImpl.calls[3].url, '/api/admin/reputation');
 });
 
 test('throws response errors with status and payload', async () => {

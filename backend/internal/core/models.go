@@ -525,13 +525,17 @@ type MarketplaceBounty struct {
 }
 
 type MarketplaceContributor struct {
-	WorkerID    string     `json:"worker_id"`
-	Name        string     `json:"name"`
-	Kind        WorkerKind `json:"kind"`
-	AgentType   string     `json:"agent_type,omitempty"`
-	TaskCount   int        `json:"task_count"`
-	EarnedCents int64      `json:"earned_cents"`
-	LastPaidAt  time.Time  `json:"last_paid_at"`
+	WorkerID        string     `json:"worker_id"`
+	Name            string     `json:"name"`
+	Kind            WorkerKind `json:"kind"`
+	AgentType       string     `json:"agent_type,omitempty"`
+	TaskCount       int        `json:"task_count"`
+	EarnedCents     int64      `json:"earned_cents"`
+	LastPaidAt      time.Time  `json:"last_paid_at"`
+	ReputationScore int        `json:"reputation_score"`
+	ReputationLevel string     `json:"reputation_level"`
+	RiskLevel       string     `json:"risk_level"`
+	Flags           []string   `json:"flags,omitempty"`
 }
 
 type MarketplaceAgent struct {
@@ -645,13 +649,14 @@ type AIWorkflowSignal struct {
 }
 
 type WorkerDashboardResponse struct {
-	Profile        WorkerProfile        `json:"profile"`
-	Stats          WorkerStats          `json:"stats"`
-	ClaimedTasks   []WorkerClaimedTask  `json:"claimed_tasks"`
-	Rewards        []WorkerRewardEntry  `json:"rewards"`
-	Reputation     []WorkerReputation   `json:"reputation"`
-	Proposals      []WorkerProposal     `json:"proposals"`
-	IdentityStatus []WorkerIdentityHint `json:"identity_status"`
+	Profile         WorkerProfile         `json:"profile"`
+	Stats           WorkerStats           `json:"stats"`
+	ClaimedTasks    []WorkerClaimedTask   `json:"claimed_tasks"`
+	Rewards         []WorkerRewardEntry   `json:"rewards"`
+	Reputation      []WorkerReputation    `json:"reputation"`
+	ReputationAudit WorkerReputationAudit `json:"reputation_audit"`
+	Proposals       []WorkerProposal      `json:"proposals"`
+	IdentityStatus  []WorkerIdentityHint  `json:"identity_status"`
 }
 
 type WorkerProfile struct {
@@ -668,6 +673,7 @@ type WorkerStats struct {
 	OpenProposalCount int        `json:"open_proposal_count"`
 	RewardCents       int64      `json:"reward_cents"`
 	ReputationScore   int        `json:"reputation_score"`
+	RiskLevel         string     `json:"risk_level"`
 	LastPaidAt        *time.Time `json:"last_paid_at,omitempty"`
 }
 
@@ -699,6 +705,24 @@ type WorkerReputation struct {
 	Label string `json:"label"`
 	Value string `json:"value"`
 	Tone  string `json:"tone"`
+}
+
+type WorkerReputationAudit struct {
+	WorkerID               string     `json:"worker_id"`
+	Name                   string     `json:"name,omitempty"`
+	Kind                   WorkerKind `json:"kind,omitempty"`
+	AgentType              string     `json:"agent_type,omitempty"`
+	Score                  int        `json:"score"`
+	Level                  string     `json:"level"`
+	RiskLevel              string     `json:"risk_level"`
+	CompletedTaskCount     int        `json:"completed_task_count"`
+	RewardCents            int64      `json:"reward_cents"`
+	RewardRowCount         int        `json:"reward_row_count"`
+	HasGitHub              bool       `json:"has_github"`
+	HasWallet              bool       `json:"has_wallet"`
+	DuplicateIdentityCount int        `json:"duplicate_identity_count"`
+	Flags                  []string   `json:"flags,omitempty"`
+	LastPaidAt             *time.Time `json:"last_paid_at,omitempty"`
 }
 
 type WorkerProposal struct {
@@ -749,6 +773,21 @@ type AdminSummary struct {
 	SSLReviews        []*SSLReviewStatus `json:"ssl_reviews,omitempty"`
 }
 
+type AdminReputationResponse struct {
+	Stats   AdminReputationStats    `json:"stats"`
+	Workers []WorkerReputationAudit `json:"workers"`
+}
+
+type AdminReputationStats struct {
+	WorkerCount        int `json:"worker_count"`
+	HighRiskCount      int `json:"high_risk_count"`
+	MediumRiskCount    int `json:"medium_risk_count"`
+	LowRiskCount       int `json:"low_risk_count"`
+	TrustedCount       int `json:"trusted_count"`
+	NewWorkerCount     int `json:"new_worker_count"`
+	CompletedTaskCount int `json:"completed_task_count"`
+}
+
 type AdminOpsQueueResponse struct {
 	Stats AdminOpsQueueStats  `json:"stats"`
 	Items []AdminOpsQueueItem `json:"items"`
@@ -783,9 +822,10 @@ type AdminOpsQueueItem struct {
 
 type AdminUser struct {
 	PublicUser
-	ProjectCount     int        `json:"project_count"`
-	TotalBudgetCents int64      `json:"total_budget_cents"`
-	LastProjectAt    *time.Time `json:"last_project_at,omitempty"`
+	ProjectCount     int                    `json:"project_count"`
+	TotalBudgetCents int64                  `json:"total_budget_cents"`
+	LastProjectAt    *time.Time             `json:"last_project_at,omitempty"`
+	WorkerAudit      *WorkerReputationAudit `json:"worker_audit,omitempty"`
 }
 
 type SSLReviewStatus struct {

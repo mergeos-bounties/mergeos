@@ -1055,6 +1055,24 @@ func (s *Store) Marketplace() MarketplaceResponse {
 	}
 
 	for _, contributor := range contributors {
+		hasGitHub, hasWallet, duplicateIdentityCount := s.workerIdentitySignalsForWorkerIDLocked(contributor.WorkerID)
+		audit := workerReputationAudit(WorkerReputationAudit{
+			WorkerID:               contributor.WorkerID,
+			Name:                   contributor.Name,
+			Kind:                   contributor.Kind,
+			AgentType:              contributor.AgentType,
+			CompletedTaskCount:     contributor.TaskCount,
+			RewardCents:            contributor.EarnedCents,
+			RewardRowCount:         contributor.TaskCount,
+			HasGitHub:              hasGitHub,
+			HasWallet:              hasWallet,
+			DuplicateIdentityCount: duplicateIdentityCount,
+			LastPaidAt:             nonZeroTimePointer(contributor.LastPaidAt),
+		})
+		contributor.ReputationScore = audit.Score
+		contributor.ReputationLevel = audit.Level
+		contributor.RiskLevel = audit.RiskLevel
+		contributor.Flags = audit.Flags
 		response.Contributors = append(response.Contributors, contributor)
 	}
 	sort.Slice(response.Contributors, func(i, j int) bool {
@@ -1147,7 +1165,20 @@ func (s *Store) WorkerDashboard(userID string) WorkerDashboardResponse {
 
 	response.Proposals = workerProposalRows(s.projects, s.tasks, user)
 	response.Stats.OpenProposalCount = len(response.Proposals)
-	response.Stats.ReputationScore = workerReputationScore(response.Stats.ClaimedTaskCount, response.Stats.RewardCents, len(response.Rewards), response.Profile.GitHubUsername != "", response.Profile.WalletAddress != "")
+	response.ReputationAudit = workerReputationAudit(WorkerReputationAudit{
+		WorkerID:               workerDashboardID(response.Profile),
+		Name:                   response.Profile.Name,
+		Kind:                   WorkerHuman,
+		CompletedTaskCount:     response.Stats.ClaimedTaskCount,
+		RewardCents:            response.Stats.RewardCents,
+		RewardRowCount:         len(response.Rewards),
+		HasGitHub:              response.Profile.GitHubUsername != "",
+		HasWallet:              response.Profile.WalletAddress != "",
+		DuplicateIdentityCount: s.duplicateIdentityCountLocked(user),
+		LastPaidAt:             response.Stats.LastPaidAt,
+	})
+	response.Stats.ReputationScore = response.ReputationAudit.Score
+	response.Stats.RiskLevel = response.ReputationAudit.RiskLevel
 	response.Reputation = workerReputationRows(response)
 	return response
 }
@@ -1241,7 +1272,93 @@ func (s *Store) adminUserRowLocked(user *User) AdminUser {
 			row.LastProjectAt = &createdAt
 		}
 	}
+	if audit := s.workerReputationAuditForUserLocked(user); strings.TrimSpace(audit.WorkerID) != "" {
+		row.WorkerAudit = &audit
+	}
 	return row
+}
+
+func (s *Store) AdminReputation() AdminReputationResponse {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	audits := map[string]WorkerReputationAudit{}
+	for _, task := range s.tasks {
+		if task == nil || task.Status != TaskAccepted || strings.TrimSpace(task.WorkerID) == "" {
+			continue
+		}
+		key := workerReputationKey(task.WorkerID, task.AgentType)
+		audit := audits[key]
+		if strings.TrimSpace(audit.WorkerID) == "" {
+			audit.WorkerID = normalizeWorkerID(task.WorkerID)
+			audit.Name = marketplaceWorkerName(task.WorkerID, task.AgentType)
+			audit.Kind = task.WorkerKind
+			audit.AgentType = strings.TrimSpace(task.AgentType)
+			audit.HasGitHub, audit.HasWallet, audit.DuplicateIdentityCount = s.workerIdentitySignalsForWorkerIDLocked(task.WorkerID)
+		}
+		audit.CompletedTaskCount++
+		audit.RewardCents += task.RewardCents
+		audit.RewardRowCount++
+		if task.AcceptedAt != nil && (audit.LastPaidAt == nil || task.AcceptedAt.After(*audit.LastPaidAt)) {
+			lastPaidAt := *task.AcceptedAt
+			audit.LastPaidAt = &lastPaidAt
+		}
+		audits[key] = audit
+	}
+
+	for _, user := range s.users {
+		if user == nil {
+			continue
+		}
+		audit := s.workerReputationAuditForUserLocked(user)
+		if strings.TrimSpace(audit.WorkerID) == "" {
+			continue
+		}
+		key := workerReputationKey(audit.WorkerID, audit.AgentType)
+		existing := audits[key]
+		if existing.CompletedTaskCount > audit.CompletedTaskCount {
+			existing.HasGitHub = existing.HasGitHub || audit.HasGitHub
+			existing.HasWallet = existing.HasWallet || audit.HasWallet
+			existing.DuplicateIdentityCount = max(existing.DuplicateIdentityCount, audit.DuplicateIdentityCount)
+			existing = workerReputationAudit(existing)
+			audits[key] = existing
+			continue
+		}
+		audits[key] = audit
+	}
+
+	response := AdminReputationResponse{Workers: []WorkerReputationAudit{}}
+	for _, audit := range audits {
+		audit = workerReputationAudit(audit)
+		response.Workers = append(response.Workers, audit)
+		response.Stats.WorkerCount++
+		response.Stats.CompletedTaskCount += audit.CompletedTaskCount
+		switch audit.RiskLevel {
+		case "high":
+			response.Stats.HighRiskCount++
+		case "medium":
+			response.Stats.MediumRiskCount++
+		default:
+			response.Stats.LowRiskCount++
+		}
+		switch audit.Level {
+		case "elite", "trusted":
+			response.Stats.TrustedCount++
+		case "new":
+			response.Stats.NewWorkerCount++
+		}
+	}
+	sort.Slice(response.Workers, func(i, j int) bool {
+		left, right := response.Workers[i], response.Workers[j]
+		if workerRiskRank(left.RiskLevel) != workerRiskRank(right.RiskLevel) {
+			return workerRiskRank(left.RiskLevel) > workerRiskRank(right.RiskLevel)
+		}
+		if left.Score == right.Score {
+			return left.RewardCents > right.RewardCents
+		}
+		return left.Score > right.Score
+	})
+	return response
 }
 
 func (s *Store) hasOtherAdminLocked(userID string) bool {
@@ -2406,10 +2523,212 @@ func workerReputationScore(claimedTasks int, rewardCents int64, rewardRows int, 
 	return score
 }
 
+func workerReputationAudit(audit WorkerReputationAudit) WorkerReputationAudit {
+	audit.WorkerID = normalizeWorkerID(audit.WorkerID)
+	if strings.TrimSpace(audit.Name) == "" {
+		audit.Name = marketplaceWorkerName(audit.WorkerID, audit.AgentType)
+	}
+	audit.Score = workerReputationScore(audit.CompletedTaskCount, audit.RewardCents, audit.RewardRowCount, audit.HasGitHub, audit.HasWallet)
+	if audit.DuplicateIdentityCount > 0 {
+		audit.Score -= 25
+	}
+	if audit.CompletedTaskCount == 0 {
+		audit.Score -= 5
+	}
+	if audit.CompletedTaskCount > 0 && audit.RewardRowCount == 0 {
+		audit.Score -= 10
+	}
+	if audit.Score < 0 {
+		audit.Score = 0
+	}
+	if audit.Score > 100 {
+		audit.Score = 100
+	}
+	audit.Level = workerReputationLevel(audit.Score)
+	audit.RiskLevel = workerRiskLevel(audit)
+	audit.Flags = workerReputationFlags(audit)
+	return audit
+}
+
+func workerReputationLevel(score int) string {
+	switch {
+	case score >= 85:
+		return "elite"
+	case score >= 70:
+		return "trusted"
+	case score >= 55:
+		return "building"
+	default:
+		return "new"
+	}
+}
+
+func workerRiskLevel(audit WorkerReputationAudit) string {
+	if audit.DuplicateIdentityCount > 0 || audit.Score < 45 || (audit.CompletedTaskCount > 0 && audit.RewardRowCount == 0) {
+		return "high"
+	}
+	if audit.Score < 70 || !audit.HasGitHub || !audit.HasWallet {
+		return "medium"
+	}
+	return "low"
+}
+
+func workerRiskRank(level string) int {
+	switch strings.ToLower(strings.TrimSpace(level)) {
+	case "high":
+		return 3
+	case "medium":
+		return 2
+	case "low":
+		return 1
+	default:
+		return 0
+	}
+}
+
+func workerReputationFlags(audit WorkerReputationAudit) []string {
+	flags := []string{}
+	if !audit.HasGitHub {
+		flags = append(flags, "missing_github_identity")
+	}
+	if !audit.HasWallet {
+		flags = append(flags, "missing_wallet_identity")
+	}
+	if audit.DuplicateIdentityCount > 0 {
+		flags = append(flags, "duplicate_identity")
+	}
+	if audit.CompletedTaskCount == 0 {
+		flags = append(flags, "no_completed_tasks")
+	}
+	if audit.CompletedTaskCount > 0 && audit.RewardRowCount == 0 {
+		flags = append(flags, "missing_reward_ledger")
+	}
+	return flags
+}
+
+func workerDashboardID(profile WorkerProfile) string {
+	if profile.GitHubUsername != "" {
+		return githubWorkerAccount(profile.GitHubUsername)
+	}
+	if profile.WalletAddress != "" {
+		return walletAccount(profile.WalletAddress)
+	}
+	return profile.UserID
+}
+
+func workerReputationKey(workerID, agentType string) string {
+	workerID = strings.ToLower(strings.TrimSpace(normalizeWorkerID(workerID)))
+	agentType = strings.ToLower(strings.TrimSpace(agentType))
+	return workerID + "|" + agentType
+}
+
+func workerIDHasGitHub(workerID string) bool {
+	workerID = strings.ToLower(strings.TrimSpace(normalizeWorkerID(workerID)))
+	return strings.HasPrefix(workerID, "github:") && normalizeGitHubUsername(workerID) != ""
+}
+
+func workerIDHasWallet(workerID string) bool {
+	workerID = strings.ToLower(strings.TrimSpace(normalizeWorkerID(workerID)))
+	return validWalletAddress(workerID)
+}
+
+func nonZeroTimePointer(value time.Time) *time.Time {
+	if value.IsZero() {
+		return nil
+	}
+	copyValue := value
+	return &copyValue
+}
+
+func (s *Store) workerReputationAuditForUserLocked(user *User) WorkerReputationAudit {
+	workerID := ""
+	wallet := normalizeWalletAddress(user.WalletAddress)
+	github := normalizeGitHubUsername(user.GitHubUsername)
+	if github != "" {
+		workerID = githubWorkerAccount(github)
+	} else if wallet != "" {
+		workerID = walletAccount(wallet)
+	}
+	if workerID == "" {
+		return WorkerReputationAudit{}
+	}
+
+	workerIDs, rewardAccounts := workerIdentitySets(user)
+	audit := WorkerReputationAudit{
+		WorkerID:               workerID,
+		Name:                   user.Name,
+		Kind:                   WorkerHuman,
+		HasGitHub:              github != "",
+		HasWallet:              wallet != "",
+		DuplicateIdentityCount: s.duplicateIdentityCountLocked(user),
+	}
+	for _, task := range s.tasks {
+		if task == nil || task.Status != TaskAccepted || !workerIDs[strings.ToLower(normalizeWorkerID(task.WorkerID))] {
+			continue
+		}
+		audit.CompletedTaskCount++
+		audit.RewardCents += task.RewardCents
+		if task.AcceptedAt != nil && (audit.LastPaidAt == nil || task.AcceptedAt.After(*audit.LastPaidAt)) {
+			lastPaidAt := *task.AcceptedAt
+			audit.LastPaidAt = &lastPaidAt
+		}
+	}
+	for _, entry := range s.ledger {
+		if entry.Type != "task_payment" && entry.Type != "manual_credit" {
+			continue
+		}
+		if rewardAccounts[strings.ToLower(strings.TrimSpace(entry.ToAccount))] {
+			audit.RewardRowCount++
+		}
+	}
+	return workerReputationAudit(audit)
+}
+
+func (s *Store) workerIdentitySignalsForWorkerIDLocked(workerID string) (bool, bool, int) {
+	hasGitHub := workerIDHasGitHub(workerID)
+	hasWallet := workerIDHasWallet(workerID)
+	duplicateIdentityCount := 0
+	if hasGitHub {
+		username := normalizeGitHubUsername(workerID)
+		if user := s.userByGitHubLocked("", username); user != nil {
+			hasWallet = hasWallet || normalizeWalletAddress(user.WalletAddress) != ""
+			duplicateIdentityCount = s.duplicateIdentityCountLocked(user)
+		} else if wallet := s.walletByGitHubLocked(username); wallet != nil {
+			hasWallet = hasWallet || normalizeWalletAddress(wallet.Address) != ""
+		}
+	}
+	return hasGitHub, hasWallet, duplicateIdentityCount
+}
+
+func (s *Store) duplicateIdentityCountLocked(user *User) int {
+	count := 0
+	wallet := normalizeWalletAddress(user.WalletAddress)
+	github := normalizeGitHubUsername(user.GitHubUsername)
+	for id, other := range s.users {
+		if other == nil || id == user.ID {
+			continue
+		}
+		if wallet != "" && normalizeWalletAddress(other.WalletAddress) == wallet {
+			count++
+		}
+		if github != "" && normalizeGitHubUsername(other.GitHubUsername) == github {
+			count++
+		}
+	}
+	return count
+}
+
 func workerReputationRows(response WorkerDashboardResponse) []WorkerReputation {
 	identity := "Incomplete"
 	if response.Profile.GitHubUsername != "" && response.Profile.WalletAddress != "" {
 		identity = "Verified"
+	}
+	riskTone := "green"
+	switch response.ReputationAudit.RiskLevel {
+	case "high":
+		riskTone = "red"
+	case "medium":
+		riskTone = "amber"
 	}
 	lastPaid := "No payouts yet"
 	if response.Stats.LastPaidAt != nil {
@@ -2417,6 +2736,8 @@ func workerReputationRows(response WorkerDashboardResponse) []WorkerReputation {
 	}
 	return []WorkerReputation{
 		{Label: "Identity", Value: identity, Tone: "green"},
+		{Label: "Level", Value: marketplaceTitle(response.ReputationAudit.Level), Tone: "blue"},
+		{Label: "Risk", Value: marketplaceTitle(response.ReputationAudit.RiskLevel), Tone: riskTone},
 		{Label: "Completed tasks", Value: strconv.Itoa(response.Stats.ClaimedTaskCount), Tone: "blue"},
 		{Label: "Rewards", Value: formatTokenAmount(response.Stats.RewardCents), Tone: "green"},
 		{Label: "Last payout", Value: lastPaid, Tone: "amber"},
