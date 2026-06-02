@@ -5,6 +5,7 @@ import {
   agentActionEventType,
   agentActionEventTypes,
   createMergeOSClient,
+  deploymentAgentActionPayload,
   isAgentActionEventType,
   isWorkflowEventType,
   liveFeedTypeToProtocolEventType,
@@ -89,6 +90,45 @@ test('maps typed agent action event protocol values', () => {
   assert.equal(isAgentActionEventType('agent.generated'), true);
   assert.equal(isAgentActionEventType('agent.action'), true);
   assert.equal(isAgentActionEventType('task.paid'), false);
+});
+
+test('builds deployment agent action payloads for deployment evidence', async () => {
+  const payload = deploymentAgentActionPayload({
+    url: 'https://vercel.example/deployments/mergeos-preview',
+    status: 'processed',
+    durationMillis: 42000,
+    pullNumber: 120,
+    labels: ['preview', 'release-gate'],
+  });
+  assert.deepEqual(payload, {
+    action: 'deploy',
+    agent_type: 'deployment-agent',
+    status: 'processed',
+    reference_url: 'https://vercel.example/deployments/mergeos-preview',
+    duration_millis: 42000,
+    pull_number: 120,
+    labels: ['preview', 'release-gate'],
+  });
+
+  const fetchImpl = fakeFetch([
+    { status: 201, body: { log: { event_name: 'agent_action', action: 'deploy' } } },
+  ]);
+  const client = new MergeOSClient({ token: 'agent-token', fetchImpl });
+  const response = await client.recordDeployment('prj_1', { deploymentURL: payload.reference_url });
+
+  assert.equal(response.log.action, 'deploy');
+  assert.equal(fetchImpl.calls[0].url, '/api/projects/prj_1/agent-actions');
+  assert.equal(fetchImpl.calls[0].options.method, 'POST');
+  assert.equal(fetchImpl.calls[0].options.headers.Authorization, 'Bearer agent-token');
+  assert.equal(fetchImpl.calls[0].options.body, JSON.stringify({
+    action: 'deploy',
+    agent_type: 'deployment-agent',
+    status: 'processed',
+    reference_url: 'https://vercel.example/deployments/mergeos-preview',
+    duration_millis: 0,
+    pull_number: 0,
+    labels: [],
+  }));
 });
 
 test('loads runtime config without auth for payment rail discovery', async () => {

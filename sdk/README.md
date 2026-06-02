@@ -15,6 +15,7 @@ npm test
 import {
   agentActionEventType,
   createMergeOSClient,
+  deploymentAgentActionPayload,
   protocolEventFromMessage,
   protocolEventsFromMessage,
   protocolEventGroup,
@@ -36,6 +37,11 @@ const agentAction = await mergeos.createProjectAgentAction(projects[0].id, {
   agent_type: 'qa-agent',
 });
 const eventType = agentActionEventType(agentAction.log.action); // "agent.tested"
+await mergeos.recordDeployment(projects[0].id, {
+  deploymentURL: 'https://vercel.example/deployments/mergeos-preview',
+  status: 'processed',
+});
+const deployPayload = deploymentAgentActionPayload({ url: 'https://vercel.example/deployments/mergeos-preview' });
 const graph = await mergeos.projectTaskGraph(projects[0].id);
 const workflowProtocol = await mergeos.projectWorkflowProtocol(projects[0].id);
 console.log(workflowProtocol.current_step, workflowProtocol.progress);
@@ -76,6 +82,11 @@ await mergeos.createProjectAgentAction('prj_0001', {
   agent_type: 'review-agent',
   pull_number: 120,
   reference_url: 'https://github.com/acme/repo/pull/120',
+});
+await mergeos.recordDeployment('prj_0001', {
+  url: 'https://vercel.example/deployments/mergeos-preview',
+  status: 'processed',
+  labels: ['preview', 'release-gate'],
 });
 await mergeos.projectTaskGraph('prj_0001');
 await mergeos.projectWorkflowProtocol('prj_0001');

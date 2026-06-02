@@ -252,6 +252,10 @@ export class MergeOSClient {
     return this.request(`/api/projects/${encodeURIComponent(projectID)}/agent-actions`, { method: 'POST', body: payload });
   }
 
+  recordDeployment(projectID, payload = {}) {
+    return this.createProjectAgentAction(projectID, deploymentAgentActionPayload(payload));
+  }
+
   projectTaskGraph(projectID) {
     return this.request(`/api/projects/${encodeURIComponent(projectID)}/task-graph`);
   }
@@ -434,6 +438,21 @@ export function createMergeOSClient(options = {}) {
 export function agentActionEventType(action = '') {
   const normalized = String(action || '').trim().toLowerCase();
   return agentActionEventTypes[normalized] || 'agent.action';
+}
+
+export function deploymentAgentActionPayload(payload = {}) {
+  const referenceURL = payload.reference_url || payload.referenceURL || payload.deployment_url || payload.deploymentURL || payload.url || '';
+  const durationMillis = payload.duration_millis ?? payload.durationMillis;
+  const pullNumber = payload.pull_number ?? payload.pullNumber;
+  return {
+    action: 'deploy',
+    agent_type: payload.agent_type || payload.agentType || 'deployment-agent',
+    status: payload.status || 'processed',
+    reference_url: referenceURL,
+    duration_millis: Number(durationMillis) > 0 ? Number(durationMillis) : 0,
+    pull_number: Number(pullNumber) > 0 ? Number(pullNumber) : 0,
+    labels: Array.isArray(payload.labels) ? payload.labels : [],
+  };
 }
 
 export function isAgentActionEventType(type = '') {
