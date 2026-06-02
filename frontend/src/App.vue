@@ -3097,7 +3097,7 @@
                         <span class="ledger-status">Verified</span>
                       </td>
                       <td>
-                        <button class="ledger-ref-button" type="button" @click="showToast(`Opening ${event.ref}...`)">
+                        <button class="ledger-ref-button" type="button" @click="handleLedgerReference(event)">
                           {{ event.ref }}
                           <Link2 :size="12" />
                         </button>
@@ -5755,6 +5755,29 @@ async function copyDashboardProjectLink() {
   showToast(`Project ledger link: ${shareURL}`);
 }
 
+async function handleLedgerReference(event = {}) {
+  const rawReference = String(event.rawReference || event.entryHash || event.ref || '').trim();
+  if (!rawReference) return;
+  if (/^https?:\/\//i.test(rawReference)) {
+    openExternalURL(rawReference);
+    return;
+  }
+
+  const verifierURL = hasWindow ? `${window.location.origin}/api/public/ledger/verify` : '/api/public/ledger/verify';
+  if (hasWindow && navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(rawReference);
+      showToast('Ledger reference copied. Opening verifier.');
+      openExternalURL(verifierURL);
+      return;
+    } catch {
+      // Use visible fallback below.
+    }
+  }
+  showToast(`Ledger reference: ${rawReference}`);
+  openExternalURL(verifierURL);
+}
+
 async function startGitHubLogin() {
   if (!hasWindow) return;
   errorMessage.value = '';
@@ -7723,6 +7746,9 @@ function mapLedgerEntry(entry) {
     secondaryAmount: entry.type === 'payment_verified' ? 'funding verified' : entry.type === 'token_mint' ? 'mint log' : '',
     amountTone: meta.amountTone,
     ref: shortLedgerReference(entry.reference || entry.entry_hash || `#${entry.sequence}`),
+    rawReference: entry.reference || '',
+    entryHash: entry.entry_hash || '',
+    sequence: entry.sequence,
   };
 }
 
