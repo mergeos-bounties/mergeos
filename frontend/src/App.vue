@@ -1545,6 +1545,54 @@
                   <button type="button" @click="showToast('Opening task routing...')">View Routing</button>
                 </article>
 
+                <article class="dash-card repository-scan-card">
+                  <div class="card-title-row">
+                    <div>
+                      <h2>Repository Scan</h2>
+                      <p>{{ dashboardRepositoryScanView.body }}</p>
+                    </div>
+                    <button type="button" aria-label="Refresh repository scan" :disabled="dashboardRepositoryScanLoading || !dashboardSelectedProject" @click="loadDashboardRepositoryScanData(dashboardSelectedProject?.id)">
+                      <RefreshCw :size="14" />
+                    </button>
+                  </div>
+                  <div class="repository-scan-metrics" aria-label="Repository scan summary">
+                    <article>
+                      <span>Files</span>
+                      <strong>{{ dashboardRepositoryScanView.scanned }}</strong>
+                    </article>
+                    <article>
+                      <span>Findings</span>
+                      <strong>{{ dashboardRepositoryScanView.findings }}</strong>
+                    </article>
+                    <article>
+                      <span>Dependencies</span>
+                      <strong>{{ dashboardRepositoryScanView.dependencies }}</strong>
+                    </article>
+                    <article>
+                      <span>Status</span>
+                      <strong>{{ dashboardRepositoryScanView.status }}</strong>
+                    </article>
+                  </div>
+                  <div v-if="dashboardRepositoryScanError" class="deployment-error">{{ dashboardRepositoryScanError }}</div>
+                  <div v-else-if="dashboardRepositoryScanFindings.length" class="repository-finding-list">
+                    <article v-for="finding in dashboardRepositoryScanFindings" :key="finding.id">
+                      <span :class="['repository-finding-icon', finding.tone]">
+                        <Bug :size="15" />
+                      </span>
+                      <div>
+                        <strong>{{ finding.title }}</strong>
+                        <small>{{ finding.body }}</small>
+                        <b>{{ finding.pathLine }}</b>
+                      </div>
+                      <em :class="finding.tone">{{ finding.severity }}</em>
+                    </article>
+                  </div>
+                  <article v-else class="dash-empty-state compact">
+                    <strong>{{ dashboardRepositoryScanLoading ? 'Scanning repository...' : 'No repository findings' }}</strong>
+                    <p>{{ dashboardRepositoryScanLoading ? 'Loading code, dependency, and debt signals.' : `Last scan: ${dashboardRepositoryScanView.updatedAt}` }}</p>
+                  </article>
+                </article>
+
                 <article class="dash-card deployment-card">
                   <div class="card-title-row">
                     <div>
@@ -3145,6 +3193,9 @@ const dashboardAIWorkflowError = ref('');
 const dashboardPullRequests = ref(null);
 const dashboardPullRequestsLoading = ref(false);
 const dashboardPullRequestsError = ref('');
+const dashboardRepositoryScan = ref(null);
+const dashboardRepositoryScanLoading = ref(false);
+const dashboardRepositoryScanError = ref('');
 const dashboardNotifications = ref([]);
 const dashboardNotificationsLoading = ref(false);
 const dashboardNotificationsError = ref('');
@@ -4162,6 +4213,50 @@ const dashboardPullRequestRows = computed(() => {
   }
   return rows.sort((a, b) => new Date(b.updatedAtRaw || 0) - new Date(a.updatedAtRaw || 0)).slice(0, 5);
 });
+const dashboardRepositoryScanStats = computed(() => dashboardRepositoryScan.value?.stats || {});
+const dashboardRepositoryScanView = computed(() => {
+  if (!dashboardSelectedProject.value) {
+    return {
+      status: dashboardRepositoryScanLoading.value ? 'Scanning' : 'Empty',
+      body: 'Repository scan appears after a project is selected.',
+      scanned: '0',
+      findings: '0',
+      dependencies: '0',
+      updatedAt: '-',
+    };
+  }
+  if (!dashboardRepositoryScan.value) {
+    return {
+      status: dashboardRepositoryScanLoading.value ? 'Scanning' : 'Waiting',
+      body: dashboardRepositoryScanLoading.value ? 'Scanning repository signals.' : 'No repository scan payload loaded.',
+      scanned: '0',
+      findings: '0',
+      dependencies: '0',
+      updatedAt: '-',
+    };
+  }
+  const scan = dashboardRepositoryScan.value;
+  const stats = dashboardRepositoryScanStats.value;
+  const dependencyCount = Number(stats.dependency_files) || (Array.isArray(scan.dependencies) ? scan.dependencies.length : 0);
+  const findingCount = Number(stats.finding_count) || (Array.isArray(scan.findings) ? scan.findings.length : 0);
+  const scannedFiles = Number(stats.scanned_files) || 0;
+  const when = formatLedgerDateTime(scan.updated_at);
+  return {
+    status: toTitleLabel(scan.status || 'scanned'),
+    body: trimMarketplaceText(scan.summary, `${formatCompactNumber(scannedFiles)} files scanned / ${formatCompactNumber(findingCount)} findings`),
+    scanned: formatCompactNumber(scannedFiles),
+    findings: formatCompactNumber(findingCount),
+    dependencies: formatCompactNumber(dependencyCount),
+    updatedAt: when.full,
+  };
+});
+const dashboardRepositoryScanFindings = computed(() =>
+  (dashboardRepositoryScan.value?.findings || [])
+    .slice()
+    .sort((a, b) => repositoryFindingSeverityRank(b.severity) - repositoryFindingSeverityRank(a.severity))
+    .slice(0, 4)
+    .map(mapDashboardRepositoryFinding),
+);
 const dashboardTaskRows = computed(() => dashboardSelectedTasks.value.map(mapDashboardTask));
 const dashboardActivityRows = computed(() =>
   dashboardProjectLedger.value.slice().reverse().slice(0, 6).map(mapDashboardActivity),
@@ -4664,6 +4759,7 @@ async function selectDashboardProject(projectID) {
   void loadDashboardDeploymentData(projectID, { silent: true });
   void loadDashboardAIWorkflowData(projectID, { silent: true });
   void loadDashboardPullRequestsData(projectID, { silent: true });
+  void loadDashboardRepositoryScanData(projectID, { silent: true });
   await nextTick();
   if (!hasWindow) return;
   dashboardProjectHeader.value?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -5407,6 +5503,37 @@ function dashboardPullReadinessTone(readiness = {}, pull = {}) {
   return 'blue';
 }
 
+function repositoryFindingSeverityRank(severity = '') {
+  const normalized = String(severity || '').toLowerCase();
+  if (normalized === 'critical') return 5;
+  if (normalized === 'high') return 4;
+  if (normalized === 'medium') return 3;
+  if (normalized === 'low') return 2;
+  return 1;
+}
+
+function repositoryFindingTone(severity = '') {
+  const normalized = String(severity || '').toLowerCase();
+  if (normalized === 'critical' || normalized === 'high') return 'red';
+  if (normalized === 'medium') return 'amber';
+  if (normalized === 'low') return 'blue';
+  return 'green';
+}
+
+function mapDashboardRepositoryFinding(finding = {}) {
+  const path = finding.path || 'repository';
+  const line = Number(finding.line) || 0;
+  return {
+    id: finding.id || `${path}-${line}-${finding.title || finding.category || finding.severity || 'finding'}`,
+    title: finding.title || toTitleLabel(finding.category || 'Repository signal'),
+    body: trimMarketplaceText(finding.body || finding.signal, 'Repository scan finding.'),
+    severity: toTitleLabel(finding.severity || 'info'),
+    category: toTitleLabel(finding.category || 'code'),
+    pathLine: line > 0 ? `${path}:${line}` : path,
+    tone: repositoryFindingTone(finding.severity),
+  };
+}
+
 function mapWorkerClaimedTask(task = {}) {
   const when = formatLedgerDateTime(task.accepted_at);
   return {
@@ -5798,6 +5925,9 @@ async function loadDashboardData(options = {}) {
     dashboardPullRequests.value = null;
     dashboardPullRequestsLoading.value = false;
     dashboardPullRequestsError.value = '';
+    dashboardRepositoryScan.value = null;
+    dashboardRepositoryScanLoading.value = false;
+    dashboardRepositoryScanError.value = '';
     dashboardSection.value = 'projects';
     selectedDashboardProjectID.value = '';
     return;
@@ -5829,6 +5959,9 @@ async function loadDashboardData(options = {}) {
       if (!options.skipPullRequests) {
         detailLoads.push(loadDashboardPullRequestsData(selectedDashboardProjectID.value, { silent: true }));
       }
+      if (!options.skipRepositoryScan) {
+        detailLoads.push(loadDashboardRepositoryScanData(selectedDashboardProjectID.value, { silent: true }));
+      }
       await Promise.all(detailLoads);
     } else {
       dashboardEscrow.value = null;
@@ -5839,6 +5972,8 @@ async function loadDashboardData(options = {}) {
       dashboardAIWorkflowError.value = '';
       dashboardPullRequests.value = null;
       dashboardPullRequestsError.value = '';
+      dashboardRepositoryScan.value = null;
+      dashboardRepositoryScanError.value = '';
     }
   } catch (error) {
     dashboardError.value = error.message || 'Could not load projects';
@@ -5957,6 +6092,40 @@ async function loadDashboardAIWorkflowData(projectID, options = {}) {
     }
   } finally {
     dashboardAIWorkflowLoading.value = false;
+  }
+}
+
+async function loadDashboardRepositoryScanData(projectID, options = {}) {
+  const targetProjectID = String(projectID || '').trim();
+  if (!token.value || !targetProjectID) {
+    dashboardRepositoryScan.value = null;
+    dashboardRepositoryScanError.value = '';
+    return;
+  }
+
+  const silent = Boolean(options.silent);
+  if (!silent) dashboardRepositoryScanLoading.value = true;
+  dashboardRepositoryScanError.value = '';
+  try {
+    const payload = await api(`/api/projects/${encodeURIComponent(targetProjectID)}/repo-scan`);
+    dashboardRepositoryScan.value = {
+      project_id: payload.project_id || targetProjectID,
+      project_title: payload.project_title || '',
+      status: payload.status || 'scanned',
+      summary: payload.summary || '',
+      stats: payload.stats || {},
+      languages: payload.languages || {},
+      dependencies: Array.isArray(payload.dependencies) ? payload.dependencies : [],
+      findings: Array.isArray(payload.findings) ? payload.findings : [],
+      updated_at: payload.updated_at,
+    };
+  } catch (error) {
+    if (targetProjectID === selectedDashboardProjectID.value) {
+      dashboardRepositoryScan.value = null;
+      dashboardRepositoryScanError.value = error.message || 'Could not load repository scan';
+    }
+  } finally {
+    dashboardRepositoryScanLoading.value = false;
   }
 }
 
@@ -6084,7 +6253,7 @@ function startDashboardRealtime() {
   dashboardRefreshTimer = window.setInterval(() => {
     if (!token.value || !user.value) return;
     if (document.visibilityState === 'hidden') return;
-    void loadDashboardData({ silent: true, skipPullRequests: true });
+    void loadDashboardData({ silent: true, skipPullRequests: true, skipRepositoryScan: true });
     if (dashboardSection.value === 'worker') {
       void loadWorkerDashboardData({ silent: true });
     }
@@ -6271,6 +6440,9 @@ function clearSession() {
   dashboardPullRequests.value = null;
   dashboardPullRequestsLoading.value = false;
   dashboardPullRequestsError.value = '';
+  dashboardRepositoryScan.value = null;
+  dashboardRepositoryScanLoading.value = false;
+  dashboardRepositoryScanError.value = '';
   dashboardNotifications.value = [];
   dashboardNotificationsError.value = '';
   workerDashboard.value = {
