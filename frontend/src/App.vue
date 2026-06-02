@@ -3242,6 +3242,58 @@
             </article>
           </section>
 
+          <section class="marketplace-agent-section" aria-label="AI agent operations">
+            <div class="section-heading-row">
+              <h2>
+                <Bot :size="17" />
+                AI Agent Operations
+              </h2>
+              <div class="marketplace-data-status">
+                <span>{{ marketplaceAgentQueueRows.length }} active agent lanes</span>
+              </div>
+            </div>
+
+            <div v-if="marketplaceAgentQueueRows.length" class="marketplace-agent-grid">
+              <article v-for="agent in marketplaceAgentQueueRows" :key="agent.type">
+                <div class="marketplace-agent-head">
+                  <span :class="['popular-agent-icon', agent.tone]">
+                    <component :is="agent.icon" :size="21" />
+                  </span>
+                  <div>
+                    <strong>{{ agent.title }}</strong>
+                    <small>{{ agent.workerKind }} / {{ agent.status }}</small>
+                  </div>
+                </div>
+                <p>{{ agent.body }}</p>
+                <div class="marketplace-agent-stats">
+                  <span>
+                    <strong>{{ agent.openTasks }}</strong>
+                    <small>Open</small>
+                  </span>
+                  <span>
+                    <strong>{{ agent.totalTasks }}</strong>
+                    <small>Total</small>
+                  </span>
+                  <span>
+                    <strong>{{ agent.budget }}</strong>
+                    <small>Pool</small>
+                  </span>
+                </div>
+                <div class="marketplace-agent-capabilities">
+                  <span v-for="capability in agent.capabilities" :key="capability">{{ capability }}</span>
+                </div>
+                <div class="marketplace-agent-task-list">
+                  <small v-for="task in agent.nextTasks" :key="task.id">{{ task.issue }} / {{ task.title }} / {{ task.reward }}</small>
+                  <small v-if="!agent.nextTasks.length">No open task attached to this lane yet.</small>
+                </div>
+              </article>
+            </div>
+            <article v-else class="marketplace-empty-state compact">
+              <strong>{{ marketplaceLoading ? 'Loading agent lanes...' : 'No AI agent lanes yet' }}</strong>
+              <p>{{ marketplaceLoading ? 'Fetching agent work queue from live marketplace data.' : 'AI-scoped tasks will appear here after repository scan and task generation.' }}</p>
+            </article>
+          </section>
+
           <section id="marketplace-benefits" class="marketplace-benefit-strip" aria-label="Marketplace benefits">
             <article v-for="benefit in marketplaceBenefits" :key="benefit.title">
               <span>
@@ -4595,6 +4647,11 @@ const marketplaceAgentsView = computed(() =>
     body: `${Number(agent.open_task_count) || 0} open tasks · ${formatPublicMRGFromCents(agent.budget_cents)} pool`,
     tone: ['green', 'blue', 'yellow', 'red'][index % 4],
   })),
+);
+const marketplaceAgentQueueRows = computed(() =>
+  (marketplaceData.value.agents || [])
+    .filter((agent) => Number(agent.task_count) > 0 || Number(agent.open_task_count) > 0)
+    .map(mapMarketplaceAgentQueue),
 );
 const marketplaceHeroAgent = computed(() => marketplaceAgentsView.value[0] || {
   type: 'empty-agent',
@@ -6035,6 +6092,50 @@ function marketplaceAgentIcon(type = '') {
   if (text.includes('qa') || text.includes('test')) return CheckCircle2;
   if (text.includes('front')) return Code2;
   return Bot;
+}
+
+function marketplaceAgentCapabilities(type = '') {
+  const text = String(type || '').toLowerCase();
+  if (text.includes('design')) {
+    return ['UI review', 'Brand kit', 'Responsive QA'];
+  }
+  if (text.includes('ledger') || text.includes('go') || text.includes('payment')) {
+    return ['Payment checks', 'Ledger proof', 'Replay review'];
+  }
+  if (text.includes('devops') || text.includes('deploy')) {
+    return ['Deploy verify', 'SSL review', 'Smoke tests'];
+  }
+  if (text.includes('qa') || text.includes('test')) {
+    return ['Regression tests', 'Evidence review', 'A11y pass'];
+  }
+  if (text.includes('front')) {
+    return ['UI generation', 'Component tests', 'PR review'];
+  }
+  return ['Repo scan', 'Task generation', 'PR review'];
+}
+
+function mapMarketplaceAgentQueue(agent = {}, index = 0) {
+  const type = agent.type || `agent-${index}`;
+  const openTasks = Number(agent.open_task_count) || 0;
+  const totalTasks = Number(agent.task_count) || openTasks;
+  const relatedTasks = (marketplaceData.value.bounties || [])
+    .filter((bounty) => String(bounty.suggested_agent_type || '').toLowerCase() === String(type).toLowerCase())
+    .slice(0, 3)
+    .map((bounty, taskIndex) => mapMarketplaceBounty(bounty, taskIndex));
+  return {
+    type,
+    icon: marketplaceAgentIcon(type),
+    title: agent.title || toTitleLabel(type || 'AI Agent'),
+    workerKind: toTitleLabel(agent.worker_kind || 'agent'),
+    status: openTasks > 0 ? 'Accepting work' : 'Standing by',
+    body: `${toTitleLabel(type)} can review, test, generate, and validate scoped work from funded repository tasks.`,
+    openTasks: formatCompactNumber(openTasks),
+    totalTasks: formatCompactNumber(totalTasks),
+    budget: formatPublicMRGFromCents(agent.budget_cents),
+    capabilities: marketplaceAgentCapabilities(type),
+    nextTasks: relatedTasks,
+    tone: ['green', 'blue', 'yellow', 'red'][index % 4],
+  };
 }
 
 function mapMarketplaceProject(project = {}, index = 0) {

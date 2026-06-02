@@ -4115,6 +4115,131 @@ svg {
   font-weight: 850;
 }
 
+.marketplace-agent-section {
+  display: grid;
+  gap: 16px;
+}
+
+.marketplace-agent-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.marketplace-agent-grid article {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  border: 1px solid #e5edf4;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 16px;
+}
+
+.marketplace-agent-head {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+}
+
+.marketplace-agent-head strong,
+.marketplace-agent-head small {
+  display: block;
+  min-width: 0;
+}
+
+.marketplace-agent-head strong {
+  overflow: hidden;
+  color: #111827;
+  font-size: 14px;
+  font-weight: 930;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.marketplace-agent-head small {
+  margin-top: 3px;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.marketplace-agent-grid p {
+  min-height: 50px;
+  margin: 0;
+  color: #475569;
+  font-size: 12px;
+  line-height: 1.45;
+  font-weight: 700;
+}
+
+.marketplace-agent-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.marketplace-agent-stats span {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+  border: 1px solid #edf0f2;
+  border-radius: 8px;
+  background: #f8fafc;
+  padding: 9px;
+}
+
+.marketplace-agent-stats strong {
+  overflow: hidden;
+  color: #111827;
+  font-size: 12px;
+  font-weight: 930;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.marketplace-agent-stats small {
+  color: #64748b;
+  font-size: 9px;
+  font-weight: 850;
+}
+
+.marketplace-agent-capabilities {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.marketplace-agent-capabilities span {
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #334155;
+  padding: 4px 7px;
+  font-size: 9px;
+  font-weight: 880;
+}
+
+.marketplace-agent-task-list {
+  display: grid;
+  gap: 6px;
+  border-top: 1px solid #eef0f2;
+  padding-top: 10px;
+}
+
+.marketplace-agent-task-list small {
+  overflow: hidden;
+  color: #64748b;
+  font-size: 10px;
+  line-height: 1.35;
+  font-weight: 760;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .marketplace-benefit-strip {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -10402,6 +10527,10 @@ svg {
   .marketplace-project-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .marketplace-agent-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 760px) {
@@ -10426,6 +10555,7 @@ svg {
 
   .marketplace-trust,
   .marketplace-benefit-strip,
+  .marketplace-agent-grid,
   .marketplace-rail {
     grid-template-columns: 1fr;
   }
@@ -10464,6 +10594,10 @@ svg {
   .marketplace-bounty-meta {
     grid-column: 2 / -1;
     justify-items: start;
+  }
+
+  .marketplace-agent-stats {
+    grid-template-columns: 1fr;
   }
 }
 
