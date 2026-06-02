@@ -153,7 +153,11 @@ func (s *Server) geminiReviewWebhook(w http.ResponseWriter, r *http.Request) {
 			entry.KeyID = result.KeyID
 			entry.Labels = append([]string(nil), result.Labels...)
 		}
-		_ = s.store.AddGeminiWebhookLog(entry)
+		if err := s.store.AddGeminiWebhookLog(entry); err == nil {
+			if eventType := geminiWebhookBroadcastType(entry); eventType != "" {
+				s.broadcastLiveFeedEvent(eventType)
+			}
+		}
 	}
 
 	if !s.cfg.GeminiReviewReady() || s.geminiReviewer == nil || !s.geminiReviewer.Ready() {
@@ -200,6 +204,25 @@ func (s *Server) geminiReviewWebhook(w http.ResponseWriter, r *http.Request) {
 
 func (s *GeminiReviewService) Ready() bool {
 	return s.store != nil && s.store.HasRunnableGeminiAPIKey()
+}
+
+func geminiWebhookBroadcastType(log GeminiWebhookLog) string {
+	if strings.TrimSpace(log.Repository) == "" && log.PullNumber <= 0 {
+		return ""
+	}
+	if strings.EqualFold(log.EventName, "repo_issues_synced") {
+		return "repo_issues_synced"
+	}
+	if strings.EqualFold(log.EventName, "agent_action") {
+		return "agent_action"
+	}
+	if publicLiveFeedIsPullRequestOpened(&log) {
+		return "pr_opened"
+	}
+	if strings.EqualFold(log.EventName, "pull_request") || strings.EqualFold(log.EventName, "issue_comment") {
+		return "ai_review"
+	}
+	return ""
 }
 
 func geminiReviewRequestFromGitHubWebhook(eventName string, body []byte) (GeminiReviewWebhookRequest, bool, error) {

@@ -9753,6 +9753,20 @@ function handleWSEvent(payload = {}) {
   }
 
   if (payload.type === 'live_feed_snapshot') return;
+  if (payload.type === 'pr_opened' || payload.type === 'ai_review') {
+    void loadMarketplaceData({ silent: true });
+    if (user.value) {
+      void loadDashboardData({
+        silent: true,
+        skipRepositoryScan: true,
+        skipTaskGraph: true,
+      });
+      if (isAdminUser.value) {
+        void loadAdminConsoleData({ silent: true });
+      }
+    }
+    return;
+  }
   if (payload.type === 'task_accepted' || payload.type === 'repo_issues_synced' || payload.type === 'ledger_task_payment' || payload.type === 'ledger_manual_credit') {
     void loadMarketplaceData({ silent: true });
     void loadLedgerData({ silent: true });

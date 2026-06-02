@@ -176,6 +176,47 @@ func TestGeminiWebhookLogs(t *testing.T) {
 	}
 }
 
+func TestGeminiWebhookBroadcastType(t *testing.T) {
+	cases := []struct {
+		name string
+		log  GeminiWebhookLog
+		want string
+	}{
+		{
+			name: "pull opened",
+			log:  GeminiWebhookLog{EventName: "pull_request", Action: "opened", Repository: "mergeos-bounties/mergeos", PullNumber: 14},
+			want: "pr_opened",
+		},
+		{
+			name: "pull reviewed",
+			log:  GeminiWebhookLog{EventName: "pull_request", Action: "synchronize", Repository: "mergeos-bounties/mergeos", PullNumber: 14},
+			want: "ai_review",
+		},
+		{
+			name: "issue comment reviewed",
+			log:  GeminiWebhookLog{EventName: "issue_comment", Action: "created", Repository: "mergeos-bounties/mergeos", PullNumber: 14},
+			want: "ai_review",
+		},
+		{
+			name: "agent action",
+			log:  GeminiWebhookLog{EventName: "agent_action", Action: "test", Repository: "mergeos-bounties/mergeos"},
+			want: "agent_action",
+		},
+		{
+			name: "missing context",
+			log:  GeminiWebhookLog{EventName: "pull_request", Action: "opened"},
+			want: "",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := geminiWebhookBroadcastType(tc.log); got != tc.want {
+				t.Fatalf("broadcast type = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
 func TestGeminiReviewRequestFromGitHubWebhook(t *testing.T) {
 	body := []byte(`{
 		"action":"opened",
