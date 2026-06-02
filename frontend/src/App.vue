@@ -1229,6 +1229,53 @@
                   </form>
                 </article>
 
+                <article class="dash-card admin-test-settings-card">
+                  <div class="card-title-row">
+                    <div>
+                      <h2>Test Publish Settings</h2>
+                      <p>Enable password-gated public test keys for LLM, PayPal, and USDT task work.</p>
+                    </div>
+                    <span>{{ adminTestSettingsStatus }}</span>
+                  </div>
+                  <form class="admin-test-settings-form" @submit.prevent="submitAdminTestSettings">
+                    <label class="admin-toggle-row">
+                      <input v-model="adminTestSettings.test_mode_enabled" type="checkbox" />
+                      <span>
+                        Public test mode
+                        <strong>{{ adminTestSettings.test_mode_enabled ? 'Enabled' : 'Disabled' }}</strong>
+                      </span>
+                    </label>
+                    <label>
+                      <span>Shared password</span>
+                      <input v-model="adminTestSettingsPassword" type="password" autocomplete="new-password" placeholder="Set or rotate public password" />
+                    </label>
+                    <p v-if="adminTestSettingsError" class="deployment-error">{{ adminTestSettingsError }}</p>
+                    <div class="admin-test-settings-actions">
+                      <button type="submit" :disabled="adminTestSettingsBusy">
+                        {{ adminTestSettingsBusy ? 'Saving...' : 'Save Settings' }}
+                      </button>
+                      <button type="button" @click="openPublicPage('test-settings')">Open Public Page</button>
+                    </div>
+                  </form>
+                  <div v-if="adminTestSettingsRows.length" class="admin-test-key-list">
+                    <article v-for="entry in adminTestSettingsRows" :key="entry.id">
+                      <span class="admin-ops-icon green">
+                        <LockKeyhole :size="15" />
+                      </span>
+                      <div>
+                        <strong>{{ entry.displayName }}</strong>
+                        <small>{{ entry.integrationType }} / {{ entry.settingKey }} / {{ entry.valueHint }}</small>
+                        <b v-if="entry.mapKeys.length">{{ entry.mapKeys.join(', ') }}</b>
+                      </div>
+                      <em>{{ entry.status }}</em>
+                    </article>
+                  </div>
+                  <article v-else class="dash-empty-state compact">
+                    <strong>{{ adminConsoleLoading ? 'Loading test keys...' : 'No published test keys' }}</strong>
+                    <p>{{ adminConsoleLoading ? 'Fetching test publish settings.' : 'Use the public test page to add database-backed keys after password access is enabled.' }}</p>
+                  </article>
+                </article>
+
                 <article class="dash-card admin-ops-card">
                   <div class="card-title-row">
                     <div>
@@ -3613,6 +3660,11 @@ const adminSummary = ref(null);
 const adminOpsQueue = ref({ stats: {}, items: [] });
 const adminReputation = ref({ stats: {}, workers: [] });
 const adminUsers = ref([]);
+const adminTestSettings = ref({ test_mode_enabled: false, updated_at: '' });
+const adminTestSettingsEntries = ref([]);
+const adminTestSettingsPassword = ref('');
+const adminTestSettingsBusy = ref(false);
+const adminTestSettingsError = ref('');
 const adminConsoleLoading = ref(false);
 const adminConsoleError = ref('');
 const adminCreditBusy = ref(false);
@@ -4943,6 +4995,12 @@ const adminReputationRows = computed(() =>
 const adminReputationStats = computed(() => adminReputation.value?.stats || {});
 const adminUserRows = computed(() =>
   (adminUsers.value || []).slice(0, 8).map(mapAdminUserRow),
+);
+const adminTestSettingsRows = computed(() =>
+  (adminTestSettingsEntries.value || []).slice(0, 5).map(mapAdminTestSettingsEntry),
+);
+const adminTestSettingsStatus = computed(() =>
+  adminTestSettings.value?.test_mode_enabled ? 'Enabled' : 'Disabled',
 );
 const adminCreditReady = computed(() =>
   Boolean(adminCreditForm.workerID.trim())
@@ -6296,6 +6354,21 @@ function mapAdminUserRow(row = {}) {
   };
 }
 
+function mapAdminTestSettingsEntry(entry = {}) {
+  const mapKeys = Object.keys(entry.key_value_map || {});
+  const when = formatLedgerDateTime(entry.updated_at);
+  return {
+    id: entry.id || `${entry.integration_type}-${entry.setting_key}`,
+    integrationType: toTitleLabel(entry.integration_type || 'test'),
+    displayName: entry.display_name || entry.setting_key || 'Test key',
+    settingKey: entry.setting_key || '-',
+    valueHint: entry.setting_value_hint || '****',
+    mapKeys,
+    status: toTitleLabel(entry.status || 'active'),
+    updatedAt: when.full,
+  };
+}
+
 function formatLedgerDateTime(value) {
   const date = value ? new Date(value) : new Date();
   if (Number.isNaN(date.getTime())) {
@@ -7091,6 +7164,8 @@ async function loadAdminConsoleData(options = {}) {
     adminOpsQueue.value = { stats: {}, items: [] };
     adminReputation.value = { stats: {}, workers: [] };
     adminUsers.value = [];
+    adminTestSettings.value = { test_mode_enabled: false, updated_at: '' };
+    adminTestSettingsEntries.value = [];
     adminConsoleError.value = '';
     return;
   }
@@ -7099,11 +7174,13 @@ async function loadAdminConsoleData(options = {}) {
   if (!silent) adminConsoleLoading.value = true;
   adminConsoleError.value = '';
   try {
-    const [summary, opsQueue, reputation, users] = await Promise.all([
+    const [summary, opsQueue, reputation, users, testSettings, testEntries] = await Promise.all([
       api('/api/admin/summary'),
       api('/api/admin/ops-queue'),
       api('/api/admin/reputation'),
       api('/api/admin/users'),
+      api('/api/admin/test-settings'),
+      api('/api/admin/test-settings/entries'),
     ]);
     adminSummary.value = summary || {};
     adminOpsQueue.value = {
@@ -7115,10 +7192,41 @@ async function loadAdminConsoleData(options = {}) {
       workers: Array.isArray(reputation?.workers) ? reputation.workers : [],
     };
     adminUsers.value = Array.isArray(users) ? users : [];
+    adminTestSettings.value = {
+      test_mode_enabled: Boolean(testSettings?.test_mode_enabled),
+      updated_at: testSettings?.updated_at || '',
+    };
+    adminTestSettingsEntries.value = Array.isArray(testEntries) ? testEntries : [];
   } catch (error) {
     adminConsoleError.value = error.message || 'Could not load admin console';
   } finally {
     adminConsoleLoading.value = false;
+  }
+}
+
+async function submitAdminTestSettings() {
+  adminTestSettingsBusy.value = true;
+  adminTestSettingsError.value = '';
+  try {
+    const payload = {
+      test_mode_enabled: Boolean(adminTestSettings.value.test_mode_enabled),
+      test_password: adminTestSettingsPassword.value || undefined,
+    };
+    const updated = await api('/api/admin/test-settings', {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
+    adminTestSettings.value = {
+      test_mode_enabled: Boolean(updated?.test_mode_enabled),
+      updated_at: updated?.updated_at || '',
+    };
+    adminTestSettingsPassword.value = '';
+    await loadPublicTestSettingsStatus({ silent: true });
+    showToast(`Test settings ${adminTestSettings.value.test_mode_enabled ? 'enabled' : 'disabled'}.`);
+  } catch (error) {
+    adminTestSettingsError.value = error.message || 'Could not update test settings';
+  } finally {
+    adminTestSettingsBusy.value = false;
   }
 }
 
@@ -7438,6 +7546,11 @@ function clearSession() {
   adminOpsQueue.value = { stats: {}, items: [] };
   adminReputation.value = { stats: {}, workers: [] };
   adminUsers.value = [];
+  adminTestSettings.value = { test_mode_enabled: false, updated_at: '' };
+  adminTestSettingsEntries.value = [];
+  adminTestSettingsPassword.value = '';
+  adminTestSettingsBusy.value = false;
+  adminTestSettingsError.value = '';
   adminConsoleLoading.value = false;
   adminConsoleError.value = '';
   adminCreditError.value = '';

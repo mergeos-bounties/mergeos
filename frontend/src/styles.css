@@ -7445,6 +7445,7 @@ svg {
 .admin-ops-stats,
 .admin-ops-list,
 .admin-users-list,
+.admin-test-key-list,
 .admin-reputation-list {
   display: grid;
   gap: 10px;
@@ -7504,6 +7505,7 @@ svg {
 
 .admin-ops-list article,
 .admin-users-list article,
+.admin-test-key-list article,
 .admin-reputation-list article {
   min-width: 0;
   display: grid;
@@ -7522,6 +7524,10 @@ svg {
 }
 
 .admin-users-list article {
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+}
+
+.admin-test-key-list article {
   grid-template-columns: 34px minmax(0, 1fr) auto;
 }
 
@@ -7559,6 +7565,9 @@ svg {
 .admin-users-list strong,
 .admin-users-list small,
 .admin-users-list b,
+.admin-test-key-list strong,
+.admin-test-key-list small,
+.admin-test-key-list b,
 .admin-reputation-list strong,
 .admin-reputation-list small,
 .admin-reputation-list b {
@@ -7568,6 +7577,7 @@ svg {
 
 .admin-ops-list strong,
 .admin-users-list strong,
+.admin-test-key-list strong,
 .admin-reputation-list strong {
   overflow: hidden;
   color: #111827;
@@ -7579,6 +7589,7 @@ svg {
 
 .admin-ops-list small,
 .admin-users-list small,
+.admin-test-key-list small,
 .admin-reputation-list small {
   margin-top: 4px;
   color: #64748b;
@@ -7589,6 +7600,7 @@ svg {
 
 .admin-ops-list b,
 .admin-users-list b,
+.admin-test-key-list b,
 .admin-reputation-list b {
   width: max-content;
   max-width: 100%;
@@ -7614,6 +7626,7 @@ svg {
 
 .admin-ops-side em,
 .admin-user-side em,
+.admin-test-key-list em,
 .admin-reputation-list em {
   border-radius: 999px;
   padding: 4px 7px;
@@ -7652,6 +7665,7 @@ svg {
 
 .admin-ops-side button,
 .admin-user-side button,
+.admin-test-settings-actions button,
 .admin-credit-form > button,
 .admin-credit-result button {
   min-height: 28px;
@@ -7738,6 +7752,95 @@ svg {
   line-height: 1.35;
   font-weight: 740;
   overflow-wrap: anywhere;
+}
+
+.admin-test-settings-form {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.admin-test-settings-form label:not(.admin-toggle-row) {
+  display: grid;
+  gap: 6px;
+}
+
+.admin-test-settings-form label > span {
+  color: #475569;
+  font-size: 10px;
+  font-weight: 850;
+}
+
+.admin-test-settings-form input[type="password"] {
+  width: 100%;
+  min-height: 36px;
+  border: 1px solid #dbe3ea;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #111827;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 720;
+}
+
+.admin-toggle-row {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #e8eef1;
+  border-radius: 8px;
+  background: #fbfcfd;
+  padding: 10px;
+}
+
+.admin-toggle-row input {
+  width: 16px;
+  height: 16px;
+}
+
+.admin-toggle-row span,
+.admin-toggle-row strong {
+  display: block;
+}
+
+.admin-toggle-row span {
+  color: #475569;
+  font-size: 11px;
+  font-weight: 820;
+}
+
+.admin-toggle-row strong {
+  margin-top: 2px;
+  color: #111827;
+  font-size: 12px;
+  font-weight: 920;
+}
+
+.admin-test-settings-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.admin-test-settings-actions button:first-child {
+  background: var(--green);
+  border-color: var(--green);
+  color: #ffffff;
+}
+
+.admin-test-settings-actions button:disabled {
+  opacity: 0.55;
+}
+
+.admin-test-key-list em {
+  border-radius: 999px;
+  background: #ecfdf5;
+  color: #047857;
+  padding: 4px 7px;
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 900;
 }
 
 .payment-history-list {
@@ -8528,6 +8631,7 @@ svg {
   .admin-readiness-list,
   .admin-ops-stats,
   .admin-credit-row,
+  .admin-test-settings-actions,
   .payment-summary-grid,
   .payment-history-meta {
     grid-template-columns: 1fr;
@@ -8535,12 +8639,14 @@ svg {
 
   .admin-ops-list article,
   .admin-users-list article,
+  .admin-test-key-list article,
   .admin-reputation-list article {
     grid-template-columns: 34px minmax(0, 1fr);
   }
 
   .admin-ops-side,
   .admin-user-side,
+  .admin-test-key-list em,
   .admin-reputation-list em {
     grid-column: 2;
     justify-items: start;
