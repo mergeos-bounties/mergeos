@@ -35,6 +35,10 @@ await mergeos.publicMarketplace();
 await mergeos.publicLedger();
 await mergeos.publicLedgerVerification();
 await mergeos.publicLiveFeed({ limit: 80 });
+await mergeos.importRepoIssues({ repo_url: 'https://github.com/acme/repo' });
+await mergeos.publicTestSettingsStatus();
+await mergeos.publicTestSettingsAuth('shared-password');
+await mergeos.publicTestSettingsEntries('shared-password');
 ```
 
 ## Task and workflow APIs
@@ -57,6 +61,15 @@ await mergeos.workerDashboard();
 
 ```js
 await mergeos.adminSummary();
+await mergeos.adminUsers();
+await mergeos.adminProjects();
+await mergeos.adminTasks();
+await mergeos.adminTaskPullRequests('tsk_0001');
+await mergeos.mergeAdminTaskPullRequest('tsk_0001', 120, {
+  worker_id: 'github:contributor',
+  reward_mrg: 50,
+  bounty_type: 'future-small',
+});
 await mergeos.adminOpsQueue();
 await mergeos.adminReputation();
 await mergeos.creditMRG({
@@ -65,6 +78,15 @@ await mergeos.creditMRG({
   bounty_type: 'future-medium',
   pr_url: 'https://github.com/mergeos-bounties/mergeos/pull/120',
 });
+await mergeos.adminSettings();
+await mergeos.adminSSLReviews();
+await mergeos.adminGeminiKeys();
+await mergeos.adminTestSettings();
+await mergeos.updateAdminTestSettings({
+  test_mode_enabled: true,
+  test_password: 'shared-password',
+});
+await mergeos.adminTestSettingsEntries();
 ```
 
 ## Event API
