@@ -93,6 +93,11 @@ export class MergeOSClient {
     return this.request(`/api/public/protocol/tasks${limit}`, { auth: false });
   }
 
+  publicProtocolAgents(options = {}) {
+    const limit = Number(options.limit) > 0 ? `?limit=${encodeURIComponent(Number(options.limit))}` : '';
+    return this.request(`/api/public/protocol/agents${limit}`, { auth: false });
+  }
+
   publicProtocolEvents(options = {}) {
     const limit = Number(options.limit) > 0 ? `?limit=${encodeURIComponent(Number(options.limit))}` : '';
     return this.request(`/api/public/protocol/events${limit}`, { auth: false });

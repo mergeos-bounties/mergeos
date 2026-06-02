@@ -12,6 +12,12 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Description: "Claimable bounty task with reward, worker lane, acceptance criteria, and evidence requirements.",
 			},
 			{
+				Version:     "mergeos.agent.v1",
+				Kind:        "agent",
+				SchemaURL:   "https://mergeos.shop/protocol/agent.v1.schema.json",
+				Description: "AI agent lane with supported actions, capabilities, active bounty demand, and open task references.",
+			},
+			{
 				Version:     "mergeos.workflow.v1",
 				Kind:        "workflow",
 				SchemaURL:   "https://mergeos.shop/protocol/workflow.v1.schema.json",
@@ -43,6 +49,13 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Protocol:    "mergeos.task.v1",
 				Auth:        "none",
 				Description: "Public open bounty tasks as protocol documents.",
+			},
+			{
+				Method:      "GET",
+				Path:        "/api/public/protocol/agents",
+				Protocol:    "mergeos.agent.v1",
+				Auth:        "none",
+				Description: "Public AI agent lanes as protocol documents.",
 			},
 			{
 				Method:      "GET",

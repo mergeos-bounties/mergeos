@@ -4,12 +4,52 @@ import { assertProtocolDocument, protocolSchemas, schemaForProtocol, validatePro
 
 test('loads stable task, workflow, and event schemas', () => {
   assert.deepEqual(Object.keys(protocolSchemas).sort(), [
+    'mergeos.agent.v1',
     'mergeos.event.v1',
     'mergeos.scan.v1',
     'mergeos.task.v1',
     'mergeos.workflow.v1',
   ]);
   assert.equal(schemaForProtocol('mergeos.task.v1').title, 'MergeOS Task v1');
+});
+
+test('validates an agent protocol document', () => {
+  const result = validateProtocolDocument({
+    protocol_version: 'mergeos.agent.v1',
+    kind: 'agent',
+    id: 'agt_qa_agent',
+    type: 'qa-agent',
+    title: 'QA Agent',
+    worker_kind: 'agent',
+    supported_actions: ['review', 'test'],
+    capabilities: ['qa_validation', 'evidence_reporting'],
+    task_count: 3,
+    open_task_count: 2,
+    budget_mrg: 150,
+    status: 'active',
+    open_task_ids: ['prj_0001:issue:12'],
+  });
+
+  assert.equal(result.valid, true);
+  assert.deepEqual(result.errors, []);
+
+  const invalid = validateProtocolDocument({
+    protocol_version: 'mergeos.agent.v1',
+    kind: 'agent',
+    id: 'x',
+    type: '',
+    title: 'QA Agent',
+    worker_kind: 'bot',
+    supported_actions: ['unknown'],
+    capabilities: [],
+    task_count: -1,
+    open_task_count: 0,
+    budget_mrg: 0,
+    status: 'busy',
+  });
+  assert.equal(invalid.valid, false);
+  assert(invalid.errors.some((error) => error.path === 'worker_kind'));
+  assert(invalid.errors.some((error) => error.path === 'supported_actions[0]'));
 });
 
 test('validates a task protocol document', () => {

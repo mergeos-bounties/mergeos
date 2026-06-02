@@ -23,6 +23,7 @@ test('creates public feed and ledger verification requests without auth', async 
     { status: 200, body: { items: [] } },
     { status: 200, body: { protocol_version: 'mergeos.protocol.manifest.v1' } },
     { status: 200, body: { tasks: [] } },
+    { status: 200, body: { agents: [] } },
     { status: 200, body: { events: [] } },
     { status: 200, body: { valid: true } },
   ]);
@@ -35,12 +36,14 @@ test('creates public feed and ledger verification requests without auth', async 
   const payload = await client.publicLiveFeed({ limit: 80 });
   const manifest = await client.publicProtocolManifest();
   const tasks = await client.publicProtocolTasks({ limit: 80 });
+  const agents = await client.publicProtocolAgents({ limit: 80 });
   const events = await client.publicProtocolEvents({ limit: 80 });
   const verification = await client.publicLedgerVerification();
 
   assert.deepEqual(payload, { items: [] });
   assert.equal(manifest.protocol_version, 'mergeos.protocol.manifest.v1');
   assert.deepEqual(tasks, { tasks: [] });
+  assert.deepEqual(agents, { agents: [] });
   assert.deepEqual(events, { events: [] });
   assert.deepEqual(verification, { valid: true });
   assert.equal(fetchImpl.calls[0].url, 'https://mergeos.shop/api/public/live-feed?limit=80');
@@ -49,10 +52,12 @@ test('creates public feed and ledger verification requests without auth', async 
   assert.equal(fetchImpl.calls[1].options.headers.Authorization, undefined);
   assert.equal(fetchImpl.calls[2].url, 'https://mergeos.shop/api/public/protocol/tasks?limit=80');
   assert.equal(fetchImpl.calls[2].options.headers.Authorization, undefined);
-  assert.equal(fetchImpl.calls[3].url, 'https://mergeos.shop/api/public/protocol/events?limit=80');
+  assert.equal(fetchImpl.calls[3].url, 'https://mergeos.shop/api/public/protocol/agents?limit=80');
   assert.equal(fetchImpl.calls[3].options.headers.Authorization, undefined);
-  assert.equal(fetchImpl.calls[4].url, 'https://mergeos.shop/api/public/ledger/verify');
+  assert.equal(fetchImpl.calls[4].url, 'https://mergeos.shop/api/public/protocol/events?limit=80');
   assert.equal(fetchImpl.calls[4].options.headers.Authorization, undefined);
+  assert.equal(fetchImpl.calls[5].url, 'https://mergeos.shop/api/public/ledger/verify');
+  assert.equal(fetchImpl.calls[5].options.headers.Authorization, undefined);
 });
 
 test('exposes public repo import and password-gated test settings without auth', async () => {

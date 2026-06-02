@@ -43,6 +43,7 @@ await mergeos.publicLedgerVerification();
 await mergeos.publicLiveFeed({ limit: 80 });
 await mergeos.publicProtocolManifest();
 await mergeos.publicProtocolTasks({ limit: 80 });
+await mergeos.publicProtocolAgents({ limit: 80 });
 await mergeos.publicProtocolEvents({ limit: 80 });
 await mergeos.importRepoIssues({ repo_url: 'https://github.com/acme/repo' });
 await mergeos.publicTestSettingsStatus();

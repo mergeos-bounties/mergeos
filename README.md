@@ -71,7 +71,7 @@ MergeOS currently supports:
 - JavaScript SDK helpers for public feeds, project deployment workflow, AI workflow, task acceptance, worker dashboards, admin ops queue, and WebSocket events.
 - WebSocket realtime stream with connection readiness and public live-feed snapshot events.
 - MRG contract sources for token issuance, treasury release, project escrow, task reserve, payout, and refund flows.
-- Open protocol schemas for task specs, workflow graphs, and realtime events.
+- Open protocol schemas for task specs, AI agent lanes, workflow graphs, and realtime events.
 
 Roadmap items include deeper AI codebase scanning, automated PR verification, fraud detection, and automatic real payout execution.
 
@@ -321,6 +321,7 @@ Public:
 - `GET /api/public/live-feed`
 - `GET /api/public/protocol`
 - `GET /api/public/protocol/tasks`
+- `GET /api/public/protocol/agents`
 - `GET /api/public/protocol/events`
 - `POST /api/public/repo/issues`
 - `POST /api/integrations/github/pr-review` GitHub webhook receiver for automated LLM PR review. Configure GitHub Webhooks with Payload URL `https://uta.mergeos.shop/api/integrations/github/pr-review`, Content type `application/json`, the same secret as `GEMINI_REVIEW_WEBHOOK_SECRET`, and events `Pull requests` plus `Issue comments`.
@@ -356,6 +357,7 @@ Customer:
 - `GET /api/projects/{id}/repo-scan`
 - `GET /api/projects/{id}/protocol/scan`
 - `POST /api/projects/{id}/repo-sync`
+- `POST /api/projects/{id}/agent-actions`
 - `GET /api/tasks`
 - `POST /api/tasks/{id}/accept`
 - `GET /api/workers/me`

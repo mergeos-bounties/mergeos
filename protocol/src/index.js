@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 
 const schemaFiles = {
+  'mergeos.agent.v1': '../schemas/agent.v1.schema.json',
   'mergeos.task.v1': '../schemas/task.v1.schema.json',
   'mergeos.workflow.v1': '../schemas/workflow.v1.schema.json',
   'mergeos.event.v1': '../schemas/event.v1.schema.json',

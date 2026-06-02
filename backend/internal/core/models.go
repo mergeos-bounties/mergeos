@@ -705,6 +705,11 @@ type PublicTaskProtocolResponse struct {
 	Tasks []TaskProtocolDocument `json:"tasks"`
 }
 
+type PublicAgentProtocolResponse struct {
+	Stats  MarketplaceStats        `json:"stats"`
+	Agents []AgentProtocolDocument `json:"agents"`
+}
+
 type ProtocolManifestResponse struct {
 	ProtocolVersion string                     `json:"protocol_version"`
 	Kind            string                     `json:"kind"`
@@ -745,6 +750,24 @@ type TaskProtocolDocument struct {
 	EvidenceRequired   []string       `json:"evidence_required,omitempty"`
 	Tags               []string       `json:"tags,omitempty"`
 	Metadata           map[string]any `json:"metadata,omitempty"`
+}
+
+type AgentProtocolDocument struct {
+	ProtocolVersion  string         `json:"protocol_version"`
+	Kind             string         `json:"kind"`
+	ID               string         `json:"id"`
+	Type             string         `json:"type"`
+	Title            string         `json:"title"`
+	WorkerKind       WorkerKind     `json:"worker_kind"`
+	SupportedActions []string       `json:"supported_actions"`
+	Capabilities     []string       `json:"capabilities"`
+	TaskCount        int            `json:"task_count"`
+	OpenTaskCount    int            `json:"open_task_count"`
+	BudgetMRG        float64        `json:"budget_mrg"`
+	Status           string         `json:"status"`
+	OpenTaskIDs      []string       `json:"open_task_ids,omitempty"`
+	Tags             []string       `json:"tags,omitempty"`
+	Metadata         map[string]any `json:"metadata,omitempty"`
 }
 
 type EventProtocolDocument struct {

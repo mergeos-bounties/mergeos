@@ -664,14 +664,14 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 	if payload.ProtocolVersion != "mergeos.protocol.manifest.v1" || payload.Kind != "protocol_manifest" {
 		t.Fatalf("unexpected manifest header: %#v", payload)
 	}
-	if len(payload.Schemas) != 4 {
+	if len(payload.Schemas) != 5 {
 		t.Fatalf("manifest schemas = %d: %#v", len(payload.Schemas), payload.Schemas)
 	}
 	schemas := map[string]bool{}
 	for _, schema := range payload.Schemas {
 		schemas[schema.Version] = true
 	}
-	for _, required := range []string{"mergeos.task.v1", "mergeos.workflow.v1", "mergeos.event.v1", "mergeos.scan.v1"} {
+	for _, required := range []string{"mergeos.task.v1", "mergeos.agent.v1", "mergeos.workflow.v1", "mergeos.event.v1", "mergeos.scan.v1"} {
 		if !schemas[required] {
 			t.Fatalf("manifest missing schema %s: %#v", required, payload.Schemas)
 		}
@@ -682,6 +682,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 	}
 	for _, required := range []string{
 		"GET /api/public/protocol/tasks",
+		"GET /api/public/protocol/agents",
 		"GET /api/public/protocol/events",
 		"GET /api/projects/{id}/protocol/workflow",
 		"GET /api/projects/{id}/protocol/scan",
@@ -831,6 +832,39 @@ func TestPublicMarketplaceRouteReturnsSanitizedLiveData(t *testing.T) {
 		}
 		if document.RewardMRG <= 0 || len(document.AcceptanceCriteria) == 0 || len(document.EvidenceRequired) == 0 {
 			t.Fatalf("task protocol missing bounty requirements: %#v", document)
+		}
+	}
+
+	agentReq := httptest.NewRequest(http.MethodGet, "/api/public/protocol/agents?limit=20", nil)
+	agentResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(agentResp, agentReq)
+	if agentResp.Code != http.StatusOK {
+		t.Fatalf("agent protocol status = %d, body = %s", agentResp.Code, agentResp.Body.String())
+	}
+	agentBody := agentResp.Body.String()
+	for _, value := range []string{"client@example.com", "+1 555 0101", auth.User.ID, tempDir, defaultDevPaymentCode} {
+		if strings.Contains(agentBody, value) {
+			t.Fatalf("agent protocol leaked private value %q: %s", value, agentBody)
+		}
+	}
+	for _, task := range project.Tasks {
+		if strings.Contains(agentBody, task.ID) {
+			t.Fatalf("agent protocol leaked internal task id %q: %s", task.ID, agentBody)
+		}
+	}
+	var agentProtocol PublicAgentProtocolResponse
+	if err := json.Unmarshal(agentResp.Body.Bytes(), &agentProtocol); err != nil {
+		t.Fatal(err)
+	}
+	if agentProtocol.Stats.OpenTaskCount != payload.Stats.OpenTaskCount || len(agentProtocol.Agents) != len(payload.Agents) {
+		t.Fatalf("unexpected agent protocol feed: %#v", agentProtocol)
+	}
+	for _, document := range agentProtocol.Agents {
+		if document.ProtocolVersion != "mergeos.agent.v1" || document.Kind != "agent" || document.ID == "" {
+			t.Fatalf("invalid agent protocol header: %#v", document)
+		}
+		if len(document.SupportedActions) == 0 || len(document.Capabilities) == 0 || document.TaskCount == 0 || len(document.OpenTaskIDs) == 0 {
+			t.Fatalf("agent protocol missing routing metadata: %#v", document)
 		}
 	}
 }

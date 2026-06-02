@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mergeos.shop/protocol/agent.v1.schema.json",
+  "title": "MergeOS Agent v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "protocol_version",
+    "kind",
+    "id",
+    "type",
+    "title",
+    "worker_kind",
+    "supported_actions",
+    "capabilities",
+    "task_count",
+    "open_task_count",
+    "budget_mrg",
+    "status"
+  ],
+  "properties": {
+    "protocol_version": { "const": "mergeos.agent.v1" },
+    "kind": { "const": "agent" },
+    "id": { "type": "string", "minLength": 3, "maxLength": 96 },
+    "type": { "type": "string", "minLength": 1, "maxLength": 120 },
+    "title": { "type": "string", "minLength": 1, "maxLength": 160 },
+    "worker_kind": { "type": "string", "enum": ["human", "agent", "hybrid"] },
+    "supported_actions": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "enum": ["review", "test", "generate", "deploy", "scan"] }
+    },
+    "capabilities": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1, "maxLength": 120 }
+    },
+    "task_count": { "type": "integer", "minimum": 0 },
+    "open_task_count": { "type": "integer", "minimum": 0 },
+    "budget_mrg": { "type": "number", "minimum": 0 },
+    "status": { "type": "string", "enum": ["active", "standby"] },
+    "open_task_ids": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 3, "maxLength": 96 }
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1, "maxLength": 120 }
+    },
+    "metadata": { "type": "object" }
+  }
+}
