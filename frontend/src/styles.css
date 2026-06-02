@@ -6717,16 +6717,34 @@ svg {
   gap: 12px;
 }
 
-.repository-scan-card .card-title-row button {
-  width: 34px;
-  height: 34px;
-  display: grid;
-  flex: 0 0 34px;
-  place-items: center;
+.repository-scan-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.repository-scan-actions button {
+  min-height: 34px;
   border: 1px solid var(--line);
   border-radius: 7px;
   background: #ffffff;
   color: #273244;
+  padding: 0 10px;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.repository-scan-actions button[aria-label] {
+  width: 34px;
+  padding: 0;
+  display: grid;
+  flex: 0 0 34px;
+  place-items: center;
+}
+
+.repository-scan-actions button:disabled {
+  opacity: 0.55;
 }
 
 .repository-scan-metrics {

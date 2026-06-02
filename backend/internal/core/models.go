@@ -543,6 +543,18 @@ type ImportRepoIssuesResponse struct {
 	Issues              []*ImportedRepoIssue `json:"issues"`
 }
 
+type ProjectIssueSyncResponse struct {
+	ProjectID          string    `json:"project_id"`
+	ProjectTitle       string    `json:"project_title"`
+	SourceRepoURL      string    `json:"source_repo_url"`
+	ImportedIssueCount int       `json:"imported_issue_count"`
+	AddedTaskCount     int       `json:"added_task_count"`
+	UpdatedTaskCount   int       `json:"updated_task_count"`
+	OpenIssueCount     int       `json:"open_issue_count"`
+	ClosedIssueCount   int       `json:"closed_issue_count"`
+	SyncedAt           time.Time `json:"synced_at"`
+}
+
 type ImportedRepoIssue struct {
 	Number             int        `json:"number"`
 	Title              string     `json:"title"`

@@ -557,7 +557,7 @@ func TestSyncProjectImportedIssuesAddsMissingAndTracksState(t *testing.T) {
 	store.projects[project.ID] = project
 	store.tasks[existing.ID] = existing
 
-	err := store.SyncProjectImportedIssues(project.ID, []*ImportedRepoIssue{
+	report, err := store.SyncProjectImportedIssuesReport(project.ID, "https://github.com/mergeos-bounties/mergeos", []*ImportedRepoIssue{
 		{
 			Number:             1,
 			Title:              "Already imported",
@@ -578,6 +578,9 @@ func TestSyncProjectImportedIssuesAddsMissingAndTracksState(t *testing.T) {
 	})
 	if err != nil {
 		t.Fatal(err)
+	}
+	if report.ProjectID != project.ID || report.SourceRepoURL == "" || report.ImportedIssueCount != 2 || report.AddedTaskCount != 1 || report.UpdatedTaskCount != 1 || report.OpenIssueCount != 1 || report.ClosedIssueCount != 1 {
+		t.Fatalf("sync report = %#v", report)
 	}
 	tasks := store.ListTasks("")
 	if len(tasks) != 2 {

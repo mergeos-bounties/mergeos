@@ -821,12 +821,24 @@ func (s *Store) ListTasks(userID string) []*Task {
 }
 
 func (s *Store) SyncProjectImportedIssues(projectID string, issues []*ImportedRepoIssue) error {
+	_, err := s.SyncProjectImportedIssuesReport(projectID, "", issues)
+	return err
+}
+
+func (s *Store) SyncProjectImportedIssuesReport(projectID, sourceRepoURL string, issues []*ImportedRepoIssue) (ProjectIssueSyncResponse, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	project, ok := s.projects[strings.TrimSpace(projectID)]
 	if !ok {
-		return errors.New("project not found")
+		return ProjectIssueSyncResponse{}, errors.New("project not found")
+	}
+	now := time.Now().UTC()
+	report := ProjectIssueSyncResponse{
+		ProjectID:     project.ID,
+		ProjectTitle:  project.Title,
+		SourceRepoURL: strings.TrimSpace(sourceRepoURL),
+		SyncedAt:      now,
 	}
 
 	existing := map[int]*Task{}
@@ -837,12 +849,17 @@ func (s *Store) SyncProjectImportedIssues(projectID string, issues []*ImportedRe
 	}
 
 	changed := false
-	now := time.Now().UTC()
 	for _, issue := range issues {
 		if issue == nil || issue.Number <= 0 {
 			continue
 		}
+		report.ImportedIssueCount++
 		state := normalizeIssueState(issue.State)
+		if state == "closed" {
+			report.ClosedIssueCount++
+		} else {
+			report.OpenIssueCount++
+		}
 		if task, ok := existing[issue.Number]; ok {
 			taskChanged := false
 			if task.IssueState != state {
@@ -856,6 +873,7 @@ func (s *Store) SyncProjectImportedIssues(projectID string, issues []*ImportedRe
 			if taskChanged {
 				s.syncProjectTaskSnapshotLocked(project, task)
 				changed = true
+				report.UpdatedTaskCount++
 			}
 			continue
 		}
@@ -878,13 +896,14 @@ func (s *Store) SyncProjectImportedIssues(projectID string, issues []*ImportedRe
 		existing[issue.Number] = task
 		s.syncProjectTaskSnapshotLocked(project, task)
 		changed = true
+		report.AddedTaskCount++
 	}
 
 	if !changed {
-		return nil
+		return report, nil
 	}
 	sortTasks(project.Tasks)
-	return s.saveLocked()
+	return report, s.saveLocked()
 }
 
 func (s *Store) TaskWithProject(taskID string) (*Task, *Project, bool) {

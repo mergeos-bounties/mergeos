@@ -2198,9 +2198,14 @@
                       <h2>Repository Scan</h2>
                       <p>{{ dashboardRepositoryScanView.body }}</p>
                     </div>
-                    <button type="button" aria-label="Refresh repository scan" :disabled="dashboardRepositoryScanLoading || !dashboardSelectedProject" @click="loadDashboardRepositoryScanData(dashboardSelectedProject?.id)">
-                      <RefreshCw :size="14" />
-                    </button>
+                    <div class="repository-scan-actions">
+                      <button type="button" :disabled="dashboardRepoSyncLoading || !dashboardSelectedProject" @click="syncDashboardRepoIssues(dashboardSelectedProject?.id)">
+                        {{ dashboardRepoSyncLoading ? 'Syncing...' : 'Sync Issues' }}
+                      </button>
+                      <button type="button" aria-label="Refresh repository scan" :disabled="dashboardRepositoryScanLoading || !dashboardSelectedProject" @click="loadDashboardRepositoryScanData(dashboardSelectedProject?.id)">
+                        <RefreshCw :size="14" />
+                      </button>
+                    </div>
                   </div>
                   <div class="repository-scan-metrics" aria-label="Repository scan summary">
                     <article>
@@ -2220,7 +2225,7 @@
                       <strong>{{ dashboardRepositoryScanView.status }}</strong>
                     </article>
                   </div>
-                  <div v-if="dashboardRepositoryScanError" class="deployment-error">{{ dashboardRepositoryScanError }}</div>
+                  <div v-if="dashboardRepositoryScanError || dashboardRepoSyncError" class="deployment-error">{{ dashboardRepositoryScanError || dashboardRepoSyncError }}</div>
                   <div v-else-if="dashboardRepositoryScanFindings.length" class="repository-finding-list">
                     <article v-for="finding in dashboardRepositoryScanFindings" :key="finding.id">
                       <span :class="['repository-finding-icon', finding.tone]">
@@ -4138,6 +4143,8 @@ const dashboardPullRequestsError = ref('');
 const dashboardRepositoryScan = ref(null);
 const dashboardRepositoryScanLoading = ref(false);
 const dashboardRepositoryScanError = ref('');
+const dashboardRepoSyncLoading = ref(false);
+const dashboardRepoSyncError = ref('');
 const dashboardNotifications = ref([]);
 const dashboardNotificationsLoading = ref(false);
 const dashboardNotificationsError = ref('');
@@ -8634,6 +8641,8 @@ async function loadDashboardData(options = {}) {
     dashboardRepositoryScan.value = null;
     dashboardRepositoryScanLoading.value = false;
     dashboardRepositoryScanError.value = '';
+    dashboardRepoSyncLoading.value = false;
+    dashboardRepoSyncError.value = '';
     dashboardSection.value = 'projects';
     selectedDashboardProjectID.value = '';
     return;
@@ -8685,6 +8694,7 @@ async function loadDashboardData(options = {}) {
       dashboardPullRequestsError.value = '';
       dashboardRepositoryScan.value = null;
       dashboardRepositoryScanError.value = '';
+      dashboardRepoSyncError.value = '';
     }
   } catch (error) {
     dashboardError.value = error.message || 'Could not load projects';
@@ -8870,6 +8880,39 @@ async function loadDashboardRepositoryScanData(projectID, options = {}) {
     }
   } finally {
     dashboardRepositoryScanLoading.value = false;
+  }
+}
+
+async function syncDashboardRepoIssues(projectID, options = {}) {
+  const targetProjectID = String(projectID || '').trim();
+  if (!token.value || !targetProjectID) return;
+
+  const silent = Boolean(options.silent);
+  if (!silent) dashboardRepoSyncLoading.value = true;
+  dashboardRepoSyncError.value = '';
+  try {
+    const report = await api(`/api/projects/${encodeURIComponent(targetProjectID)}/repo-sync`, { method: 'POST' });
+    const added = Number(report.added_task_count) || 0;
+    const updated = Number(report.updated_task_count) || 0;
+    showToast(`Repo issues synced: ${added} added, ${updated} updated.`);
+    await Promise.all([
+      loadDashboardData({
+        silent: true,
+        selectProjectID: targetProjectID,
+        skipPullRequests: true,
+        skipRepositoryScan: true,
+        skipTaskGraph: true,
+      }),
+      loadDashboardTaskGraphData(targetProjectID, { silent: true }),
+      loadDashboardRepositoryScanData(targetProjectID, { silent: true }),
+      loadMarketplaceData({ silent: true }),
+      loadLiveFeedData({ silent: true }),
+    ]);
+  } catch (error) {
+    dashboardRepoSyncError.value = error.message || 'Could not sync repository issues';
+    if (!silent) showToast(dashboardRepoSyncError.value);
+  } finally {
+    dashboardRepoSyncLoading.value = false;
   }
 }
 
@@ -9494,12 +9537,17 @@ function handleWSEvent(payload = {}) {
   }
 
   if (payload.type === 'live_feed_snapshot') return;
-  if (payload.type === 'task_accepted') {
+  if (payload.type === 'task_accepted' || payload.type === 'repo_issues_synced') {
     void loadMarketplaceData({ silent: true });
     void loadLedgerData({ silent: true });
     if (user.value) {
       void loadWorkerDashboardData({ silent: true });
-      void loadDashboardData({ silent: true, skipPullRequests: true, skipRepositoryScan: true, skipTaskGraph: true });
+      void loadDashboardData({
+        silent: true,
+        skipPullRequests: true,
+        skipRepositoryScan: payload.type !== 'repo_issues_synced',
+        skipTaskGraph: payload.type !== 'repo_issues_synced',
+      });
     }
     return;
   }
@@ -9579,6 +9627,8 @@ function clearSession() {
   dashboardRepositoryScan.value = null;
   dashboardRepositoryScanLoading.value = false;
   dashboardRepositoryScanError.value = '';
+  dashboardRepoSyncLoading.value = false;
+  dashboardRepoSyncError.value = '';
   dashboardNotifications.value = [];
   dashboardNotificationsError.value = '';
   workerDashboard.value = {

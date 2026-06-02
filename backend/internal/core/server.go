@@ -82,6 +82,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/projects/{id}/ai-workflow", s.projectAIWorkflow)
 	mux.HandleFunc("GET /api/projects/{id}/task-graph", s.projectTaskGraph)
 	mux.HandleFunc("GET /api/projects/{id}/repo-scan", s.projectRepositoryScan)
+	mux.HandleFunc("POST /api/projects/{id}/repo-sync", s.syncProjectRepoIssues)
 	mux.HandleFunc("POST /api/projects", s.createProject)
 	mux.HandleFunc("POST /api/projects/evaluate", s.evaluateProject)
 	mux.HandleFunc("POST /api/projects/evaluate-price", s.evaluateProjectPrice)
@@ -442,6 +443,40 @@ func (s *Server) projectRepositoryScan(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, scan)
+}
+
+func (s *Server) syncProjectRepoIssues(w http.ResponseWriter, r *http.Request) {
+	user, ok := s.requireUser(w, r)
+	if !ok {
+		return
+	}
+	projectID := strings.TrimSpace(r.PathValue("id"))
+	if !s.store.CanAccessProject(user.ID, user.Role, projectID) {
+		writeError(w, http.StatusForbidden, "project access is required")
+		return
+	}
+	project, ok := s.store.ProjectSnapshot(projectID)
+	if !ok {
+		writeError(w, http.StatusNotFound, "project not found")
+		return
+	}
+	repoURL := projectSourceRepoURL(project)
+	if repoURL == "" {
+		writeError(w, http.StatusBadRequest, "source repository is not configured for this project")
+		return
+	}
+	imported, err := ImportRepoIssues(r.Context(), s.cfg, ImportRepoIssuesRequest{RepoURL: repoURL})
+	if err != nil {
+		writeError(w, http.StatusBadGateway, err.Error())
+		return
+	}
+	report, err := s.store.SyncProjectImportedIssuesReport(projectID, imported.RepoURL, imported.Issues)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	s.broadcastLiveFeedEvent("repo_issues_synced")
+	writeJSON(w, http.StatusOK, report)
 }
 
 func (s *Server) notifications(w http.ResponseWriter, r *http.Request) {
