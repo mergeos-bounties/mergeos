@@ -1482,6 +1482,47 @@
                   </div>
                   <button type="button" @click="showToast('Opening task routing...')">View Routing</button>
                 </article>
+
+                <article class="dash-card deployment-card">
+                  <div class="card-title-row">
+                    <div>
+                      <h2>Deployment Validation</h2>
+                      <p>{{ dashboardDeploymentView.body }}</p>
+                    </div>
+                    <span>{{ dashboardDeploymentView.status }}</span>
+                  </div>
+                  <div class="deployment-status-row">
+                    <span class="deployment-icon"><Rocket :size="18" /></span>
+                    <div>
+                      <strong>{{ dashboardDeploymentView.progress }}%</strong>
+                      <small>{{ dashboardDeploymentView.updatedAt }}</small>
+                    </div>
+                    <button type="button" aria-label="Refresh deployment validation" :disabled="dashboardDeploymentLoading || !dashboardSelectedProject" @click="loadDashboardDeploymentData(dashboardSelectedProject?.id)">
+                      <RefreshCw :size="14" />
+                    </button>
+                  </div>
+                  <div v-if="dashboardDeploymentError" class="deployment-error">{{ dashboardDeploymentError }}</div>
+                  <div v-else-if="dashboardDeploymentStages.length" class="deployment-stage-list">
+                    <article v-for="stage in dashboardDeploymentStages" :key="stage.id">
+                      <span :class="['notification-dot', stage.tone]" />
+                      <div>
+                        <strong>{{ stage.title }}</strong>
+                        <small>{{ stage.body }}</small>
+                        <b v-if="stage.reference">{{ stage.reference }}</b>
+                      </div>
+                      <em>{{ stage.status }}</em>
+                    </article>
+                  </div>
+                  <article v-else class="dash-empty-state compact">
+                    <strong>{{ dashboardDeploymentLoading ? 'Loading deployment...' : 'No deployment signal' }}</strong>
+                    <p>{{ dashboardDeploymentLoading ? 'Syncing deployment stages.' : 'Select a funded project to load deployment validation.' }}</p>
+                  </article>
+                  <div v-if="dashboardDeploymentSignals.length" class="deployment-signal-strip">
+                    <span v-for="signal in dashboardDeploymentSignals" :key="signal.id">
+                      {{ signal.title }}
+                    </span>
+                  </div>
+                </article>
               </section>
 
               <section class="dash-card live-pr-board">
@@ -2998,6 +3039,9 @@ const activeMarketplaceCategory = ref('All');
 const dashboardProjects = ref([]);
 const dashboardTasks = ref([]);
 const dashboardLedgerEntries = ref([]);
+const dashboardDeployment = ref(null);
+const dashboardDeploymentLoading = ref(false);
+const dashboardDeploymentError = ref('');
 const dashboardNotifications = ref([]);
 const dashboardNotificationsLoading = ref(false);
 const dashboardNotificationsError = ref('');
@@ -3893,6 +3937,38 @@ const dashboardWorkSplit = computed(() => {
     { label: 'Agent', className: 'medium', value: tasks.filter((task) => task.required_worker_kind === 'agent').length },
   ];
 });
+const dashboardDeploymentView = computed(() => {
+  const deployment = dashboardDeployment.value;
+  if (!dashboardSelectedProject.value) {
+    return {
+      status: dashboardDeploymentLoading.value ? 'Syncing' : 'Empty',
+      progress: 0,
+      body: 'Deployment gates appear after a project is selected.',
+      updatedAt: '-',
+    };
+  }
+  if (!deployment) {
+    return {
+      status: dashboardDeploymentLoading.value ? 'Syncing' : 'Waiting',
+      progress: 0,
+      body: dashboardDeploymentLoading.value ? 'Fetching deployment validation gates.' : 'No deployment validation payload loaded.',
+      updatedAt: '-',
+    };
+  }
+  const when = formatLedgerDateTime(deployment.updated_at);
+  return {
+    status: toTitleLabel(deployment.status || 'queued'),
+    progress: Math.max(0, Math.min(100, Number(deployment.progress) || 0)),
+    body: `${deployment.project_title || dashboardSelectedProject.value.title || 'Project'} release gate from backend validation.`,
+    updatedAt: when.full,
+  };
+});
+const dashboardDeploymentStages = computed(() =>
+  (dashboardDeployment.value?.stages || []).map(mapDashboardDeploymentStage),
+);
+const dashboardDeploymentSignals = computed(() =>
+  (dashboardDeployment.value?.signals || []).slice(0, 3).map(mapDashboardDeploymentSignal),
+);
 const dashboardTaskRows = computed(() => dashboardSelectedTasks.value.map(mapDashboardTask));
 const dashboardActivityRows = computed(() =>
   dashboardProjectLedger.value.slice().reverse().slice(0, 6).map(mapDashboardActivity),
@@ -4391,6 +4467,7 @@ function openDashboard() {
 async function selectDashboardProject(projectID) {
   if (!projectID) return;
   selectedDashboardProjectID.value = projectID;
+  void loadDashboardDeploymentData(projectID, { silent: true });
   await nextTick();
   if (!hasWindow) return;
   dashboardProjectHeader.value?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -5076,6 +5153,27 @@ function mapDashboardTask(task = {}) {
   };
 }
 
+function mapDashboardDeploymentStage(stage = {}) {
+  const reference = stage.reference || (stage.source_task_issue_number ? `issue:${stage.source_task_issue_number}` : '');
+  return {
+    id: stage.id || stage.title || reference,
+    title: stage.title || 'Deployment stage',
+    body: trimMarketplaceText(stage.body, 'Deployment validation stage.'),
+    status: toTitleLabel(stage.status || 'pending'),
+    tone: stage.tone || (stage.status === 'complete' ? 'green' : stage.status === 'in_progress' ? 'blue' : 'amber'),
+    reference: shortLedgerReference(reference),
+  };
+}
+
+function mapDashboardDeploymentSignal(signal = {}) {
+  return {
+    id: signal.id || `${signal.type || 'signal'}-${signal.created_at || signal.reference || signal.title}`,
+    title: signal.title || toTitleLabel(signal.type || 'Signal'),
+    reference: shortLedgerReference(signal.reference || ''),
+    status: toTitleLabel(signal.status || 'live'),
+  };
+}
+
 function mapWorkerClaimedTask(task = {}) {
   const when = formatLedgerDateTime(task.accepted_at);
   return {
@@ -5205,6 +5303,9 @@ function liveFeedMetaFor(type = '') {
   }
   if (normalized === 'task_accepted') {
     return { type: 'PR Accepted', icon: GitPullRequest, tone: 'green', amountTone: 'positive' };
+  }
+  if (normalized === 'deployment_validation') {
+    return { type: 'Deployment Validation', icon: Rocket, tone: 'blue', amountTone: 'muted' };
   }
   if (normalized === 'ai_review') {
     return { type: 'AI Review', icon: Bot, tone: 'purple', amountTone: 'muted' };
@@ -5452,6 +5553,9 @@ async function loadDashboardData(options = {}) {
     dashboardProjects.value = [];
     dashboardTasks.value = [];
     dashboardLedgerEntries.value = [];
+    dashboardDeployment.value = null;
+    dashboardDeploymentLoading.value = false;
+    dashboardDeploymentError.value = '';
     dashboardSection.value = 'projects';
     selectedDashboardProjectID.value = '';
     return;
@@ -5474,10 +5578,48 @@ async function loadDashboardData(options = {}) {
     selectedDashboardProjectID.value = selectedExists
       ? requestedProjectID
       : (dashboardSortedProjects.value[0]?.id || '');
+    if (selectedDashboardProjectID.value) {
+      await loadDashboardDeploymentData(selectedDashboardProjectID.value, { silent: true });
+    } else {
+      dashboardDeployment.value = null;
+      dashboardDeploymentError.value = '';
+    }
   } catch (error) {
     dashboardError.value = error.message || 'Could not load projects';
   } finally {
     dashboardLoading.value = false;
+  }
+}
+
+async function loadDashboardDeploymentData(projectID, options = {}) {
+  const targetProjectID = String(projectID || '').trim();
+  if (!token.value || !targetProjectID) {
+    dashboardDeployment.value = null;
+    dashboardDeploymentError.value = '';
+    return;
+  }
+
+  const silent = Boolean(options.silent);
+  if (!silent) dashboardDeploymentLoading.value = true;
+  dashboardDeploymentError.value = '';
+  try {
+    const payload = await api(`/api/projects/${encodeURIComponent(targetProjectID)}/deployment`);
+    dashboardDeployment.value = {
+      project_id: payload.project_id || targetProjectID,
+      project_title: payload.project_title || '',
+      status: payload.status || 'queued',
+      progress: Number(payload.progress) || 0,
+      updated_at: payload.updated_at,
+      stages: Array.isArray(payload.stages) ? payload.stages : [],
+      signals: Array.isArray(payload.signals) ? payload.signals : [],
+    };
+  } catch (error) {
+    if (targetProjectID === selectedDashboardProjectID.value) {
+      dashboardDeployment.value = null;
+      dashboardDeploymentError.value = error.message || 'Could not load deployment validation';
+    }
+  } finally {
+    dashboardDeploymentLoading.value = false;
   }
 }
 
@@ -5750,6 +5892,9 @@ function clearSession() {
   dashboardProjects.value = [];
   dashboardTasks.value = [];
   dashboardLedgerEntries.value = [];
+  dashboardDeployment.value = null;
+  dashboardDeploymentLoading.value = false;
+  dashboardDeploymentError.value = '';
   dashboardNotifications.value = [];
   dashboardNotificationsError.value = '';
   workerDashboard.value = {

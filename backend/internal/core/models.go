@@ -574,6 +574,39 @@ type PublicLiveFeedItem struct {
 	CreatedAt    time.Time `json:"created_at"`
 }
 
+type ProjectDeploymentResponse struct {
+	ProjectID    string             `json:"project_id"`
+	ProjectTitle string             `json:"project_title"`
+	Status       string             `json:"status"`
+	Progress     int                `json:"progress"`
+	UpdatedAt    time.Time          `json:"updated_at"`
+	Stages       []DeploymentStage  `json:"stages"`
+	Signals      []DeploymentSignal `json:"signals"`
+}
+
+type DeploymentStage struct {
+	ID                    string    `json:"id"`
+	Title                 string    `json:"title"`
+	Body                  string    `json:"body"`
+	Status                string    `json:"status"`
+	Tone                  string    `json:"tone"`
+	SourceTaskIssueNumber int       `json:"source_task_issue_number,omitempty"`
+	Reference             string    `json:"reference,omitempty"`
+	URL                   string    `json:"url,omitempty"`
+	UpdatedAt             time.Time `json:"updated_at"`
+}
+
+type DeploymentSignal struct {
+	ID        string    `json:"id"`
+	Type      string    `json:"type"`
+	Title     string    `json:"title"`
+	Body      string    `json:"body"`
+	Status    string    `json:"status"`
+	Reference string    `json:"reference,omitempty"`
+	URL       string    `json:"url,omitempty"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
 type WorkerDashboardResponse struct {
 	Profile        WorkerProfile        `json:"profile"`
 	Stats          WorkerStats          `json:"stats"`

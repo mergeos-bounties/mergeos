@@ -864,10 +864,145 @@ func TestPublicLiveFeedRouteReturnsSanitizedTimeline(t *testing.T) {
 			}
 		}
 	}
-	for _, required := range []string{"project_funded", "task_accepted", "ledger_task_payment", "ai_review"} {
+	for _, required := range []string{"project_funded", "deployment_validation", "task_accepted", "ledger_task_payment", "ai_review"} {
 		if !seen[required] {
 			t.Fatalf("live feed missing %s item: %#v", required, payload.Items)
 		}
+	}
+}
+
+func TestProjectDeploymentRouteReturnsDerivedStatusAndSanitizesData(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:       defaultTokenSymbol,
+		StatePath:         filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:    1000,
+		DevPaymentEnabled: true,
+		DevPaymentCode:    defaultDevPaymentCode,
+		GitHubOwner:       defaultGitHubOwner,
+		BountyRoot:        filepath.Join(tempDir, "bounties"),
+		SMTPFrom:          "noreply@mergeos.local",
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	auth, err := store.Register(RegisterRequest{
+		Name:        "Deploy Client",
+		CompanyName: "Deploy Co",
+		Email:       "deploy@example.com",
+		Password:    "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	project, err := store.CreateProject(context.Background(), auth.User.ID, CreateProjectRequest{
+		Title:            "Deployment proof",
+		ClientName:       "Private Deploy Client",
+		CompanyName:      "Deploy Co",
+		ClientEmail:      "deploy@example.com",
+		Phone:            "+1 555 0199",
+		Brief:            "Create deployment validation data without leaking private customer data.",
+		BudgetCents:      210000,
+		PaymentMethod:    PaymentPayPal,
+		PaymentReference: defaultDevPaymentCode,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var deployTask *Task
+	for _, task := range project.Tasks {
+		if strings.Contains(strings.ToLower(task.Title+" "+task.Acceptance+" "+task.SuggestedAgentType), "deploy") {
+			deployTask = task
+			break
+		}
+	}
+	if deployTask == nil {
+		t.Fatal("project did not create a deployment task")
+	}
+	req, err := acceptRequestForPullAuthor(deployTask, "deploy-author")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.AcceptTask(deployTask.ID, req); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.AddGeminiWebhookLog(GeminiWebhookLog{
+		EventName:  "pull_request",
+		Action:     "synchronize",
+		Repository: project.BountyRepoName,
+		PullNumber: 211,
+		Sender:     "deploy-author",
+		Status:     "processed",
+		StatusCode: http.StatusOK,
+		CommentURL: "https://github.com/mergeos-bounties/mergeos/pull/211#issuecomment-2",
+		ReceivedAt: time.Now().UTC(),
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	server := NewServer(cfg, store, payments)
+	reqHTTP := httptest.NewRequest(http.MethodGet, "/api/projects/"+project.ID+"/deployment", nil)
+	reqHTTP.Header.Set("Authorization", "Bearer "+auth.Token)
+	resp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(resp, reqHTTP)
+	if resp.Code != http.StatusOK {
+		t.Fatalf("deployment status = %d, body = %s", resp.Code, resp.Body.String())
+	}
+
+	body := resp.Body.String()
+	for _, value := range []string{
+		"deploy@example.com",
+		"+1 555 0199",
+		auth.User.ID,
+		defaultDevPaymentCode,
+		tempDir,
+		deployTask.ID,
+	} {
+		if strings.Contains(body, value) {
+			t.Fatalf("deployment response leaked private value %q: %s", value, body)
+		}
+	}
+
+	var payload ProjectDeploymentResponse
+	if err := json.Unmarshal(resp.Body.Bytes(), &payload); err != nil {
+		t.Fatal(err)
+	}
+	if payload.ProjectID != project.ID || payload.Status != "validating" || payload.Progress == 0 {
+		t.Fatalf("unexpected deployment summary: %#v", payload)
+	}
+	seenStages := map[string]bool{}
+	for _, stage := range payload.Stages {
+		seenStages[stage.ID] = true
+		if stage.ID == "deployment_handoff" && stage.Status != deploymentStageComplete {
+			t.Fatalf("deployment handoff stage was not complete: %#v", stage)
+		}
+	}
+	for _, required := range []string{"repo_handoff", "task_routing", "qa_validation", "deployment_handoff", "release_gate"} {
+		if !seenStages[required] {
+			t.Fatalf("deployment response missing stage %s: %#v", required, payload.Stages)
+		}
+	}
+	if len(payload.Signals) == 0 {
+		t.Fatalf("deployment response missing ledger/AI signals: %#v", payload.Signals)
+	}
+
+	otherAuth, err := store.Register(RegisterRequest{
+		Name:     "Other Client",
+		Email:    "other-client@example.com",
+		Password: "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	forbiddenReq := httptest.NewRequest(http.MethodGet, "/api/projects/"+project.ID+"/deployment", nil)
+	forbiddenReq.Header.Set("Authorization", "Bearer "+otherAuth.Token)
+	forbiddenResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(forbiddenResp, forbiddenReq)
+	if forbiddenResp.Code != http.StatusForbidden {
+		t.Fatalf("other client deployment status = %d", forbiddenResp.Code)
 	}
 }
 

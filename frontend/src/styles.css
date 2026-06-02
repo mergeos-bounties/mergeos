@@ -5928,6 +5928,162 @@ svg {
   font-weight: 930;
 }
 
+.deployment-card {
+  display: grid;
+  gap: 12px;
+}
+
+.deployment-status-row {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) 34px;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #e8eef1;
+  border-radius: 8px;
+  background: #fbfcfd;
+  padding: 10px;
+}
+
+.deployment-icon {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: #eaf5ff;
+  color: #2563eb;
+}
+
+.deployment-status-row strong,
+.deployment-status-row small {
+  display: block;
+  min-width: 0;
+}
+
+.deployment-status-row strong {
+  color: #111827;
+  font-size: 20px;
+  line-height: 1;
+  font-weight: 930;
+}
+
+.deployment-status-row small {
+  overflow: hidden;
+  margin-top: 5px;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 760;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.deployment-status-row button {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #ffffff;
+  color: #273244;
+}
+
+.deployment-error {
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  background: #fef2f2;
+  color: var(--red);
+  padding: 9px 10px;
+  font-size: 11px;
+  font-weight: 820;
+}
+
+.deployment-stage-list {
+  display: grid;
+  gap: 8px;
+}
+
+.deployment-stage-list article {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 9px;
+  border-top: 1px solid #eef0f2;
+  padding-top: 8px;
+}
+
+.deployment-stage-list strong,
+.deployment-stage-list small,
+.deployment-stage-list b {
+  display: block;
+  min-width: 0;
+}
+
+.deployment-stage-list strong {
+  overflow: hidden;
+  color: #111827;
+  font-size: 12px;
+  font-weight: 920;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.deployment-stage-list small {
+  margin-top: 3px;
+  color: #64748b;
+  font-size: 10px;
+  line-height: 1.35;
+  font-weight: 740;
+}
+
+.deployment-stage-list b {
+  width: max-content;
+  max-width: 100%;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #f5f7f7;
+  color: #6b7280;
+  margin-top: 5px;
+  padding: 3px 7px;
+  font-size: 9px;
+  font-weight: 840;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.deployment-stage-list em {
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  padding: 4px 7px;
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.deployment-signal-strip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.deployment-signal-strip span {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #eef6ff;
+  color: #1d4ed8;
+  padding: 5px 8px;
+  font-size: 9px;
+  font-weight: 880;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .live-pr-board {
   margin-top: 14px;
   padding: 0;

@@ -47,6 +47,9 @@ func (s *Store) PublicLiveFeed(limit int) PublicLiveFeedResponse {
 			taskProjectIDs[task.ID] = project.ID
 		}
 		response.Items = append(response.Items, publicProjectLiveFeedItem(project))
+		deployment := s.projectDeploymentLocked(project)
+		touch(deployment.UpdatedAt)
+		response.Items = append(response.Items, publicDeploymentLiveFeedItem(deployment))
 	}
 
 	for _, task := range s.tasks {
@@ -111,6 +114,33 @@ func publicProjectLiveFeedItem(project *Project) PublicLiveFeedItem {
 		URL:          marketplacePublicRepoURL(project.RepoURL),
 		Status:       string(project.Status),
 		CreatedAt:    project.CreatedAt,
+	}
+}
+
+func publicDeploymentLiveFeedItem(deployment ProjectDeploymentResponse) PublicLiveFeedItem {
+	status := strings.TrimSpace(deployment.Status)
+	if status == "" {
+		status = "queued"
+	}
+	title := "Deployment validation running"
+	if status == "ready" {
+		title = "Deployment validation ready"
+	}
+	projectTitle := strings.TrimSpace(deployment.ProjectTitle)
+	if projectTitle == "" {
+		projectTitle = "MergeOS project"
+	}
+	return PublicLiveFeedItem{
+		ID:           "deployment:" + deployment.ProjectID,
+		Type:         "deployment_validation",
+		Title:        title,
+		Body:         fmt.Sprintf("%s deployment gate is %d%% complete across QA, handoff, and release checks.", projectTitle, deployment.Progress),
+		ProjectID:    deployment.ProjectID,
+		ProjectTitle: projectTitle,
+		Actor:        "mergeos-orchestrator",
+		Reference:    "project:" + deployment.ProjectID,
+		Status:       status,
+		CreatedAt:    deployment.UpdatedAt,
 	}
 }
 

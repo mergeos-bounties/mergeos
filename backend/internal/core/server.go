@@ -71,6 +71,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("POST /api/admin/gemini/keys/{id}/test", s.testAdminGeminiKey)
 	mux.HandleFunc("GET /api/admin/gemini/webhooks", s.adminGeminiWebhookLogs)
 	mux.HandleFunc("GET /api/projects", s.projects)
+	mux.HandleFunc("GET /api/projects/{id}/deployment", s.projectDeployment)
 	mux.HandleFunc("POST /api/projects", s.createProject)
 	mux.HandleFunc("POST /api/projects/evaluate", s.evaluateProject)
 	mux.HandleFunc("POST /api/projects/evaluate-price", s.evaluateProjectPrice)
@@ -299,6 +300,24 @@ func (s *Server) tasks(w http.ResponseWriter, r *http.Request) {
 		userID = ""
 	}
 	writeJSON(w, http.StatusOK, s.store.ListTasks(userID))
+}
+
+func (s *Server) projectDeployment(w http.ResponseWriter, r *http.Request) {
+	user, ok := s.requireUser(w, r)
+	if !ok {
+		return
+	}
+	projectID := strings.TrimSpace(r.PathValue("id"))
+	if !s.store.CanAccessProject(user.ID, user.Role, projectID) {
+		writeError(w, http.StatusForbidden, "project access is required")
+		return
+	}
+	deployment, err := s.store.ProjectDeployment(projectID)
+	if err != nil {
+		writeError(w, http.StatusNotFound, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, deployment)
 }
 
 func (s *Server) notifications(w http.ResponseWriter, r *http.Request) {
