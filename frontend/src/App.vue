@@ -28,11 +28,35 @@
       </nav>
 
       <div class="nav-actions project-flow-actions">
-        <button class="locale-button icon-only" type="button" aria-label="Language settings" @click="showToast('Language settings')">
-          <Globe2 :size="17" />
-          EN
-          <ChevronDown :size="13" />
-        </button>
+        <div class="locale-menu">
+          <button
+            class="locale-button icon-only"
+            type="button"
+            aria-label="Language settings"
+            aria-haspopup="menu"
+            :aria-expanded="localeMenuOpen"
+            @click="toggleLocaleMenu"
+          >
+            <Globe2 :size="17" />
+            {{ selectedLocale.code }}
+            <ChevronDown :size="13" />
+          </button>
+          <div v-if="localeMenuOpen" class="locale-popover" role="menu" aria-label="Language options">
+            <button
+              v-for="option in localeOptions"
+              :key="option.code"
+              type="button"
+              role="menuitemradio"
+              :aria-checked="option.code === selectedLocale.code"
+              :class="{ active: option.code === selectedLocale.code }"
+              @click="selectLocale(option.code)"
+            >
+              <span>{{ option.label }}</span>
+              <small>{{ option.region }}</small>
+              <CheckCircle2 v-if="option.code === selectedLocale.code" :size="15" />
+            </button>
+          </div>
+        </div>
         <template v-if="user">
           <button class="dash-icon-button light" aria-label="Messages" type="button" @click="openProjectFlowMessages">
             <MessageCircle :size="17" />
@@ -3898,6 +3922,12 @@ function getBrowserStorage() {
 
 const browserStorage = getBrowserStorage();
 const projectDraftStorageKey = 'mergeos_project_setup_draft';
+const localeStorageKey = 'mergeos_locale';
+const localeOptions = [
+  { code: 'EN', label: 'English', region: 'United States', lang: 'en-US' },
+  { code: 'VI', label: 'Vietnamese', region: 'Vietnam', lang: 'vi-VN' },
+  { code: 'JA', label: 'Japanese', region: 'Japan', lang: 'ja-JP' },
+];
 
 function readStoredToken() {
   try {
@@ -3923,6 +3953,15 @@ function removeStoredToken() {
   }
 }
 
+function readStoredLocale() {
+  try {
+    const value = browserStorage?.getItem(localeStorageKey) || '';
+    return localeOptions.some((option) => option.code === value) ? value : 'EN';
+  } catch {
+    return 'EN';
+  }
+}
+
 const token = ref(readStoredToken());
 const user = ref(null);
 const authVisible = ref(false);
@@ -3933,6 +3972,8 @@ const authRememberMe = ref(false);
 const authTermsAccepted = ref(true);
 const errorMessage = ref('');
 const mobileMenuOpen = ref(false);
+const localeMenuOpen = ref(false);
+const selectedLocaleCode = ref(readStoredLocale());
 const showPassword = ref(false);
 const showConfirmPassword = ref(false);
 const toastMessage = ref('');
@@ -4379,6 +4420,7 @@ const projectFooterSteps = computed(() =>
     done: projectWizardStage.value !== 'setup' || projectWizardStep.value > step.number,
   })),
 );
+const selectedLocale = computed(() => localeOptions.find((option) => option.code === selectedLocaleCode.value) || localeOptions[0]);
 
 const authForm = reactive({
   name: '',
@@ -5933,6 +5975,29 @@ function showToast(message) {
   toastTimer = window.setTimeout(() => {
     toastMessage.value = '';
   }, 2200);
+}
+
+function applyLocalePreference(option = selectedLocale.value) {
+  if (!hasWindow || !option?.lang) return;
+  document.documentElement.setAttribute('lang', option.lang);
+}
+
+function toggleLocaleMenu() {
+  localeMenuOpen.value = !localeMenuOpen.value;
+}
+
+function selectLocale(code) {
+  const option = localeOptions.find((item) => item.code === code);
+  if (!option) return;
+  selectedLocaleCode.value = option.code;
+  localeMenuOpen.value = false;
+  try {
+    browserStorage?.setItem(localeStorageKey, option.code);
+  } catch {
+    // Storage is optional; the active session still reflects the selected language.
+  }
+  applyLocalePreference(option);
+  showToast(`Language preference set to ${option.label}.`);
 }
 
 async function copyClaimCommand(command = '') {
@@ -9261,6 +9326,7 @@ async function logout() {
 
 onMounted(async () => {
   connectWebSocket();
+  applyLocalePreference();
   if (hasWindow) {
     const params = new URLSearchParams(window.location.search);
     const oauthToken = params.get('token');

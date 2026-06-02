@@ -178,6 +178,68 @@ svg {
   transform: translateY(-1px);
 }
 
+.locale-menu {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.locale-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 80;
+  width: 210px;
+  border: 1px solid rgba(229, 231, 235, 0.95);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.16);
+  padding: 6px;
+}
+
+.locale-popover button {
+  width: 100%;
+  min-height: 44px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px 10px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #111827;
+  padding: 8px 10px;
+  text-align: left;
+}
+
+.locale-popover button:hover,
+.locale-popover button.active {
+  background: #f0fdf8;
+  color: var(--green-dark);
+}
+
+.locale-popover span {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 850;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.locale-popover small {
+  grid-column: 1;
+  color: #6b7280;
+  font-size: 11px;
+  font-weight: 720;
+}
+
+.locale-popover svg {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  color: var(--green-dark);
+}
+
 .nav-links button.nav-active,
 .nav-links a.nav-active {
   position: relative;
@@ -10656,6 +10718,7 @@ svg {
     gap: 6px;
   }
 
+  .project-flow-actions .locale-menu,
   .project-flow-actions .locale-button {
     display: none;
   }
