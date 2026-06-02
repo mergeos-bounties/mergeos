@@ -106,39 +106,39 @@ type Store struct {
 	emailer  *EmailSender
 	storage  statePersistence
 
-	nextID            int
-	projects          map[string]*Project
-	tasks             map[string]*Task
-	users             map[string]*User
-	wallets           map[string]*Wallet
-	sessions          map[string]*Session
-	notifications     map[string]*Notification
-	attachments       map[string]*Attachment
-	sslReviews        map[string]*SSLReviewStatus
-	geminiAPIKeys     map[string]*GeminiAPIKey
-	geminiWebhookLogs map[string]*GeminiWebhookLog
-	testSettingsConfig   TestSettingsConfig
-	testSettingsEntries  map[string]*TestSettingsEntry
-	adminSettings     AdminSettings
-	ledger            []LedgerEntry
+	nextID              int
+	projects            map[string]*Project
+	tasks               map[string]*Task
+	users               map[string]*User
+	wallets             map[string]*Wallet
+	sessions            map[string]*Session
+	notifications       map[string]*Notification
+	attachments         map[string]*Attachment
+	sslReviews          map[string]*SSLReviewStatus
+	geminiAPIKeys       map[string]*GeminiAPIKey
+	geminiWebhookLogs   map[string]*GeminiWebhookLog
+	testSettingsConfig  TestSettingsConfig
+	testSettingsEntries map[string]*TestSettingsEntry
+	adminSettings       AdminSettings
+	ledger              []LedgerEntry
 }
 
 type persistedState struct {
-	NextID            int                 `json:"next_id"`
-	Projects          []*Project          `json:"projects"`
-	Tasks             []*Task             `json:"tasks"`
-	Users             []*User             `json:"users"`
-	Wallets           []*Wallet           `json:"wallets"`
-	Sessions          []*Session          `json:"sessions"`
-	Notifications     []*Notification     `json:"notifications"`
-	Attachments       []*Attachment       `json:"attachments"`
-	SSLReviews        []*SSLReviewStatus  `json:"ssl_reviews"`
-	GeminiAPIKeys     []*GeminiAPIKey     `json:"gemini_api_keys"`
-	GeminiWebhookLogs []*GeminiWebhookLog `json:"gemini_webhook_logs"`
-	AdminSettings     *AdminSettings      `json:"admin_settings,omitempty"`
-	TestSettingsConfig  *TestSettingsConfig    `json:"test_settings_config,omitempty"`
-	TestSettingsEntries []*TestSettingsEntry   `json:"test_settings_entries,omitempty"`
-	Ledger            []LedgerEntry       `json:"ledger"`
+	NextID              int                  `json:"next_id"`
+	Projects            []*Project           `json:"projects"`
+	Tasks               []*Task              `json:"tasks"`
+	Users               []*User              `json:"users"`
+	Wallets             []*Wallet            `json:"wallets"`
+	Sessions            []*Session           `json:"sessions"`
+	Notifications       []*Notification      `json:"notifications"`
+	Attachments         []*Attachment        `json:"attachments"`
+	SSLReviews          []*SSLReviewStatus   `json:"ssl_reviews"`
+	GeminiAPIKeys       []*GeminiAPIKey      `json:"gemini_api_keys"`
+	GeminiWebhookLogs   []*GeminiWebhookLog  `json:"gemini_webhook_logs"`
+	AdminSettings       *AdminSettings       `json:"admin_settings,omitempty"`
+	TestSettingsConfig  *TestSettingsConfig  `json:"test_settings_config,omitempty"`
+	TestSettingsEntries []*TestSettingsEntry `json:"test_settings_entries,omitempty"`
+	Ledger              []LedgerEntry        `json:"ledger"`
 }
 
 type statePersistence interface {
@@ -149,25 +149,25 @@ type statePersistence interface {
 
 func NewStore(cfg Config, payments *PaymentManager, repos RepoFactory, emailer *EmailSender) (*Store, error) {
 	store := &Store{
-		cfg:               cfg,
-		payments:          payments,
-		repos:             repos,
-		emailer:           emailer,
-		nextID:            1,
-		projects:          map[string]*Project{},
-		tasks:             map[string]*Task{},
-		users:             map[string]*User{},
-		wallets:           map[string]*Wallet{},
-		sessions:          map[string]*Session{},
-		notifications:     map[string]*Notification{},
-		attachments:       map[string]*Attachment{},
-		sslReviews:        map[string]*SSLReviewStatus{},
-		geminiAPIKeys:     map[string]*GeminiAPIKey{},
-		geminiWebhookLogs: map[string]*GeminiWebhookLog{},
-		testSettingsConfig:   TestSettingsConfig{},
-		testSettingsEntries:  map[string]*TestSettingsEntry{},
-		adminSettings:     defaultAdminSettings(cfg),
-		ledger:            []LedgerEntry{},
+		cfg:                 cfg,
+		payments:            payments,
+		repos:               repos,
+		emailer:             emailer,
+		nextID:              1,
+		projects:            map[string]*Project{},
+		tasks:               map[string]*Task{},
+		users:               map[string]*User{},
+		wallets:             map[string]*Wallet{},
+		sessions:            map[string]*Session{},
+		notifications:       map[string]*Notification{},
+		attachments:         map[string]*Attachment{},
+		sslReviews:          map[string]*SSLReviewStatus{},
+		geminiAPIKeys:       map[string]*GeminiAPIKey{},
+		geminiWebhookLogs:   map[string]*GeminiWebhookLog{},
+		testSettingsConfig:  TestSettingsConfig{},
+		testSettingsEntries: map[string]*TestSettingsEntry{},
+		adminSettings:       defaultAdminSettings(cfg),
+		ledger:              []LedgerEntry{},
 	}
 	if strings.TrimSpace(cfg.DatabaseURL) != "" {
 		storage, err := newPostgresPersistence(context.Background(), cfg)
@@ -955,6 +955,7 @@ func (s *Store) Marketplace() MarketplaceResponse {
 			UpdatedAt:        marketplaceLatestLedgerTime(s.ledger),
 		},
 		Projects:     []*MarketplaceProject{},
+		Bounties:     []*MarketplaceBounty{},
 		Contributors: []*MarketplaceContributor{},
 		Agents:       []*MarketplaceAgent{},
 	}
@@ -984,6 +985,7 @@ func (s *Store) Marketplace() MarketplaceResponse {
 				row.AcceptedTaskCount++
 			default:
 				row.OpenTaskCount++
+				response.Bounties = append(response.Bounties, marketplaceBountyRow(project, task))
 			}
 		}
 		response.Stats.OpenTaskCount += row.OpenTaskCount
@@ -999,6 +1001,12 @@ func (s *Store) Marketplace() MarketplaceResponse {
 
 	sort.Slice(response.Projects, func(i, j int) bool {
 		return response.Projects[i].CreatedAt.After(response.Projects[j].CreatedAt)
+	})
+	sort.Slice(response.Bounties, func(i, j int) bool {
+		if response.Bounties[i].CreatedAt.Equal(response.Bounties[j].CreatedAt) {
+			return response.Bounties[i].RewardCents > response.Bounties[j].RewardCents
+		}
+		return response.Bounties[i].CreatedAt.After(response.Bounties[j].CreatedAt)
 	})
 
 	contributors := map[string]*MarketplaceContributor{}
@@ -1828,21 +1836,21 @@ func (s *Store) saveLocked() error {
 
 func (s *Store) snapshotLocked() persistedState {
 	state := persistedState{
-		NextID:            s.nextID,
-		Projects:          make([]*Project, 0, len(s.projects)),
-		Tasks:             make([]*Task, 0, len(s.tasks)),
-		Users:             make([]*User, 0, len(s.users)),
-		Wallets:           make([]*Wallet, 0, len(s.wallets)),
-		Sessions:          make([]*Session, 0, len(s.sessions)),
-		Notifications:     make([]*Notification, 0, len(s.notifications)),
-		Attachments:       make([]*Attachment, 0, len(s.attachments)),
-		SSLReviews:        make([]*SSLReviewStatus, 0, len(s.sslReviews)),
-		GeminiAPIKeys:     make([]*GeminiAPIKey, 0, len(s.geminiAPIKeys)),
-		GeminiWebhookLogs: make([]*GeminiWebhookLog, 0, len(s.geminiWebhookLogs)),
-		AdminSettings:     cloneAdminSettings(s.adminSettings),
-		TestSettingsConfig: &s.testSettingsConfig,
+		NextID:              s.nextID,
+		Projects:            make([]*Project, 0, len(s.projects)),
+		Tasks:               make([]*Task, 0, len(s.tasks)),
+		Users:               make([]*User, 0, len(s.users)),
+		Wallets:             make([]*Wallet, 0, len(s.wallets)),
+		Sessions:            make([]*Session, 0, len(s.sessions)),
+		Notifications:       make([]*Notification, 0, len(s.notifications)),
+		Attachments:         make([]*Attachment, 0, len(s.attachments)),
+		SSLReviews:          make([]*SSLReviewStatus, 0, len(s.sslReviews)),
+		GeminiAPIKeys:       make([]*GeminiAPIKey, 0, len(s.geminiAPIKeys)),
+		GeminiWebhookLogs:   make([]*GeminiWebhookLog, 0, len(s.geminiWebhookLogs)),
+		AdminSettings:       cloneAdminSettings(s.adminSettings),
+		TestSettingsConfig:  &s.testSettingsConfig,
 		TestSettingsEntries: make([]*TestSettingsEntry, 0, len(s.testSettingsEntries)),
-		Ledger:            s.ledger,
+		Ledger:              s.ledger,
 	}
 	for _, project := range s.projects {
 		state.Projects = append(state.Projects, cloneProject(project))
@@ -2139,6 +2147,44 @@ func marketplaceProjectTags(project *Project) []string {
 		return tags[:6]
 	}
 	return tags
+}
+
+func marketplaceBountyRow(project *Project, task *Task) *MarketplaceBounty {
+	return &MarketplaceBounty{
+		ID:                 marketplaceBountyID(project.ID, task.IssueNumber),
+		ProjectID:          project.ID,
+		ProjectTitle:       marketplaceProjectTitle(project),
+		IssueNumber:        task.IssueNumber,
+		Title:              task.Title,
+		Acceptance:         compactText(task.Acceptance),
+		RewardCents:        task.RewardCents,
+		RequiredWorkerKind: task.RequiredWorkerKind,
+		SuggestedAgentType: task.SuggestedAgentType,
+		BountyType:         task.BountyType,
+		IssueURL:           marketplacePublicRepoURL(task.IssueURL),
+		CreatedAt:          task.CreatedAt,
+	}
+}
+
+func marketplaceBountyID(projectID string, issueNumber int) string {
+	projectID = strings.TrimSpace(projectID)
+	if projectID == "" {
+		projectID = "project"
+	}
+	if issueNumber > 0 {
+		return fmt.Sprintf("%s:%d", projectID, issueNumber)
+	}
+	return projectID + ":bounty"
+}
+
+func marketplaceProjectTitle(project *Project) string {
+	if project == nil {
+		return "MergeOS project"
+	}
+	if title := strings.TrimSpace(project.Title); title != "" {
+		return title
+	}
+	return "MergeOS project"
 }
 
 func marketplaceWorkerName(workerID, agentType string) string {

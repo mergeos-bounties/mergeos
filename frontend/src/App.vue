@@ -2313,6 +2313,45 @@
             </button>
           </section>
 
+          <section class="marketplace-bounty-section" aria-label="Open bounties">
+            <div class="section-heading-row">
+              <h2>
+                <ListTodo :size="17" />
+                Open Bounties
+              </h2>
+              <div class="marketplace-data-status">
+                <span>{{ marketplaceBountiesView.length }} live bounty tasks</span>
+              </div>
+            </div>
+
+            <div v-if="marketplaceBountiesView.length" class="marketplace-bounty-list">
+              <article v-for="bounty in marketplaceBountiesView" :key="bounty.id">
+                <span :class="['marketplace-bounty-icon', bounty.tone]">
+                  <component :is="bounty.icon" :size="18" />
+                </span>
+                <div>
+                  <div class="marketplace-bounty-title">
+                    <strong>{{ bounty.title }}</strong>
+                    <span>{{ bounty.issue }}</span>
+                  </div>
+                  <p>{{ bounty.acceptance }}</p>
+                  <small>{{ bounty.project }} · {{ bounty.lane }}</small>
+                </div>
+                <div class="marketplace-bounty-meta">
+                  <strong>{{ bounty.reward }}</strong>
+                  <button v-if="bounty.url" type="button" @click="openExternalURL(bounty.url)">
+                    Issue
+                    <Link2 :size="12" />
+                  </button>
+                </div>
+              </article>
+            </div>
+            <article v-else class="marketplace-empty-state compact">
+              <strong>{{ marketplaceLoading ? 'Loading bounties...' : 'No open bounties' }}</strong>
+              <p>{{ marketplaceLoading ? 'Fetching task-level marketplace rows.' : 'Funded tasks that are still open will appear here.' }}</p>
+            </article>
+          </section>
+
           <section id="marketplace-benefits" class="marketplace-benefit-strip" aria-label="Marketplace benefits">
             <article v-for="benefit in marketplaceBenefits" :key="benefit.title">
               <span>
@@ -2782,6 +2821,7 @@ const liveFeedError = ref('');
 const marketplaceData = ref({
   stats: {},
   projects: [],
+  bounties: [],
   contributors: [],
   agents: [],
 });
@@ -3531,6 +3571,11 @@ const marketplaceProjectsView = computed(() => {
       return matchesCategory && matchesSearch;
     });
 });
+const marketplaceBountiesView = computed(() =>
+  (marketplaceData.value.bounties || [])
+    .slice(0, 8)
+    .map(mapMarketplaceBounty),
+);
 const marketplaceSummaryLabel = computed(() => {
   const stats = marketplaceStats.value;
   const projects = Number(stats.project_count) || marketplaceData.value.projects?.length || 0;
@@ -4589,6 +4634,24 @@ function mapMarketplaceProject(project = {}, index = 0) {
   };
 }
 
+function mapMarketplaceBounty(bounty = {}, index = 0) {
+  const workerKind = bounty.required_worker_kind || 'human';
+  const agentType = bounty.suggested_agent_type || '';
+  const issueNumber = Number(bounty.issue_number) || 0;
+  return {
+    id: bounty.id || `${bounty.project_id || 'project'}:${issueNumber || index}`,
+    icon: agentType ? marketplaceAgentIcon(agentType) : (workerKind === 'human' ? User : Bot),
+    title: bounty.title || 'Open bounty',
+    acceptance: trimMarketplaceText(bounty.acceptance, 'Acceptance criteria will appear after task generation.'),
+    project: bounty.project_title || 'MergeOS project',
+    reward: formatPublicMRGFromCents(bounty.reward_cents),
+    lane: agentType ? toTitleLabel(agentType) : toTitleLabel(workerKind),
+    issue: issueNumber > 0 ? `#${issueNumber}` : 'Task',
+    url: bounty.issue_url || '',
+    tone: ['green', 'blue', 'purple', 'amber'][index % 4],
+  };
+}
+
 function marketplaceSearchHaystack(project = {}) {
   return [
     project.title,
@@ -5026,6 +5089,7 @@ async function loadMarketplaceData(options = {}) {
     marketplaceData.value = {
       stats: payload.stats || {},
       projects: Array.isArray(payload.projects) ? payload.projects : [],
+      bounties: Array.isArray(payload.bounties) ? payload.bounties : [],
       contributors: Array.isArray(payload.contributors) ? payload.contributors : [],
       agents: Array.isArray(payload.agents) ? payload.agents : [],
     };
@@ -5331,6 +5395,7 @@ function handleWSEvent(payload = {}) {
       };
     }
   }
+  void loadMarketplaceData({ silent: true });
   void loadLiveFeedData({ silent: true });
 }
 

@@ -472,6 +472,7 @@ type ImportedRepoIssue struct {
 type MarketplaceResponse struct {
 	Stats        MarketplaceStats          `json:"stats"`
 	Projects     []*MarketplaceProject     `json:"projects"`
+	Bounties     []*MarketplaceBounty      `json:"bounties"`
 	Contributors []*MarketplaceContributor `json:"contributors"`
 	Agents       []*MarketplaceAgent       `json:"agents"`
 }
@@ -506,6 +507,21 @@ type MarketplaceProject struct {
 	AcceptedTaskCount int           `json:"accepted_task_count"`
 	Tags              []string      `json:"tags"`
 	CreatedAt         time.Time     `json:"created_at"`
+}
+
+type MarketplaceBounty struct {
+	ID                 string     `json:"id"`
+	ProjectID          string     `json:"project_id"`
+	ProjectTitle       string     `json:"project_title"`
+	IssueNumber        int        `json:"issue_number"`
+	Title              string     `json:"title"`
+	Acceptance         string     `json:"acceptance"`
+	RewardCents        int64      `json:"reward_cents"`
+	RequiredWorkerKind WorkerKind `json:"required_worker_kind"`
+	SuggestedAgentType string     `json:"suggested_agent_type,omitempty"`
+	BountyType         string     `json:"bounty_type,omitempty"`
+	IssueURL           string     `json:"issue_url,omitempty"`
+	CreatedAt          time.Time  `json:"created_at"`
 }
 
 type MarketplaceContributor struct {

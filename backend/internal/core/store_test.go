@@ -573,6 +573,19 @@ func TestPublicMarketplaceRouteReturnsSanitizedLiveData(t *testing.T) {
 	if payload.Projects[0].ClientDisplayName != "Marketplace Co" || len(payload.Projects[0].Tags) == 0 {
 		t.Fatalf("project row missing public display data: %#v", payload.Projects[0])
 	}
+	if len(payload.Bounties) == 0 {
+		t.Fatalf("marketplace missing open bounty rows: %#v", payload)
+	}
+	for _, bounty := range payload.Bounties {
+		for _, task := range project.Tasks {
+			if strings.Contains(bounty.ID, task.ID) || strings.Contains(bounty.IssueURL, task.ID) {
+				t.Fatalf("bounty leaked task id: %#v", bounty)
+			}
+		}
+		if bounty.IssueURL != "" && !strings.HasPrefix(bounty.IssueURL, "http") {
+			t.Fatalf("bounty issue URL is not public: %#v", bounty)
+		}
+	}
 	if len(payload.Contributors) != 1 || payload.Contributors[0].EarnedCents == 0 {
 		t.Fatalf("contributors missing real paid task data: %#v", payload.Contributors)
 	}
