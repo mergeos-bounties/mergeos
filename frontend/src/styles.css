@@ -7437,9 +7437,14 @@ svg {
   grid-row: span 2;
 }
 
+.admin-users-card {
+  grid-column: 1 / -1;
+}
+
 .admin-readiness-list,
 .admin-ops-stats,
 .admin-ops-list,
+.admin-users-list,
 .admin-reputation-list {
   display: grid;
   gap: 10px;
@@ -7498,6 +7503,7 @@ svg {
 }
 
 .admin-ops-list article,
+.admin-users-list article,
 .admin-reputation-list article {
   min-width: 0;
   display: grid;
@@ -7512,6 +7518,10 @@ svg {
 }
 
 .admin-reputation-list article {
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+}
+
+.admin-users-list article {
   grid-template-columns: 34px minmax(0, 1fr) auto;
 }
 
@@ -7546,6 +7556,9 @@ svg {
 .admin-ops-list strong,
 .admin-ops-list small,
 .admin-ops-list b,
+.admin-users-list strong,
+.admin-users-list small,
+.admin-users-list b,
 .admin-reputation-list strong,
 .admin-reputation-list small,
 .admin-reputation-list b {
@@ -7554,6 +7567,7 @@ svg {
 }
 
 .admin-ops-list strong,
+.admin-users-list strong,
 .admin-reputation-list strong {
   overflow: hidden;
   color: #111827;
@@ -7564,6 +7578,7 @@ svg {
 }
 
 .admin-ops-list small,
+.admin-users-list small,
 .admin-reputation-list small {
   margin-top: 4px;
   color: #64748b;
@@ -7573,6 +7588,7 @@ svg {
 }
 
 .admin-ops-list b,
+.admin-users-list b,
 .admin-reputation-list b {
   width: max-content;
   max-width: 100%;
@@ -7589,6 +7605,7 @@ svg {
 }
 
 .admin-ops-side,
+.admin-user-side,
 .admin-reputation-list em {
   display: grid;
   justify-items: end;
@@ -7596,6 +7613,7 @@ svg {
 }
 
 .admin-ops-side em,
+.admin-user-side em,
 .admin-reputation-list em {
   border-radius: 999px;
   padding: 4px 7px;
@@ -7605,30 +7623,37 @@ svg {
 }
 
 .admin-ops-side em.red,
+.admin-user-side em.red,
 .admin-reputation-list em.red {
   background: #fef2f2;
   color: #b91c1c;
 }
 
 .admin-ops-side em.amber,
+.admin-user-side em.amber,
 .admin-reputation-list em.amber {
   background: #fffbeb;
   color: #b45309;
 }
 
 .admin-ops-side em.blue,
+.admin-user-side em.blue,
 .admin-reputation-list em.blue {
   background: #eff6ff;
   color: #1d4ed8;
 }
 
 .admin-ops-side em.green,
+.admin-user-side em.green,
 .admin-reputation-list em.green {
   background: #ecfdf5;
   color: #047857;
 }
 
-.admin-ops-side button {
+.admin-ops-side button,
+.admin-user-side button,
+.admin-credit-form > button,
+.admin-credit-result button {
   min-height: 28px;
   border: 1px solid #dbe3ea;
   border-radius: 7px;
@@ -7637,6 +7662,82 @@ svg {
   padding: 0 9px;
   font-size: 10px;
   font-weight: 850;
+}
+
+.admin-credit-form {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.admin-credit-form label {
+  display: grid;
+  gap: 6px;
+}
+
+.admin-credit-form label span {
+  color: #475569;
+  font-size: 10px;
+  font-weight: 850;
+}
+
+.admin-credit-form input,
+.admin-credit-form select {
+  width: 100%;
+  min-height: 36px;
+  border: 1px solid #dbe3ea;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #111827;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 720;
+}
+
+.admin-credit-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.admin-credit-form > button {
+  min-height: 34px;
+  background: var(--green);
+  border-color: var(--green);
+  color: #ffffff;
+}
+
+.admin-credit-form > button:disabled {
+  opacity: 0.55;
+}
+
+.admin-credit-result {
+  display: grid;
+  gap: 6px;
+  border: 1px solid rgba(15, 159, 120, 0.26);
+  border-radius: 8px;
+  background: #ecfdf5;
+  padding: 10px;
+}
+
+.admin-credit-result strong,
+.admin-credit-result small {
+  display: block;
+  min-width: 0;
+}
+
+.admin-credit-result strong {
+  color: #047857;
+  font-size: 12px;
+  font-weight: 920;
+}
+
+.admin-credit-result small {
+  color: #475569;
+  font-size: 10px;
+  line-height: 1.35;
+  font-weight: 740;
+  overflow-wrap: anywhere;
 }
 
 .payment-history-list {
@@ -8080,6 +8181,10 @@ svg {
     grid-row: auto;
   }
 
+  .admin-users-card {
+    grid-column: auto;
+  }
+
   .dash-rail {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -8422,17 +8527,20 @@ svg {
   .admin-console-grid,
   .admin-readiness-list,
   .admin-ops-stats,
+  .admin-credit-row,
   .payment-summary-grid,
   .payment-history-meta {
     grid-template-columns: 1fr;
   }
 
   .admin-ops-list article,
+  .admin-users-list article,
   .admin-reputation-list article {
     grid-template-columns: 34px minmax(0, 1fr);
   }
 
   .admin-ops-side,
+  .admin-user-side,
   .admin-reputation-list em {
     grid-column: 2;
     justify-items: start;

@@ -1171,6 +1171,64 @@
                   </div>
                 </article>
 
+                <article class="dash-card admin-credit-card">
+                  <div class="card-title-row">
+                    <div>
+                      <h2>Manual MRG Credit</h2>
+                      <p>Create payout credit with PR URL or admin reference.</p>
+                    </div>
+                    <span>{{ adminCreditForm.rewardMRG }} MRG</span>
+                  </div>
+                  <form class="admin-credit-form" @submit.prevent="submitAdminManualCredit">
+                    <label>
+                      <span>Worker ID</span>
+                      <input v-model.trim="adminCreditForm.workerID" placeholder="github:contributor or wallet" />
+                    </label>
+                    <div class="admin-credit-row">
+                      <label>
+                        <span>Reward MRG</span>
+                        <input v-model.number="adminCreditForm.rewardMRG" min="1" type="number" />
+                      </label>
+                      <label>
+                        <span>Bounty type</span>
+                        <select v-model="adminCreditForm.bountyType">
+                          <option value="future-small">Future small</option>
+                          <option value="future-medium">Future medium</option>
+                          <option value="bug-large">Bug large</option>
+                          <option value="major-feature">Major feature</option>
+                        </select>
+                      </label>
+                    </div>
+                    <label>
+                      <span>PR URL</span>
+                      <input v-model.trim="adminCreditForm.prURL" placeholder="https://github.com/owner/repo/pull/123" />
+                    </label>
+                    <label>
+                      <span>PR title</span>
+                      <input v-model.trim="adminCreditForm.prTitle" placeholder="Pull request title" />
+                    </label>
+                    <div class="admin-credit-row">
+                      <label>
+                        <span>Task ID</span>
+                        <input v-model.trim="adminCreditForm.taskID" placeholder="tsk_0001" />
+                      </label>
+                      <label>
+                        <span>Reference</span>
+                        <input v-model.trim="adminCreditForm.reference" placeholder="manual admin reference" />
+                      </label>
+                    </div>
+                    <p v-if="adminCreditError" class="deployment-error">{{ adminCreditError }}</p>
+                    <div v-if="adminCreditResultView" class="admin-credit-result">
+                      <strong>{{ adminCreditResultView.reward }} credited</strong>
+                      <small>{{ adminCreditResultView.workerID }} / {{ adminCreditResultView.reference }}</small>
+                      <button v-if="adminCreditResultView.creditURL" type="button" @click="openExternalURL(adminCreditResultView.creditURL)">Open Scan</button>
+                    </div>
+                    <button type="submit" :disabled="adminCreditBusy || !adminCreditReady">
+                      {{ adminCreditBusy ? 'Crediting...' : 'Credit Worker' }}
+                    </button>
+                  </form>
+                </article>
+
                 <article class="dash-card admin-ops-card">
                   <div class="card-title-row">
                     <div>
@@ -1204,6 +1262,34 @@
                   <article v-else class="dash-empty-state compact">
                     <strong>{{ adminConsoleLoading ? 'Loading ops queue...' : 'No ops items' }}</strong>
                     <p>{{ adminConsoleLoading ? 'Fetching admin queue.' : 'No dispute, payout, moderation, fraud, or security items require review.' }}</p>
+                  </article>
+                </article>
+
+                <article class="dash-card admin-users-card">
+                  <div class="card-title-row">
+                    <div>
+                      <h2>Users</h2>
+                      <p>Admin users, clients, wallets, GitHub identities, project spend, and worker audit hints.</p>
+                    </div>
+                    <span>{{ adminUserRows.length }} shown</span>
+                  </div>
+                  <div v-if="adminUserRows.length" class="admin-users-list">
+                    <article v-for="row in adminUserRows" :key="row.id">
+                      <span :class="['contributor-avatar', row.tone]">{{ initialsFor(row.name) }}</span>
+                      <div>
+                        <strong>{{ row.name }}</strong>
+                        <small>{{ row.email }} / {{ row.role }} / {{ row.company }}</small>
+                        <b>{{ row.github }} / {{ row.wallet }} / {{ row.projects }} projects / {{ row.budget }}</b>
+                      </div>
+                      <div class="admin-user-side">
+                        <em :class="row.tone">{{ row.risk }}</em>
+                        <button type="button" :disabled="!row.workerID" @click="prefillAdminCreditFromUser(row)">Credit</button>
+                      </div>
+                    </article>
+                  </div>
+                  <article v-else class="dash-empty-state compact">
+                    <strong>{{ adminConsoleLoading ? 'Loading users...' : 'No users' }}</strong>
+                    <p>{{ adminConsoleLoading ? 'Fetching admin user rows.' : 'Registered users will appear here.' }}</p>
                   </article>
                 </article>
 
@@ -3526,8 +3612,21 @@ const dashboardNotificationsError = ref('');
 const adminSummary = ref(null);
 const adminOpsQueue = ref({ stats: {}, items: [] });
 const adminReputation = ref({ stats: {}, workers: [] });
+const adminUsers = ref([]);
 const adminConsoleLoading = ref(false);
 const adminConsoleError = ref('');
+const adminCreditBusy = ref(false);
+const adminCreditError = ref('');
+const adminCreditResult = ref(null);
+const adminCreditForm = reactive({
+  workerID: '',
+  rewardMRG: 50,
+  bountyType: 'future-small',
+  taskID: '',
+  prURL: '',
+  prTitle: '',
+  reference: '',
+});
 const workerDashboard = ref({
   profile: {},
   stats: {},
@@ -4842,6 +4941,25 @@ const adminReputationRows = computed(() =>
   (adminReputation.value?.workers || []).slice(0, 6).map(mapAdminReputationWorker),
 );
 const adminReputationStats = computed(() => adminReputation.value?.stats || {});
+const adminUserRows = computed(() =>
+  (adminUsers.value || []).slice(0, 8).map(mapAdminUserRow),
+);
+const adminCreditReady = computed(() =>
+  Boolean(adminCreditForm.workerID.trim())
+  && Number(adminCreditForm.rewardMRG) > 0
+  && (Boolean(adminCreditForm.prURL.trim()) || Boolean(adminCreditForm.reference.trim())),
+);
+const adminCreditResultView = computed(() => {
+  const result = adminCreditResult.value;
+  if (!result) return null;
+  return {
+    workerID: result.worker_id || adminCreditForm.workerID,
+    reward: `${formatCompactNumber(result.reward_mrg)} ${tokenSymbol.value}`,
+    bountyType: toTitleLabel(result.bounty_type || adminCreditForm.bountyType),
+    reference: result.ledger_entry?.reference || '',
+    creditURL: result.credit_url || '',
+  };
+});
 const dashboardSectionEyebrow = computed(() => {
   if (dashboardSection.value === 'admin') return 'ADMIN OPS';
   if (dashboardSection.value === 'payments') return 'PAYMENTS';
@@ -6156,6 +6274,28 @@ function mapAdminReputationWorker(worker = {}) {
   };
 }
 
+function mapAdminUserRow(row = {}) {
+  const workerID = row.github_username
+    ? `github:${row.github_username}`
+    : (row.wallet_address || row.id || '');
+  const lastProject = row.last_project_at ? formatLedgerDateTime(row.last_project_at).date : '-';
+  return {
+    id: row.id || row.email || row.name,
+    name: row.name || row.email || 'User',
+    email: row.email || '',
+    role: toTitleLabel(row.role || 'client'),
+    company: row.company_name || 'MergeOS',
+    wallet: row.wallet_address ? shortWallet(row.wallet_address) : 'No wallet',
+    github: row.github_username ? `@${row.github_username}` : 'No GitHub',
+    workerID,
+    projects: formatCompactNumber(row.project_count),
+    budget: formatMRGFromCents(row.total_budget_cents),
+    lastProject,
+    risk: row.worker_audit?.risk_level ? toTitleLabel(row.worker_audit.risk_level) : 'No audit',
+    tone: row.role === 'admin' ? 'blue' : adminOpsTone(row.worker_audit?.risk_level || 'low'),
+  };
+}
+
 function formatLedgerDateTime(value) {
   const date = value ? new Date(value) : new Date();
   if (Number.isNaN(date.getTime())) {
@@ -6950,6 +7090,7 @@ async function loadAdminConsoleData(options = {}) {
     adminSummary.value = null;
     adminOpsQueue.value = { stats: {}, items: [] };
     adminReputation.value = { stats: {}, workers: [] };
+    adminUsers.value = [];
     adminConsoleError.value = '';
     return;
   }
@@ -6958,10 +7099,11 @@ async function loadAdminConsoleData(options = {}) {
   if (!silent) adminConsoleLoading.value = true;
   adminConsoleError.value = '';
   try {
-    const [summary, opsQueue, reputation] = await Promise.all([
+    const [summary, opsQueue, reputation, users] = await Promise.all([
       api('/api/admin/summary'),
       api('/api/admin/ops-queue'),
       api('/api/admin/reputation'),
+      api('/api/admin/users'),
     ]);
     adminSummary.value = summary || {};
     adminOpsQueue.value = {
@@ -6972,10 +7114,54 @@ async function loadAdminConsoleData(options = {}) {
       stats: reputation?.stats || {},
       workers: Array.isArray(reputation?.workers) ? reputation.workers : [],
     };
+    adminUsers.value = Array.isArray(users) ? users : [];
   } catch (error) {
     adminConsoleError.value = error.message || 'Could not load admin console';
   } finally {
     adminConsoleLoading.value = false;
+  }
+}
+
+function prefillAdminCreditFromUser(row = {}) {
+  if (!row.workerID) return;
+  adminCreditForm.workerID = row.workerID;
+  if (!adminCreditForm.reference && !adminCreditForm.prURL) {
+    adminCreditForm.reference = `admin-credit:${row.id}`;
+  }
+}
+
+async function submitAdminManualCredit() {
+  adminCreditError.value = '';
+  adminCreditResult.value = null;
+  if (!adminCreditReady.value) {
+    adminCreditError.value = 'Worker ID, reward, and PR URL or reference are required.';
+    return;
+  }
+  adminCreditBusy.value = true;
+  try {
+    const payload = {
+      worker_id: adminCreditForm.workerID,
+      reward_mrg: Number(adminCreditForm.rewardMRG) || 0,
+      bounty_type: adminCreditForm.bountyType,
+      task_id: adminCreditForm.taskID || undefined,
+      pr_url: adminCreditForm.prURL || undefined,
+      pr_title: adminCreditForm.prTitle || undefined,
+      reference: adminCreditForm.reference || undefined,
+    };
+    const result = await api('/api/admin/ledger/credits', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    adminCreditResult.value = result;
+    adminCreditForm.reference = '';
+    adminCreditForm.prURL = '';
+    adminCreditForm.prTitle = '';
+    showToast(`Credited ${formatCompactNumber(result.reward_mrg)} ${tokenSymbol.value}.`);
+    await loadAdminConsoleData({ silent: true });
+  } catch (error) {
+    adminCreditError.value = error.message || 'Could not create manual credit';
+  } finally {
+    adminCreditBusy.value = false;
   }
 }
 
@@ -7251,8 +7437,11 @@ function clearSession() {
   adminSummary.value = null;
   adminOpsQueue.value = { stats: {}, items: [] };
   adminReputation.value = { stats: {}, workers: [] };
+  adminUsers.value = [];
   adminConsoleLoading.value = false;
   adminConsoleError.value = '';
+  adminCreditError.value = '';
+  adminCreditResult.value = null;
   dashboardError.value = '';
   dashboardSection.value = 'projects';
   selectedDashboardProjectID.value = '';
