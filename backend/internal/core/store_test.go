@@ -895,6 +895,9 @@ func TestPublicMarketplaceRouteReturnsSanitizedLiveData(t *testing.T) {
 		if document.EstimatedHours <= 0 {
 			t.Fatalf("task protocol missing estimated hours: %#v", document)
 		}
+		if document.Complexity == "" || document.RiskLevel == "" {
+			t.Fatalf("task protocol missing AI analysis fields: %#v", document)
+		}
 	}
 
 	agentReq := httptest.NewRequest(http.MethodGet, "/api/public/protocol/agents?limit=20", nil)

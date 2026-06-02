@@ -28,11 +28,17 @@ func publicTaskProtocolDocument(bounty *MarketplaceBounty) TaskProtocolDocument 
 	if workerKind == "" {
 		workerKind = WorkerHuman
 	}
+	complexity := publicTaskComplexity(bounty)
+	riskLevel := publicTaskRiskLevel(bounty, complexity)
 	metadata := map[string]any{
 		"claim_id":      bounty.ClaimID,
 		"issue_number":  bounty.IssueNumber,
 		"project_title": bounty.ProjectTitle,
 		"created_at":    bounty.CreatedAt,
+		"analysis": map[string]any{
+			"complexity": complexity,
+			"risk_level": riskLevel,
+		},
 	}
 	if bounty.EstimatedHours > 0 {
 		metadata["estimated_hours"] = bounty.EstimatedHours
@@ -47,6 +53,8 @@ func publicTaskProtocolDocument(bounty *MarketplaceBounty) TaskProtocolDocument 
 		IssueURL:           protocolText(bounty.IssueURL, 512, ""),
 		RewardMRG:          float64(bounty.RewardCents) / 100,
 		EstimatedHours:     bounty.EstimatedHours,
+		Complexity:         complexity,
+		RiskLevel:          riskLevel,
 		BountyType:         protocolText(bounty.BountyType, 80, ""),
 		WorkerKind:         workerKind,
 		AgentType:          protocolText(bounty.SuggestedAgentType, 120, ""),
@@ -54,6 +62,44 @@ func publicTaskProtocolDocument(bounty *MarketplaceBounty) TaskProtocolDocument 
 		EvidenceRequired:   publicTaskEvidenceRequired(bounty),
 		Tags:               publicTaskProtocolTags(bounty),
 		Metadata:           metadata,
+	}
+}
+
+func publicTaskComplexity(bounty *MarketplaceBounty) string {
+	haystack := strings.ToLower(strings.Join([]string{
+		bounty.Title,
+		bounty.Acceptance,
+		bounty.BountyType,
+		bounty.SuggestedAgentType,
+	}, " "))
+	for _, value := range []string{"high", "medium", "low"} {
+		if strings.Contains(haystack, "complexity: "+value) || strings.Contains(haystack, value+" complexity") {
+			return value
+		}
+	}
+	if bounty.EstimatedHours >= 12 || bounty.RewardCents >= 100000 {
+		return "high"
+	}
+	if bounty.EstimatedHours >= 5 || bounty.RewardCents >= 40000 {
+		return "medium"
+	}
+	return "low"
+}
+
+func publicTaskRiskLevel(bounty *MarketplaceBounty, complexity string) string {
+	haystack := strings.ToLower(strings.Join([]string{
+		bounty.Title,
+		bounty.Acceptance,
+		bounty.BountyType,
+		bounty.SuggestedAgentType,
+	}, " "))
+	switch {
+	case containsAny(haystack, []string{"payment", "paypal", "usdt", "crypto", "escrow", "payout", "webhook", "secret", "token", "auth", "security"}):
+		return "high"
+	case complexity == "high" || containsAny(haystack, []string{"deploy", "deployment", "admin", "database", "ledger", "api"}):
+		return "medium"
+	default:
+		return "low"
 	}
 }
 

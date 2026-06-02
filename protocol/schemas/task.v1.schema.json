@@ -16,6 +16,8 @@
     "issue_url": { "type": "string", "maxLength": 512 },
     "reward_mrg": { "type": "number", "minimum": 0 },
     "estimated_hours": { "type": "number", "minimum": 0 },
+    "complexity": { "type": "string", "enum": ["low", "medium", "high"] },
+    "risk_level": { "type": "string", "enum": ["low", "medium", "high"] },
     "bounty_type": { "type": "string", "maxLength": 80 },
     "worker_kind": { "enum": ["human", "agent", "hybrid"] },
     "agent_type": { "type": "string", "maxLength": 120 },

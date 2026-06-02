@@ -749,6 +749,8 @@ type TaskProtocolDocument struct {
 	IssueURL           string         `json:"issue_url,omitempty"`
 	RewardMRG          float64        `json:"reward_mrg"`
 	EstimatedHours     float64        `json:"estimated_hours,omitempty"`
+	Complexity         string         `json:"complexity,omitempty"`
+	RiskLevel          string         `json:"risk_level,omitempty"`
 	BountyType         string         `json:"bounty_type,omitempty"`
 	WorkerKind         WorkerKind     `json:"worker_kind"`
 	AgentType          string         `json:"agent_type,omitempty"`

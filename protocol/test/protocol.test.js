@@ -61,6 +61,8 @@ test('validates a task protocol document', () => {
     title: 'Fix PayPal return capture',
     reward_mrg: 50,
     estimated_hours: 6.5,
+    complexity: 'medium',
+    risk_level: 'high',
     worker_kind: 'human',
     acceptance_criteria: ['Frontend test passes', 'PayPal evidence attached'],
     evidence_required: ['tests', 'screenshot'],
