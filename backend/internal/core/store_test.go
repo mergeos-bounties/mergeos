@@ -491,6 +491,31 @@ func TestLegacyWalletAccountPrefixMigratesToRawAddress(t *testing.T) {
 	}
 }
 
+func TestLedgerEntryMatchingUsesExactIDBoundaries(t *testing.T) {
+	entry := LedgerEntry{
+		Type:        "task_payment",
+		FromAccount: "reserve:project:prj_0010",
+		ToAccount:   "worker:github:builder",
+		Reference:   "task:tsk_0010;pr:https://github.com/mergeos-bounties/mergeos/pull/10",
+	}
+
+	if ledgerEntryMatches(entry, map[string]bool{"prj_001": true}, map[string]bool{"tsk_001": true}) {
+		t.Fatalf("ledger matching accepted prefix IDs: %#v", entry)
+	}
+	projectID, taskID := publicLedgerScope(entry, map[string]bool{"prj_001": true}, map[string]string{"tsk_001": "prj_001"})
+	if projectID != "" || taskID != "" {
+		t.Fatalf("public ledger scope accepted prefix IDs: project=%q task=%q", projectID, taskID)
+	}
+
+	if !ledgerEntryMatches(entry, map[string]bool{"prj_0010": true}, map[string]bool{}) {
+		t.Fatalf("ledger matching missed exact project ID: %#v", entry)
+	}
+	projectID, taskID = publicLedgerScope(entry, map[string]bool{}, map[string]string{"tsk_0010": "prj_0010"})
+	if projectID != "prj_0010" || taskID != "tsk_0010" {
+		t.Fatalf("public ledger scope missed exact task ID: project=%q task=%q", projectID, taskID)
+	}
+}
+
 func TestImportedRepoIssuesBecomeFundedTasks(t *testing.T) {
 	store := &Store{nextID: 1}
 	project := &Project{

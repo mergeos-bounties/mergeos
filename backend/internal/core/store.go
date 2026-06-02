@@ -3074,14 +3074,13 @@ func cloneProject(project *Project) *Project {
 }
 
 func ledgerEntryMatches(entry LedgerEntry, projectIDs, taskIDs map[string]bool) bool {
-	haystack := strings.Join([]string{entry.FromAccount, entry.ToAccount, entry.Reference}, "|")
 	for projectID := range projectIDs {
-		if strings.Contains(haystack, projectID) {
+		if ledgerEntryReferencesID(entry, projectID) {
 			return true
 		}
 	}
 	for taskID := range taskIDs {
-		if strings.Contains(haystack, taskID) {
+		if ledgerEntryReferencesID(entry, taskID) {
 			return true
 		}
 	}
@@ -3089,18 +3088,54 @@ func ledgerEntryMatches(entry LedgerEntry, projectIDs, taskIDs map[string]bool) 
 }
 
 func publicLedgerScope(entry LedgerEntry, projectIDs map[string]bool, taskProjectIDs map[string]string) (string, string) {
-	haystack := strings.Join([]string{entry.FromAccount, entry.ToAccount, entry.Reference}, "|")
 	for projectID := range projectIDs {
-		if strings.Contains(haystack, projectID) {
+		if ledgerEntryReferencesID(entry, projectID) {
 			return projectID, ""
 		}
 	}
 	for taskID, projectID := range taskProjectIDs {
-		if strings.Contains(haystack, taskID) {
+		if ledgerEntryReferencesID(entry, taskID) {
 			return projectID, taskID
 		}
 	}
 	return "", ""
+}
+
+func ledgerEntryReferencesID(entry LedgerEntry, id string) bool {
+	return ledgerValueReferencesID(entry.FromAccount, id) ||
+		ledgerValueReferencesID(entry.ToAccount, id) ||
+		ledgerValueReferencesID(entry.Reference, id)
+}
+
+func ledgerValueReferencesID(value, id string) bool {
+	value = strings.TrimSpace(value)
+	id = strings.TrimSpace(id)
+	if value == "" || id == "" {
+		return false
+	}
+	if value == id {
+		return true
+	}
+	for _, fieldValue := range splitLedgerReference(value) {
+		if strings.TrimSpace(fieldValue) == id {
+			return true
+		}
+	}
+	for _, token := range strings.FieldsFunc(value, ledgerReferenceTokenSeparator) {
+		if token == id {
+			return true
+		}
+	}
+	return false
+}
+
+func ledgerReferenceTokenSeparator(r rune) bool {
+	switch r {
+	case ':', ';', '|', '/', '?', '&', '=', '#', ' ', '\t', '\r', '\n':
+		return true
+	default:
+		return false
+	}
 }
 
 func publicLedgerAccount(account, projectID, taskID string) string {
