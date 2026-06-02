@@ -34,7 +34,7 @@
           <ChevronDown :size="13" />
         </button>
         <template v-if="user">
-          <button class="dash-icon-button light" aria-label="Messages" type="button" @click="showToast('Opening messages...')">
+          <button class="dash-icon-button light" aria-label="Messages" type="button" @click="openProjectFlowMessages">
             <MessageCircle :size="17" />
           </button>
           <button class="dash-profile slim" type="button" @click="logout">
@@ -5643,7 +5643,7 @@ const sidebarSections = computed(() => {
   const mainItems = [
     { label: 'Overview', icon: LayoutDashboard, section: 'projects' },
     { label: 'My Projects', icon: FolderKanban, section: 'projects' },
-    { label: 'Tasks', icon: ListTodo, section: 'projects', toast: 'Opening tasks...' },
+    { label: 'Tasks', icon: ListTodo, section: 'projects', tab: 'Tasks' },
     { label: 'Worker Dashboard', icon: User, section: 'worker' },
     { label: 'Repositories', icon: GitBranch, action: 'issue-scanner' },
     { label: 'Payments', icon: CreditCard, section: 'payments' },
@@ -6110,6 +6110,12 @@ function openDashboardProjectTab(tab = 'Overview') {
   focusDashboardPanel(dashboardProjectHeader);
 }
 
+function openProjectFlowMessages() {
+  projectWizardVisible.value = false;
+  openDashboardSection('notifications');
+  showToast('Notifications opened.');
+}
+
 async function openFundedProjectDashboard(tab = 'Overview') {
   const projectID = String(fundedProject.value?.id || selectedDashboardProjectID.value || '').trim();
   projectWizardVisible.value = false;
@@ -6234,6 +6240,9 @@ function handleDashboardNav(item) {
   }
   if (item.section) {
     openDashboardSection(item.section);
+    if (item.tab) {
+      openDashboardProjectTab(item.tab);
+    }
     return;
   }
   if (item.action === 'repo-import') {
