@@ -7422,6 +7422,223 @@ svg {
   margin-top: 14px;
 }
 
+.admin-summary-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.admin-console-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.84fr) minmax(0, 1.16fr);
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.admin-ops-card {
+  grid-row: span 2;
+}
+
+.admin-readiness-list,
+.admin-ops-stats,
+.admin-ops-list,
+.admin-reputation-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.admin-readiness-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.admin-readiness-list span,
+.admin-ops-stats span {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+  border: 1px solid #e8eef1;
+  border-radius: 8px;
+  background: #fbfcfd;
+  color: #64748b;
+  padding: 10px;
+  font-size: 11px;
+  font-weight: 820;
+}
+
+.admin-readiness-list span.ready {
+  border-color: rgba(15, 159, 120, 0.26);
+  background: #ecfdf5;
+  color: var(--green-dark);
+}
+
+.admin-readiness-list strong,
+.admin-ops-stats strong {
+  color: #111827;
+  font-size: 13px;
+  font-weight: 930;
+}
+
+.admin-ops-stats {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.admin-ops-stats .red strong {
+  color: #dc2626;
+}
+
+.admin-ops-stats .amber strong {
+  color: #d97706;
+}
+
+.admin-ops-stats .blue strong {
+  color: #2563eb;
+}
+
+.admin-ops-stats .green strong {
+  color: #047857;
+}
+
+.admin-ops-list article,
+.admin-reputation-list article {
+  min-width: 0;
+  display: grid;
+  align-items: start;
+  gap: 10px;
+  border-top: 1px solid #eef0f2;
+  padding-top: 10px;
+}
+
+.admin-ops-list article {
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+}
+
+.admin-reputation-list article {
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+}
+
+.admin-ops-icon {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+}
+
+.admin-ops-icon.red {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.admin-ops-icon.amber {
+  background: #fffbeb;
+  color: #d97706;
+}
+
+.admin-ops-icon.blue {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.admin-ops-icon.green {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.admin-ops-list strong,
+.admin-ops-list small,
+.admin-ops-list b,
+.admin-reputation-list strong,
+.admin-reputation-list small,
+.admin-reputation-list b {
+  display: block;
+  min-width: 0;
+}
+
+.admin-ops-list strong,
+.admin-reputation-list strong {
+  overflow: hidden;
+  color: #111827;
+  font-size: 12px;
+  font-weight: 920;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-ops-list small,
+.admin-reputation-list small {
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 10px;
+  line-height: 1.4;
+  font-weight: 740;
+}
+
+.admin-ops-list b,
+.admin-reputation-list b {
+  width: max-content;
+  max-width: 100%;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #f5f7f7;
+  color: #6b7280;
+  margin-top: 6px;
+  padding: 3px 7px;
+  font-size: 9px;
+  font-weight: 840;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-ops-side,
+.admin-reputation-list em {
+  display: grid;
+  justify-items: end;
+  gap: 6px;
+}
+
+.admin-ops-side em,
+.admin-reputation-list em {
+  border-radius: 999px;
+  padding: 4px 7px;
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.admin-ops-side em.red,
+.admin-reputation-list em.red {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.admin-ops-side em.amber,
+.admin-reputation-list em.amber {
+  background: #fffbeb;
+  color: #b45309;
+}
+
+.admin-ops-side em.blue,
+.admin-reputation-list em.blue {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.admin-ops-side em.green,
+.admin-reputation-list em.green {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.admin-ops-side button {
+  min-height: 28px;
+  border: 1px solid #dbe3ea;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #273244;
+  padding: 0 9px;
+  font-size: 10px;
+  font-weight: 850;
+}
+
 .payment-history-list {
   display: grid;
   gap: 12px;
@@ -7853,8 +8070,14 @@ svg {
   .dash-metrics,
   .dash-overview-grid,
   .worker-dashboard-grid,
+  .admin-summary-grid,
+  .admin-console-grid,
   .payment-summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-ops-card {
+    grid-row: auto;
   }
 
   .dash-rail {
@@ -8195,9 +8418,24 @@ svg {
   .dash-metrics,
   .dash-overview-grid,
   .dash-rail,
+  .admin-summary-grid,
+  .admin-console-grid,
+  .admin-readiness-list,
+  .admin-ops-stats,
   .payment-summary-grid,
   .payment-history-meta {
     grid-template-columns: 1fr;
+  }
+
+  .admin-ops-list article,
+  .admin-reputation-list article {
+    grid-template-columns: 34px minmax(0, 1fr);
+  }
+
+  .admin-ops-side,
+  .admin-reputation-list em {
+    grid-column: 2;
+    justify-items: start;
   }
 
   .dash-pr-row {

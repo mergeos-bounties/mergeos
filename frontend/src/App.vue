@@ -1092,7 +1092,150 @@
 
       <main class="dash-content">
         <section class="dash-main">
-          <template v-if="dashboardSection === 'payments'">
+          <template v-if="dashboardSection === 'admin'">
+            <div class="dash-breadcrumb">
+              <Home :size="14" />
+              <span>Admin</span>
+              <ChevronDown :size="13" />
+              <strong>Treasury & Ops</strong>
+            </div>
+
+            <section v-if="adminConsoleError" class="dash-empty-state">
+              <strong>Could not load admin console</strong>
+              <p>{{ adminConsoleError }}</p>
+              <button class="secondary-button compact" type="button" @click="loadAdminConsoleData">Retry</button>
+            </section>
+
+            <template v-else>
+              <section class="dash-project-header admin-console-header">
+                <div class="dash-project-title">
+                  <span class="project-photo payment-photo">
+                    <ShieldCheck :size="18" />
+                  </span>
+                  <div>
+                    <h1>Admin Console</h1>
+                    <p>Treasury, users, payout review, disputes, moderation, and reputation signals.</p>
+                  </div>
+                  <span class="live-badge">{{ adminSummaryView.status }}</span>
+                </div>
+
+                <div class="dash-project-actions">
+                  <button type="button" @click="loadAdminConsoleData">
+                    <RefreshCw :size="15" />
+                    Refresh
+                  </button>
+                  <button type="button" @click="openPublicPage('ledger')">
+                    <Link2 :size="15" />
+                    Public ledger
+                  </button>
+                </div>
+              </section>
+
+              <section class="dash-overview-grid admin-summary-grid">
+                <article class="dash-card payment-summary-card">
+                  <span>Total Budget</span>
+                  <strong>{{ adminSummaryView.totalBudget }}</strong>
+                  <small>{{ adminSummaryView.projects }} projects / {{ adminSummaryView.openTasks }} open tasks</small>
+                </article>
+                <article class="dash-card payment-summary-card">
+                  <span>Work Pool</span>
+                  <strong>{{ adminSummaryView.workPool }}</strong>
+                  <small>{{ adminSummaryView.acceptedTasks }} accepted tasks</small>
+                </article>
+                <article class="dash-card payment-summary-card">
+                  <span>Paid Tasks</span>
+                  <strong>{{ adminSummaryView.paidTasks }}</strong>
+                  <small>{{ adminSummaryView.platformFee }} platform fees</small>
+                </article>
+                <article class="dash-card payment-summary-card">
+                  <span>Users</span>
+                  <strong>{{ adminSummaryView.users }}</strong>
+                  <small>{{ adminSummaryView.admins }} admins / {{ adminSummaryView.paymentMode }}</small>
+                </article>
+              </section>
+
+              <section class="admin-console-grid">
+                <article class="dash-card admin-treasury-card">
+                  <div class="card-title-row">
+                    <div>
+                      <h2>Treasury Readiness</h2>
+                      <p>Payment and integration status from backend runtime config.</p>
+                    </div>
+                    <span>{{ adminSummaryView.repoProvider }}</span>
+                  </div>
+                  <div class="admin-readiness-list">
+                    <span :class="{ ready: adminSummaryView.payPalReady }">PayPal <strong>{{ adminSummaryView.payPalReady ? 'Ready' : 'Missing' }}</strong></span>
+                    <span :class="{ ready: adminSummaryView.cryptoReady }">Crypto <strong>{{ adminSummaryView.cryptoReady ? 'Ready' : 'Missing' }}</strong></span>
+                    <span :class="{ ready: adminSummaryView.githubReady }">GitHub <strong>{{ adminSummaryView.githubReady ? 'Ready' : 'Missing' }}</strong></span>
+                    <span :class="{ ready: adminSummaryView.smtpReady }">SMTP <strong>{{ adminSummaryView.smtpReady ? 'Ready' : 'Missing' }}</strong></span>
+                  </div>
+                </article>
+
+                <article class="dash-card admin-ops-card">
+                  <div class="card-title-row">
+                    <div>
+                      <h2>Ops Queue</h2>
+                      <p>Disputes, payout review, moderation, fraud, and security signals.</p>
+                    </div>
+                    <span>{{ formatCompactNumber(adminOpsQueue.stats?.total_count) }} rows</span>
+                  </div>
+                  <div class="admin-ops-stats">
+                    <span v-for="stat in adminOpsStats" :key="stat.label" :class="stat.tone">
+                      {{ stat.label }}
+                      <strong>{{ stat.value }}</strong>
+                    </span>
+                  </div>
+                  <div v-if="adminOpsRows.length" class="admin-ops-list">
+                    <article v-for="item in adminOpsRows" :key="item.id">
+                      <span :class="['admin-ops-icon', item.tone]">
+                        <ShieldCheck :size="15" />
+                      </span>
+                      <div>
+                        <strong>{{ item.title }}</strong>
+                        <small>{{ item.body }}</small>
+                        <b>{{ item.type }} / {{ item.reference || item.project || item.status }}</b>
+                      </div>
+                      <div class="admin-ops-side">
+                        <em :class="item.tone">{{ item.severity }}</em>
+                        <button v-if="item.url" type="button" @click="openExternalURL(item.url)">Open</button>
+                      </div>
+                    </article>
+                  </div>
+                  <article v-else class="dash-empty-state compact">
+                    <strong>{{ adminConsoleLoading ? 'Loading ops queue...' : 'No ops items' }}</strong>
+                    <p>{{ adminConsoleLoading ? 'Fetching admin queue.' : 'No dispute, payout, moderation, fraud, or security items require review.' }}</p>
+                  </article>
+                </article>
+
+                <article class="dash-card admin-reputation-card">
+                  <div class="card-title-row">
+                    <div>
+                      <h2>Worker Reputation</h2>
+                      <p>{{ formatCompactNumber(adminReputationStats.worker_count) }} workers / {{ formatCompactNumber(adminReputationStats.completed_task_count) }} completed tasks</p>
+                    </div>
+                    <span>{{ formatCompactNumber(adminReputationStats.high_risk_count) }} high risk</span>
+                  </div>
+                  <div v-if="adminReputationRows.length" class="admin-reputation-list">
+                    <article v-for="worker in adminReputationRows" :key="worker.id">
+                      <span :class="['contributor-avatar', worker.tone]">{{ initialsFor(worker.name) }}</span>
+                      <div>
+                        <strong>{{ worker.name }}</strong>
+                        <small>{{ worker.level }} / {{ worker.completed }} tasks / {{ worker.rewards }}</small>
+                        <b v-if="worker.flags.length">{{ worker.flags.slice(0, 2).join(', ') }}</b>
+                      </div>
+                      <em :class="worker.tone">{{ worker.score }}</em>
+                    </article>
+                  </div>
+                  <article v-else class="dash-empty-state compact">
+                    <strong>{{ adminConsoleLoading ? 'Loading reputation...' : 'No worker reputation rows' }}</strong>
+                    <p>{{ adminConsoleLoading ? 'Fetching worker audit signals.' : 'Paid workers will appear after accepted tasks and ledger payouts.' }}</p>
+                  </article>
+                </article>
+              </section>
+            </template>
+          </template>
+
+          <template v-else-if="dashboardSection === 'payments'">
             <div class="dash-breadcrumb">
               <Home :size="14" />
               <span>Payments</span>
@@ -3380,6 +3523,11 @@ const dashboardRepositoryScanError = ref('');
 const dashboardNotifications = ref([]);
 const dashboardNotificationsLoading = ref(false);
 const dashboardNotificationsError = ref('');
+const adminSummary = ref(null);
+const adminOpsQueue = ref({ stats: {}, items: [] });
+const adminReputation = ref({ stats: {}, workers: [] });
+const adminConsoleLoading = ref(false);
+const adminConsoleError = ref('');
 const workerDashboard = ref({
   profile: {},
   stats: {},
@@ -4207,7 +4355,9 @@ const dashboardProjectList = computed(() => {
   ].filter(Boolean).join(' ').toLowerCase().includes(query));
 });
 const dashboardSearchPlaceholder = computed(() =>
-  dashboardSection.value === 'payments'
+  dashboardSection.value === 'admin'
+    ? 'Search admin queues, users, treasury, or payouts...'
+    : dashboardSection.value === 'payments'
     ? 'Search payments, refs, methods, or statuses...'
     : dashboardSection.value === 'worker'
       ? 'Search claimed tasks, rewards, or proposal matches...'
@@ -4652,19 +4802,65 @@ const workerIdentityReadyCount = computed(() => workerIdentityRows.value.filter(
 const workerScoreRingStyle = computed(() => ({
   background: `conic-gradient(var(--green) 0 ${workerReputationScore.value}%, #e8eef1 ${workerReputationScore.value}% 100%)`,
 }));
+const isAdminUser = computed(() => user.value?.role === 'admin');
+const adminSummaryView = computed(() => {
+  const summary = adminSummary.value || {};
+  return {
+    status: adminConsoleLoading.value ? 'Syncing' : isAdminUser.value ? 'Admin' : 'Restricted',
+    totalBudget: formatMRGFromCents(summary.total_budget_cents),
+    workPool: formatMRGFromCents(summary.work_pool_cents),
+    platformFee: formatMRGFromCents(summary.platform_fee_cents),
+    paidTasks: formatMRGFromCents(summary.paid_task_cents),
+    users: formatCompactNumber(summary.user_count),
+    admins: formatCompactNumber(summary.admin_count),
+    projects: formatCompactNumber(summary.project_count),
+    openTasks: formatCompactNumber(summary.open_task_count),
+    acceptedTasks: formatCompactNumber(summary.accepted_task_count),
+    paymentMode: toTitleLabel(summary.payment_mode || 'payment'),
+    repoProvider: toTitleLabel(summary.repo_provider || 'repo'),
+    payPalReady: Boolean(summary.paypal_ready),
+    cryptoReady: Boolean(summary.crypto_ready),
+    githubReady: Boolean(summary.github_ready),
+    smtpReady: Boolean(summary.smtp_ready),
+  };
+});
+const adminOpsStats = computed(() => {
+  const stats = adminOpsQueue.value?.stats || {};
+  return [
+    { label: 'Disputes', value: formatCompactNumber(stats.dispute_count), tone: 'amber' },
+    { label: 'Payout Reviews', value: formatCompactNumber(stats.payout_review_count), tone: 'blue' },
+    { label: 'Moderation', value: formatCompactNumber(stats.moderation_count), tone: 'purple' },
+    { label: 'Fraud', value: formatCompactNumber(stats.fraud_count), tone: 'red' },
+    { label: 'Security', value: formatCompactNumber(stats.security_count), tone: 'green' },
+    { label: 'Critical', value: formatCompactNumber(stats.critical_count), tone: 'red' },
+  ];
+});
+const adminOpsRows = computed(() =>
+  (adminOpsQueue.value?.items || []).slice(0, 8).map(mapAdminOpsItem),
+);
+const adminReputationRows = computed(() =>
+  (adminReputation.value?.workers || []).slice(0, 6).map(mapAdminReputationWorker),
+);
+const adminReputationStats = computed(() => adminReputation.value?.stats || {});
 const dashboardSectionEyebrow = computed(() => {
+  if (dashboardSection.value === 'admin') return 'ADMIN OPS';
   if (dashboardSection.value === 'payments') return 'PAYMENTS';
   if (dashboardSection.value === 'worker') return 'WORKER OPS';
   return 'PROJECT OPS';
 });
 const dashboardCommandTitle = computed(() =>
-  dashboardSection.value === 'payments'
+  dashboardSection.value === 'admin'
+    ? 'Admin treasury and moderation console'
+    : dashboardSection.value === 'payments'
     ? 'Payments, escrow, and payout proof'
     : dashboardSection.value === 'worker'
       ? 'Worker rewards and proposal console'
       : 'Project delivery command center',
 );
 const dashboardCommandBody = computed(() => {
+  if (dashboardSection.value === 'admin') {
+    return 'Review treasury totals, payout risks, disputes, moderation, security, and worker reputation from the admin APIs.';
+  }
   if (dashboardSection.value === 'payments') {
     return 'Track funding, escrow holds, token minting, fees, and task payouts for the selected project.';
   }
@@ -4674,6 +4870,14 @@ const dashboardCommandBody = computed(() => {
   return 'Watch scope, tasks, budget, repo context, notifications, and ledger activity from one workspace.';
 });
 const dashboardCommandStats = computed(() => {
+  if (dashboardSection.value === 'admin') {
+    return [
+      { label: 'Treasury budget', value: adminSummaryView.value.totalBudget, icon: CircleDollarSign, tone: 'green' },
+      { label: 'Ops queue', value: formatCompactNumber(adminOpsQueue.value?.stats?.total_count), icon: ShieldCheck, tone: 'blue' },
+      { label: 'High risk workers', value: formatCompactNumber(adminReputationStats.value.high_risk_count), icon: Trophy, tone: 'purple' },
+      { label: 'Platform fees', value: adminSummaryView.value.platformFee, icon: CreditCard, tone: 'amber' },
+    ];
+  }
   if (dashboardSection.value === 'worker') {
     return [
       { label: 'Claimed', value: String(Number(workerDashboardStats.value.claimed_task_count) || 0), icon: GitPullRequest, tone: 'green' },
@@ -4728,46 +4932,55 @@ const marketplaceBenefits = [
   },
 ];
 
-const sidebarSections = [
-  {
-    label: 'Main',
-    items: [
-      { label: 'Overview', icon: LayoutDashboard, section: 'projects' },
-      { label: 'My Projects', icon: FolderKanban, section: 'projects' },
-      { label: 'Tasks', icon: ListTodo, section: 'projects', toast: 'Opening tasks...' },
-      { label: 'Worker Dashboard', icon: User, section: 'worker' },
-      { label: 'Repositories', icon: GitBranch, toast: 'Opening repositories...' },
-      { label: 'Payments', icon: CreditCard, section: 'payments' },
-      { label: 'Notifications', icon: Bell, section: 'notifications' },
-    ],
-  },
-  {
-    label: 'Discover',
-    items: [
-      { label: 'Talent Marketplace', icon: UsersRound, page: 'marketplace' },
-      { label: 'Bounty Explorer', icon: Compass, toast: 'Opening bounty explorer...' },
-      { label: 'AI Agents', icon: Bot, toast: 'Opening AI agents...' },
-    ],
-  },
-  {
-    label: 'Tools',
-    items: [
-      { label: 'Repo Import', icon: UploadCloud, toast: 'Opening repo import...' },
-      { label: 'AI Issue Scanner', icon: Search, toast: 'Opening AI issue scanner...' },
-      { label: 'Estimate Cost', icon: Calculator, toast: 'Opening cost estimator...' },
-    ],
-  },
-];
+const sidebarSections = computed(() => {
+  const mainItems = [
+    { label: 'Overview', icon: LayoutDashboard, section: 'projects' },
+    { label: 'My Projects', icon: FolderKanban, section: 'projects' },
+    { label: 'Tasks', icon: ListTodo, section: 'projects', toast: 'Opening tasks...' },
+    { label: 'Worker Dashboard', icon: User, section: 'worker' },
+    { label: 'Repositories', icon: GitBranch, toast: 'Opening repositories...' },
+    { label: 'Payments', icon: CreditCard, section: 'payments' },
+    { label: 'Notifications', icon: Bell, section: 'notifications' },
+  ];
+  if (isAdminUser.value) {
+    mainItems.splice(1, 0, { label: 'Admin Console', icon: ShieldCheck, section: 'admin' });
+  }
+  return [
+    { label: 'Main', items: mainItems },
+    {
+      label: 'Discover',
+      items: [
+        { label: 'Talent Marketplace', icon: UsersRound, page: 'marketplace' },
+        { label: 'Bounty Explorer', icon: Compass, toast: 'Opening bounty explorer...' },
+        { label: 'AI Agents', icon: Bot, toast: 'Opening AI agents...' },
+      ],
+    },
+    {
+      label: 'Tools',
+      items: [
+        { label: 'Repo Import', icon: UploadCloud, toast: 'Opening repo import...' },
+        { label: 'AI Issue Scanner', icon: Search, toast: 'Opening AI issue scanner...' },
+        { label: 'Estimate Cost', icon: Calculator, toast: 'Opening cost estimator...' },
+      ],
+    },
+  ];
+});
 
-const topNavItems = [
-  { label: 'Dashboard', section: 'projects' },
-  { label: 'Projects', section: 'projects' },
-  { label: 'Worker', section: 'worker' },
-  { label: 'Marketplace', page: 'marketplace' },
-  { label: 'Repos', toast: 'Opening repositories...' },
-  { label: 'Payments', section: 'payments' },
-  { label: 'Analytics', toast: 'Opening analytics...' },
-];
+const topNavItems = computed(() => {
+  const items = [
+    { label: 'Dashboard', section: 'projects' },
+    { label: 'Projects', section: 'projects' },
+    { label: 'Worker', section: 'worker' },
+    { label: 'Marketplace', page: 'marketplace' },
+    { label: 'Repos', toast: 'Opening repositories...' },
+    { label: 'Payments', section: 'payments' },
+    { label: 'Analytics', toast: 'Opening analytics...' },
+  ];
+  if (isAdminUser.value) {
+    items.splice(2, 0, { label: 'Admin', section: 'admin' });
+  }
+  return items;
+});
 
 const dashboardTabs = ['Overview', 'Tasks', 'Activity', 'Ledger', 'Files', 'Settings'];
 
@@ -5001,6 +5214,9 @@ function openDashboard() {
   if (user.value) {
     void loadDashboardData({ silent: true });
     void loadWorkerDashboardData({ silent: true });
+    if (isAdminUser.value) {
+      void loadAdminConsoleData({ silent: true });
+    }
   }
   if (!hasWindow) return;
   window.requestAnimationFrame(() => {
@@ -5037,10 +5253,17 @@ function handleDashboardNav(item) {
 
 function openDashboardSection(section) {
   publicModeVisible.value = false;
-  if (section === 'payments' || section === 'projects' || section === 'worker') {
+  if (section === 'payments' || section === 'projects' || section === 'worker' || section === 'admin') {
+    if (section === 'admin' && !isAdminUser.value) {
+      showToast('Admin role is required.');
+      return;
+    }
     dashboardSection.value = section;
     if (section === 'worker') {
       void loadWorkerDashboardData({ silent: true });
+    }
+    if (section === 'admin') {
+      void loadAdminConsoleData({ silent: true });
     }
     if (!hasWindow) return;
     window.requestAnimationFrame(() => {
@@ -5060,6 +5283,7 @@ function openDashboardSection(section) {
 }
 
 function isDashboardNavActive(item = {}) {
+  if (item.section === 'admin') return dashboardSection.value === 'admin';
   if (item.section === 'payments') return dashboardSection.value === 'payments';
   if (item.section === 'projects') return dashboardSection.value === 'projects';
   if (item.section === 'worker') return dashboardSection.value === 'worker';
@@ -5891,6 +6115,47 @@ function mapDashboardNotification(note = {}) {
   };
 }
 
+function adminOpsTone(value = '') {
+  const normalized = String(value || '').toLowerCase();
+  if (normalized === 'critical' || normalized === 'high' || normalized.includes('fraud')) return 'red';
+  if (normalized === 'medium' || normalized.includes('dispute')) return 'amber';
+  if (normalized.includes('security') || normalized === 'low') return 'green';
+  return 'blue';
+}
+
+function mapAdminOpsItem(item = {}) {
+  const when = formatLedgerDateTime(item.created_at);
+  const tone = adminOpsTone(item.severity || item.type);
+  return {
+    id: item.id || `${item.type || 'ops'}-${item.created_at || item.reference || item.title}`,
+    type: toTitleLabel(item.type || 'ops'),
+    severity: toTitleLabel(item.severity || 'review'),
+    title: item.title || 'Admin review item',
+    body: trimMarketplaceText(item.body, 'Admin operations item requires review.'),
+    project: item.project_title || (item.project_id ? `Project ${String(item.project_id).slice(-6)}` : ''),
+    reference: item.reference || (item.issue_number ? `Issue #${item.issue_number}` : ''),
+    status: toTitleLabel(item.status || 'open'),
+    url: item.url || '',
+    tone,
+    when: when.full,
+  };
+}
+
+function mapAdminReputationWorker(worker = {}) {
+  const name = worker.name || worker.worker_id || 'Worker';
+  return {
+    id: worker.worker_id || name,
+    name,
+    level: worker.level || worker.risk_level || 'Worker',
+    risk: toTitleLabel(worker.risk_level || 'unknown'),
+    score: Number(worker.score) || 0,
+    completed: formatCompactNumber(worker.completed_task_count),
+    rewards: formatMRGFromCents(worker.reward_cents),
+    flags: Array.isArray(worker.flags) ? worker.flags : [],
+    tone: adminOpsTone(worker.risk_level),
+  };
+}
+
 function formatLedgerDateTime(value) {
   const date = value ? new Date(value) : new Date();
   if (Number.isNaN(date.getTime())) {
@@ -6680,6 +6945,40 @@ async function loadWorkerDashboardData(options = {}) {
   }
 }
 
+async function loadAdminConsoleData(options = {}) {
+  if (!token.value || !isAdminUser.value) {
+    adminSummary.value = null;
+    adminOpsQueue.value = { stats: {}, items: [] };
+    adminReputation.value = { stats: {}, workers: [] };
+    adminConsoleError.value = '';
+    return;
+  }
+
+  const silent = Boolean(options.silent);
+  if (!silent) adminConsoleLoading.value = true;
+  adminConsoleError.value = '';
+  try {
+    const [summary, opsQueue, reputation] = await Promise.all([
+      api('/api/admin/summary'),
+      api('/api/admin/ops-queue'),
+      api('/api/admin/reputation'),
+    ]);
+    adminSummary.value = summary || {};
+    adminOpsQueue.value = {
+      stats: opsQueue?.stats || {},
+      items: Array.isArray(opsQueue?.items) ? opsQueue.items : [],
+    };
+    adminReputation.value = {
+      stats: reputation?.stats || {},
+      workers: Array.isArray(reputation?.workers) ? reputation.workers : [],
+    };
+  } catch (error) {
+    adminConsoleError.value = error.message || 'Could not load admin console';
+  } finally {
+    adminConsoleLoading.value = false;
+  }
+}
+
 async function loadDashboardNotifications() {
   if (!token.value) {
     dashboardNotifications.value = [];
@@ -6742,6 +7041,9 @@ function startDashboardRealtime() {
     if (dashboardSection.value === 'worker') {
       void loadWorkerDashboardData({ silent: true });
     }
+    if (dashboardSection.value === 'admin' && isAdminUser.value) {
+      void loadAdminConsoleData({ silent: true });
+    }
     void loadDashboardNotifications();
   }, DASHBOARD_REFRESH_MS);
 }
@@ -6790,6 +7092,9 @@ function setSession(auth) {
   }
   void loadDashboardData({ silent: true });
   void loadWorkerDashboardData({ silent: true });
+  if (isAdminUser.value) {
+    void loadAdminConsoleData({ silent: true });
+  }
   void loadDashboardNotifications();
   startDashboardRealtime();
 }
@@ -6943,6 +7248,11 @@ function clearSession() {
     identity_status: [],
   };
   workerDashboardError.value = '';
+  adminSummary.value = null;
+  adminOpsQueue.value = { stats: {}, items: [] };
+  adminReputation.value = { stats: {}, workers: [] };
+  adminConsoleLoading.value = false;
+  adminConsoleError.value = '';
   dashboardError.value = '';
   dashboardSection.value = 'projects';
   selectedDashboardProjectID.value = '';
@@ -6996,6 +7306,9 @@ async function restoreSession() {
     user.value = await api('/api/auth/me');
     await loadDashboardData({ silent: true });
     await loadWorkerDashboardData({ silent: true });
+    if (isAdminUser.value) {
+      await loadAdminConsoleData({ silent: true });
+    }
     await loadDashboardNotifications();
     startDashboardRealtime();
     if (publicPage.value === 'ledger') {
