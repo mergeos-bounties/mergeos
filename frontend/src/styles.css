@@ -5946,6 +5946,177 @@ svg {
   font-weight: 930;
 }
 
+.task-graph-progress {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.task-graph-progress span {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e8eef1;
+}
+
+.task-graph-progress i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--green);
+}
+
+.task-graph-progress strong {
+  color: #111827;
+  font-size: 12px;
+  font-weight: 930;
+}
+
+.task-graph-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.task-graph-metrics span {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border: 1px solid #e8eef1;
+  border-radius: 8px;
+  background: #fbfcfd;
+  color: #64748b;
+  padding: 8px;
+  font-size: 10px;
+  font-weight: 830;
+}
+
+.task-graph-metrics strong {
+  color: #111827;
+  font-size: 12px;
+  font-weight: 930;
+}
+
+.task-graph-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.task-graph-list article {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 10px;
+  border-top: 1px solid #eef0f2;
+  padding-top: 9px;
+}
+
+.task-graph-icon {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+}
+
+.task-graph-icon.red {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.task-graph-icon.green {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.task-graph-icon.blue {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.task-graph-icon.amber {
+  background: #fffbeb;
+  color: #d97706;
+}
+
+.task-graph-icon.purple {
+  background: #f5f3ff;
+  color: #7c3aed;
+}
+
+.task-graph-icon.slate {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.task-graph-list strong,
+.task-graph-list small {
+  display: block;
+  min-width: 0;
+}
+
+.task-graph-list strong {
+  overflow: hidden;
+  color: #111827;
+  font-size: 12px;
+  font-weight: 920;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.task-graph-list small {
+  margin-top: 3px;
+  color: #64748b;
+  font-size: 10px;
+  line-height: 1.35;
+  font-weight: 740;
+}
+
+.task-graph-list em {
+  border-radius: 999px;
+  padding: 4px 7px;
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.task-graph-list em.red {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.task-graph-list em.green {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.task-graph-list em.blue {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.task-graph-list em.amber {
+  background: #fffbeb;
+  color: #b45309;
+}
+
+.task-graph-list em.purple {
+  background: #f5f3ff;
+  color: #6d28d9;
+}
+
+.task-graph-list em.slate {
+  background: #f1f5f9;
+  color: #475569;
+}
+
 .repository-scan-card {
   display: grid;
   gap: 12px;
@@ -7673,6 +7844,15 @@ svg {
 
   .repository-finding-list article {
     grid-template-columns: 32px minmax(0, 1fr);
+  }
+
+  .task-graph-list article {
+    grid-template-columns: 30px minmax(0, 1fr);
+  }
+
+  .task-graph-list em {
+    grid-column: 2;
+    width: max-content;
   }
 
   .repository-finding-list em {

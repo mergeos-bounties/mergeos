@@ -1532,17 +1532,45 @@
 
                 <article class="dash-card analysis-card">
                   <div class="card-title-row">
-                    <h2>Work Split</h2>
-                    <span>Live</span>
+                    <div>
+                      <h2>Work Split</h2>
+                      <p>{{ dashboardTaskGraphView.body }}</p>
+                    </div>
+                    <span>{{ dashboardTaskGraphView.status }}</span>
                   </div>
-                  <p>Task routing is loaded from the funded project plan.</p>
+                  <div class="task-graph-progress">
+                    <span><i :style="{ width: `${dashboardTaskGraphView.progress}%` }" /></span>
+                    <strong>{{ dashboardTaskGraphView.progress }}%</strong>
+                  </div>
                   <div class="risk-grid">
                     <span v-for="item in dashboardWorkSplit" :key="item.label" :class="item.className">
                       {{ item.label }}
                       <strong>{{ item.value }}</strong>
                     </span>
                   </div>
-                  <button type="button" @click="showToast('Opening task routing...')">View Routing</button>
+                  <div class="task-graph-metrics">
+                    <span>Ready <strong>{{ dashboardTaskGraphView.ready }}</strong></span>
+                    <span>Blocked <strong>{{ dashboardTaskGraphView.blocked }}</strong></span>
+                    <span>Edges <strong>{{ dashboardTaskGraphView.edges }}</strong></span>
+                  </div>
+                  <div v-if="dashboardTaskGraphError" class="deployment-error">{{ dashboardTaskGraphError }}</div>
+                  <div v-else-if="dashboardTaskGraphRows.length" class="task-graph-list">
+                    <article v-for="node in dashboardTaskGraphRows" :key="node.id">
+                      <span :class="['task-graph-icon', node.tone]">
+                        <ListTodo :size="14" />
+                      </span>
+                      <div>
+                        <strong>#{{ node.issueNumber }} {{ node.title }}</strong>
+                        <small>{{ node.lane }} / {{ node.reward }} / {{ node.blockedBy }}</small>
+                      </div>
+                      <em :class="node.tone">{{ node.status }}</em>
+                    </article>
+                  </div>
+                  <article v-else class="dash-empty-state compact">
+                    <strong>{{ dashboardTaskGraphLoading ? 'Loading task graph...' : 'No graph nodes' }}</strong>
+                    <p>{{ dashboardTaskGraphLoading ? 'Resolving dependency edges.' : 'Fund a project to generate graph nodes.' }}</p>
+                  </article>
+                  <button type="button" :disabled="dashboardTaskGraphLoading || !dashboardSelectedProject" @click="loadDashboardTaskGraphData(dashboardSelectedProject?.id)">Refresh Graph</button>
                 </article>
 
                 <article class="dash-card repository-scan-card">
@@ -3190,6 +3218,9 @@ const dashboardDeploymentError = ref('');
 const dashboardAIWorkflow = ref(null);
 const dashboardAIWorkflowLoading = ref(false);
 const dashboardAIWorkflowError = ref('');
+const dashboardTaskGraph = ref(null);
+const dashboardTaskGraphLoading = ref(false);
+const dashboardTaskGraphError = ref('');
 const dashboardPullRequests = ref(null);
 const dashboardPullRequestsLoading = ref(false);
 const dashboardPullRequestsError = ref('');
@@ -4118,6 +4149,49 @@ const dashboardWorkSplit = computed(() => {
     { label: 'Agent', className: 'medium', value: tasks.filter((task) => task.required_worker_kind === 'agent').length },
   ];
 });
+const dashboardTaskGraphStats = computed(() => dashboardTaskGraph.value?.stats || {});
+const dashboardTaskGraphView = computed(() => {
+  if (!dashboardSelectedProject.value) {
+    return {
+      status: dashboardTaskGraphLoading.value ? 'Syncing' : 'Empty',
+      body: 'Task graph appears after a project is selected.',
+      progress: 0,
+      ready: '0',
+      blocked: '0',
+      edges: '0',
+    };
+  }
+  if (!dashboardTaskGraph.value) {
+    return {
+      status: dashboardTaskGraphLoading.value ? 'Syncing' : 'Waiting',
+      body: dashboardTaskGraphLoading.value ? 'Loading task dependencies.' : 'No task graph payload loaded.',
+      progress: 0,
+      ready: '0',
+      blocked: '0',
+      edges: '0',
+    };
+  }
+  const stats = dashboardTaskGraphStats.value;
+  const ready = Number(stats.ready_count) || 0;
+  const blocked = Number(stats.blocked_count) || 0;
+  const edges = Number(stats.edge_count) || 0;
+  const progress = Math.max(0, Math.min(100, Number(dashboardTaskGraph.value.progress) || 0));
+  return {
+    status: toTitleLabel(dashboardTaskGraph.value.status || 'planning'),
+    body: `${formatCompactNumber(ready)} ready / ${formatCompactNumber(blocked)} blocked / ${formatCompactNumber(edges)} dependencies`,
+    progress,
+    ready: formatCompactNumber(ready),
+    blocked: formatCompactNumber(blocked),
+    edges: formatCompactNumber(edges),
+  };
+});
+const dashboardTaskGraphRows = computed(() =>
+  (dashboardTaskGraph.value?.nodes || [])
+    .slice()
+    .sort((a, b) => taskGraphNodeSortWeight(b) - taskGraphNodeSortWeight(a))
+    .slice(0, 4)
+    .map(mapDashboardTaskGraphNode),
+);
 const dashboardDeploymentView = computed(() => {
   const deployment = dashboardDeployment.value;
   if (!dashboardSelectedProject.value) {
@@ -4758,6 +4832,7 @@ async function selectDashboardProject(projectID) {
   void loadDashboardEscrowData(projectID, { silent: true });
   void loadDashboardDeploymentData(projectID, { silent: true });
   void loadDashboardAIWorkflowData(projectID, { silent: true });
+  void loadDashboardTaskGraphData(projectID, { silent: true });
   void loadDashboardPullRequestsData(projectID, { silent: true });
   void loadDashboardRepositoryScanData(projectID, { silent: true });
   await nextTick();
@@ -5445,6 +5520,44 @@ function mapDashboardTask(task = {}) {
   };
 }
 
+function taskGraphNodeSortWeight(node = {}) {
+  if (node.status === 'accepted') return 1;
+  if (node.ready) return 3;
+  if (Array.isArray(node.blocked_by) && node.blocked_by.length) return 4;
+  return 2;
+}
+
+function taskGraphLaneTone(lane = '') {
+  const normalized = String(lane || '').toLowerCase();
+  if (normalized === 'deployment') return 'blue';
+  if (normalized === 'validation') return 'green';
+  if (normalized === 'design') return 'purple';
+  if (normalized === 'backend') return 'amber';
+  if (normalized === 'agent') return 'blue';
+  return 'slate';
+}
+
+function mapDashboardTaskGraphNode(node = {}) {
+  const blockedCount = Array.isArray(node.blocked_by) ? node.blocked_by.length : 0;
+  const status = node.status === 'accepted'
+    ? 'Complete'
+    : node.ready
+      ? 'Ready'
+      : blockedCount
+        ? 'Blocked'
+        : toTitleLabel(node.status || 'open');
+  return {
+    id: node.id || node.task_id || node.title || 'task-node',
+    issueNumber: node.issue_number || '-',
+    title: node.title || 'Untitled task node',
+    lane: toTitleLabel(node.lane || 'implementation'),
+    status,
+    reward: formatMRGFromCents(node.reward_cents),
+    blockedBy: blockedCount ? `${blockedCount} blockers` : 'No blockers',
+    tone: status === 'Blocked' ? 'red' : status === 'Ready' ? 'green' : status === 'Complete' ? 'blue' : taskGraphLaneTone(node.lane),
+  };
+}
+
 function mapDashboardDeploymentStage(stage = {}) {
   const reference = stage.reference || (stage.source_task_issue_number ? `issue:${stage.source_task_issue_number}` : '');
   return {
@@ -5922,6 +6035,9 @@ async function loadDashboardData(options = {}) {
     dashboardAIWorkflow.value = null;
     dashboardAIWorkflowLoading.value = false;
     dashboardAIWorkflowError.value = '';
+    dashboardTaskGraph.value = null;
+    dashboardTaskGraphLoading.value = false;
+    dashboardTaskGraphError.value = '';
     dashboardPullRequests.value = null;
     dashboardPullRequestsLoading.value = false;
     dashboardPullRequestsError.value = '';
@@ -5956,6 +6072,9 @@ async function loadDashboardData(options = {}) {
         loadDashboardDeploymentData(selectedDashboardProjectID.value, { silent: true }),
         loadDashboardAIWorkflowData(selectedDashboardProjectID.value, { silent: true }),
       ];
+      if (!options.skipTaskGraph) {
+        detailLoads.push(loadDashboardTaskGraphData(selectedDashboardProjectID.value, { silent: true }));
+      }
       if (!options.skipPullRequests) {
         detailLoads.push(loadDashboardPullRequestsData(selectedDashboardProjectID.value, { silent: true }));
       }
@@ -5970,6 +6089,8 @@ async function loadDashboardData(options = {}) {
       dashboardDeploymentError.value = '';
       dashboardAIWorkflow.value = null;
       dashboardAIWorkflowError.value = '';
+      dashboardTaskGraph.value = null;
+      dashboardTaskGraphError.value = '';
       dashboardPullRequests.value = null;
       dashboardPullRequestsError.value = '';
       dashboardRepositoryScan.value = null;
@@ -6095,6 +6216,39 @@ async function loadDashboardAIWorkflowData(projectID, options = {}) {
   }
 }
 
+async function loadDashboardTaskGraphData(projectID, options = {}) {
+  const targetProjectID = String(projectID || '').trim();
+  if (!token.value || !targetProjectID) {
+    dashboardTaskGraph.value = null;
+    dashboardTaskGraphError.value = '';
+    return;
+  }
+
+  const silent = Boolean(options.silent);
+  if (!silent) dashboardTaskGraphLoading.value = true;
+  dashboardTaskGraphError.value = '';
+  try {
+    const payload = await api(`/api/projects/${encodeURIComponent(targetProjectID)}/task-graph`);
+    dashboardTaskGraph.value = {
+      project_id: payload.project_id || targetProjectID,
+      project_title: payload.project_title || '',
+      status: payload.status || 'planning',
+      progress: Number(payload.progress) || 0,
+      stats: payload.stats || {},
+      nodes: Array.isArray(payload.nodes) ? payload.nodes : [],
+      edges: Array.isArray(payload.edges) ? payload.edges : [],
+      updated_at: payload.updated_at,
+    };
+  } catch (error) {
+    if (targetProjectID === selectedDashboardProjectID.value) {
+      dashboardTaskGraph.value = null;
+      dashboardTaskGraphError.value = error.message || 'Could not load task graph';
+    }
+  } finally {
+    dashboardTaskGraphLoading.value = false;
+  }
+}
+
 async function loadDashboardRepositoryScanData(projectID, options = {}) {
   const targetProjectID = String(projectID || '').trim();
   if (!token.value || !targetProjectID) {
@@ -6114,7 +6268,7 @@ async function loadDashboardRepositoryScanData(projectID, options = {}) {
       status: payload.status || 'scanned',
       summary: payload.summary || '',
       stats: payload.stats || {},
-      languages: payload.languages || {},
+      languages: Array.isArray(payload.languages) ? payload.languages : [],
       dependencies: Array.isArray(payload.dependencies) ? payload.dependencies : [],
       findings: Array.isArray(payload.findings) ? payload.findings : [],
       updated_at: payload.updated_at,
@@ -6253,7 +6407,7 @@ function startDashboardRealtime() {
   dashboardRefreshTimer = window.setInterval(() => {
     if (!token.value || !user.value) return;
     if (document.visibilityState === 'hidden') return;
-    void loadDashboardData({ silent: true, skipPullRequests: true, skipRepositoryScan: true });
+    void loadDashboardData({ silent: true, skipPullRequests: true, skipRepositoryScan: true, skipTaskGraph: true });
     if (dashboardSection.value === 'worker') {
       void loadWorkerDashboardData({ silent: true });
     }
@@ -6437,6 +6591,9 @@ function clearSession() {
   dashboardAIWorkflow.value = null;
   dashboardAIWorkflowLoading.value = false;
   dashboardAIWorkflowError.value = '';
+  dashboardTaskGraph.value = null;
+  dashboardTaskGraphLoading.value = false;
+  dashboardTaskGraphError.value = '';
   dashboardPullRequests.value = null;
   dashboardPullRequestsLoading.value = false;
   dashboardPullRequestsError.value = '';
