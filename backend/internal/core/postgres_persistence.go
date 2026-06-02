@@ -147,6 +147,12 @@ func (p *postgresPersistence) Load(ctx context.Context) (persistedState, bool, e
 	if err := p.loadLedger(ctx, &state); err != nil {
 		return persistedState{}, false, err
 	}
+	if err := p.loadTestSettingsConfig(ctx, &state); err != nil {
+		return persistedState{}, false, err
+	}
+	if err := p.loadTestSettingsEntries(ctx, &state); err != nil {
+		return persistedState{}, false, err
+	}
 	return state, true, nil
 }
 
@@ -159,7 +165,9 @@ SELECT EXISTS (SELECT 1 FROM store_meta WHERE key = 'next_id')
    OR EXISTS (SELECT 1 FROM projects)
    OR EXISTS (SELECT 1 FROM gemini_api_keys)
    OR EXISTS (SELECT 1 FROM gemini_webhook_logs)
-   OR EXISTS (SELECT 1 FROM ledger_entries)`).Scan(&found)
+   OR EXISTS (SELECT 1 FROM ledger_entries)
+   OR EXISTS (SELECT 1 FROM test_settings_config)
+   OR EXISTS (SELECT 1 FROM test_settings_entries)`).Scan(&found)
 	if err != nil {
 		return false, fmt.Errorf("check postgres state: %w", err)
 	}
@@ -535,6 +543,8 @@ func (p *postgresPersistence) Save(ctx context.Context, state persistedState) er
 	defer tx.Rollback()
 
 	for _, table := range []string{
+		"test_settings_entries",
+		"test_settings_config",
 		"ledger_entries",
 		"gemini_webhook_logs",
 		"gemini_api_keys",
@@ -605,6 +615,12 @@ VALUES ('llm_provider', $1, $2), ('llm_model', $3, $2)`, provider, settings.Upda
 		return err
 	}
 	if err := saveLedger(ctx, tx, state.Ledger); err != nil {
+		return err
+	}
+	if err := saveTestSettingsConfig(ctx, tx, state.TestSettingsConfig); err != nil {
+		return err
+	}
+	if err := saveTestSettingsEntries(ctx, tx, state.TestSettingsEntries); err != nil {
 		return err
 	}
 
@@ -885,4 +901,98 @@ func timePtr(value sql.NullTime) *time.Time {
 	}
 	t := value.Time
 	return &t
+}
+func (p *postgresPersistence) loadTestSettingsConfig(ctx context.Context, state *persistedState) error {
+	var config TestSettingsConfig
+	err := p.db.QueryRowContext(ctx, `
+SELECT test_mode_enabled, test_password_hash, updated_at
+FROM test_settings_config
+WHERE id = 'public'`).Scan(&config.TestModeEnabled, &config.TestPasswordHash, &config.UpdatedAt)
+	if err == sql.ErrNoRows {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("load test_settings_config: %w", err)
+	}
+	state.TestSettingsConfig = &config
+	return nil
+}
+
+func (p *postgresPersistence) loadTestSettingsEntries(ctx context.Context, state *persistedState) error {
+	rows, err := p.db.QueryContext(ctx, `SELECT id, integration_type, display_name, setting_key, setting_value, key_value_map, status, last_used_at, created_at, updated_at FROM test_settings_entries ORDER BY created_at, id`)
+	if err != nil {
+		return fmt.Errorf("load test_settings_entries: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var entry TestSettingsEntry
+		var kvRaw []byte
+		var lastUsedAt sql.NullTime
+		if err := rows.Scan(
+			&entry.ID, &entry.IntegrationType, &entry.DisplayName, &entry.SettingKey,
+			&entry.SettingValue, &kvRaw, &entry.Status, &lastUsedAt,
+			&entry.CreatedAt, &entry.UpdatedAt,
+		); err != nil {
+			return fmt.Errorf("scan test_settings_entry: %w", err)
+		}
+		entry.LastUsedAt = timePtr(lastUsedAt)
+		if len(kvRaw) > 0 {
+			if err := json.Unmarshal(kvRaw, &entry.KeyValueMap); err != nil {
+				return fmt.Errorf("decode key_value_map for entry %s: %w", entry.ID, err)
+			}
+		}
+		if entry.KeyValueMap == nil {
+			entry.KeyValueMap = map[string]string{}
+		}
+		state.TestSettingsEntries = append(state.TestSettingsEntries, &entry)
+	}
+	return rows.Err()
+}
+
+func saveTestSettingsConfig(ctx context.Context, tx *sql.Tx, config *TestSettingsConfig) error {
+	if config == nil {
+		return nil
+	}
+	if config.UpdatedAt.IsZero() {
+		config.UpdatedAt = time.Now().UTC()
+	}
+	if _, err := tx.ExecContext(ctx, `
+INSERT INTO test_settings_config (id, test_mode_enabled, test_password_hash, updated_at)
+VALUES ('public', $1, $2, $3)
+ON CONFLICT (id) DO UPDATE SET
+  test_mode_enabled = EXCLUDED.test_mode_enabled,
+  test_password_hash = EXCLUDED.test_password_hash,
+  updated_at = EXCLUDED.updated_at`,
+		config.TestModeEnabled, config.TestPasswordHash, config.UpdatedAt,
+	); err != nil {
+		return fmt.Errorf("save test_settings_config: %w", err)
+	}
+	return nil
+}
+
+func saveTestSettingsEntries(ctx context.Context, tx *sql.Tx, entries []*TestSettingsEntry) error {
+	for _, entry := range entries {
+		if entry == nil || entry.ID == "" {
+			continue
+		}
+		if entry.CreatedAt.IsZero() {
+			entry.CreatedAt = time.Now().UTC()
+		}
+		if entry.UpdatedAt.IsZero() {
+			entry.UpdatedAt = entry.CreatedAt
+		}
+		kvRaw, err := json.Marshal(entry.KeyValueMap)
+		if err != nil {
+			return fmt.Errorf("encode key_value_map for entry %s: %w", entry.ID, err)
+		}
+		if _, err := tx.ExecContext(ctx, `INSERT INTO test_settings_entries (id, integration_type, display_name, setting_key, setting_value, key_value_map, status, last_used_at, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7, $8, $9, $10) ON CONFLICT (id) DO UPDATE SET integration_type = EXCLUDED.integration_type, display_name = EXCLUDED.display_name, setting_key = EXCLUDED.setting_key, setting_value = EXCLUDED.setting_value, key_value_map = EXCLUDED.key_value_map, status = EXCLUDED.status, last_used_at = EXCLUDED.last_used_at, updated_at = EXCLUDED.updated_at`,
+			entry.ID, entry.IntegrationType, entry.DisplayName, entry.SettingKey,
+			entry.SettingValue, string(kvRaw), entry.Status, entry.LastUsedAt,
+			entry.CreatedAt, entry.UpdatedAt,
+		); err != nil {
+			return fmt.Errorf("save test_settings_entry %s: %w", entry.ID, err)
+		}
+	}
+	return nil
 }

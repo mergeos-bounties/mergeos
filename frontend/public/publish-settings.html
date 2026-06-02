@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MergeOS Test Publish Settings</title>
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+.header { background: #1e293b; padding: 1rem 2rem; display: flex; align-items: center; gap: 0.75rem; border-bottom: 1px solid #334155; }
+.header img { width: 32px; height: 32px; }
+.header h1 { font-size: 1.25rem; font-weight: 600; }
+.header small { color: #94a3b8; font-size: 0.8rem; }
+.container { max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
+.card { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 1.5rem; margin-bottom: 1rem; }
+.card h2 { font-size: 1.1rem; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem; }
+.card p { color: #94a3b8; font-size: 0.9rem; margin-bottom: 1rem; }
+label { display: block; margin-bottom: 0.75rem; }
+label span { display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 0.25rem; }
+input, select { width: 100%; padding: 0.5rem 0.75rem; background: #0f172a; border: 1px solid #475569; border-radius: 6px; color: #e2e8f0; font-size: 0.9rem; }
+input:focus, select:focus { outline: none; border-color: #6366f1; }
+.btn { padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 500; }
+.btn-primary { background: #6366f1; color: white; }
+.btn-primary:hover { background: #4f46e5; }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-danger { background: #dc2626; color: white; }
+.btn-danger:hover { background: #b91c1c; }
+.btn-outline { background: transparent; border: 1px solid #475569; color: #e2e8f0; }
+.btn-outline:hover { background: #334155; }
+table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+th { text-align: left; padding: 0.5rem; color: #94a3b8; font-weight: 500; border-bottom: 1px solid #334155; }
+td { padding: 0.5rem; border-bottom: 1px solid #1e293b; }
+.status-pill { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 500; }
+.status-pill.green { background: #166534; color: #86efac; }
+.status-pill.amber { background: #92400e; color: #fde68a; }
+.status-pill.blue { background: #1e40af; color: #93c5fd; }
+code { font-family: 'SF Mono', 'Fira Code', monospace; background: #0f172a; padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.8rem; color: #c084fc; }
+.error { color: #fca5a5; background: #7f1d1d; padding: 0.5rem; border-radius: 6px; margin-bottom: 0.5rem; font-size: 0.85rem; }
+.success { color: #86efac; background: #166534; padding: 0.5rem; border-radius: 6px; margin-bottom: 0.5rem; font-size: 0.85rem; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+@media (max-width: 640px) { .form-row { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="header">
+    <img src="/favicon.svg" alt="M" />
+    <div>
+      <h1>MergeOS</h1>
+      <small>Test Publish Settings</small>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- Login / Password gate -->
+    <div v-if="!authenticated" class="card">
+      <h2>🔑 Public Test Settings</h2>
+      <p>Enter the public test password to configure integration keys for testing.</p>
+      <div v-if="!testModeEnabled" class="error">Test mode is currently disabled. Ask an admin to enable it.</div>
+      <template v-if="testModeEnabled">
+        <label><span>Password</span>
+          <input v-model="passwordInput" @keyup.enter="login" placeholder="Enter public test password" type="password" />
+        </label>
+        <button class="btn btn-primary" :disabled="authBusy" @click="login">{{ authBusy ? 'Verifying...' : 'Access Publish Settings' }}</button>
+        <p v-if="authError" class="error">{{ authError }}</p>
+      </template>
+    </div>
+
+    <!-- Main Publish Settings UI -->
+    <template v-if="authenticated">
+      <div class="card">
+        <h2>⚙️ Integration Keys</h2>
+        <p>Add temporary test credentials for LLM providers, PayPal Sandbox, and USDT receivers.</p>
+      </div>
+
+      <!-- Add entry form -->
+      <div class="card">
+        <h2>➕ Add Entry</h2>
+        <form @submit.prevent="addEntry">
+          <div class="form-row">
+            <label><span>Integration Type</span>
+              <select v-model="form.integration_type">
+                <option value="llm">LLM</option>
+                <option value="paypal">PayPal Sandbox</option>
+                <option value="usdt">USDT</option>
+              </select>
+            </label>
+            <label><span>Display Name</span>
+              <input v-model="form.display_name" placeholder="OpenAI Test" />
+            </label>
+          </div>
+          <div class="form-row">
+            <label><span>Setting Key</span>
+              <input v-model="form.setting_key" placeholder="llm_test_openai_key" />
+            </label>
+            <label><span>Setting Value</span>
+              <input v-model="form.setting_value" placeholder="sk-..." type="password" />
+            </label>
+          </div>
+          <label><span>Extra Metadata (JSON)</span>
+            <input v-model="form.key_value_json" placeholder='{"env":"sandbox","model":"gpt-4"}' />
+          </label>
+          <button class="btn btn-primary" type="submit">Add Entry</button>
+        </form>
+        <p v-if="entryError" class="error">{{ entryError }}</p>
+      </div>
+
+      <!-- Entries list -->
+      <div class="card">
+        <h2>📋 Current Entries <span style="font-size:0.85rem;color:#94a3b8;font-weight:400;">({{ entries.length }})</span></h2>
+
+        <div v-if="entries.length === 0" style="text-align:center;padding:2rem;color:#64748b;">
+          No entries yet. Add your first integration key above.
+        </div>
+
+        <table v-else>
+          <thead>
+            <tr><th>Key</th><th>Type</th><th>Name</th><th>Value</th><th>Status</th><th></th></tr>
+          </thead>
+          <tbody>
+            <tr v-for="entry in entries" :key="entry.id">
+              <td><strong>{{ entry.setting_key }}</strong></td>
+              <td><span class="status-pill blue">{{ entry.integration_type }}</span></td>
+              <td>{{ entry.display_name || '-' }}</td>
+              <td><code>{{ entry.setting_value_hint }}</code></td>
+              <td><span :class="['status-pill', entry.status === 'active' ? 'green' : 'amber']">{{ entry.status }}</span></td>
+              <td><button class="btn btn-danger" style="padding:0.25rem 0.5rem;font-size:0.8rem;" @click="deleteEntry(entry.id)">Delete</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </template>
+  </div>
+</div>
+
+<script>
+const { createApp, ref, reactive, onMounted } = Vue;
+
+createApp({
+  setup() {
+    const authenticated = ref(false);
+    const testModeEnabled = ref(false);
+    const passwordInput = ref('');
+    const authBusy = ref(false);
+    const authError = ref('');
+    const entries = ref([]);
+    const entryError = ref('');
+    const sessionPassword = ref('');
+    const form = reactive({
+      integration_type: 'llm',
+      display_name: '',
+      setting_key: '',
+      setting_value: '',
+      key_value_json: '{}',
+    });
+
+    const API_BASE = window.location.origin;
+
+    async function api(path, opts = {}) {
+      const resp = await fetch(API_BASE + path, {
+        ...opts,
+        headers: { 'Content-Type': 'application/json', ...(opts.headers || {}) },
+      });
+      const text = await resp.text();
+      let payload = {};
+      try { payload = text ? JSON.parse(text) : {}; } catch { payload = { error: text || 'Request failed' }; }
+      if (!resp.ok) throw new Error(payload.error || 'Request failed');
+      return payload;
+    }
+
+    async function checkStatus() {
+      try {
+        const status = await api('/api/public/test-settings/status');
+        testModeEnabled.value = status.test_mode_enabled;
+      } catch {}
+    }
+
+    async function login() {
+      authBusy.value = true; authError.value = '';
+      try {
+        const result = await api('/api/public/test-settings/auth', {
+          method: 'POST',
+          body: JSON.stringify({ password: passwordInput.value }),
+        });
+        if (result.authenticated) {
+          sessionPassword.value = passwordInput.value;
+          authenticated.value = true;
+          passwordInput.value = '';
+          await loadEntries();
+        }
+      } catch(e) { authError.value = e.message; }
+      finally { authBusy.value = false; }
+    }
+
+    async function loadEntries() {
+      try {
+        const data = await api('/api/public/test-settings/entries/list', {
+          method: 'POST',
+          body: JSON.stringify({ password: sessionPassword.value }),
+        });
+        entries.value = Array.isArray(data) ? data : [];
+      } catch {}
+    }
+
+    async function addEntry() {
+      entryError.value = '';
+      let km = {};
+      try { km = JSON.parse(form.key_value_json || '{}'); } catch { entryError.value = 'Invalid JSON metadata.'; return; }
+      try {
+        const entry = await api('/api/public/test-settings/entries', {
+          method: 'POST',
+          body: JSON.stringify({
+            password: sessionPassword.value,
+            integration_type: form.integration_type,
+            display_name: form.display_name,
+            setting_key: form.setting_key,
+            setting_value: form.setting_value,
+            key_value_map: km,
+          }),
+        });
+        entries.value.unshift(entry);
+        form.integration_type = 'llm'; form.display_name = ''; form.setting_key = ''; form.setting_value = ''; form.key_value_json = '{}';
+      } catch(e) { entryError.value = e.message; }
+    }
+
+    async function deleteEntry(id) {
+      if (!confirm('Delete this entry?')) return;
+      try {
+        await api('/api/public/test-settings/entries/' + encodeURIComponent(id), {
+          method: 'DELETE',
+          body: JSON.stringify({ password: sessionPassword.value }),
+        });
+        entries.value = entries.value.filter(e => e.id !== id);
+      } catch(e) { entryError.value = e.message; }
+    }
+
+    onMounted(checkStatus);
+
+    return { authenticated, testModeEnabled, passwordInput, authBusy, authError, entries, entryError, form, login, addEntry, deleteEntry };
+  }
+}).mount('#app');
+</script>
+</body>
+</html>
