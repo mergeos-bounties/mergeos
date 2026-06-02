@@ -738,17 +738,44 @@ func (s *Server) wsInitialEvents() []map[string]interface{} {
 		{
 			"type":       "live_feed_snapshot",
 			"feed":       s.store.PublicLiveFeed(20),
+			"events":     s.store.PublicEventProtocol(20),
 			"created_at": now,
 		},
 	}
 }
 
 func (s *Server) broadcastLiveFeedEvent(eventType string) {
-	s.eventHub.broadcastAll(map[string]interface{}{
+	feed := s.store.PublicLiveFeed(20)
+	payload := map[string]interface{}{
 		"type":       eventType,
-		"feed":       s.store.PublicLiveFeed(20),
+		"feed":       feed,
 		"created_at": time.Now().UTC(),
-	})
+	}
+	if event := protocolEventForBroadcast(eventType, feed); event != nil {
+		payload["event"] = event
+		payload["protocol_type"] = event.Type
+	}
+	s.eventHub.broadcastAll(payload)
+}
+
+func protocolEventForBroadcast(eventType string, feed PublicLiveFeedResponse) *EventProtocolDocument {
+	for _, item := range feed.Items {
+		if !broadcastMatchesFeedType(eventType, item.Type) {
+			continue
+		}
+		event := publicLiveFeedProtocolEvent(item)
+		return &event
+	}
+	return nil
+}
+
+func broadcastMatchesFeedType(eventType, feedType string) bool {
+	switch strings.TrimSpace(eventType) {
+	case "project_created":
+		return feedType == "project_funded"
+	default:
+		return strings.TrimSpace(eventType) == feedType
+	}
 }
 
 func (s *Server) adminSummary(w http.ResponseWriter, r *http.Request) {

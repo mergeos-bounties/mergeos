@@ -111,6 +111,14 @@ func TestWebSocketSendsReadyAndLiveFeedSnapshot(t *testing.T) {
 	if !ok || !countOK || int(projectCount) != 1 {
 		t.Fatalf("snapshot missing live feed stats: %#v", snapshot)
 	}
+	events, ok := snapshot["events"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("snapshot missing protocol events: %#v", snapshot)
+	}
+	eventRows, ok := events["events"].([]interface{})
+	if !ok || len(eventRows) == 0 {
+		t.Fatalf("snapshot missing protocol event rows: %#v", snapshot)
+	}
 }
 
 func TestWebSocketBroadcastsSanitizedTaskAcceptedFeed(t *testing.T) {
@@ -237,6 +245,13 @@ func TestWebSocketBroadcastsSanitizedTaskAcceptedFeed(t *testing.T) {
 	}
 	if event["type"] != "task_accepted" {
 		t.Fatalf("unexpected websocket event: %#v", event)
+	}
+	if event["protocol_type"] != "task.claimed" {
+		t.Fatalf("task accepted websocket missing protocol type: %#v", event)
+	}
+	protocolEvent, ok := event["event"].(map[string]interface{})
+	if !ok || protocolEvent["type"] != "task.claimed" || protocolEvent["protocol_version"] != "mergeos.event.v1" {
+		t.Fatalf("task accepted websocket missing protocol event: %#v", event)
 	}
 	feed, ok := event["feed"].(map[string]interface{})
 	if !ok {
