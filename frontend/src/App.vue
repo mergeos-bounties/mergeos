@@ -119,7 +119,7 @@
               <h2>{{ currentProjectStep.title }}</h2>
               <p>{{ currentProjectStep.helper }}</p>
             </div>
-            <button v-if="projectWizardStep === 4" class="secondary-button compact ghost" type="button" @click="showToast('Opening preview...')">
+            <button v-if="projectWizardStep === 4" class="secondary-button compact ghost" type="button" @click="openProjectPreview">
               <Eye :size="15" />
               Preview
             </button>
@@ -543,7 +543,7 @@
             </section>
           </div>
 
-          <div v-else class="review-grid">
+          <div v-else ref="projectReviewPanel" class="review-grid" tabindex="-1">
             <section class="review-card wide">
               <button type="button" aria-label="Edit project information" @click="goProjectStep(1)">
                 <PenLine :size="15" />
@@ -4091,6 +4091,7 @@ const dashboardLedgerPanel = ref(null);
 const dashboardNotificationCenter = ref(null);
 const repoImportInput = ref(null);
 const attachmentInput = ref(null);
+const projectReviewPanel = ref(null);
 const priceEvaluation = ref(null);
 const priceEvaluationBusy = ref(false);
 const priceEvaluationError = ref('');
@@ -6536,6 +6537,20 @@ function goProjectStep(stepNumber) {
   projectWizardStep.value = normalizeProjectWizardStep(stepNumber);
   updateProjectWizardBrowserPath();
   scrollProjectFlowTop();
+}
+
+function openProjectPreview() {
+  projectWizardStage.value = 'setup';
+  projectWizardStep.value = 4;
+  updateProjectWizardBrowserPath();
+  void nextTick(() => {
+    if (!hasWindow) return;
+    window.requestAnimationFrame(() => {
+      projectReviewPanel.value?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      projectReviewPanel.value?.focus?.({ preventScroll: true });
+    });
+  });
+  showToast('Project preview opened.');
 }
 
 function nextProjectStep() {
