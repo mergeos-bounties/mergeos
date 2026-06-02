@@ -9787,6 +9787,9 @@ function handleWSEvent(payload = {}) {
         skipRepositoryScan: payload.type !== 'repo_issues_synced',
         skipTaskGraph: payload.type !== 'repo_issues_synced',
       });
+      if (isAdminUser.value) {
+        void loadAdminConsoleData({ silent: true });
+      }
     }
     return;
   }
