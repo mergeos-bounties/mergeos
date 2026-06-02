@@ -1909,6 +1909,10 @@
                       </div>
                       <span>{{ proposal.reward }}</span>
                       <b>{{ proposal.matchScore }}%</b>
+                      <div class="worker-proposal-actions">
+                        <button v-if="proposal.url" type="button" @click="openExternalURL(proposal.url)">Issue</button>
+                        <button type="button" :disabled="!proposal.claimCommand" @click="copyClaimCommand(proposal.claimCommand)">Copy Claim</button>
+                      </div>
                     </article>
                   </div>
                   <article v-else class="dash-empty-state compact">
@@ -3358,10 +3362,15 @@
                 </div>
                 <div class="marketplace-bounty-meta">
                   <strong>{{ bounty.reward }}</strong>
-                  <button v-if="bounty.url" type="button" @click="openExternalURL(bounty.url)">
-                    Issue
-                    <Link2 :size="12" />
-                  </button>
+                  <div class="marketplace-bounty-actions">
+                    <button v-if="bounty.url" type="button" @click="openExternalURL(bounty.url)">
+                      Issue
+                      <Link2 :size="12" />
+                    </button>
+                    <button type="button" :disabled="!bounty.claimCommand" @click="copyClaimCommand(bounty.claimCommand)">
+                      Copy Claim
+                    </button>
+                  </div>
                 </div>
               </article>
             </div>
@@ -5655,6 +5664,21 @@ function showToast(message) {
   }, 2200);
 }
 
+async function copyClaimCommand(command = '') {
+  const value = String(command || '').trim();
+  if (!value) return;
+  if (hasWindow && navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(value);
+      showToast(`Claim command copied: ${value}`);
+      return;
+    } catch {
+      // Fall through to visible fallback below.
+    }
+  }
+  showToast(`Claim command: ${value}`);
+}
+
 function pushPublicNotification(message) {
   if (!message || (user.value && !publicModeVisible.value && !projectWizardVisible.value)) return;
   const createdAt = new Date().toISOString();
@@ -6358,6 +6382,7 @@ function mapMarketplaceBounty(bounty = {}, index = 0) {
   const workerKind = bounty.required_worker_kind || 'human';
   const agentType = bounty.suggested_agent_type || '';
   const issueNumber = Number(bounty.issue_number) || 0;
+  const claimCommand = issueNumber > 0 ? `/attempt #${issueNumber}` : '';
   return {
     id: bounty.id || `${bounty.project_id || 'project'}:${issueNumber || index}`,
     icon: agentType ? marketplaceAgentIcon(agentType) : (workerKind === 'human' ? User : Bot),
@@ -6367,6 +6392,8 @@ function mapMarketplaceBounty(bounty = {}, index = 0) {
     reward: formatPublicMRGFromCents(bounty.reward_cents),
     lane: agentType ? toTitleLabel(agentType) : toTitleLabel(workerKind),
     issue: issueNumber > 0 ? `#${issueNumber}` : 'Task',
+    issueNumber,
+    claimCommand,
     url: bounty.issue_url || '',
     tone: ['green', 'blue', 'purple', 'amber'][index % 4],
   };
@@ -6689,6 +6716,7 @@ function mapWorkerReward(entry = {}) {
 
 function mapWorkerProposal(proposal = {}) {
   const agentType = proposal.suggested_agent_type || '';
+  const issueNumber = Number(proposal.issue_number) || 0;
   return {
     id: proposal.id || `${proposal.project_id}-${proposal.issue_number}`,
     title: proposal.title || 'Open bounty',
@@ -6696,6 +6724,10 @@ function mapWorkerProposal(proposal = {}) {
     lane: agentType ? toTitleLabel(agentType) : toTitleLabel(proposal.required_worker_kind || 'worker'),
     reward: formatMRGFromCents(proposal.reward_cents),
     matchScore: Number(proposal.match_score) || 0,
+    issue: issueNumber > 0 ? `#${issueNumber}` : 'Task',
+    issueNumber,
+    claimCommand: issueNumber > 0 ? `/attempt #${issueNumber}` : '',
+    url: proposal.issue_url || '',
   };
 }
 
