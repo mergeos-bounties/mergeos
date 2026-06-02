@@ -1171,6 +1171,44 @@
                   </div>
                 </article>
 
+                <article class="dash-card admin-ssl-card">
+                  <div class="card-title-row">
+                    <div>
+                      <h2>SSL & Deployment Security</h2>
+                      <p>Certificate checks for public, admin, and scan domains before deploy handoff.</p>
+                    </div>
+                    <span>{{ adminSSLStats.label }}</span>
+                  </div>
+                  <div class="admin-ssl-actions">
+                    <span>{{ adminSSLStats.ready }} ready / {{ adminSSLStats.total }} domains</span>
+                    <button type="button" :disabled="adminSSLReviewBusy" @click="runAdminSSLReview">
+                      {{ adminSSLReviewBusy ? 'Reviewing...' : 'Run Review' }}
+                    </button>
+                  </div>
+                  <p v-if="adminSSLReviewError" class="deployment-error">{{ adminSSLReviewError }}</p>
+                  <div v-if="adminSSLRows.length" class="admin-ssl-list">
+                    <article v-for="row in adminSSLRows" :key="row.id">
+                      <span :class="['admin-ops-icon', row.tone]">
+                        <Lock :size="15" />
+                      </span>
+                      <div>
+                        <strong>{{ row.domain }}:{{ row.port }}</strong>
+                        <small>{{ row.issuer }} / expires {{ row.expiry }} / {{ row.daysRemaining }}</small>
+                        <b>{{ row.dnsSummary }}</b>
+                        <small v-if="row.error" class="admin-pr-blockers">{{ row.error }}</small>
+                      </div>
+                      <div class="admin-ssl-side">
+                        <em :class="row.tone">{{ row.status }}</em>
+                        <small>{{ row.checkedBy }}</small>
+                      </div>
+                    </article>
+                  </div>
+                  <article v-else class="dash-empty-state compact">
+                    <strong>{{ adminConsoleLoading ? 'Loading SSL reviews...' : 'No SSL domains configured' }}</strong>
+                    <p>{{ adminConsoleLoading ? 'Fetching certificate review state.' : 'Configured SSL review domains will appear here.' }}</p>
+                  </article>
+                </article>
+
                 <article class="dash-card admin-credit-card">
                   <div class="card-title-row">
                     <div>
@@ -3821,6 +3859,9 @@ const adminTaskPullsError = ref('');
 const adminMergeBusyID = ref('');
 const adminMergeError = ref('');
 const adminMergeResult = ref(null);
+const adminSSLReviews = ref([]);
+const adminSSLReviewBusy = ref(false);
+const adminSSLReviewError = ref('');
 const adminTestSettings = ref({ test_mode_enabled: false, updated_at: '' });
 const adminTestSettingsEntries = ref([]);
 const adminTestSettingsPassword = ref('');
@@ -5166,6 +5207,18 @@ const adminReputationStats = computed(() => adminReputation.value?.stats || {});
 const adminUserRows = computed(() =>
   (adminUsers.value || []).slice(0, 8).map(mapAdminUserRow),
 );
+const adminSSLRows = computed(() =>
+  (adminSSLReviews.value || []).map(mapAdminSSLReview),
+);
+const adminSSLStats = computed(() => {
+  const rows = adminSSLRows.value;
+  return {
+    total: rows.length,
+    ready: rows.filter((row) => row.tone === 'green').length,
+    attention: rows.filter((row) => row.tone !== 'green').length,
+    label: rows.length ? `${rows.filter((row) => row.tone !== 'green').length} need review` : 'No domains',
+  };
+});
 const adminTaskReviewRows = computed(() =>
   (adminTasks.value || [])
     .filter((task) => task?.issue_url || task?.issue_number)
@@ -5254,7 +5307,7 @@ const dashboardCommandStats = computed(() => {
       { label: 'Treasury budget', value: adminSummaryView.value.totalBudget, icon: CircleDollarSign, tone: 'green' },
       { label: 'Ops queue', value: formatCompactNumber(adminOpsQueue.value?.stats?.total_count), icon: ShieldCheck, tone: 'blue' },
       { label: 'High risk workers', value: formatCompactNumber(adminReputationStats.value.high_risk_count), icon: Trophy, tone: 'purple' },
-      { label: 'Platform fees', value: adminSummaryView.value.platformFee, icon: CreditCard, tone: 'amber' },
+      { label: 'SSL review', value: formatCompactNumber(adminSSLStats.value.attention), icon: Lock, tone: 'amber' },
     ];
   }
   if (dashboardSection.value === 'worker') {
@@ -6601,6 +6654,40 @@ function mapAdminUserRow(row = {}) {
   };
 }
 
+function adminSSLTone(status = '') {
+  const normalized = String(status || '').toLowerCase();
+  if (normalized === 'expired' || normalized === 'error') return 'red';
+  if (normalized === 'warning' || normalized === 'pending') return 'amber';
+  return 'green';
+}
+
+function mapAdminSSLReview(review = {}) {
+  const lastChecked = review.last_checked_at ? formatLedgerDateTime(review.last_checked_at).full : 'Not checked';
+  const nextCheck = review.next_check_at ? formatLedgerDateTime(review.next_check_at).full : 'Not scheduled';
+  const notAfter = review.not_after ? formatLedgerDateTime(review.not_after).date : '-';
+  const dnsNames = Array.isArray(review.dns_names) ? review.dns_names : [];
+  const status = String(review.status || 'pending').toLowerCase();
+  const days = Number(review.days_remaining) || 0;
+  return {
+    id: `${review.domain || 'domain'}:${review.port || '443'}`,
+    domain: review.domain || 'Unknown domain',
+    port: review.port || '443',
+    status: toTitleLabel(status),
+    issuer: review.issuer || 'Unknown issuer',
+    subject: review.subject || review.domain || 'Unknown subject',
+    serialNumber: review.serial_number || '',
+    dnsNames,
+    dnsSummary: dnsNames.length ? dnsNames.slice(0, 3).join(', ') : 'No SANs recorded',
+    expiry: notAfter,
+    daysRemaining: status === 'pending' ? 'Pending' : `${days} days`,
+    lastChecked,
+    nextCheck,
+    checkedBy: review.checked_by || 'system',
+    error: review.error || '',
+    tone: adminSSLTone(status),
+  };
+}
+
 function mapAdminTestSettingsEntry(entry = {}) {
   const mapKeys = Object.keys(entry.key_value_map || {});
   const when = formatLedgerDateTime(entry.updated_at);
@@ -7495,6 +7582,9 @@ async function loadAdminConsoleData(options = {}) {
     adminTaskPullsError.value = '';
     adminMergeError.value = '';
     adminMergeResult.value = null;
+    adminSSLReviews.value = [];
+    adminSSLReviewBusy.value = false;
+    adminSSLReviewError.value = '';
     adminTestSettings.value = { test_mode_enabled: false, updated_at: '' };
     adminTestSettingsEntries.value = [];
     adminConsoleError.value = '';
@@ -7506,12 +7596,13 @@ async function loadAdminConsoleData(options = {}) {
   if (!silent) adminConsoleLoading.value = true;
   adminConsoleError.value = '';
   try {
-    const [summary, opsQueue, reputation, users, tasks, testSettings, testEntries] = await Promise.all([
+    const [summary, opsQueue, reputation, users, tasks, sslReviews, testSettings, testEntries] = await Promise.all([
       api('/api/admin/summary'),
       api('/api/admin/ops-queue'),
       api('/api/admin/reputation'),
       api('/api/admin/users'),
       shouldLoadTasks ? api('/api/admin/tasks') : Promise.resolve(adminTasks.value),
+      api('/api/admin/ssl'),
       api('/api/admin/test-settings'),
       api('/api/admin/test-settings/entries'),
     ]);
@@ -7526,6 +7617,7 @@ async function loadAdminConsoleData(options = {}) {
     };
     adminUsers.value = Array.isArray(users) ? users : [];
     adminTasks.value = Array.isArray(tasks) ? tasks : [];
+    adminSSLReviews.value = Array.isArray(sslReviews) ? sslReviews : [];
     adminTestSettings.value = {
       test_mode_enabled: Boolean(testSettings?.test_mode_enabled),
       updated_at: testSettings?.updated_at || '',
@@ -7561,6 +7653,21 @@ async function submitAdminTestSettings() {
     adminTestSettingsError.value = error.message || 'Could not update test settings';
   } finally {
     adminTestSettingsBusy.value = false;
+  }
+}
+
+async function runAdminSSLReview() {
+  adminSSLReviewBusy.value = true;
+  adminSSLReviewError.value = '';
+  try {
+    const rows = await api('/api/admin/ssl/review', { method: 'POST' });
+    adminSSLReviews.value = Array.isArray(rows) ? rows : [];
+    await loadAdminConsoleData({ silent: true });
+    showToast('SSL review completed.');
+  } catch (error) {
+    adminSSLReviewError.value = error.message || 'Could not run SSL review';
+  } finally {
+    adminSSLReviewBusy.value = false;
   }
 }
 
@@ -7951,6 +8058,9 @@ function clearSession() {
   adminMergeBusyID.value = '';
   adminMergeError.value = '';
   adminMergeResult.value = null;
+  adminSSLReviews.value = [];
+  adminSSLReviewBusy.value = false;
+  adminSSLReviewError.value = '';
   adminTestSettings.value = { test_mode_enabled: false, updated_at: '' };
   adminTestSettingsEntries.value = [];
   adminTestSettingsPassword.value = '';
