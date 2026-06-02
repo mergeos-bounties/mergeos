@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mergeos.shop/protocol/scan.v1.schema.json",
+  "title": "MergeOS Repository Scan v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["protocol_version", "kind", "id", "project_id", "status", "stats", "findings"],
+  "properties": {
+    "protocol_version": { "const": "mergeos.scan.v1" },
+    "kind": { "const": "repository_scan" },
+    "id": { "type": "string", "minLength": 3, "maxLength": 120 },
+    "project_id": { "type": "string", "minLength": 3, "maxLength": 96 },
+    "project_title": { "type": "string", "maxLength": 240 },
+    "status": { "enum": ["unavailable", "ready", "failed"] },
+    "summary": { "type": "string", "maxLength": 2000 },
+    "source_repository": { "type": "string", "maxLength": 512 },
+    "updated_at": { "type": "string", "format": "date-time" },
+    "stats": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["file_count", "scanned_files", "finding_count"],
+      "properties": {
+        "file_count": { "type": "integer", "minimum": 0 },
+        "scanned_files": { "type": "integer", "minimum": 0 },
+        "skipped_files": { "type": "integer", "minimum": 0 },
+        "dependency_files": { "type": "integer", "minimum": 0 },
+        "finding_count": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "languages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["language", "file_count"],
+        "properties": {
+          "language": { "type": "string", "minLength": 1, "maxLength": 80 },
+          "extension": { "type": "string", "maxLength": 20 },
+          "file_count": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "dependencies": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "ecosystem", "package_count"],
+        "properties": {
+          "path": { "type": "string", "minLength": 1, "maxLength": 512 },
+          "ecosystem": { "type": "string", "minLength": 1, "maxLength": 80 },
+          "package_count": { "type": "integer", "minimum": 0 },
+          "has_lockfile": { "type": "boolean" }
+        }
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "severity", "category", "title", "signal"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "severity": { "enum": ["low", "medium", "high", "critical"] },
+          "category": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "title": { "type": "string", "minLength": 1, "maxLength": 240 },
+          "body": { "type": "string", "maxLength": 1000 },
+          "path": { "type": "string", "maxLength": 512 },
+          "line": { "type": "integer", "minimum": 0 },
+          "signal": { "type": "string", "minLength": 1, "maxLength": 120 }
+        }
+      }
+    },
+    "metadata": { "type": "object" }
+  }
+}

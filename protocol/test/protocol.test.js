@@ -5,6 +5,7 @@ import { assertProtocolDocument, protocolSchemas, schemaForProtocol, validatePro
 test('loads stable task, workflow, and event schemas', () => {
   assert.deepEqual(Object.keys(protocolSchemas).sort(), [
     'mergeos.event.v1',
+    'mergeos.scan.v1',
     'mergeos.task.v1',
     'mergeos.workflow.v1',
   ]);
@@ -89,6 +90,69 @@ test('validates event protocol documents and assertion helper', () => {
 
   assert.equal(assertProtocolDocument(event), event);
   assert.throws(() => assertProtocolDocument({ ...event, occurred_at: 'not-a-date' }), /date-time/);
+});
+
+test('validates repository scan protocol documents', () => {
+  const result = validateProtocolDocument({
+    protocol_version: 'mergeos.scan.v1',
+    kind: 'repository_scan',
+    id: 'scan_prj_0001_20260603',
+    project_id: 'prj_0001',
+    project_title: 'Payment Gateway',
+    status: 'ready',
+    summary: 'Scanned 12 text files across 18 repository files.',
+    updated_at: '2026-06-03T00:00:00.000Z',
+    stats: {
+      file_count: 18,
+      scanned_files: 12,
+      skipped_files: 6,
+      dependency_files: 2,
+      finding_count: 2,
+    },
+    languages: [
+      { language: 'JavaScript', extension: '.js', file_count: 7 },
+      { language: 'Go', extension: '.go', file_count: 5 },
+    ],
+    dependencies: [
+      { path: 'package.json', ecosystem: 'npm', package_count: 4, has_lockfile: true },
+    ],
+    findings: [
+      {
+        id: 'repo-finding-001',
+        severity: 'high',
+        category: 'security',
+        title: 'Dangerous dynamic JavaScript execution',
+        body: 'Dynamic code execution was detected.',
+        path: 'src/app.js',
+        line: 42,
+        signal: 'dangerous_js_execution',
+      },
+      {
+        id: 'repo-finding-002',
+        severity: 'medium',
+        category: 'dependency',
+        title: 'Floating npm dependency version',
+        path: 'package.json',
+        line: 0,
+        signal: 'dependency_unpinned',
+      },
+    ],
+  });
+
+  assert.equal(result.valid, true);
+  assert.deepEqual(result.errors, []);
+
+  const invalid = validateProtocolDocument({
+    protocol_version: 'mergeos.scan.v1',
+    kind: 'repository_scan',
+    id: 'scan_1',
+    project_id: 'prj_1',
+    status: 'ready',
+    stats: { file_count: 1, scanned_files: 1, finding_count: 1 },
+    findings: [{ id: 'finding', severity: 'unknown', category: 'security', title: 'Bad', signal: 'bad' }],
+  });
+  assert.equal(invalid.valid, false);
+  assert(invalid.errors.some((error) => error.path === 'findings[0].severity'));
 });
 
 test('validates repository issue sync events', () => {
