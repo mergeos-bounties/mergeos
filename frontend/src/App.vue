@@ -4602,8 +4602,9 @@ const ledgerTrustItems = computed(() => {
 const ledgerTabs = ['All Activity', 'Escrow & Payments', 'Tasks & PRs', 'Milestones', 'AI Actions', 'Token Events'];
 const ledgerTabTypes = {
   'Escrow & Payments': new Set(['payment_verified', 'platform_fee', 'project_reserve', 'task_reserve', 'task_payment']),
-  'Tasks & PRs': new Set(['task_reserve', 'task_payment']),
-  Milestones: new Set(['project_reserve', 'task_reserve']),
+  'Tasks & PRs': new Set(['task_reserve', 'task_payment', 'task_opened', 'task_accepted', 'ai_review']),
+  Milestones: new Set(['project_funded', 'project_reserve', 'task_reserve', 'deployment_validation', 'repo_issues_synced']),
+  'AI Actions': new Set(['ai_review', 'agent_action', 'repo_issues_synced']),
   'Token Events': new Set(['token_mint']),
 };
 
@@ -4648,13 +4649,20 @@ const projectPaymentButtonLabel = computed(() => {
 const successProjectTitle = computed(() => fundedProject.value?.title || projectTitleLabel.value);
 const successPaymentReference = computed(() => fundedProject.value?.payment_reference || '');
 
-const ledgerEvents = computed(() => ledgerRawEntries.value.slice().reverse().map(mapLedgerEntry));
+const ledgerLiveFeedEvents = computed(() =>
+  liveFeedItemsView.value
+    .filter((item) => item.rawType && !item.rawType.startsWith('ledger_'))
+    .map(mapLiveFeedLedgerEvent),
+);
+const ledgerEvents = computed(() =>
+  [
+    ...ledgerRawEntries.value.slice().reverse().map(mapLedgerEntry),
+    ...ledgerLiveFeedEvents.value,
+  ].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)),
+);
 const ledgerTabFilteredEvents = computed(() => {
   const activeTab = activeLedgerTab.value;
   if (activeTab === 'All Activity') return ledgerEvents.value;
-  if (activeTab === 'AI Actions') {
-    return ledgerEvents.value.filter((event) => event.rawType.includes('ai'));
-  }
   const allowedTypes = ledgerTabTypes[activeTab];
   if (!allowedTypes) return ledgerEvents.value;
   return ledgerEvents.value.filter((event) => allowedTypes.has(event.rawType));
@@ -8150,6 +8158,12 @@ function liveFeedMetaFor(type = '') {
   if (normalized === 'ai_review') {
     return { type: 'AI Review', icon: Bot, tone: 'purple', amountTone: 'muted' };
   }
+  if (normalized === 'agent_action') {
+    return { type: 'Agent Action', icon: Bot, tone: 'purple', amountTone: 'muted' };
+  }
+  if (normalized === 'repo_issues_synced') {
+    return { type: 'Repo Sync', icon: RefreshCw, tone: 'blue', amountTone: 'muted' };
+  }
   return { type: toTitleLabel(normalized || 'Activity'), icon: Compass, tone: 'slate', amountTone: 'neutral' };
 }
 
@@ -8179,6 +8193,32 @@ function mapPublicLiveFeedItem(item = {}) {
     time: when.time,
     meta: `${when.full} • ${toTitleLabel(item.status || 'live')}`,
     createdAt: item.created_at,
+  };
+}
+
+function mapLiveFeedLedgerEvent(item = {}) {
+  const projectTitle = item.project || 'MergeOS activity';
+  return {
+    key: `live-${item.id || item.rawType || item.createdAt}`,
+    date: item.date,
+    time: item.time,
+    createdAt: item.createdAt,
+    rawType: item.rawType,
+    type: item.typeLabel,
+    icon: item.icon,
+    tone: item.tone,
+    projectInitial: projectInitialFor(projectTitle),
+    projectTone: projectToneFor(projectTitle),
+    project: projectTitle,
+    projectID: '',
+    company: item.actor || 'MergeOS',
+    amount: item.amount || 'Event',
+    secondaryAmount: item.status,
+    amountTone: item.amount ? item.amountTone : 'muted',
+    ref: item.reference || shortLedgerReference(item.id || item.rawType),
+    rawReference: item.rawReference || item.url || item.id || '',
+    entryHash: '',
+    sequence: '',
   };
 }
 
@@ -8601,14 +8641,19 @@ async function loadLedgerData(options = {}) {
     ledgerLoading.value = true;
   }
   try {
-    const [entries, marketplace, verification] = await Promise.all([
+    const [entries, marketplace, verification, liveFeed] = await Promise.all([
       publicApi('/api/public/ledger'),
       publicApi('/api/public/marketplace'),
       publicApi('/api/public/ledger/verify'),
+      publicApi('/api/public/live-feed?limit=80'),
     ]);
     ledgerRawEntries.value = Array.isArray(entries) ? entries : [];
     ledgerProjects.value = Array.isArray(marketplace.projects) ? marketplace.projects : [];
     ledgerVerification.value = verification && typeof verification === 'object' ? verification : null;
+    liveFeedData.value = {
+      stats: liveFeed?.stats || {},
+      items: Array.isArray(liveFeed?.items) ? liveFeed.items : [],
+    };
     applyLedgerProjectQueryFilter();
   } catch (error) {
     ledgerError.value = error.message;
