@@ -65,6 +65,13 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Description: "Public live-feed events as protocol documents.",
 			},
 			{
+				Method:      "WS",
+				Path:        "/api/ws",
+				Protocol:    "mergeos.event.v1",
+				Auth:        "none",
+				Description: "Realtime WebSocket stream for live feed snapshots and protocol event broadcasts.",
+			},
+			{
 				Method:      "GET",
 				Path:        "/api/projects/{id}/protocol/workflow",
 				Protocol:    "mergeos.workflow.v1",

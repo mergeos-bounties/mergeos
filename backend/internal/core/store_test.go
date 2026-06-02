@@ -746,6 +746,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 		"GET /api/public/protocol/tasks",
 		"GET /api/public/protocol/agents",
 		"GET /api/public/protocol/events",
+		"WS /api/ws",
 		"GET /api/projects/{id}/protocol/workflow",
 		"GET /api/projects/{id}/protocol/scan",
 	} {

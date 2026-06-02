@@ -324,6 +324,7 @@ Public:
 - `GET /api/public/protocol/tasks`
 - `GET /api/public/protocol/agents`
 - `GET /api/public/protocol/events`
+- `WS /api/ws`
 - `POST /api/public/repo/issues`
 - `POST /api/integrations/github/pr-review` GitHub webhook receiver for automated LLM PR review. Configure GitHub Webhooks with Payload URL `https://uta.mergeos.shop/api/integrations/github/pr-review`, Content type `application/json`, the same secret as `GEMINI_REVIEW_WEBHOOK_SECRET`, and events `Pull requests` plus `Issue comments`.
 
