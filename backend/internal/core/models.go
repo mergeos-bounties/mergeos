@@ -904,6 +904,7 @@ type AdminOpsQueueStats struct {
 	DisputeCount      int        `json:"dispute_count"`
 	ModerationCount   int        `json:"moderation_count"`
 	PayoutReviewCount int        `json:"payout_review_count"`
+	FraudCount        int        `json:"fraud_count"`
 	SecurityCount     int        `json:"security_count"`
 	CriticalCount     int        `json:"critical_count"`
 	UpdatedAt         *time.Time `json:"updated_at,omitempty"`

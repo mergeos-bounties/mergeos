@@ -1629,6 +1629,8 @@ func TestAdminOpsQueueReturnsDisputeModerationAndPayoutItems(t *testing.T) {
 	closedTask := store.tasks[project.Tasks[0].ID]
 	closedTask.IssueState = "closed"
 	store.syncProjectTaskSnapshotLocked(store.projects[project.ID], closedTask)
+	store.users[adminAuth.User.ID].GitHubUsername = "ops-shared"
+	store.users[clientAuth.User.ID].GitHubUsername = "ops-shared"
 	store.addNotificationLocked(clientAuth.User.ID, project.ID, "email", "Delivery notice failed", "Customer update could not be sent.", "error:smtp refused")
 	store.sslReviews["expired.mergeos.local"] = &SSLReviewStatus{
 		Domain:        "expired.mergeos.local",
@@ -1653,6 +1655,9 @@ func TestAdminOpsQueueReturnsDisputeModerationAndPayoutItems(t *testing.T) {
 		t.Fatal(err)
 	}
 	if _, err := store.AddManualCredit("github:ops-reviewer", 5000, "pr:https://github.com/mergeos-bounties/mergeos/pull/404;title:Ops queue proof"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.AddManualCredit("github:ops-reviewer", 5000, "pr:https://github.com/mergeos-bounties/mergeos/pull/404;title:Ops queue proof duplicate"); err != nil {
 		t.Fatal(err)
 	}
 
@@ -1682,14 +1687,14 @@ func TestAdminOpsQueueReturnsDisputeModerationAndPayoutItems(t *testing.T) {
 	if err := json.Unmarshal(adminResp.Body.Bytes(), &payload); err != nil {
 		t.Fatal(err)
 	}
-	if payload.Stats.TotalCount < 5 || payload.Stats.DisputeCount < 1 || payload.Stats.ModerationCount < 2 || payload.Stats.PayoutReviewCount < 2 || payload.Stats.SecurityCount < 1 || payload.Stats.CriticalCount < 1 {
+	if payload.Stats.TotalCount < 7 || payload.Stats.DisputeCount < 1 || payload.Stats.ModerationCount < 2 || payload.Stats.PayoutReviewCount < 3 || payload.Stats.FraudCount < 2 || payload.Stats.SecurityCount < 1 || payload.Stats.CriticalCount < 1 {
 		t.Fatalf("unexpected ops queue stats: %#v", payload.Stats)
 	}
 	seen := map[string]bool{}
 	for _, item := range payload.Items {
 		seen[item.Type] = true
 	}
-	for _, required := range []string{"payout_review", "payout_audit", "dispute", "moderation", "security_moderation"} {
+	for _, required := range []string{"payout_review", "payout_audit", "dispute", "moderation", "security_moderation", "fraud_review"} {
 		if !seen[required] {
 			t.Fatalf("ops queue missing %s item: %#v", required, payload.Items)
 		}

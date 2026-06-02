@@ -454,8 +454,8 @@
           <header class="task-review-header">
             <div>
               <span class="eyebrow">OPS QUEUE</span>
-              <h2>Disputes, moderation, and payout attention</h2>
-              <p>Review closed unpaid issues, delivery failures, AI webhook failures, SSL security items, and manual credit audit rows.</p>
+              <h2>Disputes, fraud, moderation, and payout attention</h2>
+              <p>Review closed unpaid issues, payout fraud signals, delivery failures, AI webhook failures, SSL security items, and manual credit audit rows.</p>
             </div>
             <button class="compact-action" :disabled="loading" type="button" @click="loadAdminData">
               <RefreshCw :size="14" />
@@ -466,7 +466,7 @@
           <div v-if="!filteredOpsQueueItems.length" class="task-empty-state">
             <span class="metric-icon green"><CheckCircle2 :size="19" /></span>
             <strong>No ops queue items</strong>
-            <small>Disputes, moderation alerts, and payout review rows will appear here when they need admin attention.</small>
+            <small>Disputes, fraud signals, moderation alerts, and payout review rows will appear here when they need admin attention.</small>
           </div>
 
           <div v-else class="ops-queue-list">
@@ -1170,13 +1170,14 @@ const opsQueueMetrics = computed(() => [
   { label: 'Open items', value: number(opsQueueStats.value.total_count), icon: AlertTriangle, tone: opsQueueStats.value.critical_count ? 'red' : 'amber' },
   { label: 'Disputes', value: number(opsQueueStats.value.dispute_count), icon: AlertTriangle, tone: opsQueueStats.value.dispute_count ? 'amber' : 'green' },
   { label: 'Moderation', value: number(opsQueueStats.value.moderation_count), icon: ShieldCheck, tone: opsQueueStats.value.moderation_count ? 'red' : 'green' },
+  { label: 'Fraud review', value: number(opsQueueStats.value.fraud_count), icon: AlertTriangle, tone: opsQueueStats.value.fraud_count ? 'red' : 'green' },
   { label: 'Payout review', value: number(opsQueueStats.value.payout_review_count), icon: CircleDollarSign, tone: opsQueueStats.value.payout_review_count ? 'blue' : 'green' },
 ]);
 const adminCommandTitle = computed(() => activeNav.value?.title || 'Admin workspace');
 const adminCommandBody = computed(() => {
   if (activeView.value === 'tasks') return 'Review GitHub issues, inspect PRs, assign bounty credit, and keep payout proof aligned with the ledger.';
   if (activeView.value === 'ledger') return 'Credit MRG, audit verified records, and switch between public references and hash evidence.';
-  if (activeView.value === 'ops') return 'Triage disputes, moderation alerts, payout review items, SSL security attention, and manual credit audit rows.';
+  if (activeView.value === 'ops') return 'Triage disputes, moderation alerts, payout fraud risks, SSL security attention, and manual credit audit rows.';
   if (activeView.value === 'users') return 'Inspect account activity, update roles, and keep admin access controlled from one panel.';
   if (activeView.value === 'setting') return 'Tune review models, provider tokens, quotas, and webhook health for the automation layer.';
   if (activeView.value === 'test-settings') return 'Manage public test-mode publish settings, integration keys, and shared test password for bounty contributors.';
@@ -2043,6 +2044,7 @@ function opsSeverityTone(severity = '') {
 }
 
 function opsIcon(type = '') {
+  if (type.includes('fraud')) return AlertTriangle;
   if (type.includes('payout')) return CircleDollarSign;
   if (type.includes('security')) return ShieldCheck;
   if (type.includes('moderation')) return AlertTriangle;
@@ -2054,6 +2056,7 @@ function opsTypeLabel(type = '') {
   if (type === 'payout_review') return 'Payout';
   if (type === 'payout_audit') return 'Audit';
   if (type === 'security_moderation') return 'Security';
+  if (type === 'fraud_review') return 'Fraud';
   return titleize(type || 'ops');
 }
 

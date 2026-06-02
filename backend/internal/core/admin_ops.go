@@ -8,6 +8,9 @@ import (
 )
 
 const maxAdminOpsQueueItems = 120
+const adminOpsRapidPayoutThreshold = 3
+
+const adminOpsRapidPayoutWindow = 10 * time.Minute
 
 func (s *Store) AdminOpsQueue() AdminOpsQueueResponse {
 	s.mu.RLock()
@@ -126,6 +129,10 @@ func (s *Store) AdminOpsQueue() AdminOpsQueueResponse {
 		})
 	}
 
+	for _, item := range s.adminOpsFraudItemsLocked() {
+		add(item)
+	}
+
 	sort.Slice(response.Items, func(i, j int) bool {
 		left, right := response.Items[i], response.Items[j]
 		if adminOpsSeverityRank(left.Severity) != adminOpsSeverityRank(right.Severity) {
@@ -160,6 +167,8 @@ func adminOpsQueueStats(items []AdminOpsQueueItem) AdminOpsQueueStats {
 			stats.SecurityCount++
 		case "payout_review", "payout_audit":
 			stats.PayoutReviewCount++
+		case "fraud_review":
+			stats.FraudCount++
 		}
 		if item.Severity == "critical" {
 			stats.CriticalCount++
@@ -254,6 +263,226 @@ func adminOpsSSLBody(review *SSLReviewStatus) string {
 		return fmt.Sprintf("%s has %d certificate days remaining.", review.Domain, review.DaysRemaining)
 	}
 	return review.Domain + " certificate status is " + sanitizeLedgerReferenceValue(review.Status) + "."
+}
+
+func (s *Store) adminOpsFraudItemsLocked() []AdminOpsQueueItem {
+	items := []AdminOpsQueueItem{}
+	byReference := map[string][]LedgerEntry{}
+	byAccount := map[string][]LedgerEntry{}
+
+	for _, entry := range s.ledger {
+		if !adminOpsLedgerEntryIsPayout(entry) {
+			continue
+		}
+		account := strings.ToLower(strings.TrimSpace(entry.ToAccount))
+		if account != "" {
+			byAccount[account] = append(byAccount[account], entry)
+		}
+		if referenceKey := adminOpsFraudReferenceKey(entry.Reference); referenceKey != "" {
+			byReference[referenceKey] = append(byReference[referenceKey], entry)
+		}
+	}
+
+	for referenceKey, rows := range byReference {
+		if len(rows) < 2 {
+			continue
+		}
+		displayReference := adminOpsFraudDisplayReference(rows[0].Reference)
+		accounts := adminOpsFraudAccounts(rows)
+		severity := "high"
+		if len(accounts) > 1 {
+			severity = "critical"
+		}
+		items = append(items, AdminOpsQueueItem{
+			ID:        adminOpsItemID("fraud-duplicate", referenceKey),
+			Type:      "fraud_review",
+			Severity:  severity,
+			Title:     "Duplicate payout reference",
+			Body:      fmt.Sprintf("%d payout ledger rows share %s across %s. Review before releasing more MRG.", len(rows), displayReference, strings.Join(accounts, ", ")),
+			Reference: displayReference,
+			URL:       publicLiveFeedReferenceURL(rows[0].Reference),
+			Status:    "duplicate_payout_reference",
+			CreatedAt: adminOpsLatestLedgerCreatedAt(rows),
+		})
+	}
+
+	for account, rows := range byAccount {
+		count, latest := adminOpsRapidPayoutBurst(rows)
+		if count < adminOpsRapidPayoutThreshold {
+			continue
+		}
+		accountLabel := publicLedgerAccount(account, "", "")
+		items = append(items, AdminOpsQueueItem{
+			ID:        adminOpsItemID("fraud-burst", account),
+			Type:      "fraud_review",
+			Severity:  "high",
+			Title:     "Rapid payout burst",
+			Body:      fmt.Sprintf("%s received %d payouts inside 10 minutes. Review payout intent and duplicate work before approving more credits.", accountLabel, count),
+			Reference: accountLabel,
+			Status:    "rapid_payout_burst",
+			CreatedAt: latest,
+		})
+	}
+
+	items = append(items, s.adminOpsDuplicateIdentityItemsLocked()...)
+	sort.Slice(items, func(i, j int) bool {
+		if items[i].CreatedAt.Equal(items[j].CreatedAt) {
+			return items[i].ID < items[j].ID
+		}
+		return items[i].CreatedAt.After(items[j].CreatedAt)
+	})
+	return items
+}
+
+func adminOpsLedgerEntryIsPayout(entry LedgerEntry) bool {
+	if entry.Type != "task_payment" && entry.Type != "manual_credit" {
+		return false
+	}
+	return entry.AmountCents > 0 && strings.TrimSpace(entry.ToAccount) != ""
+}
+
+func adminOpsFraudReferenceKey(reference string) string {
+	fields := splitLedgerReference(reference)
+	if pullURL := normalizeLedgerPullURL(fields["pr"]); pullURL != "" {
+		return "pr:" + strings.ToLower(pullURL)
+	}
+	if taskID := ledgerReferenceTaskID(reference); taskID != "" {
+		return "task:" + strings.ToLower(sanitizeLedgerReferenceValue(taskID))
+	}
+	reference = strings.ToLower(sanitizeLedgerReferenceValue(reference))
+	if reference == "" {
+		return ""
+	}
+	return "ref:" + reference
+}
+
+func adminOpsFraudDisplayReference(reference string) string {
+	if pullReference := publicPullLedgerReference(reference); pullReference != "" {
+		return pullReference
+	}
+	if taskID := ledgerReferenceTaskID(reference); taskID != "" {
+		return "task:" + sanitizeLedgerReferenceValue(taskID)
+	}
+	return sanitizeLedgerReferenceValue(reference)
+}
+
+func adminOpsFraudAccounts(rows []LedgerEntry) []string {
+	seen := map[string]bool{}
+	accounts := []string{}
+	for _, row := range rows {
+		account := strings.ToLower(strings.TrimSpace(row.ToAccount))
+		if account == "" || seen[account] {
+			continue
+		}
+		seen[account] = true
+		accounts = append(accounts, publicLedgerAccount(account, "", ""))
+	}
+	sort.Strings(accounts)
+	if len(accounts) > 3 {
+		return append(accounts[:3], fmt.Sprintf("+%d more", len(accounts)-3))
+	}
+	return accounts
+}
+
+func adminOpsLatestLedgerCreatedAt(rows []LedgerEntry) time.Time {
+	latest := time.Time{}
+	for _, row := range rows {
+		if latest.IsZero() || row.CreatedAt.After(latest) {
+			latest = row.CreatedAt
+		}
+	}
+	return latest
+}
+
+func adminOpsRapidPayoutBurst(rows []LedgerEntry) (int, time.Time) {
+	if len(rows) < adminOpsRapidPayoutThreshold {
+		return 0, time.Time{}
+	}
+	sort.Slice(rows, func(i, j int) bool {
+		return rows[i].CreatedAt.Before(rows[j].CreatedAt)
+	})
+	for start := range rows {
+		count := 1
+		latest := rows[start].CreatedAt
+		for end := start + 1; end < len(rows); end++ {
+			if rows[end].CreatedAt.Sub(rows[start].CreatedAt) > adminOpsRapidPayoutWindow {
+				break
+			}
+			count++
+			if rows[end].CreatedAt.After(latest) {
+				latest = rows[end].CreatedAt
+			}
+		}
+		if count >= adminOpsRapidPayoutThreshold {
+			return count, latest
+		}
+	}
+	return 0, time.Time{}
+}
+
+func (s *Store) adminOpsDuplicateIdentityItemsLocked() []AdminOpsQueueItem {
+	items := []AdminOpsQueueItem{}
+	githubUsers := map[string][]*User{}
+	walletUsers := map[string][]*User{}
+	for _, user := range s.users {
+		if user == nil {
+			continue
+		}
+		if github := normalizeGitHubUsername(user.GitHubUsername); github != "" {
+			githubUsers[github] = append(githubUsers[github], user)
+		}
+		if wallet := normalizeWalletAddress(user.WalletAddress); wallet != "" {
+			walletUsers[wallet] = append(walletUsers[wallet], user)
+		}
+	}
+	for github, users := range githubUsers {
+		if len(users) < 2 {
+			continue
+		}
+		reference := githubWorkerAccount(github)
+		items = append(items, AdminOpsQueueItem{
+			ID:        adminOpsItemID("fraud-github", github),
+			Type:      "fraud_review",
+			Severity:  "high",
+			Title:     "Duplicate GitHub identity",
+			Body:      fmt.Sprintf("%d user accounts share %s. Confirm ownership before paying this identity.", len(users), reference),
+			UserID:    users[0].ID,
+			Reference: reference,
+			Status:    "duplicate_identity",
+			CreatedAt: adminOpsLatestUserCreatedAt(users),
+		})
+	}
+	for wallet, users := range walletUsers {
+		if len(users) < 2 {
+			continue
+		}
+		reference := walletAccount(wallet)
+		items = append(items, AdminOpsQueueItem{
+			ID:        adminOpsItemID("fraud-wallet", wallet),
+			Type:      "fraud_review",
+			Severity:  "high",
+			Title:     "Duplicate wallet identity",
+			Body:      fmt.Sprintf("%d user accounts share wallet %s. Confirm account ownership before releasing more MRG.", len(users), reference),
+			UserID:    users[0].ID,
+			Reference: reference,
+			Status:    "duplicate_identity",
+			CreatedAt: adminOpsLatestUserCreatedAt(users),
+		})
+	}
+	return items
+}
+
+func adminOpsLatestUserCreatedAt(users []*User) time.Time {
+	latest := time.Time{}
+	for _, user := range users {
+		if user == nil {
+			continue
+		}
+		if latest.IsZero() || user.CreatedAt.After(latest) {
+			latest = user.CreatedAt
+		}
+	}
+	return latest
 }
 
 func adminOpsSeverityRank(severity string) int {
