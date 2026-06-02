@@ -94,6 +94,9 @@ func TestWebSocketSendsReadyAndLiveFeedSnapshot(t *testing.T) {
 	if ready["type"] != "connection_ready" || ready["status"] != "ok" || ready["token_symbol"] != defaultTokenSymbol {
 		t.Fatalf("unexpected ready event: %#v", ready)
 	}
+	if ready["protocol_version"] != "mergeos.event.v1" || ready["kind"] != "connection" {
+		t.Fatalf("ready event missing protocol metadata: %#v", ready)
+	}
 
 	var snapshot map[string]interface{}
 	if err := json.Unmarshal(readWebSocketTextFrame(t, reader), &snapshot); err != nil {
@@ -101,6 +104,9 @@ func TestWebSocketSendsReadyAndLiveFeedSnapshot(t *testing.T) {
 	}
 	if snapshot["type"] != "live_feed_snapshot" {
 		t.Fatalf("unexpected snapshot event: %#v", snapshot)
+	}
+	if snapshot["protocol_version"] != "mergeos.event.v1" || snapshot["kind"] != "snapshot" {
+		t.Fatalf("snapshot event missing protocol metadata: %#v", snapshot)
 	}
 	feed, ok := snapshot["feed"].(map[string]interface{})
 	if !ok {

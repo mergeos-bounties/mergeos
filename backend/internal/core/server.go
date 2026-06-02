@@ -730,16 +730,20 @@ func (s *Server) wsInitialEvents() []map[string]interface{} {
 	now := time.Now().UTC()
 	return []map[string]interface{}{
 		{
-			"type":         "connection_ready",
-			"status":       "ok",
-			"token_symbol": normalizedTokenSymbol(s.cfg.TokenSymbol),
-			"created_at":   now,
+			"protocol_version": "mergeos.event.v1",
+			"kind":             "connection",
+			"type":             "connection_ready",
+			"status":           "ok",
+			"token_symbol":     normalizedTokenSymbol(s.cfg.TokenSymbol),
+			"created_at":       now,
 		},
 		{
-			"type":       "live_feed_snapshot",
-			"feed":       s.store.PublicLiveFeed(20),
-			"events":     s.store.PublicEventProtocol(20),
-			"created_at": now,
+			"protocol_version": "mergeos.event.v1",
+			"kind":             "snapshot",
+			"type":             "live_feed_snapshot",
+			"feed":             s.store.PublicLiveFeed(20),
+			"events":           s.store.PublicEventProtocol(20),
+			"created_at":       now,
 		},
 	}
 }
