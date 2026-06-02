@@ -2970,10 +2970,11 @@
                 <button
                   v-for="tabItem in ledgerTabs"
                   :key="tabItem"
-                  :class="{ active: tabItem === 'All Activity' }"
+                  :class="{ active: tabItem === activeLedgerTab }"
                   type="button"
                   role="tab"
-                  @click="showToast(`Filtering ${tabItem}...`)"
+                  :aria-selected="tabItem === activeLedgerTab"
+                  @click="activeLedgerTab = tabItem"
                 >
                   {{ tabItem }}
                 </button>
@@ -3010,11 +3011,11 @@
                   <tr v-else-if="ledgerError">
                     <td class="ledger-state-cell error" colspan="6">{{ ledgerError }}</td>
                   </tr>
-                  <tr v-else-if="ledgerEvents.length === 0">
-                    <td class="ledger-state-cell" colspan="6">No ledger entries yet. Fund a project to mint tokens and create the first logs.</td>
+                  <tr v-else-if="filteredLedgerEvents.length === 0">
+                    <td class="ledger-state-cell" colspan="6">{{ ledgerEmptyStateCopy }}</td>
                   </tr>
                   <template v-else>
-                    <tr v-for="event in ledgerEvents" :key="event.key">
+                    <tr v-for="event in filteredLedgerEvents" :key="event.key">
                       <td>
                         <strong>{{ event.date }}</strong>
                         <span>{{ event.time }}</span>
@@ -3911,6 +3912,7 @@ const marketplaceLoading = ref(true);
 const marketplaceError = ref('');
 const marketplaceSearch = ref('');
 const activeMarketplaceCategory = ref('All');
+const activeLedgerTab = ref('All Activity');
 const publicTestSettingsStatus = ref({ test_mode_enabled: false });
 const publicTestSettingsEntries = ref([]);
 const publicTestSettingsPassword = ref('');
@@ -4381,6 +4383,12 @@ const ledgerTrustItems = [
 ];
 
 const ledgerTabs = ['All Activity', 'Escrow & Payments', 'Tasks & PRs', 'Milestones', 'AI Actions', 'Token Events'];
+const ledgerTabTypes = {
+  'Escrow & Payments': new Set(['payment_verified', 'platform_fee', 'project_reserve', 'task_reserve', 'task_payment']),
+  'Tasks & PRs': new Set(['task_reserve', 'task_payment']),
+  Milestones: new Set(['project_reserve', 'task_reserve']),
+  'Token Events': new Set(['token_mint']),
+};
 
 const ledgerVerificationChecks = [
   'Escrow-protected payments',
@@ -4413,6 +4421,21 @@ const successProjectTitle = computed(() => fundedProject.value?.title || project
 const successPaymentReference = computed(() => fundedProject.value?.payment_reference || '');
 
 const ledgerEvents = computed(() => ledgerRawEntries.value.slice().reverse().map(mapLedgerEntry));
+const filteredLedgerEvents = computed(() => {
+  const activeTab = activeLedgerTab.value;
+  if (activeTab === 'All Activity') return ledgerEvents.value;
+  if (activeTab === 'AI Actions') {
+    return ledgerEvents.value.filter((event) => event.rawType.includes('ai'));
+  }
+  const allowedTypes = ledgerTabTypes[activeTab];
+  if (!allowedTypes) return ledgerEvents.value;
+  return ledgerEvents.value.filter((event) => allowedTypes.has(event.rawType));
+});
+const ledgerEmptyStateCopy = computed(() =>
+  activeLedgerTab.value === 'All Activity'
+    ? 'No ledger entries yet. Fund a project to mint tokens and create the first logs.'
+    : `No ${activeLedgerTab.value.toLowerCase()} entries yet.`,
+);
 const ledgerMintedTokenTotal = computed(() =>
   ledgerRawEntries.value
     .filter((entry) => entry.type === 'token_mint')
@@ -7195,6 +7218,7 @@ function mapLedgerEntry(entry) {
     date: when.date,
     time: when.time,
     createdAt: entry.created_at,
+    rawType: String(entry.type || ''),
     type: meta.type,
     icon: meta.icon,
     tone: meta.tone,
