@@ -2712,6 +2712,7 @@ func workerProposalRows(projects map[string]*Project, tasks map[string]*Task, us
 			RequiredWorkerKind: task.RequiredWorkerKind,
 			SuggestedAgentType: task.SuggestedAgentType,
 			MatchScore:         workerProposalMatchScore(task, user),
+			MatchReasons:       workerProposalMatchReasons(task, user),
 			IssueURL:           marketplacePublicRepoURL(task.IssueURL),
 			CreatedAt:          task.CreatedAt,
 		})
@@ -2749,6 +2750,37 @@ func workerProposalMatchScore(task *Task, user *User) int {
 		return 98
 	}
 	return score
+}
+
+func workerProposalMatchReasons(task *Task, user *User) []string {
+	reasons := []string{"open bounty"}
+	if normalizeGitHubUsername(user.GitHubUsername) != "" {
+		reasons = append(reasons, "github identity linked")
+	}
+	if normalizeWalletAddress(user.WalletAddress) != "" {
+		reasons = append(reasons, "wallet ready")
+	}
+
+	switch task.RequiredWorkerKind {
+	case WorkerHuman:
+		reasons = append(reasons, "human contributor lane")
+	case WorkerAgent:
+		reasons = append(reasons, workerProposalAgentReason("agent lane", task.SuggestedAgentType))
+	case WorkerHybrid:
+		reasons = append(reasons, workerProposalAgentReason("hybrid lane", task.SuggestedAgentType))
+	}
+	if marketplaceEstimatedHours(task) > 0 {
+		reasons = append(reasons, "effort estimated")
+	}
+	return cleanStrings(reasons)
+}
+
+func workerProposalAgentReason(prefix, agentType string) string {
+	agentType = strings.TrimSpace(agentType)
+	if agentType == "" {
+		return prefix
+	}
+	return prefix + ": " + agentType
 }
 
 func workerReputationScore(claimedTasks int, rewardCents int64, rewardRows int, hasGitHub, hasWallet bool) int {

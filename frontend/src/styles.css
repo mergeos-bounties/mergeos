@@ -7566,6 +7566,25 @@ svg {
   white-space: nowrap;
 }
 
+.worker-proposal-reasons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.worker-proposal-reasons em {
+  border: 1px solid #dbeafe;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  padding: 3px 6px;
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 850;
+  line-height: 1.1;
+}
+
 .worker-claim-error,
 .marketplace-claim-error {
   margin: 10px 0 0;

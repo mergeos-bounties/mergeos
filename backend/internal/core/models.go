@@ -1195,6 +1195,7 @@ type WorkerProposal struct {
 	RequiredWorkerKind WorkerKind `json:"required_worker_kind"`
 	SuggestedAgentType string     `json:"suggested_agent_type,omitempty"`
 	MatchScore         int        `json:"match_score"`
+	MatchReasons       []string   `json:"match_reasons,omitempty"`
 	IssueURL           string     `json:"issue_url,omitempty"`
 	CreatedAt          time.Time  `json:"created_at"`
 }

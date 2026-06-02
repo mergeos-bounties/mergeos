@@ -2005,6 +2005,9 @@
                       <div>
                         <strong>{{ proposal.title }}</strong>
                         <small>{{ proposal.project }} · {{ proposal.lane }} · {{ proposal.effort }}</small>
+                        <div v-if="proposal.reasons.length" class="worker-proposal-reasons">
+                          <em v-for="reason in proposal.reasons" :key="`${proposal.id}-${reason}`">{{ reason }}</em>
+                        </div>
                       </div>
                       <span>{{ proposal.reward }}</span>
                       <b>{{ proposal.matchScore }}%</b>
@@ -7887,6 +7890,9 @@ function mapWorkerReward(entry = {}) {
 function mapWorkerProposal(proposal = {}) {
   const agentType = proposal.suggested_agent_type || '';
   const issueNumber = Number(proposal.issue_number) || 0;
+  const reasons = Array.isArray(proposal.match_reasons)
+    ? proposal.match_reasons.map((reason) => String(reason || '').trim()).filter(Boolean).slice(0, 3)
+    : [];
   return {
     id: proposal.id || `${proposal.project_id}-${proposal.issue_number}`,
     claimID: proposal.claim_id || proposal.id || '',
@@ -7896,6 +7902,7 @@ function mapWorkerProposal(proposal = {}) {
     reward: formatMRGFromCents(proposal.reward_cents),
     effort: formatEstimatedHours(proposal.estimated_hours),
     matchScore: Number(proposal.match_score) || 0,
+    reasons,
     issue: issueNumber > 0 ? `#${issueNumber}` : 'Task',
     issueNumber,
     claimCommand: issueNumber > 0 ? `/attempt #${issueNumber}` : '',
