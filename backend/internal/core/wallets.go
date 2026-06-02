@@ -40,6 +40,29 @@ func (s *Store) CreateGuestWallet(_ CreateWalletRequest) (*CreateWalletResponse,
 	}, nil
 }
 
+func (s *Store) CreateUserWallet(userID string, _ CreateWalletRequest) (*CreateWalletResponse, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	user, ok := s.users[strings.TrimSpace(userID)]
+	if !ok {
+		return nil, errors.New("user not found")
+	}
+	wallet, err := s.ensureWalletForUserLocked(user, "", "")
+	if err != nil {
+		return nil, err
+	}
+	summary := s.walletSummaryLocked(wallet)
+	if err := s.saveLocked(); err != nil {
+		return nil, err
+	}
+
+	return &CreateWalletResponse{
+		Address: wallet.Address,
+		Wallet:  summary,
+	}, nil
+}
+
 func (s *Store) WalletSummary(address string) (WalletSummary, bool) {
 	address = normalizeWalletAddress(address)
 	if !validWalletAddress(address) {

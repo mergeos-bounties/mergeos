@@ -433,6 +433,92 @@ func TestGitHubAuthLinksMRGWalletAndRoutesPayouts(t *testing.T) {
 	}
 }
 
+func TestCreateWalletRouteRequiresLoginAndLinksUser(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:       defaultTokenSymbol,
+		StatePath:         filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:    1000,
+		DevPaymentEnabled: true,
+		DevPaymentCode:    defaultDevPaymentCode,
+		GitHubOwner:       defaultGitHubOwner,
+		BountyRoot:        filepath.Join(tempDir, "bounties"),
+		SMTPFrom:          "noreply@mergeos.local",
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	server := NewServer(cfg, store, payments)
+
+	guestReq := httptest.NewRequest(http.MethodPost, "/api/wallets", strings.NewReader(`{}`))
+	guestResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(guestResp, guestReq)
+	if guestResp.Code != http.StatusUnauthorized {
+		t.Fatalf("guest wallet status = %d, body = %s", guestResp.Code, guestResp.Body.String())
+	}
+
+	auth, err := store.Register(RegisterRequest{
+		Name:     "Wallet User",
+		Email:    "wallet-user@example.com",
+		Password: "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	req := httptest.NewRequest(http.MethodPost, "/api/wallets", strings.NewReader(`{"label":"primary"}`))
+	req.Header.Set("Authorization", "Bearer "+auth.Token)
+	resp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(resp, req)
+	if resp.Code != http.StatusCreated {
+		t.Fatalf("user wallet status = %d, body = %s", resp.Code, resp.Body.String())
+	}
+	var created CreateWalletResponse
+	if err := json.Unmarshal(resp.Body.Bytes(), &created); err != nil {
+		t.Fatal(err)
+	}
+	if created.Address == "" || created.RecoveryCode != "" || !created.Wallet.OwnerLinked {
+		t.Fatalf("unexpected created wallet response: %#v", created)
+	}
+}
+
+func TestProductionCORSRestrictsOrigins(t *testing.T) {
+	cfg := Config{
+		Environment:   "production",
+		PrimaryDomain: defaultPrimaryDomain,
+		AdminDomain:   defaultAdminDomain,
+		ScanDomain:    defaultScanDomain,
+	}
+	handler := withCORS(cfg, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	allowedReq := httptest.NewRequest(http.MethodGet, "/api/health", nil)
+	allowedReq.Header.Set("Origin", "https://mergeos.shop")
+	allowedResp := httptest.NewRecorder()
+	handler.ServeHTTP(allowedResp, allowedReq)
+	if got := allowedResp.Header().Get("Access-Control-Allow-Origin"); got != "https://mergeos.shop" {
+		t.Fatalf("allowed origin header = %q", got)
+	}
+
+	blockedReq := httptest.NewRequest(http.MethodGet, "/api/health", nil)
+	blockedReq.Header.Set("Origin", "https://evil.example")
+	blockedResp := httptest.NewRecorder()
+	handler.ServeHTTP(blockedResp, blockedReq)
+	if got := blockedResp.Header().Get("Access-Control-Allow-Origin"); got != "" {
+		t.Fatalf("blocked origin header = %q", got)
+	}
+
+	insecureReq := httptest.NewRequest(http.MethodGet, "/api/health", nil)
+	insecureReq.Header.Set("Origin", "http://mergeos.shop")
+	insecureResp := httptest.NewRecorder()
+	handler.ServeHTTP(insecureResp, insecureReq)
+	if got := insecureResp.Header().Get("Access-Control-Allow-Origin"); got != "" {
+		t.Fatalf("insecure production origin header = %q", got)
+	}
+}
+
 func TestLegacyWalletAccountPrefixMigratesToRawAddress(t *testing.T) {
 	store := &Store{cfg: Config{GeminiReviewModel: defaultGeminiReviewModel}}
 	wallet := &Wallet{

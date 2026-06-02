@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -122,7 +123,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("PATCH /api/public/test-settings/entries/{id}", s.publicUpdateTestEntry)
 	mux.HandleFunc("DELETE /api/public/test-settings/entries/{id}", s.publicDeleteTestEntry)
 	mux.HandleFunc("GET /api/public/test-settings/status", s.publicTestStatus)
-	return withCORS(mux)
+	return withCORS(s.cfg, mux)
 }
 
 func (s *Server) health(w http.ResponseWriter, _ *http.Request) {
@@ -325,12 +326,16 @@ func (s *Server) logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) createWallet(w http.ResponseWriter, r *http.Request) {
+	user, ok := s.requireUser(w, r)
+	if !ok {
+		return
+	}
 	var req CreateWalletRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil && err != io.EOF {
 		writeError(w, http.StatusBadRequest, "invalid JSON body")
 		return
 	}
-	wallet, err := s.store.CreateGuestWallet(req)
+	wallet, err := s.store.CreateUserWallet(user.ID, req)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
@@ -1220,9 +1225,11 @@ func (s *Server) requireAdmin(w http.ResponseWriter, r *http.Request) (*User, bo
 	return user, true
 }
 
-func withCORS(next http.Handler) http.Handler {
+func withCORS(cfg Config, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
+		if origin := corsAllowedOrigin(cfg, r.Header.Get("Origin")); origin != "" {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+		}
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type,Authorization,X-Hub-Signature-256,X-GitHub-Event,X-GitHub-Delivery,X-MergeOS-Signature,X-MergeOS-Event")
 		w.Header().Set("Access-Control-Allow-Methods", "GET,POST,PATCH,DELETE,OPTIONS")
 		if r.Method == http.MethodOptions {
@@ -1231,6 +1238,36 @@ func withCORS(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(w, r)
 	})
+}
+
+func corsAllowedOrigin(cfg Config, origin string) string {
+	origin = strings.TrimSpace(origin)
+	env := normalizeEnvironment(cfg.Environment)
+	if origin == "" {
+		if env == "production" {
+			return ""
+		}
+		return "*"
+	}
+
+	parsed, err := url.Parse(origin)
+	if err != nil || parsed.Scheme == "" || parsed.Host == "" {
+		return ""
+	}
+	scheme := strings.ToLower(parsed.Scheme)
+	host := strings.ToLower(parsed.Hostname())
+	if env != "production" && (host == "localhost" || host == "127.0.0.1" || host == "::1") && (scheme == "http" || scheme == "https") {
+		return origin
+	}
+	if scheme != "https" {
+		return ""
+	}
+	for _, domain := range []string{cfg.PrimaryDomain, cfg.AdminDomain, cfg.ScanDomain} {
+		if host == cleanDomain(domain) {
+			return origin
+		}
+	}
+	return ""
 }
 
 func writeJSON(w http.ResponseWriter, status int, value any) {
