@@ -2194,6 +2194,15 @@ func TestProjectRepositoryScanRouteReturnsStaticFindings(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(project.RepoLocalPath, "package.json"), []byte(`{"dependencies":{"vue":"latest"},"devDependencies":{"vite":"^5.0.0"}}`), 0o644); err != nil {
 		t.Fatal(err)
 	}
+	if err := os.WriteFile(filepath.Join(project.RepoLocalPath, "pyproject.toml"), []byte("[project]\ndependencies = [\"requests>=2\", \"fastapi\"]\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(project.RepoLocalPath, "Cargo.toml"), []byte("[dependencies]\nserde = \"1\"\ntokio = { version = \"1\" }\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(project.RepoLocalPath, "composer.json"), []byte(`{"require":{"php":">=8.2","guzzlehttp/guzzle":"^7.0"},"require-dev":{"phpunit/phpunit":"^10.0"}}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
 	srcDir := filepath.Join(project.RepoLocalPath, "src")
 	if err := os.MkdirAll(srcDir, 0o755); err != nil {
 		t.Fatal(err)
@@ -2232,10 +2241,14 @@ func TestProjectRepositoryScanRouteReturnsStaticFindings(t *testing.T) {
 	if err := json.Unmarshal(resp.Body.Bytes(), &payload); err != nil {
 		t.Fatal(err)
 	}
-	if payload.Status != "ready" || payload.Stats.ScannedFiles == 0 || payload.Stats.DependencyFiles == 0 {
+	if payload.Status != "ready" || payload.Stats.ScannedFiles == 0 || payload.Stats.DependencyFiles != 4 {
 		t.Fatalf("unexpected repo scan summary: %#v", payload)
 	}
-	if len(payload.Dependencies) == 0 || payload.Dependencies[0].Path != "package.json" || payload.Dependencies[0].PackageCount != 2 {
+	dependenciesByPath := map[string]RepositoryDependencyFile{}
+	for _, dependency := range payload.Dependencies {
+		dependenciesByPath[dependency.Path] = dependency
+	}
+	if dependenciesByPath["package.json"].PackageCount != 2 || dependenciesByPath["pyproject.toml"].PackageCount != 2 || dependenciesByPath["Cargo.toml"].PackageCount != 2 || dependenciesByPath["composer.json"].PackageCount != 3 {
 		t.Fatalf("unexpected dependency scan: %#v", payload.Dependencies)
 	}
 	seenSignals := map[string]bool{}

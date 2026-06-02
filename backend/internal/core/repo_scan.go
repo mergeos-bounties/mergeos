@@ -128,8 +128,8 @@ func (s *Store) projectRepositoryScanLocked(project *Project) ProjectRepositoryS
 		response.Stats.ScannedFiles++
 		if dependency := repositoryDependencyFile(absRoot, relativePath, content); dependency.Path != "" {
 			dependencies = append(dependencies, dependency)
-			if !dependency.HasLockfile && dependency.Ecosystem == "npm" {
-				addFinding("medium", "dependency", "Missing npm lockfile", "package.json exists without a package-lock.json, pnpm-lock.yaml, yarn.lock, or bun.lockb in the same folder.", relativePath, 0, "lockfile_missing")
+			if title, body := repositoryMissingLockfileFinding(dependency); !dependency.HasLockfile && title != "" {
+				addFinding("medium", "dependency", title, body, relativePath, 0, "lockfile_missing")
 			}
 		}
 		repositoryDependencyFindings(relativePath, content, addFinding)
@@ -284,9 +284,46 @@ func repositoryDependencyFile(root, relativePath string, content []byte) Reposit
 			PackageCount: requirementsDependencyCount(string(content)),
 			HasLockfile:  false,
 		}
+	case "pyproject.toml":
+		return RepositoryDependencyFile{
+			Path:         relativePath,
+			Ecosystem:    "python",
+			PackageCount: pyProjectDependencyCount(string(content)),
+			HasLockfile:  repositoryHasAnyFile(filepath.Join(root, filepath.Dir(relativePath)), []string{"poetry.lock", "uv.lock", "pdm.lock"}),
+		}
+	case "cargo.toml":
+		return RepositoryDependencyFile{
+			Path:         relativePath,
+			Ecosystem:    "rust",
+			PackageCount: cargoTomlDependencyCount(string(content)),
+			HasLockfile:  repositoryHasAnyFile(filepath.Join(root, filepath.Dir(relativePath)), []string{"Cargo.lock"}),
+		}
+	case "composer.json":
+		return RepositoryDependencyFile{
+			Path:         relativePath,
+			Ecosystem:    "composer",
+			PackageCount: composerDependencyCount(content),
+			HasLockfile:  repositoryHasAnyFile(filepath.Join(root, filepath.Dir(relativePath)), []string{"composer.lock"}),
+		}
 	default:
 		return RepositoryDependencyFile{}
 	}
+}
+
+func repositoryMissingLockfileFinding(dependency RepositoryDependencyFile) (string, string) {
+	switch dependency.Ecosystem {
+	case "npm":
+		return "Missing npm lockfile", "package.json exists without a package-lock.json, pnpm-lock.yaml, yarn.lock, or bun.lockb in the same folder."
+	case "python":
+		if strings.EqualFold(filepath.Base(dependency.Path), "pyproject.toml") {
+			return "Missing Python lockfile", "pyproject.toml exists without a poetry.lock, uv.lock, or pdm.lock in the same folder."
+		}
+	case "rust":
+		return "Missing Cargo lockfile", "Cargo.toml exists without a Cargo.lock in the same folder."
+	case "composer":
+		return "Missing Composer lockfile", "composer.json exists without a composer.lock in the same folder."
+	}
+	return "", ""
 }
 
 func repositoryHasAnyFile(root string, names []string) bool {
@@ -342,6 +379,74 @@ func requirementsDependencyCount(content string) int {
 		}
 	}
 	return count
+}
+
+func pyProjectDependencyCount(content string) int {
+	count := 0
+	inProjectDependencies := false
+	inPoetryDependencies := false
+	for _, line := range strings.Split(content, "\n") {
+		trimmed := strings.TrimSpace(strings.Split(line, "#")[0])
+		if trimmed == "" {
+			continue
+		}
+		if strings.HasPrefix(trimmed, "[") {
+			section := strings.ToLower(trimmed)
+			inProjectDependencies = false
+			inPoetryDependencies = section == "[tool.poetry.dependencies]" || section == "[tool.pdm.dependencies]"
+			continue
+		}
+		if strings.HasPrefix(strings.ToLower(trimmed), "dependencies") && strings.Contains(trimmed, "[") {
+			inProjectDependencies = true
+			count += strings.Count(trimmed, `"`) / 2
+			if strings.Contains(trimmed, "]") {
+				inProjectDependencies = false
+			}
+			continue
+		}
+		if inProjectDependencies {
+			count += strings.Count(trimmed, `"`) / 2
+			if strings.Contains(trimmed, "]") {
+				inProjectDependencies = false
+			}
+			continue
+		}
+		if inPoetryDependencies && strings.Contains(trimmed, "=") && !strings.HasPrefix(strings.ToLower(trimmed), "python") {
+			count++
+		}
+	}
+	return count
+}
+
+func cargoTomlDependencyCount(content string) int {
+	count := 0
+	inDependencies := false
+	for _, line := range strings.Split(content, "\n") {
+		trimmed := strings.TrimSpace(strings.Split(line, "#")[0])
+		if trimmed == "" {
+			continue
+		}
+		if strings.HasPrefix(trimmed, "[") {
+			section := strings.ToLower(trimmed)
+			inDependencies = section == "[dependencies]" || section == "[dev-dependencies]" || section == "[build-dependencies]"
+			continue
+		}
+		if inDependencies && strings.Contains(trimmed, "=") {
+			count++
+		}
+	}
+	return count
+}
+
+func composerDependencyCount(content []byte) int {
+	var parsed struct {
+		Require    map[string]any `json:"require"`
+		RequireDev map[string]any `json:"require-dev"`
+	}
+	if err := json.Unmarshal(content, &parsed); err != nil {
+		return 0
+	}
+	return len(parsed.Require) + len(parsed.RequireDev)
 }
 
 func repositoryDependencyFindings(path string, content []byte, add func(string, string, string, string, string, int, string)) {
