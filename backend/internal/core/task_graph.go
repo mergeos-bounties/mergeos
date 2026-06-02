@@ -19,6 +19,17 @@ func (s *Store) ProjectTaskGraph(projectID string) (ProjectTaskGraphResponse, er
 	return s.projectTaskGraphLocked(project), nil
 }
 
+func (s *Store) ProjectWorkflowProtocol(projectID string) (WorkflowProtocolDocument, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	project, ok := s.projects[strings.TrimSpace(projectID)]
+	if !ok {
+		return WorkflowProtocolDocument{}, errors.New("project not found")
+	}
+	return workflowProtocolDocument(project, s.projectTaskGraphLocked(project)), nil
+}
+
 func (s *Store) projectTaskGraphLocked(project *Project) ProjectTaskGraphResponse {
 	tasks := s.projectDeploymentTasksLocked(project)
 	nodes := make([]TaskGraphNode, 0, len(tasks))
@@ -215,4 +226,77 @@ func taskGraphUpdatedAt(tasks []*Task, fallback time.Time) time.Time {
 		}
 	}
 	return updatedAt
+}
+
+func workflowProtocolDocument(project *Project, graph ProjectTaskGraphResponse) WorkflowProtocolDocument {
+	nodes := make([]WorkflowProtocolNode, 0, len(graph.Nodes))
+	for _, node := range graph.Nodes {
+		nodes = append(nodes, WorkflowProtocolNode{
+			ID:        node.ID,
+			TaskID:    node.TaskID,
+			Title:     node.Title,
+			Lane:      node.Lane,
+			Status:    workflowProtocolNodeStatus(node),
+			RewardMRG: float64(node.RewardCents) / 100,
+		})
+	}
+
+	edges := make([]WorkflowProtocolEdge, 0, len(graph.Edges))
+	for _, edge := range graph.Edges {
+		edges = append(edges, WorkflowProtocolEdge{
+			From:     edge.From,
+			To:       edge.To,
+			Relation: edge.Relation,
+		})
+	}
+
+	return WorkflowProtocolDocument{
+		ProtocolVersion: "mergeos.workflow.v1",
+		Kind:            "workflow",
+		ID:              project.ID + ":workflow",
+		ProjectID:       project.ID,
+		Status:          workflowProtocolStatus(graph),
+		Nodes:           nodes,
+		Edges:           edges,
+		Metadata: map[string]any{
+			"project_title":  graph.ProjectTitle,
+			"progress":       graph.Progress,
+			"node_count":     graph.Stats.NodeCount,
+			"edge_count":     graph.Stats.EdgeCount,
+			"ready_count":    graph.Stats.ReadyCount,
+			"blocked_count":  graph.Stats.BlockedCount,
+			"complete_count": graph.Stats.CompleteCount,
+			"updated_at":     graph.UpdatedAt,
+		},
+	}
+}
+
+func workflowProtocolStatus(graph ProjectTaskGraphResponse) string {
+	if graph.Stats.NodeCount > 0 && graph.Stats.CompleteCount == graph.Stats.NodeCount {
+		return "ready"
+	}
+	if graph.Stats.BlockedCount > 0 && graph.Stats.ReadyCount == 0 && graph.Stats.CompleteCount == 0 {
+		return "blocked"
+	}
+	switch graph.Status {
+	case "ready":
+		return "ready"
+	case "planning":
+		return "active"
+	default:
+		return "planned"
+	}
+}
+
+func workflowProtocolNodeStatus(node TaskGraphNode) string {
+	if node.Status == string(TaskAccepted) {
+		return "accepted"
+	}
+	if node.Ready {
+		return "ready"
+	}
+	if len(node.BlockedBy) > 0 {
+		return "blocked"
+	}
+	return "open"
 }

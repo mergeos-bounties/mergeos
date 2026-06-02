@@ -51,6 +51,7 @@ await mergeos.createProject(projectPayload);
 await mergeos.projectEscrow('prj_0001');
 await mergeos.projectPullRequests('prj_0001');
 await mergeos.projectTaskGraph('prj_0001');
+await mergeos.projectWorkflowProtocol('prj_0001');
 await mergeos.projectRepositoryScan('prj_0001');
 await mergeos.projectRepositoryScanProtocol('prj_0001');
 await mergeos.syncProjectRepoIssues('prj_0001');

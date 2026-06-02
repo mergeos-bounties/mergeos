@@ -1548,6 +1548,39 @@ func TestProjectTaskGraphRouteReturnsAcyclicDependencyGraph(t *testing.T) {
 		t.Fatalf("first task should be ready: %#v", payload.Nodes[0])
 	}
 
+	protocolReq := httptest.NewRequest(http.MethodGet, "/api/projects/"+project.ID+"/protocol/workflow", nil)
+	protocolReq.Header.Set("Authorization", "Bearer "+auth.Token)
+	protocolResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(protocolResp, protocolReq)
+	if protocolResp.Code != http.StatusOK {
+		t.Fatalf("workflow protocol status = %d, body = %s", protocolResp.Code, protocolResp.Body.String())
+	}
+	protocolBody := protocolResp.Body.String()
+	for _, value := range []string{
+		"graph-client@example.com",
+		"+1 555 0144",
+		auth.User.ID,
+		defaultDevPaymentCode,
+		tempDir,
+	} {
+		if strings.Contains(protocolBody, value) {
+			t.Fatalf("workflow protocol leaked private value %q: %s", value, protocolBody)
+		}
+	}
+	var document WorkflowProtocolDocument
+	if err := json.Unmarshal(protocolResp.Body.Bytes(), &document); err != nil {
+		t.Fatal(err)
+	}
+	if document.ProtocolVersion != "mergeos.workflow.v1" || document.Kind != "workflow" || document.ProjectID != project.ID {
+		t.Fatalf("unexpected workflow protocol header: %#v", document)
+	}
+	if len(document.Nodes) != len(payload.Nodes) || len(document.Edges) != len(payload.Edges) {
+		t.Fatalf("workflow protocol graph mismatch: %#v", document)
+	}
+	if document.Nodes[0].Status != "ready" || document.Nodes[0].RewardMRG <= 0 {
+		t.Fatalf("unexpected workflow protocol first node: %#v", document.Nodes[0])
+	}
+
 	otherAuth, err := store.Register(RegisterRequest{
 		Name:     "Other Graph Client",
 		Email:    "other-graph-client@example.com",
@@ -1562,6 +1595,14 @@ func TestProjectTaskGraphRouteReturnsAcyclicDependencyGraph(t *testing.T) {
 	server.Routes().ServeHTTP(forbiddenResp, forbiddenReq)
 	if forbiddenResp.Code != http.StatusForbidden {
 		t.Fatalf("other client task graph status = %d", forbiddenResp.Code)
+	}
+
+	forbiddenProtocolReq := httptest.NewRequest(http.MethodGet, "/api/projects/"+project.ID+"/protocol/workflow", nil)
+	forbiddenProtocolReq.Header.Set("Authorization", "Bearer "+otherAuth.Token)
+	forbiddenProtocolResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(forbiddenProtocolResp, forbiddenProtocolReq)
+	if forbiddenProtocolResp.Code != http.StatusForbidden {
+		t.Fatalf("other client workflow protocol status = %d", forbiddenProtocolResp.Code)
 	}
 }
 

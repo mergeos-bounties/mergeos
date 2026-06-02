@@ -200,6 +200,10 @@ export class MergeOSClient {
     return this.request(`/api/projects/${encodeURIComponent(projectID)}/task-graph`);
   }
 
+  projectWorkflowProtocol(projectID) {
+    return this.request(`/api/projects/${encodeURIComponent(projectID)}/protocol/workflow`);
+  }
+
   projectRepositoryScan(projectID) {
     return this.request(`/api/projects/${encodeURIComponent(projectID)}/repo-scan`);
   }

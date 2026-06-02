@@ -347,6 +347,7 @@ Customer:
 - `GET /api/projects/{id}/deployment`
 - `GET /api/projects/{id}/ai-workflow`
 - `GET /api/projects/{id}/task-graph`
+- `GET /api/projects/{id}/protocol/workflow`
 - `GET /api/projects/{id}/repo-scan`
 - `GET /api/projects/{id}/protocol/scan`
 - `POST /api/projects/{id}/repo-sync`

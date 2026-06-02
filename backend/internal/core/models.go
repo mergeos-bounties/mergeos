@@ -780,6 +780,32 @@ type ProjectTaskGraphResponse struct {
 	UpdatedAt    time.Time       `json:"updated_at"`
 }
 
+type WorkflowProtocolDocument struct {
+	ProtocolVersion string                 `json:"protocol_version"`
+	Kind            string                 `json:"kind"`
+	ID              string                 `json:"id"`
+	ProjectID       string                 `json:"project_id"`
+	Status          string                 `json:"status,omitempty"`
+	Nodes           []WorkflowProtocolNode `json:"nodes"`
+	Edges           []WorkflowProtocolEdge `json:"edges"`
+	Metadata        map[string]any         `json:"metadata,omitempty"`
+}
+
+type WorkflowProtocolNode struct {
+	ID        string  `json:"id"`
+	TaskID    string  `json:"task_id"`
+	Title     string  `json:"title"`
+	Lane      string  `json:"lane"`
+	Status    string  `json:"status"`
+	RewardMRG float64 `json:"reward_mrg,omitempty"`
+}
+
+type WorkflowProtocolEdge struct {
+	From     string `json:"from"`
+	To       string `json:"to"`
+	Relation string `json:"relation"`
+}
+
 type ProjectRepositoryScanResponse struct {
 	ProjectID    string                     `json:"project_id"`
 	ProjectTitle string                     `json:"project_title"`
