@@ -2714,6 +2714,7 @@ func workerProposalRows(projects map[string]*Project, tasks map[string]*Task, us
 			SuggestedAgentType: task.SuggestedAgentType,
 			MatchScore:         workerProposalMatchScore(task, user),
 			MatchReasons:       workerProposalMatchReasons(task, user),
+			EvidenceRequired:   publicTaskEvidenceRequiredForTask(task),
 			IssueURL:           marketplacePublicRepoURL(task.IssueURL),
 			CreatedAt:          task.CreatedAt,
 		})

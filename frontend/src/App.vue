@@ -1995,6 +1995,9 @@
                         <div v-if="proposal.reasons.length" class="worker-proposal-reasons">
                           <em v-for="reason in proposal.reasons" :key="`${proposal.id}-${reason}`">{{ reason }}</em>
                         </div>
+                        <div v-if="proposal.evidenceRequired.length" class="worker-proposal-evidence" aria-label="Evidence required">
+                          <em v-for="item in proposal.evidenceRequired" :key="`${proposal.id}-${item}`">{{ item }}</em>
+                        </div>
                       </div>
                       <span>{{ proposal.reward }}</span>
                       <b>{{ proposal.matchScore }}%</b>
@@ -7935,6 +7938,9 @@ function mapWorkerProposal(proposal = {}) {
   const reasons = Array.isArray(proposal.match_reasons)
     ? proposal.match_reasons.map((reason) => String(reason || '').trim()).filter(Boolean).slice(0, 3)
     : [];
+  const evidenceRequired = Array.isArray(proposal.evidence_required)
+    ? proposal.evidence_required.map(toTitleLabel).filter(Boolean).slice(0, 5)
+    : [];
   return {
     id: proposal.id || `${proposal.project_id}-${proposal.issue_number}`,
     claimID: proposal.claim_id || proposal.id || '',
@@ -7945,6 +7951,7 @@ function mapWorkerProposal(proposal = {}) {
     effort: formatEstimatedHours(proposal.estimated_hours),
     matchScore: Number(proposal.match_score) || 0,
     reasons,
+    evidenceRequired,
     issue: issueNumber > 0 ? `#${issueNumber}` : 'Task',
     issueNumber,
     claimCommand: issueNumber > 0 ? `/attempt #${issueNumber}` : '',

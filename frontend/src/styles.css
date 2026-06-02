@@ -7584,14 +7584,16 @@ svg {
   white-space: nowrap;
 }
 
-.worker-proposal-reasons {
+.worker-proposal-reasons,
+.worker-proposal-evidence {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
   margin-top: 6px;
 }
 
-.worker-proposal-reasons em {
+.worker-proposal-reasons em,
+.worker-proposal-evidence em {
   border: 1px solid #dbeafe;
   border-radius: 999px;
   background: #eff6ff;
@@ -7601,6 +7603,12 @@ svg {
   font-style: normal;
   font-weight: 850;
   line-height: 1.1;
+}
+
+.worker-proposal-evidence em {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+  color: #047857;
 }
 
 .worker-claim-error,

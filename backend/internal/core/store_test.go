@@ -2864,6 +2864,9 @@ func TestWorkerDashboardRouteMatchesGitHubWorkerAndSanitizesData(t *testing.T) {
 	if len(payload.Proposals[0].MatchReasons) == 0 {
 		t.Fatalf("worker proposal missing match reasons: %#v", payload.Proposals[0])
 	}
+	if len(payload.Proposals[0].EvidenceRequired) == 0 || !containsString(payload.Proposals[0].EvidenceRequired, "tests") {
+		t.Fatalf("worker proposal missing evidence requirements: %#v", payload.Proposals[0])
+	}
 }
 
 func TestWorkerCanSelfClaimProposalRoute(t *testing.T) {
