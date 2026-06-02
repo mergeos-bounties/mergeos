@@ -354,6 +354,58 @@ type AdminPullRequestReadiness struct {
 	Signals   []string `json:"signals,omitempty"`
 }
 
+type ProjectPullRequestsResponse struct {
+	ProjectID    string                    `json:"project_id"`
+	ProjectTitle string                    `json:"project_title"`
+	Stats        ProjectPullRequestStats   `json:"stats"`
+	Tasks        []ProjectTaskPullRequests `json:"tasks"`
+	UpdatedAt    time.Time                 `json:"updated_at"`
+}
+
+type ProjectPullRequestStats struct {
+	TaskCount              int `json:"task_count"`
+	LinkedTaskCount        int `json:"linked_task_count"`
+	PullRequestCount       int `json:"pull_request_count"`
+	OpenPullRequestCount   int `json:"open_pull_request_count"`
+	MergedPullRequestCount int `json:"merged_pull_request_count"`
+	ReadyCount             int `json:"ready_count"`
+	NeedsReviewCount       int `json:"needs_review_count"`
+	BlockedCount           int `json:"blocked_count"`
+	ErrorCount             int `json:"error_count"`
+}
+
+type ProjectTaskPullRequests struct {
+	TaskID        string                      `json:"task_id"`
+	IssueNumber   int                         `json:"issue_number"`
+	Title         string                      `json:"title"`
+	Status        string                      `json:"status"`
+	IssueURL      string                      `json:"issue_url,omitempty"`
+	Repository    string                      `json:"repository,omitempty"`
+	MonitorStatus string                      `json:"monitor_status"`
+	MonitorError  string                      `json:"monitor_error,omitempty"`
+	PullRequests  []ProjectPullRequestSummary `json:"pull_requests"`
+	UpdatedAt     time.Time                   `json:"updated_at"`
+}
+
+type ProjectPullRequestSummary struct {
+	Number         int                       `json:"number"`
+	Title          string                    `json:"title"`
+	State          string                    `json:"state"`
+	HTMLURL        string                    `json:"html_url"`
+	MergeURL       string                    `json:"merge_url,omitempty"`
+	Author         string                    `json:"author"`
+	Draft          bool                      `json:"draft"`
+	Merged         bool                      `json:"merged"`
+	MergeableState string                    `json:"mergeable_state,omitempty"`
+	BaseRef        string                    `json:"base_ref,omitempty"`
+	HeadRef        string                    `json:"head_ref,omitempty"`
+	Labels         []string                  `json:"labels,omitempty"`
+	Readiness      AdminPullRequestReadiness `json:"readiness"`
+	CreatedAt      time.Time                 `json:"created_at"`
+	UpdatedAt      time.Time                 `json:"updated_at"`
+	MergedAt       *time.Time                `json:"merged_at,omitempty"`
+}
+
 type AdminMergeTaskPullRequestRequest struct {
 	RewardMRG   int64  `json:"reward_mrg"`
 	RewardCents int64  `json:"reward_cents,omitempty"`

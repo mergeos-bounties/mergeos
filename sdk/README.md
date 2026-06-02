@@ -21,6 +21,7 @@ const mergeos = createMergeOSClient({
 
 const projects = await mergeos.listProjects();
 const escrow = await mergeos.projectEscrow(projects[0].id);
+const pulls = await mergeos.projectPullRequests(projects[0].id);
 const deployment = await mergeos.projectDeployment(projects[0].id);
 const workflow = await mergeos.projectAIWorkflow(projects[0].id);
 const graph = await mergeos.projectTaskGraph(projects[0].id);
@@ -41,6 +42,7 @@ await mergeos.publicLiveFeed({ limit: 80 });
 ```js
 await mergeos.createProject(projectPayload);
 await mergeos.projectEscrow('prj_0001');
+await mergeos.projectPullRequests('prj_0001');
 await mergeos.projectTaskGraph('prj_0001');
 await mergeos.projectRepositoryScan('prj_0001');
 await mergeos.listTasks();

@@ -60,6 +60,7 @@ MergeOS currently supports:
 - Static repository scan for dependency manifests, technical-debt markers, and secret-hygiene findings.
 - Project task dependency graph generation for workflow routing and release readiness.
 - Project escrow summaries for reserve, release, remaining-balance, and overdrawn payout review.
+- Project-level live PR monitoring for customer dashboards, including readiness signals reused from admin review.
 - Task reward allocation, worker kind, suggested agent type, and acceptance criteria.
 - Worker reputation and risk audit signals for marketplace/admin payout review.
 - Proof ledger entries with hash chaining.
@@ -342,6 +343,7 @@ Customer:
 - `POST /api/projects`
 - `GET /api/projects`
 - `GET /api/projects/{id}/escrow`
+- `GET /api/projects/{id}/pull-requests`
 - `GET /api/projects/{id}/deployment`
 - `GET /api/projects/{id}/ai-workflow`
 - `GET /api/projects/{id}/task-graph`

@@ -740,6 +740,17 @@ func (s *Store) ListProjects(userID string) []*Project {
 	return projects
 }
 
+func (s *Store) ProjectSnapshot(projectID string) (*Project, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	project, ok := s.projects[strings.TrimSpace(projectID)]
+	if !ok {
+		return nil, false
+	}
+	return cloneProject(project), true
+}
+
 func (s *Store) ListTasks(userID string) []*Task {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
