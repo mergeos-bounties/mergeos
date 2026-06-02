@@ -675,6 +675,7 @@ func (s *Server) createDispute(w http.ResponseWriter, r *http.Request) {
 		writeError(w, status, err.Error())
 		return
 	}
+	s.broadcastAdminOpsUpdated()
 	writeJSON(w, http.StatusCreated, response)
 }
 
@@ -771,6 +772,15 @@ func (s *Server) broadcastLiveFeedEvent(eventType string) {
 		payload["protocol_type"] = event.Type
 	}
 	s.eventHub.broadcastAll(payload)
+}
+
+func (s *Server) broadcastAdminOpsUpdated() {
+	s.eventHub.broadcastAll(map[string]interface{}{
+		"protocol_version": "mergeos.event.v1",
+		"kind":             "admin_ops_signal",
+		"type":             "admin_ops_updated",
+		"created_at":       time.Now().UTC(),
+	})
 }
 
 func protocolEventForBroadcast(eventType string, feed PublicLiveFeedResponse) *EventProtocolDocument {

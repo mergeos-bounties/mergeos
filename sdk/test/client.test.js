@@ -121,6 +121,7 @@ test('maps live feed records to workflow event protocol values', () => {
   assert.equal(protocolTypeFromMessage({ type: 'ledger_manual_credit' }), 'ledger.recorded');
   assert.equal(protocolTypeFromMessage({ type: 'connection_ready' }), '');
   assert.equal(protocolTypeFromMessage({ type: 'live_feed_snapshot', events: { events: [protocolEvent] } }), '');
+  assert.equal(protocolTypeFromMessage({ type: 'admin_ops_updated' }), '');
   assert.equal(protocolEventGroup('pr.opened'), 'pull_request');
   assert.equal(protocolEventGroup('task.paid'), 'task');
   assert.equal(protocolEventGroup('agent.tested'), 'agent');

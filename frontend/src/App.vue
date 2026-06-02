@@ -9753,6 +9753,15 @@ function handleWSEvent(payload = {}) {
   }
 
   if (payload.type === 'live_feed_snapshot') return;
+  if (payload.type === 'admin_ops_updated') {
+    if (user.value) {
+      void loadDashboardNotifications();
+      if (isAdminUser.value) {
+        void loadAdminConsoleData({ silent: true, skipTasks: true });
+      }
+    }
+    return;
+  }
   if (payload.type === 'pr_opened' || payload.type === 'ai_review') {
     void loadMarketplaceData({ silent: true });
     if (user.value) {
