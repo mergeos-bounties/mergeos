@@ -4097,6 +4097,7 @@ const marketplaceData = ref({
   bounties: [],
   contributors: [],
   agents: [],
+  agentProtocols: [],
 });
 const marketplaceLoading = ref(true);
 const marketplaceError = ref('');
@@ -5123,14 +5124,28 @@ const marketplaceContributorsView = computed(() =>
     tone: marketplaceAvatarTones[index % marketplaceAvatarTones.length],
   })),
 );
+const marketplaceAgentProtocolIndex = computed(() => {
+  const index = new Map();
+  for (const agent of marketplaceData.value.agentProtocols || []) {
+    const type = String(agent.type || '').toLowerCase();
+    if (type) index.set(type, agent);
+  }
+  return index;
+});
 const marketplaceAgentsView = computed(() =>
-  (marketplaceData.value.agents || []).map((agent, index) => ({
-    type: agent.type || `agent-${index}`,
-    icon: marketplaceAgentIcon(agent.type),
-    title: agent.title || toTitleLabel(agent.type || 'AI Agent'),
-    body: `${Number(agent.open_task_count) || 0} open tasks · ${formatPublicMRGFromCents(agent.budget_cents)} pool`,
-    tone: ['green', 'blue', 'yellow', 'red'][index % 4],
-  })),
+  (marketplaceData.value.agents || []).map((agent, index) => {
+    const protocol = marketplaceAgentProtocolFor(agent.type);
+    const actions = marketplaceAgentActionSummary(protocol);
+    return {
+      type: agent.type || `agent-${index}`,
+      icon: marketplaceAgentIcon(agent.type),
+      title: agent.title || protocol?.title || toTitleLabel(agent.type || 'AI Agent'),
+      body: actions
+        ? `${Number(agent.open_task_count) || 0} open tasks · ${actions}`
+        : `${Number(agent.open_task_count) || 0} open tasks · ${formatPublicMRGFromCents(agent.budget_cents)} pool`,
+      tone: ['green', 'blue', 'yellow', 'red'][index % 4],
+    };
+  }),
 );
 const marketplaceAgentQueueRows = computed(() =>
   (marketplaceData.value.agents || [])
@@ -7339,7 +7354,22 @@ function marketplaceAgentIcon(type = '') {
   return Bot;
 }
 
-function marketplaceAgentCapabilities(type = '') {
+function marketplaceAgentProtocolFor(type = '') {
+  return marketplaceAgentProtocolIndex.value.get(String(type || '').toLowerCase()) || null;
+}
+
+function marketplaceAgentActionSummary(protocol = null) {
+  const actions = Array.isArray(protocol?.supported_actions) ? protocol.supported_actions : [];
+  return actions.slice(0, 4).map(toTitleLabel).join(', ');
+}
+
+function marketplaceAgentCapabilities(type = '', protocol = null) {
+  const protocolCapabilities = Array.isArray(protocol?.capabilities)
+    ? protocol.capabilities.map(toTitleLabel).filter(Boolean)
+    : [];
+  if (protocolCapabilities.length) {
+    return protocolCapabilities.slice(0, 4);
+  }
   const text = String(type || '').toLowerCase();
   if (text.includes('design')) {
     return ['UI review', 'Brand kit', 'Responsive QA'];
@@ -7361,6 +7391,8 @@ function marketplaceAgentCapabilities(type = '') {
 
 function mapMarketplaceAgentQueue(agent = {}, index = 0) {
   const type = agent.type || `agent-${index}`;
+  const protocol = marketplaceAgentProtocolFor(type);
+  const actions = marketplaceAgentActionSummary(protocol);
   const openTasks = Number(agent.open_task_count) || 0;
   const totalTasks = Number(agent.task_count) || openTasks;
   const relatedTasks = (marketplaceData.value.bounties || [])
@@ -7370,14 +7402,16 @@ function mapMarketplaceAgentQueue(agent = {}, index = 0) {
   return {
     type,
     icon: marketplaceAgentIcon(type),
-    title: agent.title || toTitleLabel(type || 'AI Agent'),
+    title: agent.title || protocol?.title || toTitleLabel(type || 'AI Agent'),
     workerKind: toTitleLabel(agent.worker_kind || 'agent'),
     status: openTasks > 0 ? 'Accepting work' : 'Standing by',
-    body: `${toTitleLabel(type)} can review, test, generate, and validate scoped work from funded repository tasks.`,
+    body: actions
+      ? `${toTitleLabel(type)} supports ${actions} for funded repository tasks.`
+      : `${toTitleLabel(type)} can review, test, generate, and validate scoped work from funded repository tasks.`,
     openTasks: formatCompactNumber(openTasks),
     totalTasks: formatCompactNumber(totalTasks),
     budget: formatPublicMRGFromCents(agent.budget_cents),
-    capabilities: marketplaceAgentCapabilities(type),
+    capabilities: marketplaceAgentCapabilities(type, protocol),
     nextTasks: relatedTasks,
     tone: ['green', 'blue', 'yellow', 'red'][index % 4],
   };
@@ -8588,13 +8622,17 @@ async function loadMarketplaceData(options = {}) {
   if (!silent) marketplaceLoading.value = true;
   marketplaceError.value = '';
   try {
-    const payload = await publicApi('/api/public/marketplace');
+    const [payload, protocolPayload] = await Promise.all([
+      publicApi('/api/public/marketplace'),
+      publicApi('/api/public/protocol/agents?limit=80').catch(() => ({ agents: [] })),
+    ]);
     marketplaceData.value = {
       stats: payload.stats || {},
       projects: Array.isArray(payload.projects) ? payload.projects : [],
       bounties: Array.isArray(payload.bounties) ? payload.bounties : [],
       contributors: Array.isArray(payload.contributors) ? payload.contributors : [],
       agents: Array.isArray(payload.agents) ? payload.agents : [],
+      agentProtocols: Array.isArray(protocolPayload.agents) ? protocolPayload.agents : [],
     };
     if (!marketplaceCategories.value.includes(activeMarketplaceCategory.value)) {
       activeMarketplaceCategory.value = 'All';
