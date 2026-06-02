@@ -1,6 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { MergeOSClient, createMergeOSClient } from '../src/index.js';
+import {
+  MergeOSClient,
+  agentActionEventType,
+  agentActionEventTypes,
+  createMergeOSClient,
+  isAgentActionEventType,
+} from '../src/index.js';
 
 function fakeFetch(responses = []) {
   const calls = [];
@@ -58,6 +64,19 @@ test('creates public feed and ledger verification requests without auth', async 
   assert.equal(fetchImpl.calls[4].options.headers.Authorization, undefined);
   assert.equal(fetchImpl.calls[5].url, 'https://mergeos.shop/api/public/ledger/verify');
   assert.equal(fetchImpl.calls[5].options.headers.Authorization, undefined);
+});
+
+test('maps typed agent action event protocol values', () => {
+  assert.equal(agentActionEventTypes.test, 'agent.tested');
+  assert.equal(agentActionEventType('review'), 'agent.reviewed');
+  assert.equal(agentActionEventType('TEST'), 'agent.tested');
+  assert.equal(agentActionEventType('generate'), 'agent.generated');
+  assert.equal(agentActionEventType('deploy'), 'agent.deployed');
+  assert.equal(agentActionEventType('scan'), 'agent.scanned');
+  assert.equal(agentActionEventType('unknown'), 'agent.action');
+  assert.equal(isAgentActionEventType('agent.generated'), true);
+  assert.equal(isAgentActionEventType('agent.action'), true);
+  assert.equal(isAgentActionEventType('task.paid'), false);
 });
 
 test('exposes public repo import and password-gated test settings without auth', async () => {

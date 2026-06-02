@@ -12,7 +12,7 @@ npm test
 ## Usage
 
 ```js
-import { createMergeOSClient } from '@mergeos/sdk';
+import { agentActionEventType, createMergeOSClient } from '@mergeos/sdk';
 
 const mergeos = createMergeOSClient({
   baseURL: 'https://mergeos.shop',
@@ -28,6 +28,7 @@ const agentAction = await mergeos.createProjectAgentAction(projects[0].id, {
   action: 'test',
   agent_type: 'qa-agent',
 });
+const eventType = agentActionEventType(agentAction.log.action); // "agent.tested"
 const graph = await mergeos.projectTaskGraph(projects[0].id);
 const scan = await mergeos.projectRepositoryScan(projects[0].id);
 const scanProtocol = await mergeos.projectRepositoryScanProtocol(projects[0].id);

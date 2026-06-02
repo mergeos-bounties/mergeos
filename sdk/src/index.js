@@ -1,5 +1,13 @@
 const jsonHeaders = { 'Content-Type': 'application/json' };
 
+export const agentActionEventTypes = Object.freeze({
+  review: 'agent.reviewed',
+  test: 'agent.tested',
+  generate: 'agent.generated',
+  deploy: 'agent.deployed',
+  scan: 'agent.scanned',
+});
+
 export class MergeOSClient {
   constructor(options = {}) {
     this.baseURL = normalizeBaseURL(options.baseURL || '');
@@ -400,6 +408,16 @@ export class MergeOSClient {
 
 export function createMergeOSClient(options = {}) {
   return new MergeOSClient(options);
+}
+
+export function agentActionEventType(action = '') {
+  const normalized = String(action || '').trim().toLowerCase();
+  return agentActionEventTypes[normalized] || 'agent.action';
+}
+
+export function isAgentActionEventType(type = '') {
+  const normalized = String(type || '').trim().toLowerCase();
+  return normalized === 'agent.action' || Object.values(agentActionEventTypes).includes(normalized);
 }
 
 function normalizeBaseURL(value) {
