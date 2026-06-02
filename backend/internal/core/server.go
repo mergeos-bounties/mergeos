@@ -82,6 +82,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/projects/{id}/ai-workflow", s.projectAIWorkflow)
 	mux.HandleFunc("GET /api/projects/{id}/task-graph", s.projectTaskGraph)
 	mux.HandleFunc("GET /api/projects/{id}/repo-scan", s.projectRepositoryScan)
+	mux.HandleFunc("GET /api/projects/{id}/protocol/scan", s.projectRepositoryScanProtocol)
 	mux.HandleFunc("POST /api/projects/{id}/repo-sync", s.syncProjectRepoIssues)
 	mux.HandleFunc("POST /api/projects", s.createProject)
 	mux.HandleFunc("POST /api/projects/evaluate", s.evaluateProject)
@@ -443,6 +444,24 @@ func (s *Server) projectRepositoryScan(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, scan)
+}
+
+func (s *Server) projectRepositoryScanProtocol(w http.ResponseWriter, r *http.Request) {
+	user, ok := s.requireUser(w, r)
+	if !ok {
+		return
+	}
+	projectID := strings.TrimSpace(r.PathValue("id"))
+	if !s.store.CanAccessProject(user.ID, user.Role, projectID) {
+		writeError(w, http.StatusForbidden, "project access is required")
+		return
+	}
+	document, err := s.store.ProjectRepositoryScanProtocol(projectID)
+	if err != nil {
+		writeError(w, http.StatusNotFound, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, document)
 }
 
 func (s *Server) syncProjectRepoIssues(w http.ResponseWriter, r *http.Request) {

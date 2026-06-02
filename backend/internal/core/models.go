@@ -792,6 +792,23 @@ type ProjectRepositoryScanResponse struct {
 	UpdatedAt    time.Time                  `json:"updated_at"`
 }
 
+type RepositoryScanProtocolDocument struct {
+	ProtocolVersion string                     `json:"protocol_version"`
+	Kind            string                     `json:"kind"`
+	ID              string                     `json:"id"`
+	ProjectID       string                     `json:"project_id"`
+	ProjectTitle    string                     `json:"project_title,omitempty"`
+	Status          string                     `json:"status"`
+	Summary         string                     `json:"summary,omitempty"`
+	SourceRepo      string                     `json:"source_repository,omitempty"`
+	UpdatedAt       time.Time                  `json:"updated_at"`
+	Stats           RepositoryScanStats        `json:"stats"`
+	Languages       []RepositoryLanguage       `json:"languages,omitempty"`
+	Dependencies    []RepositoryDependencyFile `json:"dependencies,omitempty"`
+	Findings        []RepositoryScanFinding    `json:"findings"`
+	Metadata        map[string]any             `json:"metadata,omitempty"`
+}
+
 type RepositoryScanStats struct {
 	FileCount       int `json:"file_count"`
 	ScannedFiles    int `json:"scanned_files"`

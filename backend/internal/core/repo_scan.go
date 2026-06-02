@@ -31,6 +31,18 @@ func (s *Store) ProjectRepositoryScan(projectID string) (ProjectRepositoryScanRe
 	return s.projectRepositoryScanLocked(project), nil
 }
 
+func (s *Store) ProjectRepositoryScanProtocol(projectID string) (RepositoryScanProtocolDocument, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	project, ok := s.projects[strings.TrimSpace(projectID)]
+	if !ok {
+		return RepositoryScanProtocolDocument{}, errors.New("project not found")
+	}
+	scan := s.projectRepositoryScanLocked(project)
+	return repositoryScanProtocolDocument(project, scan), nil
+}
+
 func (s *Store) projectRepositoryScanLocked(project *Project) ProjectRepositoryScanResponse {
 	response := ProjectRepositoryScanResponse{
 		ProjectID:    project.ID,
@@ -137,6 +149,32 @@ func (s *Store) projectRepositoryScanLocked(project *Project) ProjectRepositoryS
 	response.Stats.FindingCount = len(findings)
 	response.Summary = fmt.Sprintf("Scanned %d text files across %d repository files.", response.Stats.ScannedFiles, response.Stats.FileCount)
 	return response
+}
+
+func repositoryScanProtocolDocument(project *Project, scan ProjectRepositoryScanResponse) RepositoryScanProtocolDocument {
+	findings := scan.Findings
+	if findings == nil {
+		findings = []RepositoryScanFinding{}
+	}
+	return RepositoryScanProtocolDocument{
+		ProtocolVersion: "mergeos.scan.v1",
+		Kind:            "repository_scan",
+		ID:              "scan:" + scan.ProjectID,
+		ProjectID:       scan.ProjectID,
+		ProjectTitle:    scan.ProjectTitle,
+		Status:          scan.Status,
+		Summary:         scan.Summary,
+		SourceRepo:      projectSourceRepoURL(project),
+		UpdatedAt:       scan.UpdatedAt,
+		Stats:           scan.Stats,
+		Languages:       scan.Languages,
+		Dependencies:    scan.Dependencies,
+		Findings:        findings,
+		Metadata: map[string]any{
+			"finding_count":    scan.Stats.FindingCount,
+			"dependency_files": scan.Stats.DependencyFiles,
+		},
+	}
 }
 
 func repositoryScanRootAllowed(root, bountyRoot string) bool {

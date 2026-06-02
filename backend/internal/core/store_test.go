@@ -1665,6 +1665,30 @@ func TestProjectRepositoryScanRouteReturnsStaticFindings(t *testing.T) {
 		}
 	}
 
+	protocolReq := httptest.NewRequest(http.MethodGet, "/api/projects/"+project.ID+"/protocol/scan", nil)
+	protocolReq.Header.Set("Authorization", "Bearer "+auth.Token)
+	protocolResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(protocolResp, protocolReq)
+	if protocolResp.Code != http.StatusOK {
+		t.Fatalf("repo scan protocol status = %d, body = %s", protocolResp.Code, protocolResp.Body.String())
+	}
+	protocolBody := protocolResp.Body.String()
+	for _, value := range []string{"scan-client@example.com", "+1 555 0155", auth.User.ID, defaultDevPaymentCode, tempDir, "super-secret-token"} {
+		if strings.Contains(protocolBody, value) {
+			t.Fatalf("repo scan protocol leaked private value %q: %s", value, protocolBody)
+		}
+	}
+	var protocolPayload RepositoryScanProtocolDocument
+	if err := json.Unmarshal(protocolResp.Body.Bytes(), &protocolPayload); err != nil {
+		t.Fatal(err)
+	}
+	if protocolPayload.ProtocolVersion != "mergeos.scan.v1" || protocolPayload.Kind != "repository_scan" || protocolPayload.ProjectID != project.ID || protocolPayload.Stats.FindingCount != payload.Stats.FindingCount {
+		t.Fatalf("unexpected repo scan protocol payload: %#v", protocolPayload)
+	}
+	if len(protocolPayload.Findings) != len(payload.Findings) {
+		t.Fatalf("repo scan protocol findings = %d, want %d", len(protocolPayload.Findings), len(payload.Findings))
+	}
+
 	otherAuth, err := store.Register(RegisterRequest{
 		Name:     "Other Scan Client",
 		Email:    "other-scan-client@example.com",
@@ -1679,6 +1703,13 @@ func TestProjectRepositoryScanRouteReturnsStaticFindings(t *testing.T) {
 	server.Routes().ServeHTTP(forbiddenResp, forbiddenReq)
 	if forbiddenResp.Code != http.StatusForbidden {
 		t.Fatalf("other client repo scan status = %d", forbiddenResp.Code)
+	}
+	forbiddenProtocolReq := httptest.NewRequest(http.MethodGet, "/api/projects/"+project.ID+"/protocol/scan", nil)
+	forbiddenProtocolReq.Header.Set("Authorization", "Bearer "+otherAuth.Token)
+	forbiddenProtocolResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(forbiddenProtocolResp, forbiddenProtocolReq)
+	if forbiddenProtocolResp.Code != http.StatusForbidden {
+		t.Fatalf("other client repo scan protocol status = %d", forbiddenProtocolResp.Code)
 	}
 }
 

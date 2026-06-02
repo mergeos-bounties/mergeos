@@ -204,6 +204,10 @@ export class MergeOSClient {
     return this.request(`/api/projects/${encodeURIComponent(projectID)}/repo-scan`);
   }
 
+  projectRepositoryScanProtocol(projectID) {
+    return this.request(`/api/projects/${encodeURIComponent(projectID)}/protocol/scan`);
+  }
+
   syncProjectRepoIssues(projectID) {
     return this.request(`/api/projects/${encodeURIComponent(projectID)}/repo-sync`, { method: 'POST' });
   }
