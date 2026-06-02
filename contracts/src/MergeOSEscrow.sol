@@ -29,6 +29,7 @@ contract MergeOSEscrow {
 
     struct TaskReserve {
         bytes32 projectId;
+        bytes32 reserveReference;
         address worker;
         uint256 amount;
         bool released;
@@ -52,9 +53,27 @@ contract MergeOSEscrow {
         uint256 platformFee,
         uint256 workPool
     );
-    event TaskReserved(bytes32 indexed projectId, bytes32 indexed taskId, address indexed worker, uint256 amount);
-    event TaskPaid(bytes32 indexed projectId, bytes32 indexed taskId, address indexed worker, uint256 amount);
-    event TaskRefunded(bytes32 indexed projectId, bytes32 indexed taskId, address indexed recipient, uint256 amount);
+    event TaskReserved(
+        bytes32 indexed projectId,
+        bytes32 indexed taskId,
+        address indexed worker,
+        uint256 amount,
+        bytes32 reference
+    );
+    event TaskPaid(
+        bytes32 indexed projectId,
+        bytes32 indexed taskId,
+        address indexed worker,
+        uint256 amount,
+        bytes32 reference
+    );
+    event TaskRefunded(
+        bytes32 indexed projectId,
+        bytes32 indexed taskId,
+        address indexed recipient,
+        uint256 amount,
+        bytes32 reference
+    );
     event ProjectClosed(bytes32 indexed projectId);
     event ProjectRefunded(bytes32 indexed projectId, address indexed recipient, uint256 amount);
     event TreasuryUpdated(address indexed treasury);
@@ -67,6 +86,7 @@ contract MergeOSEscrow {
     error ZeroAddress();
     error InvalidAmount();
     error InvalidProject();
+    error InvalidReference();
     error InvalidTask();
     error ProjectExists();
     error ProjectNotFunded();
@@ -157,11 +177,13 @@ contract MergeOSEscrow {
         bytes32 projectId,
         bytes32 taskId,
         address worker,
-        uint256 amount
+        uint256 amount,
+        bytes32 reference
     ) external onlyOperator {
         ProjectEscrow storage project = projects[projectId];
         if (project.status != ProjectStatus.Funded) revert ProjectNotFunded();
         if (taskId == bytes32(0)) revert InvalidTask();
+        if (reference == bytes32(0)) revert InvalidReference();
         if (worker == address(0)) revert ZeroAddress();
         if (amount == 0) revert InvalidAmount();
         if (taskReserves[taskId].amount != 0) revert TaskExists();
@@ -170,18 +192,20 @@ contract MergeOSEscrow {
         project.availableWorkPool -= amount;
         taskReserves[taskId] = TaskReserve({
             projectId: projectId,
+            reserveReference: reference,
             worker: worker,
             amount: amount,
             released: false,
             refunded: false
         });
 
-        emit TaskReserved(projectId, taskId, worker, amount);
+        emit TaskReserved(projectId, taskId, worker, amount, reference);
     }
 
-    function releaseTask(bytes32 taskId) external onlyOperator nonReentrant {
+    function releaseTask(bytes32 taskId, bytes32 reference) external onlyOperator nonReentrant {
         TaskReserve storage reserve = taskReserves[taskId];
         if (reserve.amount == 0) revert TaskNotReserved();
+        if (reference == bytes32(0)) revert InvalidReference();
         if (reserve.released || reserve.refunded) revert TaskAlreadyFinalized();
 
         ProjectEscrow storage project = projects[reserve.projectId];
@@ -189,12 +213,13 @@ contract MergeOSEscrow {
         project.released += reserve.amount;
         _safeTransfer(reserve.worker, reserve.amount);
 
-        emit TaskPaid(reserve.projectId, taskId, reserve.worker, reserve.amount);
+        emit TaskPaid(reserve.projectId, taskId, reserve.worker, reserve.amount, reference);
     }
 
-    function refundTask(bytes32 taskId, address recipient) external onlyOperator nonReentrant {
+    function refundTask(bytes32 taskId, address recipient, bytes32 reference) external onlyOperator nonReentrant {
         TaskReserve storage reserve = taskReserves[taskId];
         if (reserve.amount == 0) revert TaskNotReserved();
+        if (reference == bytes32(0)) revert InvalidReference();
         if (reserve.released || reserve.refunded) revert TaskAlreadyFinalized();
         if (recipient == address(0)) revert ZeroAddress();
 
@@ -203,7 +228,7 @@ contract MergeOSEscrow {
         project.refunded += reserve.amount;
         _safeTransfer(recipient, reserve.amount);
 
-        emit TaskRefunded(reserve.projectId, taskId, recipient, reserve.amount);
+        emit TaskRefunded(reserve.projectId, taskId, recipient, reserve.amount, reference);
     }
 
     function refundProjectRemainder(bytes32 projectId, address recipient) external onlyOperator nonReentrant {

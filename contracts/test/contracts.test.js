@@ -94,11 +94,12 @@ describe("MergeOSEscrow", () => {
     assert.match(source, /contract MergeOSEscrow/);
     assert.match(source, /enum ProjectStatus/);
     assert.match(source, /struct ProjectEscrow/);
+    assert.match(source, /struct TaskReserve[\s\S]*bytes32 reserveReference/);
     assert.match(source, /function fundProject\(/);
     assert.match(source, /_safeTransferFrom\(client, address\(this\), amount\)/);
     assert.match(source, /function reserveTask\(/);
-    assert.match(source, /function releaseTask\(bytes32 taskId\) external onlyOperator nonReentrant/);
-    assert.match(source, /function refundTask\(bytes32 taskId, address recipient\) external onlyOperator nonReentrant/);
+    assert.match(source, /function releaseTask\(bytes32 taskId, bytes32 reference\) external onlyOperator nonReentrant/);
+    assert.match(source, /function refundTask\(bytes32 taskId, address recipient, bytes32 reference\) external onlyOperator nonReentrant/);
     assert.match(source, /function refundProjectRemainder\(/);
   });
 
@@ -107,8 +108,10 @@ describe("MergeOSEscrow", () => {
     assert.match(source, /function _safeTransfer\(address recipient, uint256 amount\) private/);
     assert.match(source, /function _safeTransferFrom\(address from, address recipient, uint256 amount\) private/);
     assert.match(source, /event ProjectFunded\(/);
-    assert.match(source, /event TaskReserved\(/);
-    assert.match(source, /event TaskPaid\(/);
+    assert.match(source, /event TaskReserved\([\s\S]*bytes32 reference[\s\S]*\)/);
+    assert.match(source, /event TaskPaid\([\s\S]*bytes32 reference[\s\S]*\)/);
+    assert.match(source, /event TaskRefunded\([\s\S]*bytes32 reference[\s\S]*\)/);
+    assert.match(source, /if \(reference == bytes32\(0\)\) revert InvalidReference\(\)/);
     assert.match(source, /event ProjectRefunded\(/);
   });
 });
