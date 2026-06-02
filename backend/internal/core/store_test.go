@@ -1752,13 +1752,20 @@ func TestProjectAIWorkflowRouteReturnsWorkflowAndSanitizesData(t *testing.T) {
 		t.Fatalf("unexpected ai workflow task mix: %#v", payload)
 	}
 	seenStages := map[string]bool{}
+	prReviewStatus := ""
 	for _, stage := range payload.Stages {
 		seenStages[stage.ID] = true
+		if stage.ID == "pr_review" {
+			prReviewStatus = stage.Status
+		}
 	}
 	for _, required := range []string{"repo_import", "issue_scan", "reward_estimation", "contributor_routing", "pr_review", "deployment_validation"} {
 		if !seenStages[required] {
 			t.Fatalf("ai workflow missing stage %s: %#v", required, payload.Stages)
 		}
+	}
+	if prReviewStatus != deploymentStageInProgress {
+		t.Fatalf("PR opened should leave review stage in progress, got %q", prReviewStatus)
 	}
 	if len(payload.Signals) == 0 {
 		t.Fatalf("ai workflow missing signals: %#v", payload.Signals)

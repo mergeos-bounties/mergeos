@@ -186,10 +186,30 @@ func aiWorkflowPRReviewStage(project *Project, logs []GeminiWebhookLog) AIWorkfl
 	status := deploymentStagePending
 	body := "AI review and agent execution are waiting for matching workflow activity."
 	updatedAt := project.CreatedAt
-	if len(logs) > 0 {
+	reviewEvents := 0
+	openedPulls := 0
+	for _, log := range logs {
+		if publicLiveFeedIsPullRequestOpened(&log) {
+			openedPulls++
+			if log.ReceivedAt.After(updatedAt) {
+				updatedAt = log.ReceivedAt
+			}
+			continue
+		}
+		if strings.EqualFold(log.EventName, "repo_issues_synced") {
+			continue
+		}
+		reviewEvents++
+		if log.ReceivedAt.After(updatedAt) {
+			updatedAt = log.ReceivedAt
+		}
+	}
+	if reviewEvents > 0 {
 		status = deploymentStageComplete
-		body = fmt.Sprintf("%d AI workflow events are linked to this project.", len(logs))
-		updatedAt = logs[0].ReceivedAt
+		body = fmt.Sprintf("%d AI review or agent events are linked to this project.", reviewEvents)
+	} else if openedPulls > 0 {
+		status = deploymentStageInProgress
+		body = fmt.Sprintf("%d opened PRs are waiting for AI review or agent execution.", openedPulls)
 	}
 	return AIWorkflowStage{
 		ID:        "pr_review",
