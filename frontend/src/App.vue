@@ -2907,7 +2907,7 @@
                 Realtime
               </span>
             </div>
-            <p>Public MergeOS activity from funded projects, open bounty tasks, PR payouts, AI review webhooks, and ledger-backed payment events.</p>
+            <p>Public MergeOS activity from funded projects, open bounty tasks, PR payouts, AI agent actions, repo sync, and ledger-backed payment events.</p>
 
             <div class="ledger-trust-row" aria-label="Live feed trust signals">
               <article>
@@ -2925,7 +2925,7 @@
                 </span>
                 <div>
                   <strong>AI actions</strong>
-                  <small>Review webhook status</small>
+                  <small>Review, test, and repo sync</small>
                 </div>
               </article>
               <article>
