@@ -5693,7 +5693,8 @@ function openWalletOnScan(address = '') {
 async function copyDashboardProjectLink() {
   const project = dashboardSelectedProject.value;
   const projectID = String(project?.id || selectedDashboardProjectID.value || '').trim();
-  const sharePath = projectID ? `/ledger?project=${encodeURIComponent(projectID)}` : '/ledger';
+  const projectKey = String(project?.title || projectID).trim();
+  const sharePath = projectKey ? `/ledger?project=${encodeURIComponent(projectKey)}` : '/ledger';
   const shareURL = hasWindow ? `${window.location.origin}${sharePath}` : sharePath;
   if (hasWindow && navigator.clipboard?.writeText) {
     try {
@@ -5793,6 +5794,19 @@ async function copyClaimCommand(command = '') {
 function resetLedgerFilters() {
   activeLedgerTab.value = 'All Activity';
   activeLedgerProjectFilter.value = 'All Projects';
+}
+
+function applyLedgerProjectQueryFilter() {
+  if (!hasWindow) return;
+  const requestedProject = new URLSearchParams(window.location.search).get('project');
+  const normalized = String(requestedProject || '').trim().toLowerCase();
+  if (!normalized) return;
+  const match = ledgerEvents.value.find((event) =>
+    event.project.toLowerCase() === normalized || event.projectID.toLowerCase() === normalized,
+  );
+  if (match) {
+    activeLedgerProjectFilter.value = match.project;
+  }
 }
 
 function resetMarketplaceFilters() {
@@ -7499,6 +7513,7 @@ function mapLedgerEntry(entry) {
     time: when.time,
     createdAt: entry.created_at,
     rawType: String(entry.type || ''),
+    projectID,
     type: meta.type,
     icon: meta.icon,
     tone: meta.tone,
@@ -7837,6 +7852,7 @@ async function loadLedgerData(options = {}) {
     ]);
     ledgerRawEntries.value = Array.isArray(entries) ? entries : [];
     ledgerProjects.value = Array.isArray(marketplace.projects) ? marketplace.projects : [];
+    applyLedgerProjectQueryFilter();
   } catch (error) {
     ledgerError.value = error.message;
   } finally {
