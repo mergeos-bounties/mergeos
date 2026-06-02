@@ -871,6 +871,117 @@ func TestPublicLiveFeedRouteReturnsSanitizedTimeline(t *testing.T) {
 	}
 }
 
+func TestWorkerDashboardRouteMatchesGitHubWorkerAndSanitizesData(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:       defaultTokenSymbol,
+		StatePath:         filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:    1000,
+		DevPaymentEnabled: true,
+		DevPaymentCode:    defaultDevPaymentCode,
+		GitHubOwner:       defaultGitHubOwner,
+		BountyRoot:        filepath.Join(tempDir, "bounties"),
+		SMTPFrom:          "noreply@mergeos.local",
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	workerAuth, err := store.AuthenticateGitHub(GitHubAuthProfile{
+		ID:        "1001",
+		Username:  "worker-dev",
+		Name:      "Worker Dev",
+		Email:     "worker@example.com",
+		AvatarURL: "https://avatars.githubusercontent.com/u/1001",
+	}, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	clientAuth, err := store.Register(RegisterRequest{
+		Name:        "Worker Client",
+		CompanyName: "Worker Client Co",
+		Email:       "worker-client@example.com",
+		Password:    "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	project, err := store.CreateProject(context.Background(), clientAuth.User.ID, CreateProjectRequest{
+		Title:            "Worker dashboard proof",
+		ClientName:       "Private Worker Client",
+		CompanyName:      "Worker Client Co",
+		ClientEmail:      "worker-client@example.com",
+		Phone:            "+1 555 0188",
+		Brief:            "Create worker dashboard records without exposing private customer data.",
+		BudgetCents:      200000,
+		PaymentMethod:    PaymentPayPal,
+		PaymentReference: defaultDevPaymentCode,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var humanTask *Task
+	for _, task := range project.Tasks {
+		if task.RequiredWorkerKind == WorkerHuman {
+			humanTask = task
+			break
+		}
+	}
+	if humanTask == nil {
+		t.Fatal("project did not create a human task")
+	}
+	if _, err := store.AcceptTask(humanTask.ID, AcceptTaskRequest{
+		WorkerKind: WorkerHuman,
+		WorkerID:   "github:worker-dev",
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	server := NewServer(cfg, store, payments)
+	reqHTTP := httptest.NewRequest(http.MethodGet, "/api/workers/me", nil)
+	reqHTTP.Header.Set("Authorization", "Bearer "+workerAuth.Token)
+	resp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(resp, reqHTTP)
+	if resp.Code != http.StatusOK {
+		t.Fatalf("worker dashboard status = %d, body = %s", resp.Code, resp.Body.String())
+	}
+
+	body := resp.Body.String()
+	for _, value := range []string{
+		"worker-client@example.com",
+		"+1 555 0188",
+		clientAuth.User.ID,
+		defaultDevPaymentCode,
+		tempDir,
+		humanTask.ID,
+	} {
+		if strings.Contains(body, value) {
+			t.Fatalf("worker dashboard leaked private value %q: %s", value, body)
+		}
+	}
+
+	var payload WorkerDashboardResponse
+	if err := json.Unmarshal(resp.Body.Bytes(), &payload); err != nil {
+		t.Fatal(err)
+	}
+	if payload.Profile.GitHubUsername != "worker-dev" || payload.Profile.WalletAddress == "" {
+		t.Fatalf("worker profile missing linked identity: %#v", payload.Profile)
+	}
+	if payload.Stats.ClaimedTaskCount != 1 || payload.Stats.RewardCents == 0 || payload.Stats.ReputationScore <= 0 {
+		t.Fatalf("unexpected worker stats: %#v", payload.Stats)
+	}
+	if len(payload.ClaimedTasks) != 1 || payload.ClaimedTasks[0].ProjectTitle != "Worker dashboard proof" {
+		t.Fatalf("claimed tasks missing accepted task: %#v", payload.ClaimedTasks)
+	}
+	if len(payload.Rewards) == 0 {
+		t.Fatalf("worker rewards missing payout ledger row: %#v", payload.Rewards)
+	}
+	if len(payload.Proposals) == 0 {
+		t.Fatalf("worker dashboard missing proposal opportunities: %#v", payload.Proposals)
+	}
+}
+
 func TestAdminAutoPromoteAndRoutes(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := Config{

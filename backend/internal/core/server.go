@@ -77,6 +77,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("POST /api/projects/evaluate-llm", s.evaluateProjectWithLLM)
 	mux.HandleFunc("GET /api/tasks", s.tasks)
 	mux.HandleFunc("POST /api/tasks/", s.acceptTask)
+	mux.HandleFunc("GET /api/workers/me", s.workerDashboard)
 	mux.HandleFunc("GET /api/notifications", s.notifications)
 	mux.HandleFunc("POST /api/notifications/read", s.markNotificationRead)
 	mux.HandleFunc("POST /api/notifications/read-all", s.markAllNotificationsRead)
@@ -712,6 +713,14 @@ func (s *Server) acceptTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, task)
+}
+
+func (s *Server) workerDashboard(w http.ResponseWriter, r *http.Request) {
+	user, ok := s.requireUser(w, r)
+	if !ok {
+		return
+	}
+	writeJSON(w, http.StatusOK, s.store.WorkerDashboard(user.ID))
 }
 
 func (s *Server) requireUser(w http.ResponseWriter, r *http.Request) (*User, bool) {

@@ -574,6 +574,84 @@ type PublicLiveFeedItem struct {
 	CreatedAt    time.Time `json:"created_at"`
 }
 
+type WorkerDashboardResponse struct {
+	Profile        WorkerProfile        `json:"profile"`
+	Stats          WorkerStats          `json:"stats"`
+	ClaimedTasks   []WorkerClaimedTask  `json:"claimed_tasks"`
+	Rewards        []WorkerRewardEntry  `json:"rewards"`
+	Reputation     []WorkerReputation   `json:"reputation"`
+	Proposals      []WorkerProposal     `json:"proposals"`
+	IdentityStatus []WorkerIdentityHint `json:"identity_status"`
+}
+
+type WorkerProfile struct {
+	UserID          string `json:"user_id"`
+	Name            string `json:"name"`
+	Email           string `json:"email"`
+	WalletAddress   string `json:"wallet_address,omitempty"`
+	GitHubUsername  string `json:"github_username,omitempty"`
+	GitHubAvatarURL string `json:"github_avatar_url,omitempty"`
+}
+
+type WorkerStats struct {
+	ClaimedTaskCount  int        `json:"claimed_task_count"`
+	OpenProposalCount int        `json:"open_proposal_count"`
+	RewardCents       int64      `json:"reward_cents"`
+	ReputationScore   int        `json:"reputation_score"`
+	LastPaidAt        *time.Time `json:"last_paid_at,omitempty"`
+}
+
+type WorkerClaimedTask struct {
+	ID           string     `json:"id"`
+	ProjectID    string     `json:"project_id"`
+	ProjectTitle string     `json:"project_title"`
+	IssueNumber  int        `json:"issue_number"`
+	Title        string     `json:"title"`
+	Acceptance   string     `json:"acceptance"`
+	RewardCents  int64      `json:"reward_cents"`
+	WorkerKind   WorkerKind `json:"worker_kind"`
+	AgentType    string     `json:"agent_type,omitempty"`
+	ProofHash    string     `json:"proof_hash,omitempty"`
+	IssueURL     string     `json:"issue_url,omitempty"`
+	AcceptedAt   *time.Time `json:"accepted_at,omitempty"`
+}
+
+type WorkerRewardEntry struct {
+	Sequence    int       `json:"sequence"`
+	Type        string    `json:"type"`
+	AmountCents int64     `json:"amount_cents"`
+	Reference   string    `json:"reference"`
+	EntryHash   string    `json:"entry_hash"`
+	CreatedAt   time.Time `json:"created_at"`
+}
+
+type WorkerReputation struct {
+	Label string `json:"label"`
+	Value string `json:"value"`
+	Tone  string `json:"tone"`
+}
+
+type WorkerProposal struct {
+	ID                 string     `json:"id"`
+	ProjectID          string     `json:"project_id"`
+	ProjectTitle       string     `json:"project_title"`
+	IssueNumber        int        `json:"issue_number"`
+	Title              string     `json:"title"`
+	Acceptance         string     `json:"acceptance"`
+	RewardCents        int64      `json:"reward_cents"`
+	RequiredWorkerKind WorkerKind `json:"required_worker_kind"`
+	SuggestedAgentType string     `json:"suggested_agent_type,omitempty"`
+	MatchScore         int        `json:"match_score"`
+	IssueURL           string     `json:"issue_url,omitempty"`
+	CreatedAt          time.Time  `json:"created_at"`
+}
+
+type WorkerIdentityHint struct {
+	Label string `json:"label"`
+	Value string `json:"value"`
+	Ready bool   `json:"ready"`
+}
+
 type AdminSummary struct {
 	UserCount         int                `json:"user_count"`
 	AdminCount        int                `json:"admin_count"`

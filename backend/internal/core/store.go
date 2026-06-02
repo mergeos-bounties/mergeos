@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -1073,6 +1074,81 @@ func (s *Store) Marketplace() MarketplaceResponse {
 		return response.Agents[i].OpenTaskCount > response.Agents[j].OpenTaskCount
 	})
 
+	return response
+}
+
+func (s *Store) WorkerDashboard(userID string) WorkerDashboardResponse {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	user := s.users[strings.TrimSpace(userID)]
+	if user == nil {
+		return WorkerDashboardResponse{}
+	}
+
+	workerIDs, rewardAccounts := workerIdentitySets(user)
+	response := WorkerDashboardResponse{
+		Profile: WorkerProfile{
+			UserID:          user.ID,
+			Name:            user.Name,
+			Email:           user.Email,
+			WalletAddress:   normalizeWalletAddress(user.WalletAddress),
+			GitHubUsername:  normalizeGitHubUsername(user.GitHubUsername),
+			GitHubAvatarURL: user.GitHubAvatarURL,
+		},
+		ClaimedTasks:   []WorkerClaimedTask{},
+		Rewards:        []WorkerRewardEntry{},
+		Reputation:     []WorkerReputation{},
+		Proposals:      []WorkerProposal{},
+		IdentityStatus: workerIdentityHints(user),
+	}
+
+	for _, task := range s.tasks {
+		if task.Status != TaskAccepted || !workerIDs[strings.ToLower(normalizeWorkerID(task.WorkerID))] {
+			continue
+		}
+		project := s.projects[task.ProjectID]
+		response.ClaimedTasks = append(response.ClaimedTasks, workerClaimedTaskRow(project, task))
+		response.Stats.ClaimedTaskCount++
+		response.Stats.RewardCents += task.RewardCents
+		if task.AcceptedAt != nil && (response.Stats.LastPaidAt == nil || task.AcceptedAt.After(*response.Stats.LastPaidAt)) {
+			lastPaidAt := *task.AcceptedAt
+			response.Stats.LastPaidAt = &lastPaidAt
+		}
+	}
+	sort.Slice(response.ClaimedTasks, func(i, j int) bool {
+		left := response.ClaimedTasks[i].AcceptedAt
+		right := response.ClaimedTasks[j].AcceptedAt
+		if left == nil || right == nil {
+			return response.ClaimedTasks[i].IssueNumber > response.ClaimedTasks[j].IssueNumber
+		}
+		return left.After(*right)
+	})
+
+	for _, entry := range s.ledger {
+		if entry.Type != "task_payment" && entry.Type != "manual_credit" {
+			continue
+		}
+		if !rewardAccounts[strings.ToLower(strings.TrimSpace(entry.ToAccount))] {
+			continue
+		}
+		response.Rewards = append(response.Rewards, WorkerRewardEntry{
+			Sequence:    entry.Sequence,
+			Type:        entry.Type,
+			AmountCents: entry.AmountCents,
+			Reference:   publicWorkerRewardReference(entry.Reference),
+			EntryHash:   entry.EntryHash,
+			CreatedAt:   entry.CreatedAt,
+		})
+	}
+	sort.Slice(response.Rewards, func(i, j int) bool {
+		return response.Rewards[i].CreatedAt.After(response.Rewards[j].CreatedAt)
+	})
+
+	response.Proposals = workerProposalRows(s.projects, s.tasks, user)
+	response.Stats.OpenProposalCount = len(response.Proposals)
+	response.Stats.ReputationScore = workerReputationScore(response.Stats.ClaimedTaskCount, response.Stats.RewardCents, len(response.Rewards), response.Profile.GitHubUsername != "", response.Profile.WalletAddress != "")
+	response.Reputation = workerReputationRows(response)
 	return response
 }
 
@@ -2185,6 +2261,166 @@ func marketplaceProjectTitle(project *Project) string {
 		return title
 	}
 	return "MergeOS project"
+}
+
+func workerIdentitySets(user *User) (map[string]bool, map[string]bool) {
+	workerIDs := map[string]bool{}
+	rewardAccounts := map[string]bool{}
+	addWorker := func(value string) {
+		value = strings.ToLower(strings.TrimSpace(normalizeWorkerID(value)))
+		if value != "" {
+			workerIDs[value] = true
+		}
+	}
+	addReward := func(value string) {
+		value = strings.ToLower(strings.TrimSpace(value))
+		if value != "" {
+			rewardAccounts[value] = true
+		}
+	}
+
+	if wallet := normalizeWalletAddress(user.WalletAddress); wallet != "" {
+		addWorker(wallet)
+		addWorker(walletAccount(wallet))
+		addReward(walletAccount(wallet))
+	}
+	if github := normalizeGitHubUsername(user.GitHubUsername); github != "" {
+		addWorker("github:" + github)
+		addReward(githubWorkerAccount(github))
+	}
+	return workerIDs, rewardAccounts
+}
+
+func workerIdentityHints(user *User) []WorkerIdentityHint {
+	wallet := normalizeWalletAddress(user.WalletAddress)
+	github := normalizeGitHubUsername(user.GitHubUsername)
+	githubValue := ""
+	if github != "" {
+		githubValue = githubWorkerAccount(github)
+	}
+	return []WorkerIdentityHint{
+		{Label: "MRG wallet", Value: wallet, Ready: wallet != ""},
+		{Label: "GitHub", Value: githubValue, Ready: github != ""},
+	}
+}
+
+func workerClaimedTaskRow(project *Project, task *Task) WorkerClaimedTask {
+	return WorkerClaimedTask{
+		ID:           marketplaceBountyID(task.ProjectID, task.IssueNumber),
+		ProjectID:    task.ProjectID,
+		ProjectTitle: marketplaceProjectTitle(project),
+		IssueNumber:  task.IssueNumber,
+		Title:        task.Title,
+		Acceptance:   compactText(task.Acceptance),
+		RewardCents:  task.RewardCents,
+		WorkerKind:   task.WorkerKind,
+		AgentType:    task.AgentType,
+		ProofHash:    task.ProofHash,
+		IssueURL:     marketplacePublicRepoURL(task.IssueURL),
+		AcceptedAt:   task.AcceptedAt,
+	}
+}
+
+func publicWorkerRewardReference(reference string) string {
+	if pullReference := publicPullLedgerReference(reference); pullReference != "" {
+		return pullReference
+	}
+	taskID := ledgerReferenceTaskID(reference)
+	if taskID != "" {
+		return "task"
+	}
+	return sanitizeLedgerReferenceValue(reference)
+}
+
+func workerProposalRows(projects map[string]*Project, tasks map[string]*Task, user *User) []WorkerProposal {
+	rows := []WorkerProposal{}
+	for _, task := range tasks {
+		if task.Status == TaskAccepted {
+			continue
+		}
+		project := projects[task.ProjectID]
+		rows = append(rows, WorkerProposal{
+			ID:                 marketplaceBountyID(task.ProjectID, task.IssueNumber),
+			ProjectID:          task.ProjectID,
+			ProjectTitle:       marketplaceProjectTitle(project),
+			IssueNumber:        task.IssueNumber,
+			Title:              task.Title,
+			Acceptance:         compactText(task.Acceptance),
+			RewardCents:        task.RewardCents,
+			RequiredWorkerKind: task.RequiredWorkerKind,
+			SuggestedAgentType: task.SuggestedAgentType,
+			MatchScore:         workerProposalMatchScore(task, user),
+			IssueURL:           marketplacePublicRepoURL(task.IssueURL),
+			CreatedAt:          task.CreatedAt,
+		})
+	}
+	sort.Slice(rows, func(i, j int) bool {
+		if rows[i].MatchScore == rows[j].MatchScore {
+			if rows[i].RewardCents == rows[j].RewardCents {
+				return rows[i].CreatedAt.After(rows[j].CreatedAt)
+			}
+			return rows[i].RewardCents > rows[j].RewardCents
+		}
+		return rows[i].MatchScore > rows[j].MatchScore
+	})
+	if len(rows) > 8 {
+		return rows[:8]
+	}
+	return rows
+}
+
+func workerProposalMatchScore(task *Task, user *User) int {
+	score := 54
+	if normalizeGitHubUsername(user.GitHubUsername) != "" {
+		score += 18
+	}
+	if normalizeWalletAddress(user.WalletAddress) != "" {
+		score += 12
+	}
+	if task.RequiredWorkerKind == WorkerHuman {
+		score += 8
+	}
+	if strings.TrimSpace(task.SuggestedAgentType) != "" {
+		score += 6
+	}
+	if score > 98 {
+		return 98
+	}
+	return score
+}
+
+func workerReputationScore(claimedTasks int, rewardCents int64, rewardRows int, hasGitHub, hasWallet bool) int {
+	score := 45
+	if hasGitHub {
+		score += 15
+	}
+	if hasWallet {
+		score += 15
+	}
+	score += claimedTasks * 8
+	score += rewardRows * 2
+	score += int(rewardCents / 50000)
+	if score > 100 {
+		return 100
+	}
+	return score
+}
+
+func workerReputationRows(response WorkerDashboardResponse) []WorkerReputation {
+	identity := "Incomplete"
+	if response.Profile.GitHubUsername != "" && response.Profile.WalletAddress != "" {
+		identity = "Verified"
+	}
+	lastPaid := "No payouts yet"
+	if response.Stats.LastPaidAt != nil {
+		lastPaid = response.Stats.LastPaidAt.Format("2006-01-02")
+	}
+	return []WorkerReputation{
+		{Label: "Identity", Value: identity, Tone: "green"},
+		{Label: "Completed tasks", Value: strconv.Itoa(response.Stats.ClaimedTaskCount), Tone: "blue"},
+		{Label: "Rewards", Value: formatTokenAmount(response.Stats.RewardCents), Tone: "green"},
+		{Label: "Last payout", Value: lastPaid, Tone: "amber"},
+	}
 }
 
 func marketplaceWorkerName(workerID, agentType string) string {

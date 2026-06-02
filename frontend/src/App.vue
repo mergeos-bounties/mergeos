@@ -1073,7 +1073,7 @@
 
       <section class="dash-command-strip" aria-label="Dashboard command summary">
         <div class="dash-command-copy">
-          <span class="marketplace-eyebrow">{{ dashboardSection === 'payments' ? 'PAYMENTS' : 'PROJECT OPS' }}</span>
+          <span class="marketplace-eyebrow">{{ dashboardSectionEyebrow }}</span>
           <h1>{{ dashboardCommandTitle }}</h1>
           <p>{{ dashboardCommandBody }}</p>
         </div>
@@ -1192,6 +1192,172 @@
                   <CreditCard :size="14" />
                   {{ dashboardPaymentRows.length }} payment events loaded
                 </div>
+              </section>
+            </template>
+          </template>
+
+          <template v-else-if="dashboardSection === 'worker'">
+            <div class="dash-breadcrumb">
+              <Home :size="14" />
+              <span>Worker</span>
+              <ChevronDown :size="13" />
+              <strong>{{ workerDashboardView.title }}</strong>
+            </div>
+
+            <section v-if="workerDashboardError" class="dash-empty-state">
+              <strong>Could not load worker dashboard</strong>
+              <p>{{ workerDashboardError }}</p>
+              <button class="secondary-button compact" type="button" @click="loadWorkerDashboardData">Retry</button>
+            </section>
+
+            <template v-else>
+              <section class="dash-project-header worker-dashboard-header">
+                <div class="dash-project-title">
+                  <span class="project-photo">{{ workerDashboardView.initials }}</span>
+                  <div>
+                    <h1>{{ workerDashboardView.title }}</h1>
+                    <p>{{ workerDashboardView.body }}</p>
+                  </div>
+                  <span class="live-badge">{{ workerDashboardView.status }}</span>
+                </div>
+
+                <div class="dash-project-actions">
+                  <button type="button" @click="loadWorkerDashboardData">
+                    <RefreshCw :size="15" />
+                    Refresh
+                  </button>
+                  <button type="button" @click="openPublicPage('marketplace')">
+                    <UsersRound :size="15" />
+                    Marketplace
+                  </button>
+                </div>
+              </section>
+
+              <section class="dash-metrics" aria-label="Worker summary">
+                <article v-for="metric in workerDashboardMetrics" :key="metric.label">
+                  <span>{{ metric.label }}</span>
+                  <strong>{{ metric.value }}</strong>
+                  <small>{{ metric.caption }}</small>
+                </article>
+              </section>
+
+              <section class="worker-dashboard-grid">
+                <article class="dash-card worker-reputation-card">
+                  <div class="card-title-row">
+                    <h2>Reputation</h2>
+                    <span>{{ workerReputationScore }} / 100</span>
+                  </div>
+                  <div class="worker-score-ring" :style="workerScoreRingStyle">
+                    <strong>{{ workerReputationScore }}</strong>
+                    <span>Score</span>
+                  </div>
+                  <div class="risk-grid">
+                    <span v-for="item in workerReputationRows" :key="item.label" :class="item.tone">
+                      {{ item.label }}
+                      <strong>{{ item.value }}</strong>
+                    </span>
+                  </div>
+                </article>
+
+                <article class="dash-card worker-identity-card">
+                  <div class="card-title-row">
+                    <h2>Identity</h2>
+                    <span>{{ workerIdentityReadyCount }} ready</span>
+                  </div>
+                  <div class="worker-identity-list">
+                    <article v-for="item in workerIdentityRows" :key="item.label">
+                      <span :class="['notification-dot', item.ready ? 'green' : 'amber']" />
+                      <div>
+                        <strong>{{ item.label }}</strong>
+                        <small>{{ item.value || 'Not linked' }}</small>
+                      </div>
+                      <b>{{ item.ready ? 'Ready' : 'Needed' }}</b>
+                    </article>
+                  </div>
+                  <button class="rail-link-button" :disabled="authBusy || !githubOAuthReady" type="button" @click="startGitHubLogin">
+                    Link GitHub
+                  </button>
+                </article>
+              </section>
+
+              <section class="dash-card live-pr-board">
+                <div class="card-title-row">
+                  <div>
+                    <h2>Claimed Tasks</h2>
+                    <p>Accepted work matched to your wallet or GitHub identity.</p>
+                  </div>
+                  <button type="button" @click="loadWorkerDashboardData">Refresh</button>
+                </div>
+                <div v-if="workerClaimedTaskRows.length" class="dash-pr-list">
+                  <article v-for="task in workerClaimedTaskRows" :key="task.id" class="dash-pr-row">
+                    <span class="contributor-avatar">{{ task.initials }}</span>
+                    <div class="dash-pr-main">
+                      <strong>#{{ task.issueNumber }} {{ task.title }}</strong>
+                      <small>{{ task.acceptance }}</small>
+                      <span>{{ task.project }}</span>
+                    </div>
+                    <div class="dash-pr-stat">
+                      <strong>{{ task.reward }}</strong>
+                      <small>Reward</small>
+                    </div>
+                    <div class="dash-pr-stat positive">
+                      <strong>{{ task.kind }}</strong>
+                      <small>Worker</small>
+                    </div>
+                    <div class="dash-pr-stat negative">
+                      <strong>{{ task.when }}</strong>
+                      <small>Accepted</small>
+                    </div>
+                    <b class="accepted">Paid</b>
+                  </article>
+                </div>
+                <article v-else class="dash-empty-state compact">
+                  <strong>{{ workerDashboardLoading ? 'Loading claimed tasks...' : 'No claimed tasks yet' }}</strong>
+                  <p>{{ workerDashboardLoading ? 'Matching tasks to your GitHub and wallet identities.' : 'Accepted tasks paid to your identity will appear here.' }}</p>
+                </article>
+              </section>
+
+              <section class="worker-dashboard-grid">
+                <article class="dash-card">
+                  <div class="card-title-row">
+                    <h2>Rewards</h2>
+                    <span>{{ workerRewardRows.length }} rows</span>
+                  </div>
+                  <div v-if="workerRewardRows.length" class="worker-reward-list">
+                    <article v-for="reward in workerRewardRows" :key="reward.key">
+                      <div>
+                        <strong>{{ reward.amount }}</strong>
+                        <small>{{ reward.type }} · {{ reward.when }}</small>
+                      </div>
+                      <span>{{ reward.ref }}</span>
+                    </article>
+                  </div>
+                  <article v-else class="dash-empty-state compact">
+                    <strong>No reward entries</strong>
+                    <p>MRG task payouts and manual credits will be listed here.</p>
+                  </article>
+                </article>
+
+                <article class="dash-card">
+                  <div class="card-title-row">
+                    <h2>Proposal Opportunities</h2>
+                    <span>{{ workerProposalRows.length }}</span>
+                  </div>
+                  <div v-if="workerProposalRows.length" class="worker-proposal-list">
+                    <article v-for="proposal in workerProposalRows" :key="proposal.id">
+                      <div>
+                        <strong>{{ proposal.title }}</strong>
+                        <small>{{ proposal.project }} · {{ proposal.lane }}</small>
+                      </div>
+                      <span>{{ proposal.reward }}</span>
+                      <b>{{ proposal.matchScore }}%</b>
+                    </article>
+                  </div>
+                  <article v-else class="dash-empty-state compact">
+                    <strong>No open proposal matches</strong>
+                    <p>Open marketplace bounties will appear here when available.</p>
+                  </article>
+                </article>
               </section>
             </template>
           </template>
@@ -2835,6 +3001,17 @@ const dashboardLedgerEntries = ref([]);
 const dashboardNotifications = ref([]);
 const dashboardNotificationsLoading = ref(false);
 const dashboardNotificationsError = ref('');
+const workerDashboard = ref({
+  profile: {},
+  stats: {},
+  claimed_tasks: [],
+  rewards: [],
+  reputation: [],
+  proposals: [],
+  identity_status: [],
+});
+const workerDashboardLoading = ref(false);
+const workerDashboardError = ref('');
 const dashboardLoading = ref(false);
 const dashboardError = ref('');
 const dashboardSearch = ref('');
@@ -3628,7 +3805,9 @@ const dashboardProjectList = computed(() => {
 const dashboardSearchPlaceholder = computed(() =>
   dashboardSection.value === 'payments'
     ? 'Search payments, refs, methods, or statuses...'
-    : 'Search your live projects...',
+    : dashboardSection.value === 'worker'
+      ? 'Search claimed tasks, rewards, or proposal matches...'
+      : 'Search your live projects...',
 );
 const dashboardSelectedProject = computed(() => {
   if (!dashboardSortedProjects.value.length) return null;
@@ -3804,43 +3983,119 @@ const dashboardPaymentSummary = computed(() => {
     },
   ];
 });
+const workerDashboardProfile = computed(() => workerDashboard.value.profile || {});
+const workerDashboardStats = computed(() => workerDashboard.value.stats || {});
+const workerReputationScore = computed(() => Math.max(0, Math.min(100, Number(workerDashboardStats.value.reputation_score) || 0)));
+const workerDashboardView = computed(() => {
+  const profile = workerDashboardProfile.value;
+  const display = profile.github_username ? `github:${profile.github_username}` : (profile.name || profile.email || 'Worker dashboard');
+  return {
+    title: display,
+    body: 'Track claimed tasks, rewards, reputation, and proposal-ready bounty matches from the worker side of MergeOS.',
+    initials: initialsFor(profile.github_username || profile.name || profile.email || 'WK'),
+    status: workerDashboardLoading.value ? 'Syncing' : 'Worker',
+  };
+});
+const workerDashboardMetrics = computed(() => [
+  {
+    label: 'Claimed tasks',
+    value: String(Number(workerDashboardStats.value.claimed_task_count) || 0),
+    caption: 'Accepted and paid work',
+  },
+  {
+    label: 'Rewards',
+    value: formatMRGFromCents(workerDashboardStats.value.reward_cents),
+    caption: 'MRG earned',
+  },
+  {
+    label: 'Reputation',
+    value: `${workerReputationScore.value}`,
+    caption: 'Identity and payout score',
+  },
+  {
+    label: 'Proposals',
+    value: String(Number(workerDashboardStats.value.open_proposal_count) || 0),
+    caption: 'Open bounty matches',
+  },
+]);
+const workerClaimedTaskRows = computed(() =>
+  (workerDashboard.value.claimed_tasks || []).map(mapWorkerClaimedTask),
+);
+const workerRewardRows = computed(() =>
+  (workerDashboard.value.rewards || []).map(mapWorkerReward),
+);
+const workerReputationRows = computed(() =>
+  (workerDashboard.value.reputation || []).map((row) => ({
+    label: row.label || 'Signal',
+    value: row.value || '-',
+    tone: row.tone || 'medium',
+  })),
+);
+const workerProposalRows = computed(() =>
+  (workerDashboard.value.proposals || []).map(mapWorkerProposal),
+);
+const workerIdentityRows = computed(() => workerDashboard.value.identity_status || []);
+const workerIdentityReadyCount = computed(() => workerIdentityRows.value.filter((row) => row.ready).length);
+const workerScoreRingStyle = computed(() => ({
+  background: `conic-gradient(var(--green) 0 ${workerReputationScore.value}%, #e8eef1 ${workerReputationScore.value}% 100%)`,
+}));
+const dashboardSectionEyebrow = computed(() => {
+  if (dashboardSection.value === 'payments') return 'PAYMENTS';
+  if (dashboardSection.value === 'worker') return 'WORKER OPS';
+  return 'PROJECT OPS';
+});
 const dashboardCommandTitle = computed(() =>
   dashboardSection.value === 'payments'
     ? 'Payments, escrow, and payout proof'
-    : 'Project delivery command center',
+    : dashboardSection.value === 'worker'
+      ? 'Worker rewards and proposal console'
+      : 'Project delivery command center',
 );
 const dashboardCommandBody = computed(() => {
   if (dashboardSection.value === 'payments') {
     return 'Track funding, escrow holds, token minting, fees, and task payouts for the selected project.';
   }
+  if (dashboardSection.value === 'worker') {
+    return 'See paid tasks, MRG rewards, identity readiness, reputation signals, and open bounty matches.';
+  }
   return 'Watch scope, tasks, budget, repo context, notifications, and ledger activity from one workspace.';
 });
-const dashboardCommandStats = computed(() => [
-  {
-    label: 'Active projects',
-    value: String(dashboardProjectList.value.length),
-    icon: FolderKanban,
-    tone: 'green',
-  },
-  {
-    label: 'Open tasks',
-    value: String(dashboardOpenTasks.value.length),
-    icon: ListTodo,
-    tone: 'blue',
-  },
-  {
-    label: 'Verified funding',
-    value: formatMRGFromCents(dashboardLedgerFundingCents.value),
-    icon: ShieldCheck,
-    tone: 'purple',
-  },
-  {
-    label: 'Unread notices',
-    value: String(dashboardNotificationCount.value),
-    icon: Bell,
-    tone: 'amber',
-  },
-]);
+const dashboardCommandStats = computed(() => {
+  if (dashboardSection.value === 'worker') {
+    return [
+      { label: 'Claimed', value: String(Number(workerDashboardStats.value.claimed_task_count) || 0), icon: GitPullRequest, tone: 'green' },
+      { label: 'Rewards', value: formatMRGFromCents(workerDashboardStats.value.reward_cents), icon: CircleDollarSign, tone: 'blue' },
+      { label: 'Reputation', value: `${workerReputationScore.value}`, icon: Trophy, tone: 'purple' },
+      { label: 'Proposals', value: String(Number(workerDashboardStats.value.open_proposal_count) || 0), icon: Compass, tone: 'amber' },
+    ];
+  }
+  return [
+    {
+      label: 'Active projects',
+      value: String(dashboardProjectList.value.length),
+      icon: FolderKanban,
+      tone: 'green',
+    },
+    {
+      label: 'Open tasks',
+      value: String(dashboardOpenTasks.value.length),
+      icon: ListTodo,
+      tone: 'blue',
+    },
+    {
+      label: 'Verified funding',
+      value: formatMRGFromCents(dashboardLedgerFundingCents.value),
+      icon: ShieldCheck,
+      tone: 'purple',
+    },
+    {
+      label: 'Unread notices',
+      value: String(dashboardNotificationCount.value),
+      icon: Bell,
+      tone: 'amber',
+    },
+  ];
+});
 
 const marketplaceBenefits = [
   {
@@ -3867,6 +4122,7 @@ const sidebarSections = [
       { label: 'Overview', icon: LayoutDashboard, section: 'projects' },
       { label: 'My Projects', icon: FolderKanban, section: 'projects' },
       { label: 'Tasks', icon: ListTodo, section: 'projects', toast: 'Opening tasks...' },
+      { label: 'Worker Dashboard', icon: User, section: 'worker' },
       { label: 'Repositories', icon: GitBranch, toast: 'Opening repositories...' },
       { label: 'Payments', icon: CreditCard, section: 'payments' },
       { label: 'Notifications', icon: Bell, section: 'notifications' },
@@ -3893,6 +4149,7 @@ const sidebarSections = [
 const topNavItems = [
   { label: 'Dashboard', section: 'projects' },
   { label: 'Projects', section: 'projects' },
+  { label: 'Worker', section: 'worker' },
   { label: 'Marketplace', page: 'marketplace' },
   { label: 'Repos', toast: 'Opening repositories...' },
   { label: 'Payments', section: 'payments' },
@@ -4123,6 +4380,7 @@ function openDashboard() {
   dashboardSection.value = 'projects';
   if (user.value) {
     void loadDashboardData({ silent: true });
+    void loadWorkerDashboardData({ silent: true });
   }
   if (!hasWindow) return;
   window.requestAnimationFrame(() => {
@@ -4153,8 +4411,11 @@ function handleDashboardNav(item) {
 
 function openDashboardSection(section) {
   publicModeVisible.value = false;
-  if (section === 'payments' || section === 'projects') {
+  if (section === 'payments' || section === 'projects' || section === 'worker') {
     dashboardSection.value = section;
+    if (section === 'worker') {
+      void loadWorkerDashboardData({ silent: true });
+    }
     if (!hasWindow) return;
     window.requestAnimationFrame(() => {
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -4175,6 +4436,7 @@ function openDashboardSection(section) {
 function isDashboardNavActive(item = {}) {
   if (item.section === 'payments') return dashboardSection.value === 'payments';
   if (item.section === 'projects') return dashboardSection.value === 'projects';
+  if (item.section === 'worker') return dashboardSection.value === 'worker';
   return false;
 }
 
@@ -4814,6 +5076,44 @@ function mapDashboardTask(task = {}) {
   };
 }
 
+function mapWorkerClaimedTask(task = {}) {
+  const when = formatLedgerDateTime(task.accepted_at);
+  return {
+    id: task.id || `${task.project_id}-${task.issue_number}`,
+    initials: String(task.issue_number || 'W').padStart(2, '0').slice(-2),
+    issueNumber: task.issue_number || '-',
+    title: task.title || 'Accepted task',
+    acceptance: trimMarketplaceText(task.acceptance, 'Acceptance criteria not provided.'),
+    project: task.project_title || 'MergeOS project',
+    reward: formatMRGFromCents(task.reward_cents),
+    kind: task.agent_type ? toTitleLabel(task.agent_type) : toTitleLabel(task.worker_kind || 'worker'),
+    when: when.date === '-' ? '-' : when.date,
+  };
+}
+
+function mapWorkerReward(entry = {}) {
+  const when = formatLedgerDateTime(entry.created_at);
+  return {
+    key: `${entry.sequence}-${entry.entry_hash || entry.reference}`,
+    type: entry.type === 'manual_credit' ? 'Manual credit' : 'Task payout',
+    amount: formatMRGFromCents(entry.amount_cents),
+    ref: shortLedgerReference(entry.reference || entry.entry_hash || `#${entry.sequence}`),
+    when: when.full,
+  };
+}
+
+function mapWorkerProposal(proposal = {}) {
+  const agentType = proposal.suggested_agent_type || '';
+  return {
+    id: proposal.id || `${proposal.project_id}-${proposal.issue_number}`,
+    title: proposal.title || 'Open bounty',
+    project: proposal.project_title || 'MergeOS project',
+    lane: agentType ? toTitleLabel(agentType) : toTitleLabel(proposal.required_worker_kind || 'worker'),
+    reward: formatMRGFromCents(proposal.reward_cents),
+    matchScore: Number(proposal.match_score) || 0,
+  };
+}
+
 function mapDashboardActivity(entry = {}) {
   const meta = ledgerMetaFor(entry.type);
   return {
@@ -5181,6 +5481,42 @@ async function loadDashboardData(options = {}) {
   }
 }
 
+async function loadWorkerDashboardData(options = {}) {
+  if (!token.value) {
+    workerDashboard.value = {
+      profile: {},
+      stats: {},
+      claimed_tasks: [],
+      rewards: [],
+      reputation: [],
+      proposals: [],
+      identity_status: [],
+    };
+    workerDashboardError.value = '';
+    return;
+  }
+
+  const silent = Boolean(options.silent);
+  if (!silent) workerDashboardLoading.value = true;
+  workerDashboardError.value = '';
+  try {
+    const payload = await api('/api/workers/me');
+    workerDashboard.value = {
+      profile: payload.profile || {},
+      stats: payload.stats || {},
+      claimed_tasks: Array.isArray(payload.claimed_tasks) ? payload.claimed_tasks : [],
+      rewards: Array.isArray(payload.rewards) ? payload.rewards : [],
+      reputation: Array.isArray(payload.reputation) ? payload.reputation : [],
+      proposals: Array.isArray(payload.proposals) ? payload.proposals : [],
+      identity_status: Array.isArray(payload.identity_status) ? payload.identity_status : [],
+    };
+  } catch (error) {
+    workerDashboardError.value = error.message || 'Could not load worker dashboard';
+  } finally {
+    workerDashboardLoading.value = false;
+  }
+}
+
 async function loadDashboardNotifications() {
   if (!token.value) {
     dashboardNotifications.value = [];
@@ -5240,6 +5576,9 @@ function startDashboardRealtime() {
     if (!token.value || !user.value) return;
     if (document.visibilityState === 'hidden') return;
     void loadDashboardData({ silent: true });
+    if (dashboardSection.value === 'worker') {
+      void loadWorkerDashboardData({ silent: true });
+    }
     void loadDashboardNotifications();
   }, DASHBOARD_REFRESH_MS);
 }
@@ -5287,6 +5626,7 @@ function setSession(auth) {
     void loadLiveFeedData({ silent: true });
   }
   void loadDashboardData({ silent: true });
+  void loadWorkerDashboardData({ silent: true });
   void loadDashboardNotifications();
   startDashboardRealtime();
 }
@@ -5412,6 +5752,16 @@ function clearSession() {
   dashboardLedgerEntries.value = [];
   dashboardNotifications.value = [];
   dashboardNotificationsError.value = '';
+  workerDashboard.value = {
+    profile: {},
+    stats: {},
+    claimed_tasks: [],
+    rewards: [],
+    reputation: [],
+    proposals: [],
+    identity_status: [],
+  };
+  workerDashboardError.value = '';
   dashboardError.value = '';
   dashboardSection.value = 'projects';
   selectedDashboardProjectID.value = '';
@@ -5464,6 +5814,7 @@ async function restoreSession() {
   try {
     user.value = await api('/api/auth/me');
     await loadDashboardData({ silent: true });
+    await loadWorkerDashboardData({ silent: true });
     await loadDashboardNotifications();
     startDashboardRealtime();
     if (publicPage.value === 'ledger') {

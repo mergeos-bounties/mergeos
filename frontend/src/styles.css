@@ -6050,6 +6050,139 @@ svg {
   color: #047857;
 }
 
+.worker-dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.worker-score-ring {
+  width: 104px;
+  height: 104px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  margin: 18px auto 10px;
+  position: relative;
+}
+
+.worker-score-ring::after {
+  content: "";
+  position: absolute;
+  inset: 10px;
+  border-radius: inherit;
+  background: #ffffff;
+}
+
+.worker-score-ring strong,
+.worker-score-ring span {
+  position: relative;
+  z-index: 1;
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.worker-score-ring strong {
+  align-self: center;
+  color: #111827;
+  font-size: 26px;
+  font-weight: 930;
+}
+
+.worker-score-ring span {
+  align-self: end;
+  margin-bottom: 24px;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 850;
+}
+
+.risk-grid .green::before {
+  background: var(--green);
+}
+
+.risk-grid .blue::before {
+  background: #2563eb;
+}
+
+.risk-grid .amber::before {
+  background: #d97706;
+}
+
+.worker-identity-list,
+.worker-reward-list,
+.worker-proposal-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.worker-identity-list article,
+.worker-reward-list article,
+.worker-proposal-list article {
+  min-width: 0;
+  display: grid;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #eef0f2;
+  border-radius: 8px;
+  background: #fbfcfd;
+  padding: 10px;
+}
+
+.worker-identity-list article {
+  grid-template-columns: 10px minmax(0, 1fr) auto;
+}
+
+.worker-reward-list article {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.worker-proposal-list article {
+  grid-template-columns: minmax(0, 1fr) auto 42px;
+}
+
+.worker-identity-list strong,
+.worker-reward-list strong,
+.worker-proposal-list strong {
+  display: block;
+  overflow: hidden;
+  color: #111827;
+  font-size: 12px;
+  line-height: 1.25;
+  font-weight: 920;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.worker-identity-list small,
+.worker-reward-list small,
+.worker-proposal-list small,
+.worker-reward-list span,
+.worker-proposal-list span {
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 760;
+}
+
+.worker-identity-list b,
+.worker-proposal-list b {
+  border-radius: 999px;
+  background: #dcfce7;
+  color: #047857;
+  padding: 5px 8px;
+  font-size: 10px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.worker-proposal-list span {
+  color: var(--green-dark);
+  font-weight: 920;
+  white-space: nowrap;
+}
+
 .watching-line {
   min-height: 42px;
   display: flex;
@@ -6716,6 +6849,7 @@ svg {
 
   .dash-metrics,
   .dash-overview-grid,
+  .worker-dashboard-grid,
   .payment-summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -6906,6 +7040,7 @@ svg {
 
   .dash-metrics,
   .dash-overview-grid,
+  .worker-dashboard-grid,
   .dash-rail {
     grid-template-columns: 1fr;
   }
