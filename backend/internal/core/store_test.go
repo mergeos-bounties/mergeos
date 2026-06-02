@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -1284,6 +1285,9 @@ func TestPublicLiveFeedRouteReturnsSanitizedTimeline(t *testing.T) {
 			if item.URL != "https://github.com/mergeos-bounties/mergeos/pull/151" {
 				t.Fatalf("task payout feed url = %q", item.URL)
 			}
+			if item.LedgerSequence <= 0 || len(item.EntryHash) != 64 {
+				t.Fatalf("task payout feed missing ledger proof fields: %#v", item)
+			}
 		}
 	}
 	for _, required := range []string{"project_funded", "deployment_validation", "task_accepted", "ledger_task_payment", "pr_opened"} {
@@ -1319,6 +1323,11 @@ func TestPublicLiveFeedRouteReturnsSanitizedTimeline(t *testing.T) {
 		eventTypes[event.Type] = true
 		if event.Type == "task.paid" && (event.AmountMRG == nil || *event.AmountMRG <= 0) {
 			t.Fatalf("task paid event missing amount: %#v", event)
+		}
+		if event.Type == "task.paid" {
+			if event.Payload["ledger_sequence"] == nil || len(fmt.Sprint(event.Payload["entry_hash"])) != 64 {
+				t.Fatalf("task paid event missing ledger proof payload: %#v", event)
+			}
 		}
 	}
 	for _, required := range []string{"project.funded", "deployment.updated", "task.claimed", "task.paid", "pr.opened"} {

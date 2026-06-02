@@ -686,19 +686,21 @@ type PublicLiveFeedStats struct {
 }
 
 type PublicLiveFeedItem struct {
-	ID           string    `json:"id"`
-	Type         string    `json:"type"`
-	Title        string    `json:"title"`
-	Body         string    `json:"body"`
-	ProjectID    string    `json:"project_id,omitempty"`
-	ProjectTitle string    `json:"project_title,omitempty"`
-	Actor        string    `json:"actor,omitempty"`
-	Action       string    `json:"action,omitempty"`
-	AmountCents  int64     `json:"amount_cents,omitempty"`
-	Reference    string    `json:"reference,omitempty"`
-	URL          string    `json:"url,omitempty"`
-	Status       string    `json:"status"`
-	CreatedAt    time.Time `json:"created_at"`
+	ID             string    `json:"id"`
+	Type           string    `json:"type"`
+	Title          string    `json:"title"`
+	Body           string    `json:"body"`
+	ProjectID      string    `json:"project_id,omitempty"`
+	ProjectTitle   string    `json:"project_title,omitempty"`
+	Actor          string    `json:"actor,omitempty"`
+	Action         string    `json:"action,omitempty"`
+	AmountCents    int64     `json:"amount_cents,omitempty"`
+	LedgerSequence int       `json:"ledger_sequence,omitempty"`
+	EntryHash      string    `json:"entry_hash,omitempty"`
+	Reference      string    `json:"reference,omitempty"`
+	URL            string    `json:"url,omitempty"`
+	Status         string    `json:"status"`
+	CreatedAt      time.Time `json:"created_at"`
 }
 
 type PublicEventProtocolResponse struct {

@@ -253,18 +253,20 @@ func publicLedgerLiveFeedItem(entry LedgerEntry, projectIDs map[string]bool, tas
 	}
 	reference := publicLedgerReference(projectID, taskID, entry.Sequence, entry.Reference)
 	return PublicLiveFeedItem{
-		ID:           fmt.Sprintf("ledger:%d", entry.Sequence),
-		Type:         "ledger_" + entry.Type,
-		Title:        publicLiveFeedLedgerTitle(entry.Type),
-		Body:         publicLiveFeedLedgerBody(entry, projectTitle),
-		ProjectID:    projectID,
-		ProjectTitle: projectTitle,
-		Actor:        publicLedgerAccount(entry.ToAccount, projectID, taskID),
-		AmountCents:  entry.AmountCents,
-		Reference:    reference,
-		URL:          publicLiveFeedReferenceURL(reference),
-		Status:       "verified",
-		CreatedAt:    entry.CreatedAt,
+		ID:             fmt.Sprintf("ledger:%d", entry.Sequence),
+		Type:           "ledger_" + entry.Type,
+		Title:          publicLiveFeedLedgerTitle(entry.Type),
+		Body:           publicLiveFeedLedgerBody(entry, projectTitle),
+		ProjectID:      projectID,
+		ProjectTitle:   projectTitle,
+		Actor:          publicLedgerAccount(entry.ToAccount, projectID, taskID),
+		AmountCents:    entry.AmountCents,
+		LedgerSequence: entry.Sequence,
+		EntryHash:      entry.EntryHash,
+		Reference:      reference,
+		URL:            publicLiveFeedReferenceURL(reference),
+		Status:         "verified",
+		CreatedAt:      entry.CreatedAt,
 	}
 }
 
@@ -594,6 +596,12 @@ func publicLiveFeedProtocolEvent(item PublicLiveFeedItem) EventProtocolDocument 
 	}
 	if item.URL != "" {
 		payload["url"] = item.URL
+	}
+	if item.LedgerSequence > 0 {
+		payload["ledger_sequence"] = item.LedgerSequence
+	}
+	if item.EntryHash != "" {
+		payload["entry_hash"] = item.EntryHash
 	}
 
 	event := EventProtocolDocument{
