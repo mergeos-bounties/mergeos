@@ -1209,6 +1209,97 @@
                   </article>
                 </article>
 
+                <article class="dash-card admin-llm-card">
+                  <div class="card-title-row">
+                    <div>
+                      <h2>AI Review Providers</h2>
+                      <p>Runtime provider, API key pool, and webhook health for automated PR review.</p>
+                    </div>
+                    <span>{{ adminLLMStats.label }}</span>
+                  </div>
+
+                  <form class="admin-llm-form" @submit.prevent="submitAdminLLMSettings">
+                    <label>
+                      <span>Provider</span>
+                      <select v-model="adminLLMForm.provider" @change="handleAdminLLMProviderChange">
+                        <option v-for="option in adminLLMProviderOptions" :key="option.id" :value="option.id">{{ option.label }}</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span>Model</span>
+                      <select v-model="adminLLMForm.model">
+                        <option v-for="model in adminLLMModelOptions" :key="model" :value="model">{{ model }}</option>
+                      </select>
+                    </label>
+                    <button type="submit" :disabled="adminLLMBusy">Save Runtime</button>
+                  </form>
+
+                  <form class="admin-llm-key-form" @submit.prevent="submitAdminLLMKey">
+                    <label>
+                      <span>New API key</span>
+                      <input v-model.trim="adminLLMForm.apiKey" type="password" autocomplete="new-password" placeholder="Provider API key" />
+                    </label>
+                    <button type="submit" :disabled="adminLLMBusy || !adminLLMKeyReady">Add Key</button>
+                  </form>
+                  <p v-if="adminLLMError" class="deployment-error">{{ adminLLMError }}</p>
+
+                  <div v-if="adminLLMKeyRows.length" class="admin-llm-key-list">
+                    <article v-for="key in adminLLMKeyRows" :key="key.id">
+                      <span :class="['admin-ops-icon', key.tone]">
+                        <Bot :size="15" />
+                      </span>
+                      <div>
+                        <strong>{{ key.provider }} / {{ key.model }}</strong>
+                        <small>{{ key.keyHint }} / {{ key.requestCount }} requests / {{ key.successCount }} ok / {{ key.quotaErrorCount }} quota</small>
+                        <b>{{ key.lastStatusCode ? `HTTP ${key.lastStatusCode}` : 'No status code' }} / {{ key.lastUsed }}</b>
+                        <small v-if="key.lastError" class="admin-pr-blockers">{{ key.lastError }}</small>
+                      </div>
+                      <div class="admin-llm-side">
+                        <em :class="key.tone">{{ key.status }}</em>
+                        <button type="button" :disabled="adminLLMKeyBusyID === key.testBusyID" @click="testAdminLLMKey(key)">
+                          {{ adminLLMKeyBusyID === key.testBusyID ? 'Testing...' : 'Test' }}
+                        </button>
+                        <button
+                          type="button"
+                          :disabled="adminLLMKeyBusyID === key.resetBusyID"
+                          @click="updateAdminLLMKey(key, '', true)"
+                        >
+                          Reset
+                        </button>
+                        <button
+                          type="button"
+                          :disabled="adminLLMKeyBusyID === key.toggleBusyID"
+                          @click="updateAdminLLMKey(key, key.toggleStatus)"
+                        >
+                          {{ key.toggleLabel }}
+                        </button>
+                      </div>
+                    </article>
+                  </div>
+                  <article v-else class="dash-empty-state compact">
+                    <strong>{{ adminConsoleLoading ? 'Loading AI keys...' : 'No AI review keys' }}</strong>
+                    <p>{{ adminConsoleLoading ? 'Fetching provider key pool.' : 'Add a provider key to enable automated PR review and LLM cost evaluation.' }}</p>
+                  </article>
+
+                  <div v-if="adminLLMWebhookRows.length" class="admin-llm-webhook-list">
+                    <article v-for="log in adminLLMWebhookRows" :key="log.id">
+                      <span :class="['admin-ops-icon', log.tone]">
+                        <GitPullRequest :size="15" />
+                      </span>
+                      <div>
+                        <strong>{{ log.title }}</strong>
+                        <small>{{ log.body }} / {{ log.when }}</small>
+                        <b>{{ log.repository }} / {{ log.duration }}</b>
+                        <small v-if="log.error" class="admin-pr-blockers">{{ log.error }}</small>
+                      </div>
+                      <div class="admin-llm-side">
+                        <em :class="log.tone">{{ log.status }}</em>
+                        <button v-if="log.commentURL" type="button" @click="openExternalURL(log.commentURL)">Comment</button>
+                      </div>
+                    </article>
+                  </div>
+                </article>
+
                 <article class="dash-card admin-credit-card">
                   <div class="card-title-row">
                     <div>
@@ -3862,6 +3953,17 @@ const adminMergeResult = ref(null);
 const adminSSLReviews = ref([]);
 const adminSSLReviewBusy = ref(false);
 const adminSSLReviewError = ref('');
+const adminSettings = ref({ llm_provider_options: [] });
+const adminLLMKeys = ref([]);
+const adminLLMWebhooks = ref([]);
+const adminLLMBusy = ref(false);
+const adminLLMError = ref('');
+const adminLLMKeyBusyID = ref('');
+const adminLLMForm = reactive({
+  provider: 'gemini',
+  model: 'gemini-2.5-flash',
+  apiKey: '',
+});
 const adminTestSettings = ref({ test_mode_enabled: false, updated_at: '' });
 const adminTestSettingsEntries = ref([]);
 const adminTestSettingsPassword = ref('');
@@ -5219,6 +5321,36 @@ const adminSSLStats = computed(() => {
     label: rows.length ? `${rows.filter((row) => row.tone !== 'green').length} need review` : 'No domains',
   };
 });
+const adminLLMProviderOptions = computed(() => {
+  const options = adminSettings.value?.llm_provider_options;
+  if (Array.isArray(options) && options.length) return options;
+  return [{ id: 'gemini', label: 'Gemini', models: ['gemini-2.5-flash'] }];
+});
+const adminLLMSelectedProvider = computed(() =>
+  adminLLMProviderOptions.value.find((option) => option.id === adminLLMForm.provider) || adminLLMProviderOptions.value[0],
+);
+const adminLLMModelOptions = computed(() => {
+  const models = adminLLMSelectedProvider.value?.models;
+  return Array.isArray(models) && models.length ? models : [adminLLMForm.model].filter(Boolean);
+});
+const adminLLMKeyRows = computed(() =>
+  (adminLLMKeys.value || []).map(mapAdminLLMKey),
+);
+const adminLLMWebhookRows = computed(() =>
+  (adminLLMWebhooks.value || []).slice(0, 5).map(mapAdminLLMWebhook),
+);
+const adminLLMStats = computed(() => {
+  const rows = adminLLMKeyRows.value;
+  return {
+    total: rows.length,
+    active: rows.filter((row) => row.statusValue === 'active').length,
+    errors: rows.filter((row) => row.tone === 'red').length,
+    label: `${rows.filter((row) => row.statusValue === 'active').length}/${rows.length} active`,
+  };
+});
+const adminLLMKeyReady = computed(() =>
+  adminLLMForm.provider && adminLLMForm.model && adminLLMForm.apiKey.trim().length >= 8,
+);
 const adminTaskReviewRows = computed(() =>
   (adminTasks.value || [])
     .filter((task) => task?.issue_url || task?.issue_number)
@@ -5306,7 +5438,7 @@ const dashboardCommandStats = computed(() => {
     return [
       { label: 'Treasury budget', value: adminSummaryView.value.totalBudget, icon: CircleDollarSign, tone: 'green' },
       { label: 'Ops queue', value: formatCompactNumber(adminOpsQueue.value?.stats?.total_count), icon: ShieldCheck, tone: 'blue' },
-      { label: 'High risk workers', value: formatCompactNumber(adminReputationStats.value.high_risk_count), icon: Trophy, tone: 'purple' },
+      { label: 'LLM keys', value: formatCompactNumber(adminLLMStats.value.active), icon: Bot, tone: 'purple' },
       { label: 'SSL review', value: formatCompactNumber(adminSSLStats.value.attention), icon: Lock, tone: 'amber' },
     ];
   }
@@ -6688,6 +6820,61 @@ function mapAdminSSLReview(review = {}) {
   };
 }
 
+function adminLLMTone(status = '') {
+  const normalized = String(status || '').toLowerCase();
+  if (normalized === 'error') return 'red';
+  if (normalized === 'quota_limited' || normalized === 'disabled') return 'amber';
+  return 'green';
+}
+
+function mapAdminLLMKey(key = {}) {
+  const lastUsed = key.last_used_at ? formatLedgerDateTime(key.last_used_at).full : 'Never used';
+  const statusValue = key.status || 'active';
+  const toggleStatus = statusValue === 'disabled' ? 'active' : 'disabled';
+  const id = key.id || key.key_hint || key.provider || 'llm-key';
+  return {
+    id,
+    provider: toTitleLabel(key.provider || 'gemini'),
+    providerValue: key.provider || 'gemini',
+    model: key.model || '-',
+    keyHint: key.key_hint || 'hidden key',
+    status: toTitleLabel(statusValue),
+    statusValue,
+    requestCount: formatCompactNumber(key.request_count),
+    successCount: formatCompactNumber(key.success_count),
+    quotaErrorCount: formatCompactNumber(key.quota_error_count),
+    lastStatusCode: key.last_status_code || 0,
+    lastError: key.last_error || '',
+    lastUsed,
+    testBusyID: `${id}:test`,
+    resetBusyID: `${id}:reset`,
+    toggleBusyID: `${id}:${toggleStatus}`,
+    toggleStatus,
+    toggleLabel: toggleStatus === 'active' ? 'Enable' : 'Disable',
+    tone: adminLLMTone(key.status),
+  };
+}
+
+function mapAdminLLMWebhook(log = {}) {
+  const when = formatLedgerDateTime(log.received_at);
+  const status = String(log.status || 'logged').toLowerCase();
+  return {
+    id: log.id || `${log.delivery_id || 'delivery'}-${log.received_at || log.pull_number || ''}`,
+    title: log.pull_number ? `PR #${log.pull_number}` : (log.repository || 'AI review webhook'),
+    body: `${log.event_name || 'event'} / ${log.action || 'received'} / ${log.sender || 'GitHub'}`,
+    repository: log.repository || '-',
+    status: toTitleLabel(status),
+    statusValue: status,
+    statusCode: log.status_code || 0,
+    duration: `${formatCompactNumber(log.duration_millis)} ms`,
+    labels: Array.isArray(log.labels) ? log.labels : [],
+    error: log.error || '',
+    commentURL: log.comment_url || '',
+    when: when.full,
+    tone: status === 'failed' || status === 'error' ? 'red' : status === 'skipped' ? 'amber' : 'green',
+  };
+}
+
 function mapAdminTestSettingsEntry(entry = {}) {
   const mapKeys = Object.keys(entry.key_value_map || {});
   const when = formatLedgerDateTime(entry.updated_at);
@@ -7585,6 +7772,15 @@ async function loadAdminConsoleData(options = {}) {
     adminSSLReviews.value = [];
     adminSSLReviewBusy.value = false;
     adminSSLReviewError.value = '';
+    adminSettings.value = { llm_provider_options: [] };
+    adminLLMKeys.value = [];
+    adminLLMWebhooks.value = [];
+    adminLLMBusy.value = false;
+    adminLLMError.value = '';
+    adminLLMKeyBusyID.value = '';
+    adminLLMForm.provider = 'gemini';
+    adminLLMForm.model = 'gemini-2.5-flash';
+    adminLLMForm.apiKey = '';
     adminTestSettings.value = { test_mode_enabled: false, updated_at: '' };
     adminTestSettingsEntries.value = [];
     adminConsoleError.value = '';
@@ -7596,13 +7792,16 @@ async function loadAdminConsoleData(options = {}) {
   if (!silent) adminConsoleLoading.value = true;
   adminConsoleError.value = '';
   try {
-    const [summary, opsQueue, reputation, users, tasks, sslReviews, testSettings, testEntries] = await Promise.all([
+    const [summary, opsQueue, reputation, users, tasks, sslReviews, settings, llmKeys, llmWebhooks, testSettings, testEntries] = await Promise.all([
       api('/api/admin/summary'),
       api('/api/admin/ops-queue'),
       api('/api/admin/reputation'),
       api('/api/admin/users'),
       shouldLoadTasks ? api('/api/admin/tasks') : Promise.resolve(adminTasks.value),
       api('/api/admin/ssl'),
+      api('/api/admin/settings'),
+      api('/api/admin/gemini/keys'),
+      api('/api/admin/gemini/webhooks?limit=5'),
       api('/api/admin/test-settings'),
       api('/api/admin/test-settings/entries'),
     ]);
@@ -7618,6 +7817,10 @@ async function loadAdminConsoleData(options = {}) {
     adminUsers.value = Array.isArray(users) ? users : [];
     adminTasks.value = Array.isArray(tasks) ? tasks : [];
     adminSSLReviews.value = Array.isArray(sslReviews) ? sslReviews : [];
+    adminSettings.value = settings || { llm_provider_options: [] };
+    hydrateAdminLLMForm(adminSettings.value);
+    adminLLMKeys.value = Array.isArray(llmKeys) ? llmKeys : [];
+    adminLLMWebhooks.value = Array.isArray(llmWebhooks) ? llmWebhooks : [];
     adminTestSettings.value = {
       test_mode_enabled: Boolean(testSettings?.test_mode_enabled),
       updated_at: testSettings?.updated_at || '',
@@ -7668,6 +7871,110 @@ async function runAdminSSLReview() {
     adminSSLReviewError.value = error.message || 'Could not run SSL review';
   } finally {
     adminSSLReviewBusy.value = false;
+  }
+}
+
+function hydrateAdminLLMForm(settings = {}) {
+  const provider = settings.llm_provider || adminLLMForm.provider || 'gemini';
+  const options = Array.isArray(settings.llm_provider_options) && settings.llm_provider_options.length
+    ? settings.llm_provider_options
+    : adminLLMProviderOptions.value;
+  const selected = options.find((option) => option.id === provider) || options[0];
+  adminLLMForm.provider = selected?.id || provider;
+  const models = Array.isArray(selected?.models) ? selected.models : [];
+  const model = settings.llm_model || adminLLMForm.model || models[0] || '';
+  adminLLMForm.model = models.includes(model) ? model : (models[0] || model);
+}
+
+function handleAdminLLMProviderChange() {
+  const selected = adminLLMProviderOptions.value.find((option) => option.id === adminLLMForm.provider);
+  const models = Array.isArray(selected?.models) ? selected.models : [];
+  adminLLMForm.model = models[0] || '';
+}
+
+async function submitAdminLLMSettings() {
+  adminLLMBusy.value = true;
+  adminLLMError.value = '';
+  try {
+    const settings = await api('/api/admin/settings', {
+      method: 'PATCH',
+      body: JSON.stringify({
+        llm_provider: adminLLMForm.provider,
+        llm_model: adminLLMForm.model,
+      }),
+    });
+    adminSettings.value = settings || adminSettings.value;
+    hydrateAdminLLMForm(adminSettings.value);
+    showToast(`AI review provider set to ${toTitleLabel(adminLLMForm.provider)}.`);
+  } catch (error) {
+    adminLLMError.value = error.message || 'Could not update AI review provider';
+  } finally {
+    adminLLMBusy.value = false;
+  }
+}
+
+async function submitAdminLLMKey() {
+  adminLLMBusy.value = true;
+  adminLLMError.value = '';
+  try {
+    await api('/api/admin/gemini/keys', {
+      method: 'POST',
+      body: JSON.stringify({
+        api_key: adminLLMForm.apiKey,
+        provider: adminLLMForm.provider,
+        model: adminLLMForm.model,
+      }),
+    });
+    adminLLMForm.apiKey = '';
+    await loadAdminConsoleData({ silent: true });
+    showToast('AI review API key added.');
+  } catch (error) {
+    adminLLMError.value = error.message || 'Could not add AI review API key';
+  } finally {
+    adminLLMBusy.value = false;
+  }
+}
+
+async function updateAdminLLMKey(row = {}, status = '', resetCounts = false) {
+  if (!row.id) return;
+  const action = resetCounts ? 'reset' : status || 'update';
+  adminLLMKeyBusyID.value = `${row.id}:${action}`;
+  adminLLMError.value = '';
+  try {
+    await api(`/api/admin/gemini/keys/${encodeURIComponent(row.id)}`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        status,
+        reset_counts: Boolean(resetCounts),
+      }),
+    });
+    await loadAdminConsoleData({ silent: true });
+    showToast(resetCounts ? 'AI key counters reset.' : `AI key ${toTitleLabel(status)}.`);
+  } catch (error) {
+    adminLLMError.value = error.message || 'Could not update AI review API key';
+  } finally {
+    adminLLMKeyBusyID.value = '';
+  }
+}
+
+async function testAdminLLMKey(row = {}) {
+  if (!row.id) return;
+  adminLLMKeyBusyID.value = `${row.id}:test`;
+  adminLLMError.value = '';
+  try {
+    const result = await api(`/api/admin/gemini/keys/${encodeURIComponent(row.id)}/test`, {
+      method: 'POST',
+      body: JSON.stringify({
+        provider: row.providerValue,
+        model: row.model,
+      }),
+    });
+    await loadAdminConsoleData({ silent: true });
+    showToast(result.ok ? 'AI key test passed.' : (result.error || 'AI key test failed.'));
+  } catch (error) {
+    adminLLMError.value = error.message || 'Could not test AI review API key';
+  } finally {
+    adminLLMKeyBusyID.value = '';
   }
 }
 
@@ -8061,6 +8368,15 @@ function clearSession() {
   adminSSLReviews.value = [];
   adminSSLReviewBusy.value = false;
   adminSSLReviewError.value = '';
+  adminSettings.value = { llm_provider_options: [] };
+  adminLLMKeys.value = [];
+  adminLLMWebhooks.value = [];
+  adminLLMBusy.value = false;
+  adminLLMError.value = '';
+  adminLLMKeyBusyID.value = '';
+  adminLLMForm.provider = 'gemini';
+  adminLLMForm.model = 'gemini-2.5-flash';
+  adminLLMForm.apiKey = '';
   adminTestSettings.value = { test_mode_enabled: false, updated_at: '' };
   adminTestSettingsEntries.value = [];
   adminTestSettingsPassword.value = '';

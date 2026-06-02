@@ -7575,6 +7575,8 @@ svg {
 .admin-ops-list,
 .admin-users-list,
 .admin-ssl-list,
+.admin-llm-key-list,
+.admin-llm-webhook-list,
 .admin-pr-task-list,
 .admin-pr-pull-list,
 .admin-test-key-list,
@@ -7638,6 +7640,8 @@ svg {
 .admin-ops-list article,
 .admin-users-list article,
 .admin-ssl-list article,
+.admin-llm-key-list article,
+.admin-llm-webhook-list article,
 .admin-pr-task-list article,
 .admin-pr-pull-list article,
 .admin-test-key-list article,
@@ -7663,6 +7667,11 @@ svg {
 }
 
 .admin-ssl-list article {
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+}
+
+.admin-llm-key-list article,
+.admin-llm-webhook-list article {
   grid-template-columns: 34px minmax(0, 1fr) auto;
 }
 
@@ -7715,6 +7724,12 @@ svg {
 .admin-ssl-list strong,
 .admin-ssl-list small,
 .admin-ssl-list b,
+.admin-llm-key-list strong,
+.admin-llm-key-list small,
+.admin-llm-key-list b,
+.admin-llm-webhook-list strong,
+.admin-llm-webhook-list small,
+.admin-llm-webhook-list b,
 .admin-pr-task-list strong,
 .admin-pr-task-list small,
 .admin-pr-task-list b,
@@ -7734,6 +7749,8 @@ svg {
 .admin-ops-list strong,
 .admin-users-list strong,
 .admin-ssl-list strong,
+.admin-llm-key-list strong,
+.admin-llm-webhook-list strong,
 .admin-pr-task-list strong,
 .admin-pr-pull-list strong,
 .admin-test-key-list strong,
@@ -7749,6 +7766,8 @@ svg {
 .admin-ops-list small,
 .admin-users-list small,
 .admin-ssl-list small,
+.admin-llm-key-list small,
+.admin-llm-webhook-list small,
 .admin-pr-task-list small,
 .admin-pr-pull-list small,
 .admin-test-key-list small,
@@ -7763,6 +7782,8 @@ svg {
 .admin-ops-list b,
 .admin-users-list b,
 .admin-ssl-list b,
+.admin-llm-key-list b,
+.admin-llm-webhook-list b,
 .admin-pr-task-list b,
 .admin-pr-pull-list b,
 .admin-test-key-list b,
@@ -7784,6 +7805,7 @@ svg {
 .admin-ops-side,
 .admin-user-side,
 .admin-ssl-side,
+.admin-llm-side,
 .admin-pr-task-actions,
 .admin-pr-side,
 .admin-reputation-list em {
@@ -7795,6 +7817,7 @@ svg {
 .admin-ops-side em,
 .admin-user-side em,
 .admin-ssl-side em,
+.admin-llm-side em,
 .admin-pr-side em,
 .admin-test-key-list em,
 .admin-reputation-list em {
@@ -7808,6 +7831,7 @@ svg {
 .admin-ops-side em.red,
 .admin-user-side em.red,
 .admin-ssl-side em.red,
+.admin-llm-side em.red,
 .admin-pr-side em.red,
 .admin-reputation-list em.red {
   background: #fef2f2;
@@ -7817,6 +7841,7 @@ svg {
 .admin-ops-side em.amber,
 .admin-user-side em.amber,
 .admin-ssl-side em.amber,
+.admin-llm-side em.amber,
 .admin-pr-side em.amber,
 .admin-reputation-list em.amber {
   background: #fffbeb;
@@ -7826,6 +7851,7 @@ svg {
 .admin-ops-side em.blue,
 .admin-user-side em.blue,
 .admin-ssl-side em.blue,
+.admin-llm-side em.blue,
 .admin-pr-side em.blue,
 .admin-reputation-list em.blue {
   background: #eff6ff;
@@ -7835,6 +7861,7 @@ svg {
 .admin-ops-side em.green,
 .admin-user-side em.green,
 .admin-ssl-side em.green,
+.admin-llm-side em.green,
 .admin-pr-side em.green,
 .admin-reputation-list em.green {
   background: #ecfdf5;
@@ -7844,6 +7871,9 @@ svg {
 .admin-ops-side button,
 .admin-user-side button,
 .admin-ssl-actions button,
+.admin-llm-form button,
+.admin-llm-key-form button,
+.admin-llm-side button,
 .admin-pr-task-actions button,
 .admin-pr-side button,
 .admin-merge-result-actions button,
@@ -7958,6 +7988,73 @@ svg {
   color: #64748b;
   font-size: 10px;
   font-weight: 780;
+}
+
+.admin-llm-form,
+.admin-llm-key-form {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.admin-llm-form {
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr) auto;
+  align-items: end;
+}
+
+.admin-llm-key-form {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+}
+
+.admin-llm-form label,
+.admin-llm-key-form label {
+  display: grid;
+  gap: 6px;
+}
+
+.admin-llm-form label span,
+.admin-llm-key-form label span {
+  color: #475569;
+  font-size: 10px;
+  font-weight: 850;
+}
+
+.admin-llm-form input,
+.admin-llm-form select,
+.admin-llm-key-form input,
+.admin-llm-key-form select {
+  width: 100%;
+  min-height: 36px;
+  border: 1px solid #dbe3ea;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #111827;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 720;
+}
+
+.admin-llm-form button,
+.admin-llm-key-form button {
+  min-height: 36px;
+}
+
+.admin-llm-form button:first-of-type,
+.admin-llm-key-form button:first-of-type {
+  background: var(--green);
+  border-color: var(--green);
+  color: #ffffff;
+}
+
+.admin-llm-form button:disabled,
+.admin-llm-key-form button:disabled,
+.admin-llm-side button:disabled {
+  opacity: 0.55;
+}
+
+.admin-llm-side {
+  grid-template-columns: minmax(0, max-content);
 }
 
 .admin-merge-form {
@@ -8975,6 +9072,8 @@ svg {
   .admin-ops-stats,
   .admin-credit-row,
   .admin-merge-form,
+  .admin-llm-form,
+  .admin-llm-key-form,
   .admin-pr-review-layout,
   .admin-test-settings-actions,
   .payment-summary-grid,
@@ -8985,6 +9084,8 @@ svg {
   .admin-ops-list article,
   .admin-users-list article,
   .admin-ssl-list article,
+  .admin-llm-key-list article,
+  .admin-llm-webhook-list article,
   .admin-pr-task-list article,
   .admin-pr-pull-list article,
   .admin-test-key-list article,
@@ -8999,6 +9100,7 @@ svg {
   .admin-ops-side,
   .admin-user-side,
   .admin-ssl-side,
+  .admin-llm-side,
   .admin-pr-task-actions,
   .admin-pr-side,
   .admin-test-key-list em,
