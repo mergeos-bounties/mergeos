@@ -49,6 +49,7 @@ test('sends bearer token and JSON body for task acceptance', async () => {
 
 test('exposes project workflow and admin ops routes', async () => {
   const fetchImpl = fakeFetch([
+    { status: 200, body: { release_status: 'funded' } },
     { status: 200, body: { status: 'validating' } },
     { status: 200, body: { status: 'orchestrating' } },
     { status: 200, body: { stats: { node_count: 2 }, nodes: [], edges: [] } },
@@ -58,6 +59,7 @@ test('exposes project workflow and admin ops routes', async () => {
   ]);
   const client = new MergeOSClient({ token: 'admin-token', fetchImpl });
 
+  await client.projectEscrow('prj_1');
   await client.projectDeployment('prj_1');
   await client.projectAIWorkflow('prj_1');
   const graph = await client.projectTaskGraph('prj_1');
@@ -69,12 +71,13 @@ test('exposes project workflow and admin ops routes', async () => {
   assert.equal(scan.stats.scanned_files, 3);
   assert.equal(ops.stats.total_count, 1);
   assert.equal(reputation.stats.worker_count, 1);
-  assert.equal(fetchImpl.calls[0].url, '/api/projects/prj_1/deployment');
-  assert.equal(fetchImpl.calls[1].url, '/api/projects/prj_1/ai-workflow');
-  assert.equal(fetchImpl.calls[2].url, '/api/projects/prj_1/task-graph');
-  assert.equal(fetchImpl.calls[3].url, '/api/projects/prj_1/repo-scan');
-  assert.equal(fetchImpl.calls[4].url, '/api/admin/ops-queue');
-  assert.equal(fetchImpl.calls[5].url, '/api/admin/reputation');
+  assert.equal(fetchImpl.calls[0].url, '/api/projects/prj_1/escrow');
+  assert.equal(fetchImpl.calls[1].url, '/api/projects/prj_1/deployment');
+  assert.equal(fetchImpl.calls[2].url, '/api/projects/prj_1/ai-workflow');
+  assert.equal(fetchImpl.calls[3].url, '/api/projects/prj_1/task-graph');
+  assert.equal(fetchImpl.calls[4].url, '/api/projects/prj_1/repo-scan');
+  assert.equal(fetchImpl.calls[5].url, '/api/admin/ops-queue');
+  assert.equal(fetchImpl.calls[6].url, '/api/admin/reputation');
 });
 
 test('throws response errors with status and payload', async () => {

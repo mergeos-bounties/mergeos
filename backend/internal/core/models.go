@@ -607,6 +607,44 @@ type ProjectDeploymentResponse struct {
 	Signals      []DeploymentSignal `json:"signals"`
 }
 
+type ProjectEscrowResponse struct {
+	ProjectID           string              `json:"project_id"`
+	ProjectTitle        string              `json:"project_title"`
+	TokenSymbol         string              `json:"token_symbol"`
+	ReleaseStatus       string              `json:"release_status"`
+	BudgetCents         int64               `json:"budget_cents"`
+	FeeCents            int64               `json:"fee_cents"`
+	WorkPoolCents       int64               `json:"work_pool_cents"`
+	ProjectReserveCents int64               `json:"project_reserve_cents"`
+	TaskReserveCents    int64               `json:"task_reserve_cents"`
+	TaskPaymentCents    int64               `json:"task_payment_cents"`
+	ManualCreditCents   int64               `json:"manual_credit_cents"`
+	ReleasedCents       int64               `json:"released_cents"`
+	RemainingCents      int64               `json:"remaining_cents"`
+	OverdrawnCents      int64               `json:"overdrawn_cents"`
+	UnallocatedCents    int64               `json:"unallocated_cents"`
+	PaidTaskCount       int                 `json:"paid_task_count"`
+	OpenTaskCount       int                 `json:"open_task_count"`
+	UpdatedAt           time.Time           `json:"updated_at"`
+	Tasks               []ProjectEscrowTask `json:"tasks"`
+}
+
+type ProjectEscrowTask struct {
+	TaskID         string    `json:"task_id"`
+	IssueNumber    int       `json:"issue_number"`
+	Title          string    `json:"title"`
+	Status         string    `json:"status"`
+	ReleaseStatus  string    `json:"release_status"`
+	RewardCents    int64     `json:"reward_cents"`
+	PaidCents      int64     `json:"paid_cents"`
+	RemainingCents int64     `json:"remaining_cents"`
+	OverpaidCents  int64     `json:"overpaid_cents"`
+	WorkerID       string    `json:"worker_id,omitempty"`
+	ProofHash      string    `json:"proof_hash,omitempty"`
+	IssueURL       string    `json:"issue_url,omitempty"`
+	UpdatedAt      time.Time `json:"updated_at"`
+}
+
 type DeploymentStage struct {
 	ID                    string    `json:"id"`
 	Title                 string    `json:"title"`

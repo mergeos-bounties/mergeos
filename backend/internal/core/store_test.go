@@ -1006,6 +1006,121 @@ func TestProjectDeploymentRouteReturnsDerivedStatusAndSanitizesData(t *testing.T
 	}
 }
 
+func TestProjectEscrowRouteReturnsReserveReleaseSummary(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:       defaultTokenSymbol,
+		StatePath:         filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:    1000,
+		DevPaymentEnabled: true,
+		DevPaymentCode:    defaultDevPaymentCode,
+		GitHubOwner:       defaultGitHubOwner,
+		BountyRoot:        filepath.Join(tempDir, "bounties"),
+		SMTPFrom:          "noreply@mergeos.local",
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	auth, err := store.Register(RegisterRequest{
+		Name:        "Escrow Client",
+		CompanyName: "Escrow Co",
+		Email:       "escrow-client@example.com",
+		Password:    "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	project, err := store.CreateProject(context.Background(), auth.User.ID, CreateProjectRequest{
+		Title:            "Escrow proof",
+		ClientName:       "Private Escrow Client",
+		CompanyName:      "Escrow Co",
+		ClientEmail:      "escrow-client@example.com",
+		Phone:            "+1 555 0144",
+		Brief:            "Create escrow release data without leaking payment references.",
+		BudgetCents:      180000,
+		PaymentMethod:    PaymentPayPal,
+		PaymentReference: defaultDevPaymentCode,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	task := project.Tasks[0]
+	acceptedReward := task.RewardCents
+	req, err := acceptRequestForPullAuthor(task, "escrow-author")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.AcceptTask(task.ID, req); err != nil {
+		t.Fatal(err)
+	}
+
+	server := NewServer(cfg, store, payments)
+	reqHTTP := httptest.NewRequest(http.MethodGet, "/api/projects/"+project.ID+"/escrow", nil)
+	reqHTTP.Header.Set("Authorization", "Bearer "+auth.Token)
+	resp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(resp, reqHTTP)
+	if resp.Code != http.StatusOK {
+		t.Fatalf("escrow status = %d, body = %s", resp.Code, resp.Body.String())
+	}
+
+	body := resp.Body.String()
+	for _, value := range []string{
+		"escrow-client@example.com",
+		"+1 555 0144",
+		defaultDevPaymentCode,
+		tempDir,
+	} {
+		if strings.Contains(body, value) {
+			t.Fatalf("escrow response leaked private value %q: %s", value, body)
+		}
+	}
+
+	var payload ProjectEscrowResponse
+	if err := json.Unmarshal(resp.Body.Bytes(), &payload); err != nil {
+		t.Fatal(err)
+	}
+	if payload.ProjectID != project.ID || payload.ReleaseStatus != "releasing" || payload.WorkPoolCents != project.WorkPoolCents {
+		t.Fatalf("unexpected escrow summary: %#v", payload)
+	}
+	if payload.ProjectReserveCents != project.WorkPoolCents || payload.TaskReserveCents != project.WorkPoolCents {
+		t.Fatalf("unexpected escrow reserves: %#v", payload)
+	}
+	if payload.TaskPaymentCents != acceptedReward || payload.ReleasedCents != acceptedReward || payload.RemainingCents != project.WorkPoolCents-acceptedReward {
+		t.Fatalf("unexpected escrow release totals: %#v", payload)
+	}
+	if payload.PaidTaskCount != 1 || payload.OpenTaskCount != len(project.Tasks)-1 || len(payload.Tasks) != len(project.Tasks) {
+		t.Fatalf("unexpected escrow task counts: %#v", payload)
+	}
+	foundReleasedTask := false
+	for _, row := range payload.Tasks {
+		if row.TaskID == task.ID {
+			foundReleasedTask = row.ReleaseStatus == "released" && row.PaidCents == acceptedReward && row.WorkerID == "github:escrow-author"
+			break
+		}
+	}
+	if !foundReleasedTask {
+		t.Fatalf("escrow response missing released task row: %#v", payload.Tasks)
+	}
+
+	otherAuth, err := store.Register(RegisterRequest{
+		Name:     "Other Escrow Client",
+		Email:    "other-escrow-client@example.com",
+		Password: "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	forbiddenReq := httptest.NewRequest(http.MethodGet, "/api/projects/"+project.ID+"/escrow", nil)
+	forbiddenReq.Header.Set("Authorization", "Bearer "+otherAuth.Token)
+	forbiddenResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(forbiddenResp, forbiddenReq)
+	if forbiddenResp.Code != http.StatusForbidden {
+		t.Fatalf("other client escrow status = %d", forbiddenResp.Code)
+	}
+}
+
 func TestProjectAIWorkflowRouteReturnsWorkflowAndSanitizesData(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := Config{

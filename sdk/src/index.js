@@ -91,6 +91,10 @@ export class MergeOSClient {
     return this.request(`/api/projects/${encodeURIComponent(projectID)}/deployment`);
   }
 
+  projectEscrow(projectID) {
+    return this.request(`/api/projects/${encodeURIComponent(projectID)}/escrow`);
+  }
+
   projectAIWorkflow(projectID) {
     return this.request(`/api/projects/${encodeURIComponent(projectID)}/ai-workflow`);
   }

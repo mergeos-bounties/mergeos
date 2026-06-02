@@ -59,6 +59,7 @@ MergeOS currently supports:
 - Local git bounty workspaces or GitHub private bounty repos when `GITHUB_TOKEN` is configured.
 - Static repository scan for dependency manifests, technical-debt markers, and secret-hygiene findings.
 - Project task dependency graph generation for workflow routing and release readiness.
+- Project escrow summaries for reserve, release, remaining-balance, and overdrawn payout review.
 - Task reward allocation, worker kind, suggested agent type, and acceptance criteria.
 - Worker reputation and risk audit signals for marketplace/admin payout review.
 - Proof ledger entries with hash chaining.
@@ -337,6 +338,7 @@ Customer:
 - `GET /api/uploads/{id}/download`
 - `POST /api/projects`
 - `GET /api/projects`
+- `GET /api/projects/{id}/escrow`
 - `GET /api/projects/{id}/deployment`
 - `GET /api/projects/{id}/ai-workflow`
 - `GET /api/projects/{id}/task-graph`
