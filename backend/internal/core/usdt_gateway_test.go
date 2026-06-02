@@ -186,7 +186,7 @@ func TestGenericHMACProviderParsePayloadInvalid(t *testing.T) {
 
 func TestUSDTWebhookHandlerBadMethod(t *testing.T) {
 	cfg := Config{DevPaymentEnabled: true}
-	store := newTestStore(t, cfg)
+	store := newTestStoreUSDT(t, cfg)
 	gm := NewUSDTGatewayManager(cfg, store)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/payments/usdt/webhook", nil)
@@ -203,7 +203,7 @@ func TestUSDTWebhookHandlerMissingSignature(t *testing.T) {
 		CryptoWebhookSecret: "secret123",
 		DevPaymentEnabled:   false,
 	}
-	store := newTestStore(t, cfg)
+	store := newTestStoreUSDT(t, cfg)
 	gm := NewUSDTGatewayManager(cfg, store)
 
 	body := []byte(`{"event_id":"evt_1"}`)
@@ -218,7 +218,7 @@ func TestUSDTWebhookHandlerMissingSignature(t *testing.T) {
 
 func TestUSDTWebhookHandlerInvalidJSON(t *testing.T) {
 	cfg := Config{DevPaymentEnabled: true}
-	store := newTestStore(t, cfg)
+	store := newTestStoreUSDT(t, cfg)
 	gm := NewUSDTGatewayManager(cfg, store)
 
 	body := []byte(`not json`)
@@ -233,7 +233,7 @@ func TestUSDTWebhookHandlerInvalidJSON(t *testing.T) {
 
 func TestUSDTWebhookHandlerMissingEventID(t *testing.T) {
 	cfg := Config{DevPaymentEnabled: true}
-	store := newTestStore(t, cfg)
+	store := newTestStoreUSDT(t, cfg)
 	gm := NewUSDTGatewayManager(cfg, store)
 
 	payload := USDTWebhookPayload{
@@ -256,7 +256,7 @@ func TestUSDTWebhookHandlerValidConfirmed(t *testing.T) {
 		DevPaymentEnabled: true,
 		PlatformFeeBps:    1000,
 	}
-	store := newTestStore(t, cfg)
+	store := newTestStoreUSDT(t, cfg)
 	gm := NewUSDTGatewayManager(cfg, store)
 
 	// First create a project for the webhook to reference
@@ -332,7 +332,7 @@ func TestUSDTWebhookHandlerValidConfirmed(t *testing.T) {
 
 func TestUSDTWebhookHandlerIdempotencyDuplicate(t *testing.T) {
 	cfg := Config{DevPaymentEnabled: true}
-	store := newTestStore(t, cfg)
+	store := newTestStoreUSDT(t, cfg)
 	gm := NewUSDTGatewayManager(cfg, store)
 
 	userID := createTestUser(t, store)
@@ -396,7 +396,7 @@ func TestUSDTWebhookHandlerIdempotencyDuplicate(t *testing.T) {
 
 func TestListUSDTWebhookEvents(t *testing.T) {
 	cfg := Config{DevPaymentEnabled: true}
-	store := newTestStore(t, cfg)
+	store := newTestStoreUSDT(t, cfg)
 
 	events := store.ListUSDTWebhookEvents()
 	if events == nil {
@@ -421,7 +421,7 @@ func TestListUSDTWebhookEvents(t *testing.T) {
 
 func TestUSDTGatewayProviderRegistration(t *testing.T) {
 	cfg := Config{DevPaymentEnabled: true}
-	store := newTestStore(t, cfg)
+	store := newTestStoreUSDT(t, cfg)
 	gm := NewUSDTGatewayManager(cfg, store)
 
 	if len(gm.providers) != 1 {
@@ -450,8 +450,8 @@ func createTestUser(t *testing.T, store *Store) string {
 	return auth.User.ID
 }
 
-// newTestStore creates a minimal in-memory store for tests.
-func newTestStore(t *testing.T, cfg Config) *Store {
+// newTestStoreUSDT creates a minimal in-memory store for tests.
+func newTestStoreUSDT(t *testing.T, cfg Config) *Store {
 	t.Helper()
 	store, err := NewStore(cfg, NewPaymentManager(cfg), NewRepoFactory(cfg), NewEmailSender(cfg))
 	if err != nil {
