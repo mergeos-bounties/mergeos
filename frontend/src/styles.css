@@ -1072,6 +1072,86 @@ svg {
   color: #7b8492;
 }
 
+.reference-dropzone .text-action:disabled {
+  opacity: 0.62;
+  cursor: wait;
+}
+
+.hidden-file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.attachment-error {
+  margin: 2px 0 0;
+  color: #b91c1c;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.attachment-list {
+  width: 100%;
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.attachment-row {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) 30px;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #e5eaf0;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 8px;
+  text-align: left;
+}
+
+.attachment-row > svg {
+  color: #16a34a;
+}
+
+.attachment-row div {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.attachment-row strong,
+.attachment-row small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attachment-row strong {
+  color: #111827;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.attachment-row button {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #64748b;
+}
+
+.attachment-row button:hover {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
 .budget-row {
   grid-template-columns: minmax(190px, 240px) minmax(0, 1fr);
   align-items: start;

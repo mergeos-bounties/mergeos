@@ -270,11 +270,37 @@
               <small>{{ projectSetupForm.requirements.length }} / 2000</small>
             </label>
 
-            <section class="wizard-section split reference-dropzone">
+            <section
+              class="wizard-section split reference-dropzone"
+              @dragover.prevent
+              @drop.prevent="uploadProjectAttachments"
+            >
               <UploadCloud :size="24" />
               <strong>Drag & drop files here</strong>
-              <button class="text-action" type="button" @click="showToast('File upload coming soon.')">browse your files</button>
+              <button class="text-action" :disabled="attachmentUploadBusy" type="button" @click="openAttachmentPicker">
+                {{ attachmentUploadBusy ? 'Uploading...' : 'browse your files' }}
+              </button>
+              <input
+                ref="attachmentInput"
+                class="hidden-file-input"
+                multiple
+                type="file"
+                @change="uploadProjectAttachments"
+              />
               <small>Supports images, PDFs, docs, links up to 200MB.</small>
+              <p v-if="attachmentUploadError" class="attachment-error">{{ attachmentUploadError }}</p>
+              <div v-if="projectAttachments.length" class="attachment-list" aria-label="Project attachments">
+                <article v-for="file in projectAttachments" :key="file.id" class="attachment-row">
+                  <FileText :size="15" />
+                  <div>
+                    <strong>{{ file.original_name || 'Attachment' }}</strong>
+                    <small>{{ formatFileSize(file.size_bytes) }} · {{ file.content_type || 'file' }}</small>
+                  </div>
+                  <button type="button" :aria-label="`Remove ${file.original_name || 'attachment'}`" @click="removeProjectAttachment(file.id)">
+                    <X :size="14" />
+                  </button>
+                </article>
+              </div>
             </section>
           </div>
 
@@ -557,6 +583,22 @@
                 </li>
               </ul>
               <p v-else>{{ projectDeliverablesPlaceholder }}</p>
+            </section>
+
+            <section v-if="projectAttachments.length" class="review-card">
+              <button type="button" aria-label="Edit attachments" @click="goProjectStep(2)">
+                <PenLine :size="15" />
+              </button>
+              <h3>
+                <FileText :size="17" />
+                Reference files
+              </h3>
+              <ul>
+                <li v-for="file in projectAttachments" :key="file.id">
+                  <CheckCircle2 :size="14" />
+                  {{ file.original_name || 'Attachment' }}
+                </li>
+              </ul>
             </section>
 
             <section class="review-card">
@@ -3736,6 +3778,7 @@ import {
   Eye,
   Filter,
   FileCheck2,
+  FileText,
   FolderKanban,
   GitBranch,
   GitPullRequest,
@@ -4047,12 +4090,16 @@ const dashboardActivityPanel = ref(null);
 const dashboardLedgerPanel = ref(null);
 const dashboardNotificationCenter = ref(null);
 const repoImportInput = ref(null);
+const attachmentInput = ref(null);
 const priceEvaluation = ref(null);
 const priceEvaluationBusy = ref(false);
 const priceEvaluationError = ref('');
 const repoImportBusy = ref(false);
 const repoImportError = ref('');
 const repoImportResult = ref(null);
+const projectAttachments = ref([]);
+const attachmentUploadBusy = ref(false);
+const attachmentUploadError = ref('');
 let dashboardRefreshTimer = 0;
 
 const projectSetupForm = reactive({
@@ -6154,7 +6201,8 @@ function projectSetupIsEmpty() {
     projectSetupForm.requirements,
     projectSetupForm.budgetAmount,
   ].every((value) => !String(value || '').trim())
-    && projectDeliverables.value.every((item) => !String(item || '').trim());
+    && projectDeliverables.value.every((item) => !String(item || '').trim())
+    && projectAttachments.value.length === 0;
 }
 
 function projectDraftPayload() {
@@ -6162,6 +6210,7 @@ function projectDraftPayload() {
     saved_at: new Date().toISOString(),
     form: { ...projectSetupForm },
     deliverables: projectDeliverables.value.slice(),
+    attachments: projectAttachments.value.slice(),
     repo_import_result: repoImportResult.value,
     funding_amount: projectFundingAmount.value,
     payment_method: projectPaymentMethod.value,
@@ -6177,6 +6226,7 @@ function applyProjectDraft(draft = {}) {
   }
   const deliverables = Array.isArray(draft.deliverables) ? draft.deliverables : [];
   projectDeliverables.value = deliverables.length ? deliverables : [''];
+  projectAttachments.value = Array.isArray(draft.attachments) ? draft.attachments.filter((file) => file?.id) : [];
   repoImportResult.value = draft.repo_import_result || null;
   projectFundingAmount.value = draft.funding_amount || projectFundingAmount.value;
   projectPaymentMethod.value = draft.payment_method || projectPaymentMethod.value;
@@ -6314,6 +6364,88 @@ async function loadRepoIssues() {
   }
 }
 
+function openAttachmentPicker() {
+  attachmentInput.value?.click();
+}
+
+function projectAttachmentFilesFromEvent(event) {
+  const source = event?.dataTransfer?.files || event?.target?.files;
+  return source ? Array.from(source).filter((file) => file?.name) : [];
+}
+
+function resetAttachmentInput(event) {
+  const target = event?.target;
+  if (target && 'value' in target) {
+    target.value = '';
+  }
+}
+
+function normalizeAttachmentResponse(payload) {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.attachments)) return payload.attachments;
+  return payload?.id ? [payload] : [];
+}
+
+function requireLoginForProjectAttachmentUpload() {
+  authReturnToProjectWizard.value = true;
+  projectWizardVisible.value = false;
+  openAuth('login');
+  showToast('Log in to upload attachments.');
+}
+
+async function uploadProjectAttachments(event) {
+  const files = projectAttachmentFilesFromEvent(event);
+  resetAttachmentInput(event);
+  if (!files.length || attachmentUploadBusy.value) return;
+
+  attachmentUploadError.value = '';
+  if (!user.value || !token.value) {
+    requireLoginForProjectAttachmentUpload();
+    return;
+  }
+
+  const form = new FormData();
+  files.forEach((file) => form.append('files', file));
+  attachmentUploadBusy.value = true;
+  try {
+    const response = await fetch('/api/uploads', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token.value}`,
+      },
+      body: form,
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      if (response.status === 401) {
+        clearSession();
+        requireLoginForProjectAttachmentUpload();
+        return;
+      }
+      throw createRequestError(response, payload && !Array.isArray(payload) ? payload : {});
+    }
+    const uploaded = normalizeAttachmentResponse(payload).filter((file) => file?.id);
+    if (!uploaded.length) {
+      throw new Error('Upload finished but no attachment IDs were returned.');
+    }
+    const existingIDs = new Set(projectAttachments.value.map((file) => file.id));
+    projectAttachments.value = [
+      ...projectAttachments.value,
+      ...uploaded.filter((file) => !existingIDs.has(file.id)),
+    ];
+    showToast(`${uploaded.length} file${uploaded.length === 1 ? '' : 's'} attached.`);
+  } catch (error) {
+    attachmentUploadError.value = error.message || 'Could not upload attachments.';
+    showToast(attachmentUploadError.value);
+  } finally {
+    attachmentUploadBusy.value = false;
+  }
+}
+
+function removeProjectAttachment(attachmentID) {
+  projectAttachments.value = projectAttachments.value.filter((file) => file.id !== attachmentID);
+}
+
 function openAuthFromProjectWizard(mode = 'login') {
   closeProjectWizard();
   openAuth(mode);
@@ -6447,6 +6579,8 @@ async function completeProjectFunding() {
       body: JSON.stringify(buildCreateProjectPayload()),
     });
     fundedProject.value = project;
+    projectAttachments.value = [];
+    browserStorage?.removeItem(projectDraftStorageKey);
     projectWizardVisible.value = true;
     projectWizardStage.value = 'success';
     projectWizardStep.value = 4;
@@ -6543,6 +6677,13 @@ function formatMoney(value) {
     currency: 'USD',
     maximumFractionDigits: 0,
   }).format(Number(value) || 0);
+}
+
+function formatFileSize(bytes = 0) {
+  const size = Math.max(0, Number(bytes) || 0);
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(size < 1024 * 10 ? 1 : 0)} KB`;
+  return `${(size / (1024 * 1024)).toFixed(size < 1024 * 1024 * 10 ? 1 : 0)} MB`;
 }
 
 function mrgFromUSD(value = 0) {
@@ -7560,7 +7701,7 @@ function buildCreateProjectPayload() {
     budget_cents: projectPaymentAmountCents.value,
     payment_method: paymentMethodForProject(),
     payment_reference: paymentReferenceForProject(),
-    attachment_ids: [],
+    attachment_ids: projectAttachments.value.map((file) => file.id).filter(Boolean),
     source_repo_url: projectSetupForm.repoUrl || '',
   };
 }
@@ -7572,6 +7713,7 @@ function buildProjectBrief() {
     projectSetupForm.overview && `Overview:\n${projectSetupForm.overview}`,
     repoImportedIssues.value.length && `Imported issues:\n${repoImportedIssues.value.map((issue) => `- #${issue.number} ${issue.title} (score ${issue.score}, ${issue.complexity})`).join('\n')}`,
     visibleDeliverables.value.length && `Deliverables:\n${visibleDeliverables.value.map((item) => `- ${item}`).join('\n')}`,
+    projectAttachments.value.length && `Reference files:\n${projectAttachments.value.map((file) => `- ${file.original_name || file.id}`).join('\n')}`,
     projectSetupForm.requirements && `Requirements:\n${projectSetupForm.requirements}`,
     projectSetupForm.techStack && `Tech stack: ${projectSetupForm.techStack}`,
     `Visibility: ${projectSetupForm.visibility}`,
