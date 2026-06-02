@@ -640,6 +640,7 @@ type MarketplaceBounty struct {
 	RequiredWorkerKind WorkerKind `json:"required_worker_kind"`
 	SuggestedAgentType string     `json:"suggested_agent_type,omitempty"`
 	BountyType         string     `json:"bounty_type,omitempty"`
+	SourceRepository   string     `json:"source_repository,omitempty"`
 	IssueURL           string     `json:"issue_url,omitempty"`
 	CreatedAt          time.Time  `json:"created_at"`
 }

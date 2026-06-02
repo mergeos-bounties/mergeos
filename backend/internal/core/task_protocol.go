@@ -34,6 +34,7 @@ func publicTaskProtocolDocument(bounty *MarketplaceBounty) TaskProtocolDocument 
 		"claim_id":      bounty.ClaimID,
 		"issue_number":  bounty.IssueNumber,
 		"project_title": bounty.ProjectTitle,
+		"repository":    bounty.SourceRepository,
 		"created_at":    bounty.CreatedAt,
 		"analysis": map[string]any{
 			"complexity": complexity,
@@ -50,6 +51,7 @@ func publicTaskProtocolDocument(bounty *MarketplaceBounty) TaskProtocolDocument 
 		ProjectID:          strings.TrimSpace(bounty.ProjectID),
 		Title:              protocolText(bounty.Title, 240, "Untitled bounty"),
 		Summary:            protocolText(bounty.Acceptance, 2000, ""),
+		SourceRepository:   protocolText(bounty.SourceRepository, 512, ""),
 		IssueURL:           protocolText(bounty.IssueURL, 512, ""),
 		RewardMRG:          float64(bounty.RewardCents) / 100,
 		EstimatedHours:     bounty.EstimatedHours,
