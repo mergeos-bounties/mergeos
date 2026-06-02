@@ -34,6 +34,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/public/ledger/verify", s.publicLedgerVerify)
 	mux.HandleFunc("GET /api/public/live-feed", s.publicLiveFeed)
 	mux.HandleFunc("GET /api/public/protocol", s.publicProtocolManifest)
+	mux.HandleFunc("GET /api/public/protocol/ledger", s.publicProtocolLedger)
 	mux.HandleFunc("GET /api/public/protocol/tasks", s.publicProtocolTasks)
 	mux.HandleFunc("GET /api/public/protocol/agents", s.publicProtocolAgents)
 	mux.HandleFunc("GET /api/public/protocol/events", s.publicProtocolEvents)
@@ -200,6 +201,16 @@ func (s *Server) publicLiveFeed(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) publicProtocolManifest(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, ProtocolManifest())
+}
+
+func (s *Server) publicProtocolLedger(w http.ResponseWriter, _ *http.Request) {
+	writeJSON(w, http.StatusOK, LedgerProtocolResponse{
+		ProtocolVersion: "mergeos.ledger.v1",
+		Kind:            "ledger",
+		TokenSymbol:     normalizedTokenSymbol(s.cfg.TokenSymbol),
+		Verification:    s.store.VerifyLedger(),
+		Entries:         s.store.ListPublicLedger(),
+	})
 }
 
 func (s *Server) publicProtocolEvents(w http.ResponseWriter, r *http.Request) {

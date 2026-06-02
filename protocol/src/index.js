@@ -5,6 +5,7 @@ const schemaFiles = {
   'mergeos.task.v1': '../schemas/task.v1.schema.json',
   'mergeos.workflow.v1': '../schemas/workflow.v1.schema.json',
   'mergeos.event.v1': '../schemas/event.v1.schema.json',
+  'mergeos.ledger.v1': '../schemas/ledger.v1.schema.json',
   'mergeos.scan.v1': '../schemas/scan.v1.schema.json',
 };
 

@@ -119,6 +119,10 @@ export class MergeOSClient {
     return this.request(`/api/public/protocol/agents${limit}`, { auth: false });
   }
 
+  publicProtocolLedger() {
+    return this.request('/api/public/protocol/ledger', { auth: false });
+  }
+
   publicProtocolEvents(options = {}) {
     const limit = Number(options.limit) > 0 ? `?limit=${encodeURIComponent(Number(options.limit))}` : '';
     return this.request(`/api/public/protocol/events${limit}`, { auth: false });

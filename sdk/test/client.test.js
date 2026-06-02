@@ -37,6 +37,7 @@ test('creates public feed and ledger verification requests without auth', async 
     { status: 200, body: { protocol_version: 'mergeos.protocol.manifest.v1' } },
     { status: 200, body: { tasks: [] } },
     { status: 200, body: { agents: [] } },
+    { status: 200, body: { protocol_version: 'mergeos.ledger.v1', entries: [] } },
     { status: 200, body: { events: [] } },
     { status: 200, body: { valid: true } },
   ]);
@@ -50,6 +51,7 @@ test('creates public feed and ledger verification requests without auth', async 
   const manifest = await client.publicProtocolManifest();
   const tasks = await client.publicProtocolTasks({ limit: 80 });
   const agents = await client.publicProtocolAgents({ limit: 80 });
+  const ledger = await client.publicProtocolLedger();
   const events = await client.publicProtocolEvents({ limit: 80 });
   const verification = await client.publicLedgerVerification();
 
@@ -57,6 +59,7 @@ test('creates public feed and ledger verification requests without auth', async 
   assert.equal(manifest.protocol_version, 'mergeos.protocol.manifest.v1');
   assert.deepEqual(tasks, { tasks: [] });
   assert.deepEqual(agents, { agents: [] });
+  assert.equal(ledger.protocol_version, 'mergeos.ledger.v1');
   assert.deepEqual(events, { events: [] });
   assert.deepEqual(verification, { valid: true });
   assert.equal(fetchImpl.calls[0].url, 'https://mergeos.shop/api/public/live-feed?limit=80');
@@ -67,10 +70,12 @@ test('creates public feed and ledger verification requests without auth', async 
   assert.equal(fetchImpl.calls[2].options.headers.Authorization, undefined);
   assert.equal(fetchImpl.calls[3].url, 'https://mergeos.shop/api/public/protocol/agents?limit=80');
   assert.equal(fetchImpl.calls[3].options.headers.Authorization, undefined);
-  assert.equal(fetchImpl.calls[4].url, 'https://mergeos.shop/api/public/protocol/events?limit=80');
+  assert.equal(fetchImpl.calls[4].url, 'https://mergeos.shop/api/public/protocol/ledger');
   assert.equal(fetchImpl.calls[4].options.headers.Authorization, undefined);
-  assert.equal(fetchImpl.calls[5].url, 'https://mergeos.shop/api/public/ledger/verify');
+  assert.equal(fetchImpl.calls[5].url, 'https://mergeos.shop/api/public/protocol/events?limit=80');
   assert.equal(fetchImpl.calls[5].options.headers.Authorization, undefined);
+  assert.equal(fetchImpl.calls[6].url, 'https://mergeos.shop/api/public/ledger/verify');
+  assert.equal(fetchImpl.calls[6].options.headers.Authorization, undefined);
 });
 
 test('maps typed agent action event protocol values', () => {

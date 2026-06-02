@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mergeos.shop/protocol/ledger.v1.schema.json",
+  "title": "MergeOS Ledger v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["protocol_version", "kind", "token_symbol", "verification", "entries"],
+  "properties": {
+    "protocol_version": { "const": "mergeos.ledger.v1" },
+    "kind": { "const": "ledger" },
+    "token_symbol": { "type": "string", "minLength": 1, "maxLength": 16 },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["valid", "entry_count", "last_sequence", "last_hash"],
+      "properties": {
+        "valid": { "type": "boolean" },
+        "entry_count": { "type": "integer", "minimum": 0 },
+        "last_sequence": { "type": "integer", "minimum": 0 },
+        "last_hash": { "type": "string", "minLength": 64, "maxLength": 64 },
+        "broken_sequence": { "type": "integer", "minimum": 0 },
+        "error": { "type": "string", "maxLength": 500 },
+        "updated_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["sequence", "type", "amount_cents", "reference", "previous_hash", "entry_hash", "created_at"],
+        "properties": {
+          "sequence": { "type": "integer", "minimum": 1 },
+          "type": { "type": "string", "minLength": 1, "maxLength": 80 },
+          "from_account": { "type": "string", "maxLength": 160 },
+          "to_account": { "type": "string", "maxLength": 160 },
+          "amount_cents": { "type": "integer", "minimum": 0 },
+          "reference": { "type": "string", "maxLength": 512 },
+          "previous_hash": { "type": "string", "minLength": 64, "maxLength": 64 },
+          "entry_hash": { "type": "string", "minLength": 64, "maxLength": 64 },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      }
+    }
+  }
+}

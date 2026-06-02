@@ -2,10 +2,11 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { assertProtocolDocument, protocolSchemas, schemaForProtocol, validateProtocolDocument } from '../src/index.js';
 
-test('loads stable task, workflow, and event schemas', () => {
+test('loads stable task, workflow, ledger, and event schemas', () => {
   assert.deepEqual(Object.keys(protocolSchemas).sort(), [
     'mergeos.agent.v1',
     'mergeos.event.v1',
+    'mergeos.ledger.v1',
     'mergeos.scan.v1',
     'mergeos.task.v1',
     'mergeos.workflow.v1',
@@ -173,6 +174,42 @@ test('validates event protocol documents and assertion helper', () => {
   });
   assert.equal(unknownEvent.valid, false);
   assert(unknownEvent.errors.some((error) => error.path === 'type'));
+});
+
+test('validates public ledger protocol documents', () => {
+  const ledger = {
+    protocol_version: 'mergeos.ledger.v1',
+    kind: 'ledger',
+    token_symbol: 'MRG',
+    verification: {
+      valid: true,
+      entry_count: 1,
+      last_sequence: 1,
+      last_hash: 'b'.repeat(64),
+      updated_at: '2026-06-03T00:00:00.000Z',
+    },
+    entries: [
+      {
+        sequence: 1,
+        type: 'task_payment',
+        from_account: 'escrow:task-reserve',
+        to_account: 'github:contributor',
+        amount_cents: 5000,
+        reference: 'project:prj_0001;task:tsk_0001;pr:https://github.com/mergeos-bounties/mergeos/pull/120',
+        previous_hash: '0'.repeat(64),
+        entry_hash: 'b'.repeat(64),
+        created_at: '2026-06-03T00:00:00.000Z',
+      },
+    ],
+  };
+
+  assert.equal(validateProtocolDocument(ledger).valid, true);
+  const invalid = validateProtocolDocument({
+    ...ledger,
+    verification: { ...ledger.verification, last_hash: 'short' },
+  });
+  assert.equal(invalid.valid, false);
+  assert(invalid.errors.some((error) => error.path === 'verification.last_hash'));
 });
 
 test('validates repository scan protocol documents', () => {

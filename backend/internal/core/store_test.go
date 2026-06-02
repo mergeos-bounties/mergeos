@@ -721,7 +721,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 	if payload.ProtocolVersion != "mergeos.protocol.manifest.v1" || payload.Kind != "protocol_manifest" {
 		t.Fatalf("unexpected manifest header: %#v", payload)
 	}
-	if len(payload.Schemas) != 5 {
+	if len(payload.Schemas) != 6 {
 		t.Fatalf("manifest schemas = %d: %#v", len(payload.Schemas), payload.Schemas)
 	}
 	schemas := map[string]bool{}
@@ -730,7 +730,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 		schemas[schema.Version] = true
 		descriptions[schema.Version] = schema.Description
 	}
-	for _, required := range []string{"mergeos.task.v1", "mergeos.agent.v1", "mergeos.workflow.v1", "mergeos.event.v1", "mergeos.scan.v1"} {
+	for _, required := range []string{"mergeos.task.v1", "mergeos.agent.v1", "mergeos.workflow.v1", "mergeos.event.v1", "mergeos.ledger.v1", "mergeos.scan.v1"} {
 		if !schemas[required] {
 			t.Fatalf("manifest missing schema %s: %#v", required, payload.Schemas)
 		}
@@ -745,6 +745,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 	for _, required := range []string{
 		"GET /api/public/protocol/tasks",
 		"GET /api/public/protocol/agents",
+		"GET /api/public/protocol/ledger",
 		"GET /api/public/protocol/events",
 		"WS /api/ws",
 		"GET /api/projects/{id}/protocol/workflow",
@@ -1044,6 +1045,32 @@ func TestPublicLedgerRouteReturnsSanitizedLiveData(t *testing.T) {
 	}
 	if !foundGitHubWorker {
 		t.Fatalf("public ledger did not expose github worker account: %#v", payload)
+	}
+
+	protocolReq := httptest.NewRequest(http.MethodGet, "/api/public/protocol/ledger", nil)
+	protocolResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(protocolResp, protocolReq)
+	if protocolResp.Code != http.StatusOK {
+		t.Fatalf("public protocol ledger status = %d, body = %s", protocolResp.Code, protocolResp.Body.String())
+	}
+	protocolBody := protocolResp.Body.String()
+	for _, value := range privateValues {
+		if strings.Contains(protocolBody, value) {
+			t.Fatalf("public protocol ledger leaked private value %q: %s", value, protocolBody)
+		}
+	}
+	var protocolPayload LedgerProtocolResponse
+	if err := json.Unmarshal(protocolResp.Body.Bytes(), &protocolPayload); err != nil {
+		t.Fatal(err)
+	}
+	if protocolPayload.ProtocolVersion != "mergeos.ledger.v1" || protocolPayload.Kind != "ledger" || protocolPayload.TokenSymbol != defaultTokenSymbol {
+		t.Fatalf("unexpected public ledger protocol header: %#v", protocolPayload)
+	}
+	if !protocolPayload.Verification.Valid || protocolPayload.Verification.EntryCount != len(store.ListLedger()) {
+		t.Fatalf("unexpected public ledger protocol verification: %#v", protocolPayload.Verification)
+	}
+	if len(protocolPayload.Entries) != len(payload) {
+		t.Fatalf("public ledger protocol entries = %d, want %d", len(protocolPayload.Entries), len(payload))
 	}
 }
 

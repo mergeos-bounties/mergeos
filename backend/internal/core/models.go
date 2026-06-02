@@ -196,6 +196,14 @@ type LedgerVerificationResponse struct {
 	UpdatedAt      *time.Time `json:"updated_at,omitempty"`
 }
 
+type LedgerProtocolResponse struct {
+	ProtocolVersion string                     `json:"protocol_version"`
+	Kind            string                     `json:"kind"`
+	TokenSymbol     string                     `json:"token_symbol"`
+	Verification    LedgerVerificationResponse `json:"verification"`
+	Entries         []LedgerEntry              `json:"entries"`
+}
+
 type RegisterRequest struct {
 	Name        string `json:"name"`
 	CompanyName string `json:"company_name"`

@@ -30,6 +30,12 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Description: "Realtime project, task, PR, deployment, ledger, and AI agent event envelope.",
 			},
 			{
+				Version:     "mergeos.ledger.v1",
+				Kind:        "ledger",
+				SchemaURL:   "https://mergeos.shop/protocol/ledger.v1.schema.json",
+				Description: "Public ledger entries with hash-chain verification metadata for payouts, fees, token minting, and manual credits.",
+			},
+			{
 				Version:     "mergeos.scan.v1",
 				Kind:        "repository_scan",
 				SchemaURL:   "https://mergeos.shop/protocol/scan.v1.schema.json",
@@ -56,6 +62,13 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Protocol:    "mergeos.agent.v1",
 				Auth:        "none",
 				Description: "Public AI agent lanes as protocol documents.",
+			},
+			{
+				Method:      "GET",
+				Path:        "/api/public/protocol/ledger",
+				Protocol:    "mergeos.ledger.v1",
+				Auth:        "none",
+				Description: "Public ledger proof document with sanitized ledger rows and hash-chain verification.",
 			},
 			{
 				Method:      "GET",

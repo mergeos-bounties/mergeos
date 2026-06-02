@@ -1,6 +1,6 @@
 # MergeOS Protocol
 
-Open protocol definitions for MergeOS tasks, agent lanes, workflow graphs, and realtime events.
+Open protocol definitions for MergeOS tasks, agent lanes, workflow graphs, public ledger proof, and realtime events.
 
 The live app exposes protocol discovery at `GET /api/public/protocol`.
 
@@ -10,6 +10,7 @@ The live app exposes protocol discovery at `GET /api/public/protocol`.
 - `mergeos.agent.v1`: an AI agent lane with supported actions, capabilities, and open task references.
 - `mergeos.workflow.v1`: a project workflow graph with progress, current AI workflow step, nodes, dependency edges, worker lanes, rewards, and effort estimates.
 - `mergeos.event.v1`: a realtime ledger/workflow event emitted by apps, agents, or integrations, including typed agent review/test/generate/deploy/scan events.
+- `mergeos.ledger.v1`: a public ledger proof document with sanitized ledger rows and hash-chain verification metadata.
 - `mergeos.scan.v1`: a repository scan document with dependency manifests, language counts, and security/debt findings.
 
 Event types include project funding, task creation/claim/payment, PR lifecycle, repository issue sync, deployment updates, ledger records, and agent actions.

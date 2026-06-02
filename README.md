@@ -323,6 +323,7 @@ Public:
 - `GET /api/public/protocol`
 - `GET /api/public/protocol/tasks`
 - `GET /api/public/protocol/agents`
+- `GET /api/public/protocol/ledger`
 - `GET /api/public/protocol/events`
 - `WS /api/ws`
 - `POST /api/public/repo/issues`
