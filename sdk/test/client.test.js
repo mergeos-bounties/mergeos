@@ -97,18 +97,28 @@ test('exposes public repo import and password-gated test settings without auth',
   }));
 });
 
-test('sends bearer token and JSON body for task acceptance', async () => {
-  const fetchImpl = fakeFetch([{ status: 200, body: { id: 'tsk_1', status: 'accepted' } }]);
+test('sends bearer token and JSON body for task acceptance and disputes', async () => {
+  const fetchImpl = fakeFetch([
+    { status: 200, body: { id: 'tsk_1', status: 'accepted' } },
+    { status: 201, body: { notification: { id: 'ntf_1', status: 'dispute:high' } } },
+  ]);
   const client = createMergeOSClient({ baseURL: 'http://127.0.0.1:8080', token: 'abc', fetchImpl });
 
   const payload = { worker_kind: 'human', worker_id: 'github:worker' };
   const task = await client.acceptTask('tsk_1', payload);
+  const disputePayload = { task_id: 'tsk_1', body: 'Evidence needs maintainer review.' };
+  const dispute = await client.createDispute(disputePayload);
 
   assert.equal(task.status, 'accepted');
+  assert.equal(dispute.notification.status, 'dispute:high');
   assert.equal(fetchImpl.calls[0].url, 'http://127.0.0.1:8080/api/tasks/tsk_1/accept');
   assert.equal(fetchImpl.calls[0].options.method, 'POST');
   assert.equal(fetchImpl.calls[0].options.headers.Authorization, 'Bearer abc');
   assert.equal(fetchImpl.calls[0].options.body, JSON.stringify(payload));
+  assert.equal(fetchImpl.calls[1].url, 'http://127.0.0.1:8080/api/disputes');
+  assert.equal(fetchImpl.calls[1].options.method, 'POST');
+  assert.equal(fetchImpl.calls[1].options.headers.Authorization, 'Bearer abc');
+  assert.equal(fetchImpl.calls[1].options.body, JSON.stringify(disputePayload));
 });
 
 test('supports wallet, payment, and raw upload helper routes', async () => {

@@ -2298,6 +2298,137 @@ func TestAdminOpsQueueReturnsDisputeModerationAndPayoutItems(t *testing.T) {
 	}
 }
 
+func TestCreateDisputeRouteAddsAdminOpsQueueItem(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:       defaultTokenSymbol,
+		StatePath:         filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:    1000,
+		DevPaymentEnabled: true,
+		DevPaymentCode:    defaultDevPaymentCode,
+		GitHubOwner:       defaultGitHubOwner,
+		BountyRoot:        filepath.Join(tempDir, "bounties"),
+		SMTPFrom:          "noreply@mergeos.local",
+		AdminAutoPromote:  true,
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	adminAuth, err := store.Register(RegisterRequest{Name: "Ops Admin", Email: "ops-admin-dispute@example.com", Password: "password123"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	clientAuth, err := store.Register(RegisterRequest{Name: "Dispute Client", CompanyName: "Dispute Co", Email: "dispute-client@example.com", Password: "password123"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	workerAuth, err := store.Register(RegisterRequest{Name: "Dispute Worker", Email: "dispute-worker@example.com", Password: "password123"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	otherAuth, err := store.Register(RegisterRequest{Name: "Other User", Email: "other-dispute@example.com", Password: "password123"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	store.mu.Lock()
+	store.users[workerAuth.User.ID].GitHubUsername = "worker-dispute"
+	store.mu.Unlock()
+
+	project, err := store.CreateProject(context.Background(), clientAuth.User.ID, CreateProjectRequest{
+		Title:            "Dispute workflow proof",
+		ClientName:       "Private Dispute Client",
+		CompanyName:      "Dispute Co",
+		ClientEmail:      "dispute-client@example.com",
+		Phone:            "+1 555 0188",
+		Brief:            "Create dispute queue coverage without leaking private project data.",
+		BudgetCents:      180000,
+		PaymentMethod:    PaymentPayPal,
+		PaymentReference: defaultDevPaymentCode,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var humanTask *Task
+	for _, task := range project.Tasks {
+		if task.RequiredWorkerKind == WorkerHuman {
+			humanTask = task
+			break
+		}
+	}
+	if humanTask == nil {
+		t.Fatal("project did not create a human task")
+	}
+	if _, err := store.AcceptTask(humanTask.ID, AcceptTaskRequest{WorkerKind: WorkerHuman, WorkerID: "github:worker-dispute"}); err != nil {
+		t.Fatal(err)
+	}
+
+	server := NewServer(cfg, store, payments)
+	clientBody := strings.NewReader(`{"project_id":"` + project.ID + `","subject":"Milestone evidence mismatch","body":"The submitted evidence does not match the deployed result.","severity":"critical"}`)
+	clientReq := httptest.NewRequest(http.MethodPost, "/api/disputes", clientBody)
+	clientReq.Header.Set("Authorization", "Bearer "+clientAuth.Token)
+	clientResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(clientResp, clientReq)
+	if clientResp.Code != http.StatusCreated {
+		t.Fatalf("client dispute status = %d, body = %s", clientResp.Code, clientResp.Body.String())
+	}
+	var created CreateDisputeResponse
+	if err := json.Unmarshal(clientResp.Body.Bytes(), &created); err != nil {
+		t.Fatal(err)
+	}
+	if created.Notification.ProjectID != project.ID || created.Notification.Channel != "dispute" || created.Notification.Status != "dispute:critical" {
+		t.Fatalf("unexpected dispute notification: %#v", created.Notification)
+	}
+
+	workerBody := strings.NewReader(`{"task_id":"` + humanTask.ID + `","body":"Payment proof needs maintainer review."}`)
+	workerReq := httptest.NewRequest(http.MethodPost, "/api/disputes", workerBody)
+	workerReq.Header.Set("Authorization", "Bearer "+workerAuth.Token)
+	workerResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(workerResp, workerReq)
+	if workerResp.Code != http.StatusCreated {
+		t.Fatalf("worker dispute status = %d, body = %s", workerResp.Code, workerResp.Body.String())
+	}
+
+	otherReq := httptest.NewRequest(http.MethodPost, "/api/disputes", strings.NewReader(`{"project_id":"`+project.ID+`","body":"Unauthorized dispute."}`))
+	otherReq.Header.Set("Authorization", "Bearer "+otherAuth.Token)
+	otherResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(otherResp, otherReq)
+	if otherResp.Code != http.StatusForbidden {
+		t.Fatalf("other dispute status = %d, body = %s", otherResp.Code, otherResp.Body.String())
+	}
+
+	adminReq := httptest.NewRequest(http.MethodGet, "/api/admin/ops-queue", nil)
+	adminReq.Header.Set("Authorization", "Bearer "+adminAuth.Token)
+	adminResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(adminResp, adminReq)
+	if adminResp.Code != http.StatusOK {
+		t.Fatalf("admin ops queue status = %d, body = %s", adminResp.Code, adminResp.Body.String())
+	}
+	body := adminResp.Body.String()
+	for _, value := range []string{"dispute-client@example.com", "+1 555 0188", defaultDevPaymentCode, tempDir} {
+		if strings.Contains(body, value) {
+			t.Fatalf("admin ops dispute queue leaked private value %q: %s", value, body)
+		}
+	}
+	var queue AdminOpsQueueResponse
+	if err := json.Unmarshal(adminResp.Body.Bytes(), &queue); err != nil {
+		t.Fatal(err)
+	}
+	if queue.Stats.DisputeCount < 2 || queue.Stats.CriticalCount < 1 {
+		t.Fatalf("ops queue missing dispute stats: %#v", queue.Stats)
+	}
+	foundCritical := false
+	for _, item := range queue.Items {
+		if item.Type == "dispute" && item.ProjectID == project.ID && item.Severity == "critical" {
+			foundCritical = true
+		}
+	}
+	if !foundCritical {
+		t.Fatalf("ops queue missing critical dispute item: %#v", queue.Items)
+	}
+}
+
 func TestAdminTasksRouteIncludesAcceptedTasksForAudit(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := Config{

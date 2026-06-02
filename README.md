@@ -356,6 +356,7 @@ Customer:
 - `GET /api/tasks`
 - `POST /api/tasks/{id}/accept`
 - `GET /api/workers/me`
+- `POST /api/disputes`
 - `GET /api/notifications`
 - `GET /api/ledger`
 

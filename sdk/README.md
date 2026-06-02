@@ -63,6 +63,10 @@ await mergeos.acceptTask('tsk_0001', {
   worker_id: 'github:contributor',
 });
 await mergeos.workerDashboard();
+await mergeos.createDispute({
+  task_id: 'tsk_0001',
+  body: 'Evidence needs maintainer review.',
+});
 ```
 
 ## Admin APIs

@@ -1703,7 +1703,7 @@ func (s *Store) userByEmailLocked(email string) *User {
 	return nil
 }
 
-func (s *Store) addNotificationLocked(userID, projectID, channel, subject, body, status string) {
+func (s *Store) addNotificationLocked(userID, projectID, channel, subject, body, status string) *Notification {
 	note := &Notification{
 		ID:        s.newID("ntf"),
 		UserID:    userID,
@@ -1715,6 +1715,7 @@ func (s *Store) addNotificationLocked(userID, projectID, channel, subject, body,
 		CreatedAt: time.Now().UTC(),
 	}
 	s.notifications[note.ID] = note
+	return note
 }
 
 func (s *Store) newID(prefix string) string {

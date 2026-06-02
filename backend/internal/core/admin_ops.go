@@ -247,11 +247,15 @@ func adminOpsTaskUpdatedAt(task *Task) time.Time {
 
 func adminOpsNotificationNeedsAttention(status string) bool {
 	status = strings.ToLower(strings.TrimSpace(status))
-	return strings.HasPrefix(status, "error:") || strings.HasPrefix(status, "skipped:")
+	return strings.HasPrefix(status, "error:") || strings.HasPrefix(status, "skipped:") || strings.HasPrefix(status, "dispute:")
 }
 
 func adminOpsNotificationSeverity(status string) string {
-	if strings.HasPrefix(strings.ToLower(strings.TrimSpace(status)), "error:") {
+	status = strings.ToLower(strings.TrimSpace(status))
+	if strings.HasPrefix(status, "dispute:") {
+		return normalizeDisputeSeverity(strings.TrimPrefix(status, "dispute:"))
+	}
+	if strings.HasPrefix(status, "error:") {
 		return "high"
 	}
 	return "medium"

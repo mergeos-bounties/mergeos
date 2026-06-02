@@ -238,6 +238,10 @@ export class MergeOSClient {
     return this.request('/api/workers/me');
   }
 
+  createDispute(payload) {
+    return this.request('/api/disputes', { method: 'POST', body: payload });
+  }
+
   ledger() {
     return this.request('/api/ledger');
   }
