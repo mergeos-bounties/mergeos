@@ -24,6 +24,10 @@ const escrow = await mergeos.projectEscrow(projects[0].id);
 const pulls = await mergeos.projectPullRequests(projects[0].id);
 const deployment = await mergeos.projectDeployment(projects[0].id);
 const workflow = await mergeos.projectAIWorkflow(projects[0].id);
+const agentAction = await mergeos.createProjectAgentAction(projects[0].id, {
+  action: 'test',
+  agent_type: 'qa-agent',
+});
 const graph = await mergeos.projectTaskGraph(projects[0].id);
 const scan = await mergeos.projectRepositoryScan(projects[0].id);
 const scanProtocol = await mergeos.projectRepositoryScanProtocol(projects[0].id);
@@ -54,6 +58,12 @@ await mergeos.createProject(projectPayload);
 await mergeos.projectEscrow('prj_0001');
 await mergeos.projectDashboard('prj_0001');
 await mergeos.projectPullRequests('prj_0001');
+await mergeos.createProjectAgentAction('prj_0001', {
+  action: 'review',
+  agent_type: 'review-agent',
+  pull_number: 120,
+  reference_url: 'https://github.com/acme/repo/pull/120',
+});
 await mergeos.projectTaskGraph('prj_0001');
 await mergeos.projectWorkflowProtocol('prj_0001');
 await mergeos.projectRepositoryScan('prj_0001');

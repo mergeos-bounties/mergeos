@@ -225,10 +225,10 @@ func publicAILiveFeedItem(log *GeminiWebhookLog) PublicLiveFeedItem {
 	reference := publicLiveFeedAIReference(log)
 	return PublicLiveFeedItem{
 		ID:        "ai:" + log.ID,
-		Type:      "ai_review",
+		Type:      publicLiveFeedAIType(log),
 		Title:     publicLiveFeedAITitle(log),
 		Body:      publicLiveFeedAIBody(log),
-		Actor:     publicLiveFeedGitHubActor(log.Sender),
+		Actor:     publicLiveFeedAIActor(log),
 		Reference: reference,
 		URL:       publicLiveFeedURL(log.CommentURL),
 		Status:    publicLiveFeedStatus(log.Status),
@@ -324,6 +324,27 @@ func publicLiveFeedGitHubActor(sender string) string {
 	return githubWorkerAccount("github:" + strings.TrimPrefix(sender, "@"))
 }
 
+func publicLiveFeedAIType(log *GeminiWebhookLog) string {
+	if log != nil && strings.EqualFold(log.EventName, "agent_action") {
+		return "agent_action"
+	}
+	return "ai_review"
+}
+
+func publicLiveFeedAIActor(log *GeminiWebhookLog) string {
+	if log == nil {
+		return ""
+	}
+	if log != nil && strings.EqualFold(log.EventName, "agent_action") {
+		actor := sanitizeLedgerReferenceValue(strings.TrimPrefix(log.Sender, "agent:"))
+		if actor == "" {
+			actor = defaultAgentActionActor
+		}
+		return marketplaceTitle(actor)
+	}
+	return publicLiveFeedGitHubActor(log.Sender)
+}
+
 func publicLiveFeedLedgerTitle(entryType string) string {
 	switch entryType {
 	case "payment_verified":
@@ -354,6 +375,16 @@ func publicLiveFeedLedgerBody(entry LedgerEntry, projectTitle string) string {
 }
 
 func publicLiveFeedAITitle(log *GeminiWebhookLog) string {
+	if strings.EqualFold(log.EventName, "agent_action") {
+		action := sanitizeLedgerReferenceValue(log.Action)
+		if action == "" {
+			action = "action"
+		}
+		if log.PullNumber > 0 {
+			return fmt.Sprintf("AI agent %s PR #%d", agentActionTitleVerb(action), log.PullNumber)
+		}
+		return fmt.Sprintf("AI agent %s", agentActionTitleVerb(action))
+	}
 	if log.PullNumber > 0 {
 		return fmt.Sprintf("AI reviewed PR #%d", log.PullNumber)
 	}
@@ -364,6 +395,20 @@ func publicLiveFeedAIBody(log *GeminiWebhookLog) string {
 	repo := sanitizeLedgerReferenceValue(log.Repository)
 	if repo == "" {
 		repo = "GitHub repository"
+	}
+	if strings.EqualFold(log.EventName, "agent_action") {
+		agent := sanitizeLedgerReferenceValue(strings.TrimPrefix(log.Sender, "agent:"))
+		if agent == "" {
+			agent = defaultAgentActionActor
+		}
+		action := sanitizeLedgerReferenceValue(log.Action)
+		if action == "" {
+			action = "action"
+		}
+		if log.PullNumber > 0 {
+			return fmt.Sprintf("%s ran %s for %s PR #%d.", marketplaceTitle(agent), action, repo, log.PullNumber)
+		}
+		return fmt.Sprintf("%s ran %s for %s.", marketplaceTitle(agent), action, repo)
 	}
 	action := sanitizeLedgerReferenceValue(log.Action)
 	if action == "" {
@@ -387,6 +432,23 @@ func publicLiveFeedAIReference(log *GeminiWebhookLog) string {
 		return fmt.Sprintf("%s#%d", repo, log.PullNumber)
 	}
 	return repo
+}
+
+func agentActionTitleVerb(action string) string {
+	switch strings.ToLower(strings.TrimSpace(action)) {
+	case "review":
+		return "reviewed"
+	case "test":
+		return "tested"
+	case "generate":
+		return "generated"
+	case "deploy":
+		return "validated deployment"
+	case "scan":
+		return "scanned"
+	default:
+		return "recorded action"
+	}
 }
 
 func publicLiveFeedReferenceURL(reference string) string {

@@ -214,6 +214,10 @@ export class MergeOSClient {
     return this.request(`/api/projects/${encodeURIComponent(projectID)}/ai-workflow`);
   }
 
+  createProjectAgentAction(projectID, payload) {
+    return this.request(`/api/projects/${encodeURIComponent(projectID)}/agent-actions`, { method: 'POST', body: payload });
+  }
+
   projectTaskGraph(projectID) {
     return this.request(`/api/projects/${encodeURIComponent(projectID)}/task-graph`);
   }

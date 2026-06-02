@@ -89,6 +89,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/projects/{id}/repo-scan", s.projectRepositoryScan)
 	mux.HandleFunc("GET /api/projects/{id}/protocol/scan", s.projectRepositoryScanProtocol)
 	mux.HandleFunc("POST /api/projects/{id}/repo-sync", s.syncProjectRepoIssues)
+	mux.HandleFunc("POST /api/projects/{id}/agent-actions", s.createProjectAgentAction)
 	mux.HandleFunc("POST /api/projects", s.createProject)
 	mux.HandleFunc("POST /api/projects/evaluate", s.evaluateProject)
 	mux.HandleFunc("POST /api/projects/evaluate-price", s.evaluateProjectPrice)
@@ -577,6 +578,34 @@ func (s *Server) syncProjectRepoIssues(w http.ResponseWriter, r *http.Request) {
 	}
 	s.broadcastLiveFeedEvent("repo_issues_synced")
 	writeJSON(w, http.StatusOK, report)
+}
+
+func (s *Server) createProjectAgentAction(w http.ResponseWriter, r *http.Request) {
+	user, ok := s.requireUser(w, r)
+	if !ok {
+		return
+	}
+	projectID := strings.TrimSpace(r.PathValue("id"))
+	if !s.store.CanAccessProject(user.ID, user.Role, projectID) {
+		writeError(w, http.StatusForbidden, "project access is required")
+		return
+	}
+	var req AgentActionRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	response, err := s.store.RecordProjectAgentAction(projectID, req)
+	if err != nil {
+		status := http.StatusBadRequest
+		if strings.Contains(err.Error(), "not found") {
+			status = http.StatusNotFound
+		}
+		writeError(w, status, err.Error())
+		return
+	}
+	s.broadcastLiveFeedEvent("agent_action")
+	writeJSON(w, http.StatusCreated, response)
 }
 
 func (s *Server) notifications(w http.ResponseWriter, r *http.Request) {

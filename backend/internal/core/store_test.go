@@ -1682,6 +1682,186 @@ func TestProjectAIWorkflowRouteReturnsWorkflowAndSanitizesData(t *testing.T) {
 	}
 }
 
+func TestProjectAgentActionRouteRecordsWorkflowEventAndSanitizesData(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:       defaultTokenSymbol,
+		StatePath:         filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:    1000,
+		DevPaymentEnabled: true,
+		DevPaymentCode:    defaultDevPaymentCode,
+		GitHubOwner:       defaultGitHubOwner,
+		BountyRoot:        filepath.Join(tempDir, "bounties"),
+		SMTPFrom:          "noreply@mergeos.local",
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	auth, err := store.Register(RegisterRequest{
+		Name:        "Agent Client",
+		CompanyName: "Agent Co",
+		Email:       "agent-client@example.com",
+		Password:    "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	project, err := store.CreateProject(context.Background(), auth.User.ID, CreateProjectRequest{
+		Title:            "Agent action proof",
+		ClientName:       "Private Agent Client",
+		CompanyName:      "Agent Co",
+		ClientEmail:      "agent-client@example.com",
+		Phone:            "+1 555 0190",
+		Brief:            "Create AI agent action evidence without leaking private customer data.",
+		BudgetCents:      210000,
+		PaymentMethod:    PaymentPayPal,
+		PaymentReference: defaultDevPaymentCode,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	server := NewServer(cfg, store, payments)
+	createReq := httptest.NewRequest(http.MethodPost, "/api/projects/"+project.ID+"/agent-actions", strings.NewReader(`{
+		"action":"test",
+		"agent_type":"qa-agent",
+		"status":"processed",
+		"pull_number":777,
+		"reference_url":"https://github.com/mergeos-bounties/mergeos/pull/777",
+		"labels":["evidence: star"],
+		"duration_millis":1234
+	}`))
+	createReq.Header.Set("Authorization", "Bearer "+auth.Token)
+	createResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(createResp, createReq)
+	if createResp.Code != http.StatusCreated {
+		t.Fatalf("agent action status = %d, body = %s", createResp.Code, createResp.Body.String())
+	}
+
+	privateValues := []string{
+		"agent-client@example.com",
+		"+1 555 0190",
+		auth.User.ID,
+		defaultDevPaymentCode,
+		tempDir,
+		project.Tasks[0].ID,
+	}
+	body := createResp.Body.String()
+	for _, value := range privateValues {
+		if strings.Contains(body, value) {
+			t.Fatalf("agent action response leaked private value %q: %s", value, body)
+		}
+	}
+
+	var created AgentActionResponse
+	if err := json.Unmarshal(createResp.Body.Bytes(), &created); err != nil {
+		t.Fatal(err)
+	}
+	if created.Log.EventName != "agent_action" || created.Log.Action != "test" || created.Log.Repository != project.BountyRepoName || created.Log.PullNumber != 777 {
+		t.Fatalf("unexpected agent action log: %#v", created.Log)
+	}
+	if created.Log.Status != "processed" || created.Log.CommentURL != "https://github.com/mergeos-bounties/mergeos/pull/777" || created.Log.DurationMillis != 1234 {
+		t.Fatalf("unexpected agent action status fields: %#v", created.Log)
+	}
+
+	workflowReq := httptest.NewRequest(http.MethodGet, "/api/projects/"+project.ID+"/ai-workflow", nil)
+	workflowReq.Header.Set("Authorization", "Bearer "+auth.Token)
+	workflowResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(workflowResp, workflowReq)
+	if workflowResp.Code != http.StatusOK {
+		t.Fatalf("ai workflow after agent action status = %d, body = %s", workflowResp.Code, workflowResp.Body.String())
+	}
+	for _, value := range privateValues {
+		if strings.Contains(workflowResp.Body.String(), value) {
+			t.Fatalf("ai workflow leaked private value %q: %s", value, workflowResp.Body.String())
+		}
+	}
+	var workflow ProjectAIWorkflowResponse
+	if err := json.Unmarshal(workflowResp.Body.Bytes(), &workflow); err != nil {
+		t.Fatal(err)
+	}
+	if workflow.AIActionCount != 1 {
+		t.Fatalf("ai workflow action count = %d", workflow.AIActionCount)
+	}
+	seenAgentSignal := false
+	for _, signal := range workflow.Signals {
+		if signal.Type == "agent_action" {
+			seenAgentSignal = true
+		}
+	}
+	if !seenAgentSignal {
+		t.Fatalf("ai workflow missing agent action signal: %#v", workflow.Signals)
+	}
+
+	feedReq := httptest.NewRequest(http.MethodGet, "/api/public/live-feed?limit=20", nil)
+	feedResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(feedResp, feedReq)
+	if feedResp.Code != http.StatusOK {
+		t.Fatalf("public live feed status = %d, body = %s", feedResp.Code, feedResp.Body.String())
+	}
+	for _, value := range privateValues {
+		if strings.Contains(feedResp.Body.String(), value) {
+			t.Fatalf("public live feed leaked private value %q: %s", value, feedResp.Body.String())
+		}
+	}
+	var feed PublicLiveFeedResponse
+	if err := json.Unmarshal(feedResp.Body.Bytes(), &feed); err != nil {
+		t.Fatal(err)
+	}
+	seenAgentItem := false
+	for _, item := range feed.Items {
+		if item.Type == "agent_action" && item.Actor == "QA Agent" {
+			seenAgentItem = true
+		}
+	}
+	if !seenAgentItem {
+		t.Fatalf("public live feed missing agent action item: %#v", feed.Items)
+	}
+
+	protocolReq := httptest.NewRequest(http.MethodGet, "/api/public/protocol/events?limit=20", nil)
+	protocolResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(protocolResp, protocolReq)
+	if protocolResp.Code != http.StatusOK {
+		t.Fatalf("public protocol events status = %d, body = %s", protocolResp.Code, protocolResp.Body.String())
+	}
+	for _, value := range privateValues {
+		if strings.Contains(protocolResp.Body.String(), value) {
+			t.Fatalf("public protocol events leaked private value %q: %s", value, protocolResp.Body.String())
+		}
+	}
+	var events PublicEventProtocolResponse
+	if err := json.Unmarshal(protocolResp.Body.Bytes(), &events); err != nil {
+		t.Fatal(err)
+	}
+	seenAgentEvent := false
+	for _, event := range events.Events {
+		if event.Type == "agent.action" && event.Actor == "QA Agent" {
+			seenAgentEvent = true
+		}
+	}
+	if !seenAgentEvent {
+		t.Fatalf("public protocol events missing agent action: %#v", events.Events)
+	}
+
+	otherAuth, err := store.Register(RegisterRequest{
+		Name:     "Other Agent Client",
+		Email:    "other-agent-client@example.com",
+		Password: "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	forbiddenReq := httptest.NewRequest(http.MethodPost, "/api/projects/"+project.ID+"/agent-actions", strings.NewReader(`{"action":"test"}`))
+	forbiddenReq.Header.Set("Authorization", "Bearer "+otherAuth.Token)
+	forbiddenResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(forbiddenResp, forbiddenReq)
+	if forbiddenResp.Code != http.StatusForbidden {
+		t.Fatalf("other client agent action status = %d", forbiddenResp.Code)
+	}
+}
+
 func TestProjectTaskGraphRouteReturnsAcyclicDependencyGraph(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := Config{

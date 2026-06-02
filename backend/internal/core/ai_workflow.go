@@ -184,16 +184,16 @@ func aiWorkflowRoutingStage(project *Project, tasks []*Task) AIWorkflowStage {
 
 func aiWorkflowPRReviewStage(project *Project, logs []GeminiWebhookLog) AIWorkflowStage {
 	status := deploymentStagePending
-	body := "PR review automation is waiting for matching GitHub webhook activity."
+	body := "AI review and agent execution are waiting for matching workflow activity."
 	updatedAt := project.CreatedAt
 	if len(logs) > 0 {
 		status = deploymentStageComplete
-		body = fmt.Sprintf("%d AI review webhook events are linked to this project.", len(logs))
+		body = fmt.Sprintf("%d AI workflow events are linked to this project.", len(logs))
 		updatedAt = logs[0].ReceivedAt
 	}
 	return AIWorkflowStage{
 		ID:        "pr_review",
-		Title:     "PR review",
+		Title:     "AI review and agent actions",
 		Body:      body,
 		Status:    status,
 		Tone:      deploymentStageTone(status),
@@ -244,7 +244,7 @@ func aiWorkflowSignals(project *Project, logs []GeminiWebhookLog, deployment Pro
 		reference := publicLiveFeedAIReference(&log)
 		signals = append(signals, AIWorkflowSignal{
 			ID:        "ai:" + log.ID,
-			Type:      "ai_review",
+			Type:      publicLiveFeedAIType(&log),
 			Title:     publicLiveFeedAITitle(&log),
 			Body:      publicLiveFeedAIBody(&log),
 			Status:    publicLiveFeedStatus(log.Status),

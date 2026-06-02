@@ -160,6 +160,7 @@ test('exposes project workflow and admin ops routes', async () => {
     { status: 200, body: { stats: { pull_request_count: 2 }, tasks: [] } },
     { status: 200, body: { status: 'validating' } },
     { status: 200, body: { status: 'orchestrating' } },
+    { status: 201, body: { log: { event_name: 'agent_action', action: 'test' } } },
     { status: 200, body: { stats: { node_count: 2 }, nodes: [], edges: [] } },
     { status: 200, body: { protocol_version: 'mergeos.workflow.v1', nodes: [], edges: [] } },
     { status: 200, body: { status: 'ready', stats: { scanned_files: 3 }, findings: [] } },
@@ -175,6 +176,7 @@ test('exposes project workflow and admin ops routes', async () => {
   const pulls = await client.projectPullRequests('prj_1');
   await client.projectDeployment('prj_1');
   await client.projectAIWorkflow('prj_1');
+  const agentAction = await client.createProjectAgentAction('prj_1', { action: 'test', agent_type: 'qa-agent' });
   const graph = await client.projectTaskGraph('prj_1');
   const workflowProtocol = await client.projectWorkflowProtocol('prj_1');
   const scan = await client.projectRepositoryScan('prj_1');
@@ -185,6 +187,7 @@ test('exposes project workflow and admin ops routes', async () => {
 
   assert.equal(dashboard.project.project_id, 'prj_1');
   assert.equal(pulls.stats.pull_request_count, 2);
+  assert.equal(agentAction.log.action, 'test');
   assert.equal(graph.stats.node_count, 2);
   assert.equal(workflowProtocol.protocol_version, 'mergeos.workflow.v1');
   assert.equal(scan.stats.scanned_files, 3);
@@ -197,14 +200,16 @@ test('exposes project workflow and admin ops routes', async () => {
   assert.equal(fetchImpl.calls[2].url, '/api/projects/prj_1/pull-requests');
   assert.equal(fetchImpl.calls[3].url, '/api/projects/prj_1/deployment');
   assert.equal(fetchImpl.calls[4].url, '/api/projects/prj_1/ai-workflow');
-  assert.equal(fetchImpl.calls[5].url, '/api/projects/prj_1/task-graph');
-  assert.equal(fetchImpl.calls[6].url, '/api/projects/prj_1/protocol/workflow');
-  assert.equal(fetchImpl.calls[7].url, '/api/projects/prj_1/repo-scan');
-  assert.equal(fetchImpl.calls[8].url, '/api/projects/prj_1/protocol/scan');
-  assert.equal(fetchImpl.calls[9].url, '/api/projects/prj_1/repo-sync');
-  assert.equal(fetchImpl.calls[9].options.method, 'POST');
-  assert.equal(fetchImpl.calls[10].url, '/api/admin/ops-queue');
-  assert.equal(fetchImpl.calls[11].url, '/api/admin/reputation');
+  assert.equal(fetchImpl.calls[5].url, '/api/projects/prj_1/agent-actions');
+  assert.equal(fetchImpl.calls[5].options.method, 'POST');
+  assert.equal(fetchImpl.calls[6].url, '/api/projects/prj_1/task-graph');
+  assert.equal(fetchImpl.calls[7].url, '/api/projects/prj_1/protocol/workflow');
+  assert.equal(fetchImpl.calls[8].url, '/api/projects/prj_1/repo-scan');
+  assert.equal(fetchImpl.calls[9].url, '/api/projects/prj_1/protocol/scan');
+  assert.equal(fetchImpl.calls[10].url, '/api/projects/prj_1/repo-sync');
+  assert.equal(fetchImpl.calls[10].options.method, 'POST');
+  assert.equal(fetchImpl.calls[11].url, '/api/admin/ops-queue');
+  assert.equal(fetchImpl.calls[12].url, '/api/admin/reputation');
 });
 
 test('exposes admin operations, review, settings, and integration routes', async () => {
