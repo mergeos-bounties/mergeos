@@ -890,6 +890,12 @@ func (s *Server) acceptTask(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "route not found")
 		return
 	}
+	resolvedTaskID, err := s.store.ResolveTaskClaimID(taskID)
+	if err != nil {
+		writeError(w, http.StatusNotFound, err.Error())
+		return
+	}
+	taskID = resolvedTaskID
 
 	var req AcceptTaskRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil && err != io.EOF {

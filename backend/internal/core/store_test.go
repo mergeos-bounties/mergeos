@@ -605,6 +605,11 @@ func TestPublicMarketplaceRouteReturnsSanitizedLiveData(t *testing.T) {
 	if strings.Contains(body, "client@example.com") || strings.Contains(body, "+1 555 0101") || strings.Contains(body, auth.User.ID) || strings.Contains(body, tempDir) {
 		t.Fatalf("public marketplace leaked private customer data: %s", body)
 	}
+	for _, task := range project.Tasks {
+		if strings.Contains(body, task.ID) {
+			t.Fatalf("public marketplace leaked internal task id %q: %s", task.ID, body)
+		}
+	}
 
 	var payload MarketplaceResponse
 	if err := json.Unmarshal(resp.Body.Bytes(), &payload); err != nil {
@@ -627,6 +632,9 @@ func TestPublicMarketplaceRouteReturnsSanitizedLiveData(t *testing.T) {
 			if strings.Contains(bounty.ID, task.ID) || strings.Contains(bounty.IssueURL, task.ID) {
 				t.Fatalf("bounty leaked task id: %#v", bounty)
 			}
+		}
+		if strings.TrimSpace(bounty.ClaimID) == "" || bounty.ClaimID == bounty.ID && !strings.Contains(bounty.ClaimID, ":") {
+			t.Fatalf("bounty missing public claim id: %#v", bounty)
 		}
 		if bounty.IssueURL != "" && !strings.HasPrefix(bounty.IssueURL, "http") {
 			t.Fatalf("bounty issue URL is not public: %#v", bounty)
@@ -1747,19 +1755,19 @@ func TestWorkerCanSelfClaimProposalRoute(t *testing.T) {
 	}
 
 	dashboard := store.WorkerDashboard(workerAuth.User.ID)
-	foundProposal := false
+	claimID := ""
 	for _, proposal := range dashboard.Proposals {
-		if proposal.TaskID == humanTask.ID {
-			foundProposal = true
+		if proposal.ProjectID == project.ID && proposal.IssueNumber == humanTask.IssueNumber {
+			claimID = proposal.ClaimID
 			break
 		}
 	}
-	if !foundProposal {
-		t.Fatalf("worker dashboard proposal missing task id %q: %#v", humanTask.ID, dashboard.Proposals)
+	if claimID == "" || claimID == humanTask.ID {
+		t.Fatalf("worker dashboard proposal missing public claim id for task %q: %#v", humanTask.ID, dashboard.Proposals)
 	}
 
 	server := NewServer(cfg, store, payments)
-	reqHTTP := httptest.NewRequest(http.MethodPost, "/api/tasks/"+humanTask.ID+"/accept", strings.NewReader(`{"worker_kind":"agent","worker_id":"github:spoofed","agent_type":"bad"}`))
+	reqHTTP := httptest.NewRequest(http.MethodPost, "/api/tasks/"+claimID+"/accept", strings.NewReader(`{"worker_kind":"agent","worker_id":"github:spoofed","agent_type":"bad"}`))
 	reqHTTP.Header.Set("Authorization", "Bearer "+workerAuth.Token)
 	resp := httptest.NewRecorder()
 	server.Routes().ServeHTTP(resp, reqHTTP)

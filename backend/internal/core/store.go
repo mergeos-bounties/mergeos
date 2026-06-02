@@ -1490,6 +1490,35 @@ func (s *Store) CanAccessTask(userID string, role UserRole, taskID string) bool 
 	return ok && project.ClientUserID == userID
 }
 
+func (s *Store) ResolveTaskClaimID(value string) (string, error) {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return "", errors.New("task id is required")
+	}
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	if task, ok := s.tasks[value]; ok && task != nil {
+		return task.ID, nil
+	}
+	separator := strings.LastIndex(value, ":")
+	if separator <= 0 || separator >= len(value)-1 {
+		return "", errors.New("task not found")
+	}
+	projectID := strings.TrimSpace(value[:separator])
+	issueNumber, err := strconv.Atoi(strings.TrimSpace(value[separator+1:]))
+	if err != nil || issueNumber <= 0 {
+		return "", errors.New("task not found")
+	}
+	for _, task := range s.tasks {
+		if task != nil && task.ProjectID == projectID && task.IssueNumber == issueNumber {
+			return task.ID, nil
+		}
+	}
+	return "", errors.New("task not found")
+}
+
 func (s *Store) SelfAcceptTaskRequest(userID, taskID string) (AcceptTaskRequest, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -2445,8 +2474,10 @@ func marketplaceProjectTags(project *Project) []string {
 }
 
 func marketplaceBountyRow(project *Project, task *Task) *MarketplaceBounty {
+	claimID := marketplaceBountyID(project.ID, task.IssueNumber)
 	return &MarketplaceBounty{
-		ID:                 marketplaceBountyID(project.ID, task.IssueNumber),
+		ID:                 claimID,
+		ClaimID:            claimID,
 		ProjectID:          project.ID,
 		ProjectTitle:       marketplaceProjectTitle(project),
 		IssueNumber:        task.IssueNumber,
@@ -2558,9 +2589,10 @@ func workerProposalRows(projects map[string]*Project, tasks map[string]*Task, us
 			continue
 		}
 		project := projects[task.ProjectID]
+		claimID := marketplaceBountyID(task.ProjectID, task.IssueNumber)
 		rows = append(rows, WorkerProposal{
-			ID:                 marketplaceBountyID(task.ProjectID, task.IssueNumber),
-			TaskID:             task.ID,
+			ID:                 claimID,
+			ClaimID:            claimID,
 			ProjectID:          task.ProjectID,
 			ProjectTitle:       marketplaceProjectTitle(project),
 			IssueNumber:        task.IssueNumber,

@@ -7525,7 +7525,8 @@ svg {
   white-space: nowrap;
 }
 
-.worker-claim-error {
+.worker-claim-error,
+.marketplace-claim-error {
   margin: 10px 0 0;
   border: 1px solid #fecdd3;
   border-radius: 8px;

@@ -2004,10 +2004,10 @@
                         <button v-if="proposal.url" type="button" @click="openExternalURL(proposal.url)">Issue</button>
                         <button
                           type="button"
-                          :disabled="!proposal.taskID || workerClaimBusyID === proposal.taskID"
+                          :disabled="!proposal.claimID || workerClaimBusyID === proposal.claimID"
                           @click="claimWorkerProposal(proposal)"
                         >
-                          {{ workerClaimBusyID === proposal.taskID ? 'Claiming' : 'Claim' }}
+                          {{ workerClaimBusyID === proposal.claimID ? 'Claiming' : 'Claim' }}
                         </button>
                         <button type="button" :disabled="!proposal.claimCommand" @click="copyClaimCommand(proposal.claimCommand)">Copy Claim</button>
                       </div>
@@ -3482,6 +3482,7 @@
             </div>
 
             <div v-if="marketplaceBountiesView.length" class="marketplace-bounty-list">
+              <p v-if="marketplaceClaimError" class="marketplace-claim-error">{{ marketplaceClaimError }}</p>
               <article v-for="bounty in marketplaceBountiesView" :key="bounty.id">
                 <span :class="['marketplace-bounty-icon', bounty.tone]">
                   <component :is="bounty.icon" :size="18" />
@@ -3500,6 +3501,13 @@
                     <button v-if="bounty.url" type="button" @click="openExternalURL(bounty.url)">
                       Issue
                       <Link2 :size="12" />
+                    </button>
+                    <button
+                      type="button"
+                      :disabled="!bounty.claimID || marketplaceClaimBusyID === bounty.claimID"
+                      @click="claimMarketplaceBounty(bounty)"
+                    >
+                      {{ marketplaceClaimBusyID === bounty.claimID ? 'Claiming' : 'Claim' }}
                     </button>
                     <button type="button" :disabled="!bounty.claimCommand" @click="copyClaimCommand(bounty.claimCommand)">
                       Copy Claim
@@ -4069,6 +4077,8 @@ const marketplaceData = ref({
 });
 const marketplaceLoading = ref(true);
 const marketplaceError = ref('');
+const marketplaceClaimBusyID = ref('');
+const marketplaceClaimError = ref('');
 const marketplaceSearch = ref('');
 const activeMarketplaceCategory = ref('All');
 const activeMarketplaceFilter = ref('Category');
@@ -6082,22 +6092,22 @@ async function copyClaimCommand(command = '') {
   showToast(`Claim command: ${value}`);
 }
 
-async function claimWorkerProposal(proposal = {}) {
-  const taskID = String(proposal.taskID || '').trim();
-  if (!taskID) {
-    workerClaimError.value = 'Task id is missing for this proposal.';
+async function claimTaskWithID(claimID, errorRef, busyRef) {
+  const value = String(claimID || '').trim();
+  if (!value) {
+    errorRef.value = 'Claim id is missing for this bounty.';
     return;
   }
   if (!token.value) {
-    workerClaimError.value = 'Login is required to claim tasks.';
-    showToast(workerClaimError.value);
+    errorRef.value = 'Login is required to claim tasks.';
+    showToast(errorRef.value);
     return;
   }
 
-  workerClaimBusyID.value = taskID;
-  workerClaimError.value = '';
+  busyRef.value = value;
+  errorRef.value = '';
   try {
-    await api(`/api/tasks/${encodeURIComponent(taskID)}/accept`, {
+    await api(`/api/tasks/${encodeURIComponent(value)}/accept`, {
       method: 'POST',
       body: JSON.stringify({}),
     });
@@ -6105,11 +6115,19 @@ async function claimWorkerProposal(proposal = {}) {
     await loadWorkerDashboardData({ silent: true });
     await loadMarketplaceData({ silent: true });
   } catch (error) {
-    workerClaimError.value = error.message || 'Could not claim this task.';
-    showToast(workerClaimError.value);
+    errorRef.value = error.message || 'Could not claim this task.';
+    showToast(errorRef.value);
   } finally {
-    workerClaimBusyID.value = '';
+    busyRef.value = '';
   }
+}
+
+async function claimWorkerProposal(proposal = {}) {
+  await claimTaskWithID(proposal.claimID, workerClaimError, workerClaimBusyID);
+}
+
+async function claimMarketplaceBounty(bounty = {}) {
+  await claimTaskWithID(bounty.claimID, marketplaceClaimError, marketplaceClaimBusyID);
 }
 
 function resetLedgerFilters() {
@@ -7373,6 +7391,7 @@ function mapMarketplaceBounty(bounty = {}, index = 0) {
   const claimCommand = issueNumber > 0 ? `/attempt #${issueNumber}` : '';
   return {
     id: bounty.id || `${bounty.project_id || 'project'}:${issueNumber || index}`,
+    claimID: bounty.claim_id || bounty.id || '',
     icon: agentType ? marketplaceAgentIcon(agentType) : (workerKind === 'human' ? User : Bot),
     title: bounty.title || 'Open bounty',
     acceptance: trimMarketplaceText(bounty.acceptance, 'Acceptance criteria will appear after task generation.'),
@@ -7740,7 +7759,7 @@ function mapWorkerProposal(proposal = {}) {
   const issueNumber = Number(proposal.issue_number) || 0;
   return {
     id: proposal.id || `${proposal.project_id}-${proposal.issue_number}`,
-    taskID: proposal.task_id || '',
+    claimID: proposal.claim_id || proposal.id || '',
     title: proposal.title || 'Open bounty',
     project: proposal.project_title || 'MergeOS project',
     lane: agentType ? toTitleLabel(agentType) : toTitleLabel(proposal.required_worker_kind || 'worker'),
