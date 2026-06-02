@@ -2046,6 +2046,9 @@ func TestProjectTaskGraphRouteReturnsAcyclicDependencyGraph(t *testing.T) {
 	if !payload.Nodes[0].Ready || len(payload.Nodes[0].BlockedBy) != 0 {
 		t.Fatalf("first task should be ready: %#v", payload.Nodes[0])
 	}
+	if payload.Nodes[0].EstimatedHours <= 0 || payload.Nodes[0].RequiredWorkerKind == "" {
+		t.Fatalf("task graph node missing routing estimates: %#v", payload.Nodes[0])
+	}
 
 	protocolReq := httptest.NewRequest(http.MethodGet, "/api/projects/"+project.ID+"/protocol/workflow", nil)
 	protocolReq.Header.Set("Authorization", "Bearer "+auth.Token)
@@ -2078,6 +2081,12 @@ func TestProjectTaskGraphRouteReturnsAcyclicDependencyGraph(t *testing.T) {
 	}
 	if document.Nodes[0].Status != "ready" || document.Nodes[0].RewardMRG <= 0 {
 		t.Fatalf("unexpected workflow protocol first node: %#v", document.Nodes[0])
+	}
+	if document.Nodes[0].EstimatedHours <= 0 || document.Nodes[0].RequiredWorkerKind == "" {
+		t.Fatalf("workflow protocol node missing routing estimates: %#v", document.Nodes[0])
+	}
+	if len(document.Nodes) > 1 && len(document.Nodes[1].Dependencies) == 0 {
+		t.Fatalf("workflow protocol node missing dependencies: %#v", document.Nodes[1])
 	}
 
 	otherAuth, err := store.Register(RegisterRequest{

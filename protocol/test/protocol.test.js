@@ -97,8 +97,8 @@ test('validates workflow node and edge references', () => {
     project_id: 'prj_0001',
     status: 'active',
     nodes: [
-      { id: 'n1', task_id: 'tsk_1', title: 'Implement', lane: 'implementation', status: 'open', reward_mrg: 40 },
-      { id: 'n2', task_id: 'tsk_2', title: 'Validate', lane: 'validation', status: 'ready', reward_mrg: 10 },
+      { id: 'n1', task_id: 'tsk_1', issue_number: 1, title: 'Implement', lane: 'implementation', status: 'open', reward_mrg: 40, estimated_hours: 5, worker_kind: 'human' },
+      { id: 'n2', task_id: 'tsk_2', issue_number: 2, title: 'Validate', lane: 'validation', status: 'ready', reward_mrg: 10, estimated_hours: 1.5, worker_kind: 'agent', agent_type: 'qa-agent', dependencies: ['tsk_1'] },
     ],
     edges: [{ from: 'n1', to: 'n2', relation: 'sequence' }],
   });

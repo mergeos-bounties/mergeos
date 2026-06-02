@@ -933,12 +933,18 @@ type WorkflowProtocolDocument struct {
 }
 
 type WorkflowProtocolNode struct {
-	ID        string  `json:"id"`
-	TaskID    string  `json:"task_id"`
-	Title     string  `json:"title"`
-	Lane      string  `json:"lane"`
-	Status    string  `json:"status"`
-	RewardMRG float64 `json:"reward_mrg,omitempty"`
+	ID                 string     `json:"id"`
+	TaskID             string     `json:"task_id"`
+	IssueNumber        int        `json:"issue_number,omitempty"`
+	Title              string     `json:"title"`
+	Lane               string     `json:"lane"`
+	Status             string     `json:"status"`
+	RewardMRG          float64    `json:"reward_mrg,omitempty"`
+	EstimatedHours     float64    `json:"estimated_hours,omitempty"`
+	RequiredWorkerKind WorkerKind `json:"worker_kind,omitempty"`
+	SuggestedAgentType string     `json:"agent_type,omitempty"`
+	IssueURL           string     `json:"issue_url,omitempty"`
+	Dependencies       []string   `json:"dependencies,omitempty"`
 }
 
 type WorkflowProtocolEdge struct {
@@ -1027,6 +1033,7 @@ type TaskGraphNode struct {
 	Ready              bool       `json:"ready"`
 	BlockedBy          []string   `json:"blocked_by,omitempty"`
 	RewardCents        int64      `json:"reward_cents"`
+	EstimatedHours     float64    `json:"estimated_hours,omitempty"`
 	RequiredWorkerKind WorkerKind `json:"required_worker_kind"`
 	SuggestedAgentType string     `json:"suggested_agent_type,omitempty"`
 	IssueURL           string     `json:"issue_url,omitempty"`

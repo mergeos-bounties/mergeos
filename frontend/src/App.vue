@@ -2180,7 +2180,7 @@
                       </span>
                       <div>
                         <strong>#{{ node.issueNumber }} {{ node.title }}</strong>
-                        <small>{{ node.lane }} / {{ node.reward }} / {{ node.blockedBy }}</small>
+                        <small>{{ node.lane }} / {{ node.worker }} / {{ node.reward }} / {{ node.effort }} / {{ node.blockedBy }}</small>
                       </div>
                       <em :class="node.tone">{{ node.status }}</em>
                     </article>
@@ -7717,8 +7717,10 @@ function mapDashboardTaskGraphNode(node = {}) {
     issueNumber: node.issue_number || '-',
     title: node.title || 'Untitled task node',
     lane: toTitleLabel(node.lane || 'implementation'),
+    worker: node.suggested_agent_type ? toTitleLabel(node.suggested_agent_type) : toTitleLabel(node.required_worker_kind || 'human'),
     status,
     reward: formatMRGFromCents(node.reward_cents),
+    effort: formatEstimatedHours(node.estimated_hours),
     blockedBy: blockedCount ? `${blockedCount} blockers` : 'No blockers',
     tone: status === 'Blocked' ? 'red' : status === 'Ready' ? 'green' : status === 'Complete' ? 'blue' : taskGraphLaneTone(node.lane),
   };

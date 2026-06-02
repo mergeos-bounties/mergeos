@@ -121,6 +121,7 @@ func taskGraphNode(task *Task) TaskGraphNode {
 		Lane:               taskGraphLane(task),
 		Status:             status,
 		RewardCents:        task.RewardCents,
+		EstimatedHours:     marketplaceEstimatedHours(task),
 		RequiredWorkerKind: task.RequiredWorkerKind,
 		SuggestedAgentType: strings.TrimSpace(task.SuggestedAgentType),
 		IssueURL:           marketplacePublicRepoURL(task.IssueURL),
@@ -229,15 +230,26 @@ func taskGraphUpdatedAt(tasks []*Task, fallback time.Time) time.Time {
 }
 
 func workflowProtocolDocument(project *Project, graph ProjectTaskGraphResponse) WorkflowProtocolDocument {
+	dependenciesByTaskID := map[string][]string{}
+	for _, edge := range graph.Edges {
+		dependenciesByTaskID[edge.To] = append(dependenciesByTaskID[edge.To], edge.From)
+	}
+
 	nodes := make([]WorkflowProtocolNode, 0, len(graph.Nodes))
 	for _, node := range graph.Nodes {
 		nodes = append(nodes, WorkflowProtocolNode{
-			ID:        node.ID,
-			TaskID:    node.TaskID,
-			Title:     node.Title,
-			Lane:      node.Lane,
-			Status:    workflowProtocolNodeStatus(node),
-			RewardMRG: float64(node.RewardCents) / 100,
+			ID:                 node.ID,
+			TaskID:             node.TaskID,
+			IssueNumber:        node.IssueNumber,
+			Title:              node.Title,
+			Lane:               node.Lane,
+			Status:             workflowProtocolNodeStatus(node),
+			RewardMRG:          float64(node.RewardCents) / 100,
+			EstimatedHours:     node.EstimatedHours,
+			RequiredWorkerKind: node.RequiredWorkerKind,
+			SuggestedAgentType: node.SuggestedAgentType,
+			IssueURL:           node.IssueURL,
+			Dependencies:       stableTaskIDs(dependenciesByTaskID[node.TaskID]),
 		})
 	}
 

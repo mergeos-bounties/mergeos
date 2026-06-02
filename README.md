@@ -58,7 +58,7 @@ MergeOS currently supports:
 - GitHub reward aliases. If a worker has not linked a wallet yet, payouts can still target `github:username`; once linked, payouts route to the user's `0x...` wallet address.
 - Local git bounty workspaces or GitHub private bounty repos when `GITHUB_TOKEN` is configured.
 - Static repository scan for dependency manifests, technical-debt markers, and secret-hygiene findings.
-- Project task dependency graph generation for workflow routing and release readiness.
+- Project task dependency graph generation for workflow routing, effort metadata, dependency edges, and release readiness.
 - Project escrow summaries for reserve, release, remaining-balance, and overdrawn payout review.
 - Project-level live PR monitoring for customer dashboards, including readiness signals reused from admin review.
 - Project-level AI agent action logging for review, test, generate, deploy, and scan workflow events.
