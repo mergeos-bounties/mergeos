@@ -79,9 +79,18 @@ func (c *wsConn) writeText(data []byte) error {
 	return err
 }
 
+func (c *wsConn) close() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.closed {
+		return
+	}
+	c.closed = true
+	_ = c.conn.Close()
+}
+
 func (c *wsConn) readLoop(hub *eventHub) {
-	defer c.conn.Close()
-	hub.add(c)
+	defer c.close()
 	defer hub.remove(c)
 	for {
 		hdr := make([]byte, 2)

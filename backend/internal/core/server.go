@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Server struct {
@@ -447,7 +448,43 @@ func (s *Server) wsHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
+	s.eventHub.add(conn)
+	if err := s.writeWSInitialEvents(conn); err != nil {
+		s.eventHub.remove(conn)
+		conn.close()
+		return
+	}
 	go conn.readLoop(s.eventHub)
+}
+
+func (s *Server) writeWSInitialEvents(conn *wsConn) error {
+	for _, event := range s.wsInitialEvents() {
+		data, err := json.Marshal(event)
+		if err != nil {
+			return err
+		}
+		if err := conn.writeText(data); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *Server) wsInitialEvents() []map[string]interface{} {
+	now := time.Now().UTC()
+	return []map[string]interface{}{
+		{
+			"type":         "connection_ready",
+			"status":       "ok",
+			"token_symbol": normalizedTokenSymbol(s.cfg.TokenSymbol),
+			"created_at":   now,
+		},
+		{
+			"type":       "live_feed_snapshot",
+			"feed":       s.store.PublicLiveFeed(20),
+			"created_at": now,
+		},
+	}
 }
 
 func (s *Server) adminSummary(w http.ResponseWriter, r *http.Request) {

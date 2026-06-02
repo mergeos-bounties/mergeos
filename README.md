@@ -66,6 +66,7 @@ MergeOS currently supports:
 - SMTP notifications when configured, persisted notification records when SMTP is not configured.
 - Admin APIs for users, projects, tasks, attachments, notifications, ledger, and SSL review.
 - JavaScript SDK helpers for public feeds, project deployment workflow, AI workflow, task acceptance, worker dashboards, admin ops queue, and WebSocket events.
+- WebSocket realtime stream with connection readiness and public live-feed snapshot events.
 - MRG contract sources for token issuance, treasury release, project escrow, task reserve, payout, and refund flows.
 - Open protocol schemas for task specs, workflow graphs, and realtime events.
 

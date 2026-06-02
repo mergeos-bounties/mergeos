@@ -72,3 +72,5 @@ socket.onmessage = (event) => {
   console.log(JSON.parse(event.data));
 };
 ```
+
+The stream sends `connection_ready` and `live_feed_snapshot` events immediately after connect, then broadcasts live project events.
