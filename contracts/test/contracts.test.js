@@ -16,6 +16,7 @@ describe("contract package", () => {
   it("contains the required MergeOS contract sources", () => {
     assert.deepEqual(Object.keys(sources).sort(), [
       "MergeOSEscrow.sol",
+      "MergeOSPayouts.sol",
       "MergeOSToken.sol",
       "MergeOSTreasury.sol",
     ]);
@@ -55,6 +56,30 @@ describe("MergeOSTreasury", () => {
     assert.match(source, /function release\(address recipient, uint256 amount, bytes32 reference\) external onlyOperator/);
     assert.match(source, /function setOperator\(address account, bool enabled\) external onlyOwner/);
     assert.match(source, /function _safeTransfer\(address recipient, uint256 amount\) private/);
+  });
+});
+
+describe("MergeOSPayouts", () => {
+  const source = sources["MergeOSPayouts.sol"];
+
+  it("records approved payouts and executes each reference through treasury", () => {
+    assert.match(source, /contract MergeOSPayouts/);
+    assert.match(source, /interface IMergeOSPayoutTreasury/);
+    assert.match(source, /enum PayoutStatus/);
+    assert.match(source, /struct Payout/);
+    assert.match(source, /event PayoutApproved\(bytes32 indexed payoutId, address indexed recipient, uint256 amount, bytes32 indexed reference\)/);
+    assert.match(source, /event PayoutExecuted\(bytes32 indexed payoutId, address indexed recipient, uint256 amount, bytes32 indexed reference\)/);
+    assert.match(source, /function approvePayout\(/);
+    assert.match(source, /function executePayout\(bytes32 payoutId\) external onlyOperator/);
+    assert.match(source, /treasury\.release\(payout\.recipient, payout\.amount, payout\.reference\)/);
+    assert.match(source, /function cancelPayout\(bytes32 payoutId\) external onlyOperator/);
+  });
+
+  it("prevents duplicate or unapproved payout execution", () => {
+    assert.match(source, /if \(payouts\[payoutId\]\.status != PayoutStatus\.None\) revert PayoutExists\(\)/);
+    assert.match(source, /if \(payout\.status != PayoutStatus\.Approved\) revert PayoutNotApproved\(\)/);
+    assert.match(source, /payout\.status = PayoutStatus\.Executed/);
+    assert.match(source, /payout\.status = PayoutStatus\.Cancelled/);
   });
 });
 
