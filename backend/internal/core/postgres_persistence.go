@@ -903,17 +903,16 @@ func timePtr(value sql.NullTime) *time.Time {
 	return &t
 }
 func (p *postgresPersistence) loadTestSettingsConfig(ctx context.Context, state *persistedState) error {
-	var raw string
-	err := p.db.QueryRowContext(ctx, `SELECT value FROM store_meta WHERE key = 'test_settings_config'`).Scan(&raw)
+	var config TestSettingsConfig
+	err := p.db.QueryRowContext(ctx, `
+SELECT test_mode_enabled, test_password_hash, updated_at
+FROM test_settings_config
+WHERE id = 'public'`).Scan(&config.TestModeEnabled, &config.TestPasswordHash, &config.UpdatedAt)
 	if err == sql.ErrNoRows {
 		return nil
 	}
 	if err != nil {
 		return fmt.Errorf("load test_settings_config: %w", err)
-	}
-	var config TestSettingsConfig
-	if err := json.Unmarshal([]byte(raw), &config); err != nil {
-		return fmt.Errorf("parse test_settings_config: %w", err)
 	}
 	state.TestSettingsConfig = &config
 	return nil
@@ -955,11 +954,18 @@ func saveTestSettingsConfig(ctx context.Context, tx *sql.Tx, config *TestSetting
 	if config == nil {
 		return nil
 	}
-	raw, err := json.Marshal(config)
-	if err != nil {
-		return fmt.Errorf("marshal test_settings_config: %w", err)
+	if config.UpdatedAt.IsZero() {
+		config.UpdatedAt = time.Now().UTC()
 	}
-	if _, err := tx.ExecContext(ctx, `INSERT INTO store_meta (key, value, updated_at) VALUES ('test_settings_config', $1, now())`, string(raw)); err != nil {
+	if _, err := tx.ExecContext(ctx, `
+INSERT INTO test_settings_config (id, test_mode_enabled, test_password_hash, updated_at)
+VALUES ('public', $1, $2, $3)
+ON CONFLICT (id) DO UPDATE SET
+  test_mode_enabled = EXCLUDED.test_mode_enabled,
+  test_password_hash = EXCLUDED.test_password_hash,
+  updated_at = EXCLUDED.updated_at`,
+		config.TestModeEnabled, config.TestPasswordHash, config.UpdatedAt,
+	); err != nil {
 		return fmt.Errorf("save test_settings_config: %w", err)
 	}
 	return nil

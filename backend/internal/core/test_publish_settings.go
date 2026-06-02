@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"os"
 	"strings"
@@ -14,8 +15,13 @@ import (
 
 type TestSettingsConfig struct {
 	TestModeEnabled  bool      `json:"test_mode_enabled"`
-	TestPasswordHash string    `json:"-"`
+	TestPasswordHash string    `json:"test_password_hash,omitempty"`
 	UpdatedAt        time.Time `json:"updated_at"`
+}
+
+type TestSettingsConfigResponse struct {
+	TestModeEnabled bool      `json:"test_mode_enabled"`
+	UpdatedAt       time.Time `json:"updated_at"`
 }
 
 type TestSettingsEntry struct {
@@ -156,6 +162,56 @@ func recordPasswordAttempt(ip string, success bool) {
 	}
 }
 
+func testSettingsConfigResponse(config TestSettingsConfig) TestSettingsConfigResponse {
+	return TestSettingsConfigResponse{
+		TestModeEnabled: config.TestModeEnabled,
+		UpdatedAt:       config.UpdatedAt,
+	}
+}
+
+func testSettingsRateLimitKey(r *http.Request) string {
+	remoteIP := normalizedClientIP(r.RemoteAddr)
+	if trustedProxyIP(remoteIP) {
+		if forwarded := firstForwardedClientIP(r.Header.Get("X-Forwarded-For")); forwarded != "" {
+			return forwarded
+		}
+		if realIP := normalizedClientIP(r.Header.Get("X-Real-IP")); realIP != "" {
+			return realIP
+		}
+	}
+	return remoteIP
+}
+
+func firstForwardedClientIP(value string) string {
+	for _, part := range strings.Split(value, ",") {
+		if ip := normalizedClientIP(part); ip != "" {
+			return ip
+		}
+	}
+	return ""
+}
+
+func normalizedClientIP(value string) string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return ""
+	}
+	if host, _, err := net.SplitHostPort(value); err == nil {
+		value = host
+	}
+	value = strings.Trim(value, "[]")
+	ip := net.ParseIP(value)
+	if ip == nil {
+		return ""
+	}
+	return ip.String()
+}
+
+func trustedProxyIP(value string) bool {
+	ip := net.ParseIP(value)
+	return ip != nil && (ip.IsLoopback() || ip.IsPrivate())
+}
+
 var knownEnvNames = []string{
 	"GITHUB_TOKEN", "MERGEOS_GITHUB_TOKEN", "TOKEN_SYMBOL",
 	"ADMIN_EMAIL", "ADMIN_PASSWORD",
@@ -266,7 +322,7 @@ func (s *Store) ListTestSettingsEntries() []*TestSettingsEntryResponse {
 			DisplayName: entry.DisplayName, SettingKey: entry.SettingKey,
 			SettingValueHint: SettingValueMask(entry.SettingValue),
 			KeyValueMap:      maskKeyValueMap(entry.KeyValueMap),
-			Status: entry.Status, LastUsedAt: entry.LastUsedAt,
+			Status:           entry.Status, LastUsedAt: entry.LastUsedAt,
 			CreatedAt: entry.CreatedAt, UpdatedAt: entry.UpdatedAt,
 		})
 	}
@@ -274,9 +330,9 @@ func (s *Store) ListTestSettingsEntries() []*TestSettingsEntryResponse {
 }
 
 var allowedIntegrationTypes = map[string]bool{
-	"llm":          true,
-	"paypal":       true,
-	"usdt":         true,
+	"llm":    true,
+	"paypal": true,
+	"usdt":   true,
 }
 
 var allowedEntryStatuses = map[string]bool{
@@ -335,8 +391,12 @@ func (s *Store) UpdateTestSettingsEntry(id string, req UpdateTestEntryRequest) (
 	}
 	if strings.TrimSpace(req.SettingKey) != "" {
 		var kvMapKeys []string
-		for k := range entry.KeyValueMap { kvMapKeys = append(kvMapKeys, k) }
-		for k := range req.KeyValueMap { kvMapKeys = append(kvMapKeys, k) }
+		for k := range entry.KeyValueMap {
+			kvMapKeys = append(kvMapKeys, k)
+		}
+		for k := range req.KeyValueMap {
+			kvMapKeys = append(kvMapKeys, k)
+		}
 		if err := checkForEnvCollision(req.SettingKey, kvMapKeys); err != nil {
 			return nil, err
 		}
@@ -346,15 +406,23 @@ func (s *Store) UpdateTestSettingsEntry(id string, req UpdateTestEntryRequest) (
 		entry.SettingValue = req.SettingValue
 	}
 	if req.KeyValueMap != nil {
-		if entry.KeyValueMap == nil { entry.KeyValueMap = map[string]string{} }
+		if entry.KeyValueMap == nil {
+			entry.KeyValueMap = map[string]string{}
+		}
 		// Check nested key_value_map keys for ENV collision even when setting_key unchanged
 		var mergedKeys []string
-		for k := range entry.KeyValueMap { mergedKeys = append(mergedKeys, k) }
-		for k := range req.KeyValueMap { mergedKeys = append(mergedKeys, k) }
+		for k := range entry.KeyValueMap {
+			mergedKeys = append(mergedKeys, k)
+		}
+		for k := range req.KeyValueMap {
+			mergedKeys = append(mergedKeys, k)
+		}
 		if err := checkForEnvCollision(entry.SettingKey, mergedKeys); err != nil {
 			return nil, err
 		}
-		for k, v := range req.KeyValueMap { entry.KeyValueMap[k] = v }
+		for k, v := range req.KeyValueMap {
+			entry.KeyValueMap[k] = v
+		}
 	}
 	if strings.TrimSpace(req.Status) != "" {
 		if !allowedEntryStatuses[strings.ToLower(strings.TrimSpace(req.Status))] {
@@ -386,139 +454,191 @@ func entryToResponse(entry *TestSettingsEntry) *TestSettingsEntryResponse {
 		DisplayName: entry.DisplayName, SettingKey: entry.SettingKey,
 		SettingValueHint: SettingValueMask(entry.SettingValue),
 		KeyValueMap:      maskKeyValueMap(entry.KeyValueMap),
-		Status: entry.Status, LastUsedAt: entry.LastUsedAt,
+		Status:           entry.Status, LastUsedAt: entry.LastUsedAt,
 		CreatedAt: entry.CreatedAt, UpdatedAt: entry.UpdatedAt,
 	}
 }
 
 func (s *Server) adminGetTestSettings(w http.ResponseWriter, r *http.Request) {
-	if _, ok := s.requireAdmin(w, r); !ok { return }
-	writeJSON(w, http.StatusOK, s.store.GetTestSettingsConfig())
+	if _, ok := s.requireAdmin(w, r); !ok {
+		return
+	}
+	writeJSON(w, http.StatusOK, testSettingsConfigResponse(s.store.GetTestSettingsConfig()))
 }
 
 func (s *Server) adminUpdateTestSettings(w http.ResponseWriter, r *http.Request) {
-	if _, ok := s.requireAdmin(w, r); !ok { return }
+	if _, ok := s.requireAdmin(w, r); !ok {
+		return
+	}
 	var req UpdateTestSettingsRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid JSON body"); return
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
 	}
 	config, err := s.store.UpdateTestSettingsConfig(req)
-	if err != nil { writeError(w, http.StatusBadRequest, err.Error()); return }
-	writeJSON(w, http.StatusOK, config)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, testSettingsConfigResponse(config))
 }
 
 func (s *Server) adminListTestEntries(w http.ResponseWriter, r *http.Request) {
-	if _, ok := s.requireAdmin(w, r); !ok { return }
+	if _, ok := s.requireAdmin(w, r); !ok {
+		return
+	}
 	writeJSON(w, http.StatusOK, s.store.ListTestSettingsEntries())
 }
 
 func (s *Server) adminAddTestEntry(w http.ResponseWriter, r *http.Request) {
-	if _, ok := s.requireAdmin(w, r); !ok { return }
+	if _, ok := s.requireAdmin(w, r); !ok {
+		return
+	}
 	var req AddTestEntryRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid JSON body"); return
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
 	}
 	entry, err := s.store.AddTestSettingsEntry(req)
-	if err != nil { writeError(w, http.StatusBadRequest, err.Error()); return }
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
 	writeJSON(w, http.StatusCreated, entry)
 }
 
 func (s *Server) adminUpdateTestEntry(w http.ResponseWriter, r *http.Request) {
-	if _, ok := s.requireAdmin(w, r); !ok { return }
+	if _, ok := s.requireAdmin(w, r); !ok {
+		return
+	}
 	var req UpdateTestEntryRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid JSON body"); return
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
 	}
 	entry, err := s.store.UpdateTestSettingsEntry(r.PathValue("id"), req)
-	if err != nil { writeError(w, http.StatusBadRequest, err.Error()); return }
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
 	writeJSON(w, http.StatusOK, entry)
 }
 
 func (s *Server) adminDeleteTestEntry(w http.ResponseWriter, r *http.Request) {
-	if _, ok := s.requireAdmin(w, r); !ok { return }
+	if _, ok := s.requireAdmin(w, r); !ok {
+		return
+	}
 	if err := s.store.DeleteTestSettingsEntry(r.PathValue("id")); err != nil {
-		writeError(w, http.StatusNotFound, err.Error()); return
+		writeError(w, http.StatusNotFound, err.Error())
+		return
 	}
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
 func (s *Server) requireTestAuthBody(w http.ResponseWriter, r *http.Request) bool {
-	if !checkPasswordRateLimit(r.RemoteAddr) {
+	rateLimitKey := testSettingsRateLimitKey(r)
+	if !checkPasswordRateLimit(rateLimitKey) {
 		writeError(w, http.StatusTooManyRequests, "too many failed password attempts; try again later")
 		return false
 	}
 	cfg := s.store.GetTestSettingsConfig()
 	if !cfg.TestModeEnabled {
-		writeError(w, http.StatusForbidden, "test mode is disabled"); return false
+		writeError(w, http.StatusForbidden, "test mode is disabled")
+		return false
 	}
 	bodyBytes, err := io.ReadAll(r.Body)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "failed to read request body"); return false
+		writeError(w, http.StatusBadRequest, "failed to read request body")
+		return false
 	}
 	var req PublicTestSettingsRequest
 	if err := json.Unmarshal(bodyBytes, &req); err != nil {
-		writeError(w, http.StatusUnauthorized, "password is required"); return false
+		writeError(w, http.StatusUnauthorized, "password is required")
+		return false
 	}
 	r.Body = io.NopCloser(strings.NewReader(string(bodyBytes)))
 	valid := s.store.VerifyTestPassword(req.Password)
-	recordPasswordAttempt(r.RemoteAddr, valid)
+	recordPasswordAttempt(rateLimitKey, valid)
 	if !valid {
-		writeError(w, http.StatusUnauthorized, "invalid password"); return false
+		writeError(w, http.StatusUnauthorized, "invalid password")
+		return false
 	}
 	return true
 }
 
 func (s *Server) publicTestSettingsAuth(w http.ResponseWriter, r *http.Request) {
-	if !checkPasswordRateLimit(r.RemoteAddr) {
-		writeError(w, http.StatusTooManyRequests, "too many failed password attempts; try again later"); return
+	rateLimitKey := testSettingsRateLimitKey(r)
+	if !checkPasswordRateLimit(rateLimitKey) {
+		writeError(w, http.StatusTooManyRequests, "too many failed password attempts; try again later")
+		return
 	}
 	cfg := s.store.GetTestSettingsConfig()
 	if !cfg.TestModeEnabled {
-		writeError(w, http.StatusForbidden, "test mode is disabled"); return
+		writeError(w, http.StatusForbidden, "test mode is disabled")
+		return
 	}
 	var req PublicTestSettingsRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusUnauthorized, "password is required"); return
+		writeError(w, http.StatusUnauthorized, "password is required")
+		return
 	}
 	valid := s.store.VerifyTestPassword(req.Password)
-	recordPasswordAttempt(r.RemoteAddr, valid)
+	recordPasswordAttempt(rateLimitKey, valid)
 	if !valid {
-		writeError(w, http.StatusUnauthorized, "invalid password"); return
+		writeError(w, http.StatusUnauthorized, "invalid password")
+		return
 	}
 	writeJSON(w, http.StatusOK, map[string]bool{"authenticated": true})
 }
 
 func (s *Server) publicListTestEntries(w http.ResponseWriter, r *http.Request) {
-	if !s.requireTestAuthBody(w, r) { return }
+	if !s.requireTestAuthBody(w, r) {
+		return
+	}
 	writeJSON(w, http.StatusOK, s.store.ListTestSettingsEntries())
 }
 
 func (s *Server) publicAddTestEntry(w http.ResponseWriter, r *http.Request) {
-	if !s.requireTestAuthBody(w, r) { return }
+	if !s.requireTestAuthBody(w, r) {
+		return
+	}
 	var req AddTestEntryRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid JSON body"); return
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
 	}
 	entry, err := s.store.AddTestSettingsEntry(req)
-	if err != nil { writeError(w, http.StatusBadRequest, err.Error()); return }
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
 	writeJSON(w, http.StatusCreated, entry)
 }
 
 func (s *Server) publicUpdateTestEntry(w http.ResponseWriter, r *http.Request) {
-	if !s.requireTestAuthBody(w, r) { return }
+	if !s.requireTestAuthBody(w, r) {
+		return
+	}
 	var req UpdateTestEntryRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid JSON body"); return
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
 	}
 	entry, err := s.store.UpdateTestSettingsEntry(r.PathValue("id"), req)
-	if err != nil { writeError(w, http.StatusBadRequest, err.Error()); return }
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
 	writeJSON(w, http.StatusOK, entry)
 }
 
 func (s *Server) publicDeleteTestEntry(w http.ResponseWriter, r *http.Request) {
-	if !s.requireTestAuthBody(w, r) { return }
+	if !s.requireTestAuthBody(w, r) {
+		return
+	}
 	if err := s.store.DeleteTestSettingsEntry(r.PathValue("id")); err != nil {
-		writeError(w, http.StatusNotFound, err.Error()); return
+		writeError(w, http.StatusNotFound, err.Error())
+		return
 	}
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
