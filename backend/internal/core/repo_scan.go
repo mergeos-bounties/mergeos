@@ -120,6 +120,7 @@ func (s *Store) projectRepositoryScanLocked(project *Project) ProjectRepositoryS
 				addFinding("medium", "dependency", "Missing npm lockfile", "package.json exists without a package-lock.json, pnpm-lock.yaml, yarn.lock, or bun.lockb in the same folder.", relativePath, 0, "lockfile_missing")
 			}
 		}
+		repositoryDependencyFindings(relativePath, content, addFinding)
 		repositoryContentFindings(relativePath, string(content), addFinding)
 		return nil
 	})
@@ -305,6 +306,47 @@ func requirementsDependencyCount(content string) int {
 	return count
 }
 
+func repositoryDependencyFindings(path string, content []byte, add func(string, string, string, string, string, int, string)) {
+	switch strings.ToLower(filepath.Base(path)) {
+	case "package.json":
+		var parsed struct {
+			Dependencies     map[string]string `json:"dependencies"`
+			DevDependencies  map[string]string `json:"devDependencies"`
+			PeerDependencies map[string]string `json:"peerDependencies"`
+		}
+		if err := json.Unmarshal(content, &parsed); err != nil {
+			return
+		}
+		if npmHasFloatingDependencyVersion(parsed.Dependencies) || npmHasFloatingDependencyVersion(parsed.DevDependencies) || npmHasFloatingDependencyVersion(parsed.PeerDependencies) {
+			add("medium", "dependency", "Floating npm dependency version", "A dependency uses an unpinned or latest-style version. Pin versions before release to reduce supply-chain drift.", path, 0, "dependency_unpinned")
+		}
+	case "requirements.txt":
+		for index, line := range strings.Split(string(content), "\n") {
+			if pythonRequirementUnpinned(line) {
+				add("medium", "dependency", "Unpinned Python dependency", "A Python requirement is not pinned to an exact version. Pin versions before release to reduce supply-chain drift.", path, index+1, "dependency_unpinned")
+			}
+		}
+	}
+}
+
+func npmHasFloatingDependencyVersion(dependencies map[string]string) bool {
+	for _, version := range dependencies {
+		version = strings.ToLower(strings.TrimSpace(version))
+		if version == "" || version == "*" || version == "latest" || strings.HasPrefix(version, "file:") || strings.HasPrefix(version, "git+") {
+			return true
+		}
+	}
+	return false
+}
+
+func pythonRequirementUnpinned(line string) bool {
+	line = strings.TrimSpace(line)
+	if line == "" || strings.HasPrefix(line, "#") || strings.HasPrefix(line, "-") {
+		return false
+	}
+	return !strings.Contains(line, "==")
+}
+
 func repositoryContentFindings(path, content string, add func(string, string, string, string, string, int, string)) {
 	name := strings.ToLower(filepath.Base(path))
 	if strings.HasPrefix(name, ".env") {
@@ -319,7 +361,39 @@ func repositoryContentFindings(path, content string, add func(string, string, st
 		if repositorySecretPattern.MatchString(line) && !strings.Contains(lower, "example") && !strings.Contains(lower, "placeholder") {
 			add("high", "secret_hygiene", "Potential hardcoded secret", "A secret-like assignment was found. The response intentionally omits the raw value.", path, lineNumber, "secret_pattern")
 		}
+		if repositoryDangerousJavaScriptPattern(path, lower) {
+			add("high", "security", "Dangerous dynamic JavaScript execution", "Dynamic code execution was detected. Review this before release because it can turn user input into executable code.", path, lineNumber, "dangerous_js_execution")
+		}
+		if repositoryInnerHTMLPattern(path, lower) {
+			add("medium", "security", "Direct innerHTML assignment", "Direct innerHTML writes should be reviewed for sanitization before release.", path, lineNumber, "direct_inner_html")
+		}
+		if repositoryProductionPanicPattern(path, lower) {
+			add("medium", "bug_risk", "Production panic path", "A panic call was found outside a Go test file. Confirm this cannot crash a user-facing workflow.", path, lineNumber, "production_panic")
+		}
 	}
+}
+
+func repositoryDangerousJavaScriptPattern(path, lowerLine string) bool {
+	extension := strings.ToLower(filepath.Ext(path))
+	if extension != ".js" && extension != ".jsx" && extension != ".ts" && extension != ".tsx" && extension != ".vue" {
+		return false
+	}
+	return strings.Contains(lowerLine, "eval(") || strings.Contains(lowerLine, "new function(")
+}
+
+func repositoryInnerHTMLPattern(path, lowerLine string) bool {
+	extension := strings.ToLower(filepath.Ext(path))
+	if extension != ".js" && extension != ".jsx" && extension != ".ts" && extension != ".tsx" && extension != ".vue" && extension != ".html" {
+		return false
+	}
+	return strings.Contains(lowerLine, ".innerhtml") && strings.Contains(lowerLine, "=")
+}
+
+func repositoryProductionPanicPattern(path, lowerLine string) bool {
+	if strings.ToLower(filepath.Ext(path)) != ".go" || strings.HasSuffix(strings.ToLower(path), "_test.go") {
+		return false
+	}
+	return strings.Contains(lowerLine, "panic(")
 }
 
 func repositoryLanguageRows(rows map[string]*RepositoryLanguage) []RepositoryLanguage {

@@ -1605,14 +1605,17 @@ func TestProjectRepositoryScanRouteReturnsStaticFindings(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(project.RepoLocalPath, "package.json"), []byte(`{"dependencies":{"vue":"^3.0.0"},"devDependencies":{"vite":"^5.0.0"}}`), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(project.RepoLocalPath, "package.json"), []byte(`{"dependencies":{"vue":"latest"},"devDependencies":{"vite":"^5.0.0"}}`), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	srcDir := filepath.Join(project.RepoLocalPath, "src")
 	if err := os.MkdirAll(srcDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(srcDir, "config.js"), []byte("const API_SECRET = 'super-secret-token';\n// TODO tighten this test hook\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(srcDir, "config.js"), []byte("const API_SECRET = 'super-secret-token';\n// TODO tighten this test hook\nwindow.eval(userInput);\ndocument.body.innerHTML = html;\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(srcDir, "server.go"), []byte("package main\n\nfunc crash() {\n\tpanic(\"unexpected\")\n}\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -1656,7 +1659,7 @@ func TestProjectRepositoryScanRouteReturnsStaticFindings(t *testing.T) {
 			t.Fatalf("finding leaked raw secret: %#v", finding)
 		}
 	}
-	for _, signal := range []string{"lockfile_missing", "secret_pattern", "todo_fixme"} {
+	for _, signal := range []string{"lockfile_missing", "dependency_unpinned", "secret_pattern", "todo_fixme", "dangerous_js_execution", "direct_inner_html", "production_panic"} {
 		if !seenSignals[signal] {
 			t.Fatalf("repo scan missing signal %s: %#v", signal, payload.Findings)
 		}
