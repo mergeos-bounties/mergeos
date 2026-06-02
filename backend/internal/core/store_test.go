@@ -1780,6 +1780,102 @@ func TestProjectDeploymentRouteReturnsDerivedStatusAndSanitizesData(t *testing.T
 	}
 }
 
+func TestProjectDeploymentUsesDeploymentAgentAction(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:       defaultTokenSymbol,
+		StatePath:         filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:    1000,
+		DevPaymentEnabled: true,
+		DevPaymentCode:    defaultDevPaymentCode,
+		GitHubOwner:       defaultGitHubOwner,
+		BountyRoot:        filepath.Join(tempDir, "bounties"),
+		SMTPFrom:          "noreply@mergeos.local",
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	auth, err := store.Register(RegisterRequest{
+		Name:        "Deploy Agent Client",
+		CompanyName: "Deploy Agent Co",
+		Email:       "deploy-agent@example.com",
+		Password:    "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	project, err := store.CreateProject(context.Background(), auth.User.ID, CreateProjectRequest{
+		Title:            "Deployment agent proof",
+		ClientName:       "Private Deploy Agent Client",
+		CompanyName:      "Deploy Agent Co",
+		ClientEmail:      "deploy-agent@example.com",
+		Phone:            "+1 555 0188",
+		Brief:            "Create deployment agent handoff data without leaking private customer data.",
+		BudgetCents:      210000,
+		PaymentMethod:    PaymentPayPal,
+		PaymentReference: defaultDevPaymentCode,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.RecordProjectAgentAction(project.ID, AgentActionRequest{
+		Action:         "deploy",
+		AgentType:      "deployment-agent",
+		Status:         "processed",
+		ReferenceURL:   "https://vercel.example/deployments/mergeos-preview",
+		DurationMillis: 42000,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	server := NewServer(cfg, store, payments)
+	reqHTTP := httptest.NewRequest(http.MethodGet, "/api/projects/"+project.ID+"/deployment", nil)
+	reqHTTP.Header.Set("Authorization", "Bearer "+auth.Token)
+	resp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(resp, reqHTTP)
+	if resp.Code != http.StatusOK {
+		t.Fatalf("deployment status = %d, body = %s", resp.Code, resp.Body.String())
+	}
+	body := resp.Body.String()
+	for _, value := range []string{
+		"deploy-agent@example.com",
+		"+1 555 0188",
+		auth.User.ID,
+		defaultDevPaymentCode,
+		tempDir,
+	} {
+		if strings.Contains(body, value) {
+			t.Fatalf("deployment response leaked private value %q: %s", value, body)
+		}
+	}
+
+	var payload ProjectDeploymentResponse
+	if err := json.Unmarshal(resp.Body.Bytes(), &payload); err != nil {
+		t.Fatal(err)
+	}
+	foundDeployStage := false
+	foundDeploySignal := false
+	for _, stage := range payload.Stages {
+		if stage.ID == "deployment_handoff" {
+			foundDeployStage = true
+			if stage.Status != deploymentStageComplete || stage.URL != "https://vercel.example/deployments/mergeos-preview" {
+				t.Fatalf("deployment agent did not complete handoff stage: %#v", stage)
+			}
+		}
+	}
+	for _, signal := range payload.Signals {
+		if signal.Type == "agent_action" && signal.Status == "processed" && signal.URL == "https://vercel.example/deployments/mergeos-preview" {
+			foundDeploySignal = true
+			break
+		}
+	}
+	if !foundDeployStage || !foundDeploySignal {
+		t.Fatalf("deployment response missing deploy agent evidence: stage=%t signal=%t payload=%#v", foundDeployStage, foundDeploySignal, payload)
+	}
+}
+
 func TestProjectEscrowRouteReturnsReserveReleaseSummary(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := Config{

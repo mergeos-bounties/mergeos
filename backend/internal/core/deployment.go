@@ -56,16 +56,7 @@ func (s *Store) projectDeploymentLocked(project *Project) ProjectDeploymentRespo
 			"QA and customer preview work is open for validation.",
 			"QA validation will start after a matching task is created.",
 		),
-		deploymentTaskCategoryStage(
-			"deployment_handoff",
-			"Deployment handoff",
-			tasks,
-			project.CreatedAt,
-			[]string{"deploy", "deployment", "devops", "handoff", "release", "pipeline", "environment"},
-			"Deployment pipeline and handoff notes have been accepted.",
-			"Deployment handoff is open and waiting on delivery proof.",
-			"Deployment handoff will start after a matching task is created.",
-		),
+		s.deploymentHandoffStageLocked(project, tasks),
 		deploymentReleaseGateStage(project, tasks),
 	}
 	signals := s.deploymentSignalsLocked(project, tasks)
@@ -109,6 +100,48 @@ func (s *Store) projectDeploymentLocked(project *Project) ProjectDeploymentRespo
 		UpdatedAt:    updatedAt,
 		Stages:       stages,
 		Signals:      signals,
+	}
+}
+
+func (s *Store) deploymentHandoffStageLocked(project *Project, tasks []*Task) DeploymentStage {
+	stage := deploymentTaskCategoryStage(
+		"deployment_handoff",
+		"Deployment handoff",
+		tasks,
+		project.CreatedAt,
+		[]string{"deploy", "deployment", "devops", "handoff", "release", "pipeline", "environment"},
+		"Deployment pipeline and handoff notes have been accepted.",
+		"Deployment handoff is open and waiting on delivery proof.",
+		"Deployment handoff will start after a matching task is created.",
+	)
+
+	log := s.latestDeploymentAgentLogLocked(project)
+	if log == nil || log.ReceivedAt.Before(stage.UpdatedAt) {
+		return stage
+	}
+
+	status := deploymentStageInProgress
+	body := fmt.Sprintf("%s reported deployment %s.", publicLiveFeedAIActor(log), publicLiveFeedStatus(log.Status))
+	switch publicLiveFeedStatus(log.Status) {
+	case "processed":
+		status = deploymentStageComplete
+		body = fmt.Sprintf("%s completed deployment handoff.", publicLiveFeedAIActor(log))
+	case "failed":
+		body = fmt.Sprintf("%s reported deployment failure; release needs review.", publicLiveFeedAIActor(log))
+	case "needs_review":
+		body = fmt.Sprintf("%s flagged deployment handoff for review.", publicLiveFeedAIActor(log))
+	case "running", "received":
+		body = fmt.Sprintf("%s is running deployment handoff.", publicLiveFeedAIActor(log))
+	}
+	return DeploymentStage{
+		ID:        "deployment_handoff",
+		Title:     "Deployment handoff",
+		Body:      body,
+		Status:    status,
+		Tone:      deploymentStageTone(status),
+		Reference: publicLiveFeedAIReference(log),
+		URL:       publicLiveFeedURL(log.CommentURL),
+		UpdatedAt: log.ReceivedAt,
 	}
 }
 
@@ -393,6 +426,22 @@ func deploymentLogMatchesProject(log *GeminiWebhookLog, project *Project) bool {
 		}
 	}
 	return false
+}
+
+func (s *Store) latestDeploymentAgentLogLocked(project *Project) *GeminiWebhookLog {
+	var latest *GeminiWebhookLog
+	for _, log := range s.geminiWebhookLogs {
+		if !deploymentLogMatchesProject(log, project) {
+			continue
+		}
+		if !strings.EqualFold(log.EventName, "agent_action") || !strings.EqualFold(log.Action, "deploy") {
+			continue
+		}
+		if latest == nil || log.ReceivedAt.After(latest.ReceivedAt) {
+			latest = log
+		}
+	}
+	return latest
 }
 
 func deploymentStageTone(status string) string {
