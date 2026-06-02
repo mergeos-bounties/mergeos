@@ -1727,7 +1727,7 @@
                     <div class="payment-history-side">
                       <strong :class="['payment-history-amount', row.amountClass]">{{ row.amount }}</strong>
                       <small>{{ row.when }}</small>
-                      <button type="button" @click="showToast(`Reference: ${row.rawReference}`)">
+                      <button type="button" @click="handleLedgerReference(row)">
                         {{ row.reference }}
                       </button>
                     </div>
