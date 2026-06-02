@@ -1138,6 +1138,9 @@ func TestPublicMarketplaceRouteReturnsSanitizedLiveData(t *testing.T) {
 		if bounty.EstimatedHours <= 0 {
 			t.Fatalf("bounty missing estimated hours: %#v", bounty)
 		}
+		if len(bounty.EvidenceRequired) == 0 || !containsString(bounty.EvidenceRequired, "tests") {
+			t.Fatalf("bounty missing evidence requirements: %#v", bounty)
+		}
 	}
 	if len(payload.Contributors) != 1 || payload.Contributors[0].EarnedCents == 0 {
 		t.Fatalf("contributors missing real paid task data: %#v", payload.Contributors)

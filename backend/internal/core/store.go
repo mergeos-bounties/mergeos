@@ -2569,6 +2569,7 @@ func marketplaceBountyRow(project *Project, task *Task) *MarketplaceBounty {
 		RequiredWorkerKind: task.RequiredWorkerKind,
 		SuggestedAgentType: task.SuggestedAgentType,
 		BountyType:         task.BountyType,
+		EvidenceRequired:   publicTaskEvidenceRequiredForTask(task),
 		SourceRepository:   marketplacePublicRepoURL(projectSourceRepoURL(project)),
 		IssueURL:           marketplacePublicRepoURL(task.IssueURL),
 		CreatedAt:          task.CreatedAt,

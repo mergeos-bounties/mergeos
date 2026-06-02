@@ -4289,6 +4289,24 @@ svg {
   font-weight: 780;
 }
 
+.marketplace-bounty-evidence {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 7px;
+}
+
+.marketplace-bounty-evidence span {
+  border: 1px solid #dbe7f1;
+  border-radius: 999px;
+  background: #f8fbfd;
+  color: #415062;
+  padding: 3px 7px;
+  font-size: 9px;
+  line-height: 1.2;
+  font-weight: 900;
+}
+
 .marketplace-bounty-meta {
   display: grid;
   justify-items: end;

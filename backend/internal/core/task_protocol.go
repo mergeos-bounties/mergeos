@@ -139,6 +139,9 @@ func publicTaskAcceptanceCriteria(acceptance string) []string {
 }
 
 func publicTaskEvidenceRequired(bounty *MarketplaceBounty) []string {
+	if len(bounty.EvidenceRequired) > 0 {
+		return stableStrings(bounty.EvidenceRequired)
+	}
 	haystack := strings.ToLower(strings.Join([]string{
 		bounty.Title,
 		bounty.Acceptance,
@@ -159,6 +162,20 @@ func publicTaskEvidenceRequired(bounty *MarketplaceBounty) []string {
 		required = append(required, "security_review")
 	}
 	return stableStrings(required)
+}
+
+func publicTaskEvidenceRequiredForTask(task *Task) []string {
+	if task == nil {
+		return []string{"tests"}
+	}
+	return publicTaskEvidenceRequired(&MarketplaceBounty{
+		Title:              task.Title,
+		Acceptance:         task.Acceptance,
+		BountyType:         task.BountyType,
+		SuggestedAgentType: task.SuggestedAgentType,
+		EstimatedHours:     marketplaceEstimatedHours(task),
+		RewardCents:        task.RewardCents,
+	})
 }
 
 func publicTaskProtocolTags(bounty *MarketplaceBounty) []string {

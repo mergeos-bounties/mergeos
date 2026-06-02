@@ -3498,6 +3498,9 @@
                     <span>{{ bounty.issue }}</span>
                   </div>
                   <p>{{ bounty.acceptance }}</p>
+                  <div v-if="bounty.evidenceRequired.length" class="marketplace-bounty-evidence" aria-label="Evidence required">
+                    <span v-for="evidence in bounty.evidenceRequired" :key="`${bounty.id}-${evidence}`">{{ evidence }}</span>
+                  </div>
                   <small>{{ bounty.project }} · {{ bounty.lane }}<template v-if="bounty.effort"> · {{ bounty.effort }}</template></small>
                 </div>
                 <div class="marketplace-bounty-meta">
@@ -7525,6 +7528,9 @@ function mapMarketplaceBounty(bounty = {}, index = 0) {
   const issueNumber = Number(bounty.issue_number) || 0;
   const claimCommand = issueNumber > 0 ? `/attempt #${issueNumber}` : '';
   const estimatedHours = Number(bounty.estimated_hours) || 0;
+  const evidenceRequired = Array.isArray(bounty.evidence_required)
+    ? bounty.evidence_required.map(toTitleLabel).filter(Boolean).slice(0, 5)
+    : [];
   return {
     id: bounty.id || `${bounty.project_id || 'project'}:${issueNumber || index}`,
     claimID: bounty.claim_id || bounty.id || '',
@@ -7536,6 +7542,7 @@ function mapMarketplaceBounty(bounty = {}, index = 0) {
     rewardCents: Number(bounty.reward_cents) || 0,
     effort: estimatedHours > 0 ? formatEstimatedHours(estimatedHours) : '',
     effortHours: estimatedHours,
+    evidenceRequired,
     lane: agentType ? toTitleLabel(agentType) : toTitleLabel(workerKind),
     issue: issueNumber > 0 ? `#${issueNumber}` : 'Task',
     issueNumber,
@@ -7588,6 +7595,7 @@ function marketplaceBountyHaystack(bounty = {}) {
     bounty.effort,
     bounty.lane,
     bounty.issue,
+    ...(bounty.evidenceRequired || []),
   ].join(' ').toLowerCase();
 }
 
