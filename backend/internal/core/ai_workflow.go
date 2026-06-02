@@ -25,6 +25,7 @@ func (s *Store) projectAIWorkflowLocked(project *Project) ProjectAIWorkflowRespo
 	stages := []AIWorkflowStage{
 		aiWorkflowRepoStage(project),
 		aiWorkflowIssueScanStage(project, tasks),
+		aiWorkflowTaskGenerationStage(project, tasks),
 		aiWorkflowEstimateStage(project, tasks, s.cfg.TokenSymbol),
 		aiWorkflowRoutingStage(project, tasks),
 		aiWorkflowPRReviewStage(project, logs),
@@ -122,6 +123,30 @@ func aiWorkflowIssueScanStage(project *Project, tasks []*Task) AIWorkflowStage {
 		Tone:      deploymentStageTone(status),
 		Reference: "project:" + project.ID,
 		UpdatedAt: project.CreatedAt,
+	}
+}
+
+func aiWorkflowTaskGenerationStage(project *Project, tasks []*Task) AIWorkflowStage {
+	latest := project.CreatedAt
+	for _, task := range tasks {
+		if task.CreatedAt.After(latest) {
+			latest = task.CreatedAt
+		}
+	}
+	status := deploymentStagePending
+	body := "Task generation is waiting for parsed issues or project scope."
+	if len(tasks) > 0 {
+		status = deploymentStageComplete
+		body = fmt.Sprintf("Task generation created %d delivery nodes for marketplace routing.", len(tasks))
+	}
+	return AIWorkflowStage{
+		ID:        "task_generation",
+		Title:     "Task generation",
+		Body:      body,
+		Status:    status,
+		Tone:      deploymentStageTone(status),
+		Reference: "project:" + project.ID,
+		UpdatedAt: latest,
 	}
 }
 

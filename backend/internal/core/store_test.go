@@ -1885,7 +1885,7 @@ func TestProjectAIWorkflowRouteReturnsWorkflowAndSanitizesData(t *testing.T) {
 			prReviewStatus = stage.Status
 		}
 	}
-	for _, required := range []string{"repo_import", "issue_scan", "reward_estimation", "contributor_routing", "pr_review", "deployment_validation"} {
+	for _, required := range []string{"repo_import", "issue_scan", "task_generation", "reward_estimation", "contributor_routing", "pr_review", "deployment_validation"} {
 		if !seenStages[required] {
 			t.Fatalf("ai workflow missing stage %s: %#v", required, payload.Stages)
 		}
