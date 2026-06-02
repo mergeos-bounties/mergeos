@@ -272,6 +272,8 @@ func workflowProtocolDocument(project *Project, graph ProjectTaskGraphResponse) 
 		Edges:           edges,
 		Metadata: map[string]any{
 			"project_title":  graph.ProjectTitle,
+			"workflow_steps": workflowProtocolSteps(),
+			"current_step":   workflowProtocolCurrentStep(graph),
 			"progress":       graph.Progress,
 			"node_count":     graph.Stats.NodeCount,
 			"edge_count":     graph.Stats.EdgeCount,
@@ -281,6 +283,34 @@ func workflowProtocolDocument(project *Project, graph ProjectTaskGraphResponse) 
 			"updated_at":     graph.UpdatedAt,
 		},
 	}
+}
+
+func workflowProtocolSteps() []string {
+	return []string{
+		"repo_import",
+		"issue_scan",
+		"task_generation",
+		"reward_estimation",
+		"contributor_routing",
+		"pr_review",
+		"deployment_validation",
+	}
+}
+
+func workflowProtocolCurrentStep(graph ProjectTaskGraphResponse) string {
+	if graph.Stats.NodeCount == 0 {
+		return "repo_import"
+	}
+	if graph.Stats.CompleteCount == graph.Stats.NodeCount {
+		return "deployment_validation"
+	}
+	if graph.Stats.CompleteCount > 0 {
+		return "pr_review"
+	}
+	if graph.Stats.ReadyCount > 0 || graph.Stats.BlockedCount > 0 {
+		return "contributor_routing"
+	}
+	return "task_generation"
 }
 
 func workflowProtocolStatus(graph ProjectTaskGraphResponse) string {

@@ -2104,6 +2104,10 @@ func TestProjectTaskGraphRouteReturnsAcyclicDependencyGraph(t *testing.T) {
 	if len(document.Nodes) > 1 && len(document.Nodes[1].Dependencies) == 0 {
 		t.Fatalf("workflow protocol node missing dependencies: %#v", document.Nodes[1])
 	}
+	workflowSteps, ok := document.Metadata["workflow_steps"].([]interface{})
+	if !ok || len(workflowSteps) != 7 || document.Metadata["current_step"] != "contributor_routing" {
+		t.Fatalf("workflow protocol missing AI workflow stage metadata: %#v", document.Metadata)
+	}
 
 	otherAuth, err := store.Register(RegisterRequest{
 		Name:     "Other Graph Client",
