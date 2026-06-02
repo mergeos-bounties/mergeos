@@ -7666,6 +7666,20 @@ svg {
   min-height: 318px;
 }
 
+.dashboard-ledger-list article {
+  border-radius: 8px;
+  padding: 4px;
+  cursor: pointer;
+  transition: background 160ms ease, transform 160ms ease;
+}
+
+.dashboard-ledger-list article:hover,
+.dashboard-ledger-list article:focus-visible {
+  outline: none;
+  background: #f0fdf8;
+  transform: translateY(-1px);
+}
+
 .chat-meta {
   display: flex;
   align-items: baseline;

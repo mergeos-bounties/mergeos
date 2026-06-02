@@ -2439,7 +2439,16 @@
               <span class="online-dot">{{ dashboardLedgerRows.length }} rows</span>
             </div>
             <div v-if="dashboardLedgerRows.length" class="chat-list dashboard-ledger-list">
-              <article v-for="entry in dashboardLedgerRows" :key="entry.key">
+              <article
+                v-for="entry in dashboardLedgerRows"
+                :key="entry.key"
+                role="button"
+                tabindex="0"
+                :aria-label="`Open ledger proof ${entry.ref}`"
+                @click="handleLedgerReference(entry)"
+                @keyup.enter="handleLedgerReference(entry)"
+                @keyup.space.prevent="handleLedgerReference(entry)"
+              >
                 <span class="contributor-avatar">LG</span>
                 <div>
                   <div class="chat-meta">
@@ -5366,6 +5375,9 @@ const dashboardLedgerRows = computed(() =>
       title: meta.type,
       value: formatMRGFromCents(entry.amount_cents),
       ref: shortLedgerReference(entry.reference || entry.entry_hash || `#${entry.sequence}`),
+      rawReference: entry.reference || '',
+      entryHash: entry.entry_hash || '',
+      sequence: entry.sequence,
     };
   }),
 );
