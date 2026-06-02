@@ -144,6 +144,27 @@ test('validates event protocol documents and assertion helper', () => {
   });
   assert.equal(agentEvent.valid, true);
   assert.deepEqual(agentEvent.errors, []);
+
+  const pullOpenedEvent = validateProtocolDocument({
+    protocol_version: 'mergeos.event.v1',
+    kind: 'event',
+    id: 'evt_pr_opened',
+    type: 'pr.opened',
+    occurred_at: '2026-06-02T00:00:00.000Z',
+    actor: 'github:contributor',
+    reference: 'mergeos-bounties/mergeos#151',
+    payload: { pull_number: 151 },
+  });
+  assert.equal(pullOpenedEvent.valid, true);
+  assert.deepEqual(pullOpenedEvent.errors, []);
+
+  const unknownEvent = validateProtocolDocument({
+    ...event,
+    id: 'evt_unknown',
+    type: 'pr.unknown',
+  });
+  assert.equal(unknownEvent.valid, false);
+  assert(unknownEvent.errors.some((error) => error.path === 'type'));
 });
 
 test('validates repository scan protocol documents', () => {

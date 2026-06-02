@@ -12,7 +12,19 @@ The live app exposes protocol discovery at `GET /api/public/protocol`.
 - `mergeos.event.v1`: a realtime ledger/workflow event emitted by apps, agents, or integrations, including typed agent review/test/generate/deploy/scan events.
 - `mergeos.scan.v1`: a repository scan document with dependency manifests, language counts, and security/debt findings.
 
-Event types include project funding, task creation/claim/payment, PR review, repository issue sync, deployment updates, ledger records, and agent actions.
+Event types include project funding, task creation/claim/payment, PR lifecycle, repository issue sync, deployment updates, ledger records, and agent actions.
+
+## Event Taxonomy
+
+| Group | Event types |
+| --- | --- |
+| Project | `project.funded` |
+| Task | `task.created`, `task.claimed`, `task.paid` |
+| Pull request | `pr.opened`, `pr.reviewed` |
+| Repository | `repo.issues.synced` |
+| Deployment | `deployment.updated` |
+| Ledger | `ledger.recorded` |
+| Agent | `agent.reviewed`, `agent.tested`, `agent.generated`, `agent.deployed`, `agent.scanned`, `agent.action` |
 
 ## Usage
 
