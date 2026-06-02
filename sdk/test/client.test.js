@@ -21,6 +21,7 @@ function fakeFetch(responses = []) {
 test('creates public feed and ledger verification requests without auth', async () => {
   const fetchImpl = fakeFetch([
     { status: 200, body: { items: [] } },
+    { status: 200, body: { events: [] } },
     { status: 200, body: { valid: true } },
   ]);
   const client = new MergeOSClient({
@@ -30,14 +31,18 @@ test('creates public feed and ledger verification requests without auth', async 
   });
 
   const payload = await client.publicLiveFeed({ limit: 80 });
+  const events = await client.publicProtocolEvents({ limit: 80 });
   const verification = await client.publicLedgerVerification();
 
   assert.deepEqual(payload, { items: [] });
+  assert.deepEqual(events, { events: [] });
   assert.deepEqual(verification, { valid: true });
   assert.equal(fetchImpl.calls[0].url, 'https://mergeos.shop/api/public/live-feed?limit=80');
   assert.equal(fetchImpl.calls[0].options.headers.Authorization, undefined);
-  assert.equal(fetchImpl.calls[1].url, 'https://mergeos.shop/api/public/ledger/verify');
+  assert.equal(fetchImpl.calls[1].url, 'https://mergeos.shop/api/public/protocol/events?limit=80');
   assert.equal(fetchImpl.calls[1].options.headers.Authorization, undefined);
+  assert.equal(fetchImpl.calls[2].url, 'https://mergeos.shop/api/public/ledger/verify');
+  assert.equal(fetchImpl.calls[2].options.headers.Authorization, undefined);
 });
 
 test('exposes public repo import and password-gated test settings without auth', async () => {

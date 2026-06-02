@@ -1,6 +1,8 @@
 package core
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"sort"
 	"strings"
@@ -87,6 +89,18 @@ func (s *Store) PublicLiveFeed(limit int) PublicLiveFeedResponse {
 		response.Items = response.Items[:limit]
 	}
 	return response
+}
+
+func (s *Store) PublicEventProtocol(limit int) PublicEventProtocolResponse {
+	feed := s.PublicLiveFeed(limit)
+	events := make([]EventProtocolDocument, 0, len(feed.Items))
+	for _, item := range feed.Items {
+		events = append(events, publicLiveFeedProtocolEvent(item))
+	}
+	return PublicEventProtocolResponse{
+		Stats:  feed.Stats,
+		Events: events,
+	}
 }
 
 func normalizePublicLiveFeedLimit(limit int) int {
@@ -397,4 +411,86 @@ func publicLiveFeedStatus(status string) string {
 		return "received"
 	}
 	return strings.ToLower(status)
+}
+
+func publicLiveFeedProtocolEvent(item PublicLiveFeedItem) EventProtocolDocument {
+	actor := strings.TrimSpace(item.Actor)
+	if actor == "" {
+		actor = "mergeos"
+	}
+	occurredAt := item.CreatedAt
+	if occurredAt.IsZero() {
+		occurredAt = time.Unix(0, 0).UTC()
+	}
+	reference := publicEventReference(item)
+	payload := map[string]any{
+		"feed_type": item.Type,
+		"title":     item.Title,
+		"status":    item.Status,
+	}
+	if item.ProjectTitle != "" {
+		payload["project_title"] = item.ProjectTitle
+	}
+	if item.URL != "" {
+		payload["url"] = item.URL
+	}
+
+	event := EventProtocolDocument{
+		ProtocolVersion: "mergeos.event.v1",
+		Kind:            "event",
+		ID:              publicEventID(item.ID),
+		Type:            publicEventType(item.Type),
+		OccurredAt:      occurredAt,
+		Actor:           actor,
+		ProjectID:       strings.TrimSpace(item.ProjectID),
+		Reference:       reference,
+		Payload:         payload,
+	}
+	if item.AmountCents > 0 {
+		amount := float64(item.AmountCents) / 100
+		event.AmountMRG = &amount
+	}
+	return event
+}
+
+func publicEventType(feedType string) string {
+	switch feedType {
+	case "project_funded":
+		return "project.funded"
+	case "task_opened":
+		return "task.created"
+	case "task_accepted":
+		return "task.claimed"
+	case "deployment_validation":
+		return "deployment.updated"
+	case "ai_review":
+		return "pr.reviewed"
+	}
+	if strings.HasPrefix(feedType, "ledger_task_payment") {
+		return "task.paid"
+	}
+	if strings.HasPrefix(feedType, "ledger_") {
+		return "ledger.recorded"
+	}
+	return "agent.action"
+}
+
+func publicEventID(feedID string) string {
+	id := "evt:" + strings.TrimSpace(feedID)
+	if len(id) >= 3 && len(id) <= 120 {
+		return id
+	}
+	sum := sha256.Sum256([]byte(id))
+	return "evt:" + hex.EncodeToString(sum[:16])
+}
+
+func publicEventReference(item PublicLiveFeedItem) string {
+	reference := strings.TrimSpace(item.Reference)
+	if reference == "" {
+		reference = strings.TrimSpace(item.URL)
+	}
+	if len(reference) <= 512 {
+		return reference
+	}
+	return reference[:512]
 }

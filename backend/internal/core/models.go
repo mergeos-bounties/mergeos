@@ -683,6 +683,25 @@ type PublicLiveFeedItem struct {
 	CreatedAt    time.Time `json:"created_at"`
 }
 
+type PublicEventProtocolResponse struct {
+	Stats  PublicLiveFeedStats     `json:"stats"`
+	Events []EventProtocolDocument `json:"events"`
+}
+
+type EventProtocolDocument struct {
+	ProtocolVersion string         `json:"protocol_version"`
+	Kind            string         `json:"kind"`
+	ID              string         `json:"id"`
+	Type            string         `json:"type"`
+	OccurredAt      time.Time      `json:"occurred_at"`
+	Actor           string         `json:"actor"`
+	ProjectID       string         `json:"project_id,omitempty"`
+	TaskID          string         `json:"task_id,omitempty"`
+	Reference       string         `json:"reference,omitempty"`
+	AmountMRG       *float64       `json:"amount_mrg,omitempty"`
+	Payload         map[string]any `json:"payload,omitempty"`
+}
+
 type ProjectDeploymentResponse struct {
 	ProjectID    string             `json:"project_id"`
 	ProjectTitle string             `json:"project_title"`

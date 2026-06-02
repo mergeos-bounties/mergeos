@@ -33,6 +33,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/public/ledger", s.publicLedger)
 	mux.HandleFunc("GET /api/public/ledger/verify", s.publicLedgerVerify)
 	mux.HandleFunc("GET /api/public/live-feed", s.publicLiveFeed)
+	mux.HandleFunc("GET /api/public/protocol/events", s.publicProtocolEvents)
 	mux.HandleFunc("POST /api/public/repo/issues", s.importRepoIssues)
 	mux.HandleFunc("POST /api/integrations/github/pr-review", s.geminiReviewWebhook)
 	mux.HandleFunc("POST /api/payments/crypto/webhook", s.cryptoWebhook)
@@ -189,6 +190,16 @@ func (s *Server) publicLiveFeed(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	writeJSON(w, http.StatusOK, s.store.PublicLiveFeed(limit))
+}
+
+func (s *Server) publicProtocolEvents(w http.ResponseWriter, r *http.Request) {
+	limit := 0
+	if raw := strings.TrimSpace(r.URL.Query().Get("limit")); raw != "" {
+		if parsed, err := strconv.Atoi(raw); err == nil {
+			limit = parsed
+		}
+	}
+	writeJSON(w, http.StatusOK, s.store.PublicEventProtocol(limit))
 }
 
 func (s *Server) register(w http.ResponseWriter, r *http.Request) {

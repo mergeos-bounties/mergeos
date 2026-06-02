@@ -1090,6 +1090,41 @@ func TestPublicLiveFeedRouteReturnsSanitizedTimeline(t *testing.T) {
 			t.Fatalf("live feed missing %s item: %#v", required, payload.Items)
 		}
 	}
+
+	protocolReq := httptest.NewRequest(http.MethodGet, "/api/public/protocol/events?limit=50", nil)
+	protocolResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(protocolResp, protocolReq)
+	if protocolResp.Code != http.StatusOK {
+		t.Fatalf("public protocol events status = %d, body = %s", protocolResp.Code, protocolResp.Body.String())
+	}
+	protocolBody := protocolResp.Body.String()
+	for _, value := range privateValues {
+		if strings.Contains(protocolBody, value) {
+			t.Fatalf("public protocol events leaked private value %q: %s", value, protocolBody)
+		}
+	}
+	var eventFeed PublicEventProtocolResponse
+	if err := json.Unmarshal(protocolResp.Body.Bytes(), &eventFeed); err != nil {
+		t.Fatal(err)
+	}
+	if eventFeed.Stats.ProjectCount != payload.Stats.ProjectCount || len(eventFeed.Events) == 0 {
+		t.Fatalf("unexpected protocol event feed: %#v", eventFeed)
+	}
+	eventTypes := map[string]bool{}
+	for _, event := range eventFeed.Events {
+		if event.ProtocolVersion != "mergeos.event.v1" || event.Kind != "event" || event.Actor == "" || event.OccurredAt.IsZero() {
+			t.Fatalf("invalid protocol event header: %#v", event)
+		}
+		eventTypes[event.Type] = true
+		if event.Type == "task.paid" && (event.AmountMRG == nil || *event.AmountMRG <= 0) {
+			t.Fatalf("task paid event missing amount: %#v", event)
+		}
+	}
+	for _, required := range []string{"project.funded", "deployment.updated", "task.claimed", "task.paid", "pr.reviewed"} {
+		if !eventTypes[required] {
+			t.Fatalf("protocol events missing %s item: %#v", required, eventFeed.Events)
+		}
+	}
 }
 
 func TestProjectDeploymentRouteReturnsDerivedStatusAndSanitizesData(t *testing.T) {

@@ -37,6 +37,7 @@ await mergeos.publicMarketplace();
 await mergeos.publicLedger();
 await mergeos.publicLedgerVerification();
 await mergeos.publicLiveFeed({ limit: 80 });
+await mergeos.publicProtocolEvents({ limit: 80 });
 await mergeos.importRepoIssues({ repo_url: 'https://github.com/acme/repo' });
 await mergeos.publicTestSettingsStatus();
 await mergeos.publicTestSettingsAuth('shared-password');
