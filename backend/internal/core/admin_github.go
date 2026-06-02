@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	pathpkg "path"
 	"regexp"
 	"sort"
 	"strconv"
@@ -69,6 +70,9 @@ func (s *Server) adminTaskPullRequests(w http.ResponseWriter, r *http.Request) {
 		writeGitHubAdminError(w, err, http.StatusBadGateway)
 		return
 	}
+	for i := range pulls {
+		pulls[i].Readiness = adminPullRequestReadiness(task, pulls[i])
+	}
 	writeJSON(w, http.StatusOK, AdminTaskPullRequestsResponse{
 		TaskID:       task.ID,
 		IssueNumber:  target.IssueNumber,
@@ -124,6 +128,11 @@ func (s *Server) mergeAdminTaskPullRequest(w http.ResponseWriter, r *http.Reques
 	}
 	if pull.Draft {
 		writeError(w, http.StatusConflict, "draft pull requests cannot be merged")
+		return
+	}
+	pull.Readiness = adminPullRequestReadiness(task, pull)
+	if !pull.Readiness.CanMerge {
+		writeError(w, http.StatusConflict, "pull request is not merge-ready: "+strings.Join(pull.Readiness.Blockers, "; "))
 		return
 	}
 	var mergeSHA string
@@ -405,6 +414,138 @@ func githubWorkerID(login string) (string, error) {
 	return "github:" + login, nil
 }
 
+func adminPullRequestReadiness(task *Task, pull AdminTaskPullRequest) AdminPullRequestReadiness {
+	readiness := AdminPullRequestReadiness{
+		Status:    "ready",
+		CanMerge:  true,
+		RiskLevel: "low",
+		Signals:   []string{},
+	}
+	addSignal := func(value string) {
+		value = strings.TrimSpace(value)
+		if value != "" {
+			readiness.Signals = append(readiness.Signals, value)
+		}
+	}
+	addBlocker := func(value string) {
+		readiness.Blockers = append(readiness.Blockers, value)
+	}
+	addWarning := func(value string) {
+		readiness.Warnings = append(readiness.Warnings, value)
+	}
+
+	if pull.Draft {
+		addBlocker("draft pull requests cannot be merged")
+	}
+	if !pull.Merged && !strings.EqualFold(strings.TrimSpace(pull.State), "open") {
+		addBlocker("pull request must be open or already merged")
+	}
+	switch strings.ToLower(strings.TrimSpace(pull.MergeableState)) {
+	case "dirty", "blocked", "draft":
+		addBlocker("pull request has mergeable_state=" + sanitizeLedgerReferenceValue(pull.MergeableState))
+	case "behind", "unstable", "unknown":
+		addWarning("pull request mergeable_state is " + sanitizeLedgerReferenceValue(pull.MergeableState))
+	}
+
+	labels := adminPullRequestLabelSet(pull.Labels)
+	if labels["evidence: missing"] || !labels["evidence: provided"] {
+		addBlocker("evidence: provided label is required")
+	} else {
+		addSignal("evidence: provided")
+	}
+	if labels["star: missing"] || !labels["star: verified"] {
+		addBlocker("star: verified label is required")
+	} else {
+		addSignal("star: verified")
+	}
+	if adminTaskIsPaymentSensitive(task, pull) {
+		addSignal("payment-sensitive")
+		if !labels["evidence: provided"] {
+			addBlocker("payment-sensitive PR requires sandbox/provider evidence")
+		} else {
+			addWarning("payment-sensitive PR still requires maintainer review of provider, ledger, and replay evidence")
+		}
+	}
+
+	totalAdditions := 0
+	totalDeletions := 0
+	for _, file := range pull.ChangedFiles {
+		path := strings.ToLower(strings.TrimSpace(file.Path))
+		status := strings.ToLower(strings.TrimSpace(file.Status))
+		totalAdditions += file.Additions
+		totalDeletions += file.Deletions
+		if strings.HasPrefix(path, ".github/workflows/") {
+			if status == "removed" {
+				addBlocker("workflow file deletion requires separate maintainer approval")
+			} else {
+				addWarning("workflow file changed")
+			}
+		}
+		name := strings.ToLower(strings.TrimSpace(pathpkg.Base(path)))
+		if strings.HasPrefix(name, ".env") && !strings.Contains(name, "example") {
+			addBlocker("environment file changes are not allowed in bounty PRs")
+		}
+	}
+	if len(pull.ChangedFiles) > 5 && totalDeletions > totalAdditions*2+100 {
+		addWarning("broad deletion-heavy diff requires manual scope review")
+	}
+
+	if len(readiness.Blockers) > 0 {
+		readiness.Status = "blocked"
+		readiness.CanMerge = false
+		readiness.RiskLevel = "high"
+	} else if len(readiness.Warnings) > 0 {
+		readiness.Status = "needs_review"
+		readiness.RiskLevel = "medium"
+	}
+	return readiness
+}
+
+func adminPullRequestLabelSet(labels []string) map[string]bool {
+	result := map[string]bool{}
+	for _, label := range labels {
+		result[strings.ToLower(strings.TrimSpace(label))] = true
+	}
+	return result
+}
+
+func adminTaskIsPaymentSensitive(task *Task, pull AdminTaskPullRequest) bool {
+	haystack := strings.ToLower(strings.Join([]string{
+		taskTitle(task),
+		taskAcceptance(task),
+		taskBountyType(task),
+		pull.Title,
+		strings.Join(pull.Labels, " "),
+	}, " "))
+	for _, keyword := range []string{"payment", "paypal", "usdt", "crypto", "webhook", "ledger", "payout", "escrow"} {
+		if strings.Contains(haystack, keyword) {
+			return true
+		}
+	}
+	return false
+}
+
+func taskTitle(task *Task) string {
+	if task == nil {
+		return ""
+	}
+	return task.Title
+}
+
+func taskAcceptance(task *Task) string {
+	if task == nil {
+		return ""
+	}
+	return task.Acceptance
+}
+
+func taskBountyType(task *Task) string {
+	if task == nil {
+		return ""
+	}
+	return task.BountyType
+}
+
 func (c *adminGitHubClient) listPullRequestsLinkedToIssue(ctx context.Context, target githubIssueTarget) ([]AdminTaskPullRequest, error) {
 	seen := map[int]bool{}
 	numbers := []int{}
@@ -504,7 +645,72 @@ func (c *adminGitHubClient) pullRequest(ctx context.Context, target githubIssueT
 	if err := c.githubJSON(ctx, http.MethodGet, endpoint, nil, &row); err != nil {
 		return AdminTaskPullRequest{}, err
 	}
-	return row.adminRow(target), nil
+	pull := row.adminRow(target)
+	if labels, err := c.issueLabels(ctx, target, number); err == nil {
+		pull.Labels = labels
+	}
+	if files, err := c.pullRequestFiles(ctx, target, number); err == nil {
+		pull.ChangedFiles = files
+	}
+	return pull, nil
+}
+
+func (c *adminGitHubClient) issueLabels(ctx context.Context, target githubIssueTarget, number int) ([]string, error) {
+	endpoint := fmt.Sprintf(
+		"https://api.github.com/repos/%s/%s/issues/%d",
+		url.PathEscape(target.Owner),
+		url.PathEscape(target.Repo),
+		number,
+	)
+	var row struct {
+		Labels []struct {
+			Name string `json:"name"`
+		} `json:"labels"`
+	}
+	if err := c.githubJSON(ctx, http.MethodGet, endpoint, nil, &row); err != nil {
+		return nil, err
+	}
+	labels := make([]string, 0, len(row.Labels))
+	for _, label := range row.Labels {
+		name := strings.TrimSpace(label.Name)
+		if name != "" {
+			labels = append(labels, name)
+		}
+	}
+	sort.Strings(labels)
+	return labels, nil
+}
+
+func (c *adminGitHubClient) pullRequestFiles(ctx context.Context, target githubIssueTarget, number int) ([]AdminPullRequestFile, error) {
+	endpoint := fmt.Sprintf(
+		"https://api.github.com/repos/%s/%s/pulls/%d/files?per_page=100",
+		url.PathEscape(target.Owner),
+		url.PathEscape(target.Repo),
+		number,
+	)
+	var rows []struct {
+		Filename  string `json:"filename"`
+		Status    string `json:"status"`
+		Additions int    `json:"additions"`
+		Deletions int    `json:"deletions"`
+	}
+	if err := c.githubJSON(ctx, http.MethodGet, endpoint, nil, &rows); err != nil {
+		return nil, err
+	}
+	files := make([]AdminPullRequestFile, 0, len(rows))
+	for _, row := range rows {
+		path := strings.TrimSpace(row.Filename)
+		if path == "" {
+			continue
+		}
+		files = append(files, AdminPullRequestFile{
+			Path:      path,
+			Status:    strings.TrimSpace(row.Status),
+			Additions: row.Additions,
+			Deletions: row.Deletions,
+		})
+	}
+	return files, nil
 }
 
 func (c *adminGitHubClient) mergePullRequest(ctx context.Context, target githubIssueTarget, number int) (string, error) {

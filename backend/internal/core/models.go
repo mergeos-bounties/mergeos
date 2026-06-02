@@ -308,21 +308,40 @@ type AdminTaskPullRequestsResponse struct {
 }
 
 type AdminTaskPullRequest struct {
-	Number         int        `json:"number"`
-	Title          string     `json:"title"`
-	Body           string     `json:"-"`
-	State          string     `json:"state"`
-	HTMLURL        string     `json:"html_url"`
-	MergeURL       string     `json:"merge_url,omitempty"`
-	Author         string     `json:"author"`
-	Draft          bool       `json:"draft"`
-	Merged         bool       `json:"merged"`
-	MergeableState string     `json:"mergeable_state,omitempty"`
-	BaseRef        string     `json:"base_ref,omitempty"`
-	HeadRef        string     `json:"head_ref,omitempty"`
-	CreatedAt      time.Time  `json:"created_at"`
-	UpdatedAt      time.Time  `json:"updated_at"`
-	MergedAt       *time.Time `json:"merged_at,omitempty"`
+	Number         int                       `json:"number"`
+	Title          string                    `json:"title"`
+	Body           string                    `json:"-"`
+	State          string                    `json:"state"`
+	HTMLURL        string                    `json:"html_url"`
+	MergeURL       string                    `json:"merge_url,omitempty"`
+	Author         string                    `json:"author"`
+	Draft          bool                      `json:"draft"`
+	Merged         bool                      `json:"merged"`
+	MergeableState string                    `json:"mergeable_state,omitempty"`
+	BaseRef        string                    `json:"base_ref,omitempty"`
+	HeadRef        string                    `json:"head_ref,omitempty"`
+	Labels         []string                  `json:"labels,omitempty"`
+	ChangedFiles   []AdminPullRequestFile    `json:"changed_files,omitempty"`
+	Readiness      AdminPullRequestReadiness `json:"readiness"`
+	CreatedAt      time.Time                 `json:"created_at"`
+	UpdatedAt      time.Time                 `json:"updated_at"`
+	MergedAt       *time.Time                `json:"merged_at,omitempty"`
+}
+
+type AdminPullRequestFile struct {
+	Path      string `json:"path"`
+	Status    string `json:"status"`
+	Additions int    `json:"additions"`
+	Deletions int    `json:"deletions"`
+}
+
+type AdminPullRequestReadiness struct {
+	Status    string   `json:"status"`
+	CanMerge  bool     `json:"can_merge"`
+	RiskLevel string   `json:"risk_level"`
+	Blockers  []string `json:"blockers,omitempty"`
+	Warnings  []string `json:"warnings,omitempty"`
+	Signals   []string `json:"signals,omitempty"`
 }
 
 type AdminMergeTaskPullRequestRequest struct {

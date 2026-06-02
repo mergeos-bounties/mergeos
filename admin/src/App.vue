@@ -351,6 +351,13 @@
                         <strong>#{{ pull.number }} {{ pull.title }}</strong>
                         <small>@{{ pull.author }} / {{ pullStatus(pull) }} / {{ pull.head_ref || 'head' }} -> {{ pull.base_ref || 'base' }}</small>
                         <em>Credit: github:{{ pull.author }} / {{ mrg(mergeSelection(task, pull).reward_mrg) }}</em>
+                        <div class="task-pr-readiness">
+                          <span :class="['status-pill', pullReadinessTone(pull)]">{{ pullReadinessLabel(pull) }}</span>
+                          <span>{{ pullReadinessRisk(pull) }}</span>
+                        </div>
+                        <ul v-if="pullReadinessNotes(pull).length" class="task-pr-readiness-notes">
+                          <li v-for="note in pullReadinessNotes(pull)" :key="note">{{ note }}</li>
+                        </ul>
                       </div>
                     </div>
                     <div class="bounty-review-controls">
@@ -1837,10 +1844,36 @@ function pullStatus(pull) {
   return [pull.state || 'open', pull.mergeable_state].filter(Boolean).join(' / ');
 }
 
+function pullReadinessLabel(pull = {}) {
+  const status = pull.readiness?.status || '';
+  if (!status) return 'Unscored';
+  return titleize(status);
+}
+
+function pullReadinessRisk(pull = {}) {
+  const risk = pull.readiness?.risk_level || '';
+  return risk ? `${titleize(risk)} risk` : 'No risk score';
+}
+
+function pullReadinessTone(pull = {}) {
+  const status = pull.readiness?.status || '';
+  const risk = pull.readiness?.risk_level || '';
+  if (status === 'blocked' || risk === 'high') return 'red';
+  if (status === 'needs_review' || risk === 'medium') return 'amber';
+  if (status === 'ready' || risk === 'low') return 'green';
+  return 'blue';
+}
+
+function pullReadinessNotes(pull = {}) {
+  const readiness = pull.readiness || {};
+  return [...(readiness.blockers || []), ...(readiness.warnings || [])].slice(0, 4);
+}
+
 function canMergeTaskPull(task, pull) {
   const selection = mergeSelection(task, pull);
   if (!pull?.author) return false;
   if (mergeBusy.value[mergeKey(task, pull)] || pull.draft) return false;
+  if (pull.readiness && pull.readiness.can_merge === false) return false;
   if (!selection.bounty_type || Number(selection.reward_mrg) <= 0) return false;
   return pull.merged || pull.state === 'open';
 }

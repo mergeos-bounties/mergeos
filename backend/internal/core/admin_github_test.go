@@ -144,3 +144,51 @@ func TestNeutralizeClosingIssueKeywords(t *testing.T) {
 		t.Fatalf("safe body changed to %q", safe)
 	}
 }
+
+func TestAdminPullRequestReadinessBlocksMissingEvidenceAndWorkflowDeletion(t *testing.T) {
+	readiness := adminPullRequestReadiness(
+		&Task{Title: "PayPal payment flow", Acceptance: "Provider evidence required"},
+		AdminTaskPullRequest{
+			State:          "open",
+			MergeableState: "clean",
+			Labels:         []string{"star: verified", "evidence: missing"},
+			ChangedFiles: []AdminPullRequestFile{
+				{Path: ".github/workflows/deploy.yml", Status: "removed", Deletions: 30},
+			},
+		},
+	)
+	if readiness.CanMerge || readiness.Status != "blocked" || readiness.RiskLevel != "high" {
+		t.Fatalf("readiness should block merge: %#v", readiness)
+	}
+	for _, expected := range []string{"evidence: provided label is required", "workflow file deletion requires separate maintainer approval"} {
+		found := false
+		for _, blocker := range readiness.Blockers {
+			if blocker == expected {
+				found = true
+			}
+		}
+		if !found {
+			t.Fatalf("missing blocker %q in %#v", expected, readiness.Blockers)
+		}
+	}
+}
+
+func TestAdminPullRequestReadinessAllowsVerifiedLowRiskPR(t *testing.T) {
+	readiness := adminPullRequestReadiness(
+		&Task{Title: "Dashboard copy fix"},
+		AdminTaskPullRequest{
+			State:          "open",
+			MergeableState: "clean",
+			Labels:         []string{"star: verified", "evidence: provided"},
+			ChangedFiles: []AdminPullRequestFile{
+				{Path: "frontend/src/App.vue", Status: "modified", Additions: 12, Deletions: 2},
+			},
+		},
+	)
+	if !readiness.CanMerge || readiness.Status != "ready" || readiness.RiskLevel != "low" {
+		t.Fatalf("readiness should allow verified low-risk PR: %#v", readiness)
+	}
+	if len(readiness.Blockers) != 0 || len(readiness.Warnings) != 0 {
+		t.Fatalf("unexpected readiness notes: %#v", readiness)
+	}
+}
