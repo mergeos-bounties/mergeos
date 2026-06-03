@@ -19,7 +19,6 @@ import (
 )
 
 var slugClean = regexp.MustCompile(`[^a-z0-9-]+`)
-var estimatedEffortPattern = regexp.MustCompile(`(?i)estimated effort:\s*([0-9]+(?:\.[0-9]+)?)\s*hours?`)
 
 const defaultGeminiReviewModel = "gemini-2.5-flash"
 const defaultLLMProvider = "gemini"
@@ -119,6 +118,7 @@ type Store struct {
 	sslReviews          map[string]*SSLReviewStatus
 	geminiAPIKeys       map[string]*GeminiAPIKey
 	geminiWebhookLogs   map[string]*GeminiWebhookLog
+	usdtWebhookEvents   map[string]*USDTWebhookEvent
 	testSettingsConfig  TestSettingsConfig
 	testSettingsEntries map[string]*TestSettingsEntry
 	adminSettings       AdminSettings
@@ -137,6 +137,7 @@ type persistedState struct {
 	SSLReviews          []*SSLReviewStatus   `json:"ssl_reviews"`
 	GeminiAPIKeys       []*GeminiAPIKey      `json:"gemini_api_keys"`
 	GeminiWebhookLogs   []*GeminiWebhookLog  `json:"gemini_webhook_logs"`
+	USDTWebhookEvents   []*USDTWebhookEvent  `json:"usdt_webhook_events"`
 	AdminSettings       *AdminSettings       `json:"admin_settings,omitempty"`
 	TestSettingsConfig  *TestSettingsConfig  `json:"test_settings_config,omitempty"`
 	TestSettingsEntries []*TestSettingsEntry `json:"test_settings_entries,omitempty"`
@@ -166,6 +167,7 @@ func NewStore(cfg Config, payments *PaymentManager, repos RepoFactory, emailer *
 		sslReviews:          map[string]*SSLReviewStatus{},
 		geminiAPIKeys:       map[string]*GeminiAPIKey{},
 		geminiWebhookLogs:   map[string]*GeminiWebhookLog{},
+		usdtWebhookEvents:   map[string]*USDTWebhookEvent{},
 		testSettingsConfig:  TestSettingsConfig{},
 		testSettingsEntries: map[string]*TestSettingsEntry{},
 		adminSettings:       defaultAdminSettings(cfg),
@@ -635,8 +637,8 @@ func (s *Store) CreateProject(ctx context.Context, userID string, req CreateProj
 	if req.BudgetCents < 10000 {
 		return nil, errors.New("funding payment must be at least 100 USD")
 	}
-	if req.PaymentMethod != PaymentPayPal && req.PaymentMethod != PaymentCrypto && req.PaymentMethod != PaymentUSDT && req.PaymentMethod != PaymentStripe {
-		return nil, errors.New("payment method must be paypal, crypto, usdt, or stripe")
+	if req.PaymentMethod != PaymentPayPal && req.PaymentMethod != PaymentCrypto {
+		return nil, errors.New("payment method must be paypal or crypto")
 	}
 	tokenSymbol := normalizedTokenSymbol(s.cfg.TokenSymbol)
 	sourceRepoURL := strings.TrimSpace(req.SourceRepoURL)
@@ -687,7 +689,6 @@ func (s *Store) CreateProject(ctx context.Context, userID string, req CreateProj
 	fee := req.BudgetCents * s.cfg.PlatformFeeBps / 10000
 	workPool := req.BudgetCents - fee
 	now := time.Now().UTC()
-	allowAgents := createProjectAllowsAgents(req)
 	project := &Project{
 		ID:               projectID,
 		ClientUserID:     user.ID,
@@ -705,7 +706,6 @@ func (s *Store) CreateProject(ctx context.Context, userID string, req CreateProj
 		PaymentProvider:  verification.Provider,
 		PaymentReference: verification.Reference,
 		RepoVisibility:   "private-child-bounty-repo",
-		AllowAgents:      &allowAgents,
 		BudgetCents:      req.BudgetCents,
 		FeeCents:         fee,
 		WorkPoolCents:    workPool,
@@ -730,9 +730,9 @@ func (s *Store) CreateProject(ctx context.Context, userID string, req CreateProj
 		project.Attachments = append(project.Attachments, cloneAttachment(attachment))
 	}
 	if len(importedIssues) > 0 {
-		project.Tasks = s.tasksFromImportedIssuesWithPolicy(project, importedIssues, allowAgents)
+		project.Tasks = s.tasksFromImportedIssues(project, importedIssues)
 	} else {
-		project.Tasks = s.splitProjectTasksWithPolicy(project, allowAgents)
+		project.Tasks = s.splitProjectTasks(project)
 	}
 
 	repo, err := s.repos.CreateProjectRepo(ctx, project, project.Tasks)
@@ -823,24 +823,12 @@ func (s *Store) ListTasks(userID string) []*Task {
 }
 
 func (s *Store) SyncProjectImportedIssues(projectID string, issues []*ImportedRepoIssue) error {
-	_, err := s.SyncProjectImportedIssuesReport(projectID, "", issues)
-	return err
-}
-
-func (s *Store) SyncProjectImportedIssuesReport(projectID, sourceRepoURL string, issues []*ImportedRepoIssue) (ProjectIssueSyncResponse, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	project, ok := s.projects[strings.TrimSpace(projectID)]
 	if !ok {
-		return ProjectIssueSyncResponse{}, errors.New("project not found")
-	}
-	now := time.Now().UTC()
-	report := ProjectIssueSyncResponse{
-		ProjectID:     project.ID,
-		ProjectTitle:  project.Title,
-		SourceRepoURL: strings.TrimSpace(sourceRepoURL),
-		SyncedAt:      now,
+		return errors.New("project not found")
 	}
 
 	existing := map[int]*Task{}
@@ -851,17 +839,12 @@ func (s *Store) SyncProjectImportedIssuesReport(projectID, sourceRepoURL string,
 	}
 
 	changed := false
+	now := time.Now().UTC()
 	for _, issue := range issues {
 		if issue == nil || issue.Number <= 0 {
 			continue
 		}
-		report.ImportedIssueCount++
 		state := normalizeIssueState(issue.State)
-		if state == "closed" {
-			report.ClosedIssueCount++
-		} else {
-			report.OpenIssueCount++
-		}
 		if task, ok := existing[issue.Number]; ok {
 			taskChanged := false
 			if task.IssueState != state {
@@ -875,7 +858,6 @@ func (s *Store) SyncProjectImportedIssuesReport(projectID, sourceRepoURL string,
 			if taskChanged {
 				s.syncProjectTaskSnapshotLocked(project, task)
 				changed = true
-				report.UpdatedTaskCount++
 			}
 			continue
 		}
@@ -894,21 +876,17 @@ func (s *Store) SyncProjectImportedIssuesReport(projectID, sourceRepoURL string,
 			IssueState:         state,
 			CreatedAt:          now,
 		}
-		if !projectAllowsAgents(project) {
-			routeTaskToHuman(task)
-		}
 		s.tasks[task.ID] = task
 		existing[issue.Number] = task
 		s.syncProjectTaskSnapshotLocked(project, task)
 		changed = true
-		report.AddedTaskCount++
 	}
 
 	if !changed {
-		return report, nil
+		return nil
 	}
 	sortTasks(project.Tasks)
-	return report, s.saveLocked()
+	return s.saveLocked()
 }
 
 func (s *Store) TaskWithProject(taskID string) (*Task, *Project, bool) {
@@ -1515,74 +1493,6 @@ func (s *Store) CanAccessTask(userID string, role UserRole, taskID string) bool 
 	return ok && project.ClientUserID == userID
 }
 
-func (s *Store) ResolveTaskClaimID(value string) (string, error) {
-	value = strings.TrimSpace(value)
-	if value == "" {
-		return "", errors.New("task id is required")
-	}
-
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
-	if task, ok := s.tasks[value]; ok && task != nil {
-		return task.ID, nil
-	}
-	separator := strings.LastIndex(value, ":")
-	if separator <= 0 || separator >= len(value)-1 {
-		return "", errors.New("task not found")
-	}
-	projectID := strings.TrimSpace(value[:separator])
-	issueNumber, err := strconv.Atoi(strings.TrimSpace(value[separator+1:]))
-	if err != nil || issueNumber <= 0 {
-		return "", errors.New("task not found")
-	}
-	for _, task := range s.tasks {
-		if task != nil && task.ProjectID == projectID && task.IssueNumber == issueNumber {
-			return task.ID, nil
-		}
-	}
-	return "", errors.New("task not found")
-}
-
-func (s *Store) SelfAcceptTaskRequest(userID, taskID string) (AcceptTaskRequest, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
-	user := s.users[strings.TrimSpace(userID)]
-	if user == nil {
-		return AcceptTaskRequest{}, errors.New("login is required")
-	}
-	task, ok := s.tasks[strings.TrimSpace(taskID)]
-	if !ok {
-		return AcceptTaskRequest{}, errors.New("task not found")
-	}
-	if task.Status == TaskAccepted {
-		return AcceptTaskRequest{}, errors.New("task is already accepted")
-	}
-
-	workerID := ""
-	if github := normalizeGitHubUsername(user.GitHubUsername); github != "" {
-		workerID = githubWorkerAccount(github)
-	} else if wallet := normalizeWalletAddress(user.WalletAddress); validWalletAddress(wallet) {
-		workerID = walletAccount(wallet)
-	}
-	if workerID == "" {
-		return AcceptTaskRequest{}, errors.New("GitHub or wallet identity is required to claim tasks")
-	}
-
-	req := AcceptTaskRequest{
-		WorkerKind: task.RequiredWorkerKind,
-		WorkerID:   workerID,
-	}
-	if req.WorkerKind != WorkerHuman {
-		req.AgentType = strings.TrimSpace(task.SuggestedAgentType)
-		if req.AgentType == "" {
-			req.AgentType = "worker-dashboard"
-		}
-	}
-	return req, nil
-}
-
 func (s *Store) AcceptTask(taskID string, req AcceptTaskRequest) (*Task, error) {
 	return s.AcceptTaskWithReview(taskID, req, 0, "")
 }
@@ -1598,9 +1508,6 @@ func (s *Store) AcceptTaskWithReviewReference(taskID string, req AcceptTaskReque
 	task, ok := s.tasks[taskID]
 	if !ok {
 		return nil, errors.New("task not found")
-	}
-	if task.Status == TaskAccepted {
-		return nil, errors.New("task is already accepted")
 	}
 	if req.WorkerKind != WorkerHuman && req.WorkerKind != WorkerAgent && req.WorkerKind != WorkerHybrid {
 		return nil, errors.New("worker kind must be human, agent, or hybrid")
@@ -1704,7 +1611,7 @@ func (s *Store) userByEmailLocked(email string) *User {
 	return nil
 }
 
-func (s *Store) addNotificationLocked(userID, projectID, channel, subject, body, status string) *Notification {
+func (s *Store) addNotificationLocked(userID, projectID, channel, subject, body, status string) {
 	note := &Notification{
 		ID:        s.newID("ntf"),
 		UserID:    userID,
@@ -1716,7 +1623,6 @@ func (s *Store) addNotificationLocked(userID, projectID, channel, subject, body,
 		CreatedAt: time.Now().UTC(),
 	}
 	s.notifications[note.ID] = note
-	return note
 }
 
 func (s *Store) newID(prefix string) string {
@@ -1725,25 +1631,7 @@ func (s *Store) newID(prefix string) string {
 	return id
 }
 
-func createProjectAllowsAgents(req CreateProjectRequest) bool {
-	if req.AllowAgents == nil {
-		return true
-	}
-	return *req.AllowAgents
-}
-
-func projectAllowsAgents(project *Project) bool {
-	if project == nil || project.AllowAgents == nil {
-		return true
-	}
-	return *project.AllowAgents
-}
-
 func (s *Store) splitProjectTasks(project *Project) []*Task {
-	return s.splitProjectTasksWithPolicy(project, true)
-}
-
-func (s *Store) splitProjectTasksWithPolicy(project *Project, allowAgents bool) []*Task {
 	tokenSymbol := normalizedTokenSymbol(s.cfg.TokenSymbol)
 	type spec struct {
 		title      string
@@ -1782,19 +1670,12 @@ func (s *Store) splitProjectTasksWithPolicy(project *Project, allowAgents bool) 
 			IssueState:         "open",
 			CreatedAt:          time.Now().UTC(),
 		}
-		if !allowAgents {
-			routeTaskToHuman(task)
-		}
 		tasks = append(tasks, task)
 	}
 	return tasks
 }
 
 func (s *Store) tasksFromImportedIssues(project *Project, issues []*ImportedRepoIssue) []*Task {
-	return s.tasksFromImportedIssuesWithPolicy(project, issues, true)
-}
-
-func (s *Store) tasksFromImportedIssuesWithPolicy(project *Project, issues []*ImportedRepoIssue, allowAgents bool) []*Task {
 	tasks := make([]*Task, 0, len(issues))
 	totalWeight := int64(0)
 	for _, issue := range issues {
@@ -1826,20 +1707,9 @@ func (s *Store) tasksFromImportedIssuesWithPolicy(project *Project, issues []*Im
 			IssueState:         normalizeIssueState(issue.State),
 			CreatedAt:          time.Now().UTC(),
 		}
-		if !allowAgents {
-			routeTaskToHuman(task)
-		}
 		tasks = append(tasks, task)
 	}
 	return tasks
-}
-
-func routeTaskToHuman(task *Task) {
-	if task == nil {
-		return
-	}
-	task.RequiredWorkerKind = WorkerHuman
-	task.SuggestedAgentType = ""
 }
 
 func issueRewardWeight(issue *ImportedRepoIssue) int64 {
@@ -1919,25 +1789,11 @@ func importedIssueAcceptance(issue *ImportedRepoIssue) string {
 	if issue.Complexity != "" {
 		parts = append(parts, "Complexity: "+issue.Complexity+".")
 	}
-	if issue.EstimatedHours > 0 {
-		parts = append(parts, "Estimated effort: "+formatEstimatedHours(issue.EstimatedHours)+".")
-	}
 	if len(issue.Reasons) > 0 {
 		parts = append(parts, "Scoring signals: "+strings.Join(issue.Reasons, ", ")+".")
 	}
 	parts = append(parts, "Acceptance requires passing checks, a clear fix summary, and evidence that the original issue can be closed.")
 	return strings.Join(parts, " ")
-}
-
-func formatEstimatedHours(hours float64) string {
-	if hours <= 0 {
-		return "0 hours"
-	}
-	rounded := roundHalfHour(hours)
-	if rounded == float64(int64(rounded)) {
-		return fmt.Sprintf("%d hours", int64(rounded))
-	}
-	return fmt.Sprintf("%.1f hours", rounded)
 }
 
 func (s *Store) addLedger(entryType, from, to string, amountCents int64, reference string) LedgerEntry {
@@ -2105,11 +1961,6 @@ func (s *Store) applyState(state persistedState) bool {
 		if project == nil || project.ID == "" {
 			continue
 		}
-		if project.AllowAgents == nil {
-			allowAgents := true
-			project.AllowAgents = &allowAgents
-			migrated = true
-		}
 		for _, task := range project.Tasks {
 			if task == nil {
 				continue
@@ -2211,6 +2062,13 @@ func (s *Store) applyState(state persistedState) bool {
 		logCopy.Labels = append([]string(nil), log.Labels...)
 		s.geminiWebhookLogs[logCopy.ID] = &logCopy
 	}
+	for _, event := range state.USDTWebhookEvents {
+		if event == nil || event.ID == "" {
+			continue
+		}
+		eventCopy := *event
+		s.usdtWebhookEvents[eventCopy.ID] = &eventCopy
+	}
 	s.trimGeminiWebhookLogsLocked()
 
 	// Test settings
@@ -2252,6 +2110,7 @@ func (s *Store) snapshotLocked() persistedState {
 		SSLReviews:          make([]*SSLReviewStatus, 0, len(s.sslReviews)),
 		GeminiAPIKeys:       make([]*GeminiAPIKey, 0, len(s.geminiAPIKeys)),
 		GeminiWebhookLogs:   make([]*GeminiWebhookLog, 0, len(s.geminiWebhookLogs)),
+		USDTWebhookEvents:   make([]*USDTWebhookEvent, 0, len(s.usdtWebhookEvents)),
 		AdminSettings:       cloneAdminSettings(s.adminSettings),
 		TestSettingsConfig:  &s.testSettingsConfig,
 		TestSettingsEntries: make([]*TestSettingsEntry, 0, len(s.testSettingsEntries)),
@@ -2307,6 +2166,13 @@ func (s *Store) snapshotLocked() persistedState {
 		entryCopy := *entry
 		state.TestSettingsEntries = append(state.TestSettingsEntries, &entryCopy)
 	}
+	for _, event := range s.usdtWebhookEvents {
+		eventCopy := *event
+		state.USDTWebhookEvents = append(state.USDTWebhookEvents, &eventCopy)
+	}
+	sort.Slice(state.USDTWebhookEvents, func(i, j int) bool {
+		return state.USDTWebhookEvents[i].ReceivedAt.After(state.USDTWebhookEvents[j].ReceivedAt)
+	})
 	return state
 }
 
@@ -2555,51 +2421,20 @@ func marketplaceProjectTags(project *Project) []string {
 }
 
 func marketplaceBountyRow(project *Project, task *Task) *MarketplaceBounty {
-	claimID := marketplaceBountyID(project.ID, task.IssueNumber)
 	return &MarketplaceBounty{
-		ID:                 claimID,
-		ClaimID:            claimID,
+		ID:                 marketplaceBountyID(project.ID, task.IssueNumber),
 		ProjectID:          project.ID,
 		ProjectTitle:       marketplaceProjectTitle(project),
 		IssueNumber:        task.IssueNumber,
 		Title:              task.Title,
 		Acceptance:         compactText(task.Acceptance),
 		RewardCents:        task.RewardCents,
-		EstimatedHours:     marketplaceEstimatedHours(task),
 		RequiredWorkerKind: task.RequiredWorkerKind,
 		SuggestedAgentType: task.SuggestedAgentType,
 		BountyType:         task.BountyType,
-		EvidenceRequired:   publicTaskEvidenceRequiredForTask(task),
-		SourceRepository:   marketplacePublicRepoURL(projectSourceRepoURL(project)),
 		IssueURL:           marketplacePublicRepoURL(task.IssueURL),
 		CreatedAt:          task.CreatedAt,
 	}
-}
-
-func marketplaceEstimatedHours(task *Task) float64 {
-	if task == nil {
-		return 0
-	}
-	if match := estimatedEffortPattern.FindStringSubmatch(task.Acceptance); len(match) == 2 {
-		if value, err := strconv.ParseFloat(match[1], 64); err == nil && value > 0 {
-			return roundHalfHour(value)
-		}
-	}
-	return estimatedHoursFromReward(task.RewardCents)
-}
-
-func estimatedHoursFromReward(rewardCents int64) float64 {
-	if rewardCents <= 0 {
-		return 0
-	}
-	hours := float64(rewardCents) / 10000
-	if hours < 1 {
-		hours = 1
-	}
-	if hours > 80 {
-		hours = 80
-	}
-	return roundHalfHour(hours)
 }
 
 func marketplaceBountyID(projectID string, issueNumber int) string {
@@ -2699,22 +2534,17 @@ func workerProposalRows(projects map[string]*Project, tasks map[string]*Task, us
 			continue
 		}
 		project := projects[task.ProjectID]
-		claimID := marketplaceBountyID(task.ProjectID, task.IssueNumber)
 		rows = append(rows, WorkerProposal{
-			ID:                 claimID,
-			ClaimID:            claimID,
+			ID:                 marketplaceBountyID(task.ProjectID, task.IssueNumber),
 			ProjectID:          task.ProjectID,
 			ProjectTitle:       marketplaceProjectTitle(project),
 			IssueNumber:        task.IssueNumber,
 			Title:              task.Title,
 			Acceptance:         compactText(task.Acceptance),
 			RewardCents:        task.RewardCents,
-			EstimatedHours:     marketplaceEstimatedHours(task),
 			RequiredWorkerKind: task.RequiredWorkerKind,
 			SuggestedAgentType: task.SuggestedAgentType,
 			MatchScore:         workerProposalMatchScore(task, user),
-			MatchReasons:       workerProposalMatchReasons(task, user),
-			EvidenceRequired:   publicTaskEvidenceRequiredForTask(task),
 			IssueURL:           marketplacePublicRepoURL(task.IssueURL),
 			CreatedAt:          task.CreatedAt,
 		})
@@ -2752,37 +2582,6 @@ func workerProposalMatchScore(task *Task, user *User) int {
 		return 98
 	}
 	return score
-}
-
-func workerProposalMatchReasons(task *Task, user *User) []string {
-	reasons := []string{"open bounty"}
-	if normalizeGitHubUsername(user.GitHubUsername) != "" {
-		reasons = append(reasons, "github identity linked")
-	}
-	if normalizeWalletAddress(user.WalletAddress) != "" {
-		reasons = append(reasons, "wallet ready")
-	}
-
-	switch task.RequiredWorkerKind {
-	case WorkerHuman:
-		reasons = append(reasons, "human contributor lane")
-	case WorkerAgent:
-		reasons = append(reasons, workerProposalAgentReason("agent lane", task.SuggestedAgentType))
-	case WorkerHybrid:
-		reasons = append(reasons, workerProposalAgentReason("hybrid lane", task.SuggestedAgentType))
-	}
-	if marketplaceEstimatedHours(task) > 0 {
-		reasons = append(reasons, "effort estimated")
-	}
-	return cleanStrings(reasons)
-}
-
-func workerProposalAgentReason(prefix, agentType string) string {
-	agentType = strings.TrimSpace(agentType)
-	if agentType == "" {
-		return prefix
-	}
-	return prefix + ": " + agentType
 }
 
 func workerReputationScore(claimedTasks int, rewardCents int64, rewardRows int, hasGitHub, hasWallet bool) int {
@@ -3076,13 +2875,14 @@ func cloneProject(project *Project) *Project {
 }
 
 func ledgerEntryMatches(entry LedgerEntry, projectIDs, taskIDs map[string]bool) bool {
+	haystack := strings.Join([]string{entry.FromAccount, entry.ToAccount, entry.Reference}, "|")
 	for projectID := range projectIDs {
-		if ledgerEntryReferencesID(entry, projectID) {
+		if strings.Contains(haystack, projectID) {
 			return true
 		}
 	}
 	for taskID := range taskIDs {
-		if ledgerEntryReferencesID(entry, taskID) {
+		if strings.Contains(haystack, taskID) {
 			return true
 		}
 	}
@@ -3090,54 +2890,18 @@ func ledgerEntryMatches(entry LedgerEntry, projectIDs, taskIDs map[string]bool) 
 }
 
 func publicLedgerScope(entry LedgerEntry, projectIDs map[string]bool, taskProjectIDs map[string]string) (string, string) {
+	haystack := strings.Join([]string{entry.FromAccount, entry.ToAccount, entry.Reference}, "|")
 	for projectID := range projectIDs {
-		if ledgerEntryReferencesID(entry, projectID) {
+		if strings.Contains(haystack, projectID) {
 			return projectID, ""
 		}
 	}
 	for taskID, projectID := range taskProjectIDs {
-		if ledgerEntryReferencesID(entry, taskID) {
+		if strings.Contains(haystack, taskID) {
 			return projectID, taskID
 		}
 	}
 	return "", ""
-}
-
-func ledgerEntryReferencesID(entry LedgerEntry, id string) bool {
-	return ledgerValueReferencesID(entry.FromAccount, id) ||
-		ledgerValueReferencesID(entry.ToAccount, id) ||
-		ledgerValueReferencesID(entry.Reference, id)
-}
-
-func ledgerValueReferencesID(value, id string) bool {
-	value = strings.TrimSpace(value)
-	id = strings.TrimSpace(id)
-	if value == "" || id == "" {
-		return false
-	}
-	if value == id {
-		return true
-	}
-	for _, fieldValue := range splitLedgerReference(value) {
-		if strings.TrimSpace(fieldValue) == id {
-			return true
-		}
-	}
-	for _, token := range strings.FieldsFunc(value, ledgerReferenceTokenSeparator) {
-		if token == id {
-			return true
-		}
-	}
-	return false
-}
-
-func ledgerReferenceTokenSeparator(r rune) bool {
-	switch r {
-	case ':', ';', '|', '/', '?', '&', '=', '#', ' ', '\t', '\r', '\n':
-		return true
-	default:
-		return false
-	}
 }
 
 func publicLedgerAccount(account, projectID, taskID string) string {
