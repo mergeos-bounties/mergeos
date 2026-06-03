@@ -3209,16 +3209,6 @@ func publicLedgerReference(projectID, taskID string, sequence int, reference str
 	return "project:" + projectID
 }
 
-func (s *Store) ListUSDTWebhookEvents() []*USDTWebhookEvent {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	events := make([]*USDTWebhookEvent, 0, len(s.usdtWebhookEvents))
-	for _, e := range s.usdtWebhookEvents {
-		events = append(events, e)
-	}
-	return events
-}
-
 func (s *Store) IsPaymentReferenceUsed(reference string) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
