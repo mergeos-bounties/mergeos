@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -41,6 +42,11 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/public/ledger", s.publicLedger)
 	mux.HandleFunc("GET /api/public/ledger/verify", s.publicLedgerVerify)
 	mux.HandleFunc("GET /api/public/live-feed", s.publicLiveFeed)
+	mux.HandleFunc("GET /api/public/protocol", s.publicProtocolManifest)
+	mux.HandleFunc("GET /api/public/protocol/ledger", s.publicProtocolLedger)
+	mux.HandleFunc("GET /api/public/protocol/tasks", s.publicProtocolTasks)
+	mux.HandleFunc("GET /api/public/protocol/agents", s.publicProtocolAgents)
+	mux.HandleFunc("GET /api/public/protocol/events", s.publicProtocolEvents)
 	mux.HandleFunc("POST /api/public/repo/issues", s.importRepoIssues)
 	mux.HandleFunc("POST /api/integrations/github/pr-review", s.geminiReviewWebhook)
 	mux.HandleFunc("POST /api/payments/crypto/webhook", s.cryptoWebhook)
@@ -87,11 +93,16 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/admin/gemini/webhooks", s.adminGeminiWebhookLogs)
 	mux.HandleFunc("GET /api/projects", s.projects)
 	mux.HandleFunc("GET /api/projects/{id}/escrow", s.projectEscrow)
+	mux.HandleFunc("GET /api/projects/{id}/dashboard", s.projectDashboard)
 	mux.HandleFunc("GET /api/projects/{id}/pull-requests", s.projectPullRequests)
 	mux.HandleFunc("GET /api/projects/{id}/deployment", s.projectDeployment)
 	mux.HandleFunc("GET /api/projects/{id}/ai-workflow", s.projectAIWorkflow)
 	mux.HandleFunc("GET /api/projects/{id}/task-graph", s.projectTaskGraph)
+	mux.HandleFunc("GET /api/projects/{id}/protocol/workflow", s.projectWorkflowProtocol)
 	mux.HandleFunc("GET /api/projects/{id}/repo-scan", s.projectRepositoryScan)
+	mux.HandleFunc("GET /api/projects/{id}/protocol/scan", s.projectRepositoryScanProtocol)
+	mux.HandleFunc("POST /api/projects/{id}/repo-sync", s.syncProjectRepoIssues)
+	mux.HandleFunc("POST /api/projects/{id}/agent-actions", s.createProjectAgentAction)
 	mux.HandleFunc("POST /api/projects", s.createProject)
 	mux.HandleFunc("POST /api/projects/evaluate", s.evaluateProject)
 	mux.HandleFunc("POST /api/projects/evaluate-price", s.evaluateProjectPrice)
@@ -102,6 +113,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/notifications", s.notifications)
 	mux.HandleFunc("POST /api/notifications/read", s.markNotificationRead)
 	mux.HandleFunc("POST /api/notifications/read-all", s.markAllNotificationsRead)
+	mux.HandleFunc("POST /api/disputes", s.createDispute)
 	mux.HandleFunc("GET /api/ws", s.wsHandler)
 	mux.HandleFunc("GET /api/ledger", s.ledger)
 
@@ -121,7 +133,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("PATCH /api/public/test-settings/entries/{id}", s.publicUpdateTestEntry)
 	mux.HandleFunc("DELETE /api/public/test-settings/entries/{id}", s.publicDeleteTestEntry)
 	mux.HandleFunc("GET /api/public/test-settings/status", s.publicTestStatus)
-	return withCORS(mux)
+	return withCORS(s.cfg, mux)
 }
 
 func (s *Server) health(w http.ResponseWriter, _ *http.Request) {
@@ -145,6 +157,9 @@ func (s *Server) config(w http.ResponseWriter, _ *http.Request) {
 		GitHubOAuthClient: s.cfg.GitHubOAuthClientID,
 		PayPalReady:       s.cfg.PayPalReady(),
 		CryptoReady:       s.cfg.CryptoReady(),
+		StripeReady:       s.cfg.StripeReady(),
+		StripePublicKey:   s.cfg.StripePublishableKey,
+		PaymentRails:      paymentRails(s.cfg),
 		GitHubReady:       s.cfg.GitHubReady(),
 		SMTPReady:         s.cfg.SMTPReady(),
 		DevPaymentEnabled: s.cfg.DevPaymentEnabled,
@@ -196,6 +211,50 @@ func (s *Server) publicLiveFeed(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	writeJSON(w, http.StatusOK, s.store.PublicLiveFeed(limit))
+}
+
+func (s *Server) publicProtocolManifest(w http.ResponseWriter, _ *http.Request) {
+	writeJSON(w, http.StatusOK, ProtocolManifest())
+}
+
+func (s *Server) publicProtocolLedger(w http.ResponseWriter, _ *http.Request) {
+	writeJSON(w, http.StatusOK, LedgerProtocolResponse{
+		ProtocolVersion: "mergeos.ledger.v1",
+		Kind:            "ledger",
+		TokenSymbol:     normalizedTokenSymbol(s.cfg.TokenSymbol),
+		Verification:    s.store.VerifyLedger(),
+		Entries:         s.store.ListPublicLedger(),
+	})
+}
+
+func (s *Server) publicProtocolEvents(w http.ResponseWriter, r *http.Request) {
+	limit := 0
+	if raw := strings.TrimSpace(r.URL.Query().Get("limit")); raw != "" {
+		if parsed, err := strconv.Atoi(raw); err == nil {
+			limit = parsed
+		}
+	}
+	writeJSON(w, http.StatusOK, s.store.PublicEventProtocol(limit))
+}
+
+func (s *Server) publicProtocolAgents(w http.ResponseWriter, r *http.Request) {
+	limit := 0
+	if raw := strings.TrimSpace(r.URL.Query().Get("limit")); raw != "" {
+		if parsed, err := strconv.Atoi(raw); err == nil {
+			limit = parsed
+		}
+	}
+	writeJSON(w, http.StatusOK, s.store.PublicAgentProtocol(limit))
+}
+
+func (s *Server) publicProtocolTasks(w http.ResponseWriter, r *http.Request) {
+	limit := 0
+	if raw := strings.TrimSpace(r.URL.Query().Get("limit")); raw != "" {
+		if parsed, err := strconv.Atoi(raw); err == nil {
+			limit = parsed
+		}
+	}
+	writeJSON(w, http.StatusOK, s.store.PublicTaskProtocol(limit))
 }
 
 func (s *Server) register(w http.ResponseWriter, r *http.Request) {
@@ -277,12 +336,16 @@ func (s *Server) logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) createWallet(w http.ResponseWriter, r *http.Request) {
+	user, ok := s.requireUser(w, r)
+	if !ok {
+		return
+	}
 	var req CreateWalletRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil && err != io.EOF {
 		writeError(w, http.StatusBadRequest, "invalid JSON body")
 		return
 	}
-	wallet, err := s.store.CreateGuestWallet(req)
+	wallet, err := s.store.CreateUserWallet(user.ID, req)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
@@ -377,6 +440,39 @@ func (s *Server) projectEscrow(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, escrow)
 }
 
+func (s *Server) projectDashboard(w http.ResponseWriter, r *http.Request) {
+	user, ok := s.requireUser(w, r)
+	if !ok {
+		return
+	}
+	projectID := strings.TrimSpace(r.PathValue("id"))
+	if !s.store.CanAccessProject(user.ID, user.Role, projectID) {
+		writeError(w, http.StatusForbidden, "project access is required")
+		return
+	}
+	dashboard, err := s.store.ProjectDashboard(projectID)
+	if err != nil {
+		writeError(w, http.StatusNotFound, err.Error())
+		return
+	}
+	project, ok := s.store.ProjectSnapshot(projectID)
+	if !ok {
+		writeError(w, http.StatusNotFound, "project not found")
+		return
+	}
+	client, err := newAdminGitHubClient(s.cfg, false)
+	if err != nil {
+		dashboard.PullRequestError = sanitizeLedgerReferenceValue(err.Error())
+	} else {
+		dashboard.PullRequests = projectPullRequestsMonitor(r.Context(), client, project)
+		if dashboard.PullRequests.UpdatedAt.After(dashboard.UpdatedAt) {
+			dashboard.UpdatedAt = dashboard.PullRequests.UpdatedAt
+			dashboard.Project.UpdatedAt = dashboard.PullRequests.UpdatedAt
+		}
+	}
+	writeJSON(w, http.StatusOK, dashboard)
+}
+
 func (s *Server) projectPullRequests(w http.ResponseWriter, r *http.Request) {
 	user, ok := s.requireUser(w, r)
 	if !ok {
@@ -436,6 +532,24 @@ func (s *Server) projectTaskGraph(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, graph)
 }
 
+func (s *Server) projectWorkflowProtocol(w http.ResponseWriter, r *http.Request) {
+	user, ok := s.requireUser(w, r)
+	if !ok {
+		return
+	}
+	projectID := strings.TrimSpace(r.PathValue("id"))
+	if !s.store.CanAccessProject(user.ID, user.Role, projectID) {
+		writeError(w, http.StatusForbidden, "project access is required")
+		return
+	}
+	document, err := s.store.ProjectWorkflowProtocol(projectID)
+	if err != nil {
+		writeError(w, http.StatusNotFound, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, document)
+}
+
 func (s *Server) projectRepositoryScan(w http.ResponseWriter, r *http.Request) {
 	user, ok := s.requireUser(w, r)
 	if !ok {
@@ -454,6 +568,90 @@ func (s *Server) projectRepositoryScan(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, scan)
 }
 
+func (s *Server) projectRepositoryScanProtocol(w http.ResponseWriter, r *http.Request) {
+	user, ok := s.requireUser(w, r)
+	if !ok {
+		return
+	}
+	projectID := strings.TrimSpace(r.PathValue("id"))
+	if !s.store.CanAccessProject(user.ID, user.Role, projectID) {
+		writeError(w, http.StatusForbidden, "project access is required")
+		return
+	}
+	document, err := s.store.ProjectRepositoryScanProtocol(projectID)
+	if err != nil {
+		writeError(w, http.StatusNotFound, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, document)
+}
+
+func (s *Server) syncProjectRepoIssues(w http.ResponseWriter, r *http.Request) {
+	user, ok := s.requireUser(w, r)
+	if !ok {
+		return
+	}
+	projectID := strings.TrimSpace(r.PathValue("id"))
+	if !s.store.CanAccessProject(user.ID, user.Role, projectID) {
+		writeError(w, http.StatusForbidden, "project access is required")
+		return
+	}
+	project, ok := s.store.ProjectSnapshot(projectID)
+	if !ok {
+		writeError(w, http.StatusNotFound, "project not found")
+		return
+	}
+	repoURL := projectSourceRepoURL(project)
+	if repoURL == "" {
+		writeError(w, http.StatusBadRequest, "source repository is not configured for this project")
+		return
+	}
+	imported, err := ImportRepoIssues(r.Context(), s.cfg, ImportRepoIssuesRequest{RepoURL: repoURL})
+	if err != nil {
+		writeError(w, http.StatusBadGateway, err.Error())
+		return
+	}
+	report, err := s.store.SyncProjectImportedIssuesReport(projectID, imported.RepoURL, imported.Issues)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if err := s.store.RecordRepoIssueSyncEvent(report); err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	s.broadcastLiveFeedEvent("repo_issues_synced")
+	writeJSON(w, http.StatusOK, report)
+}
+
+func (s *Server) createProjectAgentAction(w http.ResponseWriter, r *http.Request) {
+	user, ok := s.requireUser(w, r)
+	if !ok {
+		return
+	}
+	projectID := strings.TrimSpace(r.PathValue("id"))
+	if !s.store.CanAccessProject(user.ID, user.Role, projectID) {
+		writeError(w, http.StatusForbidden, "project access is required")
+		return
+	}
+	var req AgentActionRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	response, err := s.store.RecordProjectAgentAction(projectID, req)
+	if err != nil {
+		status := http.StatusBadRequest
+		if strings.Contains(err.Error(), "not found") {
+			status = http.StatusNotFound
+		}
+		writeError(w, status, err.Error())
+		return
+	}
+	s.broadcastLiveFeedEvent("agent_action")
+	writeJSON(w, http.StatusCreated, response)
+}
+
 func (s *Server) notifications(w http.ResponseWriter, r *http.Request) {
 	user, ok := s.requireUser(w, r)
 	if !ok {
@@ -464,6 +662,39 @@ func (s *Server) notifications(w http.ResponseWriter, r *http.Request) {
 		userID = ""
 	}
 	writeJSON(w, http.StatusOK, s.store.ListNotifications(userID))
+}
+
+func (s *Server) createDispute(w http.ResponseWriter, r *http.Request) {
+	user, ok := s.requireUser(w, r)
+	if !ok {
+		return
+	}
+	var req CreateDisputeRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	if strings.TrimSpace(req.TaskID) != "" {
+		taskID, err := s.store.ResolveTaskClaimID(req.TaskID)
+		if err != nil {
+			writeError(w, http.StatusNotFound, err.Error())
+			return
+		}
+		req.TaskID = taskID
+	}
+	response, err := s.store.CreateDispute(user.ID, user.Role, req)
+	if err != nil {
+		status := http.StatusBadRequest
+		if strings.Contains(err.Error(), "access") {
+			status = http.StatusForbidden
+		} else if strings.Contains(err.Error(), "not found") {
+			status = http.StatusNotFound
+		}
+		writeError(w, status, err.Error())
+		return
+	}
+	s.broadcastAdminOpsUpdated()
+	writeJSON(w, http.StatusCreated, response)
 }
 
 func (s *Server) markNotificationRead(w http.ResponseWriter, r *http.Request) {
@@ -529,16 +760,64 @@ func (s *Server) wsInitialEvents() []map[string]interface{} {
 	now := time.Now().UTC()
 	return []map[string]interface{}{
 		{
-			"type":         "connection_ready",
-			"status":       "ok",
-			"token_symbol": normalizedTokenSymbol(s.cfg.TokenSymbol),
-			"created_at":   now,
+			"protocol_version": "mergeos.event.v1",
+			"kind":             "connection",
+			"type":             "connection_ready",
+			"status":           "ok",
+			"token_symbol":     normalizedTokenSymbol(s.cfg.TokenSymbol),
+			"created_at":       now,
 		},
 		{
-			"type":       "live_feed_snapshot",
-			"feed":       s.store.PublicLiveFeed(20),
-			"created_at": now,
+			"protocol_version": "mergeos.event.v1",
+			"kind":             "snapshot",
+			"type":             "live_feed_snapshot",
+			"feed":             s.store.PublicLiveFeed(20),
+			"events":           s.store.PublicEventProtocol(20),
+			"created_at":       now,
 		},
+	}
+}
+
+func (s *Server) broadcastLiveFeedEvent(eventType string) {
+	feed := s.store.PublicLiveFeed(20)
+	payload := map[string]interface{}{
+		"type":       eventType,
+		"feed":       feed,
+		"created_at": time.Now().UTC(),
+	}
+	if event := protocolEventForBroadcast(eventType, feed); event != nil {
+		payload["event"] = event
+		payload["protocol_type"] = event.Type
+	}
+	s.eventHub.broadcastAll(payload)
+}
+
+func (s *Server) broadcastAdminOpsUpdated() {
+	s.eventHub.broadcastAll(map[string]interface{}{
+		"protocol_version": "mergeos.event.v1",
+		"kind":             "admin_ops_signal",
+		"type":             "admin_ops_updated",
+		"created_at":       time.Now().UTC(),
+	})
+}
+
+func protocolEventForBroadcast(eventType string, feed PublicLiveFeedResponse) *EventProtocolDocument {
+	for _, item := range feed.Items {
+		if !broadcastMatchesFeedType(eventType, item.Type) {
+			continue
+		}
+		event := publicLiveFeedProtocolEvent(item)
+		return &event
+	}
+	return nil
+}
+
+func broadcastMatchesFeedType(eventType, feedType string) bool {
+	switch strings.TrimSpace(eventType) {
+	case "project_created":
+		return feedType == "project_funded"
+	default:
+		return strings.TrimSpace(eventType) == feedType
 	}
 }
 
@@ -865,10 +1144,7 @@ func (s *Server) createProject(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	s.eventHub.broadcastAll(map[string]interface{}{
-		"type":    "project_created",
-		"project": project,
-	})
+	s.broadcastLiveFeedEvent("project_created")
 	writeJSON(w, http.StatusCreated, project)
 }
 
@@ -937,21 +1213,33 @@ func (s *Server) acceptTask(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "route not found")
 		return
 	}
-	if !s.store.CanAccessTask(user.ID, user.Role, taskID) {
-		writeError(w, http.StatusForbidden, "admin access is required")
+	resolvedTaskID, err := s.store.ResolveTaskClaimID(taskID)
+	if err != nil {
+		writeError(w, http.StatusNotFound, err.Error())
 		return
 	}
+	taskID = resolvedTaskID
 
 	var req AcceptTaskRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil && err != io.EOF {
 		writeError(w, http.StatusBadRequest, "invalid JSON body")
 		return
 	}
+	if !s.store.CanAccessTask(user.ID, user.Role, taskID) {
+		selfReq, err := s.store.SelfAcceptTaskRequest(user.ID, taskID)
+		if err != nil {
+			writeError(w, http.StatusForbidden, err.Error())
+			return
+		}
+		req = selfReq
+	}
+
 	task, err := s.store.AcceptTask(taskID, req)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	s.broadcastLiveFeedEvent("task_accepted")
 	writeJSON(w, http.StatusOK, task)
 }
 
@@ -984,9 +1272,11 @@ func (s *Server) requireAdmin(w http.ResponseWriter, r *http.Request) (*User, bo
 	return user, true
 }
 
-func withCORS(next http.Handler) http.Handler {
+func withCORS(cfg Config, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
+		if origin := corsAllowedOrigin(cfg, r.Header.Get("Origin")); origin != "" {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+		}
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type,Authorization,X-Hub-Signature-256,X-GitHub-Event,X-GitHub-Delivery,X-MergeOS-Signature,X-MergeOS-Event")
 		w.Header().Set("Access-Control-Allow-Methods", "GET,POST,PATCH,DELETE,OPTIONS")
 		if r.Method == http.MethodOptions {
@@ -995,6 +1285,36 @@ func withCORS(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(w, r)
 	})
+}
+
+func corsAllowedOrigin(cfg Config, origin string) string {
+	origin = strings.TrimSpace(origin)
+	env := normalizeEnvironment(cfg.Environment)
+	if origin == "" {
+		if env == "production" {
+			return ""
+		}
+		return "*"
+	}
+
+	parsed, err := url.Parse(origin)
+	if err != nil || parsed.Scheme == "" || parsed.Host == "" {
+		return ""
+	}
+	scheme := strings.ToLower(parsed.Scheme)
+	host := strings.ToLower(parsed.Hostname())
+	if env != "production" && (host == "localhost" || host == "127.0.0.1" || host == "::1") && (scheme == "http" || scheme == "https") {
+		return origin
+	}
+	if scheme != "https" {
+		return ""
+	}
+	for _, domain := range []string{cfg.PrimaryDomain, cfg.AdminDomain, cfg.ScanDomain} {
+		if host == cleanDomain(domain) {
+			return origin
+		}
+	}
+	return ""
 }
 
 func writeJSON(w http.ResponseWriter, status int, value any) {
@@ -1008,13 +1328,95 @@ func writeError(w http.ResponseWriter, status int, message string) {
 }
 
 func paymentMode(cfg Config) string {
-	if cfg.PayPalReady() || cfg.CryptoReady() {
+	if cfg.PayPalReady() || cfg.CryptoReady() || cfg.StripeReady() {
 		return "live-adapters"
 	}
 	if cfg.DevPaymentEnabled {
 		return "local-dev-verifier"
 	}
 	return "not-configured"
+}
+
+func paymentRails(cfg Config) []PaymentRailOption {
+	devEnabled := cfg.DevPaymentEnabled
+	paypalEnabled := cfg.PayPalReady() || devEnabled
+	cryptoEnabled := cfg.CryptoReady() || devEnabled
+	usdtReady := cfg.CryptoReady() && cfg.CryptoAsset == "erc20" && strings.TrimSpace(cfg.CryptoTokenContract) != ""
+	usdtEnabled := usdtReady || devEnabled
+	stripeEnabled := cfg.StripeReady() || devEnabled
+	return []PaymentRailOption{
+		{
+			ID:                "paypal",
+			Label:             "PayPal",
+			Method:            string(PaymentPayPal),
+			Caption:           "Sandbox/live checkout",
+			Enabled:           paypalEnabled,
+			Ready:             cfg.PayPalReady(),
+			DisabledReason:    disabledPaymentRailReason(paypalEnabled, "PayPal credentials are not configured."),
+			RequiresReference: !devEnabled,
+		},
+		{
+			ID:                "crypto",
+			Label:             publicCryptoRailLabel(cfg),
+			Method:            string(PaymentCrypto),
+			Caption:           "EVM native/ERC-20 transfer",
+			Enabled:           cryptoEnabled,
+			Ready:             cfg.CryptoReady(),
+			DisabledReason:    disabledPaymentRailReason(cryptoEnabled, "Crypto verifier is not configured."),
+			RequiresReference: !devEnabled,
+			Asset:             strings.ToUpper(strings.TrimSpace(cfg.CryptoAsset)),
+			Receiver:          cfg.CryptoReceiver,
+			TokenContract:     cfg.CryptoTokenContract,
+		},
+		{
+			ID:                "usdt",
+			Label:             "USDT",
+			Method:            string(PaymentUSDT),
+			Caption:           "USDT ERC-20 transfer",
+			Enabled:           usdtEnabled,
+			Ready:             usdtReady,
+			DisabledReason:    disabledPaymentRailReason(usdtEnabled, "USDT ERC-20 verifier is not configured."),
+			RequiresReference: !devEnabled,
+			Asset:             "USDT",
+			Receiver:          cfg.CryptoReceiver,
+			TokenContract:     cfg.CryptoTokenContract,
+		},
+		{
+			ID:                "stripe",
+			Label:             "Credit / Debit card",
+			Method:            string(PaymentStripe),
+			Caption:           "Stripe PaymentIntent",
+			Enabled:           stripeEnabled,
+			Ready:             cfg.StripeReady(),
+			DisabledReason:    disabledPaymentRailReason(stripeEnabled, "Stripe verifier is not configured."),
+			RequiresReference: !devEnabled,
+			PublicKey:         cfg.StripePublishableKey,
+		},
+		{
+			ID:                "bank",
+			Label:             "Bank transfer",
+			Method:            "bank",
+			Caption:           "Manual treasury rail",
+			Enabled:           false,
+			Ready:             false,
+			DisabledReason:    "Bank transfer requires manual treasury review.",
+			RequiresReference: true,
+		},
+	}
+}
+
+func disabledPaymentRailReason(enabled bool, reason string) string {
+	if enabled {
+		return ""
+	}
+	return reason
+}
+
+func publicCryptoRailLabel(cfg Config) string {
+	if cfg.CryptoAsset == "erc20" && strings.TrimSpace(cfg.CryptoTokenContract) != "" {
+		return "USDC / USDT"
+	}
+	return "USDC"
 }
 
 func repoProvider(cfg Config) string {
