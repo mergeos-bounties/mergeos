@@ -1,6 +1,7 @@
 package core
 
 import (
+	"bytes"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
@@ -33,9 +34,9 @@ var configEnvKeys = []string{
 	"CRYPTO_RPC_URL",
 	"CRYPTO_RECEIVER",
 	"CRYPTO_ASSET",
+	"CRYPTO_TOKEN_MINT",
 	"CRYPTO_TOKEN_CONTRACT",
 	"CRYPTO_TOKEN_DECIMALS",
-	"CRYPTO_WEI_PER_USD_CENT",
 	"CRYPTO_MIN_CONFIRMATIONS",
 	"GITHUB_TOKEN",
 	"GITHUB_OWNER",
@@ -97,6 +98,27 @@ func TestLoadConfigLocalDefaultsIncludeAdminBootstrap(t *testing.T) {
 	}
 	if cfg.AdminPassword != defaultLocalAdminPassword {
 		t.Fatalf("admin password = %q", cfg.AdminPassword)
+	}
+}
+
+func TestLoadConfigDefaultsCryptoToSolanaSPL(t *testing.T) {
+	withTempConfigDir(t)
+	clearConfigEnv(t)
+	receiver := base58Encode(bytes.Repeat([]byte{4}, walletAddressBytes))
+	mint := base58Encode(bytes.Repeat([]byte{5}, walletAddressBytes))
+	t.Setenv("CRYPTO_RPC_URL", "https://api.mainnet-beta.solana.com")
+	t.Setenv("CRYPTO_RECEIVER", receiver)
+	t.Setenv("CRYPTO_TOKEN_MINT", mint)
+
+	cfg := LoadConfig()
+	if cfg.CryptoAsset != "spl" {
+		t.Fatalf("crypto asset = %q", cfg.CryptoAsset)
+	}
+	if cfg.CryptoReceiver != receiver || cfg.CryptoTokenContract != mint {
+		t.Fatalf("crypto receiver/token = %q/%q", cfg.CryptoReceiver, cfg.CryptoTokenContract)
+	}
+	if !cfg.CryptoReady() {
+		t.Fatal("solana spl config should be ready")
 	}
 }
 

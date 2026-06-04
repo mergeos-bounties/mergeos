@@ -755,8 +755,8 @@
               <small>Required for production Stripe verification; local dev mode can still use the configured verifier code.</small>
             </label>
             <label v-if="isCryptoLikePaymentRail(selectedPaymentRail)" class="wizard-field full crypto-reference-field">
-              <span>{{ cryptoPaymentAssetLabel }} transaction hash</span>
-              <input v-model.trim="projectCryptoReference" placeholder="0x..." autocomplete="off" />
+              <span>Solana signature</span>
+              <input v-model.trim="projectCryptoReference" placeholder="Paste confirmed Solana signature" autocomplete="off" />
               <small>Required for production crypto verification; local dev mode can still use the configured verifier code.</small>
             </label>
             <div v-if="isCryptoLikePaymentRail(selectedPaymentRail)" class="crypto-payment-instructions">
@@ -1439,7 +1439,7 @@
                   <div class="card-title-row">
                     <div>
                       <h2>Test Publish Settings</h2>
-                      <p>Enable password-gated public test keys for LLM, PayPal, and USDT task work.</p>
+                      <p>Enable password-gated public test keys for LLM, PayPal, and Solana SPL task work.</p>
                     </div>
                     <span>{{ adminTestSettingsStatus }}</span>
                   </div>
@@ -2761,7 +2761,7 @@
                 {{ publicTestSettingsModeLabel }}
               </span>
             </div>
-            <p>Password-gated test keys for temporary LLM, PayPal, and USDT task integrations.</p>
+            <p>Password-gated test keys for temporary LLM, PayPal, and Solana SPL task integrations.</p>
           </div>
           <button class="secondary-button compact" type="button" @click="loadPublicTestSettingsStatus">
             <RefreshCw :size="14" />
@@ -3836,7 +3836,7 @@
             <template v-else>
               <article class="auth-quote-card">
                 <ShieldCheck :size="24" />
-                <p>Create an account to save projects, link an MRG wallet, and record funding on the live ledger.</p>
+                <p>Create an account to save projects, link a Solana MRG wallet, and record funding on the live ledger.</p>
                 <div>
                   <span class="mini-avatar">MRG</span>
                   <strong>Account data appears after login</strong>
@@ -4330,8 +4330,8 @@ const fundingAmountOptions = [
 
 const fallbackPaymentRails = [
   { id: 'paypal', label: 'PayPal', method: 'paypal', caption: 'Sandbox/live checkout', enabled: true },
-  { id: 'crypto', label: 'USDC', method: 'crypto', caption: 'Ethereum, Polygon, Arbitrum', enabled: true },
-  { id: 'usdt', label: 'USDT', method: 'usdt', caption: 'USDT ERC-20 transfer', enabled: true },
+  { id: 'crypto', label: 'Solana SPL', method: 'crypto', caption: 'Solana SPL transfer', enabled: true, requires_reference: true, asset: 'SPL' },
+  { id: 'usdt', label: 'Solana SPL', method: 'usdt', caption: 'Backward-compatible Solana SPL rail', enabled: true, requires_reference: true, asset: 'SPL' },
   { id: 'stripe', label: 'Credit / Debit card', method: 'stripe', caption: 'Stripe PaymentIntent', enabled: false, disabled_reason: 'Stripe verifier is not enabled yet.' },
   { id: 'bank', label: 'Bank transfer', method: 'bank', caption: 'Manual treasury rail', enabled: false, disabled_reason: 'Bank transfer requires manual treasury review.' },
 ];
@@ -4672,7 +4672,7 @@ const cryptoReceiverAddress = computed(() => {
   return String(cryptoRail?.receiver || runtimeConfig.value?.crypto_receiver || '').trim();
 });
 const cryptoReceiverLabel = computed(() => cryptoReceiverAddress.value ? shortLedgerReference(cryptoReceiverAddress.value) : 'Not configured');
-const cryptoPaymentAssetLabel = computed(() => selectedCryptoPaymentRail.value?.asset || selectedCryptoPaymentRail.value?.label || runtimeConfig.value?.crypto_asset || 'USDC');
+const cryptoPaymentAssetLabel = computed(() => selectedCryptoPaymentRail.value?.asset || selectedCryptoPaymentRail.value?.label || runtimeConfig.value?.crypto_asset || 'SPL');
 const cryptoTokenContractLabel = computed(() => {
   const cryptoRail = selectedCryptoPaymentRail.value;
   const value = String(cryptoRail?.tokenContract || runtimeConfig.value?.crypto_token_contract || runtimeConfig.value?.crypto_token || '').trim();
@@ -4861,7 +4861,7 @@ const marketplaceFilters = ['Category', 'Budget', 'Delivery time'];
 const publicTestSettingsIntegrationOptions = [
   { label: 'LLM', value: 'llm' },
   { label: 'PayPal', value: 'paypal' },
-  { label: 'USDT', value: 'usdt' },
+  { label: 'Solana SPL', value: 'solana_spl' },
 ];
 
 const marketplaceProjectPalettes = [
@@ -5092,7 +5092,7 @@ const publicInfoPages = {
     features: [
       { title: 'Project and attachment data', body: 'Uploaded references are attached to projects so customers and admins can review scope and delivery evidence.', icon: FileCheck2, tone: 'green' },
       { title: 'Payment visibility', body: 'Payment and payout history is shown as proof rows without exposing secret provider credentials.', icon: CreditCard, tone: 'blue' },
-      { title: 'Password-gated test settings', body: 'Temporary LLM, PayPal, and USDT test keys require shared password access and are validated against environment-name collisions.', icon: ShieldCheck, tone: 'purple' },
+      { title: 'Password-gated test settings', body: 'Temporary LLM, PayPal, and Solana SPL test keys require shared password access and are validated against environment-name collisions.', icon: ShieldCheck, tone: 'purple' },
     ],
   },
 };
@@ -5965,7 +5965,7 @@ function initialsFor(value = '') {
 
 function shortWallet(value = '') {
   const address = String(value || '').trim();
-  if (address.length <= 14) return address || 'MRG wallet';
+  if (address.length <= 14) return address || 'Solana MRG wallet';
   return `${address.slice(0, 6)}...${address.slice(-6)}`;
 }
 
@@ -6127,7 +6127,7 @@ async function handleGitHubCallback() {
       body: JSON.stringify({ code, redirect_uri: redirectURI }),
     });
     setSession(auth);
-    showToast(auth.user?.wallet_address ? 'GitHub linked to your MRG wallet.' : 'Logged in with GitHub.');
+    showToast(auth.user?.wallet_address ? 'GitHub linked to your Solana MRG wallet.' : 'Logged in with GitHub.');
   } catch (error) {
     errorMessage.value = error.message;
     showToast(error.message);
@@ -7184,7 +7184,7 @@ async function completeProjectFunding() {
     }
     if (!paymentReferenceForProject()) {
       if (isCryptoLikePaymentRail(selectedPaymentRail.value)) {
-        throw new Error(`${cryptoPaymentAssetLabel.value} transaction hash is required before funding this project.`);
+        throw new Error('Paste the confirmed Solana transaction signature before funding this project.');
       }
       if (paymentMethodForProject() === 'stripe') {
         throw new Error('Stripe PaymentIntent ID is required before funding this project.');

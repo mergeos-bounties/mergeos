@@ -1,121 +1,82 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
-const src = join(root, "src");
-const sources = Object.fromEntries(
-  readdirSync(src)
-    .filter((file) => file.endsWith(".sol"))
-    .map((file) => [file, readFileSync(join(src, file), "utf8")]),
-);
+const programPath = join(root, "programs", "mergeos", "src", "lib.rs");
+const programSource = readFileSync(programPath, "utf8");
 
 describe("contract package", () => {
-  it("contains the required MergeOS contract sources", () => {
-    assert.deepEqual(Object.keys(sources).sort(), [
-      "MergeOSEscrow.sol",
-      "MergeOSPayouts.sol",
-      "MergeOSToken.sol",
-      "MergeOSTreasury.sol",
-    ]);
+  it("uses a Solana Anchor workspace instead of Solidity sources", () => {
+    assert.equal(existsSync(join(root, "Anchor.toml")), true);
+    assert.equal(existsSync(join(root, "Cargo.toml")), true);
+    const srcFiles = existsSync(join(root, "src")) ? readdirSync(join(root, "src")) : [];
+    assert.deepEqual(srcFiles.filter((file) => file.endsWith(".sol")), []);
+    assert.match(programSource, /use anchor_lang::prelude::\*/);
+    assert.match(programSource, /use anchor_spl::token::\{/);
+    assert.match(programSource, /#\[program\]\s*pub mod mergeos/);
   });
 
-  it("uses Solidity 0.8.24 and avoids banned low-level primitives", () => {
-    const banned = [/\btx\.origin\b/, /\bselfdestruct\b/, /\bdelegatecall\b/, /\bcallcode\b/];
+  it("defines the MRG mint, escrow, payout, and migration instructions", () => {
+    for (const instruction of [
+      "register_legacy_wallet",
+      "mint_mrg",
+      "burn_mrg",
+      "fund_project",
+      "reserve_task",
+      "release_task",
+      "refund_task",
+      "close_project",
+    ]) {
+      assert.match(programSource, new RegExp(`pub fn ${instruction}\\(`));
+    }
+    assert.match(programSource, /pub enum LegacyChain\s*\{[\s\S]*?Trc20,[\s\S]*?Evm,/);
+    assert.match(programSource, /pub struct WalletMigration/);
+  });
 
-    for (const [file, source] of Object.entries(sources)) {
-      assert.match(source, /pragma solidity \^0\.8\.24;/, `${file} should pin compiler family`);
-      for (const pattern of banned) {
-        assert.doesNotMatch(source, pattern, `${file} must not include ${pattern}`);
-      }
+  it("keeps ledger reconciliation anchors on every public money event", () => {
+    for (const eventName of [
+      "LegacyWalletMigrated",
+      "MrgMinted",
+      "MrgBurned",
+      "ProjectFunded",
+      "TaskReserved",
+      "TaskPaid",
+      "TaskRefunded",
+      "ProjectClosed",
+    ]) {
+      assert.match(programSource, new RegExp(`pub struct ${eventName}`));
+    }
+    const referenceEvents = [
+      "MrgMinted",
+      "MrgBurned",
+      "ProjectFunded",
+      "TaskReserved",
+      "TaskPaid",
+      "TaskRefunded",
+      "ProjectClosed",
+    ];
+    for (const eventName of referenceEvents) {
+      const eventBlock = programSource.match(new RegExp(`pub struct ${eventName} \\{([\\s\\S]*?)\\}`))?.[1] || "";
+      assert.match(eventBlock, /reference: \[u8; 32\]/, `${eventName} should carry a ledger reference`);
     }
   });
-});
 
-describe("MergeOSToken", () => {
-  const source = sources["MergeOSToken.sol"];
-
-  it("exposes ERC20-compatible surface and controlled minting", () => {
-    assert.match(source, /contract MergeOSToken/);
-    assert.match(source, /event Transfer\(address indexed from, address indexed to, uint256 amount\)/);
-    assert.match(source, /event Approval\(address indexed owner, address indexed spender, uint256 amount\)/);
-    assert.match(source, /function mint\(address to, uint256 amount\) external onlyMinter/);
-    assert.match(source, /function setMinter\(address account, bool enabled\) external onlyOwner/);
-    assert.match(source, /function burn\(uint256 amount\) external/);
-  });
-});
-
-describe("MergeOSTreasury", () => {
-  const source = sources["MergeOSTreasury.sol"];
-
-  it("requires operators for payout release", () => {
-    assert.match(source, /contract MergeOSTreasury/);
-    assert.match(source, /event TreasuryRelease\(address indexed recipient, uint256 amount, bytes32 indexed reference\)/);
-    assert.match(source, /function release\(address recipient, uint256 amount, bytes32 reference\) external onlyOperator/);
-    assert.match(source, /function setOperator\(address account, bool enabled\) external onlyOwner/);
-    assert.match(source, /function _safeTransfer\(address recipient, uint256 amount\) private/);
-  });
-});
-
-describe("MergeOSPayouts", () => {
-  const source = sources["MergeOSPayouts.sol"];
-
-  it("records approved payouts and executes each reference through treasury", () => {
-    assert.match(source, /contract MergeOSPayouts/);
-    assert.match(source, /interface IMergeOSPayoutTreasury/);
-    assert.match(source, /enum PayoutStatus/);
-    assert.match(source, /struct Payout/);
-    assert.match(source, /event PayoutApproved\(bytes32 indexed payoutId, address indexed recipient, uint256 amount, bytes32 indexed reference\)/);
-    assert.match(source, /event PayoutExecuted\(bytes32 indexed payoutId, address indexed recipient, uint256 amount, bytes32 indexed reference\)/);
-    assert.match(source, /mapping\(bytes32 => bool\) public reservedReferences/);
-    assert.match(source, /function approvePayout\(/);
-    assert.match(source, /function executePayout\(bytes32 payoutId\) external onlyOperator/);
-    assert.match(source, /treasury\.release\(payout\.recipient, payout\.amount, payout\.reference\)/);
-    assert.match(source, /function approveAndExecutePayout\(/);
-    assert.match(source, /_approvePayout\(payoutId, recipient, amount, reference, PayoutStatus\.Executed, executedAt\)/);
-    assert.match(source, /treasury\.release\(recipient, amount, reference\)/);
-    assert.match(source, /function cancelPayout\(bytes32 payoutId\) external onlyOperator/);
-  });
-
-  it("prevents duplicate or unapproved payout execution", () => {
-    assert.match(source, /function _approvePayout\(/);
-    assert.match(source, /if \(payouts\[payoutId\]\.status != PayoutStatus\.None\) revert PayoutExists\(\)/);
-    assert.match(source, /if \(reservedReferences\[reference\]\) revert ReferenceExists\(\)/);
-    assert.match(source, /reservedReferences\[reference\] = true/);
-    assert.match(source, /if \(payout\.status != PayoutStatus\.Approved\) revert PayoutNotApproved\(\)/);
-    assert.match(source, /payout\.status = PayoutStatus\.Executed/);
-    assert.match(source, /payout\.status = PayoutStatus\.Cancelled/);
-    assert.match(source, /reservedReferences\[payout\.reference\] = false/);
-  });
-});
-
-describe("MergeOSEscrow", () => {
-  const source = sources["MergeOSEscrow.sol"];
-
-  it("tracks project funding, task reserves, release, and refund flows", () => {
-    assert.match(source, /contract MergeOSEscrow/);
-    assert.match(source, /enum ProjectStatus/);
-    assert.match(source, /struct ProjectEscrow/);
-    assert.match(source, /struct TaskReserve[\s\S]*bytes32 reserveReference/);
-    assert.match(source, /function fundProject\(/);
-    assert.match(source, /_safeTransferFrom\(client, address\(this\), amount\)/);
-    assert.match(source, /function reserveTask\(/);
-    assert.match(source, /function releaseTask\(bytes32 taskId, bytes32 reference\) external onlyOperator nonReentrant/);
-    assert.match(source, /function refundTask\(bytes32 taskId, address recipient, bytes32 reference\) external onlyOperator nonReentrant/);
-    assert.match(source, /function refundProjectRemainder\(/);
-  });
-
-  it("guards external value movement", () => {
-    assert.match(source, /modifier nonReentrant\(\)/);
-    assert.match(source, /function _safeTransfer\(address recipient, uint256 amount\) private/);
-    assert.match(source, /function _safeTransferFrom\(address from, address recipient, uint256 amount\) private/);
-    assert.match(source, /event ProjectFunded\(/);
-    assert.match(source, /event TaskReserved\([\s\S]*bytes32 reference[\s\S]*\)/);
-    assert.match(source, /event TaskPaid\([\s\S]*bytes32 reference[\s\S]*\)/);
-    assert.match(source, /event TaskRefunded\([\s\S]*bytes32 reference[\s\S]*\)/);
-    assert.match(source, /if \(reference == bytes32\(0\)\) revert InvalidReference\(\)/);
-    assert.match(source, /event ProjectRefunded\(/);
+  it("avoids EVM and unsafe Solana primitives", () => {
+    for (const banned of [
+      /\bpragma solidity\b/,
+      /\bcontract\s+\w+/,
+      /\btx\.origin\b/,
+      /\bdelegatecall\b/,
+      /\bselfdestruct\b/,
+      /\binvoke_unchecked\b/,
+    ]) {
+      assert.doesNotMatch(programSource, banned);
+    }
+    assert.match(programSource, /token::transfer_checked/);
+    assert.match(programSource, /token::mint_to/);
+    assert.match(programSource, /token::burn/);
   });
 });

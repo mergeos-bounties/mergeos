@@ -15,15 +15,15 @@ import (
 func TestCryptoWebhookVerifiesSignatureAndCreatesProjectSuccessfully(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := Config{
-		Environment:       "local",
-		TokenSymbol:       defaultTokenSymbol,
-		StatePath:         filepath.Join(tempDir, "state.json"),
-		PlatformFeeBps:    1000,
-		DevPaymentEnabled: true,
-		DevPaymentCode:    "LOCAL-PAID",
-		GitHubOwner:       defaultGitHubOwner,
-		BountyRoot:        filepath.Join(tempDir, "bounties"),
-		SMTPFrom:          "noreply@mergeos.local",
+		Environment:         "local",
+		TokenSymbol:         defaultTokenSymbol,
+		StatePath:           filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:      1000,
+		DevPaymentEnabled:   true,
+		DevPaymentCode:      "LOCAL-PAID",
+		GitHubOwner:         defaultGitHubOwner,
+		BountyRoot:          filepath.Join(tempDir, "bounties"),
+		SMTPFrom:            "noreply@mergeos.local",
 		CryptoWebhookSecret: "secret-key",
 	}
 
@@ -49,10 +49,10 @@ func TestCryptoWebhookVerifiesSignatureAndCreatesProjectSuccessfully(t *testing.
 	// Create webhook payload
 	payload := CryptoWebhookRequest{
 		UserID:      userAuth.User.ID,
-		Title:       "USDT Payment Gateway",
+		Title:       "Solana SPL Payment Gateway",
 		ClientName:  "Test Client",
 		ClientEmail: "test-client@example.com",
-		BudgetCents: 10000, // 100 USD minimum
+		BudgetCents: 10000,        // 100 USD minimum
 		TxHash:      "LOCAL-PAID", // Using dev verifier code as hash
 	}
 	bodyBytes, err := json.Marshal(payload)
@@ -81,7 +81,7 @@ func TestCryptoWebhookVerifiesSignatureAndCreatesProjectSuccessfully(t *testing.
 		t.Fatal(err)
 	}
 
-	if project.Title != "USDT Payment Gateway" || project.PaymentStatus != "verified" {
+	if project.Title != "Solana SPL Payment Gateway" || project.PaymentStatus != "verified" {
 		t.Fatalf("invalid project state: %#v", project)
 	}
 }
@@ -89,15 +89,15 @@ func TestCryptoWebhookVerifiesSignatureAndCreatesProjectSuccessfully(t *testing.
 func TestCryptoWebhookRejectsReplayAttack(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := Config{
-		Environment:       "local",
-		TokenSymbol:       defaultTokenSymbol,
-		StatePath:         filepath.Join(tempDir, "state.json"),
-		PlatformFeeBps:    1000,
-		DevPaymentEnabled: true,
-		DevPaymentCode:    "LOCAL-PAID",
-		GitHubOwner:       defaultGitHubOwner,
-		BountyRoot:        filepath.Join(tempDir, "bounties"),
-		SMTPFrom:          "noreply@mergeos.local",
+		Environment:         "local",
+		TokenSymbol:         defaultTokenSymbol,
+		StatePath:           filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:      1000,
+		DevPaymentEnabled:   true,
+		DevPaymentCode:      "LOCAL-PAID",
+		GitHubOwner:         defaultGitHubOwner,
+		BountyRoot:          filepath.Join(tempDir, "bounties"),
+		SMTPFrom:            "noreply@mergeos.local",
 		CryptoWebhookSecret: "secret-key",
 	}
 
@@ -121,7 +121,7 @@ func TestCryptoWebhookRejectsReplayAttack(t *testing.T) {
 
 	payload := CryptoWebhookRequest{
 		UserID:      userAuth.User.ID,
-		Title:       "USDT Payment Gateway",
+		Title:       "Solana SPL Payment Gateway",
 		ClientName:  "Test Client",
 		ClientEmail: "test-client@example.com",
 		BudgetCents: 10000,

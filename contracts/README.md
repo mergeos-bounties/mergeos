@@ -1,23 +1,37 @@
-# MergeOS Contracts
+# MergeOS Solana Contracts
 
-This package contains the first MergeOS contract sources for the MRG token economy.
+This package now contains the MergeOS Solana/Anchor program for the MRG token economy.
 
-## Contracts
+## Program
 
-- `MergeOSToken.sol`: minimal ERC20-compatible MRG token with owner-controlled minters.
-- `MergeOSTreasury.sol`: treasury vault for operator-approved MRG releases and manual owner sweeps.
-- `MergeOSEscrow.sol`: project escrow ledger for deposits, platform fee routing, referenced task reserves, worker payouts, and refunds.
-- `MergeOSPayouts.sol`: payout approval ledger that executes approved references once through the treasury, including one-transaction `approveAndExecutePayout` for automatically releasing already-verified bounty rewards.
+- `programs/mergeos/src/lib.rs`: Anchor program for MRG SPL mint operations, project escrow, task payout/refund, project close proof events, and legacy wallet migration.
+- `Anchor.toml`: localnet Anchor workspace configuration.
+- `Cargo.toml`: Rust workspace configuration for the Solana program.
+
+## Migration From TRC20/EVM
+
+Legacy TRC20/TRON and EVM wallet identifiers are not used as payout accounts anymore. Backend state migration hashes each legacy wallet into a deterministic Solana wallet address for internal continuity, then the Solana program records the old-chain proof through `register_legacy_wallet`.
+
+The `WalletMigration` account stores:
+
+- `legacy_chain`: `Trc20` or `Evm`.
+- `legacy_address_hash`: a 32-byte hash of the old wallet address.
+- `solana_wallet`: the new Solana wallet public key.
+- `registered_by`: the operator that registered the migration.
 
 ## Security Invariants
 
-- No contract uses `tx.origin`, `selfdestruct`, `delegatecall`, or `callcode`.
-- Treasury and escrow releases require owner or trusted operator authorization.
-- Payout approvals require owner or trusted operator authorization, reserve each reward reference once, and can either execute from the `Approved` state or be approved and executed atomically after off-chain verification.
-- Escrow token transfers use explicit ERC20 return-value checks.
-- Escrow payout and refund paths use a local `nonReentrant` guard.
-- Escrow task reserve, payout, and refund events require non-zero references so off-chain PR/task evidence can be reconciled with on-chain activity.
-- Project funding splits platform fee from the worker pool before task reserves are created.
+- No Solidity or EVM primitives remain in this package.
+- MRG minting uses SPL Token CPI `mint_to`.
+- Token movement uses SPL Token CPI `transfer_checked`.
+- Token burning uses SPL Token CPI `burn`.
+- Every money-moving event carries a `[u8; 32] reference` for MergeOS ledger reconciliation.
+- Escrow and task reserve accounts are PDA-backed records, keyed by project/task proof ids.
+- Legacy wallet migration stores hashes, not raw old wallet text.
+
+## Ledger References
+
+References are deterministic 32-byte proof anchors from MergeOS public ledger rows. Backend operators should derive them from ledger `entry_hash`, `public_hash`, or the `contractReferenceFromLedger` helper in `@mergeos/sdk` / `@mergeos/protocol`.
 
 ## Test
 
@@ -25,4 +39,4 @@ This package contains the first MergeOS contract sources for the MRG token econo
 npm test
 ```
 
-The current test suite is static and dependency-free so it can run without a Solidity toolchain. Add Foundry or Hardhat tests before production deployment.
+The current suite is static and dependency-free, so it runs without an Anchor toolchain. Run `anchor test` with a Solana local validator before production deployment.

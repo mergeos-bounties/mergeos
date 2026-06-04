@@ -48,14 +48,9 @@ func (p *PaymentManager) Verify(ctx context.Context, req CreateProjectRequest) (
 		return p.verifyDev(reference, "dev-crypto")
 	case PaymentUSDT:
 		if p.cfg.CryptoReady() && reference != p.cfg.DevPaymentCode {
-			verification, err := p.verifyCrypto(ctx, reference, req.BudgetCents)
-			if err != nil {
-				return PaymentVerification{}, err
-			}
-			verification.Provider = "usdt-" + verification.Provider
-			return verification, nil
+			return p.verifyCrypto(ctx, reference, req.BudgetCents)
 		}
-		return p.verifyDev(reference, "dev-usdt")
+		return p.verifyDev(reference, "dev-solana-spl")
 	case PaymentStripe:
 		if p.cfg.StripeReady() && reference != p.cfg.DevPaymentCode {
 			return p.verifyStripe(ctx, reference, req.BudgetCents)
@@ -327,117 +322,173 @@ func (p *PaymentManager) payPalBaseURL() string {
 	return "https://api-m.sandbox.paypal.com"
 }
 
-func (p *PaymentManager) verifyCrypto(ctx context.Context, txHash string, expectedCents int64) (PaymentVerification, error) {
-	txHash = strings.TrimSpace(txHash)
-	if !strings.HasPrefix(txHash, "0x") || len(txHash) != 66 {
-		return PaymentVerification{}, errors.New("crypto payment reference must be a transaction hash")
-	}
-
-	var receipt evmReceipt
-	if err := p.rpcCall(ctx, "eth_getTransactionReceipt", []any{txHash}, &receipt); err != nil {
-		return PaymentVerification{}, err
-	}
-	if receipt.Status != "0x1" {
-		return PaymentVerification{}, errors.New("crypto transaction is not successful")
+func (p *PaymentManager) verifyCrypto(ctx context.Context, reference string, expectedCents int64) (PaymentVerification, error) {
+	signature := normalizeSolanaSignature(reference)
+	if !validSolanaSignature(signature) {
+		return PaymentVerification{}, errors.New("crypto payment reference must be a Solana transaction signature")
 	}
 	if p.cfg.CryptoMinConfirmations > 0 {
-		confirmations, err := p.confirmations(ctx, receipt.BlockNumber)
-		if err != nil {
+		if err := p.verifySolanaSignatureStatus(ctx, signature); err != nil {
 			return PaymentVerification{}, err
-		}
-		if confirmations < p.cfg.CryptoMinConfirmations {
-			return PaymentVerification{}, fmt.Errorf("crypto transaction has %d confirmations, need %d", confirmations, p.cfg.CryptoMinConfirmations)
 		}
 	}
-
-	switch p.cfg.CryptoAsset {
-	case "erc20":
-		if err := p.verifyERC20Receipt(receipt, expectedCents); err != nil {
-			return PaymentVerification{}, err
-		}
-	default:
-		if err := p.verifyNativePayment(ctx, txHash, expectedCents); err != nil {
-			return PaymentVerification{}, err
-		}
+	if err := p.verifySolanaSPLTransaction(ctx, signature, expectedCents); err != nil {
+		return PaymentVerification{}, err
 	}
 
 	return PaymentVerification{
-		Provider:  "evm-" + p.cfg.CryptoAsset,
-		Reference: txHash,
+		Provider:  "solana-spl",
+		Reference: signature,
 	}, nil
 }
 
-func (p *PaymentManager) verifyNativePayment(ctx context.Context, txHash string, expectedCents int64) error {
-	var tx evmTransaction
-	if err := p.rpcCall(ctx, "eth_getTransactionByHash", []any{txHash}, &tx); err != nil {
+func normalizeSolanaSignature(value string) string {
+	value = strings.TrimSpace(value)
+	value = trimAddressPrefix(value, "solana:")
+	value = trimAddressPrefix(value, "sol:")
+	return strings.TrimSpace(value)
+}
+
+func validSolanaSignature(value string) bool {
+	decoded, ok := base58Decode(normalizeSolanaSignature(value))
+	return ok && len(decoded) == 64
+}
+
+func (p *PaymentManager) verifySolanaSPLTransaction(ctx context.Context, signature string, expectedCents int64) error {
+	var tx solanaTransaction
+	if err := p.rpcCall(ctx, "getTransaction", []any{
+		signature,
+		map[string]any{
+			"encoding":                       "jsonParsed",
+			"commitment":                     "confirmed",
+			"maxSupportedTransactionVersion": 0,
+		},
+	}, &tx); err != nil {
 		return err
 	}
-	if strings.ToLower(tx.To) != p.cfg.CryptoReceiver {
-		return fmt.Errorf("crypto receiver mismatch: got %s", tx.To)
+	if tx.Meta == nil {
+		return errors.New("solana transaction metadata is missing")
 	}
-	required := new(big.Int)
-	if _, ok := required.SetString(p.cfg.CryptoWeiPerUSDCent, 10); !ok {
-		return errors.New("CRYPTO_WEI_PER_USD_CENT must be a base-10 integer")
+	if len(tx.Meta.Err) > 0 && string(tx.Meta.Err) != "null" {
+		return errors.New("solana transaction is not successful")
 	}
-	required.Mul(required, big.NewInt(expectedCents))
-	value, err := hexBig(tx.Value)
-	if err != nil {
+	required := tokenUnitsForCents(expectedCents, p.cfg.CryptoTokenDecimals)
+	if required.Sign() <= 0 {
+		return errors.New("crypto payment amount must be positive")
+	}
+	mint := normalizeWalletAddress(p.cfg.CryptoTokenContract)
+	receiver := normalizeWalletAddress(p.cfg.CryptoReceiver)
+	if !validWalletAddress(mint) {
+		return errors.New("CRYPTO_TOKEN_MINT must be a Solana mint address")
+	}
+	if !validWalletAddress(receiver) {
+		return errors.New("CRYPTO_RECEIVER must be a Solana wallet or token account")
+	}
+	if solanaInstructionTransfers(tx.Transaction.Message.Instructions, mint, receiver, required) {
+		return nil
+	}
+	for _, inner := range tx.Meta.InnerInstructions {
+		if solanaInstructionTransfers(inner.Instructions, mint, receiver, required) {
+			return nil
+		}
+	}
+	if solanaTokenBalanceDelta(tx, mint, receiver).Cmp(required) >= 0 {
+		return nil
+	}
+	return errors.New("spl transfer to configured receiver with required amount was not found")
+}
+
+func (p *PaymentManager) verifySolanaSignatureStatus(ctx context.Context, signature string) error {
+	var statuses solanaSignatureStatuses
+	if err := p.rpcCall(ctx, "getSignatureStatuses", []any{
+		[]string{signature},
+		map[string]any{"searchTransactionHistory": true},
+	}, &statuses); err != nil {
 		return err
 	}
-	if value.Cmp(required) < 0 {
-		return fmt.Errorf("native payment too small: got %s wei, need %s wei", value.String(), required.String())
+	if len(statuses.Value) == 0 || statuses.Value[0] == nil {
+		return errors.New("solana signature was not found")
+	}
+	status := statuses.Value[0]
+	if len(status.Err) > 0 && string(status.Err) != "null" {
+		return errors.New("solana transaction is not successful")
+	}
+	if status.Confirmations == nil {
+		return nil
+	}
+	if *status.Confirmations < p.cfg.CryptoMinConfirmations {
+		return fmt.Errorf("solana transaction has %d confirmations, need %d", *status.Confirmations, p.cfg.CryptoMinConfirmations)
 	}
 	return nil
 }
 
-func (p *PaymentManager) verifyERC20Receipt(receipt evmReceipt, expectedCents int64) error {
-	required := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(p.cfg.CryptoTokenDecimals)), nil)
-	required.Mul(required, big.NewInt(expectedCents))
-	required.Div(required, big.NewInt(100))
-
-	receiver := strings.TrimPrefix(strings.ToLower(p.cfg.CryptoReceiver), "0x")
-	token := strings.ToLower(p.cfg.CryptoTokenContract)
-	for _, log := range receipt.Logs {
-		if strings.ToLower(log.Address) != token || len(log.Topics) < 3 {
+func solanaInstructionTransfers(instructions []solanaInstruction, mint, receiver string, required *big.Int) bool {
+	for _, instruction := range instructions {
+		if !strings.EqualFold(instruction.Program, "spl-token") && !strings.EqualFold(instruction.ProgramID, "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA") {
 			continue
 		}
-		if strings.ToLower(log.Topics[0]) != erc20TransferTopic {
+		parsed := instruction.parsedInfo()
+		if parsed == nil {
 			continue
 		}
-		toTopic := strings.TrimPrefix(strings.ToLower(log.Topics[2]), "0x")
-		if !strings.HasSuffix(toTopic, receiver) {
+		instructionMint := normalizeWalletAddress(parsed.String("mint"))
+		destination := normalizeWalletAddress(parsed.String("destination"))
+		if instructionMint == "" || instructionMint != mint {
 			continue
 		}
-		amount, err := hexBig(log.Data)
-		if err != nil {
-			return err
+		if destination != receiver && normalizeWalletAddress(parsed.String("account")) != receiver && normalizeWalletAddress(parsed.String("to")) != receiver {
+			continue
 		}
+		amount := parsed.TokenAmount()
 		if amount.Cmp(required) >= 0 {
-			return nil
+			return true
 		}
 	}
-	return errors.New("erc20 transfer to configured receiver with required amount was not found")
+	return false
 }
 
-func (p *PaymentManager) confirmations(ctx context.Context, txBlockHex string) (int64, error) {
-	txBlock, err := hexBig(txBlockHex)
-	if err != nil {
-		return 0, err
+func solanaTokenBalanceDelta(tx solanaTransaction, mint, receiver string) *big.Int {
+	if tx.Meta == nil {
+		return big.NewInt(0)
 	}
-	var latestHex string
-	if err := p.rpcCall(ctx, "eth_blockNumber", []any{}, &latestHex); err != nil {
-		return 0, err
+	preBalances := map[int]*big.Int{}
+	for _, balance := range tx.Meta.PreTokenBalances {
+		if normalizeWalletAddress(balance.Mint) != mint {
+			continue
+		}
+		preBalances[balance.AccountIndex] = balance.UIAmount.AmountInt()
 	}
-	latest, err := hexBig(latestHex)
-	if err != nil {
-		return 0, err
+	largest := big.NewInt(0)
+	for _, balance := range tx.Meta.PostTokenBalances {
+		if normalizeWalletAddress(balance.Mint) != mint {
+			continue
+		}
+		account := normalizeWalletAddress(tx.Transaction.Message.AccountKey(balance.AccountIndex))
+		owner := normalizeWalletAddress(balance.Owner)
+		if account != receiver && owner != receiver {
+			continue
+		}
+		post := balance.UIAmount.AmountInt()
+		pre := preBalances[balance.AccountIndex]
+		if pre == nil {
+			pre = big.NewInt(0)
+		}
+		delta := new(big.Int).Sub(post, pre)
+		if delta.Cmp(largest) > 0 {
+			largest = delta
+		}
 	}
-	diff := new(big.Int).Sub(latest, txBlock)
-	diff.Add(diff, big.NewInt(1))
-	if !diff.IsInt64() {
-		return 0, errors.New("confirmation count is too large")
+	return largest
+}
+
+func tokenUnitsForCents(expectedCents int64, decimals int) *big.Int {
+	if decimals < 0 {
+		decimals = 0
 	}
-	return diff.Int64(), nil
+	required := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(decimals)), nil)
+	required.Mul(required, big.NewInt(expectedCents))
+	required.Div(required, big.NewInt(100))
+	return required
 }
 
 func (p *PaymentManager) rpcCall(ctx context.Context, method string, params []any, out any) error {
@@ -484,24 +535,126 @@ func (p *PaymentManager) rpcCall(ctx context.Context, method string, params []an
 	return json.Unmarshal(decoded.Result, out)
 }
 
-type evmReceipt struct {
-	Status      string   `json:"status"`
-	BlockNumber string   `json:"blockNumber"`
-	Logs        []evmLog `json:"logs"`
+type solanaTransaction struct {
+	Slot int64 `json:"slot"`
+	Meta *struct {
+		Err               json.RawMessage           `json:"err"`
+		PreTokenBalances  []solanaTokenBalance      `json:"preTokenBalances"`
+		PostTokenBalances []solanaTokenBalance      `json:"postTokenBalances"`
+		InnerInstructions []solanaInnerInstructions `json:"innerInstructions"`
+	} `json:"meta"`
+	Transaction struct {
+		Message solanaMessage `json:"message"`
+	} `json:"transaction"`
 }
 
-type evmLog struct {
-	Address string   `json:"address"`
-	Topics  []string `json:"topics"`
-	Data    string   `json:"data"`
+type solanaMessage struct {
+	AccountKeys  []solanaAccountKey  `json:"accountKeys"`
+	Instructions []solanaInstruction `json:"instructions"`
 }
 
-type evmTransaction struct {
-	To    string `json:"to"`
-	Value string `json:"value"`
+func (m solanaMessage) AccountKey(index int) string {
+	if index < 0 || index >= len(m.AccountKeys) {
+		return ""
+	}
+	return m.AccountKeys[index].Pubkey
 }
 
-const erc20TransferTopic = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+type solanaAccountKey struct {
+	Pubkey string `json:"pubkey"`
+}
+
+func (k *solanaAccountKey) UnmarshalJSON(data []byte) error {
+	var object struct {
+		Pubkey string `json:"pubkey"`
+	}
+	if err := json.Unmarshal(data, &object); err == nil && object.Pubkey != "" {
+		k.Pubkey = object.Pubkey
+		return nil
+	}
+	var pubkey string
+	if err := json.Unmarshal(data, &pubkey); err != nil {
+		return err
+	}
+	k.Pubkey = pubkey
+	return nil
+}
+
+type solanaInstruction struct {
+	Program   string          `json:"program"`
+	ProgramID string          `json:"programId"`
+	Parsed    json.RawMessage `json:"parsed"`
+}
+
+func (i solanaInstruction) parsedInfo() solanaParsedInfo {
+	if len(i.Parsed) == 0 || string(i.Parsed) == "null" {
+		return nil
+	}
+	var parsed struct {
+		Type string         `json:"type"`
+		Info map[string]any `json:"info"`
+	}
+	if err := json.Unmarshal(i.Parsed, &parsed); err != nil || parsed.Info == nil {
+		return nil
+	}
+	return solanaParsedInfo(parsed.Info)
+}
+
+type solanaParsedInfo map[string]any
+
+func (i solanaParsedInfo) String(key string) string {
+	value, _ := i[key].(string)
+	return strings.TrimSpace(value)
+}
+
+func (i solanaParsedInfo) TokenAmount() *big.Int {
+	if tokenAmount, ok := i["tokenAmount"].(map[string]any); ok {
+		if amount, ok := tokenAmount["amount"].(string); ok {
+			if parsed, ok := new(big.Int).SetString(amount, 10); ok {
+				return parsed
+			}
+		}
+	}
+	if amount, ok := i["amount"].(string); ok {
+		if parsed, ok := new(big.Int).SetString(amount, 10); ok {
+			return parsed
+		}
+	}
+	return big.NewInt(0)
+}
+
+type solanaInnerInstructions struct {
+	Index        int                 `json:"index"`
+	Instructions []solanaInstruction `json:"instructions"`
+}
+
+type solanaTokenBalance struct {
+	AccountIndex int                 `json:"accountIndex"`
+	Mint         string              `json:"mint"`
+	Owner        string              `json:"owner"`
+	UIAmount     solanaUITokenAmount `json:"uiTokenAmount"`
+}
+
+type solanaUITokenAmount struct {
+	Amount string `json:"amount"`
+}
+
+func (a solanaUITokenAmount) AmountInt() *big.Int {
+	if parsed, ok := new(big.Int).SetString(strings.TrimSpace(a.Amount), 10); ok {
+		return parsed
+	}
+	return big.NewInt(0)
+}
+
+type solanaSignatureStatuses struct {
+	Value []*solanaSignatureStatus `json:"value"`
+}
+
+type solanaSignatureStatus struct {
+	Confirmations *int64          `json:"confirmations"`
+	Confirmation  string          `json:"confirmationStatus"`
+	Err           json.RawMessage `json:"err"`
+}
 
 func centsToPayPalValue(cents int64) string {
 	return fmt.Sprintf("%d.%02d", cents/100, cents%100)
@@ -537,18 +690,6 @@ func payPalValueToCents(value string) (int64, error) {
 		return 0, errors.New("paypal amount is too large")
 	}
 	return dollars.Int64(), nil
-}
-
-func hexBig(value string) (*big.Int, error) {
-	value = strings.TrimPrefix(strings.ToLower(strings.TrimSpace(value)), "0x")
-	if value == "" {
-		return big.NewInt(0), nil
-	}
-	parsed := new(big.Int)
-	if _, ok := parsed.SetString(value, 16); !ok {
-		return nil, fmt.Errorf("invalid hex integer %q", value)
-	}
-	return parsed, nil
 }
 
 func readBody(body io.Reader) string {

@@ -74,8 +74,8 @@ code { font-family: 'SF Mono', 'Fira Code', monospace; background: #0f172a; padd
 
     <template v-if="authenticated">
       <div class="card">
-        <h2>Integration Keys</h2>
-        <p>Add temporary test credentials for LLM providers, PayPal Sandbox, and USDT received proof.</p>
+        <h2>⚙️ Integration Keys</h2>
+        <p>Add temporary test credentials for LLM providers, PayPal Sandbox, and Solana SPL receivers.</p>
       </div>
 
       <div class="card">
@@ -86,7 +86,7 @@ code { font-family: 'SF Mono', 'Fira Code', monospace; background: #0f172a; padd
               <select v-model="form.integration_type">
                 <option value="llm">LLM</option>
                 <option value="paypal">PayPal Sandbox</option>
-                <option value="usdt">USDT Received</option>
+                <option value="solana_spl">Solana SPL</option>
               </select>
             </label>
             <label><span>Display Name</span>

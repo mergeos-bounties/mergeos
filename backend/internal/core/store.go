@@ -636,7 +636,7 @@ func (s *Store) CreateProject(ctx context.Context, userID string, req CreateProj
 		return nil, errors.New("funding payment must be at least 100 USD")
 	}
 	if req.PaymentMethod != PaymentPayPal && req.PaymentMethod != PaymentCrypto && req.PaymentMethod != PaymentUSDT && req.PaymentMethod != PaymentStripe {
-		return nil, errors.New("payment method must be paypal, crypto, usdt, or stripe")
+		return nil, errors.New("payment method must be paypal, crypto, solana spl, or stripe")
 	}
 	tokenSymbol := normalizedTokenSymbol(s.cfg.TokenSymbol)
 	sourceRepoURL := strings.TrimSpace(req.SourceRepoURL)
@@ -1207,7 +1207,7 @@ func (s *Store) WorkerDashboard(userID string) WorkerDashboardResponse {
 	}
 
 	for _, task := range s.tasks {
-		if task.Status != TaskAccepted || !workerIDs[strings.ToLower(normalizeWorkerID(task.WorkerID))] {
+		if task.Status != TaskAccepted || !workerIDs[workerIdentityKey(task.WorkerID)] {
 			continue
 		}
 		project := s.projects[task.ProjectID]
@@ -1232,7 +1232,7 @@ func (s *Store) WorkerDashboard(userID string) WorkerDashboardResponse {
 		if entry.Type != "task_payment" && entry.Type != "manual_credit" {
 			continue
 		}
-		if !rewardAccounts[strings.ToLower(strings.TrimSpace(entry.ToAccount))] {
+		if !rewardAccounts[rewardAccountKey(entry.ToAccount)] {
 			continue
 		}
 		response.Rewards = append(response.Rewards, WorkerRewardEntry{
@@ -1960,15 +1960,15 @@ func (s *Store) addLedger(entryType, from, to string, amountCents int64, referen
 	return entry
 }
 
-func normalizeLedgerAccounts(entries []LedgerEntry) ([]LedgerEntry, bool) {
+func normalizeLedgerAccounts(entries []LedgerEntry, walletMigration map[string]string) ([]LedgerEntry, bool) {
 	normalized := make([]LedgerEntry, len(entries))
 	changed := false
 	for index, entry := range entries {
-		if account, ok := normalizeLedgerAccount(entry.FromAccount); ok {
+		if account, ok := normalizeLedgerAccount(entry.FromAccount, walletMigration); ok {
 			entry.FromAccount = account
 			changed = true
 		}
-		if account, ok := normalizeLedgerAccount(entry.ToAccount); ok {
+		if account, ok := normalizeLedgerAccount(entry.ToAccount, walletMigration); ok {
 			entry.ToAccount = account
 			changed = true
 		}
@@ -1987,9 +1987,12 @@ func normalizeLedgerAccounts(entries []LedgerEntry) ([]LedgerEntry, bool) {
 	return normalized, true
 }
 
-func normalizeLedgerAccount(account string) (string, bool) {
+func normalizeLedgerAccount(account string, walletMigration map[string]string) (string, bool) {
 	trimmed := strings.TrimSpace(account)
 	lower := strings.ToLower(trimmed)
+	if address, ok := migratedWalletAccount(trimmed, walletMigration); ok {
+		return walletAccount(address), true
+	}
 	if strings.HasPrefix(lower, "wallet:") {
 		normalized := walletAccount(trimmed)
 		if !validWalletAddress(normalized) || normalized == trimmed {
@@ -2001,6 +2004,134 @@ func normalizeLedgerAccount(account string) (string, bool) {
 		return taskReserveAccount(), true
 	}
 	return "", false
+}
+
+func walletMigrationKey(value string) string {
+	value = strings.TrimSpace(value)
+	if validLegacyEVMWalletAddress(value) {
+		return strings.ToLower(value)
+	}
+	return value
+}
+
+func buildWalletMigrationMap(state persistedState) map[string]string {
+	migration := map[string]string{}
+	add := func(legacyAddress, solanaAddress string) {
+		legacyAddress = normalizeLegacyWalletAddress(legacyAddress)
+		if !validLegacyWalletAddress(legacyAddress) {
+			return
+		}
+		solanaAddress = normalizeWalletAddress(solanaAddress)
+		if !validWalletAddress(solanaAddress) {
+			solanaAddress = solanaWalletFromLegacy(legacyAddress)
+		}
+		if !validWalletAddress(solanaAddress) {
+			return
+		}
+		migration[walletMigrationKey(legacyAddress)] = solanaAddress
+		migration[walletMigrationKey(legacyWalletAccount(legacyAddress))] = solanaAddress
+	}
+	for _, wallet := range state.Wallets {
+		if wallet == nil {
+			continue
+		}
+		address := normalizeWalletAddress(wallet.Address)
+		if validLegacyWalletAddress(address) {
+			add(address, "")
+		}
+		if legacyAddress := normalizeLegacyWalletAddress(wallet.LegacyAddress); legacyAddress != "" {
+			add(legacyAddress, address)
+		}
+	}
+	for _, user := range state.Users {
+		if user != nil {
+			add(user.WalletAddress, "")
+		}
+	}
+	for _, task := range state.Tasks {
+		if task != nil {
+			add(task.WorkerID, "")
+		}
+	}
+	for _, project := range state.Projects {
+		if project == nil {
+			continue
+		}
+		for _, task := range project.Tasks {
+			if task != nil {
+				add(task.WorkerID, "")
+			}
+		}
+	}
+	for _, entry := range state.Ledger {
+		add(entry.FromAccount, "")
+		add(entry.ToAccount, "")
+	}
+	return migration
+}
+
+func migratedWalletAccount(value string, walletMigration map[string]string) (string, bool) {
+	if len(walletMigration) == 0 {
+		return "", false
+	}
+	trimmed := strings.TrimSpace(value)
+	lookupValues := []string{trimmed}
+	if strings.HasPrefix(strings.ToLower(trimmed), "wallet:") {
+		lookupValues = append(lookupValues, trimAddressPrefix(trimmed, "wallet:"))
+	}
+	for _, candidate := range lookupValues {
+		legacyAddress := normalizeLegacyWalletAddress(candidate)
+		if !validLegacyWalletAddress(legacyAddress) {
+			continue
+		}
+		if solanaAddress, ok := walletMigration[walletMigrationKey(legacyAddress)]; ok && validWalletAddress(solanaAddress) {
+			return solanaAddress, true
+		}
+	}
+	return "", false
+}
+
+func normalizeWorkerIDWithWalletMigration(value string, walletMigration map[string]string) string {
+	if address, ok := migratedWalletAccount(value, walletMigration); ok {
+		return walletAccount(address)
+	}
+	return normalizeWorkerID(value)
+}
+
+func normalizeUserWalletWithMigration(value string, walletMigration map[string]string) (string, bool) {
+	if address, ok := migratedWalletAccount(value, walletMigration); ok {
+		return address, true
+	}
+	normalized := normalizeWalletAddress(value)
+	if validWalletAddress(normalized) {
+		return normalized, normalized != value
+	}
+	return "", strings.TrimSpace(value) != ""
+}
+
+func normalizePersistedWalletWithMigration(wallet *Wallet, walletMigration map[string]string) bool {
+	if wallet == nil {
+		return false
+	}
+	changed := false
+	previousAddress := wallet.Address
+	previousChain := wallet.Chain
+	previousLegacyAddress := wallet.LegacyAddress
+	if address, ok := migratedWalletAccount(wallet.Address, walletMigration); ok {
+		if wallet.LegacyAddress == "" {
+			wallet.LegacyAddress = normalizeLegacyWalletAddress(wallet.Address)
+		}
+		wallet.Address = address
+	} else {
+		wallet.Address = normalizeWalletAddress(wallet.Address)
+	}
+	wallet.Chain = walletChainSolana
+	wallet.LegacyAddress = normalizeLegacyWalletAddress(wallet.LegacyAddress)
+	wallet.GitHubUsername = normalizeGitHubUsername(wallet.GitHubUsername)
+	if previousAddress != wallet.Address || previousChain != wallet.Chain || previousLegacyAddress != wallet.LegacyAddress {
+		changed = true
+	}
+	return changed
 }
 
 func ledgerEntryHash(entry LedgerEntry) string {
@@ -2073,6 +2204,7 @@ func (s *Store) applyState(state persistedState) bool {
 	if state.NextID > 0 {
 		s.nextID = state.NextID
 	}
+	walletMigration := buildWalletMigrationMap(state)
 	s.adminSettings = defaultAdminSettings(s.cfg)
 	if state.AdminSettings != nil {
 		s.adminSettings = *state.AdminSettings
@@ -2090,7 +2222,9 @@ func (s *Store) applyState(state persistedState) bool {
 			s.adminSettings.UpdatedAt = time.Now().UTC()
 		}
 	}
-	s.ledger, migrated = normalizeLedgerAccounts(state.Ledger)
+	var ledgerMigrated bool
+	s.ledger, ledgerMigrated = normalizeLedgerAccounts(state.Ledger, walletMigration)
+	migrated = migrated || ledgerMigrated
 	s.projects = map[string]*Project{}
 	s.tasks = map[string]*Task{}
 	s.users = map[string]*User{}
@@ -2114,7 +2248,7 @@ func (s *Store) applyState(state persistedState) bool {
 			if task == nil {
 				continue
 			}
-			workerID := normalizeWorkerID(task.WorkerID)
+			workerID := normalizeWorkerIDWithWalletMigration(task.WorkerID, walletMigration)
 			if workerID != task.WorkerID {
 				task.WorkerID = workerID
 				migrated = true
@@ -2126,7 +2260,7 @@ func (s *Store) applyState(state persistedState) bool {
 		if task == nil || task.ID == "" {
 			continue
 		}
-		workerID := normalizeWorkerID(task.WorkerID)
+		workerID := normalizeWorkerIDWithWalletMigration(task.WorkerID, walletMigration)
 		if workerID != task.WorkerID {
 			taskCopy := *task
 			taskCopy.WorkerID = workerID
@@ -2139,7 +2273,11 @@ func (s *Store) applyState(state persistedState) bool {
 		if user == nil || user.ID == "" {
 			continue
 		}
-		user.WalletAddress = normalizeWalletAddress(user.WalletAddress)
+		normalizedWallet, walletMigrated := normalizeUserWalletWithMigration(user.WalletAddress, walletMigration)
+		if user.WalletAddress != normalizedWallet || walletMigrated {
+			migrated = true
+		}
+		user.WalletAddress = normalizedWallet
 		user.GitHubUsername = normalizeGitHubUsername(user.GitHubUsername)
 		s.users[user.ID] = user
 	}
@@ -2147,12 +2285,43 @@ func (s *Store) applyState(state persistedState) bool {
 		if wallet == nil {
 			continue
 		}
-		wallet.Address = normalizeWalletAddress(wallet.Address)
-		wallet.GitHubUsername = normalizeGitHubUsername(wallet.GitHubUsername)
+		if normalizePersistedWalletWithMigration(wallet, walletMigration) {
+			migrated = true
+		}
 		if !validWalletAddress(wallet.Address) {
 			continue
 		}
+		if existing := s.wallets[wallet.Address]; existing != nil {
+			if existing.LegacyAddress == "" && wallet.LegacyAddress != "" {
+				existing.LegacyAddress = wallet.LegacyAddress
+				migrated = true
+			}
+			if existing.Chain == "" {
+				existing.Chain = walletChainSolana
+				migrated = true
+			}
+			continue
+		}
 		s.wallets[wallet.Address] = wallet
+	}
+	for _, user := range s.users {
+		if user == nil {
+			continue
+		}
+		address := normalizeWalletAddress(user.WalletAddress)
+		if !validWalletAddress(address) {
+			continue
+		}
+		if _, exists := s.wallets[address]; exists {
+			continue
+		}
+		s.wallets[address] = &Wallet{
+			Address:     address,
+			Chain:       walletChainSolana,
+			OwnerUserID: user.ID,
+			CreatedAt:   user.CreatedAt,
+		}
+		migrated = true
 	}
 	now := time.Now().UTC()
 	for _, session := range state.Sessions {
@@ -2627,13 +2796,13 @@ func workerIdentitySets(user *User) (map[string]bool, map[string]bool) {
 	workerIDs := map[string]bool{}
 	rewardAccounts := map[string]bool{}
 	addWorker := func(value string) {
-		value = strings.ToLower(strings.TrimSpace(normalizeWorkerID(value)))
+		value = workerIdentityKey(value)
 		if value != "" {
 			workerIDs[value] = true
 		}
 	}
 	addReward := func(value string) {
-		value = strings.ToLower(strings.TrimSpace(value))
+		value = rewardAccountKey(value)
 		if value != "" {
 			rewardAccounts[value] = true
 		}
@@ -2648,7 +2817,42 @@ func workerIdentitySets(user *User) (map[string]bool, map[string]bool) {
 		addWorker("github:" + github)
 		addReward(githubWorkerAccount(github))
 	}
+	addWorker(user.ID)
 	return workerIDs, rewardAccounts
+}
+
+func workerIdentityKey(value string) string {
+	value = strings.TrimSpace(normalizeWorkerID(value))
+	if value == "" {
+		return ""
+	}
+	if validWalletAddress(value) {
+		return walletAccount(value)
+	}
+	if strings.HasPrefix(strings.ToLower(value), "wallet:") {
+		address := normalizeWalletAddress(value)
+		if validWalletAddress(address) {
+			return walletAccount(address)
+		}
+	}
+	return strings.ToLower(value)
+}
+
+func rewardAccountKey(value string) string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return ""
+	}
+	if validWalletAddress(value) {
+		return walletAccount(value)
+	}
+	if strings.HasPrefix(strings.ToLower(value), "wallet:") {
+		address := normalizeWalletAddress(value)
+		if validWalletAddress(address) {
+			return walletAccount(address)
+		}
+	}
+	return strings.ToLower(value)
 }
 
 func workerIdentityHints(user *User) []WorkerIdentityHint {
@@ -2659,7 +2863,7 @@ func workerIdentityHints(user *User) []WorkerIdentityHint {
 		githubValue = githubWorkerAccount(github)
 	}
 	return []WorkerIdentityHint{
-		{Label: "MRG wallet", Value: wallet, Ready: wallet != ""},
+		{Label: "Solana MRG wallet", Value: wallet, Ready: wallet != ""},
 		{Label: "GitHub", Value: githubValue, Ready: github != ""},
 	}
 }
@@ -2896,18 +3100,18 @@ func workerDashboardID(profile WorkerProfile) string {
 }
 
 func workerReputationKey(workerID, agentType string) string {
-	workerID = strings.ToLower(strings.TrimSpace(normalizeWorkerID(workerID)))
+	workerID = workerIdentityKey(workerID)
 	agentType = strings.ToLower(strings.TrimSpace(agentType))
 	return workerID + "|" + agentType
 }
 
 func workerIDHasGitHub(workerID string) bool {
-	workerID = strings.ToLower(strings.TrimSpace(normalizeWorkerID(workerID)))
+	workerID = workerIdentityKey(workerID)
 	return strings.HasPrefix(workerID, "github:") && normalizeGitHubUsername(workerID) != ""
 }
 
 func workerIDHasWallet(workerID string) bool {
-	workerID = strings.ToLower(strings.TrimSpace(normalizeWorkerID(workerID)))
+	workerID = strings.TrimSpace(normalizeWorkerID(workerID))
 	return validWalletAddress(workerID)
 }
 
@@ -2942,7 +3146,7 @@ func (s *Store) workerReputationAuditForUserLocked(user *User) WorkerReputationA
 		DuplicateIdentityCount: s.duplicateIdentityCountLocked(user),
 	}
 	for _, task := range s.tasks {
-		if task == nil || task.Status != TaskAccepted || !workerIDs[strings.ToLower(normalizeWorkerID(task.WorkerID))] {
+		if task == nil || task.Status != TaskAccepted || !workerIDs[workerIdentityKey(task.WorkerID)] {
 			continue
 		}
 		audit.CompletedTaskCount++
@@ -2956,7 +3160,7 @@ func (s *Store) workerReputationAuditForUserLocked(user *User) WorkerReputationA
 		if entry.Type != "task_payment" && entry.Type != "manual_credit" {
 			continue
 		}
-		if rewardAccounts[strings.ToLower(strings.TrimSpace(entry.ToAccount))] {
+		if rewardAccounts[rewardAccountKey(entry.ToAccount)] {
 			audit.RewardRowCount++
 		}
 	}

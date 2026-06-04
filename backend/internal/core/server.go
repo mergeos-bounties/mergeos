@@ -1294,7 +1294,7 @@ func paymentRails(cfg Config) []PaymentRailOption {
 	devEnabled := cfg.DevPaymentEnabled
 	paypalEnabled := cfg.PayPalReady() || devEnabled
 	cryptoEnabled := cfg.CryptoReady() || devEnabled
-	usdtReady := cfg.CryptoReady() && cfg.CryptoAsset == "erc20" && strings.TrimSpace(cfg.CryptoTokenContract) != ""
+	usdtReady := cfg.CryptoReady() && cfg.CryptoAsset == "spl" && strings.TrimSpace(cfg.CryptoTokenContract) != ""
 	usdtEnabled := usdtReady || devEnabled
 	stripeEnabled := cfg.StripeReady() || devEnabled
 	return []PaymentRailOption{
@@ -1312,10 +1312,10 @@ func paymentRails(cfg Config) []PaymentRailOption {
 			ID:                "crypto",
 			Label:             publicCryptoRailLabel(cfg),
 			Method:            string(PaymentCrypto),
-			Caption:           "EVM native/ERC-20 transfer",
+			Caption:           "Solana SPL transfer",
 			Enabled:           cryptoEnabled,
 			Ready:             cfg.CryptoReady(),
-			DisabledReason:    disabledPaymentRailReason(cryptoEnabled, "Crypto verifier is not configured."),
+			DisabledReason:    disabledPaymentRailReason(cryptoEnabled, "Solana SPL verifier is not configured."),
 			RequiresReference: !devEnabled,
 			Asset:             strings.ToUpper(strings.TrimSpace(cfg.CryptoAsset)),
 			Receiver:          cfg.CryptoReceiver,
@@ -1323,14 +1323,14 @@ func paymentRails(cfg Config) []PaymentRailOption {
 		},
 		{
 			ID:                "usdt",
-			Label:             "USDT",
+			Label:             "Solana SPL",
 			Method:            string(PaymentUSDT),
-			Caption:           "USDT ERC-20 transfer",
+			Caption:           "Backward-compatible Solana SPL rail",
 			Enabled:           usdtEnabled,
 			Ready:             usdtReady,
-			DisabledReason:    disabledPaymentRailReason(usdtEnabled, "USDT ERC-20 verifier is not configured."),
+			DisabledReason:    disabledPaymentRailReason(usdtEnabled, "Solana SPL verifier is not configured."),
 			RequiresReference: !devEnabled,
-			Asset:             "USDT",
+			Asset:             "SPL",
 			Receiver:          cfg.CryptoReceiver,
 			TokenContract:     cfg.CryptoTokenContract,
 		},
@@ -1366,10 +1366,10 @@ func disabledPaymentRailReason(enabled bool, reason string) string {
 }
 
 func publicCryptoRailLabel(cfg Config) string {
-	if cfg.CryptoAsset == "erc20" && strings.TrimSpace(cfg.CryptoTokenContract) != "" {
-		return "USDC / USDT"
+	if cfg.CryptoAsset == "spl" && strings.TrimSpace(cfg.CryptoTokenContract) != "" {
+		return "Solana SPL"
 	}
-	return "USDC"
+	return "Solana"
 }
 
 func repoProvider(cfg Config) string {

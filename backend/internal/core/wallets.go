@@ -2,14 +2,23 @@ package core
 
 import (
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"math/big"
 	"strings"
 	"time"
 )
 
-const walletAddressBytes = 20
+const (
+	walletAddressBytes       = 32
+	walletChainSolana        = "solana"
+	legacyWalletHashPrefix   = "mergeos:solana-wallet-migration:"
+	solanaBase58Alphabet     = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+	solanaAddressPrefix      = "solana:"
+	solanaShortAddressPrefix = "sol:"
+)
 
 func (s *Store) CreateGuestWallet(_ CreateWalletRequest) (*CreateWalletResponse, error) {
 	recoveryCode, err := newWalletRecoveryCode()
@@ -190,7 +199,7 @@ func (s *Store) AuthenticateGitHub(profile GitHubAuthProfile, walletAddress, wal
 	}
 	if created {
 		s.users[user.ID] = user
-		s.addNotificationLocked(user.ID, "", "email", "GitHub connected", "Your GitHub account is linked to an MRG wallet for future rewards.", "logged:github-wallet")
+		s.addNotificationLocked(user.ID, "", "email", "GitHub connected", "Your GitHub account is linked to a Solana MRG wallet for future rewards.", "logged:github-wallet")
 	}
 
 	token, err := newToken()
@@ -225,7 +234,7 @@ func (s *Store) ensureWalletForUserLocked(user *User, requestedAddress, recovery
 	if requestedAddress != "" {
 		if existingUserWallet := normalizeWalletAddress(user.WalletAddress); existingUserWallet != "" && existingUserWallet != requestedAddress {
 			if _, ok := s.wallets[existingUserWallet]; ok {
-				return nil, errors.New("account already has an MRG wallet")
+				return nil, errors.New("account already has a Solana MRG wallet")
 			}
 		}
 		address = requestedAddress
@@ -236,6 +245,7 @@ func (s *Store) ensureWalletForUserLocked(user *User, requestedAddress, recovery
 		if !ok {
 			wallet = &Wallet{
 				Address:   address,
+				Chain:     walletChainSolana,
 				CreatedAt: time.Now().UTC(),
 			}
 			s.wallets[address] = wallet
@@ -276,6 +286,7 @@ func (s *Store) createWalletLocked(ownerUserID, recoverySalt, recoveryHash strin
 		}
 		wallet := &Wallet{
 			Address:      address,
+			Chain:        walletChainSolana,
 			OwnerUserID:  strings.TrimSpace(ownerUserID),
 			RecoverySalt: recoverySalt,
 			RecoveryHash: recoveryHash,
@@ -299,6 +310,10 @@ func (s *Store) walletSummaryLocked(wallet *Wallet) WalletSummary {
 	accountSet := map[string]bool{
 		legacyWalletAccount(address): true,
 	}
+	if legacyAddress := normalizeLegacyWalletAddress(wallet.LegacyAddress); legacyAddress != "" {
+		accountSet[legacyAddress] = true
+		accountSet[legacyWalletAccount(legacyAddress)] = true
+	}
 	for _, account := range accounts {
 		accountSet[account] = true
 	}
@@ -306,6 +321,8 @@ func (s *Store) walletSummaryLocked(wallet *Wallet) WalletSummary {
 	summary := WalletSummary{
 		Address:        address,
 		Account:        walletAccount(address),
+		Chain:          normalizedWalletChain(wallet.Chain),
+		LegacyAddress:  normalizeLegacyWalletAddress(wallet.LegacyAddress),
 		LinkedAccounts: accounts,
 		GitHubUsername: normalizeGitHubUsername(wallet.GitHubUsername),
 		OwnerLinked:    wallet.OwnerUserID != "",
@@ -394,7 +411,7 @@ func newWalletAddress() (string, error) {
 	if _, err := rand.Read(bytes); err != nil {
 		return "", err
 	}
-	return "0x" + hex.EncodeToString(bytes), nil
+	return base58Encode(bytes), nil
 }
 
 func newWalletRecoveryCode() (string, error) {
@@ -406,18 +423,20 @@ func newWalletRecoveryCode() (string, error) {
 }
 
 func normalizeWalletAddress(value string) string {
-	value = strings.ToLower(strings.TrimSpace(value))
-	value = strings.TrimPrefix(value, "wallet:")
-	return value
+	value = strings.TrimSpace(value)
+	value = trimAddressPrefix(value, "wallet:")
+	value = trimAddressPrefix(value, solanaAddressPrefix)
+	value = trimAddressPrefix(value, solanaShortAddressPrefix)
+	return strings.TrimSpace(value)
 }
 
 func validWalletAddress(value string) bool {
 	value = normalizeWalletAddress(value)
-	if len(value) != 42 || !strings.HasPrefix(value, "0x") {
+	if value == "" {
 		return false
 	}
-	_, err := hex.DecodeString(value[2:])
-	return err == nil
+	decoded, ok := base58Decode(value)
+	return ok && len(decoded) == walletAddressBytes
 }
 
 func normalizeGitHubUsername(value string) string {
@@ -437,4 +456,121 @@ func legacyWalletAccount(address string) string {
 
 func githubWorkerAccount(username string) string {
 	return "github:" + normalizeGitHubUsername(username)
+}
+
+func normalizedWalletChain(value string) string {
+	value = strings.ToLower(strings.TrimSpace(value))
+	if value == "" {
+		return walletChainSolana
+	}
+	return value
+}
+
+func normalizeLegacyWalletAddress(value string) string {
+	value = strings.TrimSpace(value)
+	value = trimAddressPrefix(value, "wallet:")
+	value = trimAddressPrefix(value, "tron:")
+	value = trimAddressPrefix(value, "trc20:")
+	value = trimAddressPrefix(value, "eip155:")
+	if validLegacyEVMWalletAddress(value) {
+		return strings.ToLower(value)
+	}
+	return strings.TrimSpace(value)
+}
+
+func validLegacyWalletAddress(value string) bool {
+	value = normalizeLegacyWalletAddress(value)
+	return validLegacyEVMWalletAddress(value) || validLegacyTronWalletAddress(value)
+}
+
+func validLegacyEVMWalletAddress(value string) bool {
+	value = strings.TrimSpace(value)
+	if len(value) != 42 || !strings.HasPrefix(strings.ToLower(value), "0x") {
+		return false
+	}
+	_, err := hex.DecodeString(value[2:])
+	return err == nil
+}
+
+func validLegacyTronWalletAddress(value string) bool {
+	value = strings.TrimSpace(value)
+	if len(value) != 34 || !strings.HasPrefix(value, "T") {
+		return false
+	}
+	decoded, ok := base58Decode(value)
+	return ok && len(decoded) == 25
+}
+
+func solanaWalletFromLegacy(value string) string {
+	legacyAddress := normalizeLegacyWalletAddress(value)
+	if !validLegacyWalletAddress(legacyAddress) {
+		return ""
+	}
+	sum := sha256.Sum256([]byte(legacyWalletHashPrefix + legacyAddress))
+	return base58Encode(sum[:])
+}
+
+func trimAddressPrefix(value, prefix string) string {
+	value = strings.TrimSpace(value)
+	if strings.HasPrefix(strings.ToLower(value), prefix) {
+		return strings.TrimSpace(value[len(prefix):])
+	}
+	return value
+}
+
+func base58Encode(input []byte) string {
+	if len(input) == 0 {
+		return ""
+	}
+	value := new(big.Int).SetBytes(input)
+	base := big.NewInt(58)
+	zero := big.NewInt(0)
+	mod := new(big.Int)
+	encoded := []byte{}
+	for value.Cmp(zero) > 0 {
+		value.DivMod(value, base, mod)
+		encoded = append(encoded, solanaBase58Alphabet[mod.Int64()])
+	}
+	for _, b := range input {
+		if b != 0 {
+			break
+		}
+		encoded = append(encoded, solanaBase58Alphabet[0])
+	}
+	if len(encoded) == 0 {
+		encoded = append(encoded, solanaBase58Alphabet[0])
+	}
+	for left, right := 0, len(encoded)-1; left < right; left, right = left+1, right-1 {
+		encoded[left], encoded[right] = encoded[right], encoded[left]
+	}
+	return string(encoded)
+}
+
+func base58Decode(value string) ([]byte, bool) {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return nil, false
+	}
+	result := big.NewInt(0)
+	base := big.NewInt(58)
+	for _, char := range value {
+		index := strings.IndexRune(solanaBase58Alphabet, char)
+		if index < 0 {
+			return nil, false
+		}
+		result.Mul(result, base)
+		result.Add(result, big.NewInt(int64(index)))
+	}
+	decoded := result.Bytes()
+	leadingZeros := 0
+	for _, char := range value {
+		if char != rune(solanaBase58Alphabet[0]) {
+			break
+		}
+		leadingZeros++
+	}
+	if leadingZeros > 0 {
+		decoded = append(make([]byte, leadingZeros), decoded...)
+	}
+	return decoded, true
 }

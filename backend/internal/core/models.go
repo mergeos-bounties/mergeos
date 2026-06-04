@@ -70,6 +70,8 @@ type PublicUser struct {
 
 type Wallet struct {
 	Address        string     `json:"address"`
+	Chain          string     `json:"chain,omitempty"`
+	LegacyAddress  string     `json:"legacy_address,omitempty"`
 	OwnerUserID    string     `json:"owner_user_id,omitempty"`
 	GitHubID       string     `json:"github_id,omitempty"`
 	GitHubUsername string     `json:"github_username,omitempty"`
@@ -260,6 +262,8 @@ type LinkWalletRequest struct {
 type WalletSummary struct {
 	Address          string     `json:"address"`
 	Account          string     `json:"account"`
+	Chain            string     `json:"chain,omitempty"`
+	LegacyAddress    string     `json:"legacy_address,omitempty"`
 	BalanceCents     int64      `json:"balance_cents"`
 	ReceivedCents    int64      `json:"received_cents"`
 	SentCents        int64      `json:"sent_cents"`

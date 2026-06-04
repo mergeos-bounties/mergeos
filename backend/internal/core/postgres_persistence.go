@@ -263,7 +263,7 @@ ORDER BY created_at, id`)
 
 func (p *postgresPersistence) loadWallets(ctx context.Context, state *persistedState) error {
 	rows, err := p.db.QueryContext(ctx, `
-SELECT address, owner_user_id, github_id, github_username, recovery_salt, recovery_hash, created_at, linked_at
+SELECT address, chain, legacy_address, owner_user_id, github_id, github_username, recovery_salt, recovery_hash, created_at, linked_at
 FROM wallets
 ORDER BY created_at, address`)
 	if err != nil {
@@ -275,7 +275,7 @@ ORDER BY created_at, address`)
 		wallet := &Wallet{}
 		var linkedAt sql.NullTime
 		if err := rows.Scan(
-			&wallet.Address, &wallet.OwnerUserID, &wallet.GitHubID, &wallet.GitHubUsername,
+			&wallet.Address, &wallet.Chain, &wallet.LegacyAddress, &wallet.OwnerUserID, &wallet.GitHubID, &wallet.GitHubUsername,
 			&wallet.RecoverySalt, &wallet.RecoveryHash, &wallet.CreatedAt, &linkedAt,
 		); err != nil {
 			return fmt.Errorf("scan wallet: %w", err)
@@ -665,9 +665,9 @@ func saveWallets(ctx context.Context, tx *sql.Tx, wallets []*Wallet) error {
 			continue
 		}
 		if _, err := tx.ExecContext(ctx, `
-INSERT INTO wallets (address, owner_user_id, github_id, github_username, recovery_salt, recovery_hash, created_at, linked_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-			address, wallet.OwnerUserID, wallet.GitHubID, normalizeGitHubUsername(wallet.GitHubUsername),
+INSERT INTO wallets (address, chain, legacy_address, owner_user_id, github_id, github_username, recovery_salt, recovery_hash, created_at, linked_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+			address, normalizedWalletChain(wallet.Chain), normalizeLegacyWalletAddress(wallet.LegacyAddress), wallet.OwnerUserID, wallet.GitHubID, normalizeGitHubUsername(wallet.GitHubUsername),
 			wallet.RecoverySalt, wallet.RecoveryHash, wallet.CreatedAt, wallet.LinkedAt,
 		); err != nil {
 			return fmt.Errorf("save wallet %s: %w", wallet.Address, err)

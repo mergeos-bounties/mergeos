@@ -52,7 +52,6 @@ type Config struct {
 	CryptoAsset            string
 	CryptoTokenContract    string
 	CryptoTokenDecimals    int
-	CryptoWeiPerUSDCent    string
 	CryptoMinConfirmations int64
 	CryptoWebhookSecret    string
 
@@ -153,11 +152,10 @@ func LoadConfig() Config {
 		StripeWebhookSecret:  os.Getenv("STRIPE_WEBHOOK_SECRET"),
 
 		CryptoRPCURL:           os.Getenv("CRYPTO_RPC_URL"),
-		CryptoReceiver:         strings.ToLower(os.Getenv("CRYPTO_RECEIVER")),
-		CryptoAsset:            strings.ToLower(getenv("CRYPTO_ASSET", "native")),
-		CryptoTokenContract:    strings.ToLower(os.Getenv("CRYPTO_TOKEN_CONTRACT")),
+		CryptoReceiver:         normalizeWalletAddress(os.Getenv("CRYPTO_RECEIVER")),
+		CryptoAsset:            strings.ToLower(getenv("CRYPTO_ASSET", "spl")),
+		CryptoTokenContract:    normalizeWalletAddress(firstEnv("CRYPTO_TOKEN_MINT", "CRYPTO_TOKEN_CONTRACT")),
 		CryptoTokenDecimals:    int(getenvInt64("CRYPTO_TOKEN_DECIMALS", 6)),
-		CryptoWeiPerUSDCent:    os.Getenv("CRYPTO_WEI_PER_USD_CENT"),
 		CryptoMinConfirmations: getenvInt64("CRYPTO_MIN_CONFIRMATIONS", 1),
 		CryptoWebhookSecret:    os.Getenv("CRYPTO_WEBHOOK_SECRET"),
 
@@ -251,10 +249,10 @@ func (c Config) CryptoReady() bool {
 	if c.CryptoRPCURL == "" || c.CryptoReceiver == "" {
 		return false
 	}
-	if c.CryptoAsset == "erc20" {
-		return c.CryptoTokenContract != ""
+	if c.CryptoAsset != "" && c.CryptoAsset != "spl" {
+		return false
 	}
-	return c.CryptoWeiPerUSDCent != ""
+	return validWalletAddress(c.CryptoReceiver) && validWalletAddress(c.CryptoTokenContract)
 }
 
 func (c Config) StripeReady() bool {

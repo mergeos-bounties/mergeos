@@ -225,24 +225,11 @@ func trustedProxyIP(value string) bool {
 }
 
 var knownEnvNames = []string{
-	"ADMIN_AUTO_PROMOTE_FIRST_USER", "ADMIN_COMPANY_NAME", "ADMIN_DOMAIN", "ADMIN_EMAIL", "ADMIN_NAME", "ADMIN_PASSWORD",
-	"BOUNTY_ROOT", "DATABASE_URL", "DEV_PAYMENT_CODE", "DEV_PAYMENT_ENABLED",
-	"GEMINI_API_KEY", "GEMINI_API_KEYS", "GEMINI_REVIEW_MAX_PATCH_BYTES", "GEMINI_REVIEW_MODEL", "GEMINI_REVIEW_WEBHOOK_SECRET",
-	"GITHUB_APP_CLIENT_ID", "GITHUB_APP_CLIENT_SECRET", "GITHUB_APP_ID", "GITHUB_CLIENT_ID", "GITHUB_CLIENT_SECRET",
-	"GITHUB_OAUTH_CLIENT_ID", "GITHUB_OAUTH_CLIENT_SECRET", "GITHUB_OWNER", "GITHUB_OWNER_TYPE", "GITHUB_TOKEN",
-	"GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET",
-	"MERGEOS_ENV", "MERGEOS_GEMINI_API_KEY", "MERGEOS_GEMINI_API_KEYS", "MERGEOS_GEMINI_REVIEW_WEBHOOK_SECRET",
-	"MERGEOS_GITHUB_APP_CLIENT_ID", "MERGEOS_GITHUB_APP_CLIENT_SECRET", "MERGEOS_GITHUB_APP_ID",
-	"MERGEOS_GITHUB_OAUTH_CLIENT_ID", "MERGEOS_GITHUB_OAUTH_CLIENT_SECRET", "MERGEOS_GITHUB_TOKEN",
-	"MERGEOS_GOOGLE_CLIENT_ID", "MERGEOS_GOOGLE_CLIENT_SECRET", "MERGEOS_STATE_PATH",
+	"GITHUB_TOKEN", "MERGEOS_GITHUB_TOKEN", "TOKEN_SYMBOL",
+	"ADMIN_EMAIL", "ADMIN_PASSWORD",
 	"PAYPAL_CLIENT_ID", "PAYPAL_CLIENT_SECRET", "PAYPAL_ENV", "PAYPAL_ENVIRONMENT",
-	"PLATFORM_FEE_BPS", "PRIMARY_DOMAIN", "SCAN_DOMAIN",
-	"CRYPTO_ASSET", "CRYPTO_MIN_CONFIRMATIONS", "CRYPTO_RECEIVER", "CRYPTO_RPC_URL", "CRYPTO_TOKEN_CONTRACT",
-	"CRYPTO_TOKEN_DECIMALS", "CRYPTO_WEBHOOK_SECRET", "CRYPTO_WEI_PER_USD_CENT",
-	"SMTP_FROM", "SMTP_HOST", "SMTP_PASSWORD", "SMTP_PORT", "SMTP_USERNAME",
-	"SSL_EXPIRY_WARN_DAYS", "SSL_REVIEW_DOMAINS", "SSL_REVIEW_ENABLED", "SSL_REVIEW_INTERVAL_MINUTES",
-	"TOKEN_SYMBOL", "UPLOAD_ROOT",
-	"USDT_NETWORK", "USDT_PROVIDER_API_KEY", "USDT_PROVIDER_SECRET", "USDT_PROVIDER_URL", "USDT_RECEIVER", "USDT_RECEIVER_ADDRESS", "USDT_WEBHOOK_SECRET",
+	"CRYPTO_WEBHOOK_SECRET", "CRYPTO_TOKEN_MINT", "CRYPTO_TOKEN_CONTRACT",
+	"CRYPTO_RECEIVER", "SOLANA_RECEIVER_ADDRESS", "GEMINI_API_KEYS",
 }
 
 var runtimeEnvNames map[string]bool
@@ -357,7 +344,7 @@ func (s *Store) ListTestSettingsEntries() []*TestSettingsEntryResponse {
 func (s *Store) ResolveActiveTestSettings(integrationType string) ([]*TestSettingsEntrySecretResponse, error) {
 	integrationType = strings.ToLower(strings.TrimSpace(integrationType))
 	if !allowedIntegrationTypes[integrationType] {
-		return nil, fmt.Errorf("invalid integration_type %q: must be one of llm, paypal, usdt", integrationType)
+		return nil, fmt.Errorf("invalid integration_type %q: must be one of llm, paypal, solana_spl", integrationType)
 	}
 
 	s.mu.RLock()
@@ -380,9 +367,9 @@ func (s *Store) ResolveActiveTestSettings(integrationType string) ([]*TestSettin
 }
 
 var allowedIntegrationTypes = map[string]bool{
-	"llm":    true,
-	"paypal": true,
-	"usdt":   true,
+	"llm":        true,
+	"paypal":     true,
+	"solana_spl": true,
 }
 
 var allowedEntryStatuses = map[string]bool{
@@ -395,7 +382,7 @@ func (s *Store) AddTestSettingsEntry(req AddTestEntryRequest) (*TestSettingsEntr
 		return nil, errors.New("integration_type is required")
 	}
 	if !allowedIntegrationTypes[strings.ToLower(strings.TrimSpace(req.IntegrationType))] {
-		return nil, fmt.Errorf("invalid integration_type %q: must be one of llm, paypal, usdt", req.IntegrationType)
+		return nil, fmt.Errorf("invalid integration_type %q: must be one of llm, paypal, solana_spl", req.IntegrationType)
 	}
 	if strings.TrimSpace(req.SettingKey) == "" {
 		return nil, errors.New("setting_key is required")

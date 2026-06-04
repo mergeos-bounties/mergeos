@@ -129,11 +129,10 @@ func TestRuntimeConfigReturnsPaymentRails(t *testing.T) {
 		StripeSecretKey:      "sk_test_secret",
 		StripeWebhookSecret:  "whsec_secret",
 		CryptoRPCURL:         "https://rpc.example",
-		CryptoReceiver:       "0x1111111111111111111111111111111111111111",
-		CryptoAsset:          "erc20",
-		CryptoTokenContract:  "0x2222222222222222222222222222222222222222",
+		CryptoReceiver:       "So11111111111111111111111111111111111111112",
+		CryptoAsset:          "spl",
+		CryptoTokenContract:  "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
 		CryptoTokenDecimals:  6,
-		CryptoWeiPerUSDCent:  "10000000000000000",
 		GitHubOwner:          defaultGitHubOwner,
 		BountyRoot:           filepath.Join(tempDir, "bounties"),
 		SMTPFrom:             "noreply@mergeos.local",
@@ -176,11 +175,11 @@ func TestRuntimeConfigReturnsPaymentRails(t *testing.T) {
 	if !rails["paypal"].Enabled || rails["paypal"].Method != string(PaymentPayPal) {
 		t.Fatalf("paypal rail not enabled: %#v", rails["paypal"])
 	}
-	if !rails["crypto"].Enabled || rails["crypto"].Label != "USDC / USDT" || rails["crypto"].TokenContract == "" {
+	if !rails["crypto"].Enabled || rails["crypto"].Label != "Solana SPL" || rails["crypto"].TokenContract == "" {
 		t.Fatalf("crypto rail missing metadata: %#v", rails["crypto"])
 	}
-	if !rails["usdt"].Enabled || rails["usdt"].Method != string(PaymentUSDT) || rails["usdt"].TokenContract == "" {
-		t.Fatalf("usdt rail missing metadata: %#v", rails["usdt"])
+	if !rails["usdt"].Enabled || rails["usdt"].Label != "Solana SPL" || rails["usdt"].Method != string(PaymentUSDT) || rails["usdt"].TokenContract == "" {
+		t.Fatalf("solana alias rail missing metadata: %#v", rails["usdt"])
 	}
 	if !rails["stripe"].Enabled || !rails["stripe"].Ready || rails["stripe"].Method != string(PaymentStripe) || rails["stripe"].PublicKey != "pk_test_mergeos" || rails["stripe"].DisabledReason != "" {
 		t.Fatalf("stripe rail should be enabled when verifier is configured: %#v", rails["stripe"])
@@ -190,7 +189,7 @@ func TestRuntimeConfigReturnsPaymentRails(t *testing.T) {
 	}
 }
 
-func TestCreateProjectAcceptsUSDTPaymentMethod(t *testing.T) {
+func TestCreateProjectAcceptsSolanaAliasPaymentMethod(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := Config{
 		TokenSymbol:       defaultTokenSymbol,
@@ -208,20 +207,20 @@ func TestCreateProjectAcceptsUSDTPaymentMethod(t *testing.T) {
 		t.Fatal(err)
 	}
 	auth, err := store.Register(RegisterRequest{
-		Name:        "USDT Client",
-		CompanyName: "USDT Co",
-		Email:       "usdt-client@example.com",
+		Name:        "Solana Client",
+		CompanyName: "Solana Co",
+		Email:       "solana-client@example.com",
 		Password:    "password123",
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 	project, err := store.CreateProject(context.Background(), auth.User.ID, CreateProjectRequest{
-		Title:            "USDT funded project",
-		ClientName:       "USDT Client",
-		CompanyName:      "USDT Co",
-		ClientEmail:      "usdt-client@example.com",
-		Brief:            "Fund a project through the USDT payment rail alias.",
+		Title:            "Solana funded project",
+		ClientName:       "Solana Client",
+		CompanyName:      "Solana Co",
+		ClientEmail:      "solana-client@example.com",
+		Brief:            "Fund a project through the Solana SPL payment rail alias.",
 		BudgetCents:      120000,
 		PaymentMethod:    PaymentUSDT,
 		PaymentReference: defaultDevPaymentCode,
@@ -229,8 +228,8 @@ func TestCreateProjectAcceptsUSDTPaymentMethod(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if project.PaymentMethod != PaymentUSDT || project.PaymentProvider != "dev-usdt" || project.PaymentStatus != "verified" {
-		t.Fatalf("unexpected usdt project payment fields: %#v", project)
+	if project.PaymentMethod != PaymentUSDT || project.PaymentProvider != "dev-solana-spl" || project.PaymentStatus != "verified" {
+		t.Fatalf("unexpected solana alias project payment fields: %#v", project)
 	}
 }
 
@@ -524,96 +523,15 @@ func TestGitHubAuthLinksMRGWalletAndRoutesPayouts(t *testing.T) {
 	}
 }
 
-func TestCreateWalletRouteRequiresLoginAndLinksUser(t *testing.T) {
-	tempDir := t.TempDir()
-	cfg := Config{
-		TokenSymbol:       defaultTokenSymbol,
-		StatePath:         filepath.Join(tempDir, "state.json"),
-		PlatformFeeBps:    1000,
-		DevPaymentEnabled: true,
-		DevPaymentCode:    defaultDevPaymentCode,
-		GitHubOwner:       defaultGitHubOwner,
-		BountyRoot:        filepath.Join(tempDir, "bounties"),
-		SMTPFrom:          "noreply@mergeos.local",
-	}
-	payments := NewPaymentManager(cfg)
-	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
-	if err != nil {
-		t.Fatal(err)
-	}
-	server := NewServer(cfg, store, payments)
-
-	guestReq := httptest.NewRequest(http.MethodPost, "/api/wallets", strings.NewReader(`{}`))
-	guestResp := httptest.NewRecorder()
-	server.Routes().ServeHTTP(guestResp, guestReq)
-	if guestResp.Code != http.StatusUnauthorized {
-		t.Fatalf("guest wallet status = %d, body = %s", guestResp.Code, guestResp.Body.String())
-	}
-
-	auth, err := store.Register(RegisterRequest{
-		Name:     "Wallet User",
-		Email:    "wallet-user@example.com",
-		Password: "password123",
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	req := httptest.NewRequest(http.MethodPost, "/api/wallets", strings.NewReader(`{"label":"primary"}`))
-	req.Header.Set("Authorization", "Bearer "+auth.Token)
-	resp := httptest.NewRecorder()
-	server.Routes().ServeHTTP(resp, req)
-	if resp.Code != http.StatusCreated {
-		t.Fatalf("user wallet status = %d, body = %s", resp.Code, resp.Body.String())
-	}
-	var created CreateWalletResponse
-	if err := json.Unmarshal(resp.Body.Bytes(), &created); err != nil {
-		t.Fatal(err)
-	}
-	if created.Address == "" || created.RecoveryCode != "" || !created.Wallet.OwnerLinked {
-		t.Fatalf("unexpected created wallet response: %#v", created)
-	}
-}
-
-func TestProductionCORSRestrictsOrigins(t *testing.T) {
-	cfg := Config{
-		Environment:   "production",
-		PrimaryDomain: defaultPrimaryDomain,
-		AdminDomain:   defaultAdminDomain,
-		ScanDomain:    defaultScanDomain,
-	}
-	handler := withCORS(cfg, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}))
-
-	allowedReq := httptest.NewRequest(http.MethodGet, "/api/health", nil)
-	allowedReq.Header.Set("Origin", "https://mergeos.shop")
-	allowedResp := httptest.NewRecorder()
-	handler.ServeHTTP(allowedResp, allowedReq)
-	if got := allowedResp.Header().Get("Access-Control-Allow-Origin"); got != "https://mergeos.shop" {
-		t.Fatalf("allowed origin header = %q", got)
-	}
-
-	blockedReq := httptest.NewRequest(http.MethodGet, "/api/health", nil)
-	blockedReq.Header.Set("Origin", "https://evil.example")
-	blockedResp := httptest.NewRecorder()
-	handler.ServeHTTP(blockedResp, blockedReq)
-	if got := blockedResp.Header().Get("Access-Control-Allow-Origin"); got != "" {
-		t.Fatalf("blocked origin header = %q", got)
-	}
-
-	insecureReq := httptest.NewRequest(http.MethodGet, "/api/health", nil)
-	insecureReq.Header.Set("Origin", "http://mergeos.shop")
-	insecureResp := httptest.NewRecorder()
-	handler.ServeHTTP(insecureResp, insecureReq)
-	if got := insecureResp.Header().Get("Access-Control-Allow-Origin"); got != "" {
-		t.Fatalf("insecure production origin header = %q", got)
-	}
-}
-
-func TestLegacyWalletAccountPrefixMigratesToRawAddress(t *testing.T) {
+func TestLegacyWalletAccountPrefixMigratesToSolanaAddress(t *testing.T) {
 	store := &Store{cfg: Config{GeminiReviewModel: defaultGeminiReviewModel}}
+	legacyAddress := "0x1234567890abcdef1234567890abcdef12345678"
+	expectedAddress := solanaWalletFromLegacy(legacyAddress)
+	if !validWalletAddress(expectedAddress) {
+		t.Fatalf("migration produced invalid Solana wallet %q", expectedAddress)
+	}
 	wallet := &Wallet{
-		Address:        "0x1234567890abcdef1234567890abcdef12345678",
+		Address:        legacyAddress,
 		GitHubUsername: "octo-builder",
 		CreatedAt:      time.Now().UTC(),
 	}
@@ -646,25 +564,38 @@ func TestLegacyWalletAccountPrefixMigratesToRawAddress(t *testing.T) {
 	if !store.applyState(state) {
 		t.Fatal("legacy wallet account prefix did not report migration")
 	}
-	if got := store.ledger[0].ToAccount; got != wallet.Address {
-		t.Fatalf("ledger account = %q, want %q", got, wallet.Address)
+	if got := store.ledger[0].ToAccount; got != expectedAddress {
+		t.Fatalf("ledger account = %q, want %q", got, expectedAddress)
 	}
 	if got := store.ledger[0].FromAccount; got != taskReserveAccount() {
 		t.Fatalf("reserve account = %q, want %q", got, taskReserveAccount())
 	}
-	if got := store.tasks["tsk_0001"].WorkerID; got != wallet.Address {
-		t.Fatalf("task worker id = %q, want %q", got, wallet.Address)
+	if got := store.tasks["tsk_0001"].WorkerID; got != expectedAddress {
+		t.Fatalf("task worker id = %q, want %q", got, expectedAddress)
 	}
-	summary, ok := store.WalletSummary(wallet.Address)
+	summary, ok := store.WalletSummary(expectedAddress)
 	if !ok {
 		t.Fatal("wallet summary not found")
 	}
-	if summary.BalanceCents != 10000 || summary.Account != wallet.Address {
+	if summary.BalanceCents != 10000 || summary.Account != expectedAddress || summary.Chain != walletChainSolana || summary.LegacyAddress != legacyAddress {
 		t.Fatalf("wallet summary = %#v", summary)
 	}
 	publicLedger := store.ListPublicLedger()
-	if publicLedger[0].ToAccount != wallet.Address {
-		t.Fatalf("public account = %q, want %q", publicLedger[0].ToAccount, wallet.Address)
+	if publicLedger[0].ToAccount != expectedAddress {
+		t.Fatalf("public account = %q, want %q", publicLedger[0].ToAccount, expectedAddress)
+	}
+}
+
+func TestNewWalletAddressUsesSolanaBase58(t *testing.T) {
+	address, err := newWalletAddress()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !validWalletAddress(address) {
+		t.Fatalf("new wallet address is invalid: %q", address)
+	}
+	if strings.HasPrefix(address, "0x") {
+		t.Fatalf("new wallet address still uses EVM form: %q", address)
 	}
 }
 

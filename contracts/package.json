@@ -2,7 +2,7 @@
   "name": "@mergeos/contracts",
   "version": "0.1.0",
   "type": "module",
-  "description": "MergeOS MRG token, escrow, treasury, and payout contract sources.",
+  "description": "MergeOS Solana/Anchor MRG mint, escrow, payout, and legacy wallet migration program.",
   "scripts": {
     "test": "node --test"
   },
