@@ -1,0 +1,16 @@
+[features]
+seeds = false
+skip-lint = false
+
+[programs.localnet]
+mergeos_mrg = "4gUBWum3fGKfm7BeGXryzXjPDBDLfhVJRcjN5MPnfDNW"
+
+[registry]
+url = "https://api.apr.dev"
+
+[provider]
+cluster = "localnet"
+wallet = "~/.config/solana/id.json"
+
+[scripts]
+test = "node --test contracts/solana/test/idl.test.js"

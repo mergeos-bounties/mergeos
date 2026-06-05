@@ -1,0 +1,257 @@
+{
+  "version": "0.1.0",
+  "name": "mergeos_mrg",
+  "address": "4gUBWum3fGKfm7BeGXryzXjPDBDLfhVJRcjN5MPnfDNW",
+  "metadata": {
+    "protocol_version": "mergeos.solana-mrg-program.v1",
+    "token_symbol": "MRG",
+    "target_chain": "solana",
+    "legacy_chains": ["trc20", "evm"],
+    "public_idl_url": "https://mergeos.shop/contracts/solana/mergeos_mrg.v1.idl.json",
+    "wallet_migration_pda_seeds": [
+      "wallet-migration",
+      "legacy_chain",
+      "legacy_address_hash_bytes"
+    ],
+    "wallet_migration_pda_seed_formats": [
+      "utf8",
+      "utf8",
+      "bytes32:hex_decode(contract.args.legacy_address_hash)"
+    ],
+    "ledger_reference_format": "bytes32:hex_decode(entry_hash|public_hash|contract_reference)",
+    "legacy_chain_wire": {
+      "trc20": "LegacyChain::Trc20",
+      "evm": "LegacyChain::Evm"
+    }
+  },
+  "instructions": [
+    {
+      "name": "initializeTreasury",
+      "docs": ["Initialize MergeOS MRG treasury config and token metadata."],
+      "accounts": [
+        { "name": "authority", "isMut": true, "isSigner": true },
+        { "name": "tokenMint", "isMut": false, "isSigner": false },
+        { "name": "treasuryTokenAccount", "isMut": false, "isSigner": false },
+        {
+          "name": "treasuryConfig",
+          "isMut": true,
+          "isSigner": false,
+          "pda": { "seeds": [{ "kind": "const", "value": "treasury" }] }
+        },
+        { "name": "systemProgram", "isMut": false, "isSigner": false }
+      ],
+      "args": [
+        { "name": "tokenSymbol", "type": "string" }
+      ]
+    },
+    {
+      "name": "mintVerifiedMrg",
+      "docs": ["Mint MRG after MergeOS records a verified funding ledger row."],
+      "accounts": [
+        { "name": "authority", "isMut": true, "isSigner": true },
+        {
+          "name": "treasuryConfig",
+          "isMut": true,
+          "isSigner": false,
+          "pda": { "seeds": [{ "kind": "const", "value": "treasury" }] }
+        },
+        { "name": "tokenMint", "isMut": true, "isSigner": false },
+        { "name": "receiverTokenAccount", "isMut": true, "isSigner": false },
+        { "name": "tokenProgram", "isMut": false, "isSigner": false }
+      ],
+      "args": [
+        { "name": "ledgerReference", "type": { "array": ["u8", 32] } },
+        { "name": "amount", "type": "u64" }
+      ]
+    },
+    {
+      "name": "openEscrow",
+      "docs": ["Lock MRG into a project escrow vault keyed by a 32-byte project id."],
+      "accounts": [
+        { "name": "funder", "isMut": true, "isSigner": true },
+        {
+          "name": "treasuryConfig",
+          "isMut": true,
+          "isSigner": false,
+          "pda": { "seeds": [{ "kind": "const", "value": "treasury" }] }
+        },
+        { "name": "tokenMint", "isMut": false, "isSigner": false },
+        { "name": "funderTokenAccount", "isMut": true, "isSigner": false },
+        { "name": "escrowTokenAccount", "isMut": true, "isSigner": false },
+        {
+          "name": "escrowVault",
+          "isMut": true,
+          "isSigner": false,
+          "pda": {
+            "seeds": [
+              { "kind": "const", "value": "escrow" },
+              { "kind": "arg", "path": "projectId", "format": "bytes32" }
+            ]
+          }
+        },
+        { "name": "tokenProgram", "isMut": false, "isSigner": false },
+        { "name": "systemProgram", "isMut": false, "isSigner": false }
+      ],
+      "args": [
+        { "name": "projectId", "type": { "array": ["u8", 32] } },
+        { "name": "ledgerReference", "type": { "array": ["u8", 32] } },
+        { "name": "amount", "type": "u64" }
+      ]
+    },
+    {
+      "name": "releasePayout",
+      "docs": ["Release MRG from an escrow vault to a worker token account and record a payout receipt."],
+      "accounts": [
+        { "name": "authority", "isMut": true, "isSigner": true },
+        {
+          "name": "treasuryConfig",
+          "isMut": true,
+          "isSigner": false,
+          "pda": { "seeds": [{ "kind": "const", "value": "treasury" }] }
+        },
+        {
+          "name": "escrowVault",
+          "isMut": true,
+          "isSigner": false,
+          "pda": {
+            "seeds": [
+              { "kind": "const", "value": "escrow" },
+              { "kind": "account", "path": "escrowVault.projectId", "format": "bytes32" }
+            ]
+          }
+        },
+        { "name": "escrowTokenAccount", "isMut": true, "isSigner": false },
+        { "name": "worker", "isMut": false, "isSigner": false },
+        { "name": "workerTokenAccount", "isMut": true, "isSigner": false },
+        {
+          "name": "payoutReceipt",
+          "isMut": true,
+          "isSigner": false,
+          "pda": {
+            "seeds": [
+              { "kind": "const", "value": "payout" },
+              { "kind": "arg", "path": "payoutId", "format": "bytes32" }
+            ]
+          }
+        },
+        { "name": "tokenProgram", "isMut": false, "isSigner": false },
+        { "name": "systemProgram", "isMut": false, "isSigner": false }
+      ],
+      "args": [
+        { "name": "payoutId", "type": { "array": ["u8", 32] } },
+        { "name": "ledgerReference", "type": { "array": ["u8", 32] } },
+        { "name": "amount", "type": "u64" }
+      ]
+    },
+    {
+      "name": "registerLegacyWallet",
+      "docs": ["Register a legacy TRC20/EVM wallet hash against a Solana wallet for migration proof."],
+      "accounts": [
+        { "name": "owner", "isMut": true, "isSigner": true },
+        { "name": "solanaWallet", "isMut": false, "isSigner": false },
+        {
+          "name": "walletMigration",
+          "isMut": true,
+          "isSigner": false,
+          "pda": {
+            "seeds": [
+              { "kind": "const", "value": "wallet-migration" },
+              { "kind": "arg", "path": "legacyChain", "format": "utf8:seed()" },
+              { "kind": "arg", "path": "legacyAddressHash", "format": "bytes32" }
+            ]
+          }
+        },
+        { "name": "systemProgram", "isMut": false, "isSigner": false }
+      ],
+      "args": [
+        { "name": "legacyChain", "type": { "defined": "LegacyChain" } },
+        { "name": "legacyAddressHash", "type": { "array": ["u8", 32] } },
+        { "name": "solanaWallet", "type": "publicKey" }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "TreasuryConfig",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "authority", "type": "publicKey" },
+          { "name": "tokenMint", "type": "publicKey" },
+          { "name": "treasuryTokenAccount", "type": "publicKey" },
+          { "name": "tokenSymbol", "type": "string" },
+          { "name": "bump", "type": "u8" },
+          { "name": "createdAt", "type": "i64" },
+          { "name": "mintedAmount", "type": "u64" },
+          { "name": "escrowedAmount", "type": "u64" },
+          { "name": "releasedAmount", "type": "u64" }
+        ]
+      }
+    },
+    {
+      "name": "EscrowVault",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "projectId", "type": { "array": ["u8", 32] } },
+          { "name": "funder", "type": "publicKey" },
+          { "name": "tokenMint", "type": "publicKey" },
+          { "name": "escrowTokenAccount", "type": "publicKey" },
+          { "name": "openedLedgerReference", "type": { "array": ["u8", 32] } },
+          { "name": "openedAmount", "type": "u64" },
+          { "name": "remainingAmount", "type": "u64" },
+          { "name": "bump", "type": "u8" },
+          { "name": "updatedAt", "type": "i64" }
+        ]
+      }
+    },
+    {
+      "name": "PayoutReceipt",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "payoutId", "type": { "array": ["u8", 32] } },
+          { "name": "projectId", "type": { "array": ["u8", 32] } },
+          { "name": "worker", "type": "publicKey" },
+          { "name": "workerTokenAccount", "type": "publicKey" },
+          { "name": "ledgerReference", "type": { "array": ["u8", 32] } },
+          { "name": "amount", "type": "u64" },
+          { "name": "bump", "type": "u8" },
+          { "name": "releasedAt", "type": "i64" }
+        ]
+      }
+    },
+    {
+      "name": "WalletMigration",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "legacyChain", "type": { "defined": "LegacyChain" } },
+          { "name": "legacyAddressHash", "type": { "array": ["u8", 32] } },
+          { "name": "solanaWallet", "type": "publicKey" },
+          { "name": "owner", "type": "publicKey" },
+          { "name": "bump", "type": "u8" },
+          { "name": "registeredAt", "type": "i64" }
+        ]
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "LegacyChain",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          { "name": "Trc20" },
+          { "name": "Evm" }
+        ]
+      }
+    }
+  ],
+  "events": [
+    { "name": "MRGMinted" },
+    { "name": "EscrowOpened" },
+    { "name": "PayoutReleased" },
+    { "name": "LegacyWalletRegistered" }
+  ]
+}

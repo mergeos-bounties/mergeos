@@ -88,3 +88,13 @@ const pda = walletMigrationPDASeedMetadata('trc20', oldTronAddress);
 Contract references are deterministic 32-byte anchors for the Solana MRG program. Prefer public ledger `entry_hash` or `public_hash`; the helper hashes sanitized references only when a ledger hash is not available.
 
 Wallet migration PDA metadata uses `pda_seeds: ["wallet-migration", legacy_chain, "legacy_address_hash_bytes"]` plus `pda_seed_formats` so agents know the third seed must be decoded from `contract.args.legacy_address_hash` into raw 32-byte data before deriving the Solana PDA.
+
+The public Solana MRG program IDL is served at `/contracts/solana/mergeos_mrg.v1.idl.json`. It exposes:
+
+- `initializeTreasury`
+- `mintVerifiedMrg`
+- `openEscrow`
+- `releasePayout`
+- `registerLegacyWallet`
+
+`legacy_chain` remains a protocol string (`trc20` or `evm`), while the Anchor instruction maps it to `LegacyChain::Trc20` or `LegacyChain::Evm`. Ledger references and legacy address hashes are always 32 raw bytes on-chain, decoded from the 64-character hex values in protocol documents.

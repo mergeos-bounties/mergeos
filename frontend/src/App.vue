@@ -4683,6 +4683,10 @@
                 {{ publicContractsCopy.protocolAction }}
                 <Code2 :size="16" />
               </button>
+              <button class="secondary-button large" type="button" @click="openExternalURL(solanaMRGIDLPath)">
+                {{ publicContractsCopy.idlAction || 'Open Solana IDL' }}
+                <ExternalLink :size="16" />
+              </button>
               <button class="secondary-button large" type="button" @click="copyContractsProofPacket">
                 {{ publicContractsCopy.copyRoot }}
                 <Hash :size="16" />
@@ -7862,6 +7866,7 @@ import {
   CreditCard,
   Download,
   Eye,
+  ExternalLink,
   Filter,
   FileCheck2,
   FolderKanban,
@@ -9866,6 +9871,7 @@ const publicContractsTranslations = {
     body: 'Track the contract-facing economy from verified funding to token minting, escrow reserves, treasury fees, and released task rewards.',
     primaryAction: 'Open ledger proof',
     protocolAction: 'Open protocol',
+    idlAction: 'Open Solana IDL',
     copyRoot: 'Copy proof packet',
     statusValid: 'Proof valid',
     statusSyncing: 'Syncing',
@@ -10007,6 +10013,7 @@ const mergeIdeDownloadPath = `${mergeIdeReleasePath}/download/MergeIDE-Windows-x
 const mergeIdePreviewKitPath = '/downloads/mergeide-preview-kit.md';
 const mergeIdeDownloadFileName = 'MergeIDE-Windows-x64.exe';
 const mergeIdePreviewKitFileName = 'MergeIDE-Preview-Kit.md';
+const solanaMRGIDLPath = '/contracts/solana/mergeos_mrg.v1.idl.json';
 
 const publicMergeIdeTranslations = {
   'en-US': {
@@ -11621,6 +11628,15 @@ function contractFlowAmount(type = '') {
   return contractsFlowMap.value.get(type)?.amount || formatLedgerMRGFromCents(0);
 }
 const contractsArchitectureRows = computed(() => [
+  {
+    key: 'solana-program',
+    title: 'Solana MRG program',
+    body: 'Anchor-compatible IDL exposes treasury, MRG mint, escrow vault, payout receipt, and legacy wallet migration instructions.',
+    value: 'mergeos_mrg.v1',
+    meta: 'public IDL',
+    icon: Code2,
+    tone: 'green',
+  },
   {
     key: 'token',
     title: 'MRG token',

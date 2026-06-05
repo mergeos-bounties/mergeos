@@ -145,3 +145,21 @@ jobs:
       - name: Smoke MergeIDE CLI
         working-directory: MergeIDE
         run: node ./bin/mergeide.js --help
+
+  solana-contract:
+    name: Solana contract metadata
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Test Solana IDL
+        run: node --test contracts/solana/test/idl.test.js

@@ -28,7 +28,7 @@
     "status": { "enum": ["linked", "pending_contract_registration", "registered", "failed"] },
     "legacy_chain": { "enum": ["trc20", "evm"] },
     "legacy_address": { "type": "string", "minLength": 1, "maxLength": 120 },
-    "legacy_address_hash": { "type": "string", "minLength": 64, "maxLength": 64 },
+    "legacy_address_hash": { "type": "string", "minLength": 64, "maxLength": 64, "pattern": "^[0-9a-fA-F]{64}$" },
     "target_chain": { "const": "solana" },
     "target_address": { "type": "string", "minLength": 32, "maxLength": 96 },
     "target_account": { "type": "string", "minLength": 32, "maxLength": 96 },
@@ -73,7 +73,7 @@
           "required": ["legacy_chain", "legacy_address_hash", "solana_wallet"],
           "properties": {
             "legacy_chain": { "enum": ["trc20", "evm"] },
-            "legacy_address_hash": { "type": "string", "minLength": 64, "maxLength": 64 },
+            "legacy_address_hash": { "type": "string", "minLength": 64, "maxLength": 64, "pattern": "^[0-9a-fA-F]{64}$" },
             "solana_wallet": { "type": "string", "minLength": 32, "maxLength": 96 }
           }
         },

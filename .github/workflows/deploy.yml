@@ -44,6 +44,9 @@ jobs:
             scan/package-lock.json
             MergeIDE/package-lock.json
 
+      - name: Test Solana contract metadata
+        run: node --test contracts/solana/test/idl.test.js
+
       - name: Install frontend dependencies
         working-directory: frontend
         run: npm ci

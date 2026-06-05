@@ -265,6 +265,13 @@ func ProtocolManifest() ProtocolManifestResponse {
 			},
 			{
 				Method:      "GET",
+				Path:        "/contracts/solana/mergeos_mrg.v1.idl.json",
+				Protocol:    "mergeos.solana-mrg-program.v1",
+				Auth:        "none",
+				Description: "Public Anchor-compatible IDL for the Solana MRG treasury, escrow, payout, and wallet migration program.",
+			},
+			{
+				Method:      "GET",
 				Path:        "/api/public/protocol/events",
 				Protocol:    "mergeos.event.v1",
 				Auth:        "none",

@@ -641,6 +641,10 @@ func TestCreateWalletMigrationLinksLegacyTRC20ToSolanaMetadata(t *testing.T) {
 	if migration.TargetChain != walletChainSolana || !validWalletAddress(migration.TargetAddress) {
 		t.Fatalf("target wallet = %q/%q", migration.TargetChain, migration.TargetAddress)
 	}
+	user, ok := store.UserByToken(auth.Token)
+	if !ok || user.WalletAddress != migration.TargetAddress {
+		t.Fatalf("user wallet address = %#v, want %q", user, migration.TargetAddress)
+	}
 	if migration.TargetAddress == solanaWalletFromLegacy(legacyAddress) {
 		t.Fatalf("migration API used deterministic legacy-derived address %q instead of a user Solana wallet", migration.TargetAddress)
 	}

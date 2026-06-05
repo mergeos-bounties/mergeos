@@ -192,7 +192,7 @@ func (s *Store) CreateWalletMigration(userID string, req CreateWalletMigrationRe
 		wallet.GitHubID = strings.TrimSpace(user.GitHubID)
 		wallet.GitHubUsername = normalizeGitHubUsername(user.GitHubUsername)
 	}
-	user.WalletAddress = targetAddress
+	user.WalletAddress = wallet.Address
 
 	summary := s.walletSummaryLocked(wallet)
 	response := walletMigrationResponse(legacyChain, legacyAddress, summary, cfg, now)

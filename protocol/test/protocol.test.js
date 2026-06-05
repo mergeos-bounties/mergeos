@@ -2377,4 +2377,19 @@ test('validates wallet migration protocol documents', () => {
   assert.equal(invalid.valid, false);
   assert(invalid.errors.some((error) => error.path === 'target_chain'));
   assert(invalid.errors.some((error) => error.path === 'contract.pda_seed_formats[2]'));
+
+  const invalidHash = validateProtocolDocument({
+    ...migration,
+    legacy_address_hash: 'z'.repeat(64),
+    contract: {
+      ...migration.contract,
+      args: {
+        ...migration.contract.args,
+        legacy_address_hash: 'z'.repeat(64),
+      },
+    },
+  });
+  assert.equal(invalidHash.valid, false);
+  assert(invalidHash.errors.some((error) => error.path === 'legacy_address_hash'));
+  assert(invalidHash.errors.some((error) => error.path === 'contract.args.legacy_address_hash'));
 });

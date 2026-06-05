@@ -276,6 +276,9 @@ function validateString(value, schema, path, errors) {
   if (schema.maxLength !== undefined && value.length > schema.maxLength) {
     errors.push({ path, message: `must be at most ${schema.maxLength} characters` });
   }
+  if (schema.pattern !== undefined && !(new RegExp(schema.pattern).test(value))) {
+    errors.push({ path, message: `must match pattern ${schema.pattern}` });
+  }
   if (schema.format === 'date-time' && Number.isNaN(Date.parse(value))) {
     errors.push({ path, message: 'must be an ISO date-time string' });
   }
