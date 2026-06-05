@@ -4241,6 +4241,30 @@
               </article>
             </div>
 
+            <div class="home-mergeide-signal" aria-labelledby="home-mergeide-signal-title">
+              <span>
+                <Code2 :size="15" />
+                {{ publicMergeIdeCopy.homeEyebrow }}
+              </span>
+              <strong id="home-mergeide-signal-title">{{ publicMergeIdeCopy.homeTitle }}</strong>
+              <small>{{ publicMergeIdeCopy.downloadMeta }}</small>
+              <div>
+                <a
+                  class="home-mergeide-download"
+                  :href="mergeIdeDownloadPath"
+                  :download="mergeIdeDownloadFileName"
+                  @click="closeNavContextMenu"
+                >
+                  {{ publicMergeIdeCopy.downloadAction }}
+                  <Download :size="14" />
+                </a>
+                <button type="button" @click="openPublicPage('mergeide')">
+                  {{ publicMergeIdeCopy.openAction }}
+                  <ArrowRight :size="14" />
+                </button>
+              </div>
+            </div>
+
             <div class="home-system-signal" :aria-label="publicSystemBlueprintCopy.mapLabel">
               <span>{{ publicSystemBlueprintCopy.eyebrow }}</span>
               <strong>{{ publicSystemBlueprintCopy.title }}</strong>
