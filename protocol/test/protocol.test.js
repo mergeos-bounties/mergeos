@@ -43,6 +43,7 @@ test('loads stable task, workflow, ledger, and event schemas', () => {
     'mergeos.routing.v1',
     'mergeos.scan.v1',
     'mergeos.task-claim.v1',
+    'mergeos.task-submission.v1',
     'mergeos.task.v1',
     'mergeos.token-economy.v1',
     'mergeos.wallet-migration.v1',
@@ -759,7 +760,7 @@ test('validates public agent queue protocol documents', () => {
         work_packet: {
           claim_endpoint: '/api/tasks/prj_0001:12/claim',
           action_endpoint: '/api/projects/prj_0001/agent-actions',
-          submit_endpoint: '/api/projects/prj_0001/agent-actions',
+          submit_endpoint: '/api/tasks/prj_0001:12/submit',
           supervisor_agent_type: 'ceo-strategy-agent',
           subagent_type: 'qa-agent',
           design_review_agent: 'design-review-agent',
@@ -2049,6 +2050,59 @@ test('validates task claim protocol documents', () => {
   assert(invalid.errors.some((error) => error.path === 'status'));
   assert(invalid.errors.some((error) => error.path === 'worker_kind'));
   assert(invalid.errors.some((error) => error.path === 'reward_cents'));
+});
+
+test('validates task submission protocol documents', () => {
+  const now = '2026-06-05T00:00:00.000Z';
+  const submission = {
+    protocol_version: 'mergeos.task-submission.v1',
+    kind: 'task_submission',
+    id: 'submission:claim_public_1',
+    claim_id: 'claim_public_1',
+    task_id: 'tsk_0001',
+    project_id: 'prj_0001',
+    issue_number: 12,
+    title: 'Fix PayPal return capture',
+    status: 'submitted',
+    worker_kind: 'human',
+    worker_id: 'github:worker-dev',
+    pull_request_url: 'https://github.com/mergeos-bounties/mergeos/pull/12',
+    review_evidence_url: 'https://example.com/evidence/task-12',
+    review_notes: 'Acceptance criteria verified with frontend test evidence.',
+    submitted_at: now,
+    task: {
+      id: 'tsk_0001',
+      project_id: 'prj_0001',
+      issue_number: 12,
+      title: 'Fix PayPal return capture',
+      acceptance: 'Frontend test passes',
+      reward_cents: 5000,
+      required_worker_kind: 'human',
+      suggested_agent_type: '',
+      status: 'accepted',
+      worker_kind: 'human',
+      worker_id: 'github:worker-dev',
+      pull_request_url: 'https://github.com/mergeos-bounties/mergeos/pull/12',
+      review_evidence_url: 'https://example.com/evidence/task-12',
+      review_notes: 'Acceptance criteria verified with frontend test evidence.',
+      created_at: now,
+      accepted_at: now,
+      submitted_at: now,
+    },
+  };
+
+  assert.equal(validateProtocolDocument(submission).valid, true);
+
+  const invalid = validateProtocolDocument({
+    ...submission,
+    kind: 'task_claim',
+    status: 'accepted',
+    submitted_at: 'not-a-date',
+  });
+  assert.equal(invalid.valid, false);
+  assert(invalid.errors.some((error) => error.path === 'kind'));
+  assert(invalid.errors.some((error) => error.path === 'status'));
+  assert(invalid.errors.some((error) => error.path === 'submitted_at'));
 });
 
 test('validates project estimate protocol documents', () => {

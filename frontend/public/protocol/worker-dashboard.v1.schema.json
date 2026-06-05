@@ -51,9 +51,14 @@
           "reward_cents": { "type": "integer", "minimum": 0 },
           "worker_kind": { "enum": ["human", "agent", "hybrid"] },
           "agent_type": { "type": "string", "maxLength": 120 },
+          "status": { "enum": ["claimed", "submitted", "accepted"] },
           "proof_hash": { "type": "string", "maxLength": 128 },
           "issue_url": { "type": "string", "maxLength": 512 },
-          "accepted_at": { "type": "string", "format": "date-time" }
+          "pull_request_url": { "type": "string", "maxLength": 512 },
+          "review_evidence_url": { "type": "string", "maxLength": 512 },
+          "review_notes": { "type": "string", "maxLength": 2000 },
+          "accepted_at": { "type": "string", "format": "date-time" },
+          "submitted_at": { "type": "string", "format": "date-time" }
         }
       }
     },

@@ -102,6 +102,7 @@ func agentQueueTaskRow(bounty *MarketplaceBounty) AgentQueueTask {
 		agentType = "general-ai-agent"
 	}
 	claimEndpoint := "/api/tasks/" + bountyID + "/claim"
+	submitEndpoint := "/api/tasks/" + bountyID + "/submit"
 	actionEndpoint := "/api/projects/" + bounty.ProjectID + "/agent-actions"
 	protocolURL := "/api/public/protocol/tasks?task_id=" + bountyID
 	contextURLs := map[string]string{
@@ -122,7 +123,7 @@ func agentQueueTaskRow(bounty *MarketplaceBounty) AgentQueueTask {
 	workPacket := AgentWorkPacket{
 		ClaimEndpoint:       claimEndpoint,
 		ActionEndpoint:      actionEndpoint,
-		SubmitEndpoint:      actionEndpoint,
+		SubmitEndpoint:      submitEndpoint,
 		SupervisorAgentType: ceoAgentType,
 		SubagentType:        agentType,
 		DesignReviewAgent:   designReviewAgentType,
@@ -134,7 +135,8 @@ func agentQueueTaskRow(bounty *MarketplaceBounty) AgentQueueTask {
 			{Step: 3, Action: "design_review", Label: "Design Review Agent checks UX, responsive layout, and visual quality", Method: "POST", Endpoint: actionEndpoint},
 			{Step: 4, Action: "claim_task", Label: "Claim bounty lane", Method: "POST", Endpoint: claimEndpoint},
 			{Step: 5, Action: "run_checks", Label: "Run review, test, generation, or deployment checks", Method: "POST", Endpoint: actionEndpoint},
-			{Step: 6, Action: "attach_evidence", Label: "Attach evidence to live agent log", Method: "POST", Endpoint: actionEndpoint},
+			{Step: 6, Action: "attach_evidence", Label: "Attach agent check evidence to the live log", Method: "POST", Endpoint: actionEndpoint},
+			{Step: 7, Action: "submit_review", Label: "Submit final PR and review evidence", Method: "POST", Endpoint: submitEndpoint},
 		},
 		ActionPayloads: agentQueueActionPayloads(bounty, actionEndpoint, contextURLs),
 	}

@@ -1042,7 +1042,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 	if payload.ProtocolVersion != "mergeos.protocol.manifest.v1" || payload.Kind != "protocol_manifest" {
 		t.Fatalf("unexpected manifest header: %#v", payload)
 	}
-	if len(payload.Schemas) != 32 {
+	if len(payload.Schemas) != 33 {
 		t.Fatalf("manifest schemas = %d: %#v", len(payload.Schemas), payload.Schemas)
 	}
 	schemas := map[string]bool{}
@@ -1051,7 +1051,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 		schemas[schema.Version] = true
 		descriptions[schema.Version] = schema.Description
 	}
-	for _, required := range []string{"mergeos.task.v1", "mergeos.task-claim.v1", "mergeos.agent.v1", "mergeos.contributor.v1", "mergeos.agent-action.v1", "mergeos.agent-queue.v1", "mergeos.agent-runbook.v1", "mergeos.marketplace.v1", "mergeos.live-feed.v1", "mergeos.workflow.v1", "mergeos.estimate.v1", "mergeos.wallet-migration.v1", "mergeos.release-artifact.v1", "mergeos.repo-import.v1", "mergeos.repo-sync.v1", "mergeos.dispute.v1", "mergeos.proposal.v1", "mergeos.ai-workflow.v1", "mergeos.event.v1", "mergeos.ledger.v1", "mergeos.ledger-proof.v1", "mergeos.token-economy.v1", "mergeos.escrow.v1", "mergeos.payouts.v1", "mergeos.payout-release.v1", "mergeos.deployment.v1", "mergeos.pr-monitor.v1", "mergeos.scan.v1", "mergeos.customer-dashboard.v1", "mergeos.worker-dashboard.v1", "mergeos.routing.v1", "mergeos.admin-ops.v1"} {
+	for _, required := range []string{"mergeos.task.v1", "mergeos.task-claim.v1", "mergeos.task-submission.v1", "mergeos.agent.v1", "mergeos.contributor.v1", "mergeos.agent-action.v1", "mergeos.agent-queue.v1", "mergeos.agent-runbook.v1", "mergeos.marketplace.v1", "mergeos.live-feed.v1", "mergeos.workflow.v1", "mergeos.estimate.v1", "mergeos.wallet-migration.v1", "mergeos.release-artifact.v1", "mergeos.repo-import.v1", "mergeos.repo-sync.v1", "mergeos.dispute.v1", "mergeos.proposal.v1", "mergeos.ai-workflow.v1", "mergeos.event.v1", "mergeos.ledger.v1", "mergeos.ledger-proof.v1", "mergeos.token-economy.v1", "mergeos.escrow.v1", "mergeos.payouts.v1", "mergeos.payout-release.v1", "mergeos.deployment.v1", "mergeos.pr-monitor.v1", "mergeos.scan.v1", "mergeos.customer-dashboard.v1", "mergeos.worker-dashboard.v1", "mergeos.routing.v1", "mergeos.admin-ops.v1"} {
 		if !schemas[required] {
 			t.Fatalf("manifest missing schema %s: %#v", required, payload.Schemas)
 		}
@@ -1104,6 +1104,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 		"POST /api/projects/evaluate-price",
 		"POST /api/tasks/{id}/accept",
 		"POST /api/tasks/{id}/claim",
+		"POST /api/tasks/{id}/submit",
 		"POST /api/wallets/migrations",
 		"GET /api/admin/ops-queue",
 	} {
@@ -1509,6 +1510,9 @@ func TestPublicMarketplaceRouteReturnsSanitizedLiveData(t *testing.T) {
 	}
 	if !strings.HasSuffix(firstPacket.ClaimEndpoint, "/claim") {
 		t.Fatalf("agent work packet claim endpoint should use claim alias: %#v", firstPacket)
+	}
+	if !strings.HasSuffix(firstPacket.SubmitEndpoint, "/submit") {
+		t.Fatalf("agent work packet submit endpoint should use task evidence route: %#v", firstPacket)
 	}
 	if firstPacket.ClaimEndpoint == "" || firstPacket.ActionEndpoint == "" || len(firstPacket.Runbook) < 4 || len(firstPacket.ActionPayloads) == 0 {
 		t.Fatalf("agent work packet missing executable details: %#v", firstPacket)
@@ -4254,6 +4258,163 @@ func TestWorkerDashboardRouteMatchesGitHubWorkerAndSanitizesData(t *testing.T) {
 	}
 	if len(payload.Proposals[0].EvidenceRequired) == 0 || !containsString(payload.Proposals[0].EvidenceRequired, "tests") {
 		t.Fatalf("worker proposal missing evidence requirements: %#v", payload.Proposals[0])
+	}
+}
+
+func TestTaskSubmissionRouteRecordsReviewEvidence(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:       defaultTokenSymbol,
+		StatePath:         filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:    1000,
+		DevPaymentEnabled: true,
+		DevPaymentCode:    defaultDevPaymentCode,
+		GitHubOwner:       defaultGitHubOwner,
+		BountyRoot:        filepath.Join(tempDir, "bounties"),
+		SMTPFrom:          "noreply@mergeos.local",
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	workerAuth, err := store.AuthenticateGitHub(GitHubAuthProfile{
+		ID:       "2001",
+		Username: "submitter-dev",
+		Name:     "Submitter Dev",
+		Email:    "submitter@example.com",
+	}, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	otherWorkerAuth, err := store.AuthenticateGitHub(GitHubAuthProfile{
+		ID:       "2002",
+		Username: "other-worker",
+		Name:     "Other Worker",
+		Email:    "other@example.com",
+	}, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	clientAuth, err := store.Register(RegisterRequest{
+		Name:        "Submission Client",
+		CompanyName: "Submission Client Co",
+		Email:       "submission-client@example.com",
+		Password:    "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	project, err := store.CreateProject(context.Background(), clientAuth.User.ID, CreateProjectRequest{
+		Title:            "Task submission proof",
+		ClientName:       "Submission Client",
+		CompanyName:      "Submission Client Co",
+		ClientEmail:      "submission-client@example.com",
+		Brief:            "Create a funded task that can be claimed and submitted with review evidence.",
+		BudgetCents:      200000,
+		PaymentMethod:    PaymentPayPal,
+		PaymentReference: defaultDevPaymentCode,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var humanTask *Task
+	for _, task := range project.Tasks {
+		if task.RequiredWorkerKind == WorkerHuman {
+			humanTask = task
+			break
+		}
+	}
+	if humanTask == nil {
+		t.Fatal("project did not create a human task")
+	}
+	if _, err := store.AcceptTask(humanTask.ID, AcceptTaskRequest{
+		WorkerKind: WorkerHuman,
+		WorkerID:   "github:submitter-dev",
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	server := NewServer(cfg, store, payments)
+	claimID := marketplaceBountyID(project.ID, humanTask.IssueNumber)
+	body := fmt.Sprintf(`{
+		"pull_request_url": "https://github.com/mergeos-bounties/mergeos/pull/%d#discussion",
+		"evidence_url": "https://example.com/evidence/%d?check=qa",
+		"notes": "Acceptance criteria verified with tests and review evidence."
+	}`, humanTask.IssueNumber, humanTask.IssueNumber)
+	submitReq := httptest.NewRequest(http.MethodPost, "/api/tasks/"+url.PathEscape(claimID)+"/submit", strings.NewReader(body))
+	submitReq.Header.Set("Authorization", "Bearer "+workerAuth.Token)
+	submitResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(submitResp, submitReq)
+	if submitResp.Code != http.StatusOK {
+		t.Fatalf("task submission status = %d, body = %s", submitResp.Code, submitResp.Body.String())
+	}
+	var submitted TaskSubmissionResponse
+	if err := json.Unmarshal(submitResp.Body.Bytes(), &submitted); err != nil {
+		t.Fatal(err)
+	}
+	if submitted.ProtocolVersion != "mergeos.task-submission.v1" || submitted.Kind != "task_submission" || submitted.Status != submittedTaskStatus {
+		t.Fatalf("unexpected submission response: %#v", submitted)
+	}
+	if submitted.ClaimID != claimID || submitted.PullRequestURL != fmt.Sprintf("https://github.com/mergeos-bounties/mergeos/pull/%d", humanTask.IssueNumber) {
+		t.Fatalf("submission did not normalize public claim/pr: %#v", submitted)
+	}
+	if submitted.ReviewEvidenceURL == "" || submitted.ReviewNotes == "" || submitted.SubmittedAt.IsZero() {
+		t.Fatalf("submission missing evidence fields: %#v", submitted)
+	}
+
+	dashboardReq := httptest.NewRequest(http.MethodGet, "/api/workers/me", nil)
+	dashboardReq.Header.Set("Authorization", "Bearer "+workerAuth.Token)
+	dashboardResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(dashboardResp, dashboardReq)
+	if dashboardResp.Code != http.StatusOK {
+		t.Fatalf("worker dashboard status = %d, body = %s", dashboardResp.Code, dashboardResp.Body.String())
+	}
+	var dashboard WorkerDashboardResponse
+	if err := json.Unmarshal(dashboardResp.Body.Bytes(), &dashboard); err != nil {
+		t.Fatal(err)
+	}
+	if len(dashboard.ClaimedTasks) != 1 || dashboard.ClaimedTasks[0].Status != submittedTaskStatus || dashboard.ClaimedTasks[0].SubmittedAt == nil {
+		t.Fatalf("worker dashboard did not expose submitted evidence: %#v", dashboard.ClaimedTasks)
+	}
+
+	feedReq := httptest.NewRequest(http.MethodGet, "/api/public/live-feed?limit=30", nil)
+	feedResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(feedResp, feedReq)
+	if feedResp.Code != http.StatusOK {
+		t.Fatalf("live feed status = %d, body = %s", feedResp.Code, feedResp.Body.String())
+	}
+	var feed PublicLiveFeedResponse
+	if err := json.Unmarshal(feedResp.Body.Bytes(), &feed); err != nil {
+		t.Fatal(err)
+	}
+	foundSubmitted := false
+	for _, item := range feed.Items {
+		if item.Type == "task_submitted" && item.TaskID == claimID && item.URL == submitted.PullRequestURL {
+			foundSubmitted = true
+		}
+		if strings.Contains(item.ID, humanTask.ID) {
+			t.Fatalf("live feed leaked internal task id: %#v", item)
+		}
+	}
+	if !foundSubmitted {
+		t.Fatalf("live feed missing task_submitted item: %#v", feed.Items)
+	}
+
+	forbiddenReq := httptest.NewRequest(http.MethodPost, "/api/tasks/"+url.PathEscape(claimID)+"/submit", strings.NewReader(body))
+	forbiddenReq.Header.Set("Authorization", "Bearer "+otherWorkerAuth.Token)
+	forbiddenResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(forbiddenResp, forbiddenReq)
+	if forbiddenResp.Code != http.StatusForbidden {
+		t.Fatalf("other worker submission status = %d, body = %s", forbiddenResp.Code, forbiddenResp.Body.String())
+	}
+
+	invalidReq := httptest.NewRequest(http.MethodPost, "/api/tasks/"+url.PathEscape(claimID)+"/submit", strings.NewReader(`{"pull_request_url":"https://example.com/not-a-pr"}`))
+	invalidReq.Header.Set("Authorization", "Bearer "+workerAuth.Token)
+	invalidResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(invalidResp, invalidReq)
+	if invalidResp.Code != http.StatusBadRequest {
+		t.Fatalf("invalid submission status = %d, body = %s", invalidResp.Code, invalidResp.Body.String())
 	}
 }
 

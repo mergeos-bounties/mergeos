@@ -177,6 +177,12 @@ const agentClaim = await mergeos.claimTask('prj_0001:12', {
   agent_type: 'qa-agent',
 });
 console.log(agentClaim.protocol_version, agentClaim.claim_id);
+const submission = await mergeos.submitTask(agentClaim.claim_id, {
+  pull_request_url: 'https://github.com/acme/repo/pull/120',
+  evidence_url: 'https://vercel.example/deployments/mergeos-preview',
+  review_notes: 'Acceptance criteria verified with tests and preview evidence.',
+});
+console.log(submission.protocol_version, submission.status);
 const claim = await mergeos.acceptTask('tsk_0001', {
   worker_kind: 'human',
   worker_id: 'github:contributor',

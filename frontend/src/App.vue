@@ -12954,7 +12954,7 @@ const publicSdkEndpointFallbackRows = [
   { id: 'workflow_protocol', method: 'GET', path: '/api/public/projects/{project_id}/workflow', category: 'workflow', title: 'Workflow graph', description: 'Fetch sanitized project task graph, stage contracts, and dependency edges.' },
   { id: 'workflow_pulse', method: 'GET', path: '/api/public/projects/{project_id}/ai-workflow', category: 'workflow', title: 'Workflow pulse', description: 'Read realtime project pulse across repo scan, routing, review, deployment, and payout proof.' },
   { id: 'repo_issues', method: 'POST', path: '/api/public/repo/issues', category: 'repository', title: 'Repository issue import', description: 'Import and score GitHub issues that can become estimated MergeOS work.' },
-  { id: 'submit_evidence', method: 'POST', path: '/api/projects/{project_id}/agent-actions', category: 'evidence', title: 'Submit evidence', description: 'Attach PR links, test output, deployment references, review notes, and acceptance proof.' },
+  { id: 'submit_evidence', method: 'POST', path: '/api/tasks/{task_id}/submit', category: 'evidence', title: 'Submit evidence', description: 'Attach PR links, evidence URLs, and review notes to a claimed bounty.' },
   { id: 'ledger_proof', method: 'GET', path: '/api/public/ledger/proof', category: 'ledger', title: 'Ledger proof', description: 'Fetch public ledger proof rows and public hashes.' },
   { id: 'token_economy', method: 'GET', path: '/api/public/token-economy', category: 'ledger', title: 'Token economy', description: 'Fetch MRG minting, escrow reserve, treasury, and payout totals.' },
 ];
@@ -13038,7 +13038,7 @@ const publicSdkSnippetRows = computed(() => {
       key: 'evidence',
       title: 'Submit delivery evidence',
       body: 'Authenticated clients attach PR, test, deployment, and review proof to the task packet.',
-      code: `await mergeos.tasks.submit(taskId, {\n  pull_request_url: pr.url,\n  tests: testReport.summary,\n  deployment_url: deploy.url,\n  review_notes: 'Acceptance criteria verified.'\n});`,
+      code: `await mergeos.submitTask(taskId, {\n  pull_request_url: pr.url,\n  evidence_url: deploy.url,\n  review_notes: 'Acceptance criteria verified.'\n});`,
     },
   ];
 });
@@ -25785,8 +25785,8 @@ function mapDashboardWorkflowPulseStage(stage = {}) {
 }
 
 function mapWorkerClaimedTask(task = {}) {
-  const status = task.status || (task.accepted_at ? 'accepted' : 'claimed');
-  const when = formatLedgerDateTime(task.accepted_at || task.submitted_at || task.claimed_at);
+  const status = String(task.status || (task.submitted_at ? 'submitted' : 'claimed')).toLowerCase();
+  const when = formatLedgerDateTime(task.submitted_at || task.accepted_at || task.claimed_at);
   const pullRequestURL = task.pull_request_url || '';
   const reviewEvidenceURL = task.review_evidence_url || '';
   return {
@@ -25807,7 +25807,7 @@ function mapWorkerClaimedTask(task = {}) {
     reviewNotes: task.review_notes || '',
     submittedAt: task.submitted_at || '',
     reviewURL: pullRequestURL || reviewEvidenceURL || '',
-    canSubmitReview: status !== 'accepted',
+    canSubmitReview: status === 'claimed',
   };
 }
 

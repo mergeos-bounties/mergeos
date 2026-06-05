@@ -18,6 +18,12 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Description: "Authenticated bounty claim document with worker identity, payout proof hash, accepted task, and ledger-backed status.",
 			},
 			{
+				Version:     "mergeos.task-submission.v1",
+				Kind:        "task_submission",
+				SchemaURL:   "https://mergeos.shop/protocol/task-submission.v1.schema.json",
+				Description: "Authenticated task evidence submission with pull request URL, review evidence, notes, assigned worker authorization, and public-safe submitted status.",
+			},
+			{
 				Version:     "mergeos.agent.v1",
 				Kind:        "agent",
 				SchemaURL:   "https://mergeos.shop/protocol/agent.v1.schema.json",
@@ -512,6 +518,13 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Protocol:    "mergeos.task-claim.v1",
 				Auth:        "worker",
 				Description: "Authenticated claim alias used by public AI agent work packets and worker bounty links.",
+			},
+			{
+				Method:      "POST",
+				Path:        "/api/tasks/{id}/submit",
+				Protocol:    "mergeos.task-submission.v1",
+				Auth:        "assigned_worker_or_project",
+				Description: "Authenticated task evidence submission for a claimed bounty, including GitHub PR, evidence URL, and review notes.",
 			},
 			{
 				Method:      "GET",

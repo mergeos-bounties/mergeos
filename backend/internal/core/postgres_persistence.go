@@ -332,7 +332,8 @@ ORDER BY created_at, id`)
 func (p *postgresPersistence) loadTasks(ctx context.Context, state *persistedState, projects map[string]*Project) error {
 	rows, err := p.db.QueryContext(ctx, `
 SELECT id, project_id, issue_number, title, acceptance, reward_cents, required_worker_kind, suggested_agent_type, bounty_type,
-       status, worker_kind, worker_id, agent_type, proof_hash, issue_url, issue_state, created_at, accepted_at
+       status, worker_kind, worker_id, agent_type, proof_hash, issue_url, issue_state,
+       pull_request_url, review_evidence_url, review_notes, created_at, accepted_at, submitted_at
 FROM tasks
 ORDER BY project_id, issue_number, created_at, id`)
 	if err != nil {
@@ -343,14 +344,17 @@ ORDER BY project_id, issue_number, created_at, id`)
 	for rows.Next() {
 		task := &Task{}
 		var acceptedAt sql.NullTime
+		var submittedAt sql.NullTime
 		if err := rows.Scan(
 			&task.ID, &task.ProjectID, &task.IssueNumber, &task.Title, &task.Acceptance, &task.RewardCents,
 			&task.RequiredWorkerKind, &task.SuggestedAgentType, &task.BountyType, &task.Status, &task.WorkerKind, &task.WorkerID,
-			&task.AgentType, &task.ProofHash, &task.IssueURL, &task.IssueState, &task.CreatedAt, &acceptedAt,
+			&task.AgentType, &task.ProofHash, &task.IssueURL, &task.IssueState, &task.PullRequestURL, &task.ReviewEvidenceURL,
+			&task.ReviewNotes, &task.CreatedAt, &acceptedAt, &submittedAt,
 		); err != nil {
 			return fmt.Errorf("scan task: %w", err)
 		}
 		task.AcceptedAt = timePtr(acceptedAt)
+		task.SubmittedAt = timePtr(submittedAt)
 		state.Tasks = append(state.Tasks, task)
 		if project, ok := projects[task.ProjectID]; ok {
 			taskCopy := *task
@@ -738,14 +742,17 @@ func saveTasks(ctx context.Context, tx *sql.Tx, tasks []*Task) error {
 		if _, err := tx.ExecContext(ctx, `
 INSERT INTO tasks (
   id, project_id, issue_number, title, acceptance, reward_cents, required_worker_kind, suggested_agent_type, bounty_type,
-  status, worker_kind, worker_id, agent_type, proof_hash, issue_url, issue_state, created_at, accepted_at
+  status, worker_kind, worker_id, agent_type, proof_hash, issue_url, issue_state,
+  pull_request_url, review_evidence_url, review_notes, created_at, accepted_at, submitted_at
 ) VALUES (
   $1, $2, $3, $4, $5, $6, $7, $8,
-  $9, $10, $11, $12, $13, $14, $15, $16, $17, $18
+  $9, $10, $11, $12, $13, $14, $15, $16,
+  $17, $18, $19, $20, $21, $22
 )`,
 			task.ID, task.ProjectID, task.IssueNumber, task.Title, task.Acceptance, task.RewardCents, task.RequiredWorkerKind,
 			task.SuggestedAgentType, task.BountyType, task.Status, task.WorkerKind, task.WorkerID, task.AgentType, task.ProofHash,
-			task.IssueURL, normalizeIssueState(task.IssueState), task.CreatedAt, task.AcceptedAt,
+			task.IssueURL, normalizeIssueState(task.IssueState), task.PullRequestURL, task.ReviewEvidenceURL, task.ReviewNotes,
+			task.CreatedAt, task.AcceptedAt, task.SubmittedAt,
 		); err != nil {
 			return fmt.Errorf("save task %s: %w", task.ID, err)
 		}

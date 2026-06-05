@@ -205,8 +205,12 @@ type Task struct {
 	ProofHash          string     `json:"proof_hash,omitempty"`
 	IssueURL           string     `json:"issue_url,omitempty"`
 	IssueState         string     `json:"issue_state,omitempty"`
+	PullRequestURL     string     `json:"pull_request_url,omitempty"`
+	ReviewEvidenceURL  string     `json:"review_evidence_url,omitempty"`
+	ReviewNotes        string     `json:"review_notes,omitempty"`
 	CreatedAt          time.Time  `json:"created_at"`
 	AcceptedAt         *time.Time `json:"accepted_at,omitempty"`
+	SubmittedAt        *time.Time `json:"submitted_at,omitempty"`
 }
 
 type LedgerEntry struct {
@@ -518,6 +522,34 @@ type TaskClaimResponse struct {
 	ProofHash       string     `json:"proof_hash,omitempty"`
 	AcceptedAt      *time.Time `json:"accepted_at,omitempty"`
 	Task            Task       `json:"task"`
+}
+
+type TaskSubmissionRequest struct {
+	PullRequestURL    string `json:"pull_request_url"`
+	EvidenceURL       string `json:"evidence_url"`
+	ReviewEvidenceURL string `json:"review_evidence_url"`
+	Notes             string `json:"notes"`
+	ReviewNotes       string `json:"review_notes"`
+}
+
+type TaskSubmissionResponse struct {
+	ProtocolVersion   string     `json:"protocol_version"`
+	Kind              string     `json:"kind"`
+	ID                string     `json:"id"`
+	ClaimID           string     `json:"claim_id"`
+	TaskID            string     `json:"task_id"`
+	ProjectID         string     `json:"project_id"`
+	IssueNumber       int        `json:"issue_number,omitempty"`
+	Title             string     `json:"title"`
+	Status            string     `json:"status"`
+	WorkerKind        WorkerKind `json:"worker_kind"`
+	WorkerID          string     `json:"worker_id"`
+	AgentType         string     `json:"agent_type,omitempty"`
+	PullRequestURL    string     `json:"pull_request_url,omitempty"`
+	ReviewEvidenceURL string     `json:"review_evidence_url,omitempty"`
+	ReviewNotes       string     `json:"review_notes,omitempty"`
+	SubmittedAt       time.Time  `json:"submitted_at"`
+	Task              Task       `json:"task"`
 }
 
 type AdminTaskPullRequestsResponse struct {
@@ -1771,18 +1803,23 @@ type WorkerStats struct {
 }
 
 type WorkerClaimedTask struct {
-	ID           string     `json:"id"`
-	ProjectID    string     `json:"project_id"`
-	ProjectTitle string     `json:"project_title"`
-	IssueNumber  int        `json:"issue_number"`
-	Title        string     `json:"title"`
-	Acceptance   string     `json:"acceptance"`
-	RewardCents  int64      `json:"reward_cents"`
-	WorkerKind   WorkerKind `json:"worker_kind"`
-	AgentType    string     `json:"agent_type,omitempty"`
-	ProofHash    string     `json:"proof_hash,omitempty"`
-	IssueURL     string     `json:"issue_url,omitempty"`
-	AcceptedAt   *time.Time `json:"accepted_at,omitempty"`
+	ID                string     `json:"id"`
+	ProjectID         string     `json:"project_id"`
+	ProjectTitle      string     `json:"project_title"`
+	IssueNumber       int        `json:"issue_number"`
+	Title             string     `json:"title"`
+	Acceptance        string     `json:"acceptance"`
+	RewardCents       int64      `json:"reward_cents"`
+	WorkerKind        WorkerKind `json:"worker_kind"`
+	AgentType         string     `json:"agent_type,omitempty"`
+	Status            string     `json:"status"`
+	ProofHash         string     `json:"proof_hash,omitempty"`
+	IssueURL          string     `json:"issue_url,omitempty"`
+	PullRequestURL    string     `json:"pull_request_url,omitempty"`
+	ReviewEvidenceURL string     `json:"review_evidence_url,omitempty"`
+	ReviewNotes       string     `json:"review_notes,omitempty"`
+	AcceptedAt        *time.Time `json:"accepted_at,omitempty"`
+	SubmittedAt       *time.Time `json:"submitted_at,omitempty"`
 }
 
 type WorkerRewardEntry struct {

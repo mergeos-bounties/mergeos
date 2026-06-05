@@ -66,6 +66,10 @@ func (s *Store) PublicLiveFeed(limit int) PublicLiveFeedResponse {
 			if workerID := strings.ToLower(strings.TrimSpace(normalizeWorkerID(task.WorkerID))); workerID != "" {
 				activeContributors[workerID] = true
 			}
+			if task.SubmittedAt != nil {
+				touch(*task.SubmittedAt)
+				response.Items = append(response.Items, publicTaskSubmittedLiveFeedItem(task, project))
+			}
 			if task.AcceptedAt != nil {
 				touch(*task.AcceptedAt)
 			}
@@ -279,6 +283,32 @@ func publicTaskAcceptedLiveFeedItem(task *Task, project *Project) PublicLiveFeed
 	}
 }
 
+func publicTaskSubmittedLiveFeedItem(task *Task, project *Project) PublicLiveFeedItem {
+	projectID, projectTitle := publicLiveFeedProjectScope(task, project)
+	claimID := marketplaceBountyID(projectID, task.IssueNumber)
+	createdAt := task.CreatedAt
+	if task.SubmittedAt != nil {
+		createdAt = *task.SubmittedAt
+	}
+	return PublicLiveFeedItem{
+		ID:               publicLiveFeedTaskID("task-submitted", task),
+		Type:             "task_submitted",
+		Title:            fmt.Sprintf("Task #%d submitted", task.IssueNumber),
+		Body:             publicTaskSubmittedBody(task),
+		ProjectID:        projectID,
+		ProjectTitle:     projectTitle,
+		TaskID:           claimID,
+		Actor:            publicLiveFeedActor(task.WorkerID, task.AgentType),
+		AmountCents:      task.RewardCents,
+		Reference:        publicTaskSubmissionReference(task),
+		EvidenceRequired: publicTaskEvidenceRequiredForTask(task),
+		Evidence:         publicTaskSubmissionEvidence(task),
+		URL:              publicTaskSubmissionURL(task),
+		Status:           submittedTaskStatus,
+		CreatedAt:        createdAt,
+	}
+}
+
 func publicLedgerLiveFeedItem(entry LedgerEntry, projectIDs map[string]bool, taskProjectIDs map[string]string, projects map[string]*Project) PublicLiveFeedItem {
 	projectID, taskID := publicLedgerScope(entry, projectIDs, taskProjectIDs)
 	projectTitle := ""
@@ -479,6 +509,57 @@ func publicTaskReference(task *Task) string {
 		return fmt.Sprintf("issue:%d", task.IssueNumber)
 	}
 	return "task"
+}
+
+func publicTaskSubmissionReference(task *Task) string {
+	if url := publicTaskSubmissionURL(task); url != "" {
+		return url
+	}
+	return publicTaskReference(task)
+}
+
+func publicTaskSubmissionURL(task *Task) string {
+	if task == nil {
+		return ""
+	}
+	if url := publicLiveFeedURL(task.PullRequestURL); url != "" {
+		return url
+	}
+	return publicLiveFeedURL(task.ReviewEvidenceURL)
+}
+
+func publicTaskSubmittedBody(task *Task) string {
+	body := publicLiveFeedTaskBody(task)
+	if task == nil {
+		return body
+	}
+	switch {
+	case task.PullRequestURL != "" && task.ReviewEvidenceURL != "":
+		return body + " - PR and review evidence submitted."
+	case task.PullRequestURL != "":
+		return body + " - Pull request submitted for review."
+	case task.ReviewEvidenceURL != "":
+		return body + " - Evidence URL submitted for review."
+	default:
+		return body + " - Review notes submitted."
+	}
+}
+
+func publicTaskSubmissionEvidence(task *Task) []string {
+	if task == nil {
+		return []string{}
+	}
+	evidence := []string{}
+	if task.PullRequestURL != "" {
+		evidence = append(evidence, "pull_request:"+task.PullRequestURL)
+	}
+	if task.ReviewEvidenceURL != "" {
+		evidence = append(evidence, "evidence:"+task.ReviewEvidenceURL)
+	}
+	if task.ReviewNotes != "" {
+		evidence = append(evidence, "notes:"+protocolText(task.ReviewNotes, 180, ""))
+	}
+	return normalizeAgentActionTextList(evidence, 6, 220)
 }
 
 func publicLiveFeedTaskID(prefix string, task *Task) string {
@@ -804,6 +885,8 @@ func publicEventType(item PublicLiveFeedItem) string {
 		return "project.funded"
 	case "task_opened":
 		return "task.created"
+	case "task_submitted":
+		return "task.submitted"
 	case "task_accepted":
 		return "task.claimed"
 	case "deployment_validation":

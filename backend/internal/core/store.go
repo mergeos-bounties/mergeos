@@ -3272,19 +3272,28 @@ func workerIdentityHints(user *User) []WorkerIdentityHint {
 }
 
 func workerClaimedTaskRow(project *Project, task *Task) WorkerClaimedTask {
+	status := "claimed"
+	if task.SubmittedAt != nil {
+		status = submittedTaskStatus
+	}
 	return WorkerClaimedTask{
-		ID:           marketplaceBountyID(task.ProjectID, task.IssueNumber),
-		ProjectID:    task.ProjectID,
-		ProjectTitle: marketplaceProjectTitle(project),
-		IssueNumber:  task.IssueNumber,
-		Title:        task.Title,
-		Acceptance:   compactText(task.Acceptance),
-		RewardCents:  task.RewardCents,
-		WorkerKind:   task.WorkerKind,
-		AgentType:    task.AgentType,
-		ProofHash:    task.ProofHash,
-		IssueURL:     marketplacePublicRepoURL(task.IssueURL),
-		AcceptedAt:   task.AcceptedAt,
+		ID:                marketplaceBountyID(task.ProjectID, task.IssueNumber),
+		ProjectID:         task.ProjectID,
+		ProjectTitle:      marketplaceProjectTitle(project),
+		IssueNumber:       task.IssueNumber,
+		Title:             task.Title,
+		Acceptance:        compactText(task.Acceptance),
+		RewardCents:       task.RewardCents,
+		WorkerKind:        task.WorkerKind,
+		AgentType:         task.AgentType,
+		Status:            status,
+		ProofHash:         task.ProofHash,
+		IssueURL:          marketplacePublicRepoURL(task.IssueURL),
+		PullRequestURL:    task.PullRequestURL,
+		ReviewEvidenceURL: task.ReviewEvidenceURL,
+		ReviewNotes:       task.ReviewNotes,
+		AcceptedAt:        task.AcceptedAt,
+		SubmittedAt:       task.SubmittedAt,
 	}
 }
 

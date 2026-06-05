@@ -124,6 +124,12 @@
     },
     {
       "step": 4,
+      "method": "POST",
+      "endpoint": "/api/tasks/{id}/submit",
+      "description": "Submit final pull_request_url, evidence_url, and review_notes for the claimed task."
+    },
+    {
+      "step": 5,
       "method": "GET",
       "endpoint": "/api/public/ledger/proof",
       "description": "Verify public proof after acceptance or payout release."

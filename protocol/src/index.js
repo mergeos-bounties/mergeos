@@ -29,6 +29,7 @@ const schemaFiles = {
   'mergeos.routing.v1': '../schemas/routing.v1.schema.json',
   'mergeos.scan.v1': '../schemas/scan.v1.schema.json',
   'mergeos.task-claim.v1': '../schemas/task-claim.v1.schema.json',
+  'mergeos.task-submission.v1': '../schemas/task-submission.v1.schema.json',
   'mergeos.task.v1': '../schemas/task.v1.schema.json',
   'mergeos.token-economy.v1': '../schemas/token-economy.v1.schema.json',
   'mergeos.wallet-migration.v1': '../schemas/wallet-migration.v1.schema.json',
