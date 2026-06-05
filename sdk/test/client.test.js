@@ -181,6 +181,18 @@ test('builds and sends typed AI agent action helpers', async () => {
     pull_number: 12,
     labels: ['smoke'],
   });
+  assert.deepEqual(agentActionPayload('deploy', {
+    durationMillis: Infinity,
+    pullNumber: '12.9',
+  }), {
+    action: 'deploy',
+    agent_type: 'deployment-agent',
+    status: 'processed',
+    reference_url: '',
+    duration_millis: 0,
+    pull_number: 12,
+    labels: [],
+  });
 
   const fetchImpl = fakeFetch([
     { status: 201, body: { log: { action: 'review' } } },

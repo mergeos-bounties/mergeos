@@ -560,10 +560,22 @@ export function agentActionPayload(action, payload = {}) {
     agent_type: payload.agent_type || payload.agentType || defaultAgentTypeForAction(normalizedAction),
     status: payload.status || 'processed',
     reference_url: referenceURL,
-    duration_millis: Number(durationMillis) > 0 ? Number(durationMillis) : 0,
-    pull_number: Number(pullNumber) > 0 ? Number(pullNumber) : 0,
+    duration_millis: nonNegativeInteger(durationMillis),
+    pull_number: positiveInteger(pullNumber),
     labels: Array.isArray(payload.labels) ? payload.labels : [],
   };
+}
+
+function nonNegativeInteger(value) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) return 0;
+  return Math.floor(parsed);
+}
+
+function positiveInteger(value) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) return 0;
+  return Math.floor(parsed);
 }
 
 export function normalizeAgentAction(action = '') {
