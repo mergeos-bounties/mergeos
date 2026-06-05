@@ -5,6 +5,7 @@ import { assertProtocolDocument, protocolSchemas, schemaForProtocol, validatePro
 test('loads stable task, workflow, ledger, and event schemas', () => {
   assert.deepEqual(Object.keys(protocolSchemas).sort(), [
     'mergeos.agent.v1',
+    'mergeos.customer-dashboard.v1',
     'mergeos.event.v1',
     'mergeos.ledger.v1',
     'mergeos.scan.v1',
@@ -13,6 +14,147 @@ test('loads stable task, workflow, ledger, and event schemas', () => {
     'mergeos.workflow.v1',
   ]);
   assert.equal(schemaForProtocol('mergeos.task.v1').title, 'MergeOS Task v1');
+});
+
+test('validates customer dashboard protocol documents', () => {
+  const now = '2026-06-05T00:00:00.000Z';
+  const dashboard = {
+    protocol_version: 'mergeos.customer-dashboard.v1',
+    kind: 'customer_dashboard',
+    project: {
+      project_id: 'prj_0001',
+      title: 'Dashboard aggregate proof',
+      brief: 'Customer delivery workspace with escrow, PRs, tasks, and AI workflow.',
+      status: 'funded',
+      repo_provider: 'github',
+      repo_url: 'https://github.com/mergeos-bounties/mergeos',
+      bounty_repo_name: 'mergeos-bounties/mergeos',
+      budget_cents: 210000,
+      fee_cents: 21000,
+      work_pool_cents: 189000,
+      task_count: 3,
+      open_task_count: 2,
+      accepted_task_count: 1,
+      agent_task_count: 1,
+      human_task_count: 1,
+      hybrid_task_count: 1,
+      created_at: now,
+      updated_at: now,
+    },
+    escrow: {
+      project_id: 'prj_0001',
+      project_title: 'Dashboard aggregate proof',
+      token_symbol: 'MRG',
+      release_status: 'funded',
+      budget_cents: 210000,
+      fee_cents: 21000,
+      work_pool_cents: 189000,
+      project_reserve_cents: 210000,
+      task_reserve_cents: 189000,
+      task_payment_cents: 5000,
+      manual_credit_cents: 0,
+      released_cents: 5000,
+      remaining_cents: 184000,
+      overdrawn_cents: 0,
+      unallocated_cents: 0,
+      paid_task_count: 1,
+      open_task_count: 2,
+      updated_at: now,
+      tasks: [
+        {
+          task_id: 'tsk_0001',
+          issue_number: 1,
+          title: 'Wire dashboard data',
+          status: 'accepted',
+          release_status: 'released',
+          reward_cents: 5000,
+          paid_cents: 5000,
+          remaining_cents: 0,
+          overpaid_cents: 0,
+          worker_id: 'github:worker-dev',
+          updated_at: now,
+        },
+      ],
+    },
+    deployment: {
+      project_id: 'prj_0001',
+      project_title: 'Dashboard aggregate proof',
+      status: 'validating',
+      progress: 67,
+      updated_at: now,
+      stages: [
+        { id: 'deployment_handoff', title: 'Deployment handoff', body: 'Preview is linked.', status: 'complete', tone: 'success', updated_at: now },
+      ],
+      signals: [
+        { id: 'deployment:prj_0001', type: 'deployment_validation', title: 'Deployment', body: 'Preview validation is running.', status: 'validating', created_at: now },
+      ],
+    },
+    ai_workflow: {
+      project_id: 'prj_0001',
+      project_title: 'Dashboard aggregate proof',
+      status: 'orchestrating',
+      progress: 71,
+      current_step: 'pr_review',
+      task_count: 3,
+      agent_task_count: 1,
+      human_task_count: 1,
+      hybrid_task_count: 1,
+      ai_action_count: 2,
+      updated_at: now,
+      stages: [{ id: 'repo_import', title: 'Repo import', status: 'complete' }],
+      signals: [{ id: 'agent:review', type: 'agent_action', status: 'processed' }],
+    },
+    task_graph: {
+      project_id: 'prj_0001',
+      project_title: 'Dashboard aggregate proof',
+      status: 'active',
+      progress: 60,
+      updated_at: now,
+      stats: { node_count: 3, edge_count: 2, ready_count: 1, blocked_count: 0, complete_count: 1, open_count: 2 },
+      nodes: [{ id: 'n1', task_id: 'tsk_0001', title: 'Wire dashboard data' }],
+      edges: [{ id: 'e1', from: 'n1', to: 'n2', relation: 'sequence' }],
+    },
+    repository_scan: {
+      project_id: 'prj_0001',
+      project_title: 'Dashboard aggregate proof',
+      status: 'ready',
+      summary: 'Scanned repository context for issues and dependencies.',
+      stats: { file_count: 12, scanned_files: 10, skipped_files: 2, dependency_files: 1, finding_count: 1 },
+      languages: [{ language: 'Go', extension: '.go', file_count: 6 }],
+      dependencies: [{ path: 'package.json', ecosystem: 'npm', package_count: 4, has_lockfile: true }],
+      findings: [{ id: 'finding_1', severity: 'medium', category: 'quality', title: 'Add tests' }],
+      updated_at: now,
+    },
+    pull_requests: {
+      project_id: 'prj_0001',
+      project_title: 'Dashboard aggregate proof',
+      stats: {
+        task_count: 3,
+        linked_task_count: 1,
+        pull_request_count: 1,
+        open_pull_request_count: 1,
+        merged_pull_request_count: 0,
+        ready_count: 1,
+        needs_review_count: 0,
+        blocked_count: 0,
+        error_count: 0,
+      },
+      tasks: [{ task_id: 'tsk_0001', monitor_status: 'ready' }],
+      updated_at: now,
+    },
+    updated_at: now,
+  };
+
+  assert.equal(validateProtocolDocument(dashboard).valid, true);
+
+  const invalid = validateProtocolDocument({
+    ...dashboard,
+    kind: 'project_dashboard',
+    project: { ...dashboard.project, task_count: -1 },
+  });
+  assert.equal(invalid.valid, false);
+  assert(invalid.errors.some((error) => error.path === 'kind'));
+  assert(invalid.errors.some((error) => error.path === 'project.task_count'));
 });
 
 test('validates worker dashboard protocol documents', () => {

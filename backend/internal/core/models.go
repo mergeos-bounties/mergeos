@@ -902,6 +902,8 @@ type DeploymentSignal struct {
 }
 
 type ProjectDashboardResponse struct {
+	ProtocolVersion  string                        `json:"protocol_version"`
+	Kind             string                        `json:"kind"`
 	Project          ProjectDashboardOverview      `json:"project"`
 	Escrow           ProjectEscrowResponse         `json:"escrow"`
 	Deployment       ProjectDeploymentResponse     `json:"deployment"`

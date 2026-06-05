@@ -42,6 +42,12 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Description: "Repository scan findings for security, dependency, quality, and technical debt signals.",
 			},
 			{
+				Version:     "mergeos.customer-dashboard.v1",
+				Kind:        "customer_dashboard",
+				SchemaURL:   "https://mergeos.shop/protocol/customer-dashboard.v1.schema.json",
+				Description: "Authenticated customer delivery dashboard with project overview, escrow, deployment, AI workflow, task graph, repository scan, and PR monitor data.",
+			},
+			{
 				Version:     "mergeos.worker-dashboard.v1",
 				Kind:        "worker_dashboard",
 				SchemaURL:   "https://mergeos.shop/protocol/worker-dashboard.v1.schema.json",
@@ -103,6 +109,13 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Protocol:    "mergeos.scan.v1",
 				Auth:        "project",
 				Description: "Authenticated repository scan protocol document.",
+			},
+			{
+				Method:      "GET",
+				Path:        "/api/projects/{id}/dashboard",
+				Protocol:    "mergeos.customer-dashboard.v1",
+				Auth:        "project",
+				Description: "Authenticated customer dashboard for delivery status, escrow, workflow graph, repository scan, AI activity, and live PR monitoring.",
 			},
 			{
 				Method:      "GET",

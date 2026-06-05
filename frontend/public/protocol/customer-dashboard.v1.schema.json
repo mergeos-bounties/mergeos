@@ -1,0 +1,231 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mergeos.shop/protocol/customer-dashboard.v1.schema.json",
+  "title": "MergeOS Customer Dashboard v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["protocol_version", "kind", "project", "escrow", "deployment", "ai_workflow", "task_graph", "repository_scan", "pull_requests", "updated_at"],
+  "properties": {
+    "protocol_version": { "const": "mergeos.customer-dashboard.v1" },
+    "kind": { "const": "customer_dashboard" },
+    "project": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["project_id", "title", "brief", "status", "budget_cents", "fee_cents", "work_pool_cents", "task_count", "open_task_count", "accepted_task_count", "agent_task_count", "human_task_count", "hybrid_task_count", "created_at", "updated_at"],
+      "properties": {
+        "project_id": { "type": "string", "minLength": 1, "maxLength": 96 },
+        "title": { "type": "string", "minLength": 1, "maxLength": 240 },
+        "brief": { "type": "string", "maxLength": 4000 },
+        "site_type": { "type": "string", "maxLength": 120 },
+        "package_tier": { "type": "string", "maxLength": 120 },
+        "timeline": { "type": "string", "maxLength": 120 },
+        "status": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "repo_provider": { "type": "string", "maxLength": 80 },
+        "repo_url": { "type": "string", "maxLength": 512 },
+        "bounty_repo_name": { "type": "string", "maxLength": 240 },
+        "budget_cents": { "type": "integer", "minimum": 0 },
+        "fee_cents": { "type": "integer", "minimum": 0 },
+        "work_pool_cents": { "type": "integer", "minimum": 0 },
+        "task_count": { "type": "integer", "minimum": 0 },
+        "open_task_count": { "type": "integer", "minimum": 0 },
+        "accepted_task_count": { "type": "integer", "minimum": 0 },
+        "agent_task_count": { "type": "integer", "minimum": 0 },
+        "human_task_count": { "type": "integer", "minimum": 0 },
+        "hybrid_task_count": { "type": "integer", "minimum": 0 },
+        "created_at": { "type": "string", "format": "date-time" },
+        "updated_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "escrow": {
+      "type": "object",
+      "required": ["project_id", "project_title", "token_symbol", "release_status", "budget_cents", "fee_cents", "work_pool_cents", "released_cents", "remaining_cents", "paid_task_count", "open_task_count", "updated_at", "tasks"],
+      "properties": {
+        "project_id": { "type": "string", "minLength": 1, "maxLength": 96 },
+        "project_title": { "type": "string", "maxLength": 240 },
+        "token_symbol": { "type": "string", "minLength": 1, "maxLength": 16 },
+        "release_status": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "budget_cents": { "type": "integer", "minimum": 0 },
+        "fee_cents": { "type": "integer", "minimum": 0 },
+        "work_pool_cents": { "type": "integer", "minimum": 0 },
+        "project_reserve_cents": { "type": "integer", "minimum": 0 },
+        "task_reserve_cents": { "type": "integer", "minimum": 0 },
+        "task_payment_cents": { "type": "integer", "minimum": 0 },
+        "manual_credit_cents": { "type": "integer", "minimum": 0 },
+        "released_cents": { "type": "integer", "minimum": 0 },
+        "remaining_cents": { "type": "integer", "minimum": 0 },
+        "overdrawn_cents": { "type": "integer", "minimum": 0 },
+        "unallocated_cents": { "type": "integer", "minimum": 0 },
+        "paid_task_count": { "type": "integer", "minimum": 0 },
+        "open_task_count": { "type": "integer", "minimum": 0 },
+        "updated_at": { "type": "string", "format": "date-time" },
+        "tasks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["task_id", "issue_number", "title", "status", "release_status", "reward_cents", "paid_cents", "remaining_cents", "overpaid_cents", "updated_at"],
+            "properties": {
+              "task_id": { "type": "string", "minLength": 1, "maxLength": 96 },
+              "issue_number": { "type": "integer", "minimum": 0 },
+              "title": { "type": "string", "minLength": 1, "maxLength": 240 },
+              "status": { "type": "string", "minLength": 1, "maxLength": 80 },
+              "release_status": { "type": "string", "minLength": 1, "maxLength": 80 },
+              "reward_cents": { "type": "integer", "minimum": 0 },
+              "paid_cents": { "type": "integer", "minimum": 0 },
+              "remaining_cents": { "type": "integer", "minimum": 0 },
+              "overpaid_cents": { "type": "integer", "minimum": 0 },
+              "worker_id": { "type": "string", "maxLength": 160 },
+              "proof_hash": { "type": "string", "maxLength": 128 },
+              "issue_url": { "type": "string", "maxLength": 512 },
+              "updated_at": { "type": "string", "format": "date-time" }
+            }
+          }
+        }
+      }
+    },
+    "deployment": {
+      "type": "object",
+      "required": ["project_id", "project_title", "status", "progress", "updated_at", "stages", "signals"],
+      "properties": {
+        "project_id": { "type": "string", "minLength": 1, "maxLength": 96 },
+        "project_title": { "type": "string", "maxLength": 240 },
+        "status": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "progress": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "updated_at": { "type": "string", "format": "date-time" },
+        "stages": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "title", "body", "status", "tone", "updated_at"],
+            "properties": {
+              "id": { "type": "string", "minLength": 1, "maxLength": 120 },
+              "title": { "type": "string", "minLength": 1, "maxLength": 160 },
+              "body": { "type": "string", "maxLength": 1000 },
+              "status": { "type": "string", "minLength": 1, "maxLength": 80 },
+              "tone": { "type": "string", "maxLength": 40 },
+              "source_task_issue_number": { "type": "integer", "minimum": 0 },
+              "reference": { "type": "string", "maxLength": 512 },
+              "url": { "type": "string", "maxLength": 512 },
+              "updated_at": { "type": "string", "format": "date-time" }
+            }
+          }
+        },
+        "signals": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "type", "title", "body", "status", "created_at"],
+            "properties": {
+              "id": { "type": "string", "minLength": 1, "maxLength": 160 },
+              "type": { "type": "string", "minLength": 1, "maxLength": 120 },
+              "title": { "type": "string", "minLength": 1, "maxLength": 160 },
+              "body": { "type": "string", "maxLength": 1000 },
+              "status": { "type": "string", "minLength": 1, "maxLength": 80 },
+              "reference": { "type": "string", "maxLength": 512 },
+              "url": { "type": "string", "maxLength": 512 },
+              "created_at": { "type": "string", "format": "date-time" }
+            }
+          }
+        }
+      }
+    },
+    "ai_workflow": {
+      "type": "object",
+      "required": ["project_id", "project_title", "status", "progress", "task_count", "agent_task_count", "human_task_count", "hybrid_task_count", "ai_action_count", "updated_at", "stages", "signals"],
+      "properties": {
+        "project_id": { "type": "string", "minLength": 1, "maxLength": 96 },
+        "project_title": { "type": "string", "maxLength": 240 },
+        "status": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "progress": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "current_step": { "type": "string", "maxLength": 120 },
+        "task_count": { "type": "integer", "minimum": 0 },
+        "agent_task_count": { "type": "integer", "minimum": 0 },
+        "human_task_count": { "type": "integer", "minimum": 0 },
+        "hybrid_task_count": { "type": "integer", "minimum": 0 },
+        "ai_action_count": { "type": "integer", "minimum": 0 },
+        "updated_at": { "type": "string", "format": "date-time" },
+        "stages": { "type": "array", "items": { "type": "object" } },
+        "signals": { "type": "array", "items": { "type": "object" } }
+      }
+    },
+    "task_graph": {
+      "type": "object",
+      "required": ["project_id", "project_title", "status", "progress", "stats", "nodes", "edges", "updated_at"],
+      "properties": {
+        "project_id": { "type": "string", "minLength": 1, "maxLength": 96 },
+        "project_title": { "type": "string", "maxLength": 240 },
+        "status": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "progress": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "updated_at": { "type": "string", "format": "date-time" },
+        "stats": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["node_count", "edge_count", "ready_count", "blocked_count", "complete_count", "open_count"],
+          "properties": {
+            "node_count": { "type": "integer", "minimum": 0 },
+            "edge_count": { "type": "integer", "minimum": 0 },
+            "ready_count": { "type": "integer", "minimum": 0 },
+            "blocked_count": { "type": "integer", "minimum": 0 },
+            "complete_count": { "type": "integer", "minimum": 0 },
+            "open_count": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "nodes": { "type": "array", "items": { "type": "object" } },
+        "edges": { "type": "array", "items": { "type": "object" } }
+      }
+    },
+    "repository_scan": {
+      "type": "object",
+      "required": ["project_id", "project_title", "status", "summary", "stats", "languages", "dependencies", "findings", "updated_at"],
+      "properties": {
+        "project_id": { "type": "string", "minLength": 1, "maxLength": 96 },
+        "project_title": { "type": "string", "maxLength": 240 },
+        "status": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "summary": { "type": "string", "maxLength": 1000 },
+        "updated_at": { "type": "string", "format": "date-time" },
+        "stats": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["file_count", "scanned_files", "skipped_files", "dependency_files", "finding_count"],
+          "properties": {
+            "file_count": { "type": "integer", "minimum": 0 },
+            "scanned_files": { "type": "integer", "minimum": 0 },
+            "skipped_files": { "type": "integer", "minimum": 0 },
+            "dependency_files": { "type": "integer", "minimum": 0 },
+            "finding_count": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "languages": { "type": "array", "items": { "type": "object" } },
+        "dependencies": { "type": "array", "items": { "type": "object" } },
+        "findings": { "type": "array", "items": { "type": "object" } }
+      }
+    },
+    "pull_requests": {
+      "type": "object",
+      "required": ["project_id", "project_title", "stats", "tasks", "updated_at"],
+      "properties": {
+        "project_id": { "type": "string", "minLength": 1, "maxLength": 96 },
+        "project_title": { "type": "string", "maxLength": 240 },
+        "updated_at": { "type": "string", "format": "date-time" },
+        "stats": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["task_count", "linked_task_count", "pull_request_count", "open_pull_request_count", "merged_pull_request_count", "ready_count", "needs_review_count", "blocked_count", "error_count"],
+          "properties": {
+            "task_count": { "type": "integer", "minimum": 0 },
+            "linked_task_count": { "type": "integer", "minimum": 0 },
+            "pull_request_count": { "type": "integer", "minimum": 0 },
+            "open_pull_request_count": { "type": "integer", "minimum": 0 },
+            "merged_pull_request_count": { "type": "integer", "minimum": 0 },
+            "ready_count": { "type": "integer", "minimum": 0 },
+            "needs_review_count": { "type": "integer", "minimum": 0 },
+            "blocked_count": { "type": "integer", "minimum": 0 },
+            "error_count": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "tasks": { "type": "array", "items": { "type": "object" } }
+      }
+    },
+    "pull_request_error": { "type": "string", "maxLength": 1000 },
+    "updated_at": { "type": "string", "format": "date-time" }
+  }
+}

@@ -30,12 +30,14 @@ func (s *Store) ProjectDashboard(projectID string) (ProjectDashboardResponse, er
 	)
 
 	return ProjectDashboardResponse{
-		Project:        projectDashboardOverview(project, updatedAt),
-		Escrow:         escrow,
-		Deployment:     deployment,
-		AIWorkflow:     aiWorkflow,
-		TaskGraph:      taskGraph,
-		RepositoryScan: repositoryScan,
+		ProtocolVersion: "mergeos.customer-dashboard.v1",
+		Kind:            "customer_dashboard",
+		Project:         projectDashboardOverview(project, updatedAt),
+		Escrow:          escrow,
+		Deployment:      deployment,
+		AIWorkflow:      aiWorkflow,
+		TaskGraph:       taskGraph,
+		RepositoryScan:  repositoryScan,
 		PullRequests: ProjectPullRequestsResponse{
 			ProjectID:    project.ID,
 			ProjectTitle: publicLiveFeedProjectTitle(project),
