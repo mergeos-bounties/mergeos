@@ -22,6 +22,7 @@ const schemaFiles = {
   'mergeos.payouts.v1': '../schemas/payouts.v1.schema.json',
   'mergeos.pr-monitor.v1': '../schemas/pr-monitor.v1.schema.json',
   'mergeos.proposal.v1': '../schemas/proposal.v1.schema.json',
+  'mergeos.release-artifact.v1': '../schemas/release-artifact.v1.schema.json',
   'mergeos.repo-import.v1': '../schemas/repo-import.v1.schema.json',
   'mergeos.repo-sync.v1': '../schemas/repo-sync.v1.schema.json',
   'mergeos.routing.v1': '../schemas/routing.v1.schema.json',

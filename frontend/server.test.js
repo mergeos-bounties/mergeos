@@ -164,6 +164,53 @@ test('production server serves protocol schema assets as JSON', async (t) => {
   assert.equal(payload.title, 'MergeOS Ledger v1');
 });
 
+test('production server serves MergeIDE download manifest and preview kit', async (t) => {
+  const cwd = await fs.mkdtemp(path.join(os.tmpdir(), 'mergeos-frontend-downloads-'));
+  const clientDist = path.join(cwd, 'client');
+  const downloadsDir = path.join(clientDist, 'downloads');
+  const serverDir = path.join(cwd, 'server');
+  const serverEntry = path.join(serverDir, 'entry-server.mjs');
+  await fs.mkdir(downloadsDir, { recursive: true });
+  await fs.mkdir(serverDir, { recursive: true });
+  await fs.writeFile(
+    path.join(clientDist, 'index.html'),
+    '<!doctype html><html><body><div id="app"><!--ssr-outlet--></div></body></html>',
+  );
+  await fs.writeFile(
+    path.join(downloadsDir, 'mergeide-windows-latest.json'),
+    JSON.stringify({ protocol_version: 'mergeos.release-artifact.v1', kind: 'release_artifact' }),
+  );
+  await fs.writeFile(path.join(downloadsDir, 'mergeide-preview-kit.md'), '# MergeIDE Preview Kit\n');
+  await fs.writeFile(serverEntry, "export async function render() { return '<main></main>'; }\n");
+
+  const server = await createMergeOSServer({
+    mode: 'production',
+    production: true,
+    cwd,
+    host: '127.0.0.1',
+    port: 0,
+    hmrPort: 0,
+    apiTarget: 'http://127.0.0.1:65535',
+    clientDist,
+    serverEntry,
+  });
+  t.after(() => server.close());
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+
+  const address = server.address();
+  const manifestResponse = await fetch(`http://127.0.0.1:${address.port}/downloads/mergeide-windows-latest.json`);
+  const manifest = await manifestResponse.json();
+  const kitResponse = await fetch(`http://127.0.0.1:${address.port}/downloads/mergeide-preview-kit.md`);
+  const kit = await kitResponse.text();
+
+  assert.equal(manifestResponse.status, 200);
+  assert.match(manifestResponse.headers.get('content-type') || '', /application\/json/);
+  assert.equal(manifest.protocol_version, 'mergeos.release-artifact.v1');
+  assert.equal(kitResponse.status, 200);
+  assert.match(kitResponse.headers.get('content-type') || '', /text\/markdown/);
+  assert.match(kit, /MergeIDE Preview Kit/);
+});
+
 test('production server marks hashed assets as immutable', async (t) => {
   const cwd = await fs.mkdtemp(path.join(os.tmpdir(), 'mergeos-frontend-cache-'));
   const clientDist = path.join(cwd, 'client');

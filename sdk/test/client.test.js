@@ -50,6 +50,7 @@ test('creates public feed and ledger verification requests without auth', async 
     { status: 200, body: { agents: [] } },
     { status: 200, body: { contributors: [] } },
     { status: 200, body: { protocol_version: 'mergeos.ledger.v1', entries: [] } },
+    { status: 200, body: { protocol_version: 'mergeos.release-artifact.v1', kind: 'release_artifact' } },
     { status: 200, body: { protocol_version: 'mergeos.ledger-proof.v1', valid: true } },
     { status: 200, body: { protocol_version: 'mergeos.live-feed.v1', items: [] } },
     { status: 200, body: { protocol_version: 'mergeos.token-economy.v1', totals: {} } },
@@ -74,6 +75,7 @@ test('creates public feed and ledger verification requests without auth', async 
   const agents = await client.publicProtocolAgents({ limit: 80 });
   const contributors = await client.publicProtocolContributors({ limit: 80 });
   const ledger = await client.publicProtocolLedger();
+  const mergeIDERelease = await client.publicMergeIDEWindowsRelease();
   const proof = await client.publicLedgerProof();
   const ledgerEvents = await client.publicLedgerEvents({ limit: 20 });
   const economy = await client.publicTokenEconomy();
@@ -92,6 +94,7 @@ test('creates public feed and ledger verification requests without auth', async 
   assert.deepEqual(agents, { agents: [] });
   assert.deepEqual(contributors, { contributors: [] });
   assert.equal(ledger.protocol_version, 'mergeos.ledger.v1');
+  assert.equal(mergeIDERelease.protocol_version, 'mergeos.release-artifact.v1');
   assert.equal(proof.protocol_version, 'mergeos.ledger-proof.v1');
   assert.equal(ledgerEvents.protocol_version, 'mergeos.live-feed.v1');
   assert.equal(economy.protocol_version, 'mergeos.token-economy.v1');
@@ -117,24 +120,26 @@ test('creates public feed and ledger verification requests without auth', async 
   assert.equal(fetchImpl.calls[6].options.headers.Authorization, undefined);
   assert.equal(fetchImpl.calls[7].url, 'https://mergeos.shop/api/public/protocol/ledger');
   assert.equal(fetchImpl.calls[7].options.headers.Authorization, undefined);
-  assert.equal(fetchImpl.calls[8].url, 'https://mergeos.shop/api/public/ledger/proof');
+  assert.equal(fetchImpl.calls[8].url, 'https://mergeos.shop/downloads/mergeide-windows-latest.json');
   assert.equal(fetchImpl.calls[8].options.headers.Authorization, undefined);
-  assert.equal(fetchImpl.calls[9].url, 'https://mergeos.shop/api/public/ledger/events?limit=20');
+  assert.equal(fetchImpl.calls[9].url, 'https://mergeos.shop/api/public/ledger/proof');
   assert.equal(fetchImpl.calls[9].options.headers.Authorization, undefined);
-  assert.equal(fetchImpl.calls[10].url, 'https://mergeos.shop/api/public/token-economy');
+  assert.equal(fetchImpl.calls[10].url, 'https://mergeos.shop/api/public/ledger/events?limit=20');
   assert.equal(fetchImpl.calls[10].options.headers.Authorization, undefined);
-  assert.equal(fetchImpl.calls[11].url, 'https://mergeos.shop/api/public/protocol/events?limit=80');
+  assert.equal(fetchImpl.calls[11].url, 'https://mergeos.shop/api/public/token-economy');
   assert.equal(fetchImpl.calls[11].options.headers.Authorization, undefined);
-  assert.equal(fetchImpl.calls[12].url, 'https://mergeos.shop/api/public/projects/prj_public/deployment');
+  assert.equal(fetchImpl.calls[12].url, 'https://mergeos.shop/api/public/protocol/events?limit=80');
   assert.equal(fetchImpl.calls[12].options.headers.Authorization, undefined);
-  assert.equal(fetchImpl.calls[13].url, 'https://mergeos.shop/api/public/projects/prj_public/ai-workflow');
+  assert.equal(fetchImpl.calls[13].url, 'https://mergeos.shop/api/public/projects/prj_public/deployment');
   assert.equal(fetchImpl.calls[13].options.headers.Authorization, undefined);
-  assert.equal(fetchImpl.calls[14].url, 'https://mergeos.shop/api/public/projects/prj_public/workflow');
+  assert.equal(fetchImpl.calls[14].url, 'https://mergeos.shop/api/public/projects/prj_public/ai-workflow');
   assert.equal(fetchImpl.calls[14].options.headers.Authorization, undefined);
-  assert.equal(fetchImpl.calls[15].url, 'https://mergeos.shop/api/public/projects/prj_public/pull-requests');
+  assert.equal(fetchImpl.calls[15].url, 'https://mergeos.shop/api/public/projects/prj_public/workflow');
   assert.equal(fetchImpl.calls[15].options.headers.Authorization, undefined);
-  assert.equal(fetchImpl.calls[16].url, 'https://mergeos.shop/api/public/ledger/verify');
+  assert.equal(fetchImpl.calls[16].url, 'https://mergeos.shop/api/public/projects/prj_public/pull-requests');
   assert.equal(fetchImpl.calls[16].options.headers.Authorization, undefined);
+  assert.equal(fetchImpl.calls[17].url, 'https://mergeos.shop/api/public/ledger/verify');
+  assert.equal(fetchImpl.calls[17].options.headers.Authorization, undefined);
 });
 
 test('derives Solana ledger references and legacy wallet hashes for operators', () => {

@@ -1,0 +1,52 @@
+{
+  "protocol_version": "mergeos.release-artifact.v1",
+  "kind": "release_artifact",
+  "id": "mergeide-windows-x64",
+  "product": "MergeIDE",
+  "title": "MergeIDE Windows x64 executable",
+  "description": "Repo-aware MergeOS task runner and workspace bridge for builders and AI agents working with funded delivery packets.",
+  "artifact_type": "windows_exe",
+  "platform": "windows",
+  "architecture": "x64",
+  "channel": "latest",
+  "status": "available",
+  "version_label": "Windows preview",
+  "release_tag": "mergeide-windows-latest",
+  "file_name": "MergeIDE-Windows-x64.exe",
+  "content_type": "application/x-msdownload",
+  "size_hint": "about 55 MB",
+  "download_url": "https://github.com/mergeos-bounties/mergeos/releases/latest/download/MergeIDE-Windows-x64.exe",
+  "release_url": "https://github.com/mergeos-bounties/mergeos/releases/tag/mergeide-windows-latest",
+  "manifest_url": "/downloads/mergeide-windows-latest.json",
+  "fallback_url": "/downloads/mergeide-preview-kit.md",
+  "provenance": {
+    "source_repository": "mergeos-bounties/mergeos",
+    "workflow_file": ".github/workflows/mergeide-windows-exe.yml",
+    "release_tag": "mergeide-windows-latest",
+    "asset_name": "MergeIDE-Windows-x64.exe",
+    "digest_source_url": "https://api.github.com/repos/mergeos-bounties/mergeos/releases/tags/mergeide-windows-latest",
+    "workflow_url": "https://github.com/mergeos-bounties/mergeos/actions/workflows/mergeide-windows-exe.yml"
+  },
+  "install": {
+    "summary": "Download the executable, configure MergeOS, then run tasks from a funded repository workspace.",
+    "steps": [
+      "Download MergeIDE-Windows-x64.exe from the GitHub Release asset.",
+      "Run configure with your MergeOS URL, worker id, and preferred AI CLI provider.",
+      "Authenticate, list funded tasks, run a task, and optionally claim it after the AI CLI exits successfully."
+    ]
+  },
+  "links": [
+    {
+      "label": "MergeIDE page",
+      "url": "/mergeide"
+    },
+    {
+      "label": "Preview kit",
+      "url": "/downloads/mergeide-preview-kit.md"
+    },
+    {
+      "label": "Release workflow",
+      "url": "https://github.com/mergeos-bounties/mergeos/actions/workflows/mergeide-windows-exe.yml"
+    }
+  ]
+}

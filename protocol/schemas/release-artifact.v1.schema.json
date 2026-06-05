@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mergeos.shop/protocol/release-artifact.v1.schema.json",
+  "title": "MergeOS Release Artifact v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "protocol_version",
+    "kind",
+    "id",
+    "product",
+    "title",
+    "artifact_type",
+    "platform",
+    "architecture",
+    "channel",
+    "status",
+    "file_name",
+    "download_url",
+    "release_url",
+    "provenance",
+    "install"
+  ],
+  "properties": {
+    "protocol_version": { "const": "mergeos.release-artifact.v1" },
+    "kind": { "const": "release_artifact" },
+    "id": { "type": "string", "minLength": 3, "maxLength": 120 },
+    "product": { "type": "string", "minLength": 1, "maxLength": 120 },
+    "title": { "type": "string", "minLength": 1, "maxLength": 180 },
+    "description": { "type": "string", "maxLength": 800 },
+    "artifact_type": { "type": "string", "enum": ["windows_exe", "preview_kit", "extension", "archive"] },
+    "platform": { "type": "string", "enum": ["windows", "macos", "linux", "web", "cross_platform"] },
+    "architecture": { "type": "string", "minLength": 1, "maxLength": 40 },
+    "channel": { "type": "string", "enum": ["latest", "preview", "stable", "manual"] },
+    "status": { "type": "string", "enum": ["available", "publishing", "planned"] },
+    "version_label": { "type": "string", "maxLength": 120 },
+    "release_tag": { "type": "string", "minLength": 1, "maxLength": 120 },
+    "file_name": { "type": "string", "minLength": 1, "maxLength": 180 },
+    "content_type": { "type": "string", "maxLength": 120 },
+    "size_hint": { "type": "string", "maxLength": 80 },
+    "download_url": { "type": "string", "pattern": "^https?://", "maxLength": 500 },
+    "release_url": { "type": "string", "pattern": "^https?://", "maxLength": 500 },
+    "manifest_url": { "type": "string", "maxLength": 240 },
+    "fallback_url": { "type": "string", "maxLength": 240 },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_repository",
+        "workflow_file",
+        "release_tag",
+        "asset_name",
+        "digest_source_url"
+      ],
+      "properties": {
+        "source_repository": { "type": "string", "minLength": 3, "maxLength": 160 },
+        "workflow_file": { "type": "string", "minLength": 3, "maxLength": 220 },
+        "release_tag": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "asset_name": { "type": "string", "minLength": 1, "maxLength": 180 },
+        "digest_source_url": { "type": "string", "pattern": "^https?://", "maxLength": 500 },
+        "workflow_url": { "type": "string", "pattern": "^https?://", "maxLength": 500 }
+      }
+    },
+    "install": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["summary", "steps"],
+      "properties": {
+        "summary": { "type": "string", "minLength": 1, "maxLength": 240 },
+        "steps": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1, "maxLength": 240 }
+        }
+      }
+    },
+    "links": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["label", "url"],
+        "properties": {
+          "label": { "type": "string", "minLength": 1, "maxLength": 80 },
+          "url": { "type": "string", "maxLength": 500 }
+        }
+      }
+    }
+  }
+}

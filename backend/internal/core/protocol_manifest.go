@@ -72,6 +72,12 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Description: "Authenticated legacy TRC20/EVM wallet migration document with Solana target wallet, legacy address hash, and Anchor register_legacy_wallet arguments.",
 			},
 			{
+				Version:     "mergeos.release-artifact.v1",
+				Kind:        "release_artifact",
+				SchemaURL:   "https://mergeos.shop/protocol/release-artifact.v1.schema.json",
+				Description: "Public downloadable artifact manifest for MergeIDE executables, preview kits, release provenance, and agent installation links.",
+			},
+			{
 				Version:     "mergeos.repo-import.v1",
 				Kind:        "repo_import",
 				SchemaURL:   "https://mergeos.shop/protocol/repo-import.v1.schema.json",
@@ -234,6 +240,13 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Protocol:    "mergeos.contributor.v1",
 				Auth:        "none",
 				Description: "Public contributor reputation and routing documents for human, agent, and hybrid marketplace workers.",
+			},
+			{
+				Method:      "GET",
+				Path:        "/downloads/mergeide-windows-latest.json",
+				Protocol:    "mergeos.release-artifact.v1",
+				Auth:        "none",
+				Description: "Public MergeIDE Windows executable release manifest with download URL, release tag, workflow provenance, and preview-kit fallback.",
 			},
 			{
 				Method:      "GET",

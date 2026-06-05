@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import {
   assertProtocolDocument,
@@ -35,6 +36,7 @@ test('loads stable task, workflow, ledger, and event schemas', () => {
     'mergeos.payouts.v1',
     'mergeos.pr-monitor.v1',
     'mergeos.proposal.v1',
+    'mergeos.release-artifact.v1',
     'mergeos.repo-import.v1',
     'mergeos.repo-sync.v1',
     'mergeos.routing.v1',
@@ -47,6 +49,67 @@ test('loads stable task, workflow, ledger, and event schemas', () => {
     'mergeos.workflow.v1',
   ]);
   assert.equal(schemaForProtocol('mergeos.task.v1').title, 'MergeOS Task v1');
+});
+
+test('validates release artifact protocol documents', () => {
+  const artifact = {
+    protocol_version: 'mergeos.release-artifact.v1',
+    kind: 'release_artifact',
+    id: 'mergeide-windows-x64',
+    product: 'MergeIDE',
+    title: 'MergeIDE Windows x64 executable',
+    description: 'Repo-aware MergeOS task runner and workspace bridge.',
+    artifact_type: 'windows_exe',
+    platform: 'windows',
+    architecture: 'x64',
+    channel: 'latest',
+    status: 'available',
+    version_label: 'Windows preview',
+    release_tag: 'mergeide-windows-latest',
+    file_name: 'MergeIDE-Windows-x64.exe',
+    content_type: 'application/x-msdownload',
+    size_hint: 'about 55 MB',
+    download_url: 'https://github.com/mergeos-bounties/mergeos/releases/latest/download/MergeIDE-Windows-x64.exe',
+    release_url: 'https://github.com/mergeos-bounties/mergeos/releases/tag/mergeide-windows-latest',
+    manifest_url: '/downloads/mergeide-windows-latest.json',
+    fallback_url: '/downloads/mergeide-preview-kit.md',
+    provenance: {
+      source_repository: 'mergeos-bounties/mergeos',
+      workflow_file: '.github/workflows/mergeide-windows-exe.yml',
+      release_tag: 'mergeide-windows-latest',
+      asset_name: 'MergeIDE-Windows-x64.exe',
+      digest_source_url: 'https://api.github.com/repos/mergeos-bounties/mergeos/releases/tags/mergeide-windows-latest',
+      workflow_url: 'https://github.com/mergeos-bounties/mergeos/actions/workflows/mergeide-windows-exe.yml',
+    },
+    install: {
+      summary: 'Download, configure, authenticate, then run tasks.',
+      steps: ['Download the exe.', 'Configure MergeOS.', 'Run a funded task.'],
+    },
+    links: [{ label: 'MergeIDE page', url: '/mergeide' }],
+  };
+
+  assert.equal(validateProtocolDocument(artifact).valid, true);
+
+  const invalid = validateProtocolDocument({
+    ...artifact,
+    platform: 'ios',
+    download_url: '/local.exe',
+    provenance: { ...artifact.provenance, digest_source_url: '/api/release' },
+  });
+  assert.equal(invalid.valid, false);
+  assert(invalid.errors.some((error) => error.path === 'platform'));
+  assert(invalid.errors.some((error) => error.path === 'download_url'));
+  assert(invalid.errors.some((error) => error.path === 'provenance.digest_source_url'));
+});
+
+test('validates the public MergeIDE release manifest', () => {
+  const manifest = JSON.parse(readFileSync(new URL('../../frontend/public/downloads/mergeide-windows-latest.json', import.meta.url), 'utf8'));
+  const result = validateProtocolDocument(manifest);
+
+  assert.equal(result.valid, true);
+  assert.equal(manifest.protocol_version, 'mergeos.release-artifact.v1');
+  assert.equal(manifest.file_name, 'MergeIDE-Windows-x64.exe');
+  assert.match(manifest.download_url, /releases\/latest\/download\/MergeIDE-Windows-x64\.exe$/);
 });
 
 test('validates marketplace protocol documents', () => {

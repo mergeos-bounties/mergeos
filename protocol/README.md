@@ -29,6 +29,7 @@ The live app exposes protocol discovery at `GET /api/public/protocol`, and serve
 - `mergeos.payout-release.v1`: an authenticated auto-release result with released/skipped counts, task claim receipts, and the updated payout settlement.
 - `mergeos.deployment.v1`: an authenticated deployment validation document with rollout stages, release gate progress, and ledger/AI evidence signals.
 - `mergeos.wallet-migration.v1`: an authenticated legacy TRC20/EVM wallet migration document with Solana target wallet, legacy address hash, and Anchor `register_legacy_wallet` arguments.
+- `mergeos.release-artifact.v1`: a public downloadable artifact manifest for MergeIDE executables, preview kits, release provenance, and agent install links.
 - `mergeos.pr-monitor.v1`: an authenticated live pull request monitor with task linkage, readiness gates, merge risk, labels, authors, and GitHub sync health.
 - `mergeos.proposal.v1`: an authenticated worker proposal submission and customer decision record with bid, availability, customer notification, admin review routing, and accepted/declined status.
 - `mergeos.scan.v1`: a repository scan document with dependency manifests, language counts, and security/debt findings.
@@ -98,3 +99,7 @@ The public Solana MRG program IDL is served at `/contracts/solana/mergeos_mrg.v1
 - `registerLegacyWallet`
 
 `legacy_chain` remains a protocol string (`trc20` or `evm`), while the Anchor instruction maps it to `LegacyChain::Trc20` or `LegacyChain::Evm`. Ledger references and legacy address hashes are always 32 raw bytes on-chain, decoded from the 64-character hex values in protocol documents.
+
+## MergeIDE Release Artifacts
+
+`GET /downloads/mergeide-windows-latest.json` returns a `mergeos.release-artifact.v1` document with the Windows executable URL, release tag, workflow provenance, digest source URL, preview-kit fallback, and install steps for external builders or agents.

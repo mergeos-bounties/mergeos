@@ -160,6 +160,10 @@ export class MergeOSClient {
     return this.request('/api/public/protocol/ledger', { auth: false });
   }
 
+  publicMergeIDEWindowsRelease() {
+    return this.request('/downloads/mergeide-windows-latest.json', { auth: false });
+  }
+
   publicProtocolEvents(options = {}) {
     const limit = Number(options.limit) > 0 ? `?limit=${encodeURIComponent(Number(options.limit))}` : '';
     return this.request(`/api/public/protocol/events${limit}`, { auth: false });

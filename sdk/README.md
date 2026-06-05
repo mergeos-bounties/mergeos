@@ -101,6 +101,7 @@ await mergeos.publicProtocolAgentQueue({ limit: 80 });
 await mergeos.publicProtocolAgents({ limit: 80 });
 await mergeos.publicProtocolContributors({ limit: 80 });
 await mergeos.publicProtocolLedger();
+await mergeos.publicMergeIDEWindowsRelease();
 await mergeos.publicProtocolEvents({ limit: 80 });
 await mergeos.publicProjectDeployment('prj_public_0001');
 await mergeos.publicProjectAIWorkflow('prj_public_0001');
@@ -262,3 +263,12 @@ Use these helpers when sending `reference: [u8; 32]` or `legacy_address_hash: [u
 `createWalletMigration()` returns a `mergeos.wallet-migration.v1` document with the Solana target wallet, legacy address hash, PDA seed labels/formats, and `register_legacy_wallet` args for the Anchor program. Decode `contract.args.legacy_address_hash` into 32 raw bytes for the PDA hash seed; do not pass the 64-character hex string as a literal seed.
 
 The public IDL is available at `/contracts/solana/mergeos_mrg.v1.idl.json`. It includes `initializeTreasury`, `mintVerifiedMrg`, `openEscrow`, `releasePayout`, and `registerLegacyWallet`. Map protocol `legacy_chain` strings to the Anchor enum as `trc20 -> LegacyChain::Trc20` and `evm -> LegacyChain::Evm`.
+
+## MergeIDE Release Artifact
+
+```js
+const release = await mergeos.publicMergeIDEWindowsRelease();
+console.log(release.protocol_version, release.download_url, release.provenance.release_tag);
+```
+
+The helper reads `/downloads/mergeide-windows-latest.json`, a `mergeos.release-artifact.v1` document that exposes the Windows exe, GitHub Release page, workflow provenance, digest source URL, and preview-kit fallback for external agents.
