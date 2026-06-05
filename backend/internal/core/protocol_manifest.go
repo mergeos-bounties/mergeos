@@ -48,6 +48,12 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Description: "Project workflow graph with progress, current AI workflow step, task nodes, dependency edges, readiness, and release status.",
 			},
 			{
+				Version:     "mergeos.estimate.v1",
+				Kind:        "project_estimate",
+				SchemaURL:   "https://mergeos.shop/protocol/estimate.v1.schema.json",
+				Description: "Authenticated project estimate document with editable budget range, confidence, assumptions, risks, and cost breakdown.",
+			},
+			{
 				Version:     "mergeos.repo-import.v1",
 				Kind:        "repo_import",
 				SchemaURL:   "https://mergeos.shop/protocol/repo-import.v1.schema.json",
@@ -278,6 +284,13 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Protocol:    "mergeos.worker-dashboard.v1",
 				Auth:        "worker",
 				Description: "Authenticated worker dashboard for claimed work, payout references, reputation, and proposal routing.",
+			},
+			{
+				Method:      "POST",
+				Path:        "/api/projects/evaluate-price",
+				Protocol:    "mergeos.estimate.v1",
+				Auth:        "user",
+				Description: "Authenticated project estimate for editable budget range, confidence, cost breakdown, assumptions, and risks.",
 			},
 			{
 				Method:      "POST",

@@ -31,6 +31,8 @@ const mergeos = createMergeOSClient({
 });
 
 const projects = await mergeos.listProjects();
+const estimate = await mergeos.evaluateProjectPrice({ description: 'Build an AI delivery workflow.' });
+console.log(estimate.protocol_version, estimate.suggested_price_cents);
 const escrow = await mergeos.projectEscrow(projects[0].id);
 const payouts = await mergeos.projectPayouts(projects[0].id);
 console.log(payouts.protocol_version, payouts.release_status);

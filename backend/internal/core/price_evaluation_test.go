@@ -27,6 +27,9 @@ func TestEvaluateProjectPriceReturnsStructuredEditableSuggestion(t *testing.T) {
 	if result.SuggestedPriceCents <= 0 || result.SuggestedRange.LowCents <= 0 || result.SuggestedRange.HighCents < result.SuggestedRange.LowCents {
 		t.Fatalf("invalid price range: %#v", result)
 	}
+	if result.ProtocolVersion != "mergeos.estimate.v1" || result.Kind != "project_estimate" {
+		t.Fatalf("unexpected estimate protocol header: %#v", result)
+	}
 	if !result.Editable {
 		t.Fatal("price suggestion must be editable before publishing")
 	}
@@ -87,6 +90,9 @@ func TestEvaluateProjectPriceRouteRequiresAuthAndReturnsJSON(t *testing.T) {
 	var result ProjectPriceEvaluationResponse
 	if err := json.Unmarshal(resp.Body.Bytes(), &result); err != nil {
 		t.Fatal(err)
+	}
+	if result.ProtocolVersion != "mergeos.estimate.v1" || result.Kind != "project_estimate" {
+		t.Fatalf("unexpected estimate protocol header: %#v", result)
 	}
 	if result.SuggestedPriceCents == 0 || len(result.Breakdown) == 0 || !result.Editable {
 		t.Fatalf("unexpected response: %#v", result)

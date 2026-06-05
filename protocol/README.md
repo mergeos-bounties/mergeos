@@ -13,6 +13,7 @@ The live app exposes protocol discovery at `GET /api/public/protocol`, and serve
 - `mergeos.marketplace.v1`: a public realtime marketplace document with funded projects, open bounties, contributors, AI agent lanes, and token funding stats.
 - `mergeos.live-feed.v1`: a public command center feed with project, task, PR, deployment, ledger, contributor, and AI action updates.
 - `mergeos.workflow.v1`: a project workflow graph with progress, current AI workflow step, nodes, dependency edges, worker lanes, rewards, and effort estimates.
+- `mergeos.estimate.v1`: an authenticated project estimate document with editable budget range, confidence, assumptions, risks, and cost breakdown.
 - `mergeos.repo-import.v1`: a public repository issue import document with scored GitHub issues, effort estimates, worker lane routing, and AI task generation inputs.
 - `mergeos.repo-sync.v1`: an authenticated project repository sync report that turns imported GitHub issues into MergeOS task rows.
 - `mergeos.dispute.v1`: an authenticated delivery dispute document that escalates customer, worker, or admin concerns into moderation.

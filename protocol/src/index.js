@@ -10,6 +10,7 @@ const schemaFiles = {
   'mergeos.deployment.v1': '../schemas/deployment.v1.schema.json',
   'mergeos.dispute.v1': '../schemas/dispute.v1.schema.json',
   'mergeos.escrow.v1': '../schemas/escrow.v1.schema.json',
+  'mergeos.estimate.v1': '../schemas/estimate.v1.schema.json',
   'mergeos.event.v1': '../schemas/event.v1.schema.json',
   'mergeos.ledger.v1': '../schemas/ledger.v1.schema.json',
   'mergeos.live-feed.v1': '../schemas/live-feed.v1.schema.json',

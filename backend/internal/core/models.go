@@ -331,6 +331,8 @@ type ProjectPriceEvaluationRequest struct {
 }
 
 type ProjectPriceEvaluationResponse struct {
+	ProtocolVersion     string               `json:"protocol_version"`
+	Kind                string               `json:"kind"`
 	SuggestedPriceCents int64                `json:"suggested_price_cents"`
 	SuggestedRange      PriceRange           `json:"suggested_range"`
 	Confidence          string               `json:"confidence"`

@@ -100,6 +100,8 @@ func EvaluateProjectPrice(req ProjectPriceEvaluationRequest) (*ProjectPriceEvalu
 	}
 
 	return &ProjectPriceEvaluationResponse{
+		ProtocolVersion:     "mergeos.estimate.v1",
+		Kind:                "project_estimate",
 		SuggestedPriceCents: suggested,
 		SuggestedRange:      PriceRange{LowCents: low, HighCents: high},
 		Confidence:          confidence,

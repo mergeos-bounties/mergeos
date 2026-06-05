@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mergeos.shop/protocol/estimate.v1.schema.json",
+  "title": "MergeOS Project Estimate v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["protocol_version", "kind", "suggested_price_cents", "suggested_range", "confidence", "breakdown", "assumptions", "risks", "editable"],
+  "properties": {
+    "protocol_version": { "const": "mergeos.estimate.v1" },
+    "kind": { "const": "project_estimate" },
+    "suggested_price_cents": { "type": "integer", "minimum": 0 },
+    "suggested_range": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["low_cents", "high_cents"],
+      "properties": {
+        "low_cents": { "type": "integer", "minimum": 0 },
+        "high_cents": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "confidence": { "enum": ["low", "medium", "high"] },
+    "breakdown": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["category", "amount_cents", "reason"],
+        "properties": {
+          "category": { "type": "string", "minLength": 1, "maxLength": 160 },
+          "amount_cents": { "type": "integer" },
+          "reason": { "type": "string", "minLength": 1, "maxLength": 500 }
+        }
+      }
+    },
+    "assumptions": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1, "maxLength": 500 }
+    },
+    "risks": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1, "maxLength": 500 }
+    },
+    "editable": { "type": "boolean" }
+  }
+}

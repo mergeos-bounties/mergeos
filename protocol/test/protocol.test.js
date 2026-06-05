@@ -21,6 +21,7 @@ test('loads stable task, workflow, ledger, and event schemas', () => {
     'mergeos.deployment.v1',
     'mergeos.dispute.v1',
     'mergeos.escrow.v1',
+    'mergeos.estimate.v1',
     'mergeos.event.v1',
     'mergeos.ledger.v1',
     'mergeos.live-feed.v1',
@@ -1294,6 +1295,40 @@ test('validates task claim protocol documents', () => {
   assert(invalid.errors.some((error) => error.path === 'status'));
   assert(invalid.errors.some((error) => error.path === 'worker_kind'));
   assert(invalid.errors.some((error) => error.path === 'reward_cents'));
+});
+
+test('validates project estimate protocol documents', () => {
+  const estimate = {
+    protocol_version: 'mergeos.estimate.v1',
+    kind: 'project_estimate',
+    suggested_price_cents: 420000,
+    suggested_range: { low_cents: 360000, high_cents: 500000 },
+    confidence: 'high',
+    breakdown: [
+      { category: 'Base scope', amount_cents: 180000, reason: 'Core planning, implementation, review, and delivery work.' },
+      { category: 'Technical surface', amount_cents: 120000, reason: 'Multiple technologies increase integration and testing effort.' },
+    ],
+    assumptions: ['Estimate assumes one production-ready implementation pass plus review and QA.'],
+    risks: ['Major scope changes after publishing can move the price range.'],
+    editable: true,
+  };
+
+  assert.equal(validateProtocolDocument(estimate).valid, true);
+
+  const invalid = validateProtocolDocument({
+    ...estimate,
+    kind: 'estimate',
+    confidence: 'certain',
+    suggested_price_cents: -1,
+    suggested_range: { low_cents: -1, high_cents: 0 },
+    breakdown: [],
+  });
+  assert.equal(invalid.valid, false);
+  assert(invalid.errors.some((error) => error.path === 'kind'));
+  assert(invalid.errors.some((error) => error.path === 'confidence'));
+  assert(invalid.errors.some((error) => error.path === 'suggested_price_cents'));
+  assert(invalid.errors.some((error) => error.path === 'suggested_range.low_cents'));
+  assert(invalid.errors.some((error) => error.path === 'breakdown'));
 });
 
 test('rejects invalid task fields and unknown versions', () => {

@@ -391,6 +391,34 @@ test('supports wallet, payment, and raw upload helper routes', async () => {
   assert.equal(fetchImpl.calls[4].options.headers['X-Upload'], '1');
 });
 
+test('exposes project estimate protocol route', async () => {
+  const fetchImpl = fakeFetch([
+    {
+      status: 200,
+      body: {
+        protocol_version: 'mergeos.estimate.v1',
+        kind: 'project_estimate',
+        suggested_price_cents: 420000,
+        suggested_range: { low_cents: 360000, high_cents: 500000 },
+        confidence: 'high',
+        breakdown: [],
+        assumptions: [],
+        risks: [],
+        editable: true,
+      },
+    },
+  ]);
+  const client = new MergeOSClient({ token: 'client-token', fetchImpl });
+
+  const estimate = await client.evaluateProjectPrice({ description: 'Build an AI project workflow.' });
+
+  assert.equal(estimate.protocol_version, 'mergeos.estimate.v1');
+  assert.equal(estimate.kind, 'project_estimate');
+  assert.equal(fetchImpl.calls[0].url, '/api/projects/evaluate-price');
+  assert.equal(fetchImpl.calls[0].options.method, 'POST');
+  assert.equal(fetchImpl.calls[0].options.headers.Authorization, 'Bearer client-token');
+});
+
 test('exposes project workflow and admin ops routes', async () => {
   const fetchImpl = fakeFetch([
     { status: 200, body: { protocol_version: 'mergeos.escrow.v1', release_status: 'funded' } },
