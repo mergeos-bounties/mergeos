@@ -100,6 +100,8 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/projects/{id}/protocol/workflow", s.projectWorkflowProtocol)
 	mux.HandleFunc("GET /api/projects/{id}/repo-scan", s.projectRepositoryScan)
 	mux.HandleFunc("GET /api/projects/{id}/protocol/scan", s.projectRepositoryScanProtocol)
+	mux.HandleFunc("POST /api/projects/{id}/repo-scan/suggested-tasks/{taskID}/paypal-order", s.createRepositorySuggestedTaskPayPalOrder)
+	mux.HandleFunc("POST /api/projects/{id}/repo-scan/suggested-tasks/{taskID}/fund", s.fundRepositorySuggestedTask)
 	mux.HandleFunc("POST /api/projects/{id}/repo-sync", s.syncProjectRepoIssues)
 	mux.HandleFunc("POST /api/projects/{id}/agent-actions", s.createProjectAgentAction)
 	mux.HandleFunc("POST /api/projects", s.createProject)
@@ -701,6 +703,69 @@ func (s *Server) projectRepositoryScanProtocol(w http.ResponseWriter, r *http.Re
 		return
 	}
 	writeJSON(w, http.StatusOK, document)
+}
+
+func (s *Server) createRepositorySuggestedTaskPayPalOrder(w http.ResponseWriter, r *http.Request) {
+	user, ok := s.requireUser(w, r)
+	if !ok {
+		return
+	}
+	projectID := strings.TrimSpace(r.PathValue("id"))
+	if !s.store.CanAccessProject(user.ID, user.Role, projectID) {
+		writeError(w, http.StatusForbidden, "project access is required")
+		return
+	}
+	suggestedTaskID := strings.TrimSpace(r.PathValue("taskID"))
+	var req RepositorySuggestedTaskPayPalOrderRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	if strings.TrimSpace(req.SuggestedTaskID) != "" && strings.TrimSpace(req.SuggestedTaskID) != suggestedTaskID {
+		writeError(w, http.StatusBadRequest, "suggested task id does not match route")
+		return
+	}
+	quote, err := s.store.RepositorySuggestedTaskFundingQuote(projectID, suggestedTaskID, req.RewardCents, req.BudgetCents)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	order, err := s.payments.CreatePayPalOrder(r.Context(), CreatePayPalOrderRequest{
+		AmountCents: quote.BudgetCents,
+		Description: fmt.Sprintf("Fund %s for %s", quote.TaskTitle, quote.ProjectTitle),
+		ReturnURL:   req.ReturnURL,
+		CancelURL:   req.CancelURL,
+	})
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusCreated, order)
+}
+
+func (s *Server) fundRepositorySuggestedTask(w http.ResponseWriter, r *http.Request) {
+	user, ok := s.requireUser(w, r)
+	if !ok {
+		return
+	}
+	projectID := strings.TrimSpace(r.PathValue("id"))
+	if !s.store.CanAccessProject(user.ID, user.Role, projectID) {
+		writeError(w, http.StatusForbidden, "project access is required")
+		return
+	}
+	suggestedTaskID := strings.TrimSpace(r.PathValue("taskID"))
+	var req FundRepositorySuggestedTaskRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	response, err := s.store.FundRepositorySuggestedTask(r.Context(), projectID, suggestedTaskID, req)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	s.broadcastLiveFeedEvent("repo_task_funded")
+	writeJSON(w, http.StatusCreated, response)
 }
 
 func (s *Server) syncProjectRepoIssues(w http.ResponseWriter, r *http.Request) {

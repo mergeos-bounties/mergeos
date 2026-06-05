@@ -276,6 +276,20 @@ func ProtocolManifest() ProtocolManifestResponse {
 			},
 			{
 				Method:      "POST",
+				Path:        "/api/projects/{id}/repo-scan/suggested-tasks/{taskID}/paypal-order",
+				Protocol:    "mergeos.scan.v1",
+				Auth:        "project",
+				Description: "Authenticated checkout bootstrap for funding a repository scan suggested task.",
+			},
+			{
+				Method:      "POST",
+				Path:        "/api/projects/{id}/repo-scan/suggested-tasks/{taskID}/fund",
+				Protocol:    "mergeos.scan.v1",
+				Auth:        "project",
+				Description: "Authenticated funding command that turns a repository scan suggestion into an escrow-backed task.",
+			},
+			{
+				Method:      "POST",
 				Path:        "/api/projects/{id}/repo-sync",
 				Protocol:    "mergeos.repo-sync.v1",
 				Auth:        "project",

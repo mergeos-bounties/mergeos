@@ -1280,15 +1280,16 @@ type WorkflowProtocolEvidence struct {
 }
 
 type ProjectRepositoryScanResponse struct {
-	ProjectID    string                     `json:"project_id"`
-	ProjectTitle string                     `json:"project_title"`
-	Status       string                     `json:"status"`
-	Summary      string                     `json:"summary"`
-	Stats        RepositoryScanStats        `json:"stats"`
-	Languages    []RepositoryLanguage       `json:"languages"`
-	Dependencies []RepositoryDependencyFile `json:"dependencies"`
-	Findings     []RepositoryScanFinding    `json:"findings"`
-	UpdatedAt    time.Time                  `json:"updated_at"`
+	ProjectID      string                     `json:"project_id"`
+	ProjectTitle   string                     `json:"project_title"`
+	Status         string                     `json:"status"`
+	Summary        string                     `json:"summary"`
+	Stats          RepositoryScanStats        `json:"stats"`
+	Languages      []RepositoryLanguage       `json:"languages"`
+	Dependencies   []RepositoryDependencyFile `json:"dependencies"`
+	Findings       []RepositoryScanFinding    `json:"findings"`
+	SuggestedTasks []RepositorySuggestedTask  `json:"suggested_tasks"`
+	UpdatedAt      time.Time                  `json:"updated_at"`
 }
 
 type RepositoryScanProtocolDocument struct {
@@ -1305,15 +1306,17 @@ type RepositoryScanProtocolDocument struct {
 	Languages       []RepositoryLanguage       `json:"languages,omitempty"`
 	Dependencies    []RepositoryDependencyFile `json:"dependencies,omitempty"`
 	Findings        []RepositoryScanFinding    `json:"findings"`
+	SuggestedTasks  []RepositorySuggestedTask  `json:"suggested_tasks,omitempty"`
 	Metadata        map[string]any             `json:"metadata,omitempty"`
 }
 
 type RepositoryScanStats struct {
-	FileCount       int `json:"file_count"`
-	ScannedFiles    int `json:"scanned_files"`
-	SkippedFiles    int `json:"skipped_files"`
-	DependencyFiles int `json:"dependency_files"`
-	FindingCount    int `json:"finding_count"`
+	FileCount          int `json:"file_count"`
+	ScannedFiles       int `json:"scanned_files"`
+	SkippedFiles       int `json:"skipped_files"`
+	DependencyFiles    int `json:"dependency_files"`
+	FindingCount       int `json:"finding_count"`
+	SuggestedTaskCount int `json:"suggested_task_count"`
 }
 
 type RepositoryLanguage struct {
@@ -1338,6 +1341,62 @@ type RepositoryScanFinding struct {
 	Path     string `json:"path,omitempty"`
 	Line     int    `json:"line,omitempty"`
 	Signal   string `json:"signal,omitempty"`
+}
+
+type RepositorySuggestedTask struct {
+	ID                   string                  `json:"id"`
+	SourceFindingID      string                  `json:"source_finding_id"`
+	Signal               string                  `json:"signal"`
+	Title                string                  `json:"title"`
+	Body                 string                  `json:"body,omitempty"`
+	Severity             string                  `json:"severity"`
+	Lane                 string                  `json:"lane"`
+	Path                 string                  `json:"path,omitempty"`
+	EstimatedRewardCents int64                   `json:"estimated_reward_cents"`
+	EstimatedHours       float64                 `json:"estimated_hours,omitempty"`
+	WorkerKind           WorkerKind              `json:"worker_kind"`
+	SuggestedAgentType   string                  `json:"suggested_agent_type,omitempty"`
+	ReadyForBounty       bool                    `json:"ready_for_bounty"`
+	AcceptanceCriteria   []string                `json:"acceptance_criteria,omitempty"`
+	EvidenceRequired     []string                `json:"evidence_required,omitempty"`
+	FundingPacket        RepositoryFundingPacket `json:"funding_packet"`
+}
+
+type RepositoryFundingPacket struct {
+	Status                  string         `json:"status"`
+	CanFund                 bool           `json:"can_fund"`
+	RecommendedRewardCents  int64          `json:"recommended_reward_cents"`
+	RecommendedFundingCents int64          `json:"recommended_funding_cents"`
+	FundEndpoint            string         `json:"fund_endpoint"`
+	PayPalOrderEndpoint     string         `json:"paypal_order_endpoint"`
+	FundPayload             map[string]any `json:"fund_payload"`
+	PayPalOrderPayload      map[string]any `json:"paypal_order_payload"`
+	EvidenceChecklist       []string       `json:"evidence_checklist"`
+}
+
+type FundRepositorySuggestedTaskRequest struct {
+	SuggestedTaskID  string        `json:"suggested_task_id,omitempty"`
+	RewardCents      int64         `json:"reward_cents"`
+	BudgetCents      int64         `json:"budget_cents"`
+	PaymentMethod    PaymentMethod `json:"payment_method"`
+	PaymentReference string        `json:"payment_reference"`
+}
+
+type FundRepositorySuggestedTaskResponse struct {
+	ProtocolVersion string        `json:"protocol_version"`
+	Kind            string        `json:"kind"`
+	ProjectID       string        `json:"project_id"`
+	SuggestedTaskID string        `json:"suggested_task_id"`
+	Task            *Task         `json:"task"`
+	LedgerEntries   []LedgerEntry `json:"ledger_entries"`
+}
+
+type RepositorySuggestedTaskPayPalOrderRequest struct {
+	SuggestedTaskID string `json:"suggested_task_id,omitempty"`
+	RewardCents     int64  `json:"reward_cents"`
+	BudgetCents     int64  `json:"budget_cents"`
+	ReturnURL       string `json:"return_url"`
+	CancelURL       string `json:"cancel_url"`
 }
 
 type TaskGraphStats struct {

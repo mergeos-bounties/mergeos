@@ -632,6 +632,7 @@ func (s *Store) CreateProject(ctx context.Context, userID string, req CreateProj
 	if strings.TrimSpace(req.Title) == "" {
 		return nil, errors.New("title is required")
 	}
+	req.PaymentMethod = normalizeFundingPaymentMethod(req.PaymentMethod)
 	if req.BudgetCents < 10000 {
 		return nil, errors.New("funding payment must be at least 100 USD")
 	}
@@ -825,6 +826,248 @@ func (s *Store) ListTasks(userID string) []*Task {
 func (s *Store) SyncProjectImportedIssues(projectID string, issues []*ImportedRepoIssue) error {
 	_, err := s.SyncProjectImportedIssuesReport(projectID, "", issues)
 	return err
+}
+
+type repositorySuggestedTaskFundingQuote struct {
+	ProjectID       string
+	ProjectTitle    string
+	SuggestedTaskID string
+	TaskTitle       string
+	RewardCents     int64
+	BudgetCents     int64
+	Suggestion      RepositorySuggestedTask
+}
+
+func (s *Store) RepositorySuggestedTaskFundingQuote(projectID, suggestedTaskID string, rewardCents, budgetCents int64) (repositorySuggestedTaskFundingQuote, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.repositorySuggestedTaskFundingQuoteLocked(projectID, suggestedTaskID, rewardCents, budgetCents)
+}
+
+func (s *Store) FundRepositorySuggestedTask(ctx context.Context, projectID, suggestedTaskID string, req FundRepositorySuggestedTaskRequest) (FundRepositorySuggestedTaskResponse, error) {
+	if strings.TrimSpace(req.SuggestedTaskID) != "" && strings.TrimSpace(req.SuggestedTaskID) != strings.TrimSpace(suggestedTaskID) {
+		return FundRepositorySuggestedTaskResponse{}, errors.New("suggested task id does not match route")
+	}
+	quote, err := s.RepositorySuggestedTaskFundingQuote(projectID, suggestedTaskID, req.RewardCents, req.BudgetCents)
+	if err != nil {
+		return FundRepositorySuggestedTaskResponse{}, err
+	}
+	paymentMethod := normalizeFundingPaymentMethod(req.PaymentMethod)
+	if !supportedFundingPaymentMethod(paymentMethod) {
+		return FundRepositorySuggestedTaskResponse{}, errors.New("payment method must be paypal, crypto, solana spl, or stripe")
+	}
+	verification, err := s.payments.Verify(ctx, CreateProjectRequest{
+		BudgetCents:      quote.BudgetCents,
+		PaymentMethod:    paymentMethod,
+		PaymentReference: req.PaymentReference,
+	})
+	if err != nil {
+		return FundRepositorySuggestedTaskResponse{}, err
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	project, ok := s.projects[strings.TrimSpace(projectID)]
+	if !ok {
+		return FundRepositorySuggestedTaskResponse{}, errors.New("project not found")
+	}
+	quote, err = s.repositorySuggestedTaskFundingQuoteLocked(projectID, suggestedTaskID, req.RewardCents, req.BudgetCents)
+	if err != nil {
+		return FundRepositorySuggestedTaskResponse{}, err
+	}
+	now := time.Now().UTC()
+	task := &Task{
+		ID:                 s.newID("tsk"),
+		ProjectID:          project.ID,
+		IssueNumber:        nextProjectIssueNumber(project),
+		Title:              quote.Suggestion.Title,
+		Acceptance:         repositorySuggestedTaskAcceptance(quote.Suggestion),
+		RewardCents:        quote.RewardCents,
+		RequiredWorkerKind: quote.Suggestion.WorkerKind,
+		SuggestedAgentType: strings.TrimSpace(quote.Suggestion.SuggestedAgentType),
+		BountyType:         repositoryScanSuggestionBountyType,
+		Status:             TaskOpen,
+		IssueState:         "open",
+		CreatedAt:          now,
+	}
+	if !projectAllowsAgents(project) {
+		routeTaskToHuman(task)
+	}
+	if issue, issueErr := s.repos.CreateProjectTask(ctx, project, task); issueErr == nil && issue != nil {
+		if issue.Number > 0 {
+			task.IssueNumber = issue.Number
+		}
+		task.IssueURL = strings.TrimSpace(issue.URL)
+	}
+
+	fee := quote.BudgetCents * s.cfg.PlatformFeeBps / 10000
+	workPool := quote.BudgetCents - fee
+	if workPool < quote.RewardCents {
+		workPool = quote.RewardCents
+		fee = quote.BudgetCents - workPool
+	}
+	if fee < 0 {
+		fee = 0
+	}
+	project.BudgetCents += quote.BudgetCents
+	project.FeeCents += fee
+	project.WorkPoolCents += workPool
+	project.Status = ProjectFunded
+	project.PaymentStatus = "verified"
+
+	s.tasks[task.ID] = task
+	s.syncProjectTaskSnapshotLocked(project, task)
+	sortTasks(project.Tasks)
+
+	clientProjectAccount := "client:" + project.ClientUserID + ":project:" + project.ID
+	ledgerReference := repositorySuggestedTaskLedgerReference(project, task, quote.Suggestion)
+	s.addLedger("payment_verified", "payment:"+verification.Provider, clientProjectAccount, quote.BudgetCents, verification.Reference)
+	s.addLedger("token_mint", "issuer:mergeos", clientProjectAccount, quote.BudgetCents, "mint:"+project.ID+";task:"+task.ID)
+	if fee > 0 {
+		s.addLedger("platform_fee", "client:"+project.ID, "treasury:mergeos", fee, "fee:"+project.ID+";task:"+task.ID)
+	}
+	s.addLedger("project_reserve", "client:"+project.ID, "reserve:project:"+project.ID, workPool, "task:"+task.ID+";suggestion:"+quote.SuggestedTaskID)
+	taskReserve := s.addLedger("task_reserve", "reserve:project:"+project.ID, taskReserveAccount(), task.RewardCents, ledgerReference)
+	s.addNotificationLocked(project.ClientUserID, project.ID, "repo_task_funded", "Repository task funded", fmt.Sprintf("%s is now funded with %s %s reserved for delivery.", task.Title, formatTokenAmount(task.RewardCents), normalizedTokenSymbol(s.cfg.TokenSymbol)), "logged:repo-task-funded")
+	if err := s.saveLocked(); err != nil {
+		return FundRepositorySuggestedTaskResponse{}, err
+	}
+	taskCopy := *task
+	return FundRepositorySuggestedTaskResponse{
+		ProtocolVersion: "mergeos.repo-task-funding.v1",
+		Kind:            "repo_task_funding",
+		ProjectID:       project.ID,
+		SuggestedTaskID: quote.SuggestedTaskID,
+		Task:            &taskCopy,
+		LedgerEntries:   []LedgerEntry{taskReserve},
+	}, nil
+}
+
+func (s *Store) repositorySuggestedTaskFundingQuoteLocked(projectID, suggestedTaskID string, rewardCents, budgetCents int64) (repositorySuggestedTaskFundingQuote, error) {
+	project, ok := s.projects[strings.TrimSpace(projectID)]
+	if !ok {
+		return repositorySuggestedTaskFundingQuote{}, errors.New("project not found")
+	}
+	scan := s.projectRepositoryScanLocked(project)
+	suggestion, ok := findRepositorySuggestedTask(scan.SuggestedTasks, suggestedTaskID)
+	if !ok {
+		return repositorySuggestedTaskFundingQuote{}, errors.New("suggested task not found")
+	}
+	if !suggestion.ReadyForBounty || suggestion.FundingPacket.CanFund == false || suggestion.FundingPacket.Status == "already_funded" {
+		return repositorySuggestedTaskFundingQuote{}, errors.New("suggested task is already funded")
+	}
+	recommendedReward := suggestion.FundingPacket.RecommendedRewardCents
+	if recommendedReward <= 0 {
+		recommendedReward = suggestion.EstimatedRewardCents
+	}
+	if rewardCents <= 0 {
+		rewardCents = recommendedReward
+	}
+	if rewardCents < recommendedReward {
+		return repositorySuggestedTaskFundingQuote{}, fmt.Errorf("reward must be at least %d cents", recommendedReward)
+	}
+	if budgetCents <= 0 {
+		budgetCents = repositoryFundingCentsForReward(rewardCents, s.cfg.PlatformFeeBps)
+	}
+	if budgetCents < 10000 {
+		return repositorySuggestedTaskFundingQuote{}, errors.New("escrow funding must be at least 100 USD")
+	}
+	if budgetCents < rewardCents {
+		return repositorySuggestedTaskFundingQuote{}, errors.New("escrow funding must cover the task reward")
+	}
+	return repositorySuggestedTaskFundingQuote{
+		ProjectID:       project.ID,
+		ProjectTitle:    publicLiveFeedProjectTitle(project),
+		SuggestedTaskID: suggestion.ID,
+		TaskTitle:       suggestion.Title,
+		RewardCents:     rewardCents,
+		BudgetCents:     budgetCents,
+		Suggestion:      suggestion,
+	}, nil
+}
+
+func findRepositorySuggestedTask(tasks []RepositorySuggestedTask, suggestedTaskID string) (RepositorySuggestedTask, bool) {
+	suggestedTaskID = strings.TrimSpace(suggestedTaskID)
+	for _, task := range tasks {
+		if task.ID == suggestedTaskID || task.SourceFindingID == suggestedTaskID {
+			return task, true
+		}
+	}
+	return RepositorySuggestedTask{}, false
+}
+
+func normalizeFundingPaymentMethod(method PaymentMethod) PaymentMethod {
+	switch strings.ToLower(strings.TrimSpace(string(method))) {
+	case "card", "credit_card", "debit_card", "credit / debit card":
+		return PaymentStripe
+	case string(PaymentPayPal):
+		return PaymentPayPal
+	case string(PaymentCrypto):
+		return PaymentCrypto
+	case string(PaymentUSDT), "solana", "solana_spl", "usdc":
+		return PaymentUSDT
+	case string(PaymentStripe):
+		return PaymentStripe
+	default:
+		return method
+	}
+}
+
+func supportedFundingPaymentMethod(method PaymentMethod) bool {
+	return method == PaymentPayPal || method == PaymentCrypto || method == PaymentUSDT || method == PaymentStripe
+}
+
+func repositorySuggestedTaskAcceptance(suggestion RepositorySuggestedTask) string {
+	lines := []string{
+		"Repository scan suggested task.",
+		"Source finding: " + suggestion.SourceFindingID,
+		"Signal: " + suggestion.Signal,
+	}
+	if strings.TrimSpace(suggestion.Path) != "" {
+		lines = append(lines, "Path: "+strings.TrimSpace(suggestion.Path))
+	}
+	if len(suggestion.AcceptanceCriteria) > 0 {
+		lines = append(lines, "", "Acceptance criteria:")
+		for _, item := range suggestion.AcceptanceCriteria {
+			if item = strings.TrimSpace(item); item != "" {
+				lines = append(lines, "- "+item)
+			}
+		}
+	}
+	if len(suggestion.EvidenceRequired) > 0 {
+		lines = append(lines, "", "Evidence required:")
+		for _, item := range suggestion.EvidenceRequired {
+			if item = strings.TrimSpace(item); item != "" {
+				lines = append(lines, "- "+item)
+			}
+		}
+	}
+	return strings.Join(lines, "\n")
+}
+
+func nextProjectIssueNumber(project *Project) int {
+	next := 1
+	if project == nil {
+		return next
+	}
+	for _, task := range project.Tasks {
+		if task != nil && task.IssueNumber >= next {
+			next = task.IssueNumber + 1
+		}
+	}
+	return next
+}
+
+func repositorySuggestedTaskLedgerReference(project *Project, task *Task, suggestion RepositorySuggestedTask) string {
+	reference := strings.TrimSpace(task.IssueURL)
+	if reference == "" && project != nil && strings.TrimSpace(project.BountyRepoName) != "" && task.IssueNumber > 0 {
+		reference = fmt.Sprintf("%s/issues/%d", project.BountyRepoName, task.IssueNumber)
+	}
+	if reference == "" {
+		reference = "repo-scan:" + suggestion.SourceFindingID
+	}
+	return ensureTaskLedgerReference(task.ID, reference+";suggestion:"+suggestion.ID+";signal:"+suggestion.Signal)
 }
 
 func (s *Store) SyncProjectImportedIssuesReport(projectID, sourceRepoURL string, issues []*ImportedRepoIssue) (ProjectIssueSyncResponse, error) {

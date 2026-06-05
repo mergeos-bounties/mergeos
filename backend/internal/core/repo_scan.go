@@ -13,9 +13,11 @@ import (
 )
 
 const (
-	maxRepositoryScanFiles    = 400
-	maxRepositoryScanBytes    = 256 * 1024
-	maxRepositoryScanFindings = 80
+	maxRepositoryScanFiles             = 400
+	maxRepositoryScanBytes             = 256 * 1024
+	maxRepositoryScanFindings          = 80
+	maxRepositorySuggestedTasks        = 16
+	repositoryScanSuggestionBountyType = "repo_scan_suggestion"
 )
 
 var repositorySecretPattern = regexp.MustCompile(`(?i)\b[A-Z0-9_.-]*(api[_-]?key|secret|password|token|private[_-]?key)[A-Z0-9_.-]*\b\s*[:=]\s*['"]?[A-Za-z0-9_./+=-]{8,}`)
@@ -147,6 +149,8 @@ func (s *Store) projectRepositoryScanLocked(project *Project) ProjectRepositoryS
 	response.Findings = findings
 	response.Stats.DependencyFiles = len(dependencies)
 	response.Stats.FindingCount = len(findings)
+	response.SuggestedTasks = repositorySuggestedTasks(project, findings, s.cfg.PlatformFeeBps)
+	response.Stats.SuggestedTaskCount = len(response.SuggestedTasks)
 	response.Summary = fmt.Sprintf("Scanned %d text files across %d repository files.", response.Stats.ScannedFiles, response.Stats.FileCount)
 	return response
 }
@@ -155,6 +159,10 @@ func repositoryScanProtocolDocument(project *Project, scan ProjectRepositoryScan
 	findings := scan.Findings
 	if findings == nil {
 		findings = []RepositoryScanFinding{}
+	}
+	suggestedTasks := scan.SuggestedTasks
+	if suggestedTasks == nil {
+		suggestedTasks = []RepositorySuggestedTask{}
 	}
 	return RepositoryScanProtocolDocument{
 		ProtocolVersion: "mergeos.scan.v1",
@@ -170,11 +178,242 @@ func repositoryScanProtocolDocument(project *Project, scan ProjectRepositoryScan
 		Languages:       scan.Languages,
 		Dependencies:    scan.Dependencies,
 		Findings:        findings,
+		SuggestedTasks:  suggestedTasks,
 		Metadata: map[string]any{
-			"finding_count":    scan.Stats.FindingCount,
-			"dependency_files": scan.Stats.DependencyFiles,
+			"finding_count":        scan.Stats.FindingCount,
+			"dependency_files":     scan.Stats.DependencyFiles,
+			"suggested_task_count": scan.Stats.SuggestedTaskCount,
 		},
 	}
+}
+
+func repositorySuggestedTasks(project *Project, findings []RepositoryScanFinding, platformFeeBps int64) []RepositorySuggestedTask {
+	if project == nil || len(findings) == 0 {
+		return []RepositorySuggestedTask{}
+	}
+	alreadyFunded := repositoryFundedSuggestionIDs(project)
+	capacity := len(findings)
+	if capacity > maxRepositorySuggestedTasks {
+		capacity = maxRepositorySuggestedTasks
+	}
+	tasks := make([]RepositorySuggestedTask, 0, capacity)
+	for _, finding := range findings {
+		if len(tasks) >= maxRepositorySuggestedTasks {
+			break
+		}
+		if strings.TrimSpace(finding.ID) == "" || strings.TrimSpace(finding.Signal) == "" {
+			continue
+		}
+		task := repositorySuggestedTaskFromFinding(project, finding, platformFeeBps)
+		if alreadyFunded[finding.ID] {
+			task.ReadyForBounty = false
+			task.FundingPacket.Status = "already_funded"
+			task.FundingPacket.CanFund = false
+		}
+		tasks = append(tasks, task)
+	}
+	return tasks
+}
+
+func repositorySuggestedTaskFromFinding(project *Project, finding RepositoryScanFinding, platformFeeBps int64) RepositorySuggestedTask {
+	lane, workerKind, agentType := repositorySuggestedTaskRouting(finding)
+	if !projectAllowsAgents(project) {
+		workerKind = WorkerHuman
+		agentType = ""
+	}
+	rewardCents := repositorySuggestedTaskRewardCents(finding)
+	fundingCents := repositoryFundingCentsForReward(rewardCents, platformFeeBps)
+	taskID := repositorySuggestedTaskID(finding)
+	fundEndpoint := fmt.Sprintf("/api/projects/%s/repo-scan/suggested-tasks/%s/fund", project.ID, taskID)
+	payPalOrderEndpoint := fmt.Sprintf("/api/projects/%s/repo-scan/suggested-tasks/%s/paypal-order", project.ID, taskID)
+	criteria := repositorySuggestedTaskAcceptanceCriteria(finding)
+	evidence := repositorySuggestedTaskEvidenceChecklist(finding)
+	return RepositorySuggestedTask{
+		ID:                   taskID,
+		SourceFindingID:      finding.ID,
+		Signal:               finding.Signal,
+		Title:                repositorySuggestedTaskTitle(finding),
+		Body:                 finding.Body,
+		Severity:             finding.Severity,
+		Lane:                 lane,
+		Path:                 finding.Path,
+		EstimatedRewardCents: rewardCents,
+		EstimatedHours:       repositorySuggestedTaskHours(finding.Severity),
+		WorkerKind:           workerKind,
+		SuggestedAgentType:   agentType,
+		ReadyForBounty:       true,
+		AcceptanceCriteria:   criteria,
+		EvidenceRequired:     evidence,
+		FundingPacket: RepositoryFundingPacket{
+			Status:                  "ready",
+			CanFund:                 true,
+			RecommendedRewardCents:  rewardCents,
+			RecommendedFundingCents: fundingCents,
+			FundEndpoint:            fundEndpoint,
+			PayPalOrderEndpoint:     payPalOrderEndpoint,
+			FundPayload: map[string]any{
+				"suggested_task_id": taskID,
+				"source_finding_id": finding.ID,
+				"signal":            finding.Signal,
+				"reward_cents":      rewardCents,
+				"budget_cents":      fundingCents,
+			},
+			PayPalOrderPayload: map[string]any{
+				"suggested_task_id": taskID,
+				"source_finding_id": finding.ID,
+				"reward_cents":      rewardCents,
+				"budget_cents":      fundingCents,
+			},
+			EvidenceChecklist: evidence,
+		},
+	}
+}
+
+func repositoryFundedSuggestionIDs(project *Project) map[string]bool {
+	funded := map[string]bool{}
+	if project == nil {
+		return funded
+	}
+	for _, task := range project.Tasks {
+		if task == nil || task.BountyType != repositoryScanSuggestionBountyType {
+			continue
+		}
+		for _, line := range strings.Split(task.Acceptance, "\n") {
+			line = strings.TrimSpace(line)
+			if strings.HasPrefix(line, "Source finding: ") {
+				funded[strings.TrimSpace(strings.TrimPrefix(line, "Source finding: "))] = true
+			}
+		}
+	}
+	return funded
+}
+
+func repositorySuggestedTaskID(finding RepositoryScanFinding) string {
+	suffix := strings.TrimSpace(strings.TrimPrefix(finding.ID, "repo-finding-"))
+	if suffix == "" || suffix == finding.ID {
+		suffix = slug(finding.Signal)
+	}
+	if suffix == "" {
+		suffix = "scan"
+	}
+	return "repo-task-" + suffix
+}
+
+func repositorySuggestedTaskTitle(finding RepositoryScanFinding) string {
+	title := strings.TrimSpace(finding.Title)
+	if title == "" {
+		title = "Repository scan finding"
+	}
+	return "Fix: " + title
+}
+
+func repositorySuggestedTaskRouting(finding RepositoryScanFinding) (string, WorkerKind, string) {
+	switch strings.TrimSpace(finding.Signal) {
+	case "env_file", "secret_pattern", "dangerous_js_execution", "direct_inner_html":
+		return "security", WorkerHybrid, "security-review-agent"
+	case "lockfile_missing", "dependency_unpinned":
+		return "dependencies", WorkerAgent, "dependency-scan-agent"
+	case "production_panic":
+		return "backend", WorkerHybrid, "go-reliability-agent"
+	case "todo_fixme":
+		return "implementation", WorkerHuman, ""
+	default:
+		if strings.EqualFold(finding.Category, "security") {
+			return "security", WorkerHybrid, "security-review-agent"
+		}
+		return "implementation", WorkerHybrid, "code-review-agent"
+	}
+}
+
+func repositorySuggestedTaskRewardCents(finding RepositoryScanFinding) int64 {
+	switch strings.ToLower(strings.TrimSpace(finding.Severity)) {
+	case "critical":
+		return 60000
+	case "high":
+		return 35000
+	case "medium":
+		return 20000
+	default:
+		return 10000
+	}
+}
+
+func repositorySuggestedTaskHours(severity string) float64 {
+	switch strings.ToLower(strings.TrimSpace(severity)) {
+	case "critical":
+		return 8
+	case "high":
+		return 6
+	case "medium":
+		return 3.5
+	default:
+		return 2
+	}
+}
+
+func repositoryFundingCentsForReward(rewardCents, platformFeeBps int64) int64 {
+	if rewardCents <= 0 {
+		return 0
+	}
+	if platformFeeBps <= 0 || platformFeeBps >= 10000 {
+		return rewardCents
+	}
+	divisor := 10000 - platformFeeBps
+	return (rewardCents*10000 + divisor - 1) / divisor
+}
+
+func repositorySuggestedTaskAcceptanceCriteria(finding RepositoryScanFinding) []string {
+	location := repositorySuggestedTaskLocation(finding)
+	title := strings.TrimSpace(finding.Title)
+	if title == "" {
+		title = "the repository scan signal"
+	}
+	criteria := []string{
+		fmt.Sprintf("Resolve %s without introducing regressions.", title),
+		"Attach a pull request, commit, or evidence URL that references the changed files.",
+	}
+	switch finding.Signal {
+	case "lockfile_missing", "dependency_unpinned":
+		criteria = append(criteria, "Lock dependency versions and include the generated lockfile or dependency diff.")
+	case "secret_pattern", "env_file":
+		criteria = append(criteria, "Rotate or remove exposed secret material and document the safe replacement path.")
+	case "dangerous_js_execution", "direct_inner_html":
+		criteria = append(criteria, "Replace unsafe rendering or execution with a sanitized implementation and add a regression test.")
+	case "production_panic":
+		criteria = append(criteria, "Replace the production panic path with handled error flow and coverage.")
+	default:
+		criteria = append(criteria, "Include test, lint, or review notes proving the scan signal is resolved.")
+	}
+	if location != "" {
+		criteria = append(criteria, "Reference location: "+location+".")
+	}
+	return criteria
+}
+
+func repositorySuggestedTaskEvidenceChecklist(finding RepositoryScanFinding) []string {
+	switch finding.Signal {
+	case "lockfile_missing", "dependency_unpinned":
+		return []string{"dependency_diff", "lockfile_or_pin", "tests_or_install"}
+	case "secret_pattern", "env_file":
+		return []string{"secret_removed", "rotation_note", "scan_clean"}
+	case "dangerous_js_execution", "direct_inner_html":
+		return []string{"pull_request", "security_review", "regression_test"}
+	case "production_panic":
+		return []string{"pull_request", "error_handling_test", "runtime_evidence"}
+	default:
+		return []string{"pull_request", "tests_or_review", "scan_clean"}
+	}
+}
+
+func repositorySuggestedTaskLocation(finding RepositoryScanFinding) string {
+	path := strings.TrimSpace(finding.Path)
+	if path == "" {
+		return ""
+	}
+	if finding.Line > 0 {
+		return fmt.Sprintf("%s:%d", path, finding.Line)
+	}
+	return path
 }
 
 func repositoryScanRootAllowed(root, bountyRoot string) bool {

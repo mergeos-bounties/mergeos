@@ -29,6 +29,7 @@ type RepoIssue struct {
 
 type RepoFactory interface {
 	CreateProjectRepo(ctx context.Context, project *Project, tasks []*Task) (*RepoResult, error)
+	CreateProjectTask(ctx context.Context, project *Project, task *Task) (*RepoIssue, error)
 }
 
 func NewRepoFactory(cfg Config) RepoFactory {
@@ -117,6 +118,28 @@ func (f LocalRepoFactory) CreateProjectRepo(_ context.Context, project *Project,
 	}, nil
 }
 
+func (f LocalRepoFactory) CreateProjectTask(_ context.Context, project *Project, task *Task) (*RepoIssue, error) {
+	repoPath := strings.TrimSpace(project.RepoLocalPath)
+	if repoPath == "" {
+		repoPath = strings.TrimSpace(project.RepoURL)
+	}
+	if repoPath == "" {
+		return nil, fmt.Errorf("project repository is not configured")
+	}
+	if err := os.MkdirAll(filepath.Join(repoPath, "tasks"), 0755); err != nil {
+		return nil, err
+	}
+	taskPath := filepath.Join(repoPath, "tasks", fmt.Sprintf("%03d-%s.md", task.IssueNumber, slug(task.Title)))
+	if err := os.WriteFile(taskPath, []byte(renderTaskMarkdown(project, task, f.cfg.TokenSymbol)), 0644); err != nil {
+		return nil, err
+	}
+	commitLocalRepoTask(repoPath, taskPath)
+	return &RepoIssue{
+		Number: task.IssueNumber,
+		URL:    taskPath,
+	}, nil
+}
+
 func initLocalGit(repoPath string) {
 	if _, err := os.Stat(filepath.Join(repoPath, ".git")); err == nil {
 		return
@@ -125,6 +148,25 @@ func initLocalGit(repoPath string) {
 		{"git", "-c", "gc.auto=0", "-c", "maintenance.auto=false", "init"},
 		{"git", "-c", "gc.auto=0", "-c", "maintenance.auto=false", "add", "."},
 		{"git", "-c", "gc.auto=0", "-c", "maintenance.auto=false", "-c", "user.name=MergeOS", "-c", "user.email=mergeos@local", "commit", "-m", "Initialize MergeOS bounty repo"},
+	}
+	for _, parts := range commands {
+		cmd := exec.Command(parts[0], parts[1:]...)
+		cmd.Dir = repoPath
+		_ = cmd.Run()
+	}
+}
+
+func commitLocalRepoTask(repoPath, taskPath string) {
+	if _, err := os.Stat(filepath.Join(repoPath, ".git")); err != nil {
+		return
+	}
+	relativeTaskPath, err := filepath.Rel(repoPath, taskPath)
+	if err != nil {
+		relativeTaskPath = taskPath
+	}
+	commands := [][]string{
+		{"git", "-c", "gc.auto=0", "-c", "maintenance.auto=false", "add", filepath.ToSlash(relativeTaskPath)},
+		{"git", "-c", "gc.auto=0", "-c", "maintenance.auto=false", "-c", "user.name=MergeOS", "-c", "user.email=mergeos@local", "commit", "-m", "Add MergeOS suggested task"},
 	}
 	for _, parts := range commands {
 		cmd := exec.Command(parts[0], parts[1:]...)
@@ -221,6 +263,53 @@ func (f *GitHubRepoFactory) CreateProjectRepo(ctx context.Context, project *Proj
 		URL:      created.HTMLURL,
 		Issues:   issues,
 	}, nil
+}
+
+func (f *GitHubRepoFactory) CreateProjectTask(ctx context.Context, project *Project, task *Task) (*RepoIssue, error) {
+	fullName := projectGitHubRepoFullName(project)
+	if fullName == "" {
+		return nil, fmt.Errorf("project GitHub repository is not configured")
+	}
+	issuePayload := map[string]any{
+		"title": task.Title,
+		"body":  renderTaskMarkdown(project, task, f.cfg.TokenSymbol),
+		"labels": []string{
+			"mergeos",
+			"repo-scan",
+			"worker:" + string(task.RequiredWorkerKind),
+		},
+	}
+	var issue struct {
+		Number  int    `json:"number"`
+		HTMLURL string `json:"html_url"`
+	}
+	issueURL := "https://api.github.com/repos/" + fullName + "/issues"
+	if err := f.githubJSON(ctx, http.MethodPost, issueURL, issuePayload, &issue); err != nil {
+		return nil, err
+	}
+	return &RepoIssue{
+		Number: issue.Number,
+		URL:    issue.HTMLURL,
+	}, nil
+}
+
+func projectGitHubRepoFullName(project *Project) string {
+	if project == nil {
+		return ""
+	}
+	if fullName := strings.TrimSpace(project.BountyRepoName); strings.Contains(fullName, "/") {
+		return fullName
+	}
+	repoURL := strings.TrimSpace(project.RepoURL)
+	repoURL = strings.TrimSuffix(repoURL, ".git")
+	if marker := "github.com/"; strings.Contains(repoURL, marker) {
+		fullName := strings.Trim(strings.SplitN(repoURL, marker, 2)[1], "/")
+		parts := strings.Split(fullName, "/")
+		if len(parts) >= 2 {
+			return parts[0] + "/" + parts[1]
+		}
+	}
+	return ""
 }
 
 func (f *GitHubRepoFactory) githubJSON(ctx context.Context, method, endpoint string, body any, out any) error {

@@ -23975,6 +23975,7 @@ async function startRepositorySuggestedTaskPayPalFunding(projectID, task = {}) {
   }
   const paypalPayload = task.paypalPayload || {};
   const rewardCents = Number(paypalPayload.reward_cents || task.fundingPayload?.reward_cents || task.reward_cents) || 0;
+  const fundingCents = Number(paypalPayload.budget_cents || task.recommendedFundingCents || task.fundingPayload?.budget_cents || rewardCents) || rewardCents;
   const returnURL = absolutePublicPath('/paypal/return?flow=repo_task_funding');
   const cancelURL = absolutePublicPath('/paypal/cancel?flow=repo_task_funding');
   const endpoint = task.paypalOrderEndpoint || `/api/projects/${encodeURIComponent(projectID)}/repo-scan/suggested-tasks/${encodeURIComponent(task.id)}/paypal-order`;
@@ -23983,6 +23984,7 @@ async function startRepositorySuggestedTaskPayPalFunding(projectID, task = {}) {
     body: JSON.stringify({
       suggested_task_id: paypalPayload.suggested_task_id || task.id,
       reward_cents: rewardCents,
+      budget_cents: fundingCents,
       return_url: returnURL,
       cancel_url: cancelURL,
     }),
@@ -24009,10 +24011,14 @@ function repositoryTaskFundEndpoint(projectID, taskID, task = {}) {
 
 async function submitRepositorySuggestedTaskFundingRequest(projectID, taskID, rewardCents, paymentMethod, paymentReference, options = {}) {
   const endpoint = repositoryTaskFundEndpoint(projectID, taskID, options.task || {});
+  const task = options.task || {};
+  const fundingPayload = task.fundingPayload || {};
+  const budgetCents = Number(task.recommendedFundingCents || fundingPayload.budget_cents || rewardCents) || rewardCents;
   const payload = await api(endpoint, {
     method: 'POST',
     body: JSON.stringify({
       reward_cents: Number(rewardCents) || 0,
+      budget_cents: budgetCents,
       payment_method: paymentMethod,
       payment_reference: paymentReference,
     }),

@@ -3528,6 +3528,58 @@ func TestProjectRepositoryScanRouteReturnsStaticFindings(t *testing.T) {
 			t.Fatalf("repo scan missing signal %s: %#v", signal, payload.Findings)
 		}
 	}
+	if payload.Stats.SuggestedTaskCount == 0 || len(payload.SuggestedTasks) == 0 {
+		t.Fatalf("repo scan missing suggested tasks: %#v", payload.Stats)
+	}
+	var taskToFund RepositorySuggestedTask
+	for _, task := range payload.SuggestedTasks {
+		if task.Signal == "secret_pattern" || task.Signal == "dangerous_js_execution" {
+			taskToFund = task
+			break
+		}
+	}
+	if taskToFund.ID == "" {
+		t.Fatalf("repo scan missing security suggested task: %#v", payload.SuggestedTasks)
+	}
+	if !taskToFund.ReadyForBounty || !taskToFund.FundingPacket.CanFund || taskToFund.FundingPacket.RecommendedFundingCents < taskToFund.FundingPacket.RecommendedRewardCents || len(taskToFund.FundingPacket.EvidenceChecklist) == 0 {
+		t.Fatalf("unexpected funding packet: %#v", taskToFund)
+	}
+	fundReq := httptest.NewRequest(http.MethodPost, "/api/projects/"+project.ID+"/repo-scan/suggested-tasks/"+taskToFund.ID+"/fund", strings.NewReader(fmt.Sprintf(`{"reward_cents":%d,"budget_cents":%d,"payment_method":"card","payment_reference":%q}`, taskToFund.FundingPacket.RecommendedRewardCents, taskToFund.FundingPacket.RecommendedFundingCents, defaultDevPaymentCode)))
+	fundReq.Header.Set("Authorization", "Bearer "+auth.Token)
+	fundReq.Header.Set("Content-Type", "application/json")
+	fundResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(fundResp, fundReq)
+	if fundResp.Code != http.StatusCreated {
+		t.Fatalf("repo suggested task fund status = %d, body = %s", fundResp.Code, fundResp.Body.String())
+	}
+	var fundedPayload FundRepositorySuggestedTaskResponse
+	if err := json.Unmarshal(fundResp.Body.Bytes(), &fundedPayload); err != nil {
+		t.Fatal(err)
+	}
+	if fundedPayload.Task == nil || fundedPayload.Task.BountyType != repositoryScanSuggestionBountyType || fundedPayload.Task.RewardCents != taskToFund.FundingPacket.RecommendedRewardCents || fundedPayload.Task.RequiredWorkerKind == "" {
+		t.Fatalf("unexpected funded suggested task: %#v", fundedPayload)
+	}
+	rescanReq := httptest.NewRequest(http.MethodGet, "/api/projects/"+project.ID+"/repo-scan", nil)
+	rescanReq.Header.Set("Authorization", "Bearer "+auth.Token)
+	rescanResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(rescanResp, rescanReq)
+	if rescanResp.Code != http.StatusOK {
+		t.Fatalf("repo rescan status = %d, body = %s", rescanResp.Code, rescanResp.Body.String())
+	}
+	var rescanPayload ProjectRepositoryScanResponse
+	if err := json.Unmarshal(rescanResp.Body.Bytes(), &rescanPayload); err != nil {
+		t.Fatal(err)
+	}
+	var seenAlreadyFunded bool
+	for _, task := range rescanPayload.SuggestedTasks {
+		if task.ID == taskToFund.ID {
+			seenAlreadyFunded = task.FundingPacket.Status == "already_funded" && !task.FundingPacket.CanFund
+			break
+		}
+	}
+	if !seenAlreadyFunded {
+		t.Fatalf("repo rescan did not mark funded suggestion: %#v", rescanPayload.SuggestedTasks)
+	}
 
 	protocolReq := httptest.NewRequest(http.MethodGet, "/api/projects/"+project.ID+"/protocol/scan", nil)
 	protocolReq.Header.Set("Authorization", "Bearer "+auth.Token)
@@ -3546,11 +3598,14 @@ func TestProjectRepositoryScanRouteReturnsStaticFindings(t *testing.T) {
 	if err := json.Unmarshal(protocolResp.Body.Bytes(), &protocolPayload); err != nil {
 		t.Fatal(err)
 	}
-	if protocolPayload.ProtocolVersion != "mergeos.scan.v1" || protocolPayload.Kind != "repository_scan" || protocolPayload.ProjectID != project.ID || protocolPayload.Stats.FindingCount != payload.Stats.FindingCount {
+	if protocolPayload.ProtocolVersion != "mergeos.scan.v1" || protocolPayload.Kind != "repository_scan" || protocolPayload.ProjectID != project.ID || protocolPayload.Stats.FindingCount != payload.Stats.FindingCount || protocolPayload.Stats.SuggestedTaskCount != rescanPayload.Stats.SuggestedTaskCount {
 		t.Fatalf("unexpected repo scan protocol payload: %#v", protocolPayload)
 	}
 	if len(protocolPayload.Findings) != len(payload.Findings) {
 		t.Fatalf("repo scan protocol findings = %d, want %d", len(protocolPayload.Findings), len(payload.Findings))
+	}
+	if len(protocolPayload.SuggestedTasks) != len(rescanPayload.SuggestedTasks) {
+		t.Fatalf("repo scan protocol suggested tasks = %d, want %d", len(protocolPayload.SuggestedTasks), len(rescanPayload.SuggestedTasks))
 	}
 
 	otherAuth, err := store.Register(RegisterRequest{

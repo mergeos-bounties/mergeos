@@ -24,7 +24,8 @@
         "scanned_files": { "type": "integer", "minimum": 0 },
         "skipped_files": { "type": "integer", "minimum": 0 },
         "dependency_files": { "type": "integer", "minimum": 0 },
-        "finding_count": { "type": "integer", "minimum": 0 }
+        "finding_count": { "type": "integer", "minimum": 0 },
+        "suggested_task_count": { "type": "integer", "minimum": 0 }
       }
     },
     "languages": {
@@ -69,6 +70,56 @@
           "path": { "type": "string", "maxLength": 512 },
           "line": { "type": "integer", "minimum": 0 },
           "signal": { "type": "string", "minLength": 1, "maxLength": 120 }
+        }
+      }
+    },
+    "suggested_tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "source_finding_id", "signal", "title", "severity", "lane", "estimated_reward_cents", "worker_kind", "ready_for_bounty", "funding_packet"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "source_finding_id": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "signal": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "title": { "type": "string", "minLength": 1, "maxLength": 240 },
+          "body": { "type": "string", "maxLength": 1000 },
+          "severity": { "enum": ["low", "medium", "high", "critical"] },
+          "lane": { "type": "string", "minLength": 1, "maxLength": 80 },
+          "path": { "type": "string", "maxLength": 512 },
+          "estimated_reward_cents": { "type": "integer", "minimum": 0 },
+          "estimated_hours": { "type": "number", "minimum": 0 },
+          "worker_kind": { "enum": ["human", "agent", "hybrid"] },
+          "suggested_agent_type": { "type": "string", "maxLength": 120 },
+          "ready_for_bounty": { "type": "boolean" },
+          "acceptance_criteria": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1, "maxLength": 500 }
+          },
+          "evidence_required": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1, "maxLength": 120 }
+          },
+          "funding_packet": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["status", "can_fund", "recommended_reward_cents", "recommended_funding_cents", "fund_payload", "paypal_order_payload", "evidence_checklist"],
+            "properties": {
+              "status": { "enum": ["ready", "already_funded", "needs_review", "blocked"] },
+              "can_fund": { "type": "boolean" },
+              "recommended_reward_cents": { "type": "integer", "minimum": 0 },
+              "recommended_funding_cents": { "type": "integer", "minimum": 0 },
+              "fund_endpoint": { "type": "string", "maxLength": 512 },
+              "paypal_order_endpoint": { "type": "string", "maxLength": 512 },
+              "fund_payload": { "type": "object" },
+              "paypal_order_payload": { "type": "object" },
+              "evidence_checklist": {
+                "type": "array",
+                "items": { "type": "string", "minLength": 1, "maxLength": 120 }
+              }
+            }
+          }
         }
       }
     },
