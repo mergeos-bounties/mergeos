@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mergeos.shop/protocol/pr-monitor.v1.schema.json",
+  "title": "MergeOS PR Monitor v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["protocol_version", "kind", "project_id", "project_title", "stats", "tasks", "updated_at"],
+  "properties": {
+    "protocol_version": { "const": "mergeos.pr-monitor.v1" },
+    "kind": { "const": "pr_monitor" },
+    "project_id": { "type": "string", "minLength": 1, "maxLength": 96 },
+    "project_title": { "type": "string", "maxLength": 240 },
+    "updated_at": { "type": "string", "format": "date-time" },
+    "stats": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["task_count", "linked_task_count", "pull_request_count", "open_pull_request_count", "merged_pull_request_count", "ready_count", "needs_review_count", "blocked_count", "error_count"],
+      "properties": {
+        "task_count": { "type": "integer", "minimum": 0 },
+        "linked_task_count": { "type": "integer", "minimum": 0 },
+        "pull_request_count": { "type": "integer", "minimum": 0 },
+        "open_pull_request_count": { "type": "integer", "minimum": 0 },
+        "merged_pull_request_count": { "type": "integer", "minimum": 0 },
+        "ready_count": { "type": "integer", "minimum": 0 },
+        "needs_review_count": { "type": "integer", "minimum": 0 },
+        "blocked_count": { "type": "integer", "minimum": 0 },
+        "error_count": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["task_id", "issue_number", "title", "status", "monitor_status", "pull_requests", "updated_at"],
+        "properties": {
+          "task_id": { "type": "string", "minLength": 1, "maxLength": 96 },
+          "issue_number": { "type": "integer", "minimum": 0 },
+          "title": { "type": "string", "minLength": 1, "maxLength": 240 },
+          "status": { "enum": ["open", "accepted"] },
+          "issue_url": { "type": "string", "maxLength": 512 },
+          "repository": { "type": "string", "maxLength": 240 },
+          "monitor_status": { "enum": ["unlinked", "linked", "synced", "error"] },
+          "monitor_error": { "type": "string", "maxLength": 500 },
+          "updated_at": { "type": "string", "format": "date-time" },
+          "pull_requests": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["number", "title", "state", "html_url", "author", "draft", "merged", "readiness", "created_at", "updated_at"],
+              "properties": {
+                "number": { "type": "integer", "minimum": 1 },
+                "title": { "type": "string", "minLength": 1, "maxLength": 240 },
+                "state": { "type": "string", "minLength": 1, "maxLength": 80 },
+                "html_url": { "type": "string", "minLength": 1, "maxLength": 512 },
+                "merge_url": { "type": "string", "maxLength": 512 },
+                "author": { "type": "string", "maxLength": 160 },
+                "draft": { "type": "boolean" },
+                "merged": { "type": "boolean" },
+                "mergeable_state": { "type": "string", "maxLength": 80 },
+                "base_ref": { "type": "string", "maxLength": 160 },
+                "head_ref": { "type": "string", "maxLength": 160 },
+                "labels": {
+                  "type": "array",
+                  "items": { "type": "string", "minLength": 1, "maxLength": 120 }
+                },
+                "readiness": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["status", "can_merge", "risk_level"],
+                  "properties": {
+                    "status": { "enum": ["ready", "needs_review", "blocked"] },
+                    "can_merge": { "type": "boolean" },
+                    "risk_level": { "enum": ["low", "medium", "high"] },
+                    "blockers": {
+                      "type": "array",
+                      "items": { "type": "string", "minLength": 1, "maxLength": 240 }
+                    },
+                    "warnings": {
+                      "type": "array",
+                      "items": { "type": "string", "minLength": 1, "maxLength": 240 }
+                    },
+                    "signals": {
+                      "type": "array",
+                      "items": { "type": "string", "minLength": 1, "maxLength": 160 }
+                    }
+                  }
+                },
+                "created_at": { "type": "string", "format": "date-time" },
+                "updated_at": { "type": "string", "format": "date-time" },
+                "merged_at": { "type": "string", "format": "date-time" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

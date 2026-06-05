@@ -10,6 +10,7 @@ const schemaFiles = {
   'mergeos.ledger.v1': '../schemas/ledger.v1.schema.json',
   'mergeos.live-feed.v1': '../schemas/live-feed.v1.schema.json',
   'mergeos.marketplace.v1': '../schemas/marketplace.v1.schema.json',
+  'mergeos.pr-monitor.v1': '../schemas/pr-monitor.v1.schema.json',
   'mergeos.scan.v1': '../schemas/scan.v1.schema.json',
   'mergeos.task.v1': '../schemas/task.v1.schema.json',
   'mergeos.worker-dashboard.v1': '../schemas/worker-dashboard.v1.schema.json',

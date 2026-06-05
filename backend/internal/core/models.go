@@ -392,11 +392,13 @@ type AdminPullRequestReadiness struct {
 }
 
 type ProjectPullRequestsResponse struct {
-	ProjectID    string                    `json:"project_id"`
-	ProjectTitle string                    `json:"project_title"`
-	Stats        ProjectPullRequestStats   `json:"stats"`
-	Tasks        []ProjectTaskPullRequests `json:"tasks"`
-	UpdatedAt    time.Time                 `json:"updated_at"`
+	ProtocolVersion string                    `json:"protocol_version"`
+	Kind            string                    `json:"kind"`
+	ProjectID       string                    `json:"project_id"`
+	ProjectTitle    string                    `json:"project_title"`
+	Stats           ProjectPullRequestStats   `json:"stats"`
+	Tasks           []ProjectTaskPullRequests `json:"tasks"`
+	UpdatedAt       time.Time                 `json:"updated_at"`
 }
 
 type ProjectPullRequestStats struct {

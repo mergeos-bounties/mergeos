@@ -387,7 +387,7 @@ test('exposes project workflow and admin ops routes', async () => {
   const fetchImpl = fakeFetch([
     { status: 200, body: { protocol_version: 'mergeos.escrow.v1', release_status: 'funded' } },
     { status: 200, body: { project: { project_id: 'prj_1' }, task_graph: { stats: { node_count: 2 } } } },
-    { status: 200, body: { stats: { pull_request_count: 2 }, tasks: [] } },
+    { status: 200, body: { protocol_version: 'mergeos.pr-monitor.v1', stats: { pull_request_count: 2 }, tasks: [] } },
     { status: 200, body: { status: 'validating' } },
     { status: 200, body: { status: 'orchestrating' } },
     { status: 201, body: { log: { event_name: 'agent_action', action: 'test' } } },
@@ -417,6 +417,7 @@ test('exposes project workflow and admin ops routes', async () => {
 
   assert.equal(escrow.protocol_version, 'mergeos.escrow.v1');
   assert.equal(dashboard.project.project_id, 'prj_1');
+  assert.equal(pulls.protocol_version, 'mergeos.pr-monitor.v1');
   assert.equal(pulls.stats.pull_request_count, 2);
   assert.equal(agentAction.log.action, 'test');
   assert.equal(graph.stats.node_count, 2);

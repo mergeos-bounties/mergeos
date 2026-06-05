@@ -54,6 +54,12 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Description: "Authenticated project escrow document with reserve, release, payout, remaining balance, and per-task settlement state.",
 			},
 			{
+				Version:     "mergeos.pr-monitor.v1",
+				Kind:        "pr_monitor",
+				SchemaURL:   "https://mergeos.shop/protocol/pr-monitor.v1.schema.json",
+				Description: "Authenticated live pull request monitor with task linkage, readiness gates, merge risk, labels, authors, and GitHub sync health.",
+			},
+			{
 				Version:     "mergeos.scan.v1",
 				Kind:        "repository_scan",
 				SchemaURL:   "https://mergeos.shop/protocol/scan.v1.schema.json",
@@ -154,6 +160,13 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Protocol:    "mergeos.escrow.v1",
 				Auth:        "project",
 				Description: "Authenticated project escrow reserve, release, payout, and task settlement document.",
+			},
+			{
+				Method:      "GET",
+				Path:        "/api/projects/{id}/pull-requests",
+				Protocol:    "mergeos.pr-monitor.v1",
+				Auth:        "project",
+				Description: "Authenticated live pull request monitor for linked bounty tasks, readiness gates, and merge risk.",
 			},
 			{
 				Method:      "GET",

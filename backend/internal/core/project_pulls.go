@@ -11,10 +11,12 @@ type projectPullRequestLister interface {
 
 func projectPullRequestsMonitor(ctx context.Context, lister projectPullRequestLister, project *Project) ProjectPullRequestsResponse {
 	response := ProjectPullRequestsResponse{
-		ProjectID:    project.ID,
-		ProjectTitle: publicLiveFeedProjectTitle(project),
-		Tasks:        []ProjectTaskPullRequests{},
-		UpdatedAt:    project.CreatedAt,
+		ProtocolVersion: "mergeos.pr-monitor.v1",
+		Kind:            "pr_monitor",
+		ProjectID:       project.ID,
+		ProjectTitle:    publicLiveFeedProjectTitle(project),
+		Tasks:           []ProjectTaskPullRequests{},
+		UpdatedAt:       project.CreatedAt,
 	}
 	tasks := make([]*Task, 0, len(project.Tasks))
 	for _, task := range project.Tasks {

@@ -33,6 +33,7 @@ const mergeos = createMergeOSClient({
 const projects = await mergeos.listProjects();
 const escrow = await mergeos.projectEscrow(projects[0].id);
 const pulls = await mergeos.projectPullRequests(projects[0].id);
+console.log(pulls.protocol_version, pulls.stats.ready_count);
 const deployment = await mergeos.projectDeployment(projects[0].id);
 const workflow = await mergeos.projectAIWorkflow(projects[0].id);
 const agentAction = await mergeos.createProjectAgentAction(projects[0].id, {

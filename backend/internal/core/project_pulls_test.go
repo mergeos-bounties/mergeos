@@ -87,6 +87,9 @@ func TestProjectPullRequestsMonitorSummarizesReadinessWithoutAdminFields(t *test
 	}
 
 	payload := projectPullRequestsMonitor(context.Background(), lister, project)
+	if payload.ProtocolVersion != "mergeos.pr-monitor.v1" || payload.Kind != "pr_monitor" {
+		t.Fatalf("unexpected project PR protocol header: %#v", payload)
+	}
 	if payload.ProjectID != project.ID || payload.Stats.TaskCount != 2 || payload.Stats.LinkedTaskCount != 1 {
 		t.Fatalf("unexpected project PR summary: %#v", payload)
 	}

@@ -21,6 +21,7 @@ test('loads stable task, workflow, ledger, and event schemas', () => {
     'mergeos.ledger.v1',
     'mergeos.live-feed.v1',
     'mergeos.marketplace.v1',
+    'mergeos.pr-monitor.v1',
     'mergeos.scan.v1',
     'mergeos.task.v1',
     'mergeos.worker-dashboard.v1',
@@ -281,6 +282,109 @@ test('validates escrow protocol documents', () => {
   assert(invalid.errors.some((error) => error.path === 'release_status'));
   assert(invalid.errors.some((error) => error.path === 'tasks[0].release_status'));
   assert(invalid.errors.some((error) => error.path === 'tasks[0].paid_cents'));
+});
+
+test('validates PR monitor protocol documents', () => {
+  const now = '2026-06-05T00:00:00.000Z';
+  const monitor = {
+    protocol_version: 'mergeos.pr-monitor.v1',
+    kind: 'pr_monitor',
+    project_id: 'prj_0001',
+    project_title: 'Customer portal rebuild',
+    updated_at: now,
+    stats: {
+      task_count: 2,
+      linked_task_count: 1,
+      pull_request_count: 2,
+      open_pull_request_count: 1,
+      merged_pull_request_count: 1,
+      ready_count: 1,
+      needs_review_count: 0,
+      blocked_count: 1,
+      error_count: 0,
+    },
+    tasks: [
+      {
+        task_id: 'tsk_0001',
+        issue_number: 12,
+        title: 'Fix checkout UI',
+        status: 'open',
+        issue_url: 'https://github.com/mergeos-bounties/mergeos/issues/12',
+        repository: 'mergeos-bounties/mergeos',
+        monitor_status: 'synced',
+        updated_at: now,
+        pull_requests: [
+          {
+            number: 151,
+            title: 'Fix checkout UI',
+            state: 'open',
+            html_url: 'https://github.com/mergeos-bounties/mergeos/pull/151',
+            merge_url: 'https://api.github.com/repos/mergeos-bounties/mergeos/pulls/151/merge',
+            author: 'maya-dev',
+            draft: false,
+            merged: false,
+            mergeable_state: 'clean',
+            base_ref: 'master',
+            head_ref: 'fix-checkout',
+            labels: ['evidence: provided', 'star: verified'],
+            readiness: {
+              status: 'ready',
+              can_merge: true,
+              risk_level: 'low',
+              signals: ['evidence_ready'],
+            },
+            created_at: now,
+            updated_at: now,
+          },
+          {
+            number: 152,
+            title: 'Delete deploy workflow',
+            state: 'open',
+            html_url: 'https://github.com/mergeos-bounties/mergeos/pull/152',
+            author: 'risky-builder',
+            draft: false,
+            merged: false,
+            mergeable_state: 'dirty',
+            labels: ['evidence: missing'],
+            readiness: {
+              status: 'blocked',
+              can_merge: false,
+              risk_level: 'high',
+              blockers: ['workflow file changed'],
+              warnings: ['missing evidence'],
+            },
+            created_at: now,
+            updated_at: now,
+          },
+        ],
+      },
+      {
+        task_id: 'tsk_0002',
+        issue_number: 13,
+        title: 'Validate deployment preview',
+        status: 'open',
+        monitor_status: 'unlinked',
+        updated_at: now,
+        pull_requests: [],
+      },
+    ],
+  };
+
+  assert.equal(validateProtocolDocument(monitor).valid, true);
+
+  const invalid = validateProtocolDocument({
+    ...monitor,
+    kind: 'pull_requests',
+    stats: { ...monitor.stats, blocked_count: -1 },
+    tasks: [{ ...monitor.tasks[0], monitor_status: 'waiting', pull_requests: [{ ...monitor.tasks[0].pull_requests[0], readiness: { status: 'unknown', can_merge: 'yes', risk_level: 'critical' } }] }],
+  });
+  assert.equal(invalid.valid, false);
+  assert(invalid.errors.some((error) => error.path === 'kind'));
+  assert(invalid.errors.some((error) => error.path === 'stats.blocked_count'));
+  assert(invalid.errors.some((error) => error.path === 'tasks[0].monitor_status'));
+  assert(invalid.errors.some((error) => error.path === 'tasks[0].pull_requests[0].readiness.status'));
+  assert(invalid.errors.some((error) => error.path === 'tasks[0].pull_requests[0].readiness.can_merge'));
+  assert(invalid.errors.some((error) => error.path === 'tasks[0].pull_requests[0].readiness.risk_level'));
 });
 
 test('validates admin operations protocol documents', () => {
