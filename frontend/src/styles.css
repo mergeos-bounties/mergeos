@@ -23198,24 +23198,25 @@ body {
 .protocol-page,
 .mergeide-page,
 .contracts-page {
-  padding-top: clamp(24px, 4vw, 48px);
+  padding-top: clamp(12px, 2.4vw, 28px);
 }
 
 .public-home-layout {
-  gap: clamp(22px, 4vw, 52px);
+  gap: clamp(18px, 3vw, 36px);
 }
 
 .public-home-hero {
-  min-height: min(760px, calc(100dvh - 104px));
+  min-height: min(680px, calc(100dvh - 88px));
   display: grid;
   grid-template-columns: minmax(0, 0.95fr) minmax(380px, 0.72fr);
   align-items: center;
-  gap: clamp(26px, 5vw, 70px);
-  padding: clamp(20px, 3vw, 38px) 0 clamp(24px, 4vw, 56px);
+  gap: clamp(22px, 3.5vw, 48px);
+  padding: clamp(6px, 1.6vw, 18px) 0 clamp(18px, 3vw, 38px);
 }
 
 .public-home-copy {
   max-width: 760px;
+  padding: clamp(4px, 1vw, 12px) 0 10px;
 }
 
 .marketplace-eyebrow {
@@ -23236,7 +23237,7 @@ body {
 
 .public-home-copy p {
   max-width: 620px;
-  margin-top: 24px;
+  margin-top: 18px;
   color: #34433e;
   font-size: clamp(17px, 2vw, 21px);
   line-height: 1.48;

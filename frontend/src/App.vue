@@ -13,7 +13,7 @@
       </a>
 
       <nav class="nav-links project-flow-nav" aria-label="Project setup navigation">
-        <div class="nav-menu" :class="{ open: activeNavMenu === 'product' }" @mouseenter="openNavContextMenu('product', $event)" @focusin="openNavContextMenu('product', $event)" @mouseleave="closeNavContextMenu" @keydown.escape.stop="closeNavContextMenu">
+        <div class="nav-menu" :class="{ open: activeNavMenu === 'product' }" @mouseenter="openNavContextMenu('product', $event)" @focusin="openNavContextMenu('product', $event)" @mouseleave="scheduleNavContextClose" @keydown.escape.stop="closeNavContextMenu">
           <button
             type="button"
             :class="['nav-menu-trigger', { 'nav-active': productNavIsActive }]"
@@ -24,7 +24,7 @@
             {{ publicNavCopy.product }}
             <ChevronDown :size="13" />
           </button>
-          <div class="nav-context-menu nav-mega-menu product-menu" :style="navContextMenuInlineStyle('product')" role="menu" aria-label="Product menu">
+          <div class="nav-context-menu nav-mega-menu product-menu" :style="navContextMenuInlineStyle('product')" role="menu" aria-label="Product menu" @mouseenter="cancelNavContextClose" @mouseleave="scheduleNavContextClose">
             <section class="nav-context-panel" aria-hidden="false">
               <span class="nav-context-eyebrow">{{ publicNavCopy.productMenuEyebrow }}</span>
               <strong class="nav-context-title">{{ publicNavCopy.productMenuTitle }}</strong>
@@ -54,7 +54,7 @@
             </section>
           </div>
         </div>
-        <div class="nav-menu" :class="{ open: activeNavMenu === 'solutions' }" @mouseenter="openNavContextMenu('solutions', $event)" @focusin="openNavContextMenu('solutions', $event)" @mouseleave="closeNavContextMenu" @keydown.escape.stop="closeNavContextMenu">
+        <div class="nav-menu" :class="{ open: activeNavMenu === 'solutions' }" @mouseenter="openNavContextMenu('solutions', $event)" @focusin="openNavContextMenu('solutions', $event)" @mouseleave="scheduleNavContextClose" @keydown.escape.stop="closeNavContextMenu">
           <button
             type="button"
             :class="['nav-menu-trigger', { 'nav-active': solutionNavIsActive }]"
@@ -65,7 +65,7 @@
             {{ publicNavCopy.solutions }}
             <ChevronDown :size="13" />
           </button>
-          <div class="nav-context-menu nav-mega-menu solutions-menu" :style="navContextMenuInlineStyle('solutions')" role="menu" aria-label="Solutions menu">
+          <div class="nav-context-menu nav-mega-menu solutions-menu" :style="navContextMenuInlineStyle('solutions')" role="menu" aria-label="Solutions menu" @mouseenter="cancelNavContextClose" @mouseleave="scheduleNavContextClose">
             <section class="nav-context-panel" aria-hidden="false">
               <span class="nav-context-eyebrow">{{ publicNavCopy.solutionMenuEyebrow }}</span>
               <strong class="nav-context-title">{{ publicNavCopy.solutionMenuTitle }}</strong>
@@ -4092,7 +4092,7 @@
         </a>
 
         <nav class="nav-links" aria-label="Primary">
-          <div class="nav-menu" :class="{ open: activeNavMenu === 'product' }" @mouseenter="openNavContextMenu('product', $event)" @focusin="openNavContextMenu('product', $event)" @mouseleave="closeNavContextMenu" @keydown.escape.stop="closeNavContextMenu">
+          <div class="nav-menu" :class="{ open: activeNavMenu === 'product' }" @mouseenter="openNavContextMenu('product', $event)" @focusin="openNavContextMenu('product', $event)" @mouseleave="scheduleNavContextClose" @keydown.escape.stop="closeNavContextMenu">
             <button
               type="button"
               :class="['nav-menu-trigger', { 'nav-active': productNavIsActive }]"
@@ -4103,7 +4103,7 @@
               {{ publicNavCopy.product }}
               <ChevronDown :size="13" />
             </button>
-            <div class="nav-context-menu nav-mega-menu product-menu" :style="navContextMenuInlineStyle('product')" role="menu" aria-label="Product menu">
+            <div class="nav-context-menu nav-mega-menu product-menu" :style="navContextMenuInlineStyle('product')" role="menu" aria-label="Product menu" @mouseenter="cancelNavContextClose" @mouseleave="scheduleNavContextClose">
               <section class="nav-context-panel" aria-hidden="false">
                 <span class="nav-context-eyebrow">{{ publicNavCopy.productMenuEyebrow }}</span>
                 <strong class="nav-context-title">{{ publicNavCopy.productMenuTitle }}</strong>
@@ -4133,7 +4133,7 @@
               </section>
             </div>
           </div>
-          <div class="nav-menu" :class="{ open: activeNavMenu === 'solutions' }" @mouseenter="openNavContextMenu('solutions', $event)" @focusin="openNavContextMenu('solutions', $event)" @mouseleave="closeNavContextMenu" @keydown.escape.stop="closeNavContextMenu">
+          <div class="nav-menu" :class="{ open: activeNavMenu === 'solutions' }" @mouseenter="openNavContextMenu('solutions', $event)" @focusin="openNavContextMenu('solutions', $event)" @mouseleave="scheduleNavContextClose" @keydown.escape.stop="closeNavContextMenu">
             <button
               type="button"
               :class="['nav-menu-trigger', { 'nav-active': solutionNavIsActive }]"
@@ -4144,7 +4144,7 @@
               {{ publicNavCopy.solutions }}
               <ChevronDown :size="13" />
             </button>
-            <div class="nav-context-menu nav-mega-menu solutions-menu" :style="navContextMenuInlineStyle('solutions')" role="menu" aria-label="Solutions menu">
+            <div class="nav-context-menu nav-mega-menu solutions-menu" :style="navContextMenuInlineStyle('solutions')" role="menu" aria-label="Solutions menu" @mouseenter="cancelNavContextClose" @mouseleave="scheduleNavContextClose">
               <section class="nav-context-panel" aria-hidden="false">
                 <span class="nav-context-eyebrow">{{ publicNavCopy.solutionMenuEyebrow }}</span>
                 <strong class="nav-context-title">{{ publicNavCopy.solutionMenuTitle }}</strong>
@@ -10283,6 +10283,7 @@ const authNotice = ref('');
 const mobileMenuOpen = ref(false);
 const activeNavMenu = ref('');
 const navContextGeometry = ref({ menu: '', left: 16, top: 64, width: 920, anchorLeft: 160 });
+let navContextCloseTimer = 0;
 const activeLocale = ref(readStoredLocale());
 const showPassword = ref(false);
 const showConfirmPassword = ref(false);
@@ -21180,11 +21181,13 @@ function measureNavContextMenu(menu, event = {}) {
 }
 
 function openNavContextMenu(menu, event = {}) {
+  cancelNavContextClose();
   measureNavContextMenu(menu, event);
   activeNavMenu.value = menu;
 }
 
 function toggleNavContextMenu(menu, event = {}) {
+  cancelNavContextClose();
   if (activeNavMenu.value === menu) {
     if (menu === 'product' || menu === 'solutions') {
       measureNavContextMenu(menu, event);
@@ -21198,7 +21201,26 @@ function toggleNavContextMenu(menu, event = {}) {
 }
 
 function closeNavContextMenu() {
+  cancelNavContextClose();
   activeNavMenu.value = '';
+}
+
+function scheduleNavContextClose() {
+  cancelNavContextClose();
+  if (!hasWindow) {
+    closeNavContextMenu();
+    return;
+  }
+  navContextCloseTimer = window.setTimeout(() => {
+    navContextCloseTimer = 0;
+    activeNavMenu.value = '';
+  }, 180);
+}
+
+function cancelNavContextClose() {
+  if (!navContextCloseTimer || !hasWindow) return;
+  window.clearTimeout(navContextCloseTimer);
+  navContextCloseTimer = 0;
 }
 
 function handleNavContextOutsideClick(event) {
