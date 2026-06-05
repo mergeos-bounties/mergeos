@@ -6450,7 +6450,7 @@
             <div v-else-if="!liveFeedAllItemsView.length" class="live-feed-state">No live activity yet. Fund a project to create the first public events.</div>
             <div v-else-if="!liveFeedItemsView.length" class="live-feed-state">No live activity matches this filter.</div>
             <div v-else class="live-feed-list">
-              <article v-for="item in liveFeedItemsView" :key="item.id" class="live-feed-row">
+              <article v-for="item in liveFeedItemsView" :key="item.id" :class="['live-feed-row', { 'has-agent-packet': item.hasAgentPacket }]">
                 <span :class="['ledger-event-type', item.tone]">
                   <component :is="item.icon" :size="15" />
                   {{ item.typeLabel }}
@@ -6477,6 +6477,97 @@
                     </button>
                   </div>
                 </div>
+                <details v-if="item.hasAgentPacket" class="live-feed-agent-packet">
+                  <summary>
+                    <span>
+                      <Bot :size="13" />
+                      Agent packet
+                    </span>
+                    <small>{{ item.packetSummary }}</small>
+                    <ChevronDown :size="13" />
+                  </summary>
+                  <div class="live-feed-agent-packet-body">
+                    <div class="live-feed-agent-stats" aria-label="Agent packet summary">
+                      <span>
+                        <small>Context</small>
+                        <strong>{{ item.packetCounts.context }}</strong>
+                      </span>
+                      <span>
+                        <small>Runbook</small>
+                        <strong>{{ item.packetCounts.runbook }}</strong>
+                      </span>
+                      <span>
+                        <small>Evidence</small>
+                        <strong>{{ item.packetCounts.evidence }}</strong>
+                      </span>
+                      <span>
+                        <small>Checks</small>
+                        <strong>{{ item.packetCounts.checks }}</strong>
+                      </span>
+                    </div>
+
+                    <div v-if="item.delegationChain.length" class="live-feed-agent-chain" aria-label="Agent delegation chain">
+                      <span v-for="(agent, index) in item.delegationChain" :key="`${item.id}:agent-chain:${agent}:${index}`">
+                        <b>{{ index + 1 }}</b>
+                        {{ toTitleLabel(agent) }}
+                      </span>
+                    </div>
+
+                    <div class="live-feed-agent-packet-grid">
+                      <section v-if="item.packetContextRows.length" aria-label="Agent context URLs">
+                        <strong>Context URLs</strong>
+                        <div class="live-feed-agent-context-row">
+                          <a
+                            v-for="row in item.packetContextRows"
+                            :key="row.key"
+                            :href="row.href"
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            {{ row.label }}
+                            <small>{{ row.short }}</small>
+                            <ExternalLink :size="11" />
+                          </a>
+                        </div>
+                      </section>
+
+                      <section v-if="item.packetRunbookRows.length" aria-label="Agent runbook">
+                        <strong>Runbook</strong>
+                        <ol class="live-feed-agent-runbook">
+                          <li v-for="step in item.packetRunbookRows" :key="step.key">
+                            <b>{{ step.step }}</b>
+                            <span>{{ step.label }}</span>
+                          </li>
+                        </ol>
+                      </section>
+
+                      <section v-if="item.packetCheckRows.length" aria-label="Agent checks">
+                        <strong>Checks</strong>
+                        <div class="live-feed-agent-checks">
+                          <article v-for="check in item.packetCheckRows" :key="check.key" :class="check.tone">
+                            <span>{{ check.status }}</span>
+                            <b>{{ check.name }}</b>
+                            <small v-if="check.summary">{{ check.summary }}</small>
+                            <a v-if="check.href" :href="check.href" target="_blank" rel="noreferrer">
+                              Proof
+                              <ExternalLink :size="10" />
+                            </a>
+                          </article>
+                        </div>
+                      </section>
+
+                      <section v-if="item.packetEvidenceRows.length" aria-label="Agent evidence">
+                        <strong>Evidence</strong>
+                        <div class="live-feed-agent-evidence">
+                          <span v-for="evidence in item.packetEvidenceRows" :key="evidence.key">
+                            <CheckCircle2 :size="12" />
+                            {{ evidence.label }}
+                          </span>
+                        </div>
+                      </section>
+                    </div>
+                  </div>
+                </details>
               </article>
             </div>
           </div>
@@ -26310,6 +26401,12 @@ function mapPublicLiveFeedItem(item = {}) {
   const reference = item.reference || '';
   const contractReference = contractReferenceFromRecord(item);
   const auditLabel = ledgerAuditLabel(item);
+  const contextUrls = Array.isArray(item.context_urls) ? item.context_urls.filter(Boolean) : [];
+  const evidence = Array.isArray(item.evidence) ? item.evidence.filter(Boolean) : [];
+  const runbook = Array.isArray(item.runbook) ? item.runbook.filter(Boolean) : [];
+  const checks = Array.isArray(item.checks) ? item.checks.filter((check) => check && check.name) : [];
+  const delegationChain = Array.isArray(item.delegation_chain) ? item.delegation_chain.filter(Boolean) : [];
+  const hasAgentPacket = liveFeedItemHasAgentPacket(item, { contextUrls, evidence, runbook, checks, delegationChain });
   return {
     id: item.id || `${item.type || 'activity'}-${item.created_at || reference || item.title || 'row'}`,
     rawType: item.type || '',
@@ -26333,17 +26430,113 @@ function mapPublicLiveFeedItem(item = {}) {
     auditLabel,
     meta: `${when.full} • ${toTitleLabel(item.status || 'live')}`,
     createdAt: item.created_at,
-    contextUrls: Array.isArray(item.context_urls) ? item.context_urls.filter(Boolean) : [],
-    evidence: Array.isArray(item.evidence) ? item.evidence.filter(Boolean) : [],
-    runbook: Array.isArray(item.runbook) ? item.runbook.filter(Boolean) : [],
-    checks: Array.isArray(item.checks) ? item.checks.filter((check) => check && check.name) : [],
+    contextUrls,
+    evidence,
+    runbook,
+    checks,
     delegatedBy: item.delegated_by || '',
     designAgent: item.design_agent || '',
     subagentType: item.subagent_type || '',
-    delegationChain: Array.isArray(item.delegation_chain) ? item.delegation_chain.filter(Boolean) : [],
+    delegationChain,
     delegationSummary: liveFeedDelegationSummary(item),
+    hasAgentPacket,
+    packetCounts: {
+      context: contextUrls.length,
+      runbook: runbook.length,
+      evidence: evidence.length,
+      checks: checks.length,
+    },
+    packetSummary: liveFeedAgentPacketSummary({ contextUrls, evidence, runbook, checks, delegationChain }),
+    packetContextRows: liveFeedAgentContextRows(contextUrls),
+    packetRunbookRows: liveFeedAgentRunbookRows(runbook),
+    packetEvidenceRows: liveFeedAgentEvidenceRows(evidence),
+    packetCheckRows: liveFeedAgentCheckRows(checks),
     rawContributor: item.contributor && typeof item.contributor === 'object' ? item.contributor : null,
   };
+}
+
+function liveFeedItemHasAgentPacket(item = {}, packet = {}) {
+  return (packet.contextUrls || []).length > 0
+    || (packet.evidence || []).length > 0
+    || (packet.runbook || []).length > 0
+    || (packet.checks || []).length > 0
+    || (packet.delegationChain || []).length > 0
+    || Boolean(item.delegated_by || item.design_agent || item.subagent_type);
+}
+
+function liveFeedAgentPacketSummary(packet = {}) {
+  const counts = [
+    `${(packet.contextUrls || []).length} context`,
+    `${(packet.runbook || []).length} runbook`,
+    `${(packet.evidence || []).length} evidence`,
+    `${(packet.checks || []).length} checks`,
+  ];
+  const chain = (packet.delegationChain || []).slice(0, 3).map(toTitleLabel).join(' -> ');
+  return chain ? `${counts.join(' / ')} / ${chain}` : counts.join(' / ');
+}
+
+function liveFeedAgentContextRows(urls = []) {
+  return urls.slice(0, 3).map((url, index) => ({
+    key: `agent-context:${index}:${url}`,
+    label: liveFeedContextLabel(url, index),
+    href: liveFeedContextHref(url),
+    short: shortAgentEndpoint(url),
+  }));
+}
+
+function liveFeedContextHref(value = '') {
+  const target = String(value || '').trim();
+  if (/^https?:\/\//i.test(target)) return target;
+  if (target.startsWith('/')) {
+    return hasWindow ? new URL(target, window.location.origin).toString() : target;
+  }
+  return target;
+}
+
+function liveFeedContextLabel(value = '', index = 0) {
+  const normalized = String(value || '').toLowerCase();
+  if (normalized.includes('agent-queue')) return 'Agent queue';
+  if (normalized.includes('protocol/tasks') || normalized.includes('task_protocol')) return 'Task protocol';
+  if (normalized.includes('workflow')) return 'Workflow';
+  if (normalized.includes('pull') || normalized.includes('github.com')) return 'Proof link';
+  if (normalized.includes('deployment')) return 'Deployment';
+  if (normalized.includes('ledger')) return 'Ledger';
+  return `Context ${index + 1}`;
+}
+
+function liveFeedAgentRunbookRows(runbook = []) {
+  return runbook.slice(0, 3).map((step, index) => ({
+    key: `agent-runbook:${index}:${step}`,
+    step: index + 1,
+    label: trimMarketplaceText(step, 'Runbook step.'),
+  }));
+}
+
+function liveFeedAgentEvidenceRows(evidence = []) {
+  return evidence.slice(0, 3).map((item, index) => ({
+    key: `agent-evidence:${index}:${item}`,
+    label: trimMarketplaceText(item, 'Evidence item.'),
+  }));
+}
+
+function liveFeedAgentCheckRows(checks = []) {
+  return checks.slice(0, 4).map((check, index) => ({
+    key: `agent-check:${index}:${check.name}`,
+    name: trimMarketplaceText(check.name, 'Check'),
+    status: toTitleLabel(check.status || 'passed'),
+    summary: trimMarketplaceText(check.summary, ''),
+    href: liveFeedContextHref(check.reference_url || ''),
+    tone: liveFeedAgentCheckTone(check.status),
+  }));
+}
+
+function liveFeedAgentCheckTone(status = '') {
+  const normalized = String(status || '').trim().toLowerCase();
+  if (normalized === 'failed') return 'failed';
+  if (normalized === 'warning') return 'warning';
+  if (normalized === 'running') return 'running';
+  if (normalized === 'skipped') return 'skipped';
+  return 'passed';
 }
 
 function liveFeedDelegationSummary(item = {}) {
