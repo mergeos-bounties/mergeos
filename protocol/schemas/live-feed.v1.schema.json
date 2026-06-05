@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mergeos.shop/protocol/live-feed.v1.schema.json",
+  "title": "MergeOS Live Feed v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["protocol_version", "kind", "stats", "items"],
+  "properties": {
+    "protocol_version": { "const": "mergeos.live-feed.v1" },
+    "kind": { "const": "live_feed" },
+    "stats": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["project_count", "open_task_count", "accepted_task_count", "active_contributor_count", "active_agent_count", "ledger_entry_count", "ai_action_count", "total_budget_cents", "token_symbol"],
+      "properties": {
+        "project_count": { "type": "integer", "minimum": 0 },
+        "open_task_count": { "type": "integer", "minimum": 0 },
+        "accepted_task_count": { "type": "integer", "minimum": 0 },
+        "active_contributor_count": { "type": "integer", "minimum": 0 },
+        "active_agent_count": { "type": "integer", "minimum": 0 },
+        "ledger_entry_count": { "type": "integer", "minimum": 0 },
+        "ai_action_count": { "type": "integer", "minimum": 0 },
+        "total_budget_cents": { "type": "integer", "minimum": 0 },
+        "token_symbol": { "type": "string", "minLength": 1, "maxLength": 16 },
+        "updated_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "type", "title", "body", "status", "created_at"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "type": {
+            "enum": [
+              "project_funded",
+              "deployment_validation",
+              "task_opened",
+              "task_accepted",
+              "ledger_payment_verified",
+              "ledger_token_mint",
+              "ledger_platform_fee",
+              "ledger_project_reserve",
+              "ledger_task_reserve",
+              "ledger_task_payment",
+              "ledger_manual_credit",
+              "repo_issues_synced",
+              "agent_action",
+              "pr_opened",
+              "ai_review"
+            ]
+          },
+          "title": { "type": "string", "minLength": 1, "maxLength": 240 },
+          "body": { "type": "string", "maxLength": 2000 },
+          "project_id": { "type": "string", "maxLength": 96 },
+          "project_title": { "type": "string", "maxLength": 240 },
+          "actor": { "type": "string", "maxLength": 160 },
+          "action": { "type": "string", "maxLength": 80 },
+          "amount_cents": { "type": "integer", "minimum": 0 },
+          "ledger_sequence": { "type": "integer", "minimum": 1 },
+          "entry_hash": { "type": "string", "minLength": 64, "maxLength": 64 },
+          "reference": { "type": "string", "maxLength": 512 },
+          "evidence_required": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1, "maxLength": 120 }
+          },
+          "url": { "type": "string", "maxLength": 512 },
+          "status": { "type": "string", "minLength": 1, "maxLength": 160 },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      }
+    }
+  }
+}

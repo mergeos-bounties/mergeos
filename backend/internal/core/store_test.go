@@ -926,7 +926,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 	if payload.ProtocolVersion != "mergeos.protocol.manifest.v1" || payload.Kind != "protocol_manifest" {
 		t.Fatalf("unexpected manifest header: %#v", payload)
 	}
-	if len(payload.Schemas) != 10 {
+	if len(payload.Schemas) != 11 {
 		t.Fatalf("manifest schemas = %d: %#v", len(payload.Schemas), payload.Schemas)
 	}
 	schemas := map[string]bool{}
@@ -935,7 +935,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 		schemas[schema.Version] = true
 		descriptions[schema.Version] = schema.Description
 	}
-	for _, required := range []string{"mergeos.task.v1", "mergeos.agent.v1", "mergeos.marketplace.v1", "mergeos.workflow.v1", "mergeos.event.v1", "mergeos.ledger.v1", "mergeos.scan.v1", "mergeos.customer-dashboard.v1", "mergeos.worker-dashboard.v1", "mergeos.admin-ops.v1"} {
+	for _, required := range []string{"mergeos.task.v1", "mergeos.agent.v1", "mergeos.marketplace.v1", "mergeos.live-feed.v1", "mergeos.workflow.v1", "mergeos.event.v1", "mergeos.ledger.v1", "mergeos.scan.v1", "mergeos.customer-dashboard.v1", "mergeos.worker-dashboard.v1", "mergeos.admin-ops.v1"} {
 		if !schemas[required] {
 			t.Fatalf("manifest missing schema %s: %#v", required, payload.Schemas)
 		}
@@ -949,6 +949,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 	}
 	for _, required := range []string{
 		"GET /api/public/marketplace",
+		"GET /api/public/live-feed",
 		"GET /api/public/protocol/tasks",
 		"GET /api/public/protocol/agents",
 		"GET /api/public/protocol/ledger",
@@ -1517,6 +1518,9 @@ func TestPublicLiveFeedRouteReturnsSanitizedTimeline(t *testing.T) {
 	var payload PublicLiveFeedResponse
 	if err := json.Unmarshal(resp.Body.Bytes(), &payload); err != nil {
 		t.Fatal(err)
+	}
+	if payload.ProtocolVersion != "mergeos.live-feed.v1" || payload.Kind != "live_feed" {
+		t.Fatalf("unexpected live feed protocol header: %#v", payload)
 	}
 	if payload.Stats.ProjectCount != 1 || payload.Stats.AIActionCount != 1 || payload.Stats.LedgerEntryCount == 0 {
 		t.Fatalf("unexpected live feed stats: %#v", payload.Stats)
@@ -2298,6 +2302,9 @@ func TestProjectAgentActionRouteRecordsWorkflowEventAndSanitizesData(t *testing.
 	var feed PublicLiveFeedResponse
 	if err := json.Unmarshal(feedResp.Body.Bytes(), &feed); err != nil {
 		t.Fatal(err)
+	}
+	if feed.ProtocolVersion != "mergeos.live-feed.v1" || feed.Kind != "live_feed" {
+		t.Fatalf("unexpected live feed protocol header: %#v", feed)
 	}
 	seenAgentItem := false
 	for _, item := range feed.Items {

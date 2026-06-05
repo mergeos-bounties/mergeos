@@ -704,8 +704,10 @@ type MarketplaceAgent struct {
 }
 
 type PublicLiveFeedResponse struct {
-	Stats PublicLiveFeedStats  `json:"stats"`
-	Items []PublicLiveFeedItem `json:"items"`
+	ProtocolVersion string               `json:"protocol_version"`
+	Kind            string               `json:"kind"`
+	Stats           PublicLiveFeedStats  `json:"stats"`
+	Items           []PublicLiveFeedItem `json:"items"`
 }
 
 type PublicLiveFeedStats struct {

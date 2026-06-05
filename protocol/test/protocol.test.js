@@ -9,6 +9,7 @@ test('loads stable task, workflow, ledger, and event schemas', () => {
     'mergeos.customer-dashboard.v1',
     'mergeos.event.v1',
     'mergeos.ledger.v1',
+    'mergeos.live-feed.v1',
     'mergeos.marketplace.v1',
     'mergeos.scan.v1',
     'mergeos.task.v1',
@@ -109,6 +110,98 @@ test('validates marketplace protocol documents', () => {
   assert(invalid.errors.some((error) => error.path === 'kind'));
   assert(invalid.errors.some((error) => error.path === 'stats.open_task_count'));
   assert(invalid.errors.some((error) => error.path === 'agents[0].worker_kind'));
+});
+
+test('validates live feed protocol documents', () => {
+  const now = '2026-06-05T00:00:00.000Z';
+  const feed = {
+    protocol_version: 'mergeos.live-feed.v1',
+    kind: 'live_feed',
+    stats: {
+      project_count: 1,
+      open_task_count: 2,
+      accepted_task_count: 1,
+      active_contributor_count: 3,
+      active_agent_count: 2,
+      ledger_entry_count: 6,
+      ai_action_count: 4,
+      total_budget_cents: 250000,
+      token_symbol: 'MRG',
+      updated_at: now,
+    },
+    items: [
+      {
+        id: 'project:prj_0001',
+        type: 'project_funded',
+        title: 'Project funded',
+        body: 'Customer portal opened with escrow-backed delivery.',
+        project_id: 'prj_0001',
+        project_title: 'Customer portal rebuild',
+        actor: 'Marketplace Co',
+        amount_cents: 250000,
+        reference: 'project:prj_0001',
+        url: 'https://github.com/mergeos-bounties/mergeos',
+        status: 'funded',
+        created_at: now,
+      },
+      {
+        id: 'task-accepted:prj_0001:12',
+        type: 'task_accepted',
+        title: 'Task #12 accepted',
+        body: 'Fix checkout UI - Tests pass and deployment preview is linked.',
+        project_id: 'prj_0001',
+        project_title: 'Customer portal rebuild',
+        actor: 'maya-dev',
+        amount_cents: 5000,
+        reference: 'https://github.com/mergeos-bounties/mergeos/issues/12',
+        evidence_required: ['tests', 'deploy_preview'],
+        status: 'accepted',
+        created_at: now,
+      },
+      {
+        id: 'ledger:6',
+        type: 'ledger_task_payment',
+        title: 'Task payout released',
+        body: 'Customer portal rebuild recorded Task payout released.',
+        project_id: 'prj_0001',
+        project_title: 'Customer portal rebuild',
+        actor: 'github:maya-dev',
+        amount_cents: 5000,
+        ledger_sequence: 6,
+        entry_hash: 'a'.repeat(64),
+        reference: 'pr:https://github.com/mergeos-bounties/mergeos/pull/151;title:Live feed proof',
+        url: 'https://github.com/mergeos-bounties/mergeos/pull/151',
+        status: 'verified',
+        created_at: now,
+      },
+      {
+        id: 'ai:log_0001',
+        type: 'agent_action',
+        title: 'AI agent tested PR #151',
+        body: 'QA Agent ran test for mergeos-bounties/mergeos PR #151.',
+        actor: 'QA Agent',
+        action: 'test',
+        reference: 'mergeos-bounties/mergeos#151',
+        url: 'https://github.com/mergeos-bounties/mergeos/pull/151#issuecomment-1',
+        status: 'processed',
+        created_at: now,
+      },
+    ],
+  };
+
+  assert.equal(validateProtocolDocument(feed).valid, true);
+
+  const invalid = validateProtocolDocument({
+    ...feed,
+    kind: 'feed',
+    stats: { ...feed.stats, active_agent_count: -1 },
+    items: [{ ...feed.items[0], type: 'unknown_feed_type', created_at: 'not-a-date' }],
+  });
+  assert.equal(invalid.valid, false);
+  assert(invalid.errors.some((error) => error.path === 'kind'));
+  assert(invalid.errors.some((error) => error.path === 'stats.active_agent_count'));
+  assert(invalid.errors.some((error) => error.path === 'items[0].type'));
+  assert(invalid.errors.some((error) => error.path === 'items[0].created_at'));
 });
 
 test('validates admin operations protocol documents', () => {

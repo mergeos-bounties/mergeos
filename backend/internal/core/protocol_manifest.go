@@ -24,6 +24,12 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Description: "Public realtime marketplace with funded projects, open bounties, active contributors, AI agent demand, and funding stats.",
 			},
 			{
+				Version:     "mergeos.live-feed.v1",
+				Kind:        "live_feed",
+				SchemaURL:   "https://mergeos.shop/protocol/live-feed.v1.schema.json",
+				Description: "Public realtime command center feed with project, task, PR, deployment, ledger, contributor, and AI action updates.",
+			},
+			{
 				Version:     "mergeos.workflow.v1",
 				Kind:        "workflow",
 				SchemaURL:   "https://mergeos.shop/protocol/workflow.v1.schema.json",
@@ -86,6 +92,13 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Protocol:    "mergeos.marketplace.v1",
 				Auth:        "none",
 				Description: "Public realtime marketplace for funded projects, open bounties, contributors, and AI agent lanes.",
+			},
+			{
+				Method:      "GET",
+				Path:        "/api/public/live-feed",
+				Protocol:    "mergeos.live-feed.v1",
+				Auth:        "none",
+				Description: "Public command center feed for project, task, PR, deployment, ledger, contributor, and AI action updates.",
 			},
 			{
 				Method:      "GET",

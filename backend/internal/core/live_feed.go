@@ -25,6 +25,8 @@ func (s *Store) PublicLiveFeed(limit int) PublicLiveFeedResponse {
 	activeContributors := map[string]bool{}
 	activeAgents := map[string]bool{}
 	response := PublicLiveFeedResponse{
+		ProtocolVersion: "mergeos.live-feed.v1",
+		Kind:            "live_feed",
 		Stats: PublicLiveFeedStats{
 			ProjectCount:     len(s.projects),
 			LedgerEntryCount: len(s.ledger),
