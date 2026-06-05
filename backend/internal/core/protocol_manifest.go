@@ -18,6 +18,12 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Description: "AI agent lane with supported actions, capabilities, active bounty demand, and open task references.",
 			},
 			{
+				Version:     "mergeos.agent-action.v1",
+				Kind:        "agent_action",
+				SchemaURL:   "https://mergeos.shop/protocol/agent-action.v1.schema.json",
+				Description: "Authenticated AI agent action document for review, test, generate, scan, and deployment evidence.",
+			},
+			{
 				Version:     "mergeos.marketplace.v1",
 				Kind:        "marketplace",
 				SchemaURL:   "https://mergeos.shop/protocol/marketplace.v1.schema.json",
@@ -238,6 +244,13 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Protocol:    "mergeos.ai-workflow.v1",
 				Auth:        "project",
 				Description: "Authenticated AI orchestration timeline for repository import, issue scan, task generation, routing, PR review, and deployment validation.",
+			},
+			{
+				Method:      "POST",
+				Path:        "/api/projects/{id}/agent-actions",
+				Protocol:    "mergeos.agent-action.v1",
+				Auth:        "project",
+				Description: "Authenticated AI agent evidence writer for review, test, generate, scan, and deployment actions.",
 			},
 			{
 				Method:      "GET",

@@ -142,11 +142,13 @@ test('builds deployment agent action payloads for deployment evidence', async ()
   });
 
   const fetchImpl = fakeFetch([
-    { status: 201, body: { log: { event_name: 'agent_action', action: 'deploy' } } },
+    { status: 201, body: { protocol_version: 'mergeos.agent-action.v1', kind: 'agent_action', log: { event_name: 'agent_action', action: 'deploy' } } },
   ]);
   const client = new MergeOSClient({ token: 'agent-token', fetchImpl });
   const response = await client.recordDeployment('prj_1', { deploymentURL: payload.reference_url });
 
+  assert.equal(response.protocol_version, 'mergeos.agent-action.v1');
+  assert.equal(response.kind, 'agent_action');
   assert.equal(response.log.action, 'deploy');
   assert.equal(fetchImpl.calls[0].url, '/api/projects/prj_1/agent-actions');
   assert.equal(fetchImpl.calls[0].options.method, 'POST');
@@ -395,7 +397,7 @@ test('exposes project workflow and admin ops routes', async () => {
     { status: 200, body: { protocol_version: 'mergeos.pr-monitor.v1', stats: { pull_request_count: 2 }, tasks: [] } },
     { status: 200, body: { protocol_version: 'mergeos.deployment.v1', status: 'validating' } },
     { status: 200, body: { protocol_version: 'mergeos.ai-workflow.v1', status: 'orchestrating' } },
-    { status: 201, body: { log: { event_name: 'agent_action', action: 'test' } } },
+    { status: 201, body: { protocol_version: 'mergeos.agent-action.v1', kind: 'agent_action', log: { event_name: 'agent_action', action: 'test' } } },
     { status: 200, body: { stats: { node_count: 2 }, nodes: [], edges: [] } },
     { status: 200, body: { protocol_version: 'mergeos.workflow.v1', progress: 25, current_step: 'contributor_routing', nodes: [], edges: [] } },
     { status: 200, body: { status: 'ready', stats: { scanned_files: 3 }, findings: [] } },
@@ -428,6 +430,7 @@ test('exposes project workflow and admin ops routes', async () => {
   assert.equal(pulls.stats.pull_request_count, 2);
   assert.equal(deployment.protocol_version, 'mergeos.deployment.v1');
   assert.equal(aiWorkflow.protocol_version, 'mergeos.ai-workflow.v1');
+  assert.equal(agentAction.protocol_version, 'mergeos.agent-action.v1');
   assert.equal(agentAction.log.action, 'test');
   assert.equal(graph.stats.node_count, 2);
   assert.equal(workflowProtocol.protocol_version, 'mergeos.workflow.v1');

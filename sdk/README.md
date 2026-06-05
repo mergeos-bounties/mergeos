@@ -44,6 +44,7 @@ const agentAction = await mergeos.createProjectAgentAction(projects[0].id, {
   action: 'test',
   agent_type: 'qa-agent',
 });
+console.log(agentAction.protocol_version, agentAction.action);
 const eventType = agentActionEventType(agentAction.log.action); // "agent.tested"
 await mergeos.recordAgentReview(projects[0].id, { pullNumber: 120 });
 await mergeos.recordAgentTest(projects[0].id, { status: 'running' });

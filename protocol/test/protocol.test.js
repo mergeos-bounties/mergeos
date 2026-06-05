@@ -14,6 +14,7 @@ import {
 test('loads stable task, workflow, ledger, and event schemas', () => {
   assert.deepEqual(Object.keys(protocolSchemas).sort(), [
     'mergeos.admin-ops.v1',
+    'mergeos.agent-action.v1',
     'mergeos.agent.v1',
     'mergeos.ai-workflow.v1',
     'mergeos.customer-dashboard.v1',
@@ -355,6 +356,57 @@ test('validates dispute protocol documents', () => {
   assert(invalid.errors.some((error) => error.path === 'severity'));
   assert(invalid.errors.some((error) => error.path === 'notification.channel'));
   assert(invalid.errors.some((error) => error.path === 'created_at'));
+});
+
+test('validates agent action protocol documents', () => {
+  const now = '2026-06-05T00:00:00.000Z';
+  const action = {
+    protocol_version: 'mergeos.agent-action.v1',
+    kind: 'agent_action',
+    action_id: 'gwh_0001',
+    project_id: 'prj_0001',
+    action: 'test',
+    agent_type: 'qa-agent',
+    status: 'processed',
+    repository: 'mergeos-bounties/mergeos',
+    pull_number: 777,
+    reference_url: 'https://github.com/mergeos-bounties/mergeos/pull/777',
+    labels: ['smoke', 'release-gate'],
+    duration_millis: 1234,
+    received_at: now,
+    completed_at: now,
+    log: {
+      id: 'gwh_0001',
+      event_name: 'agent_action',
+      action: 'test',
+      repository: 'mergeos-bounties/mergeos',
+      pull_number: 777,
+      sender: 'agent:qa-agent',
+      status: 'processed',
+      status_code: 200,
+      comment_url: 'https://github.com/mergeos-bounties/mergeos/pull/777',
+      labels: ['smoke', 'release-gate'],
+      duration_millis: 1234,
+      received_at: now,
+      completed_at: now,
+    },
+  };
+
+  assert.equal(validateProtocolDocument(action).valid, true);
+
+  const invalid = validateProtocolDocument({
+    ...action,
+    kind: 'agent',
+    action: 'lint',
+    status: 'done',
+    log: { ...action.log, event_name: 'webhook', status_code: 99 },
+  });
+  assert.equal(invalid.valid, false);
+  assert(invalid.errors.some((error) => error.path === 'kind'));
+  assert(invalid.errors.some((error) => error.path === 'action'));
+  assert(invalid.errors.some((error) => error.path === 'status'));
+  assert(invalid.errors.some((error) => error.path === 'log.event_name'));
+  assert(invalid.errors.some((error) => error.path === 'log.status_code'));
 });
 
 test('validates escrow protocol documents', () => {

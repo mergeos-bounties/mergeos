@@ -929,7 +929,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 	if payload.ProtocolVersion != "mergeos.protocol.manifest.v1" || payload.Kind != "protocol_manifest" {
 		t.Fatalf("unexpected manifest header: %#v", payload)
 	}
-	if len(payload.Schemas) != 19 {
+	if len(payload.Schemas) != 20 {
 		t.Fatalf("manifest schemas = %d: %#v", len(payload.Schemas), payload.Schemas)
 	}
 	schemas := map[string]bool{}
@@ -938,7 +938,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 		schemas[schema.Version] = true
 		descriptions[schema.Version] = schema.Description
 	}
-	for _, required := range []string{"mergeos.task.v1", "mergeos.agent.v1", "mergeos.marketplace.v1", "mergeos.live-feed.v1", "mergeos.workflow.v1", "mergeos.repo-import.v1", "mergeos.repo-sync.v1", "mergeos.dispute.v1", "mergeos.ai-workflow.v1", "mergeos.event.v1", "mergeos.ledger.v1", "mergeos.escrow.v1", "mergeos.payouts.v1", "mergeos.deployment.v1", "mergeos.pr-monitor.v1", "mergeos.scan.v1", "mergeos.customer-dashboard.v1", "mergeos.worker-dashboard.v1", "mergeos.admin-ops.v1"} {
+	for _, required := range []string{"mergeos.task.v1", "mergeos.agent.v1", "mergeos.agent-action.v1", "mergeos.marketplace.v1", "mergeos.live-feed.v1", "mergeos.workflow.v1", "mergeos.repo-import.v1", "mergeos.repo-sync.v1", "mergeos.dispute.v1", "mergeos.ai-workflow.v1", "mergeos.event.v1", "mergeos.ledger.v1", "mergeos.escrow.v1", "mergeos.payouts.v1", "mergeos.deployment.v1", "mergeos.pr-monitor.v1", "mergeos.scan.v1", "mergeos.customer-dashboard.v1", "mergeos.worker-dashboard.v1", "mergeos.admin-ops.v1"} {
 		if !schemas[required] {
 			t.Fatalf("manifest missing schema %s: %#v", required, payload.Schemas)
 		}
@@ -967,6 +967,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 		"GET /api/projects/{id}/payouts",
 		"GET /api/projects/{id}/deployment",
 		"GET /api/projects/{id}/ai-workflow",
+		"POST /api/projects/{id}/agent-actions",
 		"GET /api/projects/{id}/pull-requests",
 		"GET /api/projects/{id}/dashboard",
 		"GET /api/workers/me",
@@ -2409,6 +2410,15 @@ func TestProjectAgentActionRouteRecordsWorkflowEventAndSanitizesData(t *testing.
 	var created AgentActionResponse
 	if err := json.Unmarshal(createResp.Body.Bytes(), &created); err != nil {
 		t.Fatal(err)
+	}
+	if created.ProtocolVersion != "mergeos.agent-action.v1" || created.Kind != "agent_action" || created.ActionID == "" {
+		t.Fatalf("unexpected agent action protocol header: %#v", created)
+	}
+	if created.ProjectID != project.ID || created.Action != "test" || created.AgentType != "qa-agent" || created.Status != "processed" || created.ReceivedAt.IsZero() {
+		t.Fatalf("unexpected agent action protocol fields: %#v", created)
+	}
+	if created.Repository != project.BountyRepoName || created.PullNumber != 777 || created.ReferenceURL != "https://github.com/mergeos-bounties/mergeos/pull/777" || created.DurationMillis != 1234 {
+		t.Fatalf("unexpected agent action protocol evidence: %#v", created)
 	}
 	if created.Log.EventName != "agent_action" || created.Log.Action != "test" || created.Log.Repository != project.BountyRepoName || created.Log.PullNumber != 777 {
 		t.Fatalf("unexpected agent action log: %#v", created.Log)

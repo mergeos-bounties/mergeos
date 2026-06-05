@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 
 const schemaFiles = {
+  'mergeos.agent-action.v1': '../schemas/agent-action.v1.schema.json',
   'mergeos.admin-ops.v1': '../schemas/admin-ops.v1.schema.json',
   'mergeos.agent.v1': '../schemas/agent.v1.schema.json',
   'mergeos.ai-workflow.v1': '../schemas/ai-workflow.v1.schema.json',

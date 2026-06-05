@@ -1447,7 +1447,21 @@ type AgentActionRequest struct {
 }
 
 type AgentActionResponse struct {
-	Log GeminiWebhookLog `json:"log"`
+	ProtocolVersion string           `json:"protocol_version"`
+	Kind            string           `json:"kind"`
+	ActionID        string           `json:"action_id"`
+	ProjectID       string           `json:"project_id"`
+	Action          string           `json:"action"`
+	AgentType       string           `json:"agent_type"`
+	Status          string           `json:"status"`
+	Repository      string           `json:"repository,omitempty"`
+	PullNumber      int              `json:"pull_number,omitempty"`
+	ReferenceURL    string           `json:"reference_url,omitempty"`
+	Labels          []string         `json:"labels,omitempty"`
+	DurationMillis  int64            `json:"duration_millis"`
+	ReceivedAt      time.Time        `json:"received_at"`
+	CompletedAt     *time.Time       `json:"completed_at,omitempty"`
+	Log             GeminiWebhookLog `json:"log"`
 }
 
 type EvaluateProjectRequest struct {

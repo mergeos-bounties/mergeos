@@ -65,7 +65,23 @@ func (s *Store) RecordProjectAgentAction(projectID string, req AgentActionReques
 	if err := s.saveLocked(); err != nil {
 		return AgentActionResponse{}, err
 	}
-	return AgentActionResponse{Log: log}, nil
+	return AgentActionResponse{
+		ProtocolVersion: "mergeos.agent-action.v1",
+		Kind:            "agent_action",
+		ActionID:        log.ID,
+		ProjectID:       project.ID,
+		Action:          log.Action,
+		AgentType:       agentType,
+		Status:          log.Status,
+		Repository:      log.Repository,
+		PullNumber:      log.PullNumber,
+		ReferenceURL:    log.CommentURL,
+		Labels:          log.Labels,
+		DurationMillis:  log.DurationMillis,
+		ReceivedAt:      log.ReceivedAt,
+		CompletedAt:     log.CompletedAt,
+		Log:             log,
+	}, nil
 }
 
 func normalizeAgentAction(value string) (string, error) {
