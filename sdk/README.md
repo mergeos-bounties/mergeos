@@ -87,6 +87,7 @@ await mergeos.publicLiveFeed({ limit: 80 });
 await mergeos.publicProtocolManifest();
 await mergeos.publicProtocolTasks({ limit: 80 });
 await mergeos.publicProtocolAgents({ limit: 80 });
+await mergeos.publicProtocolContributors({ limit: 80 });
 await mergeos.publicProtocolLedger();
 await mergeos.publicProtocolEvents({ limit: 80 });
 await mergeos.publicProjectDeployment('prj_public_0001');

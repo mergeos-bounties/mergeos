@@ -39,6 +39,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/public/protocol/ledger", s.publicProtocolLedger)
 	mux.HandleFunc("GET /api/public/protocol/tasks", s.publicProtocolTasks)
 	mux.HandleFunc("GET /api/public/protocol/agents", s.publicProtocolAgents)
+	mux.HandleFunc("GET /api/public/protocol/contributors", s.publicProtocolContributors)
 	mux.HandleFunc("GET /api/public/protocol/events", s.publicProtocolEvents)
 	mux.HandleFunc("GET /api/public/projects/{id}/deployment", s.publicProjectDeployment)
 	mux.HandleFunc("GET /api/public/projects/{id}/ai-workflow", s.publicProjectAIWorkflow)
@@ -241,6 +242,16 @@ func (s *Server) publicProtocolAgents(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	writeJSON(w, http.StatusOK, s.store.PublicAgentProtocol(limit))
+}
+
+func (s *Server) publicProtocolContributors(w http.ResponseWriter, r *http.Request) {
+	limit := 0
+	if raw := strings.TrimSpace(r.URL.Query().Get("limit")); raw != "" {
+		if parsed, err := strconv.Atoi(raw); err == nil {
+			limit = parsed
+		}
+	}
+	writeJSON(w, http.StatusOK, s.store.PublicContributorProtocol(limit))
 }
 
 func (s *Server) publicProtocolTasks(w http.ResponseWriter, r *http.Request) {

@@ -19,6 +19,7 @@ test('loads stable task, workflow, ledger, and event schemas', () => {
     'mergeos.agent-action.v1',
     'mergeos.agent.v1',
     'mergeos.ai-workflow.v1',
+    'mergeos.contributor.v1',
     'mergeos.customer-dashboard.v1',
     'mergeos.deployment.v1',
     'mergeos.dispute.v1',
@@ -1226,6 +1227,51 @@ test('validates an agent protocol document', () => {
   assert.equal(invalid.valid, false);
   assert(invalid.errors.some((error) => error.path === 'worker_kind'));
   assert(invalid.errors.some((error) => error.path === 'supported_actions[0]'));
+});
+
+test('validates a contributor protocol document', () => {
+  const result = validateProtocolDocument({
+    protocol_version: 'mergeos.contributor.v1',
+    kind: 'contributor',
+    id: 'ctr_github_maya_dev',
+    worker_id: 'github:maya-dev',
+    display_name: 'Maya Dev',
+    worker_kind: 'hybrid',
+    agent_type: 'security-review-agent',
+    completed_task_count: 4,
+    earned_mrg: 325,
+    reputation_score: 92,
+    reputation_level: 'elite',
+    risk_level: 'low',
+    last_paid_at: '2026-06-05T00:00:00.000Z',
+    matched_task_ids: ['prj_0001:issue:12'],
+    capabilities: ['human_agent_collaboration', 'security_review', 'evidence_reporting'],
+    flags: ['github_verified'],
+    tags: ['contributor', 'hybrid', 'elite'],
+  });
+
+  assert.equal(result.valid, true);
+  assert.deepEqual(result.errors, []);
+
+  const invalid = validateProtocolDocument({
+    protocol_version: 'mergeos.contributor.v1',
+    kind: 'worker',
+    id: 'x',
+    worker_id: '',
+    display_name: 'Maya Dev',
+    worker_kind: 'bot',
+    completed_task_count: -1,
+    earned_mrg: -5,
+    reputation_score: 101,
+    reputation_level: 'elite',
+    risk_level: 'critical',
+    last_paid_at: 'not-a-date',
+    capabilities: [],
+  });
+  assert.equal(invalid.valid, false);
+  assert(invalid.errors.some((error) => error.path === 'kind'));
+  assert(invalid.errors.some((error) => error.path === 'worker_kind'));
+  assert(invalid.errors.some((error) => error.path === 'risk_level'));
 });
 
 test('validates a task protocol document', () => {

@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mergeos.shop/protocol/contributor.v1.schema.json",
+  "title": "MergeOS Contributor v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "protocol_version",
+    "kind",
+    "id",
+    "worker_id",
+    "display_name",
+    "worker_kind",
+    "completed_task_count",
+    "earned_mrg",
+    "reputation_score",
+    "reputation_level",
+    "risk_level",
+    "last_paid_at",
+    "capabilities"
+  ],
+  "properties": {
+    "protocol_version": { "const": "mergeos.contributor.v1" },
+    "kind": { "const": "contributor" },
+    "id": { "type": "string", "minLength": 3, "maxLength": 96 },
+    "worker_id": { "type": "string", "minLength": 1, "maxLength": 160 },
+    "display_name": { "type": "string", "minLength": 1, "maxLength": 160 },
+    "worker_kind": { "enum": ["human", "agent", "hybrid"] },
+    "agent_type": { "type": "string", "maxLength": 120 },
+    "completed_task_count": { "type": "integer", "minimum": 0 },
+    "earned_mrg": { "type": "number", "minimum": 0 },
+    "reputation_score": { "type": "integer", "minimum": 0, "maximum": 100 },
+    "reputation_level": { "type": "string", "minLength": 1, "maxLength": 80 },
+    "risk_level": { "enum": ["low", "medium", "high", "unknown"] },
+    "last_paid_at": { "type": "string", "format": "date-time" },
+    "matched_task_ids": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 3, "maxLength": 96 }
+    },
+    "capabilities": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1, "maxLength": 120 }
+    },
+    "flags": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1, "maxLength": 160 }
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1, "maxLength": 120 }
+    },
+    "metadata": { "type": "object" }
+  }
+}

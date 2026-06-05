@@ -24,6 +24,12 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Description: "AI agent lane with supported actions, capabilities, active bounty demand, and open task references.",
 			},
 			{
+				Version:     "mergeos.contributor.v1",
+				Kind:        "contributor",
+				SchemaURL:   "https://mergeos.shop/protocol/contributor.v1.schema.json",
+				Description: "Public contributor reputation, capability, payout, risk, and open bounty matching document for marketplace routing.",
+			},
+			{
 				Version:     "mergeos.agent-action.v1",
 				Kind:        "agent_action",
 				SchemaURL:   "https://mergeos.shop/protocol/agent-action.v1.schema.json",
@@ -178,6 +184,13 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Protocol:    "mergeos.agent.v1",
 				Auth:        "none",
 				Description: "Public AI agent lanes as protocol documents.",
+			},
+			{
+				Method:      "GET",
+				Path:        "/api/public/protocol/contributors",
+				Protocol:    "mergeos.contributor.v1",
+				Auth:        "none",
+				Description: "Public contributor reputation and routing documents for human, agent, and hybrid marketplace workers.",
 			},
 			{
 				Method:      "GET",

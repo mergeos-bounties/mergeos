@@ -1004,7 +1004,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 	if payload.ProtocolVersion != "mergeos.protocol.manifest.v1" || payload.Kind != "protocol_manifest" {
 		t.Fatalf("unexpected manifest header: %#v", payload)
 	}
-	if len(payload.Schemas) != 23 {
+	if len(payload.Schemas) != 24 {
 		t.Fatalf("manifest schemas = %d: %#v", len(payload.Schemas), payload.Schemas)
 	}
 	schemas := map[string]bool{}
@@ -1013,7 +1013,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 		schemas[schema.Version] = true
 		descriptions[schema.Version] = schema.Description
 	}
-	for _, required := range []string{"mergeos.task.v1", "mergeos.task-claim.v1", "mergeos.agent.v1", "mergeos.agent-action.v1", "mergeos.marketplace.v1", "mergeos.live-feed.v1", "mergeos.workflow.v1", "mergeos.estimate.v1", "mergeos.wallet-migration.v1", "mergeos.repo-import.v1", "mergeos.repo-sync.v1", "mergeos.dispute.v1", "mergeos.ai-workflow.v1", "mergeos.event.v1", "mergeos.ledger.v1", "mergeos.escrow.v1", "mergeos.payouts.v1", "mergeos.deployment.v1", "mergeos.pr-monitor.v1", "mergeos.scan.v1", "mergeos.customer-dashboard.v1", "mergeos.worker-dashboard.v1", "mergeos.admin-ops.v1"} {
+	for _, required := range []string{"mergeos.task.v1", "mergeos.task-claim.v1", "mergeos.agent.v1", "mergeos.contributor.v1", "mergeos.agent-action.v1", "mergeos.marketplace.v1", "mergeos.live-feed.v1", "mergeos.workflow.v1", "mergeos.estimate.v1", "mergeos.wallet-migration.v1", "mergeos.repo-import.v1", "mergeos.repo-sync.v1", "mergeos.dispute.v1", "mergeos.ai-workflow.v1", "mergeos.event.v1", "mergeos.ledger.v1", "mergeos.escrow.v1", "mergeos.payouts.v1", "mergeos.deployment.v1", "mergeos.pr-monitor.v1", "mergeos.scan.v1", "mergeos.customer-dashboard.v1", "mergeos.worker-dashboard.v1", "mergeos.admin-ops.v1"} {
 		if !schemas[required] {
 			t.Fatalf("manifest missing schema %s: %#v", required, payload.Schemas)
 		}
@@ -1030,6 +1030,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 		"GET /api/public/live-feed",
 		"GET /api/public/protocol/tasks",
 		"GET /api/public/protocol/agents",
+		"GET /api/public/protocol/contributors",
 		"GET /api/public/protocol/ledger",
 		"GET /api/public/protocol/events",
 		"GET /api/public/projects/{id}/deployment",
@@ -1256,6 +1257,42 @@ func TestPublicMarketplaceRouteReturnsSanitizedLiveData(t *testing.T) {
 		}
 		if document.Metadata["event_protocol"] != "mergeos.event.v1" || document.Metadata["event_stream_endpoint"] != "WS /api/ws" || int(document.Metadata["queue_depth"].(float64)) != len(document.OpenTaskIDs) {
 			t.Fatalf("agent protocol missing event routing metadata: %#v", document.Metadata)
+		}
+	}
+
+	contributorReq := httptest.NewRequest(http.MethodGet, "/api/public/protocol/contributors?limit=20", nil)
+	contributorResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(contributorResp, contributorReq)
+	if contributorResp.Code != http.StatusOK {
+		t.Fatalf("contributor protocol status = %d, body = %s", contributorResp.Code, contributorResp.Body.String())
+	}
+	contributorBody := contributorResp.Body.String()
+	for _, value := range []string{"client@example.com", "+1 555 0101", auth.User.ID, tempDir, defaultDevPaymentCode} {
+		if strings.Contains(contributorBody, value) {
+			t.Fatalf("contributor protocol leaked private value %q: %s", value, contributorBody)
+		}
+	}
+	for _, task := range project.Tasks {
+		if strings.Contains(contributorBody, task.ID) {
+			t.Fatalf("contributor protocol leaked internal task id %q: %s", task.ID, contributorBody)
+		}
+	}
+	var contributorProtocol PublicContributorProtocolResponse
+	if err := json.Unmarshal(contributorResp.Body.Bytes(), &contributorProtocol); err != nil {
+		t.Fatal(err)
+	}
+	if contributorProtocol.Stats.OpenTaskCount != payload.Stats.OpenTaskCount || len(contributorProtocol.Contributors) != len(payload.Contributors) {
+		t.Fatalf("unexpected contributor protocol feed: %#v", contributorProtocol)
+	}
+	for _, document := range contributorProtocol.Contributors {
+		if document.ProtocolVersion != "mergeos.contributor.v1" || document.Kind != "contributor" || document.ID == "" {
+			t.Fatalf("invalid contributor protocol header: %#v", document)
+		}
+		if document.WorkerID == "" || document.DisplayName == "" || document.CompletedTaskCount == 0 || document.EarnedMRG <= 0 || len(document.Capabilities) == 0 {
+			t.Fatalf("contributor protocol missing reputation data: %#v", document)
+		}
+		if document.Metadata["task_protocol_endpoint"] != "GET /api/public/protocol/tasks" || document.Metadata["event_stream_endpoint"] != "WS /api/ws" {
+			t.Fatalf("contributor protocol missing routing metadata: %#v", document.Metadata)
 		}
 	}
 }

@@ -837,6 +837,11 @@ type PublicAgentProtocolResponse struct {
 	Agents []AgentProtocolDocument `json:"agents"`
 }
 
+type PublicContributorProtocolResponse struct {
+	Stats        MarketplaceStats              `json:"stats"`
+	Contributors []ContributorProtocolDocument `json:"contributors"`
+}
+
 type ProtocolManifestResponse struct {
 	ProtocolVersion string                     `json:"protocol_version"`
 	Kind            string                     `json:"kind"`
@@ -898,6 +903,27 @@ type AgentProtocolDocument struct {
 	OpenTaskIDs      []string       `json:"open_task_ids,omitempty"`
 	Tags             []string       `json:"tags,omitempty"`
 	Metadata         map[string]any `json:"metadata,omitempty"`
+}
+
+type ContributorProtocolDocument struct {
+	ProtocolVersion    string         `json:"protocol_version"`
+	Kind               string         `json:"kind"`
+	ID                 string         `json:"id"`
+	WorkerID           string         `json:"worker_id"`
+	DisplayName        string         `json:"display_name"`
+	WorkerKind         WorkerKind     `json:"worker_kind"`
+	AgentType          string         `json:"agent_type,omitempty"`
+	CompletedTaskCount int            `json:"completed_task_count"`
+	EarnedMRG          float64        `json:"earned_mrg"`
+	ReputationScore    int            `json:"reputation_score"`
+	ReputationLevel    string         `json:"reputation_level"`
+	RiskLevel          string         `json:"risk_level"`
+	LastPaidAt         time.Time      `json:"last_paid_at"`
+	MatchedTaskIDs     []string       `json:"matched_task_ids,omitempty"`
+	Capabilities       []string       `json:"capabilities"`
+	Flags              []string       `json:"flags,omitempty"`
+	Tags               []string       `json:"tags,omitempty"`
+	Metadata           map[string]any `json:"metadata,omitempty"`
 }
 
 type EventProtocolDocument struct {
