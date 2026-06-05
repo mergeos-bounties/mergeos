@@ -11,12 +11,13 @@
     "stats": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["total_count", "dispute_count", "moderation_count", "payout_review_count", "fraud_count", "security_count", "critical_count"],
+      "required": ["total_count", "dispute_count", "moderation_count", "payout_review_count", "proposal_count", "fraud_count", "security_count", "critical_count"],
       "properties": {
         "total_count": { "type": "integer", "minimum": 0 },
         "dispute_count": { "type": "integer", "minimum": 0 },
         "moderation_count": { "type": "integer", "minimum": 0 },
         "payout_review_count": { "type": "integer", "minimum": 0 },
+        "proposal_count": { "type": "integer", "minimum": 0 },
         "fraud_count": { "type": "integer", "minimum": 0 },
         "security_count": { "type": "integer", "minimum": 0 },
         "critical_count": { "type": "integer", "minimum": 0 },
@@ -32,7 +33,7 @@
         "properties": {
           "id": { "type": "string", "minLength": 1, "maxLength": 200 },
           "type": {
-            "enum": ["payout_review", "payout_audit", "dispute", "moderation", "security_moderation", "fraud_review"]
+            "enum": ["payout_review", "payout_audit", "proposal_review", "dispute", "moderation", "security_moderation", "fraud_review"]
           },
           "severity": { "enum": ["low", "medium", "high", "critical"] },
           "title": { "type": "string", "minLength": 1, "maxLength": 240 },

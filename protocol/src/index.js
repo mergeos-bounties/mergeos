@@ -19,6 +19,7 @@ const schemaFiles = {
   'mergeos.payout-release.v1': '../schemas/payout-release.v1.schema.json',
   'mergeos.payouts.v1': '../schemas/payouts.v1.schema.json',
   'mergeos.pr-monitor.v1': '../schemas/pr-monitor.v1.schema.json',
+  'mergeos.proposal.v1': '../schemas/proposal.v1.schema.json',
   'mergeos.repo-import.v1': '../schemas/repo-import.v1.schema.json',
   'mergeos.repo-sync.v1': '../schemas/repo-sync.v1.schema.json',
   'mergeos.scan.v1': '../schemas/scan.v1.schema.json',

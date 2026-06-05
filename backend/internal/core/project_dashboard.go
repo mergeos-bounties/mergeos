@@ -21,6 +21,7 @@ func (s *Store) ProjectDashboard(projectID string) (ProjectDashboardResponse, er
 	aiWorkflow := s.projectAIWorkflowLocked(project)
 	taskGraph := s.projectTaskGraphLocked(project)
 	repositoryScan := s.projectRepositoryScanLocked(project)
+	proposals := s.projectSubmittedProposalsLocked(project.ID)
 	updatedAt := latestTime(
 		project.CreatedAt,
 		escrow.UpdatedAt,
@@ -29,6 +30,7 @@ func (s *Store) ProjectDashboard(projectID string) (ProjectDashboardResponse, er
 		aiWorkflow.UpdatedAt,
 		taskGraph.UpdatedAt,
 		repositoryScan.UpdatedAt,
+		proposalUpdatedAt(proposals, project.CreatedAt),
 	)
 
 	return ProjectDashboardResponse{
@@ -47,6 +49,7 @@ func (s *Store) ProjectDashboard(projectID string) (ProjectDashboardResponse, er
 			Tasks:        []ProjectTaskPullRequests{},
 			UpdatedAt:    updatedAt,
 		},
+		Proposals: proposals,
 		UpdatedAt: updatedAt,
 	}, nil
 }

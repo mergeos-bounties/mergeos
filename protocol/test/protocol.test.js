@@ -32,6 +32,7 @@ test('loads stable task, workflow, ledger, and event schemas', () => {
     'mergeos.payout-release.v1',
     'mergeos.payouts.v1',
     'mergeos.pr-monitor.v1',
+    'mergeos.proposal.v1',
     'mergeos.repo-import.v1',
     'mergeos.repo-sync.v1',
     'mergeos.scan.v1',
@@ -884,10 +885,11 @@ test('validates admin operations protocol documents', () => {
     protocol_version: 'mergeos.admin-ops.v1',
     kind: 'admin_ops',
     stats: {
-      total_count: 6,
+      total_count: 7,
       dispute_count: 1,
       moderation_count: 2,
       payout_review_count: 2,
+      proposal_count: 1,
       fraud_count: 1,
       security_count: 1,
       critical_count: 1,
@@ -923,6 +925,26 @@ test('validates admin operations protocol documents', () => {
         actions: [
           { id: 'review-prs', label: 'Review PRs', type: 'review_task_pulls' },
           { id: 'open-issue', label: 'Open Issue', type: 'open_url', url: 'https://github.com/mergeos-bounties/mergeos/issues/12' },
+        ],
+        created_at: now,
+      },
+      {
+        id: 'proposal:ntf_2',
+        type: 'proposal_review',
+        severity: 'medium',
+        title: 'Worker proposal submitted',
+        body: 'Worker offered delivery terms for issue #18.',
+        project_id: 'prj_0001',
+        project_title: 'Admin ops proof',
+        task_id: 'tsk_18',
+        issue_number: 18,
+        user_id: 'usr_worker_1',
+        reference: 'proposal:submitted;task:bounty-prj_0001-18;worker:github:worker-dev',
+        url: 'https://github.com/mergeos-bounties/mergeos/issues/18',
+        status: 'submitted',
+        actions: [
+          { id: 'open-proposal-task', label: 'Open Task', type: 'open_url', url: 'https://github.com/mergeos-bounties/mergeos/issues/18' },
+          { id: 'refresh-queue', label: 'Refresh Queue', type: 'refresh_admin_ops' },
         ],
         created_at: now,
       },
@@ -963,6 +985,66 @@ test('validates admin operations protocol documents', () => {
   assert(invalid.errors.some((error) => error.path === 'kind'));
   assert(invalid.errors.some((error) => error.path === 'stats.total_count'));
   assert(invalid.errors.some((error) => error.path === 'items[0].type'));
+});
+
+test('validates worker proposal protocol documents', () => {
+  const now = '2026-06-05T00:00:00.000Z';
+  const proposal = {
+    protocol_version: 'mergeos.proposal.v1',
+    kind: 'proposal',
+    proposal: {
+      id: 'ntf_worker_1',
+      project_id: 'prj_0001',
+      project_title: 'Proposal routing',
+      task_id: 'bounty-prj_0001-18',
+      claim_id: 'bounty-prj_0001-18',
+      worker_id: 'github:worker-dev',
+      issue_number: 18,
+      title: 'Add worker proposal flow',
+      cover_letter: 'I can deliver the worker proposal workflow with tests and public protocol proof.',
+      bid_cents: 12345,
+      estimated_hours: 9.5,
+      availability: 'Available this week',
+      status: 'submitted',
+      reference: 'proposal:submitted;task:bounty-prj_0001-18;worker:github:worker-dev',
+      created_at: now,
+      updated_at: now,
+    },
+    worker_notification: {
+      id: 'ntf_worker_1',
+      user_id: '',
+      project_id: 'prj_0001',
+      channel: 'proposal',
+      subject: 'Proposal submitted: Add worker proposal flow',
+      body: 'I can deliver the worker proposal workflow with tests and public protocol proof.',
+      status: 'proposal:submitted;task:bounty-prj_0001-18;worker:github:worker-dev',
+      created_at: now,
+    },
+    customer_notification: {
+      id: 'ntf_customer_1',
+      user_id: '',
+      project_id: 'prj_0001',
+      channel: 'proposal',
+      subject: 'Proposal submitted: Add worker proposal flow',
+      body: 'github:worker-dev submitted a proposal for Add worker proposal flow.',
+      status: 'proposal:submitted;task:bounty-prj_0001-18;worker:github:worker-dev',
+      created_at: now,
+    },
+  };
+
+  assert.equal(validateProtocolDocument(proposal).valid, true);
+
+  const invalid = validateProtocolDocument({
+    ...proposal,
+    kind: 'proposal_submission',
+    proposal: { ...proposal.proposal, bid_cents: 0, status: 'queued' },
+    customer_notification: { ...proposal.customer_notification, channel: 'task' },
+  });
+  assert.equal(invalid.valid, false);
+  assert(invalid.errors.some((error) => error.path === 'kind'));
+  assert(invalid.errors.some((error) => error.path === 'proposal.bid_cents'));
+  assert(invalid.errors.some((error) => error.path === 'proposal.status'));
+  assert(invalid.errors.some((error) => error.path === 'customer_notification.channel'));
 });
 
 test('validates customer dashboard protocol documents', () => {
@@ -1132,6 +1214,26 @@ test('validates customer dashboard protocol documents', () => {
       tasks: [{ task_id: 'tsk_0001', monitor_status: 'ready' }],
       updated_at: now,
     },
+    proposals: [
+      {
+        id: 'ntf_worker_1',
+        project_id: 'prj_0001',
+        project_title: 'Dashboard aggregate proof',
+        task_id: 'bounty-prj_0001-2',
+        claim_id: 'bounty-prj_0001-2',
+        worker_id: 'github:worker-dev',
+        issue_number: 2,
+        title: 'Wire proposal data',
+        cover_letter: 'I can wire proposal data into the customer dashboard.',
+        bid_cents: 14000,
+        estimated_hours: 8,
+        availability: 'Available this week',
+        status: 'submitted',
+        reference: 'proposal:submitted;task:bounty-prj_0001-2;worker:github:worker-dev',
+        created_at: now,
+        updated_at: now,
+      },
+    ],
     updated_at: now,
   };
 
@@ -1162,6 +1264,7 @@ test('validates worker dashboard protocol documents', () => {
     stats: {
       claimed_task_count: 1,
       open_proposal_count: 2,
+      submitted_proposal_count: 1,
       reward_cents: 5000,
       reputation_score: 88,
       risk_level: 'low',
@@ -1228,6 +1331,26 @@ test('validates worker dashboard protocol documents', () => {
         evidence_required: ['tests'],
         issue_url: 'https://github.com/mergeos-bounties/mergeos/issues/18',
         created_at: '2026-06-05T00:00:00.000Z',
+      },
+    ],
+    submitted_proposals: [
+      {
+        id: 'ntf_worker_1',
+        project_id: 'prj_0002',
+        project_title: 'Proposal routing',
+        task_id: 'claim_public_1',
+        claim_id: 'claim_public_1',
+        worker_id: 'github:worker-dev',
+        issue_number: 18,
+        title: 'Add worker match',
+        cover_letter: 'I can deliver this route with tests and public protocol proof.',
+        bid_cents: 7000,
+        estimated_hours: 4,
+        availability: 'Available this week',
+        status: 'submitted',
+        reference: 'proposal:submitted;task:claim_public_1;worker:github:worker-dev',
+        created_at: '2026-06-05T00:00:00.000Z',
+        updated_at: '2026-06-05T00:00:00.000Z',
       },
     ],
     identity_status: [

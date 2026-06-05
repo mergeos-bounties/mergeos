@@ -59,6 +59,32 @@ func (s *Store) AdminOpsQueue() AdminOpsQueueResponse {
 	}
 
 	for _, note := range s.notifications {
+		if note != nil && note.Channel == "proposal" {
+			project := s.projects[note.ProjectID]
+			if project == nil || note.UserID == project.ClientUserID {
+				continue
+			}
+			fields := splitLedgerReference(note.Status)
+			taskID := fields["task"]
+			task := s.tasks[taskID]
+			add(AdminOpsQueueItem{
+				ID:           adminOpsItemID("proposal", note.ID),
+				Type:         "proposal_review",
+				Severity:     "medium",
+				Title:        note.Subject,
+				Body:         compactText(note.Body),
+				ProjectID:    note.ProjectID,
+				ProjectTitle: publicLiveFeedProjectTitle(project),
+				TaskID:       taskID,
+				UserID:       note.UserID,
+				Reference:    note.Status,
+				URL:          marketplacePublicRepoURL(taskIssueURL(task)),
+				Status:       "submitted",
+				Actions:      adminOpsActions("proposal_review", taskID, marketplacePublicRepoURL(taskIssueURL(task))),
+				CreatedAt:    note.CreatedAt,
+			})
+			continue
+		}
 		if note == nil || !adminOpsNotificationNeedsAttention(note.Status) {
 			continue
 		}
@@ -167,6 +193,8 @@ func adminOpsQueueStats(items []AdminOpsQueueItem) AdminOpsQueueStats {
 		switch item.Type {
 		case "dispute":
 			stats.DisputeCount++
+		case "proposal_review":
+			stats.ProposalCount++
 		case "moderation":
 			stats.ModerationCount++
 		case "security_moderation":
@@ -218,6 +246,11 @@ func adminOpsActions(itemType, taskID, url string) []AdminOpsQueueAction {
 		}
 	case "dispute":
 		add("refresh-queue", "Refresh Queue", "refresh_admin_ops", "")
+	case "proposal_review":
+		if publicLiveFeedURL(url) != "" {
+			add("open-task", "Open Task", "open_url", url)
+		}
+		add("refresh-queue", "Refresh Queue", "refresh_admin_ops", "")
 	case "fraud_review":
 		if publicLiveFeedURL(url) != "" {
 			add("open-proof", "Open Proof", "open_url", url)
@@ -238,6 +271,13 @@ func adminOpsTaskReference(task *Task) string {
 		return fmt.Sprintf("issue:%d", task.IssueNumber)
 	}
 	return task.ID
+}
+
+func taskIssueURL(task *Task) string {
+	if task == nil {
+		return ""
+	}
+	return task.IssueURL
 }
 
 func adminOpsTaskUpdatedAt(task *Task) time.Time {

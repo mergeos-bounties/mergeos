@@ -1205,11 +1205,12 @@ func (s *Store) WorkerDashboard(userID string) WorkerDashboardResponse {
 			GitHubUsername:  normalizeGitHubUsername(user.GitHubUsername),
 			GitHubAvatarURL: user.GitHubAvatarURL,
 		},
-		ClaimedTasks:   []WorkerClaimedTask{},
-		Rewards:        []WorkerRewardEntry{},
-		Reputation:     []WorkerReputation{},
-		Proposals:      []WorkerProposal{},
-		IdentityStatus: workerIdentityHints(user),
+		ClaimedTasks:       []WorkerClaimedTask{},
+		Rewards:            []WorkerRewardEntry{},
+		Reputation:         []WorkerReputation{},
+		Proposals:          []WorkerProposal{},
+		SubmittedProposals: []WorkerSubmittedProposal{},
+		IdentityStatus:     workerIdentityHints(user),
 	}
 
 	for _, task := range s.tasks {
@@ -1256,6 +1257,8 @@ func (s *Store) WorkerDashboard(userID string) WorkerDashboardResponse {
 
 	response.Proposals = workerProposalRows(s.projects, s.tasks, user)
 	response.Stats.OpenProposalCount = len(response.Proposals)
+	response.SubmittedProposals = s.workerSubmittedProposalsLocked(user.ID)
+	response.Stats.SubmittedProposalCount = len(response.SubmittedProposals)
 	response.ReputationAudit = workerReputationAudit(WorkerReputationAudit{
 		WorkerID:               workerDashboardID(response.Profile),
 		Name:                   response.Profile.Name,
@@ -1530,24 +1533,7 @@ func (s *Store) ResolveTaskClaimID(value string) (string, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	if task, ok := s.tasks[value]; ok && task != nil {
-		return task.ID, nil
-	}
-	separator := strings.LastIndex(value, ":")
-	if separator <= 0 || separator >= len(value)-1 {
-		return "", errors.New("task not found")
-	}
-	projectID := strings.TrimSpace(value[:separator])
-	issueNumber, err := strconv.Atoi(strings.TrimSpace(value[separator+1:]))
-	if err != nil || issueNumber <= 0 {
-		return "", errors.New("task not found")
-	}
-	for _, task := range s.tasks {
-		if task != nil && task.ProjectID == projectID && task.IssueNumber == issueNumber {
-			return task.ID, nil
-		}
-	}
-	return "", errors.New("task not found")
+	return s.resolveTaskClaimIDLocked(value)
 }
 
 func (s *Store) SelfAcceptTaskRequest(userID, taskID string) (AcceptTaskRequest, error) {

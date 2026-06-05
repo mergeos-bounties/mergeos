@@ -339,6 +339,10 @@ export class MergeOSClient {
     return this.request('/api/workers/me');
   }
 
+  createProposal(payload) {
+    return this.request('/api/proposals', { method: 'POST', body: payload });
+  }
+
   createDispute(payload) {
     return this.request('/api/disputes', { method: 'POST', body: payload });
   }

@@ -161,6 +161,14 @@ const claim = await mergeos.acceptTask('tsk_0001', {
   worker_id: 'github:contributor',
 });
 console.log(claim.protocol_version, claim.status);
+const proposal = await mergeos.createProposal({
+  task_id: 'bounty-prj_0001-12',
+  cover_letter: 'I can ship this bounty with tests, PR evidence, and release notes.',
+  bid_cents: 12000,
+  estimated_hours: 8,
+  availability: 'Available this week',
+});
+console.log(proposal.protocol_version, proposal.proposal.status);
 const dispute = await mergeos.createDispute({
   task_id: 'tsk_0001',
   body: 'Evidence needs maintainer review.',

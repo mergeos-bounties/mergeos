@@ -84,6 +84,12 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Description: "Authenticated delivery dispute document for customer, worker, or admin escalation into the moderation queue.",
 			},
 			{
+				Version:     "mergeos.proposal.v1",
+				Kind:        "proposal",
+				SchemaURL:   "https://mergeos.shop/protocol/proposal.v1.schema.json",
+				Description: "Authenticated worker proposal submission with bid, availability, customer notification, and admin review routing.",
+			},
+			{
 				Version:     "mergeos.ai-workflow.v1",
 				Kind:        "ai_workflow",
 				SchemaURL:   "https://mergeos.shop/protocol/ai-workflow.v1.schema.json",
@@ -344,6 +350,13 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Protocol:    "mergeos.worker-dashboard.v1",
 				Auth:        "worker",
 				Description: "Authenticated worker dashboard for claimed work, payout references, reputation, and proposal routing.",
+			},
+			{
+				Method:      "POST",
+				Path:        "/api/proposals",
+				Protocol:    "mergeos.proposal.v1",
+				Auth:        "worker",
+				Description: "Authenticated worker proposal submission for an open bounty task, with customer notification and admin proposal review signal.",
 			},
 			{
 				Method:      "POST",

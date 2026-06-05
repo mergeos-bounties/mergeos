@@ -4,7 +4,7 @@
   "title": "MergeOS Worker Dashboard v1",
   "type": "object",
   "additionalProperties": false,
-  "required": ["protocol_version", "kind", "profile", "stats", "claimed_tasks", "rewards", "reputation", "reputation_audit", "proposals", "identity_status"],
+  "required": ["protocol_version", "kind", "profile", "stats", "claimed_tasks", "rewards", "reputation", "reputation_audit", "proposals", "submitted_proposals", "identity_status"],
   "properties": {
     "protocol_version": { "const": "mergeos.worker-dashboard.v1" },
     "kind": { "const": "worker_dashboard" },
@@ -24,10 +24,11 @@
     "stats": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["claimed_task_count", "open_proposal_count", "reward_cents", "reputation_score", "risk_level"],
+      "required": ["claimed_task_count", "open_proposal_count", "submitted_proposal_count", "reward_cents", "reputation_score", "risk_level"],
       "properties": {
         "claimed_task_count": { "type": "integer", "minimum": 0 },
         "open_proposal_count": { "type": "integer", "minimum": 0 },
+        "submitted_proposal_count": { "type": "integer", "minimum": 0 },
         "reward_cents": { "type": "integer", "minimum": 0 },
         "reputation_score": { "type": "integer", "minimum": 0, "maximum": 100 },
         "risk_level": { "enum": ["low", "medium", "high", "unknown"] },
@@ -139,6 +140,32 @@
           },
           "issue_url": { "type": "string", "maxLength": 512 },
           "created_at": { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+    "submitted_proposals": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "project_id", "project_title", "task_id", "claim_id", "worker_id", "issue_number", "title", "cover_letter", "bid_cents", "estimated_hours", "availability", "status", "reference", "created_at", "updated_at"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1, "maxLength": 96 },
+          "project_id": { "type": "string", "minLength": 1, "maxLength": 96 },
+          "project_title": { "type": "string", "maxLength": 240 },
+          "task_id": { "type": "string", "minLength": 1, "maxLength": 96 },
+          "claim_id": { "type": "string", "minLength": 1, "maxLength": 96 },
+          "worker_id": { "type": "string", "minLength": 1, "maxLength": 160 },
+          "issue_number": { "type": "integer", "minimum": 0 },
+          "title": { "type": "string", "minLength": 1, "maxLength": 240 },
+          "cover_letter": { "type": "string", "minLength": 1, "maxLength": 2000 },
+          "bid_cents": { "type": "integer", "minimum": 1 },
+          "estimated_hours": { "type": "number", "minimum": 0 },
+          "availability": { "type": "string", "maxLength": 160 },
+          "status": { "enum": ["submitted", "reviewing", "accepted", "declined", "withdrawn"] },
+          "reference": { "type": "string", "minLength": 1, "maxLength": 512 },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
         }
       }
     },

@@ -14510,6 +14510,10 @@ svg {
 
 .worker-proposal-list button {
   min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   border: 1px solid rgba(15, 159, 120, 0.32);
   border-radius: 8px;
   background: #eefbf5;
@@ -14517,6 +14521,24 @@ svg {
   padding: 0 10px;
   font-size: 11px;
   font-weight: 900;
+  white-space: nowrap;
+}
+
+.worker-proposal-list button.secondary {
+  border-color: rgba(37, 99, 235, 0.24);
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.worker-proposal-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 7px;
+  justify-items: stretch;
+}
+
+.worker-proposal-actions button {
+  width: 100%;
 }
 
 .worker-proposal-main {
@@ -14639,6 +14661,117 @@ svg {
   padding: 4px 7px;
   font-size: 10px;
   font-weight: 850;
+}
+
+.worker-submitted-proposal-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+  border-top: 1px solid #eef0f2;
+  padding-top: 14px;
+}
+
+.worker-submitted-proposal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.worker-submitted-proposal-head strong,
+.worker-submitted-proposal-head span {
+  color: #0f172a;
+  font-size: 12px;
+  font-weight: 920;
+}
+
+.worker-submitted-proposal-head span {
+  display: inline-grid;
+  place-items: center;
+  min-width: 28px;
+  min-height: 24px;
+  border-radius: 999px;
+  background: #ecfdf5;
+  color: var(--green-dark);
+}
+
+.worker-submitted-proposal-list article {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(94px, auto) auto;
+  align-items: start;
+  gap: 10px;
+  border: 1px solid #eef0f2;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 10px;
+}
+
+.worker-submitted-proposal-list article > div {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+
+.worker-submitted-proposal-list strong,
+.worker-submitted-proposal-list small,
+.worker-submitted-proposal-list p {
+  min-width: 0;
+}
+
+.worker-submitted-proposal-list article strong {
+  color: #111827;
+  font-size: 12px;
+  line-height: 1.25;
+  font-weight: 920;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.worker-submitted-proposal-list small,
+.worker-submitted-proposal-list p {
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 760;
+}
+
+.worker-submitted-proposal-list p {
+  margin: 0;
+  overflow-wrap: anywhere;
+  line-height: 1.45;
+}
+
+.worker-submitted-proposal-list article > span {
+  color: var(--green-dark);
+  font-size: 10px;
+  font-weight: 920;
+  white-space: nowrap;
+}
+
+.worker-submitted-proposal-list article > b {
+  border-radius: 999px;
+  padding: 5px 8px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 10px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.worker-submitted-proposal-list article > b.submitted {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.worker-submitted-proposal-list article > b.accepted {
+  background: #dcfce7;
+  color: #047857;
+}
+
+.worker-submitted-proposal-list article > b.declined {
+  background: #fee2e2;
+  color: #b91c1c;
 }
 
 .worker-audit-card {
@@ -16545,6 +16678,8 @@ svg {
   .ai-log-stat-grid,
   .escrow-stat-grid,
   .worker-proposal-list article,
+  .worker-proposal-actions,
+  .worker-submitted-proposal-list article,
   .auto-release-command-head,
   .escrow-task-list article,
   .ai-log-list article,
@@ -16572,7 +16707,10 @@ svg {
   .escrow-task-list button,
   .worker-proposal-list > article > span,
   .worker-proposal-list > article > b,
+  .worker-proposal-actions,
   .worker-proposal-list button,
+  .worker-submitted-proposal-list article > span,
+  .worker-submitted-proposal-list article > b,
   .dashboard-repository-list b,
   .dashboard-repository-list button,
   .dashboard-bounty-list button,

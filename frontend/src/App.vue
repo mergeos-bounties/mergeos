@@ -2342,13 +2342,25 @@
                       </div>
                       <span>{{ proposal.reward }}</span>
                       <b>{{ proposal.matchScore }}%</b>
-                      <button
-                        type="button"
-                        :disabled="claimingBountyID === proposal.id || !proposal.canClaim"
-                        @click="claimMarketplaceBounty(proposal)"
-                      >
-                        {{ claimingBountyID === proposal.id ? 'Claiming' : proposal.actionLabel }}
-                      </button>
+                      <div class="worker-proposal-actions">
+                        <button
+                          type="button"
+                          :disabled="claimingBountyID === proposal.id || !proposal.canClaim"
+                          @click="claimMarketplaceBounty(proposal)"
+                        >
+                          <GitPullRequest :size="13" />
+                          {{ claimingBountyID === proposal.id ? 'Claiming' : proposal.actionLabel }}
+                        </button>
+                        <button
+                          type="button"
+                          class="secondary"
+                          :disabled="proposingBountyID === proposal.id || !proposal.canClaim"
+                          @click="submitWorkerProposal(proposal)"
+                        >
+                          <SendHorizontal :size="13" />
+                          {{ proposingBountyID === proposal.id ? 'Sending' : 'Send proposal' }}
+                        </button>
+                      </div>
                     </article>
                   </div>
                   <article v-else class="dash-empty-state compact">
@@ -2365,6 +2377,21 @@
                       </button>
                     </div>
                   </article>
+                  <div v-if="workerSubmittedProposalRows.length" class="worker-submitted-proposal-list" aria-label="Submitted worker proposals">
+                    <div class="worker-submitted-proposal-head">
+                      <strong>Submitted proposals</strong>
+                      <span>{{ workerSubmittedProposalRows.length }}</span>
+                    </div>
+                    <article v-for="proposal in workerSubmittedProposalRows" :key="proposal.id">
+                      <div>
+                        <strong>{{ proposal.issue }} {{ proposal.title }}</strong>
+                        <small>{{ proposal.project }} · {{ proposal.when }}</small>
+                        <p>{{ proposal.cover }}</p>
+                      </div>
+                      <span>{{ proposal.bid }}</span>
+                      <b :class="proposal.statusTone">{{ proposal.statusLabel }}</b>
+                    </article>
+                  </div>
                 </article>
               </section>
             </template>
@@ -10286,6 +10313,7 @@ const activeMarketplaceCategory = ref('All');
 const activeMarketplaceBudget = ref('Any budget');
 const activeMarketplaceDelivery = ref('Any delivery');
 const claimingBountyID = ref('');
+const proposingBountyID = ref('');
 const pendingClaimBounty = ref(null);
 const fundingSuggestedTaskID = ref('');
 const repoTaskFundingVisible = ref(false);
@@ -10363,6 +10391,7 @@ const workerDashboard = ref({
   rewards: [],
   reputation: [],
   proposals: [],
+  submitted_proposals: [],
   identity_status: [],
 });
 const workerDashboardLoading = ref(false);
@@ -19444,7 +19473,7 @@ const workerDashboardMetrics = computed(() => [
   {
     label: 'Proposals',
     value: String(Number(workerDashboardStats.value.open_proposal_count) || 0),
-    caption: 'Open bounty matches',
+    caption: `${Number(workerDashboardStats.value.submitted_proposal_count) || 0} submitted`,
   },
 ]);
 const workerClaimedTaskRows = computed(() =>
@@ -19468,6 +19497,9 @@ const workerReputationRows = computed(() =>
 const workerReputationAudit = computed(() => workerDashboard.value.reputation_audit || {});
 const workerProposalRows = computed(() =>
   (workerDashboard.value.proposals || []).map(mapWorkerProposal),
+);
+const workerSubmittedProposalRows = computed(() =>
+  (workerDashboard.value.submitted_proposals || []).map(mapWorkerSubmittedProposal),
 );
 const workerIdentityRows = computed(() => workerDashboard.value.identity_status || []);
 const workerIdentityReadyCount = computed(() => workerIdentityRows.value.filter((row) => row.ready).length);
@@ -19580,7 +19612,7 @@ const dashboardCommandStats = computed(() => {
       { label: 'Claimed', value: String(Number(workerDashboardStats.value.claimed_task_count) || 0), icon: GitPullRequest, tone: 'green' },
       { label: 'Rewards', value: formatMRGFromCents(workerDashboardStats.value.reward_cents), icon: CircleDollarSign, tone: 'blue' },
       { label: 'Reputation', value: `${workerReputationScore.value}`, icon: Trophy, tone: 'purple' },
-      { label: 'Proposals', value: String(Number(workerDashboardStats.value.open_proposal_count) || 0), icon: Compass, tone: 'amber' },
+      { label: 'Proposals', value: `${Number(workerDashboardStats.value.open_proposal_count) || 0}/${Number(workerDashboardStats.value.submitted_proposal_count) || 0}`, icon: Compass, tone: 'amber' },
     ];
   }
   if (dashboardToolSectionView.value) {
@@ -23538,6 +23570,30 @@ function claimPayloadForBounty(bounty = {}) {
   };
 }
 
+function proposalCoverLetterForBounty(bounty = {}) {
+  const issue = bounty.issue ? `${bounty.issue} ` : '';
+  const title = trimMarketplaceText(bounty.title, 'this bounty');
+  const project = trimMarketplaceText(bounty.project, 'this MergeOS project');
+  const acceptance = trimMarketplaceText(bounty.acceptance, 'the published acceptance criteria');
+  const workerID = claimWorkerIDForProfile() || 'current session';
+  return trimMarketplaceText(
+    `I can deliver ${issue}${title} for ${project}. Scope: ${acceptance} I will attach PR evidence, tests, and release notes through MergeOS. Worker identity: ${workerID}.`,
+    'I can deliver this bounty with PR evidence, tests, and release notes through MergeOS.',
+  );
+}
+
+function proposalPayloadForBounty(bounty = {}) {
+  const estimatedHours = Number(bounty.estimatedHours) > 0 ? Number(bounty.estimatedHours) : Math.max(1, Math.ceil((Number(bounty.rewardCents) || 5000) / 2500));
+  const bidCents = Number(bounty.rewardCents) > 0 ? Number(bounty.rewardCents) : 5000;
+  return {
+    task_id: bounty.claimId || bounty.id,
+    cover_letter: proposalCoverLetterForBounty(bounty),
+    bid_cents: bidCents,
+    estimated_hours: estimatedHours,
+    availability: 'Available after customer approval',
+  };
+}
+
 async function claimMarketplaceBounty(bounty = {}, options = {}) {
   if (!bounty?.id || claimingBountyID.value) return;
   if (bounty.canClaim === false) {
@@ -23573,6 +23629,40 @@ async function claimMarketplaceBounty(bounty = {}, options = {}) {
     showToast(error.message || 'Could not claim bounty.');
   } finally {
     claimingBountyID.value = '';
+  }
+}
+
+async function submitWorkerProposal(proposal = {}) {
+  if (!proposal?.id || proposingBountyID.value) return;
+  if (proposal.canClaim === false) {
+    showToast('This proposal is no longer available.');
+    return;
+  }
+  if (!token.value || !user.value) {
+    openAuth('login');
+    showToast('Log in to send a proposal.');
+    return;
+  }
+
+  proposingBountyID.value = proposal.id;
+  try {
+    const created = await api('/api/proposals', {
+      method: 'POST',
+      body: JSON.stringify(proposalPayloadForBounty(proposal)),
+    });
+    await Promise.all([
+      loadMarketplaceData({ silent: true }),
+      loadLiveFeedData({ silent: true }),
+      loadWorkerDashboardData({ silent: true }),
+      loadDashboardData({ silent: true }),
+      loadDashboardNotifications(),
+    ]);
+    dashboardSection.value = 'worker';
+    showToast(`Proposal sent for ${proposal.issue || created.proposal?.title || 'the bounty'}.`);
+  } catch (error) {
+    showToast(error.message || 'Could not send proposal.');
+  } finally {
+    proposingBountyID.value = '';
   }
 }
 
@@ -25019,6 +25109,7 @@ function mapWorkerProposal(proposal = {}) {
   const issue = proposal.issue_number ? `#${proposal.issue_number}` : '';
   return {
     id: proposal.id || `${proposal.project_id}-${proposal.issue_number}`,
+    claimId: proposal.claim_id || proposal.id || `${proposal.project_id}-${proposal.issue_number}`,
     issue,
     title: proposal.title || 'Open bounty',
     acceptance: trimMarketplaceText(proposal.acceptance, 'Acceptance criteria will appear after task generation.'),
@@ -25026,6 +25117,7 @@ function mapWorkerProposal(proposal = {}) {
     lane: agentType ? toTitleLabel(agentType) : toTitleLabel(proposal.required_worker_kind || 'worker'),
     reward: formatMRGFromCents(proposal.reward_cents),
     rewardCents: Number(proposal.reward_cents) || 0,
+    estimatedHours: Number(proposal.estimated_hours) || 0,
     workerKind: claimPayload.worker_kind || proposal.required_worker_kind || 'human',
     agentType: claimPayload.agent_type || agentType,
     matchScore: Number(proposal.match_score) || 0,
@@ -25040,6 +25132,25 @@ function mapWorkerProposal(proposal = {}) {
     payloadRows: workerProposalPayloadRows(claimPayload, proposal),
     evidenceRows: (Array.isArray(packet.evidence_checklist) ? packet.evidence_checklist : []).map(toTitleLabel),
     warningRows: Array.isArray(packet.warnings) ? packet.warnings : [],
+  };
+}
+
+function mapWorkerSubmittedProposal(proposal = {}) {
+  const status = String(proposal.status || 'submitted').trim().toLowerCase();
+  const when = formatLedgerDateTime(proposal.updated_at || proposal.created_at);
+  const hours = Number(proposal.estimated_hours) || 0;
+  return {
+    id: proposal.id || proposal.reference || `${proposal.project_id}-${proposal.issue_number}`,
+    issue: proposal.issue_number ? `#${proposal.issue_number}` : '',
+    title: proposal.title || 'Submitted proposal',
+    project: proposal.project_title || 'MergeOS project',
+    cover: trimMarketplaceText(proposal.cover_letter, 'Proposal details are attached to the customer dashboard.'),
+    bid: `${formatMRGFromCents(proposal.bid_cents)}${hours ? ` / ${hours}h` : ''}`,
+    worker: formatClaimWorkerID(proposal.worker_id),
+    statusLabel: toTitleLabel(status || 'submitted'),
+    statusTone: status === 'accepted' ? 'accepted' : status === 'declined' || status === 'withdrawn' ? 'declined' : 'submitted',
+    when: when.full,
+    reference: proposal.reference || '',
   };
 }
 
@@ -26386,6 +26497,7 @@ async function loadWorkerDashboardData(options = {}) {
       rewards: [],
       reputation: [],
       proposals: [],
+      submitted_proposals: [],
       identity_status: [],
     };
     workerDashboardError.value = '';
@@ -26404,6 +26516,7 @@ async function loadWorkerDashboardData(options = {}) {
       rewards: Array.isArray(payload.rewards) ? payload.rewards : [],
       reputation: Array.isArray(payload.reputation) ? payload.reputation : [],
       proposals: Array.isArray(payload.proposals) ? payload.proposals : [],
+      submitted_proposals: Array.isArray(payload.submitted_proposals) ? payload.submitted_proposals : [],
       identity_status: Array.isArray(payload.identity_status) ? payload.identity_status : [],
     };
   } catch (error) {
@@ -27444,6 +27557,7 @@ function clearSession() {
     rewards: [],
     reputation: [],
     proposals: [],
+    submitted_proposals: [],
     identity_status: [],
   };
   workerDashboardError.value = '';
@@ -27455,6 +27569,7 @@ function clearSession() {
   pendingClaimBounty.value = null;
   fundingSuggestedTaskID.value = '';
   claimingBountyID.value = '';
+  proposingBountyID.value = '';
   repoTaskFundingVisible.value = false;
   repoTaskFundingBusy.value = false;
   resetRepositoryTaskFundingInputs();

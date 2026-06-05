@@ -123,6 +123,22 @@ type CreateDisputeResponse struct {
 	CreatedAt       time.Time    `json:"created_at"`
 }
 
+type CreateProposalRequest struct {
+	TaskID         string  `json:"task_id"`
+	CoverLetter    string  `json:"cover_letter"`
+	BidCents       int64   `json:"bid_cents,omitempty"`
+	EstimatedHours float64 `json:"estimated_hours,omitempty"`
+	Availability   string  `json:"availability,omitempty"`
+}
+
+type CreateProposalResponse struct {
+	ProtocolVersion      string                  `json:"protocol_version"`
+	Kind                 string                  `json:"kind"`
+	Proposal             WorkerSubmittedProposal `json:"proposal"`
+	WorkerNotification   Notification            `json:"worker_notification"`
+	CustomerNotification Notification            `json:"customer_notification"`
+}
+
 type Attachment struct {
 	ID           string    `json:"id"`
 	UserID       string    `json:"user_id,omitempty"`
@@ -1115,6 +1131,7 @@ type ProjectDashboardResponse struct {
 	TaskGraph        ProjectTaskGraphResponse      `json:"task_graph"`
 	RepositoryScan   ProjectRepositoryScanResponse `json:"repository_scan"`
 	PullRequests     ProjectPullRequestsResponse   `json:"pull_requests"`
+	Proposals        []WorkerSubmittedProposal     `json:"proposals"`
 	PullRequestError string                        `json:"pull_request_error,omitempty"`
 	UpdatedAt        time.Time                     `json:"updated_at"`
 }
@@ -1323,16 +1340,17 @@ type AIWorkflowSignal struct {
 }
 
 type WorkerDashboardResponse struct {
-	ProtocolVersion string                `json:"protocol_version"`
-	Kind            string                `json:"kind"`
-	Profile         WorkerProfile         `json:"profile"`
-	Stats           WorkerStats           `json:"stats"`
-	ClaimedTasks    []WorkerClaimedTask   `json:"claimed_tasks"`
-	Rewards         []WorkerRewardEntry   `json:"rewards"`
-	Reputation      []WorkerReputation    `json:"reputation"`
-	ReputationAudit WorkerReputationAudit `json:"reputation_audit"`
-	Proposals       []WorkerProposal      `json:"proposals"`
-	IdentityStatus  []WorkerIdentityHint  `json:"identity_status"`
+	ProtocolVersion    string                    `json:"protocol_version"`
+	Kind               string                    `json:"kind"`
+	Profile            WorkerProfile             `json:"profile"`
+	Stats              WorkerStats               `json:"stats"`
+	ClaimedTasks       []WorkerClaimedTask       `json:"claimed_tasks"`
+	Rewards            []WorkerRewardEntry       `json:"rewards"`
+	Reputation         []WorkerReputation        `json:"reputation"`
+	ReputationAudit    WorkerReputationAudit     `json:"reputation_audit"`
+	Proposals          []WorkerProposal          `json:"proposals"`
+	SubmittedProposals []WorkerSubmittedProposal `json:"submitted_proposals"`
+	IdentityStatus     []WorkerIdentityHint      `json:"identity_status"`
 }
 
 type WorkerProfile struct {
@@ -1345,12 +1363,13 @@ type WorkerProfile struct {
 }
 
 type WorkerStats struct {
-	ClaimedTaskCount  int        `json:"claimed_task_count"`
-	OpenProposalCount int        `json:"open_proposal_count"`
-	RewardCents       int64      `json:"reward_cents"`
-	ReputationScore   int        `json:"reputation_score"`
-	RiskLevel         string     `json:"risk_level"`
-	LastPaidAt        *time.Time `json:"last_paid_at,omitempty"`
+	ClaimedTaskCount       int        `json:"claimed_task_count"`
+	OpenProposalCount      int        `json:"open_proposal_count"`
+	SubmittedProposalCount int        `json:"submitted_proposal_count"`
+	RewardCents            int64      `json:"reward_cents"`
+	ReputationScore        int        `json:"reputation_score"`
+	RiskLevel              string     `json:"risk_level"`
+	LastPaidAt             *time.Time `json:"last_paid_at,omitempty"`
 }
 
 type WorkerClaimedTask struct {
@@ -1420,6 +1439,25 @@ type WorkerProposal struct {
 	CreatedAt          time.Time  `json:"created_at"`
 }
 
+type WorkerSubmittedProposal struct {
+	ID             string    `json:"id"`
+	ProjectID      string    `json:"project_id"`
+	ProjectTitle   string    `json:"project_title"`
+	TaskID         string    `json:"task_id"`
+	ClaimID        string    `json:"claim_id,omitempty"`
+	WorkerID       string    `json:"worker_id"`
+	IssueNumber    int       `json:"issue_number"`
+	Title          string    `json:"title"`
+	CoverLetter    string    `json:"cover_letter"`
+	BidCents       int64     `json:"bid_cents"`
+	EstimatedHours float64   `json:"estimated_hours,omitempty"`
+	Availability   string    `json:"availability,omitempty"`
+	Status         string    `json:"status"`
+	Reference      string    `json:"reference"`
+	CreatedAt      time.Time `json:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at"`
+}
+
 type WorkerIdentityHint struct {
 	Label string `json:"label"`
 	Value string `json:"value"`
@@ -1479,6 +1517,7 @@ type AdminOpsQueueStats struct {
 	TotalCount        int        `json:"total_count"`
 	DisputeCount      int        `json:"dispute_count"`
 	ModerationCount   int        `json:"moderation_count"`
+	ProposalCount     int        `json:"proposal_count"`
 	PayoutReviewCount int        `json:"payout_review_count"`
 	FraudCount        int        `json:"fraud_count"`
 	SecurityCount     int        `json:"security_count"`

@@ -109,6 +109,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/tasks", s.tasks)
 	mux.HandleFunc("POST /api/tasks/", s.acceptTask)
 	mux.HandleFunc("GET /api/workers/me", s.workerDashboard)
+	mux.HandleFunc("POST /api/proposals", s.createProposal)
 	mux.HandleFunc("GET /api/notifications", s.notifications)
 	mux.HandleFunc("POST /api/notifications/read", s.markNotificationRead)
 	mux.HandleFunc("POST /api/notifications/read-all", s.markAllNotificationsRead)
@@ -777,6 +778,30 @@ func (s *Server) notifications(w http.ResponseWriter, r *http.Request) {
 		userID = ""
 	}
 	writeJSON(w, http.StatusOK, s.store.ListNotifications(userID))
+}
+
+func (s *Server) createProposal(w http.ResponseWriter, r *http.Request) {
+	user, ok := s.requireUser(w, r)
+	if !ok {
+		return
+	}
+	var req CreateProposalRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	response, err := s.store.CreateProposal(user.ID, req)
+	if err != nil {
+		status := http.StatusBadRequest
+		if strings.Contains(err.Error(), "not found") {
+			status = http.StatusNotFound
+		}
+		writeError(w, status, err.Error())
+		return
+	}
+	s.broadcastAdminOpsUpdated()
+	s.broadcastLiveFeedEvent("proposal_created")
+	writeJSON(w, http.StatusCreated, response)
 }
 
 func (s *Server) createDispute(w http.ResponseWriter, r *http.Request) {

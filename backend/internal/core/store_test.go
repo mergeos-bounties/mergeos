@@ -1004,7 +1004,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 	if payload.ProtocolVersion != "mergeos.protocol.manifest.v1" || payload.Kind != "protocol_manifest" {
 		t.Fatalf("unexpected manifest header: %#v", payload)
 	}
-	if len(payload.Schemas) != 25 {
+	if len(payload.Schemas) != 26 {
 		t.Fatalf("manifest schemas = %d: %#v", len(payload.Schemas), payload.Schemas)
 	}
 	schemas := map[string]bool{}
@@ -1013,7 +1013,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 		schemas[schema.Version] = true
 		descriptions[schema.Version] = schema.Description
 	}
-	for _, required := range []string{"mergeos.task.v1", "mergeos.task-claim.v1", "mergeos.agent.v1", "mergeos.contributor.v1", "mergeos.agent-action.v1", "mergeos.marketplace.v1", "mergeos.live-feed.v1", "mergeos.workflow.v1", "mergeos.estimate.v1", "mergeos.wallet-migration.v1", "mergeos.repo-import.v1", "mergeos.repo-sync.v1", "mergeos.dispute.v1", "mergeos.ai-workflow.v1", "mergeos.event.v1", "mergeos.ledger.v1", "mergeos.escrow.v1", "mergeos.payouts.v1", "mergeos.payout-release.v1", "mergeos.deployment.v1", "mergeos.pr-monitor.v1", "mergeos.scan.v1", "mergeos.customer-dashboard.v1", "mergeos.worker-dashboard.v1", "mergeos.admin-ops.v1"} {
+	for _, required := range []string{"mergeos.task.v1", "mergeos.task-claim.v1", "mergeos.agent.v1", "mergeos.contributor.v1", "mergeos.agent-action.v1", "mergeos.marketplace.v1", "mergeos.live-feed.v1", "mergeos.workflow.v1", "mergeos.estimate.v1", "mergeos.wallet-migration.v1", "mergeos.repo-import.v1", "mergeos.repo-sync.v1", "mergeos.dispute.v1", "mergeos.proposal.v1", "mergeos.ai-workflow.v1", "mergeos.event.v1", "mergeos.ledger.v1", "mergeos.escrow.v1", "mergeos.payouts.v1", "mergeos.payout-release.v1", "mergeos.deployment.v1", "mergeos.pr-monitor.v1", "mergeos.scan.v1", "mergeos.customer-dashboard.v1", "mergeos.worker-dashboard.v1", "mergeos.admin-ops.v1"} {
 		if !schemas[required] {
 			t.Fatalf("manifest missing schema %s: %#v", required, payload.Schemas)
 		}
@@ -1043,6 +1043,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 		"GET /api/projects/{id}/protocol/scan",
 		"POST /api/projects/{id}/repo-sync",
 		"POST /api/disputes",
+		"POST /api/proposals",
 		"GET /api/projects/{id}/escrow",
 		"GET /api/projects/{id}/payouts",
 		"POST /api/projects/{id}/auto-release",
@@ -3625,6 +3626,151 @@ func TestWorkerDashboardRouteMatchesGitHubWorkerAndSanitizesData(t *testing.T) {
 	}
 	if len(payload.Proposals[0].EvidenceRequired) == 0 || !containsString(payload.Proposals[0].EvidenceRequired, "tests") {
 		t.Fatalf("worker proposal missing evidence requirements: %#v", payload.Proposals[0])
+	}
+}
+
+func TestWorkerProposalSubmissionRoutesToCustomerDashboardAndAdminOps(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:       defaultTokenSymbol,
+		StatePath:         filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:    1000,
+		DevPaymentEnabled: true,
+		DevPaymentCode:    defaultDevPaymentCode,
+		GitHubOwner:       defaultGitHubOwner,
+		BountyRoot:        filepath.Join(tempDir, "bounties"),
+		SMTPFrom:          "noreply@mergeos.local",
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	workerAuth, err := store.AuthenticateGitHub(GitHubAuthProfile{
+		ID:       "proposal-worker-1",
+		Username: "proposal-dev",
+		Name:     "Proposal Dev",
+		Email:    "proposal-dev@example.com",
+	}, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	clientAuth, err := store.Register(RegisterRequest{
+		Name:        "Proposal Client",
+		CompanyName: "Proposal Client Co",
+		Email:       "proposal-client@example.com",
+		Password:    "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	project, err := store.CreateProject(context.Background(), clientAuth.User.ID, CreateProjectRequest{
+		Title:            "Proposal routing proof",
+		ClientName:       "Private Proposal Client",
+		CompanyName:      "Proposal Client Co",
+		ClientEmail:      "proposal-client@example.com",
+		Phone:            "+1 555 0199",
+		Brief:            "Create proposal routing records without exposing private project metadata.",
+		BudgetCents:      220000,
+		PaymentMethod:    PaymentPayPal,
+		PaymentReference: defaultDevPaymentCode,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var humanTask *Task
+	for _, task := range project.Tasks {
+		if task.RequiredWorkerKind == WorkerHuman {
+			humanTask = task
+			break
+		}
+	}
+	if humanTask == nil {
+		t.Fatal("project did not create a human task")
+	}
+
+	publicTaskID := marketplaceBountyID(project.ID, humanTask.IssueNumber)
+	body := fmt.Sprintf(`{"task_id":%q,"cover_letter":"I can deliver the acceptance criteria with tests and a deployment note.","bid_cents":12345,"estimated_hours":9.5,"availability":"This week"}`, publicTaskID)
+	server := NewServer(cfg, store, payments)
+	reqHTTP := httptest.NewRequest(http.MethodPost, "/api/proposals", strings.NewReader(body))
+	reqHTTP.Header.Set("Authorization", "Bearer "+workerAuth.Token)
+	resp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(resp, reqHTTP)
+	if resp.Code != http.StatusCreated {
+		t.Fatalf("proposal status = %d, body = %s", resp.Code, resp.Body.String())
+	}
+
+	responseBody := resp.Body.String()
+	for _, value := range []string{
+		"proposal-client@example.com",
+		"+1 555 0199",
+		clientAuth.User.ID,
+		defaultDevPaymentCode,
+		tempDir,
+		humanTask.ID,
+	} {
+		if strings.Contains(responseBody, value) {
+			t.Fatalf("proposal response leaked private value %q: %s", value, responseBody)
+		}
+	}
+
+	var proposal CreateProposalResponse
+	if err := json.Unmarshal(resp.Body.Bytes(), &proposal); err != nil {
+		t.Fatal(err)
+	}
+	if proposal.ProtocolVersion != "mergeos.proposal.v1" || proposal.Kind != "proposal" {
+		t.Fatalf("unexpected proposal protocol header: %#v", proposal)
+	}
+	if proposal.Proposal.TaskID != publicTaskID || proposal.Proposal.ClaimID != publicTaskID || proposal.Proposal.WorkerID != "github:proposal-dev" {
+		t.Fatalf("proposal did not expose public task and worker references: %#v", proposal.Proposal)
+	}
+	if proposal.Proposal.BidCents != 12345 || proposal.Proposal.EstimatedHours != 9.5 || proposal.Proposal.Status != "submitted" {
+		t.Fatalf("proposal did not preserve bid and status: %#v", proposal.Proposal)
+	}
+	if proposal.CustomerNotification.UserID != "" || proposal.WorkerNotification.UserID != "" || strings.Contains(proposal.CustomerNotification.Status, humanTask.ID) {
+		t.Fatalf("proposal notifications were not sanitized: %#v %#v", proposal.WorkerNotification, proposal.CustomerNotification)
+	}
+
+	workerDashboard := store.WorkerDashboard(workerAuth.User.ID)
+	if workerDashboard.Stats.SubmittedProposalCount != 1 || len(workerDashboard.SubmittedProposals) != 1 {
+		t.Fatalf("worker dashboard missing submitted proposal: %#v", workerDashboard)
+	}
+	if workerDashboard.SubmittedProposals[0].TaskID != publicTaskID {
+		t.Fatalf("worker dashboard leaked internal task reference: %#v", workerDashboard.SubmittedProposals[0])
+	}
+
+	customerDashboard, err := store.ProjectDashboard(project.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(customerDashboard.Proposals) != 1 || customerDashboard.Proposals[0].WorkerID != "github:proposal-dev" {
+		t.Fatalf("customer dashboard missing proposal: %#v", customerDashboard.Proposals)
+	}
+
+	ops := store.AdminOpsQueue()
+	if ops.Stats.ProposalCount != 1 {
+		t.Fatalf("admin ops missing proposal review count: %#v", ops.Stats)
+	}
+	foundProposalOps := false
+	for _, item := range ops.Items {
+		if item.Type == "proposal_review" && item.ProjectID == project.ID && item.TaskID == humanTask.ID {
+			foundProposalOps = true
+			break
+		}
+	}
+	if !foundProposalOps {
+		t.Fatalf("admin ops missing proposal review item: %#v", ops.Items)
+	}
+
+	duplicateReq := httptest.NewRequest(http.MethodPost, "/api/proposals", strings.NewReader(body))
+	duplicateReq.Header.Set("Authorization", "Bearer "+workerAuth.Token)
+	duplicateResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(duplicateResp, duplicateReq)
+	if duplicateResp.Code != http.StatusBadRequest {
+		t.Fatalf("duplicate proposal status = %d, body = %s", duplicateResp.Code, duplicateResp.Body.String())
+	}
+	if store.WorkerDashboard(workerAuth.User.ID).Stats.SubmittedProposalCount != 1 {
+		t.Fatal("duplicate proposal created another submitted proposal")
 	}
 }
 
