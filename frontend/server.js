@@ -2,8 +2,11 @@ import fs from 'node:fs/promises';
 import { createReadStream } from 'node:fs';
 import http from 'node:http';
 import https from 'node:https';
+import net from 'node:net';
 import path from 'node:path';
+import tls from 'node:tls';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { renderSeoHead } from './src/seo.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const defaultClientDist = path.resolve(__dirname, 'dist/client');
@@ -92,7 +95,7 @@ export function createRuntimeConfig({ argv = process.argv, env = process.env, cw
     host: env.FRONTEND_HOST || '127.0.0.1',
     port,
     hmrPort: Number(env.VITE_HMR_PORT || port + 10000),
-    apiTarget: env.API_TARGET || 'http://127.0.0.1:8080',
+    apiTarget: env.API_TARGET || 'http://localhost:8080',
     clientDist: path.resolve(cwd, env.CLIENT_DIST || 'dist/client'),
     serverEntry: path.resolve(cwd, env.SERVER_ENTRY || 'dist/server/entry-server.js'),
   };
@@ -118,6 +121,7 @@ export async function createMergeOSServer(config) {
   }
 
   const server = http.createServer(async (req, res) => {
+    attachConnectionErrorHandlers(req, res);
     try {
       if (req.url?.startsWith('/api')) {
         proxyApi(req, res, config.apiTarget);
@@ -144,6 +148,20 @@ export async function createMergeOSServer(config) {
     }
   });
 
+  server.on('connection', (socket) => {
+    if (!socket.__mergeosErrorHandlerAttached) {
+      socket.__mergeosErrorHandlerAttached = true;
+      socket.on('error', handleConnectionError);
+    }
+  });
+
+  server.on('clientError', (error, socket) => {
+    if (!isExpectedConnectionError(error)) {
+      console.error(error);
+    }
+    socket.destroy();
+  });
+
   server.on('upgrade', (req, socket, head) => {
     if (!req.url?.startsWith('/api/ws')) {
       socket.destroy();
@@ -153,6 +171,24 @@ export async function createMergeOSServer(config) {
   });
 
   return server;
+}
+
+function attachConnectionErrorHandlers(req, res) {
+  req.on('error', handleConnectionError);
+  res.on('error', handleConnectionError);
+  if (req.socket && !req.socket.__mergeosErrorHandlerAttached) {
+    req.socket.__mergeosErrorHandlerAttached = true;
+    req.socket.on('error', handleConnectionError);
+  }
+}
+
+function handleConnectionError(error) {
+  if (isExpectedConnectionError(error)) return;
+  console.error(error);
+}
+
+function isExpectedConnectionError(error) {
+  return ['ECONNRESET', 'EPIPE', 'ERR_STREAM_PREMATURE_CLOSE'].includes(error?.code);
 }
 
 export async function startServer({ argv = process.argv, env = process.env, cwd = __dirname } = {}) {
@@ -178,10 +214,28 @@ async function renderUrl(req, res, context) {
     ? (await context.vite.ssrLoadModule('/src/entry-server.js')).render
     : context.productionRender;
   const appHtml = await render(url);
-  const html = template.replace('<!--ssr-outlet-->', appHtml);
+  const origin = publicOriginFromRequest(req);
+  const html = injectSeoHead(template, url, origin).replace('<!--ssr-outlet-->', appHtml);
   res.statusCode = 200;
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.end(html);
+}
+
+function publicOriginFromRequest(req) {
+  const host = req.headers['x-forwarded-host'] || req.headers.host || '127.0.0.1';
+  const proto = req.headers['x-forwarded-proto'] || (req.socket.encrypted ? 'https' : 'http');
+  return `${Array.isArray(proto) ? proto[0] : proto}://${Array.isArray(host) ? host[0] : host}`;
+}
+
+function injectSeoHead(template, url, origin) {
+  const seoHead = renderSeoHead(url, { origin });
+  if (template.includes('<!--seo-head-->')) {
+    return template.replace('<!--seo-head-->', seoHead);
+  }
+  if (/<title\b[^>]*>[\s\S]*?<\/title>/i.test(template)) {
+    return template.replace(/<title\b[^>]*>[\s\S]*?<\/title>/i, seoHead);
+  }
+  return template.replace('</head>', `${seoHead}\n  </head>`);
 }
 
 async function serveStatic(req, res, clientDist = defaultClientDist) {
@@ -228,65 +282,70 @@ function proxyApi(req, res, apiTarget) {
     },
   }, (proxyRes) => {
     res.writeHead(proxyRes.statusCode || 500, proxyRes.headers);
+    proxyRes.on('error', handleConnectionError);
     proxyRes.pipe(res);
   });
 
   proxyReq.on('error', (error) => {
+    if (res.destroyed || isExpectedConnectionError(error)) return;
     res.statusCode = 502;
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
     res.end(JSON.stringify({ error: `api proxy failed: ${error.message}` }));
   });
 
+  req.on('aborted', () => {
+    proxyReq.destroy();
+  });
   req.pipe(proxyReq);
 }
 
 function proxyWs(req, socket, head, apiTarget) {
   const target = new URL(apiTarget);
-  const transport = target.protocol === 'https:' ? https : http;
+  const useTLS = target.protocol === 'https:';
+  const targetPort = Number(target.port || (useTLS ? 443 : 80));
   const forwardedHost = req.headers['x-forwarded-host'] || req.headers.host || target.host;
   const forwardedProto = req.headers['x-forwarded-proto'] || (req.socket.encrypted ? 'https' : 'http');
-  const proxyReq = transport.request({
-    protocol: target.protocol,
-    hostname: target.hostname,
-    port: target.port,
-    method: req.method,
-    path: req.url,
-    headers: {
+  const proxySocket = useTLS
+    ? tls.connect({ host: target.hostname, port: targetPort, servername: target.hostname })
+    : net.connect({ host: target.hostname, port: targetPort });
+  let targetConnected = false;
+
+  proxySocket.once(useTLS ? 'secureConnect' : 'connect', () => {
+    targetConnected = true;
+    const headers = {
       ...req.headers,
       host: target.host,
       'x-forwarded-host': forwardedHost,
       'x-forwarded-proto': forwardedProto,
-    },
-  });
-
-  proxyReq.on('upgrade', (proxyRes, proxySocket, proxyHead) => {
-    socket.write(`HTTP/${proxyRes.httpVersion} ${proxyRes.statusCode} ${proxyRes.statusMessage}\r\n`);
-    for (const [name, value] of Object.entries(proxyRes.headers)) {
+    };
+    const lines = [`${req.method || 'GET'} ${req.url || '/api/ws'} HTTP/${req.httpVersion || '1.1'}`];
+    for (const [name, value] of Object.entries(headers)) {
       if (Array.isArray(value)) {
-        for (const item of value) socket.write(`${name}: ${item}\r\n`);
+        for (const item of value) lines.push(`${name}: ${item}`);
       } else if (value !== undefined) {
-        socket.write(`${name}: ${value}\r\n`);
+        lines.push(`${name}: ${value}`);
       }
     }
-    socket.write('\r\n');
-    if (proxyHead?.length) socket.write(proxyHead);
+    lines.push('', '');
+    proxySocket.pipe(socket, { end: false });
+    socket.pipe(proxySocket, { end: false });
+    proxySocket.write(lines.join('\r\n'));
     if (head?.length) proxySocket.write(head);
-    proxySocket.pipe(socket);
-    socket.pipe(proxySocket);
+    proxySocket.on('end', () => socket.end());
+    proxySocket.on('close', () => socket.destroy());
+    socket.on('close', () => proxySocket.destroy());
+    proxySocket.on('error', () => socket.destroy());
+    socket.on('error', () => proxySocket.destroy());
+    proxySocket.resume();
+    socket.resume();
   });
 
-  proxyReq.on('response', (proxyRes) => {
-    socket.write(`HTTP/1.1 ${proxyRes.statusCode || 502} ${proxyRes.statusMessage || 'Bad Gateway'}\r\n\r\n`);
-    proxyRes.resume();
+  proxySocket.on('error', () => {
+    if (!targetConnected && !socket.destroyed) {
+      socket.write('HTTP/1.1 502 Bad Gateway\r\n\r\n');
+    }
     socket.destroy();
   });
-
-  proxyReq.on('error', () => {
-    socket.write('HTTP/1.1 502 Bad Gateway\r\n\r\n');
-    socket.destroy();
-  });
-
-  proxyReq.end();
 }
 
 function readArgValue(argv, name) {
