@@ -125,7 +125,7 @@ export class MergeOSClient {
   }
 
   publicLiveFeed(options = {}) {
-    const limit = Number(options.limit) > 0 ? `?limit=${encodeURIComponent(Number(options.limit))}` : '';
+    const limit = publicLimitQuery(options.limit);
     return this.request(`/api/public/live-feed${limit}`, { auth: false });
   }
 
@@ -154,7 +154,7 @@ export class MergeOSClient {
   }
 
   publicProtocolAgents(options = {}) {
-    const limit = Number(options.limit) > 0 ? `?limit=${encodeURIComponent(Number(options.limit))}` : '';
+    const limit = publicLimitQuery(options.limit);
     return this.request(`/api/public/protocol/agents${limit}`, { auth: false });
   }
 
@@ -172,7 +172,7 @@ export class MergeOSClient {
   }
 
   publicProtocolEvents(options = {}) {
-    const limit = Number(options.limit) > 0 ? `?limit=${encodeURIComponent(Number(options.limit))}` : '';
+    const limit = publicLimitQuery(options.limit);
     return this.request(`/api/public/protocol/events${limit}`, { auth: false });
   }
 
@@ -548,6 +548,12 @@ export class MergeOSClient {
 
 export function createMergeOSClient(options = {}) {
   return new MergeOSClient(options);
+}
+
+function publicLimitQuery(limit) {
+  const value = Number(limit);
+  if (!Number.isFinite(value) || value <= 0) return '';
+  return `?limit=${encodeURIComponent(Math.floor(value))}`;
 }
 
 export function contractReferenceFromLedger(entry, options = {}) {
