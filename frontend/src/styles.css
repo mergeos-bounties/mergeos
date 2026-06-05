@@ -11675,9 +11675,10 @@ svg {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 80;
-  display: grid;
-  place-items: center;
+  z-index: 1000;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
   overflow-y: auto;
   padding: 32px;
   background: rgba(10, 16, 24, 0.64);
@@ -11689,6 +11690,7 @@ svg {
   width: min(1030px, 100%);
   max-height: calc(100dvh - 64px);
   overflow: auto;
+  margin: auto;
   border: 1px solid rgba(226, 232, 240, 0.86);
   border-radius: 18px;
   background: #ffffff;
@@ -11721,6 +11723,7 @@ svg {
   width: min(760px, 100%);
   max-height: calc(100vh - 64px);
   overflow: auto;
+  margin: auto;
   display: grid;
   gap: 16px;
   border: 1px solid rgba(226, 232, 240, 0.92);
@@ -11922,7 +11925,16 @@ svg {
 
 .wave-mark {
   display: inline-block;
-  transform: translateY(-1px);
+  transform-origin: 70% 70%;
+  animation: wave-animation 2s ease-in-out infinite;
+}
+
+@keyframes wave-animation {
+  0%, 100% { transform: rotate(0deg); }
+  15% { transform: rotate(-15deg); }
+  30% { transform: rotate(10deg); }
+  45% { transform: rotate(-10deg); }
+  60% { transform: rotate(5deg); }
 }
 
 .auth-copy p {
@@ -12113,6 +12125,7 @@ svg {
   color: var(--green-dark);
   padding: 0;
   font-weight: 880;
+  display: inline;
 }
 
 .auth-check button:hover,
@@ -19633,8 +19646,8 @@ svg {
   .auth-close-button {
     top: 10px;
     right: 10px;
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
   }
 
   .social-auth-row button {
@@ -26559,8 +26572,8 @@ svg {
   .auth-close-button {
     top: 12px;
     right: 12px;
-    width: 34px;
-    height: 34px;
+    width: 40px;
+    height: 40px;
   }
   .auth-copy {
     margin-top: 16px;
@@ -26572,15 +26585,15 @@ svg {
     font-size: 13px;
   }
   .social-auth-row button {
-    min-height: 42px;
+    min-height: 44px;
     font-size: 13px;
     padding: 0 10px;
   }
   .input-shell {
-    min-height: 42px;
+    min-height: 44px;
   }
   .input-shell input {
-    min-height: 40px;
+    min-height: 44px;
     font-size: 14px;
   }
   .auth-option-row {
@@ -26620,7 +26633,7 @@ svg {
     margin-top: 18px;
   }
   .social-auth-row button {
-    min-height: 38px;
+    min-height: 44px;
     font-size: 12px;
     gap: 6px;
   }
@@ -26635,12 +26648,12 @@ svg {
     font-size: 13px;
   }
   .input-shell {
-    min-height: 38px;
+    min-height: 44px;
     gap: 8px;
     padding: 0 10px;
   }
   .input-shell input {
-    min-height: 36px;
+    min-height: 44px;
     font-size: 13px;
   }
   .auth-check span {
