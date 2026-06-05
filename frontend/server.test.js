@@ -124,6 +124,18 @@ test('admin dashboard consumes admin ops queue action contract', async () => {
   assert.match(appSource, /api\('\/api\/admin\/ssl\/review', \{ method: 'POST' \}\)/);
 });
 
+test('live feed agent packets expose action handoff links', async () => {
+  const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
+
+  assert.match(appSource, /class="live-feed-agent-packet-actions"/);
+  assert.match(appSource, /@click="openLiveFeedAgentQueue\(item\)"/);
+  assert.match(appSource, /@click="openLiveFeedMergeIDE\(item\)"/);
+  assert.match(appSource, /function openLiveFeedAgentQueue\(item = \{\}\)/);
+  assert.match(appSource, /function openLiveFeedMergeIDE\(item = \{\}\)/);
+  assert.match(appSource, /id="marketplace-agent-packets"/);
+  assert.match(appSource, /bountyID: liveFeedAgentBountyID\(item, contextUrls\)/);
+});
+
 test('creates runtime config for production defaults', () => {
   const env = {
     NODE_ENV: 'production',

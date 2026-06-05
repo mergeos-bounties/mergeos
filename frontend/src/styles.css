@@ -20962,6 +20962,39 @@ svg {
   font-weight: 930;
 }
 
+.live-feed-agent-packet-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.live-feed-agent-packet-actions button {
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid #dbe6ef;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #273244;
+  padding: 0 11px;
+  font-size: 11px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.live-feed-agent-packet-actions button:first-child {
+  border-color: rgba(15, 159, 120, 0.24);
+  background: #ecfdf5;
+  color: var(--green-dark);
+}
+
+.live-feed-agent-packet-actions button:hover {
+  border-color: rgba(15, 159, 120, 0.34);
+  background: #f8fffb;
+}
+
 .live-feed-agent-chain {
   display: flex;
   flex-wrap: wrap;
@@ -23641,6 +23674,10 @@ svg {
   .live-feed-agent-packet summary small {
     grid-column: 1 / -1;
     white-space: normal;
+  }
+
+  .live-feed-agent-packet-actions button {
+    flex: 1 1 180px;
   }
 
   .live-feed-agent-stats {

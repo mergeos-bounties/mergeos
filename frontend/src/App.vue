@@ -6545,6 +6545,17 @@
                       </span>
                     </div>
 
+                    <div class="live-feed-agent-packet-actions" aria-label="Agent packet actions">
+                      <button type="button" @click="openLiveFeedAgentQueue(item)">
+                        <Bot :size="13" />
+                        Open in Agent Queue
+                      </button>
+                      <button type="button" @click="openLiveFeedMergeIDE(item)">
+                        <Code2 :size="13" />
+                        Open in MergeIDE
+                      </button>
+                    </div>
+
                     <div v-if="item.delegationChain.length" class="live-feed-agent-chain" aria-label="Agent delegation chain">
                       <span v-for="(agent, index) in item.delegationChain" :key="`${item.id}:agent-chain:${agent}:${index}`">
                         <b>{{ index + 1 }}</b>
@@ -7469,7 +7480,7 @@
               </div>
             </section>
 
-            <section class="marketplace-agent-packets" :aria-labelledby="marketplaceAgentWorkPackets.titleId">
+            <section id="marketplace-agent-packets" class="marketplace-agent-packets" :aria-labelledby="marketplaceAgentWorkPackets.titleId">
               <div class="marketplace-agent-packets-head">
                 <div>
                   <span class="marketplace-eyebrow">{{ marketplaceAgentWorkPackets.eyebrow }}</span>
@@ -21305,6 +21316,37 @@ function openMarketplaceAgentActions() {
   openMarketplaceSection('marketplace-agents');
 }
 
+function liveFeedAgentQueueSearchTerm(item = {}) {
+  return [
+    item.bountyID,
+    item.taskID,
+    item.projectID,
+    item.subagentType,
+    item.designAgent,
+    item.delegatedBy,
+    item.title,
+    item.project,
+  ].filter(Boolean)[0] || 'agent';
+}
+
+function openLiveFeedAgentQueue(item = {}) {
+  const searchTerm = liveFeedAgentQueueSearchTerm(item);
+  if (user.value) {
+    dashboardSearch.value = searchTerm;
+    openDashboardSection('agents');
+  } else {
+    marketplaceSearch.value = searchTerm;
+    openMarketplaceSection('marketplace-agent-packets');
+  }
+  showToast('Agent queue filtered for this packet.');
+}
+
+function openLiveFeedMergeIDE(item = {}) {
+  openPublicPage('mergeide');
+  const label = item.taskID || item.bountyID || item.project || 'agent packet';
+  showToast(`MergeIDE opened for ${shortLedgerReference(label)}.`);
+}
+
 function routeMarketplaceAgent(agent = {}) {
   openProjectWizard({ intent: 'agent-lanes' });
   projectSetupForm.allowAgents = true;
@@ -26618,6 +26660,9 @@ function mapPublicLiveFeedItem(item = {}) {
   return {
     id: item.id || `${item.type || 'activity'}-${item.created_at || reference || item.title || 'row'}`,
     rawType: item.type || '',
+    projectID: item.project_id || '',
+    taskID: item.task_id || '',
+    bountyID: liveFeedAgentBountyID(item, contextUrls),
     typeLabel: meta.type,
     icon: meta.icon,
     tone: meta.tone,
@@ -26661,6 +26706,23 @@ function mapPublicLiveFeedItem(item = {}) {
     packetCheckRows: liveFeedAgentCheckRows(checks),
     rawContributor: item.contributor && typeof item.contributor === 'object' ? item.contributor : null,
   };
+}
+
+function liveFeedAgentBountyID(item = {}, urls = []) {
+  const direct = String(item.bounty_id || item.bountyID || '').trim();
+  if (direct) return direct;
+  const taskURL = urls.find((url) => /task_id=/i.test(String(url || '')));
+  if (taskURL) {
+    const match = String(taskURL).match(/[?&]task_id=([^&#]+)/i);
+    if (match?.[1]) {
+      try {
+        return decodeURIComponent(match[1].replace(/\+/g, ' '));
+      } catch {
+        return match[1];
+      }
+    }
+  }
+  return '';
 }
 
 function liveFeedItemHasAgentPacket(item = {}, packet = {}) {
