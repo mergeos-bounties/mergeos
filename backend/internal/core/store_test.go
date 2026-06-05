@@ -1968,6 +1968,34 @@ func TestProjectEscrowRouteReturnsReserveReleaseSummary(t *testing.T) {
 	}
 }
 
+func TestProjectEscrowLedgerAppliesUsesExactIDBoundaries(t *testing.T) {
+	project := &Project{ID: "prj_001"}
+	taskIDs := map[string]bool{"tsk_001": true}
+
+	if !projectEscrowLedgerApplies(project, taskIDs, LedgerEntry{
+		Type:        "project_reserve",
+		FromAccount: "client:prj_001",
+		ToAccount:   "reserve:project:prj_001",
+		Reference:   "repo:mergeos-bounties/mergeos",
+	}) {
+		t.Fatal("expected escrow ledger matcher to include exact project reserve rows")
+	}
+	if projectEscrowLedgerApplies(project, taskIDs, LedgerEntry{
+		Type:        "project_reserve",
+		FromAccount: "client:prj_0010",
+		ToAccount:   "reserve:project:prj_0010",
+		Reference:   "repo:mergeos-bounties/mergeos",
+	}) {
+		t.Fatal("project escrow matched a sibling project with a shared ID prefix")
+	}
+	if projectEscrowLedgerApplies(project, taskIDs, LedgerEntry{
+		Type:      "task_payment",
+		Reference: "task:tsk_0010;pr:https://github.com/mergeos-bounties/mergeos/pull/10",
+	}) {
+		t.Fatal("project escrow matched a sibling task with a shared ID prefix")
+	}
+}
+
 func TestProjectPayoutsRouteReturnsSettlementContractAndSanitizesData(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := Config{
