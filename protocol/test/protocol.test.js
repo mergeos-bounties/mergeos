@@ -18,6 +18,7 @@ test('loads stable task, workflow, ledger, and event schemas', () => {
     'mergeos.ai-workflow.v1',
     'mergeos.customer-dashboard.v1',
     'mergeos.deployment.v1',
+    'mergeos.dispute.v1',
     'mergeos.escrow.v1',
     'mergeos.event.v1',
     'mergeos.ledger.v1',
@@ -312,6 +313,48 @@ test('validates repository sync protocol documents', () => {
   assert(invalid.errors.some((error) => error.path === 'kind'));
   assert(invalid.errors.some((error) => error.path === 'added_task_count'));
   assert(invalid.errors.some((error) => error.path === 'synced_at'));
+});
+
+test('validates dispute protocol documents', () => {
+  const now = '2026-06-05T00:00:00.000Z';
+  const dispute = {
+    protocol_version: 'mergeos.dispute.v1',
+    kind: 'dispute',
+    dispute_id: 'ntf_0001',
+    project_id: 'prj_0001',
+    task_id: 'tsk_0001',
+    user_id: 'usr_0001',
+    severity: 'critical',
+    status: 'dispute:critical',
+    subject: 'Milestone evidence mismatch',
+    body: 'Task #12: The submitted evidence does not match the deployed result.',
+    notification: {
+      id: 'ntf_0001',
+      user_id: 'usr_0001',
+      project_id: 'prj_0001',
+      channel: 'dispute',
+      subject: 'Milestone evidence mismatch',
+      body: 'Task #12: The submitted evidence does not match the deployed result.',
+      status: 'dispute:critical',
+      created_at: now,
+    },
+    created_at: now,
+  };
+
+  assert.equal(validateProtocolDocument(dispute).valid, true);
+
+  const invalid = validateProtocolDocument({
+    ...dispute,
+    kind: 'moderation',
+    severity: 'urgent',
+    created_at: 'not-a-date',
+    notification: { ...dispute.notification, channel: 'email' },
+  });
+  assert.equal(invalid.valid, false);
+  assert(invalid.errors.some((error) => error.path === 'kind'));
+  assert(invalid.errors.some((error) => error.path === 'severity'));
+  assert(invalid.errors.some((error) => error.path === 'notification.channel'));
+  assert(invalid.errors.some((error) => error.path === 'created_at'));
 });
 
 test('validates escrow protocol documents', () => {

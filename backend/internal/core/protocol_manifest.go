@@ -48,6 +48,12 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Description: "Authenticated project repository sync report with imported, added, updated, open, and closed issue counts for task generation.",
 			},
 			{
+				Version:     "mergeos.dispute.v1",
+				Kind:        "dispute",
+				SchemaURL:   "https://mergeos.shop/protocol/dispute.v1.schema.json",
+				Description: "Authenticated delivery dispute document for customer, worker, or admin escalation into the moderation queue.",
+			},
+			{
 				Version:     "mergeos.ai-workflow.v1",
 				Kind:        "ai_workflow",
 				SchemaURL:   "https://mergeos.shop/protocol/ai-workflow.v1.schema.json",
@@ -197,6 +203,13 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Protocol:    "mergeos.repo-sync.v1",
 				Auth:        "project",
 				Description: "Authenticated issue sync report that converts imported GitHub issues into MergeOS task rows.",
+			},
+			{
+				Method:      "POST",
+				Path:        "/api/disputes",
+				Protocol:    "mergeos.dispute.v1",
+				Auth:        "user",
+				Description: "Authenticated customer, worker, or admin dispute escalation into the admin moderation queue.",
 			},
 			{
 				Method:      "GET",

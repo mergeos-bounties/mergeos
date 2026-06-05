@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mergeos.shop/protocol/dispute.v1.schema.json",
+  "title": "MergeOS Dispute v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["protocol_version", "kind", "dispute_id", "project_id", "user_id", "severity", "status", "subject", "body", "notification", "created_at"],
+  "properties": {
+    "protocol_version": { "const": "mergeos.dispute.v1" },
+    "kind": { "const": "dispute" },
+    "dispute_id": { "type": "string", "minLength": 1, "maxLength": 96 },
+    "project_id": { "type": "string", "minLength": 1, "maxLength": 96 },
+    "task_id": { "type": "string", "maxLength": 96 },
+    "user_id": { "type": "string", "minLength": 1, "maxLength": 96 },
+    "severity": { "enum": ["low", "medium", "high", "critical"] },
+    "status": { "type": "string", "minLength": 1, "maxLength": 160 },
+    "subject": { "type": "string", "minLength": 1, "maxLength": 160 },
+    "body": { "type": "string", "minLength": 1, "maxLength": 2200 },
+    "notification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "user_id", "channel", "subject", "body", "status", "created_at"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 96 },
+        "user_id": { "type": "string", "minLength": 1, "maxLength": 96 },
+        "project_id": { "type": "string", "maxLength": 96 },
+        "channel": { "const": "dispute" },
+        "subject": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "body": { "type": "string", "minLength": 1, "maxLength": 2200 },
+        "status": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "created_at": { "type": "string", "format": "date-time" },
+        "read_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "created_at": { "type": "string", "format": "date-time" }
+  }
+}

@@ -122,11 +122,13 @@ await mergeos.acceptTask('tsk_0001', {
   worker_kind: 'human',
   worker_id: 'github:contributor',
 });
-await mergeos.workerDashboard();
-await mergeos.createDispute({
+const dispute = await mergeos.createDispute({
   task_id: 'tsk_0001',
   body: 'Evidence needs maintainer review.',
+  severity: 'high',
 });
+console.log(dispute.protocol_version, dispute.severity);
+await mergeos.workerDashboard();
 ```
 
 ## Admin APIs

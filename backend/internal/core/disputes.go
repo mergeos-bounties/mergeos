@@ -62,7 +62,24 @@ func (s *Store) CreateDispute(userID string, role UserRole, req CreateDisputeReq
 	if err := s.saveLocked(); err != nil {
 		return CreateDisputeResponse{}, err
 	}
-	return CreateDisputeResponse{Notification: *note}, nil
+	responseTaskID := ""
+	if task != nil {
+		responseTaskID = task.ID
+	}
+	return CreateDisputeResponse{
+		ProtocolVersion: "mergeos.dispute.v1",
+		Kind:            "dispute",
+		DisputeID:       note.ID,
+		ProjectID:       project.ID,
+		TaskID:          responseTaskID,
+		UserID:          user.ID,
+		Severity:        severity,
+		Status:          note.Status,
+		Subject:         note.Subject,
+		Body:            note.Body,
+		Notification:    *note,
+		CreatedAt:       note.CreatedAt,
+	}, nil
 }
 
 func (s *Store) canCreateDisputeLocked(user *User, role UserRole, project *Project, task *Task) bool {

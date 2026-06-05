@@ -929,7 +929,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 	if payload.ProtocolVersion != "mergeos.protocol.manifest.v1" || payload.Kind != "protocol_manifest" {
 		t.Fatalf("unexpected manifest header: %#v", payload)
 	}
-	if len(payload.Schemas) != 18 {
+	if len(payload.Schemas) != 19 {
 		t.Fatalf("manifest schemas = %d: %#v", len(payload.Schemas), payload.Schemas)
 	}
 	schemas := map[string]bool{}
@@ -938,7 +938,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 		schemas[schema.Version] = true
 		descriptions[schema.Version] = schema.Description
 	}
-	for _, required := range []string{"mergeos.task.v1", "mergeos.agent.v1", "mergeos.marketplace.v1", "mergeos.live-feed.v1", "mergeos.workflow.v1", "mergeos.repo-import.v1", "mergeos.repo-sync.v1", "mergeos.ai-workflow.v1", "mergeos.event.v1", "mergeos.ledger.v1", "mergeos.escrow.v1", "mergeos.payouts.v1", "mergeos.deployment.v1", "mergeos.pr-monitor.v1", "mergeos.scan.v1", "mergeos.customer-dashboard.v1", "mergeos.worker-dashboard.v1", "mergeos.admin-ops.v1"} {
+	for _, required := range []string{"mergeos.task.v1", "mergeos.agent.v1", "mergeos.marketplace.v1", "mergeos.live-feed.v1", "mergeos.workflow.v1", "mergeos.repo-import.v1", "mergeos.repo-sync.v1", "mergeos.dispute.v1", "mergeos.ai-workflow.v1", "mergeos.event.v1", "mergeos.ledger.v1", "mergeos.escrow.v1", "mergeos.payouts.v1", "mergeos.deployment.v1", "mergeos.pr-monitor.v1", "mergeos.scan.v1", "mergeos.customer-dashboard.v1", "mergeos.worker-dashboard.v1", "mergeos.admin-ops.v1"} {
 		if !schemas[required] {
 			t.Fatalf("manifest missing schema %s: %#v", required, payload.Schemas)
 		}
@@ -962,6 +962,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 		"GET /api/projects/{id}/protocol/workflow",
 		"GET /api/projects/{id}/protocol/scan",
 		"POST /api/projects/{id}/repo-sync",
+		"POST /api/disputes",
 		"GET /api/projects/{id}/escrow",
 		"GET /api/projects/{id}/payouts",
 		"GET /api/projects/{id}/deployment",
@@ -3435,6 +3436,12 @@ func TestCreateDisputeRouteAddsAdminOpsQueueItem(t *testing.T) {
 	var created CreateDisputeResponse
 	if err := json.Unmarshal(clientResp.Body.Bytes(), &created); err != nil {
 		t.Fatal(err)
+	}
+	if created.ProtocolVersion != "mergeos.dispute.v1" || created.Kind != "dispute" || created.DisputeID == "" || created.Severity != "critical" {
+		t.Fatalf("unexpected dispute protocol header: %#v", created)
+	}
+	if created.ProjectID != project.ID || created.UserID != clientAuth.User.ID || created.Status != "dispute:critical" || created.CreatedAt.IsZero() {
+		t.Fatalf("unexpected dispute protocol summary: %#v", created)
 	}
 	if created.Notification.ProjectID != project.ID || created.Notification.Channel != "dispute" || created.Notification.Status != "dispute:critical" {
 		t.Fatalf("unexpected dispute notification: %#v", created.Notification)

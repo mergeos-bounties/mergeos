@@ -109,7 +109,18 @@ type CreateDisputeRequest struct {
 }
 
 type CreateDisputeResponse struct {
-	Notification Notification `json:"notification"`
+	ProtocolVersion string       `json:"protocol_version"`
+	Kind            string       `json:"kind"`
+	DisputeID       string       `json:"dispute_id"`
+	ProjectID       string       `json:"project_id"`
+	TaskID          string       `json:"task_id,omitempty"`
+	UserID          string       `json:"user_id"`
+	Severity        string       `json:"severity"`
+	Status          string       `json:"status"`
+	Subject         string       `json:"subject"`
+	Body            string       `json:"body"`
+	Notification    Notification `json:"notification"`
+	CreatedAt       time.Time    `json:"created_at"`
 }
 
 type Attachment struct {
