@@ -1261,6 +1261,25 @@ button:disabled {
   gap: 6px;
 }
 
+.ops-action-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.ops-action-list .compact-action {
+  min-height: 28px;
+  padding: 0 8px;
+  white-space: nowrap;
+}
+
+.ops-action-list .link-action {
+  border-color: rgba(37, 99, 235, 0.18);
+  background: #eff6ff;
+  color: var(--blue);
+}
+
 .ops-queue-side span {
   color: var(--green-dark);
   font-weight: 900;
@@ -2173,6 +2192,10 @@ body {
     justify-items: start;
   }
 
+  .ops-action-list {
+    justify-content: flex-start;
+  }
+
   .ops-queue-side small {
     max-width: 100%;
     text-align: left;
@@ -2210,6 +2233,14 @@ body {
 
   .ops-queue-side {
     grid-column: auto;
+  }
+
+  .ops-action-list {
+    width: 100%;
+  }
+
+  .ops-action-list .compact-action {
+    flex: 1 1 150px;
   }
 
   .admin-command-strip {

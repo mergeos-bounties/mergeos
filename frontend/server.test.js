@@ -90,6 +90,25 @@ test('MergeIDE release manifest points to pinned GitHub release assets', async (
   assert.ok(manifest.links.some((link) => link.label === 'Release workflow' && link.url === manifest.provenance.workflow_url));
 });
 
+test('MergeIDE public page exposes the Windows exe download contract', async () => {
+  const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
+
+  assert.match(appSource, /const mergeIdeDownloadFileName = 'MergeIDE-Windows-x64\.exe';/);
+  assert.match(
+    appSource,
+    /const mergeIdeDownloadPath = `\$\{mergeIdeRepositoryPath\}\/releases\/download\/\$\{mergeIdeReleaseTag\}\/\$\{mergeIdeDownloadFileName\}`;/,
+  );
+  assert.match(appSource, /const mergeIdeReleasePath = `\$\{mergeIdeRepositoryPath\}\/releases\/tag\/\$\{mergeIdeReleaseTag\}`;/);
+  assert.match(appSource, /const mergeIdeManifestPath = '\/downloads\/mergeide-windows-latest\.json';/);
+
+  const downloadButtonBindings = appSource.match(
+    /class="primary-button large mergeide-download-button"[\s\S]{0,260}:href="mergeIdeDownloadPath"[\s\S]{0,160}:download="mergeIdeDownloadFileName"/g,
+  ) || [];
+  assert.ok(downloadButtonBindings.length >= 2);
+  assert.ok(appSource.includes("['Pinned release',"));
+  assert.ok(appSource.includes("['Release manifest',"));
+});
+
 test('creates runtime config for production defaults', () => {
   const env = {
     NODE_ENV: 'production',

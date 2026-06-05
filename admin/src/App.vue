@@ -463,6 +463,9 @@
             </button>
           </header>
 
+          <p v-if="opsActionError" class="form-error">{{ opsActionError }}</p>
+          <p v-else-if="opsActionMessage" class="form-success">{{ opsActionMessage }}</p>
+
           <div v-if="!filteredOpsQueueItems.length" class="task-empty-state">
             <span class="metric-icon green"><CheckCircle2 :size="19" /></span>
             <strong>No ops queue items</strong>
@@ -489,7 +492,20 @@
               </div>
               <div class="ops-queue-side">
                 <span>{{ titleize(item.status || 'needs_review') }}</span>
-                <a v-if="item.url" class="compact-action link-action" :href="item.url" target="_blank" rel="noreferrer">Open</a>
+                <div v-if="opsActionsForItem(item).length" class="ops-action-list">
+                  <button
+                    v-for="action in opsActionsForItem(item)"
+                    :key="action.key"
+                    class="compact-action"
+                    :class="{ 'link-action': action.type === 'open_url' }"
+                    :disabled="opsActionBusyFor(item, action)"
+                    type="button"
+                    @click="handleOpsQueueAction(item, action)"
+                  >
+                    <component :is="opsActionIcon(action)" :size="13" />
+                    {{ action.label }}
+                  </button>
+                </div>
                 <small>{{ shortRef(opsReference(item)) }}</small>
               </div>
             </article>
@@ -901,6 +917,7 @@ import {
   CircleDollarSign,
   Columns3,
   Eye,
+  ExternalLink,
   FolderKanban,
   GitPullRequest,
   KeyRound,
@@ -943,6 +960,9 @@ const userEditorMessage = ref('');
 const sslReviewBusy = ref(false);
 const sslReviewError = ref('');
 const sslReviewMessage = ref('');
+const opsActionBusy = ref({});
+const opsActionMessage = ref('');
+const opsActionError = ref('');
 const density = ref(2);
 const showLedgerHashes = ref(false);
 const compactRows = ref(true);
@@ -1476,6 +1496,156 @@ async function saveSelectedUser() {
     userEditorError.value = error.message;
   } finally {
     userEditorBusy.value = false;
+  }
+}
+
+function findOpsTask(item = {}) {
+  const taskID = String(item.task_id || '').trim();
+  if (taskID) {
+    const exact = tasks.value.find((task) => task.id === taskID);
+    if (exact) return exact;
+  }
+  const issueNumber = Number(item.issue_number) || 0;
+  if (issueNumber > 0) {
+    const projectID = String(item.project_id || '').trim();
+    return tasks.value.find((task) => Number(task.issue_number) === issueNumber && (!projectID || task.project_id === projectID))
+      || tasks.value.find((task) => Number(task.issue_number) === issueNumber);
+  }
+  return null;
+}
+
+function opsActionsForItem(item = {}) {
+  const rows = Array.isArray(item.actions) ? item.actions : [];
+  const normalized = rows
+    .map((action, index) => ({
+      key: `${item.id || 'ops'}:${action.id || action.type || index}`,
+      id: action.id || `${action.type || 'action'}-${index}`,
+      label: action.label || opsActionLabel(action.type),
+      type: action.type || 'open_url',
+      url: action.url || '',
+    }))
+    .filter((action) => action.type || action.url);
+  if (!normalized.length && item.url) {
+    normalized.push({
+      key: `${item.id || 'ops'}:open-url`,
+      id: 'open-url',
+      label: 'Open',
+      type: 'open_url',
+      url: item.url,
+    });
+  }
+  return normalized;
+}
+
+function opsActionLabel(type = '') {
+  switch (type) {
+    case 'review_task_pulls':
+      return 'Review PRs';
+    case 'run_ssl_review':
+      return 'Run SSL Review';
+    case 'refresh_admin_ops':
+      return 'Refresh Queue';
+    case 'open_url':
+      return 'Open';
+    default:
+      return titleize(type || 'Action');
+  }
+}
+
+function opsActionIcon(action = {}) {
+  switch (action.type) {
+    case 'review_task_pulls':
+      return GitPullRequest;
+    case 'run_ssl_review':
+      return ShieldCheck;
+    case 'refresh_admin_ops':
+      return RefreshCw;
+    case 'open_url':
+      return ExternalLink;
+    default:
+      return Activity;
+  }
+}
+
+function opsActionBusyKey(item = {}, action = {}) {
+  return `${item.id || 'ops'}:${action.id || action.type || 'action'}`;
+}
+
+function opsActionBusyFor(item = {}, action = {}) {
+  const type = action.type || '';
+  if (type === 'run_ssl_review') return sslReviewBusy.value || Boolean(opsActionBusy.value[opsActionBusyKey(item, action)]);
+  if (type === 'refresh_admin_ops') return loading.value || Boolean(opsActionBusy.value[opsActionBusyKey(item, action)]);
+  return Boolean(opsActionBusy.value[opsActionBusyKey(item, action)]);
+}
+
+function openOpsURL(url = '') {
+  const target = String(url || '').trim();
+  if (!target || !hasWindow) return false;
+  if (/^https?:\/\//i.test(target)) {
+    window.open(target, '_blank', 'noopener,noreferrer');
+    return true;
+  }
+  if (target.startsWith('/')) {
+    window.open(new URL(target, window.location.origin).toString(), '_blank', 'noopener,noreferrer');
+    return true;
+  }
+  return false;
+}
+
+async function handleOpsQueueAction(item = {}, action = {}) {
+  const key = opsActionBusyKey(item, action);
+  if (opsActionBusy.value[key]) return;
+  opsActionBusy.value = { ...opsActionBusy.value, [key]: true };
+  opsActionError.value = '';
+  opsActionMessage.value = '';
+  try {
+    switch (action.type) {
+      case 'open_url': {
+        if (!openOpsURL(action.url || item.url)) {
+          throw new Error('This ops item has no public URL to open.');
+        }
+        opsActionMessage.value = `Opened ${action.label || 'ops reference'}.`;
+        break;
+      }
+      case 'refresh_admin_ops': {
+        await loadAdminData();
+        opsActionMessage.value = 'Operations queue refreshed.';
+        break;
+      }
+      case 'review_task_pulls': {
+        setActiveView('tasks');
+        const task = findOpsTask(item);
+        if (task) {
+          taskIssueTab.value = issueStateForTask(task);
+          search.value = task.issue_number ? String(task.issue_number) : (task.title || task.id || '');
+          expandedTaskPulls.value = { ...expandedTaskPulls.value, [task.id]: true };
+          await loadTaskPulls(task, true);
+          opsActionMessage.value = `Opened PR review for ${taskIssueLabel(task)}.`;
+        } else {
+          search.value = item.issue_number ? String(item.issue_number) : (item.task_id || item.reference || '');
+          opsActionMessage.value = 'Opened task operations. No exact task row matched this ops item.';
+        }
+        break;
+      }
+      case 'run_ssl_review': {
+        setActiveView('ssl');
+        await reviewSSLNow();
+        opsActionMessage.value = sslReviewMessage.value || 'SSL review completed.';
+        break;
+      }
+      default: {
+        if (action.url || item.url) {
+          openOpsURL(action.url || item.url);
+          opsActionMessage.value = `Opened ${action.label || 'ops reference'}.`;
+        } else {
+          opsActionMessage.value = `${action.label || 'Ops action'} is marked for manual review.`;
+        }
+      }
+    }
+  } catch (error) {
+    opsActionError.value = error.message || 'Could not run ops action.';
+  } finally {
+    opsActionBusy.value = { ...opsActionBusy.value, [key]: false };
   }
 }
 
