@@ -21280,39 +21280,166 @@ svg {
 }
 
 @media (max-width: 760px) {
+  .project-flow-shell {
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(247, 251, 249, 0.96)),
+      #f7faf8;
+  }
+
   .project-flow-navbar {
     min-height: auto;
-    padding: 10px var(--page-gutter);
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.055);
+    padding: 9px var(--page-gutter);
+  }
+
+  .project-flow-navbar .brand-link {
+    min-width: 0;
+  }
+
+  .project-flow-navbar .brand-link strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .project-flow-actions {
+    width: auto;
     gap: 6px;
-  }
-
-  .project-flow-actions .locale-button {
-    display: none;
+    justify-content: flex-end;
   }
 
   .project-flow-actions .locale-menu {
+    display: inline-flex;
+  }
+
+  .project-flow-actions .locale-button {
+    display: inline-flex;
+    min-height: 42px;
+    border-color: #dfe5ec;
+    background: #ffffff;
+    padding: 0 8px;
+  }
+
+  .project-flow-actions .account-icon-button {
+    min-height: 42px;
+    border-color: #dfe5ec;
+    box-shadow: none;
+  }
+
+  .project-flow-actions > .primary-button {
     display: none;
   }
 
-  .project-flow-actions .primary-button {
-    min-width: 132px;
+  .project-flow-main {
+    gap: 12px;
+    padding: 12px var(--page-gutter) calc(94px + env(safe-area-inset-bottom));
+  }
+
+  .project-flow-sidebar {
+    gap: 10px;
+  }
+
+  .project-flow-sidebar > .back-link {
+    min-height: 34px;
+  }
+
+  .project-flow-title {
+    border: 1px solid rgba(221, 227, 234, 0.92);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 10px 26px rgba(15, 23, 42, 0.045);
+    padding: 12px;
   }
 
   .project-flow-title h1 {
-    font-size: 30px;
+    margin: 2px 0 5px;
+    font-size: 27px;
+    line-height: 1.05;
+  }
+
+  .project-flow-title p {
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  .project-step-list {
+    position: sticky;
+    top: 60px;
+    z-index: 20;
+    gap: 8px;
+    margin: 0 calc(var(--page-gutter) * -1);
+    border-top: 1px solid rgba(229, 231, 235, 0.68);
+    border-bottom: 1px solid rgba(229, 231, 235, 0.78);
+    background: rgba(248, 251, 249, 0.96);
+    padding: 8px var(--page-gutter);
+    backdrop-filter: blur(12px);
+  }
+
+  .project-step-list button {
+    min-height: 60px;
+    grid-auto-rows: auto;
+    grid-template-columns: 28px minmax(0, 1fr);
+    gap: 8px;
+    border-color: #e4eaf0;
+    background: #ffffff;
+    padding: 9px 10px;
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.035);
+  }
+
+  .project-step-list button.active {
+    border-color: rgba(15, 159, 120, 0.34);
+    background: #f0fbf6;
+    box-shadow: 0 10px 24px rgba(15, 159, 120, 0.1);
+  }
+
+  .project-step-list button > span {
+    width: 26px;
+    height: 26px;
+    grid-row: 1;
+  }
+
+  .project-step-list strong {
+    align-self: center;
+    font-size: 11px;
+    line-height: 1.2;
+  }
+
+  .project-step-list small {
+    display: none;
+  }
+
+  .project-flow-sidebar > .wizard-help-card,
+  .project-flow-sidebar > .wizard-quality-card {
+    display: none;
   }
 
   .wizard-card {
-    padding: 16px;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+    padding: 14px;
   }
 
   .wizard-card-heading h2,
   .funding-heading h2,
   .payment-success-panel h2 {
     overflow-wrap: anywhere;
+    font-size: 22px;
+    line-height: 1.15;
+  }
+
+  .step-kicker {
+    color: var(--green-dark);
+    font-size: 11px;
+    letter-spacing: 0;
+    text-transform: uppercase;
+  }
+
+  .wizard-card-heading p,
+  .funding-heading p,
+  .success-hero p {
+    font-size: 12px;
+    line-height: 1.45;
   }
 
   .wizard-card-heading,
@@ -21323,6 +21450,12 @@ svg {
   .project-step-actions {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .wizard-card-heading,
+  .funding-heading {
+    gap: 10px;
+    margin-bottom: 16px;
   }
 
   .attach-repo-head .secondary-button {
@@ -21340,6 +21473,10 @@ svg {
     flex: 1 1 0;
   }
 
+  .wizard-form-grid {
+    gap: 14px;
+  }
+
   .wizard-form-grid,
   .budget-row,
   .settings-grid,
@@ -21350,6 +21487,163 @@ svg {
   .payment-detail-grid,
   .next-step-grid {
     grid-template-columns: 1fr;
+  }
+
+  .wizard-field {
+    gap: 6px;
+  }
+
+  .wizard-field span,
+  .wizard-section-title strong {
+    font-size: 11px;
+  }
+
+  .wizard-field small,
+  .wizard-section-title small {
+    font-size: 10px;
+    line-height: 1.4;
+  }
+
+  .wizard-field input,
+  .wizard-field textarea,
+  .wizard-field select,
+  .rich-editor textarea {
+    min-height: 46px;
+    padding: 12px;
+    font-size: 16px;
+  }
+
+  .wizard-field textarea,
+  .rich-editor textarea {
+    min-height: 118px;
+  }
+
+  .project-type-split {
+    grid-template-columns: 1fr !important;
+    max-width: none;
+  }
+
+  .project-type-split .select-tile-big {
+    min-height: 76px !important;
+    grid-template-columns: 34px minmax(0, 1fr);
+    align-items: center;
+    align-content: center;
+    padding: 14px !important;
+  }
+
+  .project-type-split .select-tile-big svg:not(.tile-check) {
+    grid-row: span 2;
+  }
+
+  .select-tile,
+  .funding-amount-card {
+    min-height: 74px;
+    padding: 12px;
+  }
+
+  .select-tile strong,
+  .funding-amount-card strong {
+    font-size: 13px;
+  }
+
+  .select-tile small,
+  .funding-amount-card small {
+    font-size: 11px;
+  }
+
+  .rich-editor {
+    border-color: #dbe4ec;
+  }
+
+  .editor-toolbar {
+    overflow-x: auto;
+    padding: 6px;
+  }
+
+  .deliverable-row {
+    grid-template-columns: 20px minmax(0, 1fr) 32px;
+    gap: 7px;
+    padding: 7px;
+  }
+
+  .reference-dropzone {
+    min-height: 124px;
+    padding: 14px;
+  }
+
+  .timeline-box,
+  .review-card,
+  .rail-card {
+    padding: 14px;
+  }
+
+  .duration-ring {
+    width: 68px;
+    height: 68px;
+    border-width: 5px;
+  }
+
+  .review-card h3,
+  .rail-card h3,
+  .next-steps h3,
+  .tokens-box h3 {
+    margin-right: 38px;
+    font-size: 13px;
+  }
+
+  .rail-card {
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.045);
+  }
+
+  .rail-steps {
+    gap: 8px;
+  }
+
+  .rail-steps li {
+    grid-template-columns: 23px minmax(0, 1fr);
+    font-size: 12px;
+    line-height: 1.35;
+  }
+
+  .project-step-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 30;
+    display: grid;
+    grid-template-columns: minmax(62px, auto) minmax(0, 1fr);
+    align-items: center;
+    gap: 8px;
+    margin: 18px -14px -14px;
+    border-top: 1px solid rgba(226, 232, 240, 0.94);
+    background: rgba(255, 255, 255, 0.97);
+    box-shadow: 0 -14px 32px rgba(15, 23, 42, 0.08);
+    padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+    backdrop-filter: blur(14px);
+  }
+
+  .project-step-actions > div {
+    display: grid;
+    grid-template-columns: minmax(84px, 0.78fr) minmax(112px, 1fr);
+    gap: 8px;
+  }
+
+  .project-step-actions button {
+    min-height: 44px;
+    min-width: 0;
+    padding: 0 10px;
+    white-space: nowrap;
+  }
+
+  .funding-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 30;
+    margin: 18px -14px -14px;
+    border-top: 1px solid rgba(226, 232, 240, 0.94);
+    background: rgba(255, 255, 255, 0.97);
+    box-shadow: 0 -14px 32px rgba(15, 23, 42, 0.08);
+    padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+    backdrop-filter: blur(14px);
   }
 
   .project-preview-backdrop {
@@ -21460,7 +21754,7 @@ svg {
 
 @media (max-width: 520px) {
   .project-flow-navbar {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr) auto;
   }
 
   .quality-signal-grid,
@@ -21477,12 +21771,12 @@ svg {
   }
 
   .project-flow-actions {
-    width: 100%;
-    justify-content: space-between;
+    width: auto;
+    justify-content: flex-end;
   }
 
-  .project-flow-actions .primary-button {
-    flex: 1 1 auto;
+  .project-flow-actions .locale-button {
+    gap: 5px;
   }
 
   .project-flow-main {
@@ -21496,7 +21790,35 @@ svg {
   }
 
   .project-step-list {
-    grid-template-columns: repeat(4, minmax(138px, 1fr));
+    grid-auto-columns: minmax(116px, 38vw);
+    grid-template-columns: none;
+  }
+
+  .project-step-list button {
+    min-height: 58px;
+  }
+
+  .project-step-actions {
+    grid-template-columns: 54px minmax(0, 1fr);
+  }
+
+  .project-step-actions > .secondary-button {
+    padding: 0;
+    font-size: 0;
+    gap: 0;
+  }
+
+  .project-step-actions > .secondary-button svg {
+    margin: 0;
+  }
+
+  .project-step-actions > div {
+    grid-template-columns: minmax(76px, 0.72fr) minmax(104px, 1fr);
+  }
+
+  .project-step-actions button {
+    padding: 0 8px;
+    font-size: 12px;
   }
 
   .project-type-grid,
