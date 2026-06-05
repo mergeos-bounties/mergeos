@@ -18,6 +18,17 @@ func (s *Store) ProjectAIWorkflow(projectID string) (ProjectAIWorkflowResponse, 
 	return s.projectAIWorkflowLocked(project), nil
 }
 
+func (s *Store) PublicProjectAIWorkflow(projectID string) (ProjectAIWorkflowResponse, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	project, ok := s.projects[strings.TrimSpace(projectID)]
+	if !ok {
+		return ProjectAIWorkflowResponse{}, errors.New("project not found")
+	}
+	return s.projectAIWorkflowLocked(project), nil
+}
+
 func (s *Store) projectAIWorkflowLocked(project *Project) ProjectAIWorkflowResponse {
 	tasks := s.projectDeploymentTasksLocked(project)
 	logs := s.aiWorkflowLogsLocked(project)

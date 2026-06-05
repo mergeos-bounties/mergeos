@@ -201,6 +201,13 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Description: "Public sanitized deployment readiness document for marketplace projects, release gates, agent signals, and deployment validation progress.",
 			},
 			{
+				Method:      "GET",
+				Path:        "/api/public/projects/{id}/ai-workflow",
+				Protocol:    "mergeos.ai-workflow.v1",
+				Auth:        "none",
+				Description: "Public sanitized AI workflow timeline for marketplace projects across repository import, issue scan, task generation, routing, PR review, and deployment validation.",
+			},
+			{
 				Method:      "POST",
 				Path:        "/api/public/repo/issues",
 				Protocol:    "mergeos.repo-import.v1",

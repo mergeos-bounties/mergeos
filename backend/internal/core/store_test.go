@@ -1033,6 +1033,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 		"GET /api/public/protocol/ledger",
 		"GET /api/public/protocol/events",
 		"GET /api/public/projects/{id}/deployment",
+		"GET /api/public/projects/{id}/ai-workflow",
 		"POST /api/public/repo/issues",
 		"WS /api/ws",
 		"GET /api/projects/{id}/protocol/workflow",
@@ -2502,6 +2503,116 @@ func TestProjectAIWorkflowRouteReturnsWorkflowAndSanitizesData(t *testing.T) {
 	server.Routes().ServeHTTP(forbiddenResp, forbiddenReq)
 	if forbiddenResp.Code != http.StatusForbidden {
 		t.Fatalf("other client ai workflow status = %d", forbiddenResp.Code)
+	}
+}
+
+func TestPublicProjectAIWorkflowRouteReturnsSanitizedWorkflow(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:       defaultTokenSymbol,
+		StatePath:         filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:    1000,
+		DevPaymentEnabled: true,
+		DevPaymentCode:    defaultDevPaymentCode,
+		GitHubOwner:       defaultGitHubOwner,
+		BountyRoot:        filepath.Join(tempDir, "bounties"),
+		SMTPFrom:          "noreply@mergeos.local",
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	auth, err := store.Register(RegisterRequest{
+		Name:        "Public AI Client",
+		CompanyName: "Public AI Co",
+		Email:       "public-ai-client@example.com",
+		Password:    "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	project, err := store.CreateProject(context.Background(), auth.User.ID, CreateProjectRequest{
+		Title:            "Public AI workflow",
+		ClientName:       "Private Public AI Client",
+		CompanyName:      "Public AI Co",
+		ClientEmail:      "public-ai-client@example.com",
+		Phone:            "+1 555 0122",
+		Brief:            "Source repository: https://github.com/mergeos-bounties/public-ai-demo\n\nExpose public AI workflow without leaking private customer data.",
+		BudgetCents:      230000,
+		PaymentMethod:    PaymentPayPal,
+		PaymentReference: defaultDevPaymentCode,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := store.AddGeminiWebhookLog(GeminiWebhookLog{
+		EventName:  "agent_action",
+		Action:     "review",
+		Repository: project.BountyRepoName,
+		PullNumber: 444,
+		Sender:     "review-agent",
+		Status:     "processed",
+		StatusCode: http.StatusOK,
+		CommentURL: "https://github.com/mergeos-bounties/mergeos/pull/444#issuecomment-4",
+		ReceivedAt: time.Now().UTC(),
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	server := NewServer(cfg, store, payments)
+	reqHTTP := httptest.NewRequest(http.MethodGet, "/api/public/projects/"+project.ID+"/ai-workflow", nil)
+	resp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(resp, reqHTTP)
+	if resp.Code != http.StatusOK {
+		t.Fatalf("public ai workflow status = %d, body = %s", resp.Code, resp.Body.String())
+	}
+
+	body := resp.Body.String()
+	for _, value := range []string{
+		"public-ai-client@example.com",
+		"+1 555 0122",
+		auth.User.ID,
+		defaultDevPaymentCode,
+		tempDir,
+		project.Tasks[0].ID,
+	} {
+		if strings.Contains(body, value) {
+			t.Fatalf("public ai workflow leaked private value %q: %s", value, body)
+		}
+	}
+
+	var payload ProjectAIWorkflowResponse
+	if err := json.Unmarshal(resp.Body.Bytes(), &payload); err != nil {
+		t.Fatal(err)
+	}
+	if payload.ProtocolVersion != "mergeos.ai-workflow.v1" || payload.Kind != "ai_workflow" {
+		t.Fatalf("unexpected public ai workflow protocol header: %#v", payload)
+	}
+	if payload.ProjectID != project.ID || payload.Status != "orchestrating" || payload.Progress == 0 || payload.AIActionCount != 1 {
+		t.Fatalf("unexpected public ai workflow summary: %#v", payload)
+	}
+	if payload.CurrentStep != "deployment_validation" {
+		t.Fatalf("expected public current step deployment_validation, got %q", payload.CurrentStep)
+	}
+	seenStages := map[string]bool{}
+	for _, stage := range payload.Stages {
+		seenStages[stage.ID] = true
+	}
+	for _, required := range []string{"repo_import", "issue_scan", "task_generation", "reward_estimation", "contributor_routing", "pr_review", "deployment_validation"} {
+		if !seenStages[required] {
+			t.Fatalf("public ai workflow missing stage %s: %#v", required, payload.Stages)
+		}
+	}
+	foundReviewSignal := false
+	for _, signal := range payload.Signals {
+		if signal.Type == "agent_action" && signal.Status == "processed" {
+			foundReviewSignal = true
+			break
+		}
+	}
+	if !foundReviewSignal {
+		t.Fatalf("public ai workflow missing agent action signal: %#v", payload.Signals)
 	}
 }
 
