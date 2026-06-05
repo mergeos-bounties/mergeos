@@ -845,6 +845,8 @@ type ProjectDeploymentResponse struct {
 }
 
 type ProjectEscrowResponse struct {
+	ProtocolVersion     string              `json:"protocol_version"`
+	Kind                string              `json:"kind"`
 	ProjectID           string              `json:"project_id"`
 	ProjectTitle        string              `json:"project_title"`
 	TokenSymbol         string              `json:"token_symbol"`

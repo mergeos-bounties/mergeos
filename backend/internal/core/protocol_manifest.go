@@ -48,6 +48,12 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Description: "Public ledger entries with hash-chain verification metadata for payouts, fees, token minting, and manual credits.",
 			},
 			{
+				Version:     "mergeos.escrow.v1",
+				Kind:        "escrow",
+				SchemaURL:   "https://mergeos.shop/protocol/escrow.v1.schema.json",
+				Description: "Authenticated project escrow document with reserve, release, payout, remaining balance, and per-task settlement state.",
+			},
+			{
 				Version:     "mergeos.scan.v1",
 				Kind:        "repository_scan",
 				SchemaURL:   "https://mergeos.shop/protocol/scan.v1.schema.json",
@@ -141,6 +147,13 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Protocol:    "mergeos.scan.v1",
 				Auth:        "project",
 				Description: "Authenticated repository scan protocol document.",
+			},
+			{
+				Method:      "GET",
+				Path:        "/api/projects/{id}/escrow",
+				Protocol:    "mergeos.escrow.v1",
+				Auth:        "project",
+				Description: "Authenticated project escrow reserve, release, payout, and task settlement document.",
 			},
 			{
 				Method:      "GET",

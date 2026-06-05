@@ -98,6 +98,8 @@ func (s *Store) projectEscrowLocked(project *Project) ProjectEscrowResponse {
 	}
 
 	return ProjectEscrowResponse{
+		ProtocolVersion:     "mergeos.escrow.v1",
+		Kind:                "escrow",
 		ProjectID:           project.ID,
 		ProjectTitle:        publicLiveFeedProjectTitle(project),
 		TokenSymbol:         normalizedTokenSymbol(s.cfg.TokenSymbol),

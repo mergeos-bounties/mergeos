@@ -385,7 +385,7 @@ test('supports wallet, payment, and raw upload helper routes', async () => {
 
 test('exposes project workflow and admin ops routes', async () => {
   const fetchImpl = fakeFetch([
-    { status: 200, body: { release_status: 'funded' } },
+    { status: 200, body: { protocol_version: 'mergeos.escrow.v1', release_status: 'funded' } },
     { status: 200, body: { project: { project_id: 'prj_1' }, task_graph: { stats: { node_count: 2 } } } },
     { status: 200, body: { stats: { pull_request_count: 2 }, tasks: [] } },
     { status: 200, body: { status: 'validating' } },
@@ -401,7 +401,7 @@ test('exposes project workflow and admin ops routes', async () => {
   ]);
   const client = new MergeOSClient({ token: 'admin-token', fetchImpl });
 
-  await client.projectEscrow('prj_1');
+  const escrow = await client.projectEscrow('prj_1');
   const dashboard = await client.projectDashboard('prj_1');
   const pulls = await client.projectPullRequests('prj_1');
   await client.projectDeployment('prj_1');
@@ -415,6 +415,7 @@ test('exposes project workflow and admin ops routes', async () => {
   const ops = await client.adminOpsQueue();
   const reputation = await client.adminReputation();
 
+  assert.equal(escrow.protocol_version, 'mergeos.escrow.v1');
   assert.equal(dashboard.project.project_id, 'prj_1');
   assert.equal(pulls.stats.pull_request_count, 2);
   assert.equal(agentAction.log.action, 'test');

@@ -13,6 +13,7 @@ The live app exposes protocol discovery at `GET /api/public/protocol`, and serve
 - `mergeos.workflow.v1`: a project workflow graph with progress, current AI workflow step, nodes, dependency edges, worker lanes, rewards, and effort estimates.
 - `mergeos.event.v1`: a realtime ledger/workflow event emitted by apps, agents, or integrations, including typed agent review/test/generate/deploy/scan events.
 - `mergeos.ledger.v1`: a public ledger proof document with sanitized ledger rows and hash-chain verification metadata.
+- `mergeos.escrow.v1`: an authenticated project escrow document with reserves, releases, balances, and per-task settlement state.
 - `mergeos.scan.v1`: a repository scan document with dependency manifests, language counts, and security/debt findings.
 - `mergeos.customer-dashboard.v1`: an authenticated customer delivery dashboard with project overview, escrow, deployment, AI workflow, task graph, repository scan, and PR monitor modules.
 - `mergeos.worker-dashboard.v1`: an authenticated worker dashboard document with claimed tasks, payout references, reputation audit, proposal matches, and identity status.

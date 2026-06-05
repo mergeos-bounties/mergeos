@@ -16,6 +16,7 @@ test('loads stable task, workflow, ledger, and event schemas', () => {
     'mergeos.admin-ops.v1',
     'mergeos.agent.v1',
     'mergeos.customer-dashboard.v1',
+    'mergeos.escrow.v1',
     'mergeos.event.v1',
     'mergeos.ledger.v1',
     'mergeos.live-feed.v1',
@@ -211,6 +212,75 @@ test('validates live feed protocol documents', () => {
   assert(invalid.errors.some((error) => error.path === 'stats.active_agent_count'));
   assert(invalid.errors.some((error) => error.path === 'items[0].type'));
   assert(invalid.errors.some((error) => error.path === 'items[0].created_at'));
+});
+
+test('validates escrow protocol documents', () => {
+  const now = '2026-06-05T00:00:00.000Z';
+  const escrow = {
+    protocol_version: 'mergeos.escrow.v1',
+    kind: 'escrow',
+    project_id: 'prj_0001',
+    project_title: 'Customer portal rebuild',
+    token_symbol: 'MRG',
+    release_status: 'releasing',
+    budget_cents: 250000,
+    fee_cents: 25000,
+    work_pool_cents: 225000,
+    project_reserve_cents: 225000,
+    task_reserve_cents: 225000,
+    task_payment_cents: 5000,
+    manual_credit_cents: 0,
+    released_cents: 5000,
+    remaining_cents: 220000,
+    overdrawn_cents: 0,
+    unallocated_cents: 0,
+    paid_task_count: 1,
+    open_task_count: 2,
+    updated_at: now,
+    tasks: [
+      {
+        task_id: 'tsk_0001',
+        issue_number: 12,
+        title: 'Fix checkout UI',
+        status: 'accepted',
+        release_status: 'released',
+        reward_cents: 5000,
+        paid_cents: 5000,
+        remaining_cents: 0,
+        overpaid_cents: 0,
+        worker_id: 'github:maya-dev',
+        proof_hash: 'proof_123',
+        issue_url: 'https://github.com/mergeos-bounties/mergeos/issues/12',
+        updated_at: now,
+      },
+      {
+        task_id: 'tsk_0002',
+        issue_number: 13,
+        title: 'Validate deployment preview',
+        status: 'open',
+        release_status: 'reserved',
+        reward_cents: 10000,
+        paid_cents: 0,
+        remaining_cents: 10000,
+        overpaid_cents: 0,
+        updated_at: now,
+      },
+    ],
+  };
+
+  assert.equal(validateProtocolDocument(escrow).valid, true);
+
+  const invalid = validateProtocolDocument({
+    ...escrow,
+    kind: 'escrow_state',
+    release_status: 'waiting',
+    tasks: [{ ...escrow.tasks[0], release_status: 'unknown', paid_cents: -1 }],
+  });
+  assert.equal(invalid.valid, false);
+  assert(invalid.errors.some((error) => error.path === 'kind'));
+  assert(invalid.errors.some((error) => error.path === 'release_status'));
+  assert(invalid.errors.some((error) => error.path === 'tasks[0].release_status'));
+  assert(invalid.errors.some((error) => error.path === 'tasks[0].paid_cents'));
 });
 
 test('validates admin operations protocol documents', () => {
