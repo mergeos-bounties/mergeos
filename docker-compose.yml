@@ -37,7 +37,7 @@ services:
       SCAN_DOMAIN: scan.mergeos.local
       SSL_REVIEW_ENABLED: "false"
       PAYPAL_ENV: sandbox
-      CRYPTO_ASSET: erc20
+      CRYPTO_ASSET: spl
       CRYPTO_TOKEN_DECIMALS: "6"
       CRYPTO_MIN_CONFIRMATIONS: "1"
       GITHUB_TOKEN: ${MERGEOS_GITHUB_TOKEN:-}

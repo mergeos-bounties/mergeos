@@ -8,9 +8,11 @@ This package now contains the MergeOS Solana/Anchor program for the MRG token ec
 - `Anchor.toml`: localnet Anchor workspace configuration.
 - `Cargo.toml`: Rust workspace configuration for the Solana program.
 
+The checked-in localnet program id is `TqfJCDMxPEuuaQreFrZkNTKCs81ByfwG9UYc1J1MAsm`. Production must deploy the program with its own keypair and set `MRG_SOLANA_PROGRAM_ID`; the backend leaves `program_ready` false when that value is missing.
+
 ## Migration From TRC20/EVM
 
-Legacy TRC20/TRON and EVM wallet identifiers are not used as payout accounts anymore. Backend state migration hashes each legacy wallet into a deterministic Solana wallet address for internal continuity, then the Solana program records the old-chain proof through `register_legacy_wallet`.
+Legacy TRC20/TRON and EVM wallet identifiers are not used as payout accounts anymore. Backend state migration links the old address to a Solana MRG wallet, then the Solana program records the old-chain proof through `register_legacy_wallet`.
 
 The `WalletMigration` account stores:
 
@@ -41,6 +43,8 @@ const legacyAddressHash = legacyWalletAddressHash('trc20', legacyAddress, { form
 ```
 
 Use the resulting arrays directly for Anchor instruction args such as `reference: [u8; 32]` and `legacy_address_hash: [u8; 32]`.
+
+For `register_legacy_wallet`, derive the PDA with seeds `[b"wallet-migration", legacy_chain.seed(), legacy_address_hash.as_ref()]`. The hash seed is raw 32-byte data, not the 64-character hex string.
 
 ## Test
 

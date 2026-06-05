@@ -55,6 +55,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("POST /api/wallets", s.createWallet)
 	mux.HandleFunc("GET /api/wallets/{address}", s.wallet)
 	mux.HandleFunc("POST /api/wallets/link", s.linkWallet)
+	mux.HandleFunc("POST /api/wallets/migrations", s.createWalletMigration)
 	mux.HandleFunc("POST /api/payments/paypal/orders", s.createPayPalOrder)
 	mux.HandleFunc("POST /api/payments/paypal/webhook", s.handlePayPalWebhook)
 	mux.HandleFunc("POST /api/uploads", s.uploadAttachment)
@@ -369,6 +370,24 @@ func (s *Server) linkWallet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, updated)
+}
+
+func (s *Server) createWalletMigration(w http.ResponseWriter, r *http.Request) {
+	user, ok := s.requireUser(w, r)
+	if !ok {
+		return
+	}
+	var req CreateWalletMigrationRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	migration, err := s.store.CreateWalletMigration(user.ID, req, s.cfg)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusCreated, migration)
 }
 
 func (s *Server) projects(w http.ResponseWriter, r *http.Request) {

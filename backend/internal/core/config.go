@@ -54,6 +54,7 @@ type Config struct {
 	CryptoTokenDecimals    int
 	CryptoMinConfirmations int64
 	CryptoWebhookSecret    string
+	SolanaProgramID        string
 
 	GitHubToken     string
 	GitHubOwner     string
@@ -158,6 +159,7 @@ func LoadConfig() Config {
 		CryptoTokenDecimals:    int(getenvInt64("CRYPTO_TOKEN_DECIMALS", 6)),
 		CryptoMinConfirmations: getenvInt64("CRYPTO_MIN_CONFIRMATIONS", 1),
 		CryptoWebhookSecret:    os.Getenv("CRYPTO_WEBHOOK_SECRET"),
+		SolanaProgramID:        normalizeWalletAddress(os.Getenv("MRG_SOLANA_PROGRAM_ID")),
 
 		GitHubToken:     firstEnv("GITHUB_TOKEN", "MERGEOS_GITHUB_TOKEN"),
 		GitHubOwner:     getenv("GITHUB_OWNER", defaultGitHubOwner),

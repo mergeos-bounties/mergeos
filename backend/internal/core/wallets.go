@@ -15,6 +15,8 @@ const (
 	walletAddressBytes       = 32
 	walletChainSolana        = "solana"
 	legacyWalletHashPrefix   = "mergeos:solana-wallet-migration:"
+	legacyWalletHashV1Prefix = "mergeos:legacy-wallet:v1:"
+	walletMigrationPDASeed   = "wallet-migration"
 	solanaBase58Alphabet     = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 	solanaAddressPrefix      = "solana:"
 	solanaShortAddressPrefix = "sol:"
@@ -124,6 +126,80 @@ func (s *Store) LinkWalletToUser(userID string, req LinkWalletRequest) (PublicUs
 		return PublicUser{}, err
 	}
 	return publicUser(user), nil
+}
+
+func (s *Store) CreateWalletMigration(userID string, req CreateWalletMigrationRequest, cfg Config) (WalletMigrationResponse, error) {
+	legacyChain, err := normalizeLegacyChain(req.LegacyChain)
+	if err != nil {
+		return WalletMigrationResponse{}, err
+	}
+	legacyAddress := normalizeLegacyWalletAddress(req.LegacyAddress)
+	if !validLegacyWalletAddressForChain(legacyChain, legacyAddress) {
+		return WalletMigrationResponse{}, fmt.Errorf("legacy_address must be a valid %s wallet address", legacyChain)
+	}
+	targetAddress := normalizeWalletAddress(req.SolanaWallet)
+	if targetAddress != "" && !validWalletAddress(targetAddress) {
+		return WalletMigrationResponse{}, errors.New("solana_wallet is invalid")
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	user, ok := s.users[strings.TrimSpace(userID)]
+	if !ok {
+		return WalletMigrationResponse{}, errors.New("user not found")
+	}
+	if targetAddress == "" {
+		targetAddress = normalizeWalletAddress(user.WalletAddress)
+	}
+	if targetAddress != "" && !validWalletAddress(targetAddress) {
+		targetAddress = ""
+	}
+
+	now := time.Now().UTC()
+	var wallet *Wallet
+	if targetAddress == "" {
+		wallet, err = s.createWalletLocked(user.ID, "", "")
+		if err != nil {
+			return WalletMigrationResponse{}, err
+		}
+	} else {
+		var ok bool
+		wallet, ok = s.wallets[targetAddress]
+		if !ok {
+			wallet = &Wallet{
+				Address:     targetAddress,
+				Chain:       walletChainSolana,
+				OwnerUserID: user.ID,
+				CreatedAt:   now,
+			}
+			s.wallets[targetAddress] = wallet
+		}
+		if wallet.OwnerUserID != "" && wallet.OwnerUserID != user.ID {
+			return WalletMigrationResponse{}, errors.New("solana_wallet is already linked to another account")
+		}
+		wallet.OwnerUserID = user.ID
+	}
+	wallet.Chain = walletChainSolana
+	wallet.LegacyAddress = legacyAddress
+	if wallet.CreatedAt.IsZero() {
+		wallet.CreatedAt = now
+	}
+	if wallet.LinkedAt == nil {
+		wallet.LinkedAt = &now
+	}
+	if user.GitHubID != "" || user.GitHubUsername != "" {
+		wallet.GitHubID = strings.TrimSpace(user.GitHubID)
+		wallet.GitHubUsername = normalizeGitHubUsername(user.GitHubUsername)
+	}
+	user.WalletAddress = targetAddress
+
+	summary := s.walletSummaryLocked(wallet)
+	response := walletMigrationResponse(legacyChain, legacyAddress, summary, cfg, now)
+	if err := s.saveLocked(); err != nil {
+		return WalletMigrationResponse{}, err
+	}
+	return response, nil
 }
 
 func (s *Store) AuthenticateGitHub(profile GitHubAuthProfile, walletAddress, walletRecoveryCode string) (*AuthResponse, error) {
@@ -478,6 +554,29 @@ func normalizeLegacyWalletAddress(value string) string {
 	return strings.TrimSpace(value)
 }
 
+func normalizeLegacyChain(value string) (string, error) {
+	normalized := strings.ToLower(strings.TrimSpace(value))
+	switch normalized {
+	case "trc20", "tron":
+		return "trc20", nil
+	case "evm", "ethereum":
+		return "evm", nil
+	default:
+		return "", errors.New("legacy_chain must be trc20 or evm")
+	}
+}
+
+func validLegacyWalletAddressForChain(chain, address string) bool {
+	switch chain {
+	case "trc20":
+		return validLegacyTronWalletAddress(address)
+	case "evm":
+		return validLegacyEVMWalletAddress(address)
+	default:
+		return false
+	}
+}
+
 func validLegacyWalletAddress(value string) bool {
 	value = normalizeLegacyWalletAddress(value)
 	return validLegacyEVMWalletAddress(value) || validLegacyTronWalletAddress(value)
@@ -508,6 +607,81 @@ func solanaWalletFromLegacy(value string) string {
 	}
 	sum := sha256.Sum256([]byte(legacyWalletHashPrefix + legacyAddress))
 	return base58Encode(sum[:])
+}
+
+func legacyWalletAddressHashHex(chain, address string) string {
+	normalizedChain, err := normalizeLegacyChain(chain)
+	if err != nil {
+		return ""
+	}
+	normalizedAddress := strings.ToLower(normalizeLegacyWalletAddress(address))
+	if normalizedAddress == "" {
+		return ""
+	}
+	sum := sha256.Sum256([]byte(legacyWalletHashV1Prefix + normalizedChain + ":" + normalizedAddress))
+	return hex.EncodeToString(sum[:])
+}
+
+func walletMigrationResponse(chain, legacyAddress string, wallet WalletSummary, cfg Config, now time.Time) WalletMigrationResponse {
+	legacyHash := legacyWalletAddressHashHex(chain, legacyAddress)
+	programID := normalizeWalletAddress(cfg.SolanaProgramID)
+	programReady := programID != "" && validWalletAddress(programID)
+	tokenSymbol := strings.TrimSpace(cfg.TokenSymbol)
+	if tokenSymbol == "" {
+		tokenSymbol = defaultTokenSymbol
+	}
+	return WalletMigrationResponse{
+		ProtocolVersion:   "mergeos.wallet-migration.v1",
+		Kind:              "wallet_migration",
+		MigrationID:       "wmg_" + legacyHash[:16],
+		Status:            "pending_contract_registration",
+		LegacyChain:       chain,
+		LegacyAddress:     legacyAddress,
+		LegacyAddressHash: legacyHash,
+		TargetChain:       walletChainSolana,
+		TargetAddress:     wallet.Address,
+		TargetAccount:     wallet.Account,
+		TokenSymbol:       tokenSymbol,
+		RequiredProofs: []string{
+			"legacy_wallet_ownership_signature",
+			"anchor_register_legacy_wallet_transaction",
+		},
+		Contract: WalletMigrationContract{
+			Network:      solanaNetworkFromRPCURL(cfg.CryptoRPCURL),
+			ProgramID:    programID,
+			ProgramReady: programReady,
+			Instruction:  "register_legacy_wallet",
+			PDASeeds:     []string{walletMigrationPDASeed, chain, "legacy_address_hash_bytes"},
+			PDASeedFormats: []string{
+				"utf8",
+				"utf8",
+				"bytes32:hex_decode(contract.args.legacy_address_hash)",
+			},
+			Args: WalletMigrationContractArgs{
+				LegacyChain:       chain,
+				LegacyAddressHash: legacyHash,
+				SolanaWallet:      wallet.Address,
+			},
+			TokenMint:        normalizeWalletAddress(cfg.CryptoTokenContract),
+			TreasuryReceiver: normalizeWalletAddress(cfg.CryptoReceiver),
+		},
+		Wallet:    wallet,
+		CreatedAt: now,
+	}
+}
+
+func solanaNetworkFromRPCURL(value string) string {
+	normalized := strings.ToLower(strings.TrimSpace(value))
+	switch {
+	case strings.Contains(normalized, "mainnet"):
+		return "mainnet-beta"
+	case strings.Contains(normalized, "devnet"):
+		return "devnet"
+	case strings.Contains(normalized, "testnet"):
+		return "testnet"
+	default:
+		return "localnet"
+	}
 }
 
 func trimAddressPrefix(value, prefix string) string {

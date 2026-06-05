@@ -48,14 +48,14 @@ MergeOS currently supports:
 
 - Customer auth with email/password bearer sessions.
 - GitHub App login that creates or links a MergeOS account to an MRG wallet.
-- Guest MRG wallet creation with BSC-style `0x...` addresses from MergeOS Scan.
+- Guest MRG wallet creation with Solana base58 wallet addresses from MergeOS Scan.
 - Two environment modes: `local` and `production`.
 - Project creation with budget, payment method, attachments, and escrow status.
 - Local payment verification through `LOCAL-PAID`.
 - PayPal Orders v2 adapter.
-- EVM native or ERC-20 receipt verification.
+- Solana SPL transaction verification for MRG-style payment rails.
 - GitHub open issue import with heuristic complexity, estimated MRG reward, and estimated hours.
-- GitHub reward aliases. If a worker has not linked a wallet yet, payouts can still target `github:username`; once linked, payouts route to the user's `0x...` wallet address.
+- GitHub reward aliases. If a worker has not linked a wallet yet, payouts can still target `github:username`; once linked, payouts route to the user's Solana MRG wallet address.
 - Local git bounty workspaces or GitHub private bounty repos when `GITHUB_TOKEN` is configured.
 - Static repository scan for dependency manifests, technical-debt markers, and secret-hygiene findings.
 - Project task dependency graph generation for workflow routing, effort metadata, dependency edges, and release readiness.
@@ -85,7 +85,7 @@ Roadmap items include deeper AI codebase scanning, automated PR verification, fr
 - Scan: Vue 3 + Vite static explorer served from `scan.mergeos.shop`
 - Token symbol: `MRG` by default through `TOKEN_SYMBOL`
 - Bounty repos: local git under `BOUNTY_ROOT`, or GitHub private repos with `GITHUB_TOKEN`
-- Payments: local verifier, PayPal, EVM native/ERC-20 verifier
+- Payments: local verifier, PayPal, Solana SPL verifier
 
 ## Local Testing
 
@@ -295,7 +295,8 @@ Important backend variables:
 - `DEV_PAYMENT_ENABLED` and `DEV_PAYMENT_CODE`: local verifier
 - `PAYPAL_ENV`, `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`: PayPal Orders v2
 - `STRIPE_PUBLISHABLE_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`: Stripe rail metadata and PaymentIntent verifier. When configured, the Stripe rail accepts a succeeded USD PaymentIntent ID as `payment_reference` and verifies currency and amount before project funding.
-- `CRYPTO_RPC_URL`, `CRYPTO_RECEIVER`, `CRYPTO_ASSET`, `CRYPTO_TOKEN_CONTRACT`: EVM crypto verifier. `CRYPTO_ASSET=erc20` exposes both the generic crypto rail and the USDT rail; project intake accepts `payment_method: "usdt"` as a crypto-backed ERC-20 transfer alias.
+- `CRYPTO_RPC_URL`, `CRYPTO_RECEIVER`, `CRYPTO_ASSET`, `CRYPTO_TOKEN_MINT`: Solana SPL verifier. `CRYPTO_ASSET=spl` exposes the crypto/USDT rail as a Solana transaction signature verifier for MRG-style SPL payments.
+- `MRG_SOLANA_PROGRAM_ID`: deployed MergeOS Anchor program id used by wallet migration and MRG ledger instruction metadata. Leave empty until the program is deployed; the migration API will then return `program_ready: false`.
 - `GITHUB_TOKEN`, `GITHUB_OWNER`, `GITHUB_OWNER_TYPE`: backend runtime values for GitHub bounty repo creation and admin PR merge actions
 - `MERGEOS_GITHUB_TOKEN`: Docker Compose and GitHub Actions secret name that maps into backend `GITHUB_TOKEN`; use a personal access token with repo write access, not the automatic GitHub Actions token
 - `GEMINI_API_KEYS`: comma-separated Gemini API key pool used to seed the initial LLM key table; admins can add Gemini, OpenAI, Anthropic, Groq, OpenRouter, DeepSeek, and Mistral tokens later in the admin UI, while request counts and key status are tracked in the database

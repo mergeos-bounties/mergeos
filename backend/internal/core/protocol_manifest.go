@@ -54,6 +54,12 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Description: "Authenticated project estimate document with editable budget range, confidence, assumptions, risks, and cost breakdown.",
 			},
 			{
+				Version:     "mergeos.wallet-migration.v1",
+				Kind:        "wallet_migration",
+				SchemaURL:   "https://mergeos.shop/protocol/wallet-migration.v1.schema.json",
+				Description: "Authenticated legacy TRC20/EVM wallet migration document with Solana target wallet, legacy address hash, and Anchor register_legacy_wallet arguments.",
+			},
+			{
 				Version:     "mergeos.repo-import.v1",
 				Kind:        "repo_import",
 				SchemaURL:   "https://mergeos.shop/protocol/repo-import.v1.schema.json",
@@ -291,6 +297,13 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Protocol:    "mergeos.estimate.v1",
 				Auth:        "user",
 				Description: "Authenticated project estimate for editable budget range, confidence, cost breakdown, assumptions, and risks.",
+			},
+			{
+				Method:      "POST",
+				Path:        "/api/wallets/migrations",
+				Protocol:    "mergeos.wallet-migration.v1",
+				Auth:        "user",
+				Description: "Authenticated legacy TRC20/EVM wallet migration into a Solana MRG wallet with Anchor contract registration metadata.",
 			},
 			{
 				Method:      "POST",

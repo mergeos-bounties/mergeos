@@ -6,9 +6,11 @@ import {
   contractReferenceFromLedger,
   legacyWalletAddressHash,
   normalizeLegacyChain,
+  normalizeLegacyWalletAddress,
   protocolSchemas,
   schemaForProtocol,
   validateProtocolDocument,
+  walletMigrationPDASeedMetadata,
 } from '../src/index.js';
 
 test('loads stable task, workflow, ledger, and event schemas', () => {
@@ -33,6 +35,7 @@ test('loads stable task, workflow, ledger, and event schemas', () => {
     'mergeos.scan.v1',
     'mergeos.task-claim.v1',
     'mergeos.task.v1',
+    'mergeos.wallet-migration.v1',
     'mergeos.worker-dashboard.v1',
     'mergeos.workflow.v1',
   ]);
@@ -1576,13 +1579,75 @@ test('derives deterministic Solana contract references from ledger entries', () 
 test('derives deterministic legacy wallet migration hashes', () => {
   const tronHash = legacyWalletAddressHash('tron', '  TXYZ987654321  ');
   const trc20Hash = legacyWalletAddressHash('trc20', 'txyz987654321');
+  const prefixedHash = legacyWalletAddressHash('trc20', 'tron:TXYZ987654321');
   const evmBytes = legacyWalletAddressHash('ethereum', '0xAbC0000000000000000000000000000000000000', { format: 'bytes' });
 
   assert.equal(normalizeLegacyChain('TRON'), 'trc20');
   assert.equal(normalizeLegacyChain('Ethereum'), 'evm');
+  assert.equal(normalizeLegacyWalletAddress('wallet:0xAbC0000000000000000000000000000000000000'), '0xabc0000000000000000000000000000000000000');
   assert.equal(tronHash, trc20Hash);
+  assert.equal(tronHash, prefixedHash);
   assert.match(tronHash, /^[0-9a-f]{64}$/);
   assert.equal(evmBytes.length, 32);
   assert.throws(() => normalizeLegacyChain('btc'), /trc20 or evm/);
   assert.throws(() => legacyWalletAddressHash('trc20', ''), /address is required/);
+
+  const pda = walletMigrationPDASeedMetadata('tron', 'tron:TXYZ987654321');
+  assert.deepEqual(pda.pda_seeds, ['wallet-migration', 'trc20', 'legacy_address_hash_bytes']);
+  assert.deepEqual(pda.pda_seed_formats, ['utf8', 'utf8', 'bytes32:hex_decode(contract.args.legacy_address_hash)']);
+  assert.equal(pda.legacy_address_hash, tronHash);
+  assert.equal(pda.legacy_address_hash_bytes.length, 32);
+});
+
+test('validates wallet migration protocol documents', () => {
+  const legacyAddressHash = 'd'.repeat(64);
+  const migration = {
+    protocol_version: 'mergeos.wallet-migration.v1',
+    kind: 'wallet_migration',
+    migration_id: 'wmg_dddddddddddddddd',
+    status: 'pending_contract_registration',
+    legacy_chain: 'trc20',
+    legacy_address: 'TXYZ987654321987654321987654321999',
+    legacy_address_hash: legacyAddressHash,
+    target_chain: 'solana',
+    target_address: 'So1anaWorkerWallet1111111111111111111111111',
+    target_account: 'So1anaWorkerWallet1111111111111111111111111',
+    token_symbol: 'MRG',
+    required_proofs: ['legacy_wallet_ownership_signature', 'anchor_register_legacy_wallet_transaction'],
+    contract: {
+      network: 'devnet',
+      program_id: '',
+      program_ready: false,
+      instruction: 'register_legacy_wallet',
+      pda_seeds: ['wallet-migration', 'trc20', 'legacy_address_hash_bytes'],
+      pda_seed_formats: ['utf8', 'utf8', 'bytes32:hex_decode(contract.args.legacy_address_hash)'],
+      args: {
+        legacy_chain: 'trc20',
+        legacy_address_hash: legacyAddressHash,
+        solana_wallet: 'So1anaWorkerWallet1111111111111111111111111',
+      },
+    },
+    wallet: {
+      address: 'So1anaWorkerWallet1111111111111111111111111',
+      account: 'So1anaWorkerWallet1111111111111111111111111',
+      chain: 'solana',
+      owner_linked: true,
+      created_at: '2026-06-05T00:00:00.000Z',
+    },
+    created_at: '2026-06-05T00:00:00.000Z',
+  };
+
+  assert.equal(validateProtocolDocument(migration).valid, true);
+
+  const invalid = validateProtocolDocument({
+    ...migration,
+    target_chain: 'trc20',
+    contract: {
+      ...migration.contract,
+      pda_seed_formats: ['utf8', 'utf8', 'hex-string'],
+    },
+  });
+  assert.equal(invalid.valid, false);
+  assert(invalid.errors.some((error) => error.path === 'target_chain'));
+  assert(invalid.errors.some((error) => error.path === 'contract.pda_seed_formats[2]'));
 });

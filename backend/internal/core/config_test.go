@@ -38,6 +38,7 @@ var configEnvKeys = []string{
 	"CRYPTO_TOKEN_CONTRACT",
 	"CRYPTO_TOKEN_DECIMALS",
 	"CRYPTO_MIN_CONFIRMATIONS",
+	"MRG_SOLANA_PROGRAM_ID",
 	"GITHUB_TOKEN",
 	"GITHUB_OWNER",
 	"GITHUB_OWNER_TYPE",
@@ -109,6 +110,7 @@ func TestLoadConfigDefaultsCryptoToSolanaSPL(t *testing.T) {
 	t.Setenv("CRYPTO_RPC_URL", "https://api.mainnet-beta.solana.com")
 	t.Setenv("CRYPTO_RECEIVER", receiver)
 	t.Setenv("CRYPTO_TOKEN_MINT", mint)
+	t.Setenv("MRG_SOLANA_PROGRAM_ID", base58Encode(bytes.Repeat([]byte{6}, walletAddressBytes)))
 
 	cfg := LoadConfig()
 	if cfg.CryptoAsset != "spl" {
@@ -117,8 +119,22 @@ func TestLoadConfigDefaultsCryptoToSolanaSPL(t *testing.T) {
 	if cfg.CryptoReceiver != receiver || cfg.CryptoTokenContract != mint {
 		t.Fatalf("crypto receiver/token = %q/%q", cfg.CryptoReceiver, cfg.CryptoTokenContract)
 	}
+	if !validWalletAddress(cfg.SolanaProgramID) {
+		t.Fatalf("solana program id = %q", cfg.SolanaProgramID)
+	}
 	if !cfg.CryptoReady() {
 		t.Fatal("solana spl config should be ready")
+	}
+}
+
+func TestLoadConfigDoesNotInventSolanaProgramID(t *testing.T) {
+	withTempConfigDir(t)
+	clearConfigEnv(t)
+
+	cfg := LoadConfig()
+
+	if cfg.SolanaProgramID != "" {
+		t.Fatalf("solana program id default = %q, want empty until deployment", cfg.SolanaProgramID)
 	}
 }
 

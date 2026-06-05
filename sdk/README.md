@@ -23,6 +23,7 @@ import {
   protocolEventsFromMessage,
   protocolEventGroup,
   protocolTypeFromMessage,
+  walletMigrationPDASeedMetadata,
 } from '@mergeos/sdk';
 
 const mergeos = createMergeOSClient({
@@ -67,6 +68,12 @@ const syncReport = await mergeos.syncProjectRepoIssues(projects[0].id);
 console.log(syncReport.protocol_version, syncReport.added_task_count);
 const solanaReference = contractReferenceFromLedger({ entry_hash: 'a'.repeat(64) }, { format: 'bytes' });
 const legacyHash = legacyWalletAddressHash('trc20', 'TXYZ987654321', { format: 'bytes' });
+const pda = walletMigrationPDASeedMetadata('trc20', 'TXYZ987654321');
+const migration = await mergeos.createWalletMigration({
+  legacy_chain: 'trc20',
+  legacy_address: 'TXYZ987654321',
+});
+console.log(migration.protocol_version, migration.contract.instruction);
 ```
 
 ## Public APIs
@@ -195,3 +202,5 @@ const legacyAddressHash = legacyWalletAddressHash('evm', '0xabc...', { format: '
 ```
 
 Use these helpers when sending `reference: [u8; 32]` or `legacy_address_hash: [u8; 32]` to the MergeOS Anchor program. They prefer ledger `entry_hash` / `public_hash` and only hash a sanitized reference when no ledger hash exists.
+
+`createWalletMigration()` returns a `mergeos.wallet-migration.v1` document with the Solana target wallet, legacy address hash, PDA seed labels/formats, and `register_legacy_wallet` args for the Anchor program. Decode `contract.args.legacy_address_hash` into 32 raw bytes for the PDA hash seed; do not pass the 64-character hex string as a literal seed.

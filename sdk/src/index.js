@@ -202,6 +202,10 @@ export class MergeOSClient {
     return this.request('/api/wallets/link', { method: 'POST', body: payload });
   }
 
+  createWalletMigration(payload) {
+    return this.request('/api/wallets/migrations', { method: 'POST', body: payload });
+  }
+
   createPayPalOrder(payload) {
     return this.request('/api/payments/paypal/orders', { method: 'POST', body: payload });
   }
@@ -466,19 +470,40 @@ export function contractReferenceBytes(entry) {
 }
 
 export function legacyWalletAddressHash(chain, address, options = {}) {
-  const normalizedChain = normalizeLegacyChain(chain);
-  const normalizedAddress = String(address || '').trim().toLowerCase();
-  if (!normalizedAddress) {
-    throw new Error('legacy wallet address is required');
-  }
-  return formatContractReference(sha256Hex(`mergeos:legacy-wallet:v1:${normalizedChain}:${normalizedAddress}`), options);
+	const normalizedChain = normalizeLegacyChain(chain);
+	const normalizedAddress = normalizeLegacyWalletAddress(address).toLowerCase();
+	if (!normalizedAddress) {
+		throw new Error('legacy wallet address is required');
+	}
+	return formatContractReference(sha256Hex(`mergeos:legacy-wallet:v1:${normalizedChain}:${normalizedAddress}`), options);
+}
+
+export function walletMigrationPDASeedMetadata(chain, address) {
+  const legacyAddressHash = legacyWalletAddressHash(chain, address);
+  return {
+    pda_seeds: ['wallet-migration', normalizeLegacyChain(chain), 'legacy_address_hash_bytes'],
+    pda_seed_formats: ['utf8', 'utf8', 'bytes32:hex_decode(contract.args.legacy_address_hash)'],
+    legacy_address_hash: legacyAddressHash,
+    legacy_address_hash_bytes: hexToBytes(legacyAddressHash),
+  };
 }
 
 export function normalizeLegacyChain(value = '') {
-  const normalized = String(value || '').trim().toLowerCase();
-  if (normalized === 'trc20' || normalized === 'tron') return 'trc20';
-  if (normalized === 'evm' || normalized === 'ethereum') return 'evm';
-  throw new Error('legacy chain must be trc20 or evm');
+	const normalized = String(value || '').trim().toLowerCase();
+	if (normalized === 'trc20' || normalized === 'tron') return 'trc20';
+	if (normalized === 'evm' || normalized === 'ethereum') return 'evm';
+	throw new Error('legacy chain must be trc20 or evm');
+}
+
+export function normalizeLegacyWalletAddress(value = '') {
+  let normalized = String(value || '').trim();
+  for (const prefix of ['wallet:', 'tron:', 'trc20:', 'eip155:']) {
+    if (normalized.toLowerCase().startsWith(prefix)) {
+      normalized = normalized.slice(prefix.length).trim();
+    }
+  }
+  if (/^0x[0-9a-f]{40}$/i.test(normalized)) return normalized.toLowerCase();
+  return normalized;
 }
 
 export function agentActionEventType(action = '') {

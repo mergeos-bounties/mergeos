@@ -3683,6 +3683,29 @@
                 Link GitHub
               </button>
             </div>
+            <form class="wallet-migration-form" @submit.prevent="submitWalletMigration">
+              <div class="wallet-migration-grid">
+                <label>
+                  <span>Legacy chain</span>
+                  <select v-model="walletMigrationForm.legacy_chain" :disabled="walletMigrationBusy">
+                    <option value="trc20">TRC20 / TRON</option>
+                    <option value="evm">EVM</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Old wallet</span>
+                  <input v-model.trim="walletMigrationForm.legacy_address" :disabled="walletMigrationBusy" placeholder="Paste old TRC20 or EVM wallet" autocomplete="off" />
+                </label>
+              </div>
+              <button class="rail-link-button wallet-migration-submit" :disabled="walletMigrationBusy || !walletMigrationForm.legacy_address.trim()" type="submit">
+                {{ walletMigrationBusy ? 'Migrating...' : 'Migrate to Solana' }}
+              </button>
+              <p v-if="walletMigrationError" class="wallet-migration-error">{{ walletMigrationError }}</p>
+              <article v-if="walletMigrationResult" class="wallet-migration-result">
+                <strong>{{ shortWallet(walletMigrationResult.target_address) }}</strong>
+                <small>{{ walletMigrationResult.status }} / {{ walletMigrationResult.contract?.instruction }}</small>
+              </article>
+            </form>
           </section>
 
           <section ref="dashboardProjectListPanel" class="dash-card rail-card project-picker-card dashboard-focus-target" tabindex="-1">
@@ -10083,6 +10106,13 @@ function clearPendingRepositoryTaskFunding() {
 
 const token = ref(readStoredToken());
 const user = ref(null);
+const walletMigrationForm = reactive({
+  legacy_chain: 'trc20',
+  legacy_address: '',
+});
+const walletMigrationBusy = ref(false);
+const walletMigrationError = ref('');
+const walletMigrationResult = ref(null);
 const authVisible = ref(false);
 const authDialog = ref(null);
 const authMode = ref('login');
@@ -19747,6 +19777,43 @@ function openWalletOnScan(address = '') {
   const wallet = String(address || '').trim();
   if (!wallet || !hasWindow) return;
   window.open(`https://scan.mergeos.shop/address/${encodeURIComponent(wallet)}`, '_blank', 'noopener,noreferrer');
+}
+
+async function submitWalletMigration() {
+  if (!user.value) {
+    showToast('Log in to migrate a legacy wallet.');
+    return;
+  }
+  const legacyAddress = walletMigrationForm.legacy_address.trim();
+  if (!legacyAddress) {
+    walletMigrationError.value = 'Legacy wallet address is required.';
+    return;
+  }
+  walletMigrationBusy.value = true;
+  walletMigrationError.value = '';
+  try {
+    const migration = await api('/api/wallets/migrations', {
+      method: 'POST',
+      body: JSON.stringify({
+        legacy_chain: walletMigrationForm.legacy_chain,
+        legacy_address: legacyAddress,
+      }),
+    });
+    walletMigrationResult.value = migration;
+    if (migration.target_address && user.value) {
+      user.value = {
+        ...user.value,
+        wallet_address: migration.target_address,
+      };
+    }
+    walletMigrationForm.legacy_address = '';
+    showToast('Legacy wallet linked to a Solana MRG wallet.');
+  } catch (error) {
+    walletMigrationError.value = error.message || 'Could not migrate wallet.';
+    showToast(walletMigrationError.value);
+  } finally {
+    walletMigrationBusy.value = false;
+  }
 }
 
 function openExternalURL(url = '') {

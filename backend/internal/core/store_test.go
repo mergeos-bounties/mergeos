@@ -1,6 +1,7 @@
 package core
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -586,6 +587,80 @@ func TestLegacyWalletAccountPrefixMigratesToSolanaAddress(t *testing.T) {
 	}
 }
 
+func TestCreateWalletMigrationLinksLegacyTRC20ToSolanaMetadata(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:         defaultTokenSymbol,
+		StatePath:           filepath.Join(tempDir, "state.json"),
+		CryptoRPCURL:        "https://api.devnet.solana.com",
+		CryptoReceiver:      base58Encode(bytes.Repeat([]byte{4}, walletAddressBytes)),
+		CryptoTokenContract: base58Encode(bytes.Repeat([]byte{5}, walletAddressBytes)),
+		CryptoTokenDecimals: 6,
+		GeminiReviewModel:   defaultGeminiReviewModel,
+		AdminAutoPromote:    false,
+		DevPaymentEnabled:   true,
+		DevPaymentCode:      defaultDevPaymentCode,
+		PlatformFeeBps:      1000,
+	}
+	store, err := NewStore(cfg, NewPaymentManager(cfg), NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	auth, err := store.Register(RegisterRequest{
+		Name:     "Legacy Tron User",
+		Email:    "legacy-tron@example.com",
+		Password: "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	legacyAddress := base58Encode(append([]byte{0x41}, bytes.Repeat([]byte{9}, 24)...))
+
+	migration, err := store.CreateWalletMigration(auth.User.ID, CreateWalletMigrationRequest{
+		LegacyChain:   "tron",
+		LegacyAddress: "tron:" + legacyAddress,
+	}, cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if migration.ProtocolVersion != "mergeos.wallet-migration.v1" || migration.Kind != "wallet_migration" {
+		t.Fatalf("migration protocol = %#v", migration)
+	}
+	if migration.Status != "pending_contract_registration" || migration.Contract.ProgramReady {
+		t.Fatalf("migration contract readiness = %q/%v", migration.Status, migration.Contract.ProgramReady)
+	}
+	if migration.LegacyChain != "trc20" || migration.LegacyAddress != legacyAddress {
+		t.Fatalf("legacy fields = %q/%q", migration.LegacyChain, migration.LegacyAddress)
+	}
+	if want := legacyWalletAddressHashHex("trc20", legacyAddress); migration.LegacyAddressHash != want {
+		t.Fatalf("legacy hash = %q, want %q", migration.LegacyAddressHash, want)
+	}
+	if migration.TargetChain != walletChainSolana || !validWalletAddress(migration.TargetAddress) {
+		t.Fatalf("target wallet = %q/%q", migration.TargetChain, migration.TargetAddress)
+	}
+	if migration.TargetAddress == solanaWalletFromLegacy(legacyAddress) {
+		t.Fatalf("migration API used deterministic legacy-derived address %q instead of a user Solana wallet", migration.TargetAddress)
+	}
+	if migration.Contract.ProgramID != "" {
+		t.Fatalf("program id = %q, want empty until deployment env is configured", migration.Contract.ProgramID)
+	}
+	if got := migration.Contract.PDASeeds; len(got) != 3 || got[2] != "legacy_address_hash_bytes" {
+		t.Fatalf("pda seeds = %#v", got)
+	}
+	if got := migration.Contract.PDASeedFormats; len(got) != 3 || got[2] != "bytes32:hex_decode(contract.args.legacy_address_hash)" {
+		t.Fatalf("pda seed formats = %#v", got)
+	}
+	summary, ok := store.WalletSummary(migration.TargetAddress)
+	if !ok {
+		t.Fatal("migration wallet summary not found")
+	}
+	if summary.Chain != walletChainSolana || summary.LegacyAddress != legacyAddress || !summary.OwnerLinked {
+		t.Fatalf("wallet summary = %#v", summary)
+	}
+}
+
 func TestNewWalletAddressUsesSolanaBase58(t *testing.T) {
 	address, err := newWalletAddress()
 	if err != nil {
@@ -929,7 +1004,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 	if payload.ProtocolVersion != "mergeos.protocol.manifest.v1" || payload.Kind != "protocol_manifest" {
 		t.Fatalf("unexpected manifest header: %#v", payload)
 	}
-	if len(payload.Schemas) != 22 {
+	if len(payload.Schemas) != 23 {
 		t.Fatalf("manifest schemas = %d: %#v", len(payload.Schemas), payload.Schemas)
 	}
 	schemas := map[string]bool{}
@@ -938,7 +1013,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 		schemas[schema.Version] = true
 		descriptions[schema.Version] = schema.Description
 	}
-	for _, required := range []string{"mergeos.task.v1", "mergeos.task-claim.v1", "mergeos.agent.v1", "mergeos.agent-action.v1", "mergeos.marketplace.v1", "mergeos.live-feed.v1", "mergeos.workflow.v1", "mergeos.estimate.v1", "mergeos.repo-import.v1", "mergeos.repo-sync.v1", "mergeos.dispute.v1", "mergeos.ai-workflow.v1", "mergeos.event.v1", "mergeos.ledger.v1", "mergeos.escrow.v1", "mergeos.payouts.v1", "mergeos.deployment.v1", "mergeos.pr-monitor.v1", "mergeos.scan.v1", "mergeos.customer-dashboard.v1", "mergeos.worker-dashboard.v1", "mergeos.admin-ops.v1"} {
+	for _, required := range []string{"mergeos.task.v1", "mergeos.task-claim.v1", "mergeos.agent.v1", "mergeos.agent-action.v1", "mergeos.marketplace.v1", "mergeos.live-feed.v1", "mergeos.workflow.v1", "mergeos.estimate.v1", "mergeos.wallet-migration.v1", "mergeos.repo-import.v1", "mergeos.repo-sync.v1", "mergeos.dispute.v1", "mergeos.ai-workflow.v1", "mergeos.event.v1", "mergeos.ledger.v1", "mergeos.escrow.v1", "mergeos.payouts.v1", "mergeos.deployment.v1", "mergeos.pr-monitor.v1", "mergeos.scan.v1", "mergeos.customer-dashboard.v1", "mergeos.worker-dashboard.v1", "mergeos.admin-ops.v1"} {
 		if !schemas[required] {
 			t.Fatalf("manifest missing schema %s: %#v", required, payload.Schemas)
 		}
@@ -973,6 +1048,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 		"GET /api/workers/me",
 		"POST /api/projects/evaluate-price",
 		"POST /api/tasks/{id}/accept",
+		"POST /api/wallets/migrations",
 		"GET /api/admin/ops-queue",
 	} {
 		if !endpoints[required] {

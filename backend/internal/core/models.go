@@ -286,6 +286,48 @@ type WalletSummary struct {
 	LinkedAt         *time.Time `json:"linked_at,omitempty"`
 }
 
+type CreateWalletMigrationRequest struct {
+	LegacyChain   string `json:"legacy_chain"`
+	LegacyAddress string `json:"legacy_address"`
+	SolanaWallet  string `json:"solana_wallet,omitempty"`
+}
+
+type WalletMigrationContractArgs struct {
+	LegacyChain       string `json:"legacy_chain"`
+	LegacyAddressHash string `json:"legacy_address_hash"`
+	SolanaWallet      string `json:"solana_wallet"`
+}
+
+type WalletMigrationContract struct {
+	Network          string                      `json:"network"`
+	ProgramID        string                      `json:"program_id"`
+	ProgramReady     bool                        `json:"program_ready"`
+	Instruction      string                      `json:"instruction"`
+	PDASeeds         []string                    `json:"pda_seeds"`
+	PDASeedFormats   []string                    `json:"pda_seed_formats"`
+	Args             WalletMigrationContractArgs `json:"args"`
+	TokenMint        string                      `json:"token_mint,omitempty"`
+	TreasuryReceiver string                      `json:"treasury_receiver,omitempty"`
+}
+
+type WalletMigrationResponse struct {
+	ProtocolVersion   string                  `json:"protocol_version"`
+	Kind              string                  `json:"kind"`
+	MigrationID       string                  `json:"migration_id"`
+	Status            string                  `json:"status"`
+	LegacyChain       string                  `json:"legacy_chain"`
+	LegacyAddress     string                  `json:"legacy_address"`
+	LegacyAddressHash string                  `json:"legacy_address_hash"`
+	TargetChain       string                  `json:"target_chain"`
+	TargetAddress     string                  `json:"target_address"`
+	TargetAccount     string                  `json:"target_account"`
+	TokenSymbol       string                  `json:"token_symbol"`
+	RequiredProofs    []string                `json:"required_proofs"`
+	Contract          WalletMigrationContract `json:"contract"`
+	Wallet            WalletSummary           `json:"wallet"`
+	CreatedAt         time.Time               `json:"created_at"`
+}
+
 type AdminUpdateUserRequest struct {
 	Name        string   `json:"name"`
 	CompanyName string   `json:"company_name"`

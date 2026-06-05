@@ -15,10 +15,12 @@ import {
   liveFeedTypeToProtocolEventType,
   normalizeAgentAction,
   normalizeLegacyChain,
+  normalizeLegacyWalletAddress,
   protocolEventFromMessage,
   protocolEventsFromMessage,
   protocolEventGroup,
   protocolTypeFromMessage,
+  walletMigrationPDASeedMetadata,
   workflowEventTypes,
 } from '../src/index.js';
 
@@ -107,7 +109,12 @@ test('derives Solana ledger references and legacy wallet hashes for operators', 
   assert.equal(normalizeLegacyChain('TRON'), 'trc20');
   assert.equal(normalizeLegacyChain('ethereum'), 'evm');
   assert.equal(legacyWalletAddressHash('tron', 'TXYZ987654321'), legacyWalletAddressHash('trc20', 'txyz987654321'));
+  assert.equal(legacyWalletAddressHash('tron', 'tron:TXYZ987654321'), legacyWalletAddressHash('trc20', 'txyz987654321'));
+  assert.equal(normalizeLegacyWalletAddress('eip155:0xAbC0000000000000000000000000000000000000'), '0xabc0000000000000000000000000000000000000');
   assert.equal(legacyWalletAddressHash('evm', '0xAbC0000000000000000000000000000000000000', { format: 'bytes' }).length, 32);
+  const pda = walletMigrationPDASeedMetadata('tron', 'tron:TXYZ987654321');
+  assert.deepEqual(pda.pda_seeds, ['wallet-migration', 'trc20', 'legacy_address_hash_bytes']);
+  assert.equal(pda.legacy_address_hash_bytes.length, 32);
 });
 
 test('maps typed agent action event protocol values', () => {
@@ -370,6 +377,7 @@ test('supports wallet, payment, and raw upload helper routes', async () => {
     { status: 201, body: { address: 'mrg_1' } },
     { status: 200, body: { address: 'mrg_1' } },
     { status: 200, body: { linked: true } },
+    { status: 201, body: { protocol_version: 'mergeos.wallet-migration.v1', kind: 'wallet_migration' } },
     { status: 201, body: { order_id: 'ord_1' } },
     { status: 201, body: { id: 'att_1' } },
   ]);
@@ -378,17 +386,25 @@ test('supports wallet, payment, and raw upload helper routes', async () => {
   await client.createWallet({ label: 'primary' });
   await client.wallet('mrg_1');
   await client.linkWallet({ address: 'mrg_1' });
+  await client.createWalletMigration({ legacy_chain: 'trc20', legacy_address: 'TXYZ987654321987654321987654321999' });
   await client.createPayPalOrder({ project_id: 'prj_1' });
   await client.uploadAttachment(uploadBody, { headers: { 'X-Upload': '1' } });
 
   assert.equal(fetchImpl.calls[0].url, '/api/wallets');
   assert.equal(fetchImpl.calls[1].url, '/api/wallets/mrg_1');
   assert.equal(fetchImpl.calls[2].url, '/api/wallets/link');
-  assert.equal(fetchImpl.calls[3].url, '/api/payments/paypal/orders');
-  assert.equal(fetchImpl.calls[4].url, '/api/uploads');
-  assert.equal(fetchImpl.calls[4].options.body, uploadBody);
-  assert.equal(fetchImpl.calls[4].options.headers['Content-Type'], undefined);
-  assert.equal(fetchImpl.calls[4].options.headers['X-Upload'], '1');
+  assert.equal(fetchImpl.calls[3].url, '/api/wallets/migrations');
+  assert.equal(fetchImpl.calls[3].options.method, 'POST');
+  assert.equal(fetchImpl.calls[3].options.headers.Authorization, 'Bearer abc');
+  assert.equal(fetchImpl.calls[3].options.body, JSON.stringify({
+    legacy_chain: 'trc20',
+    legacy_address: 'TXYZ987654321987654321987654321999',
+  }));
+  assert.equal(fetchImpl.calls[4].url, '/api/payments/paypal/orders');
+  assert.equal(fetchImpl.calls[5].url, '/api/uploads');
+  assert.equal(fetchImpl.calls[5].options.body, uploadBody);
+  assert.equal(fetchImpl.calls[5].options.headers['Content-Type'], undefined);
+  assert.equal(fetchImpl.calls[5].options.headers['X-Upload'], '1');
 });
 
 test('exposes project estimate protocol route', async () => {

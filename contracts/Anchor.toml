@@ -6,7 +6,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-mergeos = "So11111111111111111111111111111111111111112"
+mergeos = "TqfJCDMxPEuuaQreFrZkNTKCs81ByfwG9UYc1J1MAsm"
 
 [registry]
 url = "https://api.apr.dev"

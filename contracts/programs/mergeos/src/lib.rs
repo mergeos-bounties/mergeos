@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Burn, Mint, MintTo, Token, TokenAccount, TransferChecked};
 
-declare_id!("So11111111111111111111111111111111111111112");
+declare_id!("TqfJCDMxPEuuaQreFrZkNTKCs81ByfwG9UYc1J1MAsm");
 
 #[program]
 pub mod mergeos {

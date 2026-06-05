@@ -23,6 +23,7 @@ The live app exposes protocol discovery at `GET /api/public/protocol`, and serve
 - `mergeos.escrow.v1`: an authenticated project escrow document with reserves, releases, balances, and per-task settlement state.
 - `mergeos.payouts.v1`: an authenticated payout settlement document with release status, payout accounts, ledger proof references, and per-task payment state.
 - `mergeos.deployment.v1`: an authenticated deployment validation document with rollout stages, release gate progress, and ledger/AI evidence signals.
+- `mergeos.wallet-migration.v1`: an authenticated legacy TRC20/EVM wallet migration document with Solana target wallet, legacy address hash, and Anchor `register_legacy_wallet` arguments.
 - `mergeos.pr-monitor.v1`: an authenticated live pull request monitor with task linkage, readiness gates, merge risk, labels, authors, and GitHub sync health.
 - `mergeos.scan.v1`: a repository scan document with dependency manifests, language counts, and security/debt findings.
 - `mergeos.customer-dashboard.v1`: an authenticated customer delivery dashboard with project overview, escrow, payouts, deployment, AI workflow, task graph, repository scan, and PR monitor modules.
@@ -68,10 +69,13 @@ The validator is intentionally dependency-free. It covers the fields MergeOS age
 ## Solana References
 
 ```js
-import { contractReferenceFromLedger, legacyWalletAddressHash } from '@mergeos/protocol';
+import { contractReferenceFromLedger, legacyWalletAddressHash, walletMigrationPDASeedMetadata } from '@mergeos/protocol';
 
 const reference = contractReferenceFromLedger(ledgerEntry, { format: 'bytes' });
 const legacyHash = legacyWalletAddressHash('trc20', oldTronAddress, { format: 'bytes' });
+const pda = walletMigrationPDASeedMetadata('trc20', oldTronAddress);
 ```
 
 Contract references are deterministic 32-byte anchors for the Solana MRG program. Prefer public ledger `entry_hash` or `public_hash`; the helper hashes sanitized references only when a ledger hash is not available.
+
+Wallet migration PDA metadata uses `pda_seeds: ["wallet-migration", legacy_chain, "legacy_address_hash_bytes"]` plus `pda_seed_formats` so agents know the third seed must be decoded from `contract.args.legacy_address_hash` into raw 32-byte data before deriving the Solana PDA.

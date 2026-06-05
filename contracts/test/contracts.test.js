@@ -18,6 +18,8 @@ describe("contract package", () => {
     assert.match(programSource, /use anchor_lang::prelude::\*/);
     assert.match(programSource, /use anchor_spl::token::\{/);
     assert.match(programSource, /#\[program\]\s*pub mod mergeos/);
+    assert.doesNotMatch(programSource, /So11111111111111111111111111111111111111112/);
+    assert.match(programSource, /declare_id!\("TqfJCDMxPEuuaQreFrZkNTKCs81ByfwG9UYc1J1MAsm"\)/);
   });
 
   it("defines the MRG mint, escrow, payout, and migration instructions", () => {
@@ -35,6 +37,7 @@ describe("contract package", () => {
     }
     assert.match(programSource, /pub enum LegacyChain\s*\{[\s\S]*?Trc20,[\s\S]*?Evm,/);
     assert.match(programSource, /pub struct WalletMigration/);
+    assert.match(programSource, /seeds = \[b"wallet-migration", legacy_chain\.seed\(\), legacy_address_hash\.as_ref\(\)\]/);
   });
 
   it("keeps ledger reconciliation anchors on every public money event", () => {
