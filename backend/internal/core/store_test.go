@@ -926,7 +926,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 	if payload.ProtocolVersion != "mergeos.protocol.manifest.v1" || payload.Kind != "protocol_manifest" {
 		t.Fatalf("unexpected manifest header: %#v", payload)
 	}
-	if len(payload.Schemas) != 9 {
+	if len(payload.Schemas) != 10 {
 		t.Fatalf("manifest schemas = %d: %#v", len(payload.Schemas), payload.Schemas)
 	}
 	schemas := map[string]bool{}
@@ -935,7 +935,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 		schemas[schema.Version] = true
 		descriptions[schema.Version] = schema.Description
 	}
-	for _, required := range []string{"mergeos.task.v1", "mergeos.agent.v1", "mergeos.workflow.v1", "mergeos.event.v1", "mergeos.ledger.v1", "mergeos.scan.v1", "mergeos.customer-dashboard.v1", "mergeos.worker-dashboard.v1", "mergeos.admin-ops.v1"} {
+	for _, required := range []string{"mergeos.task.v1", "mergeos.agent.v1", "mergeos.marketplace.v1", "mergeos.workflow.v1", "mergeos.event.v1", "mergeos.ledger.v1", "mergeos.scan.v1", "mergeos.customer-dashboard.v1", "mergeos.worker-dashboard.v1", "mergeos.admin-ops.v1"} {
 		if !schemas[required] {
 			t.Fatalf("manifest missing schema %s: %#v", required, payload.Schemas)
 		}
@@ -948,6 +948,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 		endpoints[endpoint.Method+" "+endpoint.Path] = true
 	}
 	for _, required := range []string{
+		"GET /api/public/marketplace",
 		"GET /api/public/protocol/tasks",
 		"GET /api/public/protocol/agents",
 		"GET /api/public/protocol/ledger",
@@ -1041,6 +1042,9 @@ func TestPublicMarketplaceRouteReturnsSanitizedLiveData(t *testing.T) {
 	var payload MarketplaceResponse
 	if err := json.Unmarshal(resp.Body.Bytes(), &payload); err != nil {
 		t.Fatal(err)
+	}
+	if payload.ProtocolVersion != "mergeos.marketplace.v1" || payload.Kind != "marketplace" {
+		t.Fatalf("unexpected marketplace protocol header: %#v", payload)
 	}
 	if payload.Stats.ProjectCount != 1 || payload.Stats.OpenTaskCount == 0 || payload.Stats.TotalBudgetCents != 250000 {
 		t.Fatalf("unexpected stats: %#v", payload.Stats)

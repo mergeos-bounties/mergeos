@@ -18,6 +18,12 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Description: "AI agent lane with supported actions, capabilities, active bounty demand, and open task references.",
 			},
 			{
+				Version:     "mergeos.marketplace.v1",
+				Kind:        "marketplace",
+				SchemaURL:   "https://mergeos.shop/protocol/marketplace.v1.schema.json",
+				Description: "Public realtime marketplace with funded projects, open bounties, active contributors, AI agent demand, and funding stats.",
+			},
+			{
 				Version:     "mergeos.workflow.v1",
 				Kind:        "workflow",
 				SchemaURL:   "https://mergeos.shop/protocol/workflow.v1.schema.json",
@@ -73,6 +79,13 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Protocol:    "mergeos.task.v1",
 				Auth:        "none",
 				Description: "Public open bounty tasks as protocol documents.",
+			},
+			{
+				Method:      "GET",
+				Path:        "/api/public/marketplace",
+				Protocol:    "mergeos.marketplace.v1",
+				Auth:        "none",
+				Description: "Public realtime marketplace for funded projects, open bounties, contributors, and AI agent lanes.",
 			},
 			{
 				Method:      "GET",

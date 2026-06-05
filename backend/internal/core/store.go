@@ -1034,6 +1034,8 @@ func (s *Store) Marketplace() MarketplaceResponse {
 	defer s.mu.RUnlock()
 
 	response := MarketplaceResponse{
+		ProtocolVersion: "mergeos.marketplace.v1",
+		Kind:            "marketplace",
 		Stats: MarketplaceStats{
 			TokenSymbol:      s.cfg.TokenSymbol,
 			LedgerEntryCount: len(s.ledger),

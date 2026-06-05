@@ -5,6 +5,7 @@ const schemaFiles = {
   'mergeos.agent.v1': '../schemas/agent.v1.schema.json',
   'mergeos.customer-dashboard.v1': '../schemas/customer-dashboard.v1.schema.json',
   'mergeos.task.v1': '../schemas/task.v1.schema.json',
+  'mergeos.marketplace.v1': '../schemas/marketplace.v1.schema.json',
   'mergeos.workflow.v1': '../schemas/workflow.v1.schema.json',
   'mergeos.event.v1': '../schemas/event.v1.schema.json',
   'mergeos.ledger.v1': '../schemas/ledger.v1.schema.json',

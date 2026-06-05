@@ -620,11 +620,13 @@ type ImportedRepoIssue struct {
 }
 
 type MarketplaceResponse struct {
-	Stats        MarketplaceStats          `json:"stats"`
-	Projects     []*MarketplaceProject     `json:"projects"`
-	Bounties     []*MarketplaceBounty      `json:"bounties"`
-	Contributors []*MarketplaceContributor `json:"contributors"`
-	Agents       []*MarketplaceAgent       `json:"agents"`
+	ProtocolVersion string                    `json:"protocol_version"`
+	Kind            string                    `json:"kind"`
+	Stats           MarketplaceStats          `json:"stats"`
+	Projects        []*MarketplaceProject     `json:"projects"`
+	Bounties        []*MarketplaceBounty      `json:"bounties"`
+	Contributors    []*MarketplaceContributor `json:"contributors"`
+	Agents          []*MarketplaceAgent       `json:"agents"`
 }
 
 type MarketplaceStats struct {

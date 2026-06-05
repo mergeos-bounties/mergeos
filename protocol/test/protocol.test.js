@@ -9,12 +9,106 @@ test('loads stable task, workflow, ledger, and event schemas', () => {
     'mergeos.customer-dashboard.v1',
     'mergeos.event.v1',
     'mergeos.ledger.v1',
+    'mergeos.marketplace.v1',
     'mergeos.scan.v1',
     'mergeos.task.v1',
     'mergeos.worker-dashboard.v1',
     'mergeos.workflow.v1',
   ]);
   assert.equal(schemaForProtocol('mergeos.task.v1').title, 'MergeOS Task v1');
+});
+
+test('validates marketplace protocol documents', () => {
+  const now = '2026-06-05T00:00:00.000Z';
+  const marketplace = {
+    protocol_version: 'mergeos.marketplace.v1',
+    kind: 'marketplace',
+    stats: {
+      project_count: 1,
+      open_task_count: 2,
+      accepted_task_count: 1,
+      ledger_entry_count: 3,
+      total_budget_cents: 250000,
+      work_pool_cents: 225000,
+      token_symbol: 'MRG',
+      updated_at: now,
+    },
+    projects: [
+      {
+        id: 'prj_0001',
+        title: 'Customer portal rebuild',
+        brief: 'Rebuild the customer portal with a responsive interface and proof ledger.',
+        status: 'funded',
+        client_display_name: 'Marketplace Co',
+        bounty_repo_name: 'mergeos-bounties/mergeos',
+        repo_provider: 'github',
+        repo_url: 'https://github.com/mergeos-bounties/mergeos',
+        budget_cents: 250000,
+        work_pool_cents: 225000,
+        task_count: 3,
+        open_task_count: 2,
+        accepted_task_count: 1,
+        tags: ['github', 'marketplace'],
+        created_at: now,
+      },
+    ],
+    bounties: [
+      {
+        id: 'prj_0001:issue:12',
+        claim_id: 'claim_12',
+        project_id: 'prj_0001',
+        project_title: 'Customer portal rebuild',
+        issue_number: 12,
+        title: 'Fix checkout UI',
+        acceptance: 'Tests pass and deployment preview is linked.',
+        reward_cents: 5000,
+        estimated_hours: 4,
+        required_worker_kind: 'human',
+        suggested_agent_type: 'qa-agent',
+        bounty_type: 'future-small',
+        evidence_required: ['tests', 'deploy_preview'],
+        source_repository: 'https://github.com/mergeos-bounties/mergeos',
+        issue_url: 'https://github.com/mergeos-bounties/mergeos/issues/12',
+        created_at: now,
+      },
+    ],
+    contributors: [
+      {
+        worker_id: 'github:maya-dev',
+        name: 'maya-dev',
+        kind: 'human',
+        task_count: 1,
+        earned_cents: 5000,
+        last_paid_at: now,
+        reputation_score: 84,
+        reputation_level: 'Trusted',
+        risk_level: 'low',
+      },
+    ],
+    agents: [
+      {
+        type: 'qa-agent',
+        title: 'QA Agent',
+        worker_kind: 'agent',
+        task_count: 2,
+        open_task_count: 2,
+        budget_cents: 10000,
+      },
+    ],
+  };
+
+  assert.equal(validateProtocolDocument(marketplace).valid, true);
+
+  const invalid = validateProtocolDocument({
+    ...marketplace,
+    kind: 'market',
+    stats: { ...marketplace.stats, open_task_count: -1 },
+    agents: [{ ...marketplace.agents[0], worker_kind: 'bot' }],
+  });
+  assert.equal(invalid.valid, false);
+  assert(invalid.errors.some((error) => error.path === 'kind'));
+  assert(invalid.errors.some((error) => error.path === 'stats.open_task_count'));
+  assert(invalid.errors.some((error) => error.path === 'agents[0].worker_kind'));
 });
 
 test('validates admin operations protocol documents', () => {
