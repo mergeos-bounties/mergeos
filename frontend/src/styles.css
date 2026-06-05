@@ -14456,6 +14456,68 @@ svg {
   margin-top: 14px;
 }
 
+.admin-triage-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.admin-triage-strip button {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 34px auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #e6edf2;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #111827;
+  padding: 10px;
+  text-align: left;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.04);
+}
+
+.admin-triage-strip button:hover {
+  border-color: rgba(15, 159, 120, 0.28);
+  background: #f8fffb;
+}
+
+.admin-triage-strip .ledger-trust-icon {
+  width: 34px;
+  height: 34px;
+  grid-row: span 2;
+}
+
+.admin-triage-strip strong {
+  color: #111827;
+  font-size: 20px;
+  line-height: 1;
+  font-weight: 950;
+}
+
+.admin-triage-strip small,
+.admin-triage-strip em {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-triage-strip small {
+  color: #334155;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.admin-triage-strip em {
+  grid-column: 2 / -1;
+  color: #64748b;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 800;
+}
+
 .admin-governance-card {
   margin-top: 14px;
 }
@@ -14747,6 +14809,20 @@ svg {
 
 .admin-dispute-item-actions button {
   cursor: pointer;
+}
+
+.admin-dispute-item-actions button:not(.link-action),
+.admin-ops-row-actions button:not(.link-action) {
+  border-color: rgba(15, 159, 120, 0.24);
+  background: #ecfdf5;
+  color: var(--green-dark);
+}
+
+.admin-dispute-item-actions button.link-action,
+.admin-ops-row-actions button.link-action {
+  border-color: rgba(29, 78, 216, 0.2);
+  background: #eff6ff;
+  color: #1d4ed8;
 }
 
 .admin-dispute-item-actions button:disabled {
@@ -16970,6 +17046,7 @@ svg {
 
   .dash-metrics,
   .dash-overview-grid,
+  .admin-triage-strip,
   .worker-dashboard-grid,
   .dashboard-agent-grid,
   .dashboard-analytics-grid,
@@ -17215,6 +17292,7 @@ svg {
 
   .dash-metrics,
   .dash-overview-grid,
+  .admin-triage-strip,
   .worker-dashboard-grid,
   .worker-audit-layout,
   .admin-governance-grid,

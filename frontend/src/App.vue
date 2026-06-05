@@ -1839,6 +1839,23 @@
                 </article>
               </section>
 
+              <section class="admin-triage-strip" aria-label="Admin triage shortcuts">
+                <button
+                  v-for="item in adminTriageRows"
+                  :key="item.key"
+                  type="button"
+                  :class="item.tone"
+                  @click="applyAdminTriageFilter(item)"
+                >
+                  <span :class="['ledger-trust-icon', item.tone]">
+                    <component :is="item.icon" :size="15" />
+                  </span>
+                  <strong>{{ item.value }}</strong>
+                  <small>{{ item.label }}</small>
+                  <em>{{ item.action }}</em>
+                </button>
+              </section>
+
               <section class="dash-card admin-governance-card" aria-label="Admin governance runbook">
                 <div class="card-title-row">
                   <div>
@@ -1916,7 +1933,18 @@
                           <small>{{ item.project }} / {{ item.status }}</small>
                         </div>
                         <div class="admin-dispute-item-actions">
-                          <a v-if="item.url" :href="item.url" target="_blank" rel="noreferrer" aria-label="Open dispute evidence">
+                          <button
+                            v-for="action in item.queueActions"
+                            :key="action.key"
+                            type="button"
+                            :class="{ 'link-action': action.type === 'open_url' }"
+                            :disabled="adminOpsQueueActionBusy(item, action)"
+                            @click="handleAdminOpsQueueAction(item, action)"
+                          >
+                            <component :is="adminOpsQueueActionIcon(action)" :size="12" />
+                            {{ adminOpsQueueActionRunning(item, action) ? 'Running' : action.label }}
+                          </button>
+                          <a v-if="item.url && !item.queueActions.length" :href="item.url" target="_blank" rel="noreferrer" aria-label="Open dispute evidence">
                             <Link2 :size="12" />
                           </a>
                           <button
@@ -1959,7 +1987,18 @@
                     </div>
                     <b>{{ item.status }}</b>
                     <div class="admin-ops-row-actions">
-                      <a v-if="item.url" :href="item.url" target="_blank" rel="noreferrer">
+                      <button
+                        v-for="action in item.queueActions"
+                        :key="action.key"
+                        type="button"
+                        :class="{ 'link-action': action.type === 'open_url' }"
+                        :disabled="adminOpsQueueActionBusy(item, action)"
+                        @click="handleAdminOpsQueueAction(item, action)"
+                      >
+                        <component :is="adminOpsQueueActionIcon(action)" :size="12" />
+                        {{ adminOpsQueueActionRunning(item, action) ? 'Running' : action.label }}
+                      </button>
+                      <a v-if="item.url && !item.queueActions.length" :href="item.url" target="_blank" rel="noreferrer">
                         <Link2 :size="12" />
                         Open
                       </a>
@@ -20154,6 +20193,53 @@ const adminSummaryCards = computed(() => {
     },
   ];
 });
+const adminTriageRows = computed(() => {
+  const ops = adminConsole.value.ops?.stats || {};
+  const disputes = adminConsole.value.disputes?.stats || {};
+  const reputation = adminConsole.value.reputation?.stats || {};
+  const criticalCount = Number(disputes.critical_count) || Number(ops.critical_count) || adminOpsRows.value.filter((row) => row.severity === 'Critical').length;
+  const payoutCount = Number(ops.payout_review_count) || adminOpsRows.value.filter((row) => /payout/i.test(row.rawType || row.type)).length;
+  const proposalCount = Number(ops.proposal_count) || adminOpsRows.value.filter((row) => row.rawType === 'proposal_review').length;
+  const highRiskWorkers = Number(reputation.high_risk_count) || adminReputationRows.value.filter((row) => /high/i.test(row.risk)).length;
+  return [
+    {
+      key: 'critical-disputes',
+      label: 'Critical disputes',
+      value: String(criticalCount),
+      action: 'Filter critical',
+      searchTerm: 'critical',
+      tone: criticalCount ? 'amber' : 'green',
+      icon: ShieldCheck,
+    },
+    {
+      key: 'pending-payouts',
+      label: 'Pending payouts',
+      value: String(payoutCount),
+      action: 'Review payout lane',
+      searchTerm: 'payout',
+      tone: payoutCount ? 'blue' : 'green',
+      icon: CircleDollarSign,
+    },
+    {
+      key: 'proposal-decisions',
+      label: 'Proposal decisions',
+      value: String(proposalCount),
+      action: 'Open proposals',
+      searchTerm: 'proposal',
+      tone: proposalCount ? 'purple' : 'green',
+      icon: MessageCircle,
+    },
+    {
+      key: 'risk-workers',
+      label: 'Risk workers',
+      value: String(highRiskWorkers),
+      action: 'Inspect risk',
+      searchTerm: 'high risk',
+      tone: highRiskWorkers ? 'amber' : 'green',
+      icon: UsersRound,
+    },
+  ];
+});
 const adminGovernanceRows = computed(() => {
   const summary = adminConsole.value.summary || {};
   const ops = adminConsole.value.ops?.stats || {};
@@ -25019,6 +25105,12 @@ async function runProjectAutoRelease() {
   }
 }
 
+function applyAdminTriageFilter(item = {}) {
+  dashboardSection.value = 'admin';
+  dashboardSearch.value = item.searchTerm || '';
+  showToast(`${item.label || 'Admin triage'} filter applied.`);
+}
+
 async function executeAdminOpsAction(item = {}) {
   if (!item?.id || releasingTaskID.value) return;
   const packet = item.actionPacket || {};
@@ -25046,6 +25138,80 @@ async function executeAdminOpsAction(item = {}) {
     }
   } catch (error) {
     showToast(error.message || 'Could not execute admin action.');
+  } finally {
+    releasingTaskID.value = '';
+  }
+}
+
+function adminOpsQueueActionBusyID(item = {}, action = {}) {
+  return `admin-ops-action:${item.id || 'ops'}:${action.id || action.type || 'action'}`;
+}
+
+function adminOpsQueueActionBusy(item = {}, action = {}) {
+  return Boolean(releasingTaskID.value);
+}
+
+function adminOpsQueueActionRunning(item = {}, action = {}) {
+  return releasingTaskID.value === adminOpsQueueActionBusyID(item, action);
+}
+
+function adminOpsQueueActionIcon(action = {}) {
+  switch (action.type) {
+  case 'review_task_pulls':
+    return GitPullRequest;
+  case 'run_ssl_review':
+    return ShieldCheck;
+  case 'refresh_admin_ops':
+    return RefreshCw;
+  case 'open_url':
+    return ExternalLink;
+  default:
+    return Link2;
+  }
+}
+
+async function handleAdminOpsQueueAction(item = {}, action = {}) {
+  if (!item?.id || !action?.type || releasingTaskID.value) return;
+  const busyID = adminOpsQueueActionBusyID(item, action);
+  releasingTaskID.value = busyID;
+  try {
+    switch (action.type) {
+    case 'open_url': {
+      const target = action.url || item.url || item.rawReference;
+      if (!target) {
+        showToast('No public admin ops URL is attached.');
+        break;
+      }
+      openExternalURL(target);
+      showToast(`Opened ${action.label || 'admin ops reference'}.`);
+      break;
+    }
+    case 'refresh_admin_ops':
+      await loadAdminConsoleData({ silent: true });
+      showToast('Admin ops queue refreshed.');
+      break;
+    case 'review_task_pulls': {
+      dashboardSection.value = 'admin';
+      dashboardSearch.value = item.issueNumber ? String(item.issueNumber) : (item.taskID || item.reference || item.project || '');
+      showToast(`Filtered admin ops for ${item.task || item.reference || 'PR review'}.`);
+      break;
+    }
+    case 'run_ssl_review': {
+      const rows = await api('/api/admin/ssl/review', { method: 'POST' });
+      await loadAdminConsoleData({ silent: true });
+      showToast(`Reviewed ${Array.isArray(rows) ? rows.length : 0} SSL domain${Array.isArray(rows) && rows.length === 1 ? '' : 's'}.`);
+      break;
+    }
+    default:
+      if (action.url || item.url) {
+        openExternalURL(action.url || item.url);
+        showToast(`Opened ${action.label || 'admin ops reference'}.`);
+      } else {
+        showToast(`${action.label || 'Admin ops action'} requires manual review.`);
+      }
+    }
+  } catch (error) {
+    showToast(error.message || 'Could not run admin ops action.');
   } finally {
     releasingTaskID.value = '';
   }
@@ -25503,6 +25669,9 @@ function mapAdminOpsItem(item = {}) {
     body: trimMarketplaceText(item.body, 'Review this operational signal.'),
     project: item.project_title || (item.project_id ? shortLedgerReference(item.project_id) : 'MergeOS'),
     task: item.issue_number ? `#${item.issue_number}` : shortLedgerReference(item.task_id || ''),
+    taskID: item.task_id || '',
+    projectID: item.project_id || '',
+    issueNumber: Number(item.issue_number) || 0,
     reference: shortLedgerReference(item.reference || item.url || ''),
     rawReference: item.reference || item.url || '',
     url: item.url || '',
@@ -25518,9 +25687,48 @@ function mapAdminOpsItem(item = {}) {
     actionLabel,
     busyLabel: (actionPacket.resolution_payload || actionPacket.resolutionPayload) ? 'Recording' : 'Releasing',
     actionPacket,
+    queueActions: adminOpsQueueActions(item),
     nextAction: actionPacket.next_action || '',
     when: when.full,
   };
+}
+
+function adminOpsQueueActions(item = {}) {
+  const rows = Array.isArray(item.actions) ? item.actions : [];
+  const actions = rows
+    .map((action, index) => ({
+      key: `${item.id || 'ops'}:${action.id || action.type || index}`,
+      id: action.id || `${action.type || 'action'}-${index}`,
+      type: action.type || 'open_url',
+      label: action.label || adminOpsQueueActionLabel(action.type),
+      url: action.url || '',
+    }))
+    .filter((action) => action.type || action.url);
+  if (!actions.length && item.url) {
+    actions.push({
+      key: `${item.id || 'ops'}:open-url`,
+      id: 'open-url',
+      type: 'open_url',
+      label: 'Open',
+      url: item.url,
+    });
+  }
+  return actions;
+}
+
+function adminOpsQueueActionLabel(type = '') {
+  switch (type) {
+  case 'review_task_pulls':
+    return 'Review PRs';
+  case 'run_ssl_review':
+    return 'Run SSL Review';
+  case 'refresh_admin_ops':
+    return 'Refresh Queue';
+  case 'open_url':
+    return 'Open';
+  default:
+    return toTitleLabel(type || 'Action');
+  }
 }
 
 function adminOpsProposalID(itemID = '') {
