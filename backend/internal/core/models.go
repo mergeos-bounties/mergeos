@@ -802,12 +802,17 @@ type MarketplaceContributor struct {
 }
 
 type MarketplaceAgent struct {
-	Type          string     `json:"type"`
-	Title         string     `json:"title"`
-	WorkerKind    WorkerKind `json:"worker_kind"`
-	TaskCount     int        `json:"task_count"`
-	OpenTaskCount int        `json:"open_task_count"`
-	BudgetCents   int64      `json:"budget_cents"`
+	Type               string     `json:"type"`
+	Title              string     `json:"title"`
+	WorkerKind         WorkerKind `json:"worker_kind"`
+	Role               string     `json:"role,omitempty"`
+	ParentAgentType    string     `json:"parent_agent_type,omitempty"`
+	SubagentTypes      []string   `json:"subagent_types,omitempty"`
+	DelegationEndpoint string     `json:"delegation_endpoint,omitempty"`
+	Focus              []string   `json:"focus,omitempty"`
+	TaskCount          int        `json:"task_count"`
+	OpenTaskCount      int        `json:"open_task_count"`
+	BudgetCents        int64      `json:"budget_cents"`
 }
 
 type PublicLiveFeedResponse struct {
@@ -888,15 +893,20 @@ type AgentQueueStats struct {
 }
 
 type AgentQueueAgent struct {
-	Type             string     `json:"type"`
-	Title            string     `json:"title"`
-	WorkerKind       WorkerKind `json:"worker_kind"`
-	TaskCount        int        `json:"task_count"`
-	OpenTaskCount    int        `json:"open_task_count"`
-	BudgetCents      int64      `json:"budget_cents"`
-	Status           string     `json:"status"`
-	SupportedActions []string   `json:"supported_actions"`
-	QueueDepth       int        `json:"queue_depth"`
+	Type               string     `json:"type"`
+	Title              string     `json:"title"`
+	WorkerKind         WorkerKind `json:"worker_kind"`
+	Role               string     `json:"role,omitempty"`
+	ParentAgentType    string     `json:"parent_agent_type,omitempty"`
+	SubagentTypes      []string   `json:"subagent_types,omitempty"`
+	DelegationEndpoint string     `json:"delegation_endpoint,omitempty"`
+	Focus              []string   `json:"focus,omitempty"`
+	TaskCount          int        `json:"task_count"`
+	OpenTaskCount      int        `json:"open_task_count"`
+	BudgetCents        int64      `json:"budget_cents"`
+	Status             string     `json:"status"`
+	SupportedActions   []string   `json:"supported_actions"`
+	QueueDepth         int        `json:"queue_depth"`
 }
 
 type AgentQueueTask struct {
@@ -919,12 +929,16 @@ type AgentQueueTask struct {
 }
 
 type AgentWorkPacket struct {
-	ClaimEndpoint  string               `json:"claim_endpoint"`
-	ActionEndpoint string               `json:"action_endpoint"`
-	SubmitEndpoint string               `json:"submit_endpoint"`
-	ContextURLs    map[string]string    `json:"context_urls"`
-	Runbook        []AgentRunbookStep   `json:"runbook"`
-	ActionPayloads []AgentActionPayload `json:"action_payloads"`
+	ClaimEndpoint       string               `json:"claim_endpoint"`
+	ActionEndpoint      string               `json:"action_endpoint"`
+	SubmitEndpoint      string               `json:"submit_endpoint"`
+	SupervisorAgentType string               `json:"supervisor_agent_type,omitempty"`
+	SubagentType        string               `json:"subagent_type,omitempty"`
+	DesignReviewAgent   string               `json:"design_review_agent,omitempty"`
+	DelegationChain     []string             `json:"delegation_chain,omitempty"`
+	ContextURLs         map[string]string    `json:"context_urls"`
+	Runbook             []AgentRunbookStep   `json:"runbook"`
+	ActionPayloads      []AgentActionPayload `json:"action_payloads"`
 }
 
 type AgentRunbookStep struct {
@@ -994,21 +1008,26 @@ type TaskProtocolDocument struct {
 }
 
 type AgentProtocolDocument struct {
-	ProtocolVersion  string         `json:"protocol_version"`
-	Kind             string         `json:"kind"`
-	ID               string         `json:"id"`
-	Type             string         `json:"type"`
-	Title            string         `json:"title"`
-	WorkerKind       WorkerKind     `json:"worker_kind"`
-	SupportedActions []string       `json:"supported_actions"`
-	Capabilities     []string       `json:"capabilities"`
-	TaskCount        int            `json:"task_count"`
-	OpenTaskCount    int            `json:"open_task_count"`
-	BudgetMRG        float64        `json:"budget_mrg"`
-	Status           string         `json:"status"`
-	OpenTaskIDs      []string       `json:"open_task_ids,omitempty"`
-	Tags             []string       `json:"tags,omitempty"`
-	Metadata         map[string]any `json:"metadata,omitempty"`
+	ProtocolVersion    string         `json:"protocol_version"`
+	Kind               string         `json:"kind"`
+	ID                 string         `json:"id"`
+	Type               string         `json:"type"`
+	Title              string         `json:"title"`
+	WorkerKind         WorkerKind     `json:"worker_kind"`
+	Role               string         `json:"role,omitempty"`
+	ParentAgentType    string         `json:"parent_agent_type,omitempty"`
+	SubagentTypes      []string       `json:"subagent_types,omitempty"`
+	DelegationEndpoint string         `json:"delegation_endpoint,omitempty"`
+	Focus              []string       `json:"focus,omitempty"`
+	SupportedActions   []string       `json:"supported_actions"`
+	Capabilities       []string       `json:"capabilities"`
+	TaskCount          int            `json:"task_count"`
+	OpenTaskCount      int            `json:"open_task_count"`
+	BudgetMRG          float64        `json:"budget_mrg"`
+	Status             string         `json:"status"`
+	OpenTaskIDs        []string       `json:"open_task_ids,omitempty"`
+	Tags               []string       `json:"tags,omitempty"`
+	Metadata           map[string]any `json:"metadata,omitempty"`
 }
 
 type ContributorProtocolDocument struct {

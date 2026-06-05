@@ -1059,6 +1059,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 		"GET /api/workers/me",
 		"POST /api/projects/evaluate-price",
 		"POST /api/tasks/{id}/accept",
+		"POST /api/tasks/{id}/claim",
 		"POST /api/wallets/migrations",
 		"GET /api/admin/ops-queue",
 	} {
@@ -1268,16 +1269,32 @@ func TestPublicMarketplaceRouteReturnsSanitizedLiveData(t *testing.T) {
 	if agentProtocol.Stats.OpenTaskCount != payload.Stats.OpenTaskCount || len(agentProtocol.Agents) != len(payload.Agents) {
 		t.Fatalf("unexpected agent protocol feed: %#v", agentProtocol)
 	}
+	foundCEOAgent := false
+	foundDesignSubagent := false
 	for _, document := range agentProtocol.Agents {
 		if document.ProtocolVersion != "mergeos.agent.v1" || document.Kind != "agent" || document.ID == "" {
 			t.Fatalf("invalid agent protocol header: %#v", document)
 		}
-		if len(document.SupportedActions) == 0 || len(document.Capabilities) == 0 || document.TaskCount == 0 || len(document.OpenTaskIDs) == 0 {
+		if len(document.SupportedActions) == 0 || len(document.Capabilities) == 0 {
 			t.Fatalf("agent protocol missing routing metadata: %#v", document)
+		}
+		if document.OpenTaskCount > 0 && len(document.OpenTaskIDs) == 0 && document.Type != ceoAgentType {
+			t.Fatalf("task-bearing agent protocol missing open task ids: %#v", document)
 		}
 		if document.Metadata["event_protocol"] != "mergeos.event.v1" || document.Metadata["event_stream_endpoint"] != "WS /api/ws" || int(document.Metadata["queue_depth"].(float64)) != len(document.OpenTaskIDs) {
 			t.Fatalf("agent protocol missing event routing metadata: %#v", document.Metadata)
 		}
+		if document.Type == ceoAgentType {
+			depth, _ := document.Metadata["queue_depth"].(float64)
+			foundCEOAgent = document.Role == "ceo_planner" && containsString(document.SubagentTypes, designReviewAgentType) && len(document.OpenTaskIDs) > 0 && int(depth) > 0
+		}
+		if document.Type == designReviewAgentType {
+			depth, _ := document.Metadata["queue_depth"].(float64)
+			foundDesignSubagent = document.Role == "subagent" && document.ParentAgentType == ceoAgentType && containsString(document.Focus, "visual_quality") && len(document.OpenTaskIDs) > 0 && int(depth) > 0
+		}
+	}
+	if !foundCEOAgent || !foundDesignSubagent {
+		t.Fatalf("agent protocol missing CEO planner or design-review subagent: %#v", agentProtocol.Agents)
 	}
 	queueReq := httptest.NewRequest(http.MethodGet, "/api/public/protocol/agent-queue?limit=20", nil)
 	queueResp := httptest.NewRecorder()
@@ -1307,13 +1324,19 @@ func TestPublicMarketplaceRouteReturnsSanitizedLiveData(t *testing.T) {
 		t.Fatalf("agent queue missing ready work: %#v", queueProtocol)
 	}
 	firstPacket := queueProtocol.Tasks[0].WorkPacket
-	for _, required := range []string{"task_protocol", "agent_queue", "workflow_protocol", "workflow_pulse", "pr_monitor"} {
+	for _, required := range []string{"task_protocol", "agent_queue", "workflow_protocol", "workflow_pulse", "pr_monitor", "ceo_agent", "design_review"} {
 		if strings.TrimSpace(firstPacket.ContextURLs[required]) == "" {
 			t.Fatalf("agent work packet missing context URL %s: %#v", required, firstPacket)
 		}
 	}
+	if firstPacket.SupervisorAgentType != ceoAgentType || firstPacket.DesignReviewAgent != designReviewAgentType || len(firstPacket.DelegationChain) < 2 || firstPacket.DelegationChain[0] != ceoAgentType || firstPacket.DelegationChain[1] != designReviewAgentType {
+		t.Fatalf("agent work packet missing CEO/design delegation chain: %#v", firstPacket)
+	}
 	if !strings.HasPrefix(firstPacket.ContextURLs["task_protocol"], "/api/public/protocol/tasks?task_id=") {
 		t.Fatalf("agent work packet task protocol is not task scoped: %#v", firstPacket.ContextURLs)
+	}
+	if !strings.HasSuffix(firstPacket.ClaimEndpoint, "/claim") {
+		t.Fatalf("agent work packet claim endpoint should use claim alias: %#v", firstPacket)
 	}
 	if firstPacket.ClaimEndpoint == "" || firstPacket.ActionEndpoint == "" || len(firstPacket.Runbook) < 4 || len(firstPacket.ActionPayloads) == 0 {
 		t.Fatalf("agent work packet missing executable details: %#v", firstPacket)
@@ -4135,31 +4158,53 @@ func TestWorkerCanSelfClaimProposalRoute(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	var humanTask *Task
+	humanTasks := []*Task{}
 	for _, task := range project.Tasks {
 		if task.RequiredWorkerKind == WorkerHuman {
-			humanTask = task
-			break
+			humanTasks = append(humanTasks, task)
 		}
 	}
-	if humanTask == nil {
-		t.Fatal("project did not create a human task")
+	if len(humanTasks) < 2 {
+		t.Fatalf("project did not create enough human tasks: %#v", project.Tasks)
 	}
+	humanTask := humanTasks[0]
+	acceptRouteTask := humanTasks[1]
 
 	dashboard := store.WorkerDashboard(workerAuth.User.ID)
 	claimID := ""
+	acceptRouteClaimID := ""
 	for _, proposal := range dashboard.Proposals {
 		if proposal.ProjectID == project.ID && proposal.IssueNumber == humanTask.IssueNumber {
 			claimID = proposal.ClaimID
-			break
+		}
+		if proposal.ProjectID == project.ID && proposal.IssueNumber == acceptRouteTask.IssueNumber {
+			acceptRouteClaimID = proposal.ClaimID
 		}
 	}
 	if claimID == "" || claimID == humanTask.ID {
 		t.Fatalf("worker dashboard proposal missing public claim id for task %q: %#v", humanTask.ID, dashboard.Proposals)
 	}
+	if acceptRouteClaimID == "" || acceptRouteClaimID == acceptRouteTask.ID {
+		t.Fatalf("worker dashboard proposal missing accept-route claim id for task %q: %#v", acceptRouteTask.ID, dashboard.Proposals)
+	}
 
 	server := NewServer(cfg, store, payments)
-	reqHTTP := httptest.NewRequest(http.MethodPost, "/api/tasks/"+claimID+"/accept", strings.NewReader(`{"worker_kind":"agent","worker_id":"github:spoofed","agent_type":"bad"}`))
+	acceptReq := httptest.NewRequest(http.MethodPost, "/api/tasks/"+acceptRouteClaimID+"/accept", strings.NewReader(`{"worker_kind":"agent","worker_id":"github:spoofed","agent_type":"bad"}`))
+	acceptReq.Header.Set("Authorization", "Bearer "+workerAuth.Token)
+	acceptResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(acceptResp, acceptReq)
+	if acceptResp.Code != http.StatusOK {
+		t.Fatalf("accept route self claim status = %d, body = %s", acceptResp.Code, acceptResp.Body.String())
+	}
+	var acceptedViaAccept TaskClaimResponse
+	if err := json.Unmarshal(acceptResp.Body.Bytes(), &acceptedViaAccept); err != nil {
+		t.Fatal(err)
+	}
+	if acceptedViaAccept.ClaimID != acceptRouteClaimID || acceptedViaAccept.TaskID != acceptRouteTask.ID || acceptedViaAccept.WorkerID != "github:self-claimer" {
+		t.Fatalf("accept route did not self claim with public claim id: %#v", acceptedViaAccept)
+	}
+
+	reqHTTP := httptest.NewRequest(http.MethodPost, "/api/tasks/"+claimID+"/claim", strings.NewReader(`{"worker_kind":"agent","worker_id":"github:spoofed","agent_type":"bad"}`))
 	reqHTTP.Header.Set("Authorization", "Bearer "+workerAuth.Token)
 	resp := httptest.NewRecorder()
 	server.Routes().ServeHTTP(resp, reqHTTP)

@@ -352,6 +352,10 @@ export class MergeOSClient {
     return this.request(`/api/tasks/${encodeURIComponent(taskID)}/accept`, { method: 'POST', body: payload });
   }
 
+  claimTask(taskID, payload) {
+    return this.request(`/api/tasks/${encodeURIComponent(taskID)}/claim`, { method: 'POST', body: payload });
+  }
+
   workerDashboard() {
     return this.request('/api/workers/me');
   }

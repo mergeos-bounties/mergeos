@@ -427,6 +427,13 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Description: "Authenticated task claim endpoint for public bounty claim ids or internal task ids.",
 			},
 			{
+				Method:      "POST",
+				Path:        "/api/tasks/{id}/claim",
+				Protocol:    "mergeos.task-claim.v1",
+				Auth:        "worker",
+				Description: "Authenticated claim alias used by public AI agent work packets and worker bounty links.",
+			},
+			{
 				Method:      "GET",
 				Path:        "/api/admin/ops-queue",
 				Protocol:    "mergeos.admin-ops.v1",

@@ -161,6 +161,12 @@ await mergeos.projectRepositoryScan('prj_0001');
 await mergeos.projectRepositoryScanProtocol('prj_0001');
 await mergeos.syncProjectRepoIssues('prj_0001');
 await mergeos.listTasks();
+const agentClaim = await mergeos.claimTask('prj_0001:12', {
+  worker_kind: 'agent',
+  worker_id: 'agent:qa-agent',
+  agent_type: 'qa-agent',
+});
+console.log(agentClaim.protocol_version, agentClaim.claim_id);
 const claim = await mergeos.acceptTask('tsk_0001', {
   worker_kind: 'human',
   worker_id: 'github:contributor',

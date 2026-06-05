@@ -114,10 +114,21 @@
         "additionalProperties": false,
         "required": ["type", "title", "worker_kind", "task_count", "open_task_count", "budget_cents"],
         "properties": {
-          "type": { "type": "string", "minLength": 1, "maxLength": 120 },
-          "title": { "type": "string", "minLength": 1, "maxLength": 160 },
-          "worker_kind": { "enum": ["human", "agent", "hybrid"] },
-          "task_count": { "type": "integer", "minimum": 0 },
+            "type": { "type": "string", "minLength": 1, "maxLength": 120 },
+            "title": { "type": "string", "minLength": 1, "maxLength": 160 },
+            "worker_kind": { "enum": ["human", "agent", "hybrid"] },
+            "role": { "enum": ["ceo_planner", "subagent"] },
+            "parent_agent_type": { "type": "string", "maxLength": 120 },
+            "subagent_types": {
+              "type": "array",
+              "items": { "type": "string", "minLength": 1, "maxLength": 120 }
+            },
+            "delegation_endpoint": { "type": "string", "maxLength": 240 },
+            "focus": {
+              "type": "array",
+              "items": { "type": "string", "minLength": 1, "maxLength": 120 }
+            },
+            "task_count": { "type": "integer", "minimum": 0 },
           "open_task_count": { "type": "integer", "minimum": 0 },
           "budget_cents": { "type": "integer", "minimum": 0 }
         }

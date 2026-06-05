@@ -1524,8 +1524,14 @@ func (s *Server) acceptTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	path := strings.TrimPrefix(r.URL.Path, "/api/tasks/")
-	taskID := strings.TrimSuffix(path, "/accept")
-	if taskID == "" || taskID == path {
+	taskID := ""
+	for _, suffix := range []string{"/accept", "/claim"} {
+		if strings.HasSuffix(path, suffix) {
+			taskID = strings.TrimSuffix(path, suffix)
+			break
+		}
+	}
+	if taskID == "" {
 		writeError(w, http.StatusNotFound, "route not found")
 		return
 	}

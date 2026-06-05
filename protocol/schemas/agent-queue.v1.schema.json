@@ -31,6 +31,17 @@
           "type": { "type": "string", "minLength": 1, "maxLength": 120 },
           "title": { "type": "string", "minLength": 1, "maxLength": 160 },
           "worker_kind": { "enum": ["human", "agent", "hybrid"] },
+          "role": { "enum": ["ceo_planner", "subagent"] },
+          "parent_agent_type": { "type": "string", "maxLength": 120 },
+          "subagent_types": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1, "maxLength": 120 }
+          },
+          "delegation_endpoint": { "type": "string", "maxLength": 240 },
+          "focus": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1, "maxLength": 120 }
+          },
           "task_count": { "type": "integer", "minimum": 0 },
           "open_task_count": { "type": "integer", "minimum": 0 },
           "budget_cents": { "type": "integer", "minimum": 0 },
@@ -99,6 +110,13 @@
         "claim_endpoint": { "type": "string", "minLength": 1, "maxLength": 240 },
         "action_endpoint": { "type": "string", "minLength": 1, "maxLength": 240 },
         "submit_endpoint": { "type": "string", "minLength": 1, "maxLength": 240 },
+        "supervisor_agent_type": { "type": "string", "maxLength": 120 },
+        "subagent_type": { "type": "string", "maxLength": 120 },
+        "design_review_agent": { "type": "string", "maxLength": 120 },
+        "delegation_chain": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1, "maxLength": 120 }
+        },
         "context_urls": {
           "type": "object",
           "additionalProperties": true

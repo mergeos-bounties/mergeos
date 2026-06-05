@@ -119,6 +119,10 @@ test('validates marketplace protocol documents', () => {
         type: 'qa-agent',
         title: 'QA Agent',
         worker_kind: 'agent',
+        role: 'subagent',
+        parent_agent_type: 'ceo-strategy-agent',
+        delegation_endpoint: '/api/public/protocol/agent-queue',
+        focus: ['test_plan', 'smoke_testing'],
         task_count: 2,
         open_task_count: 2,
         budget_cents: 10000,
@@ -477,7 +481,7 @@ test('validates public agent queue protocol documents', () => {
     kind: 'agent_queue',
     stats: {
       total_count: 1,
-      agent_count: 1,
+      agent_count: 3,
       ready_count: 1,
       reward_cents: 12000,
       token_symbol: 'MRG',
@@ -485,9 +489,43 @@ test('validates public agent queue protocol documents', () => {
     },
     agents: [
       {
+        type: 'ceo-strategy-agent',
+        title: 'CEO Strategy Agent',
+        worker_kind: 'agent',
+        role: 'ceo_planner',
+        subagent_types: ['design-review-agent', 'qa-agent'],
+        delegation_endpoint: '/api/public/protocol/agent-queue',
+        focus: ['idea_generation', 'task_decomposition', 'subagent_delegation'],
+        task_count: 4,
+        open_task_count: 1,
+        budget_cents: 12000,
+        status: 'active',
+        supported_actions: ['review', 'generate'],
+        queue_depth: 0,
+      },
+      {
+        type: 'design-review-agent',
+        title: 'Design Review Agent',
+        worker_kind: 'agent',
+        role: 'subagent',
+        parent_agent_type: 'ceo-strategy-agent',
+        delegation_endpoint: '/api/public/protocol/agent-queue',
+        focus: ['ux_review', 'responsive_design', 'visual_quality'],
+        task_count: 0,
+        open_task_count: 0,
+        budget_cents: 0,
+        status: 'standby',
+        supported_actions: ['review', 'generate'],
+        queue_depth: 0,
+      },
+      {
         type: 'qa-agent',
         title: 'QA Agent',
         worker_kind: 'agent',
+        role: 'subagent',
+        parent_agent_type: 'ceo-strategy-agent',
+        delegation_endpoint: '/api/public/protocol/agent-queue',
+        focus: ['test_plan', 'smoke_testing'],
         task_count: 4,
         open_task_count: 1,
         budget_cents: 12000,
@@ -517,12 +555,18 @@ test('validates public agent queue protocol documents', () => {
           claim_endpoint: '/api/tasks/prj_0001:12/claim',
           action_endpoint: '/api/projects/prj_0001/agent-actions',
           submit_endpoint: '/api/projects/prj_0001/agent-actions',
+          supervisor_agent_type: 'ceo-strategy-agent',
+          subagent_type: 'qa-agent',
+          design_review_agent: 'design-review-agent',
+          delegation_chain: ['ceo-strategy-agent', 'design-review-agent', 'qa-agent'],
           context_urls: {
             task_protocol: '/api/public/protocol/tasks?task_id=prj_0001:12',
             agent_queue: '/api/public/protocol/agent-queue',
             workflow_protocol: '/api/public/projects/prj_0001/workflow',
             workflow_pulse: '/api/public/projects/prj_0001/ai-workflow',
             pr_monitor: '/api/public/projects/prj_0001/pull-requests',
+            ceo_agent: '/api/public/protocol/agents',
+            design_review: '/api/public/protocol/agent-queue#design-review-agent',
           },
           runbook: [
             {
@@ -557,12 +601,13 @@ test('validates public agent queue protocol documents', () => {
     ...queue,
     kind: 'queue',
     stats: { ...queue.stats, ready_count: -1 },
-    agents: [{ ...queue.agents[0], supported_actions: ['lint'] }],
+    agents: [{ ...queue.agents[0], role: 'boss', supported_actions: ['lint'] }],
     tasks: [{ ...queue.tasks[0], readiness: 'cold' }],
   });
   assert.equal(invalid.valid, false);
   assert(invalid.errors.some((error) => error.path === 'kind'));
   assert(invalid.errors.some((error) => error.path === 'stats.ready_count'));
+  assert(invalid.errors.some((error) => error.path === 'agents[0].role'));
   assert(invalid.errors.some((error) => error.path === 'agents[0].supported_actions[0]'));
   assert(invalid.errors.some((error) => error.path === 'tasks[0].readiness'));
 });
@@ -1604,6 +1649,10 @@ test('validates an agent protocol document', () => {
     type: 'qa-agent',
     title: 'QA Agent',
     worker_kind: 'agent',
+    role: 'subagent',
+    parent_agent_type: 'ceo-strategy-agent',
+    delegation_endpoint: '/api/public/protocol/agent-queue',
+    focus: ['test_plan', 'smoke_testing'],
     supported_actions: ['review', 'test'],
     capabilities: ['qa_validation', 'evidence_reporting'],
     task_count: 3,
@@ -1623,6 +1672,7 @@ test('validates an agent protocol document', () => {
     type: '',
     title: 'QA Agent',
     worker_kind: 'bot',
+    role: 'manager',
     supported_actions: ['unknown'],
     capabilities: [],
     task_count: -1,
@@ -1632,6 +1682,7 @@ test('validates an agent protocol document', () => {
   });
   assert.equal(invalid.valid, false);
   assert(invalid.errors.some((error) => error.path === 'worker_kind'));
+  assert(invalid.errors.some((error) => error.path === 'role'));
   assert(invalid.errors.some((error) => error.path === 'supported_actions[0]'));
 });
 

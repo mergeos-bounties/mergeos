@@ -1349,9 +1349,12 @@ func (s *Store) Marketplace() MarketplaceResponse {
 			agent := agents[task.SuggestedAgentType]
 			if agent == nil {
 				agent = &MarketplaceAgent{
-					Type:       task.SuggestedAgentType,
-					Title:      marketplaceTitle(task.SuggestedAgentType),
-					WorkerKind: task.RequiredWorkerKind,
+					Type:               task.SuggestedAgentType,
+					Title:              marketplaceTitle(task.SuggestedAgentType),
+					WorkerKind:         task.RequiredWorkerKind,
+					Role:               "subagent",
+					ParentAgentType:    ceoAgentType,
+					DelegationEndpoint: agentQueueEndpoint,
 				}
 				agents[task.SuggestedAgentType] = agent
 			}
@@ -1384,6 +1387,9 @@ func (s *Store) Marketplace() MarketplaceResponse {
 		if task.AcceptedAt != nil && task.AcceptedAt.After(contributor.LastPaidAt) {
 			contributor.LastPaidAt = *task.AcceptedAt
 		}
+	}
+	if len(agents) > 0 {
+		ensureAgentHierarchy(agents)
 	}
 
 	for _, contributor := range contributors {
@@ -1425,6 +1431,92 @@ func (s *Store) Marketplace() MarketplaceResponse {
 	})
 
 	return response
+}
+
+func ensureAgentHierarchy(agents map[string]*MarketplaceAgent) {
+	subagents := []string{}
+	totalTaskCount := 0
+	totalOpenTaskCount := 0
+	totalBudgetCents := int64(0)
+	for agentType, agent := range agents {
+		if agent == nil || agentType == ceoAgentType {
+			continue
+		}
+		agent.Role = protocolText(agent.Role, 80, "subagent")
+		agent.ParentAgentType = protocolText(agent.ParentAgentType, 120, ceoAgentType)
+		agent.DelegationEndpoint = protocolText(agent.DelegationEndpoint, 240, agentQueueEndpoint)
+		if len(agent.Focus) == 0 {
+			agent.Focus = defaultAgentFocus(agent.Type)
+		}
+		subagents = append(subagents, agent.Type)
+		totalTaskCount += agent.TaskCount
+		totalOpenTaskCount += agent.OpenTaskCount
+		totalBudgetCents += agent.BudgetCents
+	}
+
+	designAgent := agents[designReviewAgentType]
+	if designAgent == nil {
+		designAgent = &MarketplaceAgent{
+			Type:               designReviewAgentType,
+			Title:              "Design Review Agent",
+			WorkerKind:         WorkerAgent,
+			Role:               "subagent",
+			ParentAgentType:    ceoAgentType,
+			DelegationEndpoint: agentQueueEndpoint,
+			Focus:              defaultAgentFocus(designReviewAgentType),
+		}
+		agents[designReviewAgentType] = designAgent
+		subagents = append(subagents, designReviewAgentType)
+	} else if !stringSliceContains(subagents, designReviewAgentType) {
+		subagents = append(subagents, designReviewAgentType)
+	}
+
+	agents[ceoAgentType] = &MarketplaceAgent{
+		Type:               ceoAgentType,
+		Title:              "CEO Strategy Agent",
+		WorkerKind:         WorkerAgent,
+		Role:               "ceo_planner",
+		SubagentTypes:      stableStrings(subagents),
+		DelegationEndpoint: agentQueueEndpoint,
+		Focus: []string{
+			"idea_generation",
+			"task_decomposition",
+			"subagent_delegation",
+			"quality_gate",
+		},
+		TaskCount:     totalTaskCount,
+		OpenTaskCount: totalOpenTaskCount,
+		BudgetCents:   totalBudgetCents,
+	}
+}
+
+func defaultAgentFocus(agentType string) []string {
+	normalized := strings.ToLower(strings.TrimSpace(agentType))
+	if normalized == designReviewAgentType || containsAny(normalized, []string{"design", "ui", "ux"}) {
+		return []string{"ux_review", "responsive_design", "visual_quality"}
+	}
+	if containsAny(normalized, []string{"frontend", "code", "build"}) {
+		return []string{"implementation", "component_quality", "handoff_evidence"}
+	}
+	if containsAny(normalized, []string{"qa", "test"}) {
+		return []string{"test_plan", "smoke_testing", "regression_evidence"}
+	}
+	if containsAny(normalized, []string{"deploy", "release", "devops"}) {
+		return []string{"release_gate", "deployment_health", "rollback_readiness"}
+	}
+	if containsAny(normalized, []string{"scan", "security", "dependency"}) {
+		return []string{"repository_scan", "risk_detection", "security_review"}
+	}
+	return []string{"task_execution", "evidence_reporting"}
+}
+
+func stringSliceContains(values []string, expected string) bool {
+	for _, value := range values {
+		if value == expected {
+			return true
+		}
+	}
+	return false
 }
 
 func (s *Store) WorkerDashboard(userID string) WorkerDashboardResponse {

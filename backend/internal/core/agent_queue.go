@@ -6,6 +6,12 @@ import (
 	"strings"
 )
 
+const (
+	ceoAgentType          = "ceo-strategy-agent"
+	designReviewAgentType = "design-review-agent"
+	agentQueueEndpoint    = "/api/public/protocol/agent-queue"
+)
+
 func (s *Store) PublicAgentQueue(limit int) AgentQueueResponse {
 	marketplace := s.Marketplace()
 	limit = normalizePublicLiveFeedLimit(limit)
@@ -18,6 +24,8 @@ func (s *Store) PublicAgentQueue(limit int) AgentQueueResponse {
 		}
 		row := agentQueueTaskRow(bounty)
 		tasks = append(tasks, row)
+		queueDepth[ceoAgentType]++
+		queueDepth[designReviewAgentType]++
 		if row.AgentType != "" {
 			queueDepth[row.AgentType]++
 		}
@@ -35,15 +43,20 @@ func (s *Store) PublicAgentQueue(limit int) AgentQueueResponse {
 			status = "active"
 		}
 		agents = append(agents, AgentQueueAgent{
-			Type:             agentType,
-			Title:            agent.Title,
-			WorkerKind:       agent.WorkerKind,
-			TaskCount:        agent.TaskCount,
-			OpenTaskCount:    agent.OpenTaskCount,
-			BudgetCents:      agent.BudgetCents,
-			Status:           status,
-			SupportedActions: document.SupportedActions,
-			QueueDepth:       queueDepth[agentType],
+			Type:               agentType,
+			Title:              agent.Title,
+			WorkerKind:         agent.WorkerKind,
+			Role:               agent.Role,
+			ParentAgentType:    agent.ParentAgentType,
+			SubagentTypes:      append([]string(nil), agent.SubagentTypes...),
+			DelegationEndpoint: agent.DelegationEndpoint,
+			Focus:              append([]string(nil), agent.Focus...),
+			TaskCount:          agent.TaskCount,
+			OpenTaskCount:      agent.OpenTaskCount,
+			BudgetCents:        agent.BudgetCents,
+			Status:             status,
+			SupportedActions:   document.SupportedActions,
+			QueueDepth:         queueDepth[agentType],
 		})
 	}
 	sort.Slice(agents, func(i, j int) bool {
@@ -93,10 +106,12 @@ func agentQueueTaskRow(bounty *MarketplaceBounty) AgentQueueTask {
 	protocolURL := "/api/public/protocol/tasks?task_id=" + bountyID
 	contextURLs := map[string]string{
 		"task_protocol":     protocolURL,
-		"agent_queue":       "/api/public/protocol/agent-queue",
+		"agent_queue":       agentQueueEndpoint,
 		"workflow_protocol": "/api/public/projects/" + bounty.ProjectID + "/workflow",
 		"workflow_pulse":    "/api/public/projects/" + bounty.ProjectID + "/ai-workflow",
 		"pr_monitor":        "/api/public/projects/" + bounty.ProjectID + "/pull-requests",
+		"ceo_agent":         "/api/public/protocol/agents",
+		"design_review":     agentQueueEndpoint + "#design-review-agent",
 	}
 	if bounty.IssueURL != "" {
 		contextURLs["issue"] = bounty.IssueURL
@@ -105,15 +120,21 @@ func agentQueueTaskRow(bounty *MarketplaceBounty) AgentQueueTask {
 		contextURLs["repository"] = bounty.SourceRepository
 	}
 	workPacket := AgentWorkPacket{
-		ClaimEndpoint:  claimEndpoint,
-		ActionEndpoint: actionEndpoint,
-		SubmitEndpoint: actionEndpoint,
-		ContextURLs:    contextURLs,
+		ClaimEndpoint:       claimEndpoint,
+		ActionEndpoint:      actionEndpoint,
+		SubmitEndpoint:      actionEndpoint,
+		SupervisorAgentType: ceoAgentType,
+		SubagentType:        agentType,
+		DesignReviewAgent:   designReviewAgentType,
+		DelegationChain:     agentDelegationChain(agentType),
+		ContextURLs:         contextURLs,
 		Runbook: []AgentRunbookStep{
 			{Step: 1, Action: "fetch_context", Label: "Fetch task protocol", Method: "GET", Endpoint: protocolURL},
-			{Step: 2, Action: "claim_task", Label: "Claim bounty lane", Method: "POST", Endpoint: claimEndpoint},
-			{Step: 3, Action: "run_checks", Label: "Run review, test, or generation checks", Method: "POST", Endpoint: actionEndpoint},
-			{Step: 4, Action: "attach_evidence", Label: "Attach evidence to live agent log", Method: "POST", Endpoint: actionEndpoint},
+			{Step: 2, Action: "plan_scope", Label: "CEO agent decomposes work and delegates subagents", Method: "GET", Endpoint: agentQueueEndpoint},
+			{Step: 3, Action: "design_review", Label: "Design Review Agent checks UX, responsive layout, and visual quality", Method: "POST", Endpoint: actionEndpoint},
+			{Step: 4, Action: "claim_task", Label: "Claim bounty lane", Method: "POST", Endpoint: claimEndpoint},
+			{Step: 5, Action: "run_checks", Label: "Run review, test, generation, or deployment checks", Method: "POST", Endpoint: actionEndpoint},
+			{Step: 6, Action: "attach_evidence", Label: "Attach evidence to live agent log", Method: "POST", Endpoint: actionEndpoint},
 		},
 		ActionPayloads: agentQueueActionPayloads(bounty, actionEndpoint, contextURLs),
 	}
@@ -137,6 +158,15 @@ func agentQueueTaskRow(bounty *MarketplaceBounty) AgentQueueTask {
 	}
 }
 
+func agentDelegationChain(agentType string) []string {
+	chain := []string{ceoAgentType, designReviewAgentType}
+	agentType = strings.TrimSpace(agentType)
+	if agentType != "" && agentType != ceoAgentType && agentType != designReviewAgentType {
+		chain = append(chain, agentType)
+	}
+	return chain
+}
+
 func agentQueueActionPayloads(bounty *MarketplaceBounty, endpoint string, contextURLs map[string]string) []AgentActionPayload {
 	actions := agentQueueActions(bounty)
 	rows := make([]AgentActionPayload, 0, len(actions))
@@ -151,16 +181,21 @@ func agentQueueActionPayloads(bounty *MarketplaceBounty, endpoint string, contex
 				"status":        "queued",
 				"project_id":    bounty.ProjectID,
 				"bounty_id":     bounty.ClaimID,
-				"agent_type":    bounty.SuggestedAgentType,
+				"agent_type":    protocolText(bounty.SuggestedAgentType, 120, "general-ai-agent"),
+				"delegated_by":  ceoAgentType,
+				"design_agent":  designReviewAgentType,
 				"reference_url": bounty.IssueURL,
 				"context_urls": []string{
 					contextURLs["task_protocol"],
 					contextURLs["workflow_protocol"],
 					contextURLs["workflow_pulse"],
+					contextURLs["design_review"],
 				},
 				"evidence": publicTaskEvidenceRequired(bounty),
 				"runbook": []string{
 					"Fetch task protocol",
+					"Let CEO Strategy Agent split scope and select subagents",
+					"Run Design Review Agent for UX, responsive, and visual quality checks",
 					"Claim or reserve the bounty lane",
 					"Run scoped checks",
 					"Record evidence",
