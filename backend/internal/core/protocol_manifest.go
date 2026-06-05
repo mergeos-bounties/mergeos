@@ -242,6 +242,13 @@ func ProtocolManifest() ProtocolManifestResponse {
 			},
 			{
 				Method:      "GET",
+				Path:        "/api/public/agents/queue",
+				Protocol:    "mergeos.agent-queue.v1",
+				Auth:        "none",
+				Description: "Compatibility alias for public AI agent queue clients; prefer /api/public/protocol/agent-queue for new integrations.",
+			},
+			{
+				Method:      "GET",
 				Path:        "/protocol/runbooks/mergeide-agent.v1.json",
 				Protocol:    "mergeos.agent-runbook.v1",
 				Auth:        "none",

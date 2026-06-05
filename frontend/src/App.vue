@@ -12947,14 +12947,14 @@ const publicSdkKitTranslations = {
 const publicSdkKitCopy = computed(() => publicSdkKitTranslations[activeLocale.value] || publicSdkKitTranslations['en-US']);
 
 const publicSdkEndpointFallbackRows = [
-  { id: 'protocol_index', method: 'GET', path: '/api/public/protocol/index', category: 'discovery', title: 'Protocol index', description: 'Discover schemas, public endpoints, realtime metadata, and agent context URLs.' },
+  { id: 'protocol_index', method: 'GET', path: '/api/public/protocol', category: 'discovery', title: 'Protocol index', description: 'Discover schemas, public endpoints, realtime metadata, and agent context URLs.' },
   { id: 'marketplace', method: 'GET', path: '/api/public/marketplace', category: 'marketplace', title: 'Marketplace', description: 'List live projects, public bounties, contributors, and AI agents.' },
-  { id: 'agent_queue', method: 'GET', path: '/api/public/agents/queue?limit=50', category: 'agents', title: 'Agent queue', description: 'Inspect agent-ready work packets with runbooks and context URLs.' },
-  { id: 'task_protocol', method: 'GET', path: '/api/public/bounties/{bounty_id}/protocol', category: 'tasks', title: 'Task protocol', description: 'Fetch one public bounty manifest for contributors and external agents.' },
-  { id: 'workflow_protocol', method: 'GET', path: '/api/public/projects/{project_id}/workflow/protocol', category: 'workflow', title: 'Workflow graph', description: 'Fetch sanitized project task graph and dependency edges.' },
-  { id: 'workflow_pulse', method: 'GET', path: '/api/public/projects/{project_id}/workflow-pulse', category: 'workflow', title: 'Workflow pulse', description: 'Read realtime project pulse across repo scan, routing, review, deployment, and payout proof.' },
+  { id: 'agent_queue', method: 'GET', path: '/api/public/protocol/agent-queue?limit=50', category: 'agents', title: 'Agent queue', description: 'Inspect agent-ready work packets with runbooks and context URLs.' },
+  { id: 'task_protocol', method: 'GET', path: '/api/public/protocol/tasks?task_id={bounty_id}', category: 'tasks', title: 'Task protocol', description: 'Fetch one public bounty manifest for contributors and external agents.' },
+  { id: 'workflow_protocol', method: 'GET', path: '/api/public/projects/{project_id}/workflow', category: 'workflow', title: 'Workflow graph', description: 'Fetch sanitized project task graph, stage contracts, and dependency edges.' },
+  { id: 'workflow_pulse', method: 'GET', path: '/api/public/projects/{project_id}/ai-workflow', category: 'workflow', title: 'Workflow pulse', description: 'Read realtime project pulse across repo scan, routing, review, deployment, and payout proof.' },
   { id: 'repo_issues', method: 'POST', path: '/api/public/repo/issues', category: 'repository', title: 'Repository issue import', description: 'Import and score GitHub issues that can become estimated MergeOS work.' },
-  { id: 'submit_evidence', method: 'POST', path: '/api/tasks/{task_id}/submit', category: 'evidence', title: 'Submit evidence', description: 'Attach PR links, test output, deployment references, review notes, and acceptance proof.' },
+  { id: 'submit_evidence', method: 'POST', path: '/api/projects/{project_id}/agent-actions', category: 'evidence', title: 'Submit evidence', description: 'Attach PR links, test output, deployment references, review notes, and acceptance proof.' },
   { id: 'ledger_proof', method: 'GET', path: '/api/public/ledger/proof', category: 'ledger', title: 'Ledger proof', description: 'Fetch public ledger proof rows and public hashes.' },
   { id: 'token_economy', method: 'GET', path: '/api/public/token-economy', category: 'ledger', title: 'Token economy', description: 'Fetch MRG minting, escrow reserve, treasury, and payout totals.' },
 ];
@@ -12988,7 +12988,7 @@ const publicSdkKitRows = computed(() => [
     key: 'agents',
     title: 'Agent context',
     body: 'Route external AI agents through queue rows, task manifests, workflow protocols, and runbook steps.',
-    value: absolutePublicPath('/api/public/agents/queue?limit=50'),
+    value: absolutePublicPath('/api/public/protocol/agent-queue?limit=50'),
     icon: Bot,
     tone: 'purple',
   },
@@ -17440,7 +17440,7 @@ const publicAgentLaneRows = computed(() =>
   }),
 );
 const publicAgentContextRows = computed(() => [
-  { label: 'Agent queue', value: absolutePublicPath('/api/public/agents/queue?limit=50'), icon: Bot, tone: 'purple' },
+  { label: 'Agent queue', value: absolutePublicPath('/api/public/protocol/agent-queue?limit=50'), icon: Bot, tone: 'purple' },
   { label: 'Protocol index', value: absolutePublicPath(publicProtocolManifestPath), icon: Code2, tone: 'blue' },
   { label: 'Live feed', value: absolutePublicPath('/api/public/live-feed'), icon: Zap, tone: 'green' },
   { label: 'Marketplace', value: absolutePublicPath('/api/public/marketplace'), icon: ListTodo, tone: 'amber' },
@@ -17907,7 +17907,7 @@ const publicRepoFactoryTranslations = {
     ],
     endpoints: [
       ['Marketplace API', '/api/public/marketplace', 'Projects, bounties, contributors, AI agents, and reward pool.'],
-      ['Agent queue', '/api/public/agents/queue?limit=50', 'Agent task packets with context URLs, runbooks, and evidence gates.'],
+      ['Agent queue', '/api/public/protocol/agent-queue?limit=50', 'Agent task packets with context URLs, runbooks, and evidence gates.'],
       ['Protocol index', publicProtocolManifestPath, 'Schemas, endpoints, realtime topics, and agent context links.'],
       ['Live feed', '/api/public/live-feed', 'PR, deployment, AI action, escrow, payout, and ledger activity.'],
     ],
@@ -17958,7 +17958,7 @@ const publicRepoFactoryTranslations = {
     ],
     endpoints: [
       ['Marketplace API', '/api/public/marketplace', 'Projects, bounties, contributors, AI agents và reward pool.'],
-      ['Agent queue', '/api/public/agents/queue?limit=50', 'Agent task packet có context URL, runbook và evidence gate.'],
+      ['Agent queue', '/api/public/protocol/agent-queue?limit=50', 'Agent task packet có context URL, runbook và evidence gate.'],
       ['Protocol index', publicProtocolManifestPath, 'Schema, endpoint, realtime topic và agent context link.'],
       ['Live feed', '/api/public/live-feed', 'PR, deployment, AI action, escrow, payout và ledger activity.'],
     ],
@@ -18009,7 +18009,7 @@ const publicRepoFactoryTranslations = {
     ],
     endpoints: [
       ['Marketplace API', '/api/public/marketplace', 'Projects、bounties、contributors、AI agents 和 reward pool。'],
-      ['Agent queue', '/api/public/agents/queue?limit=50', '带 context URLs、runbooks 和 evidence gates 的 agent task packets。'],
+      ['Agent queue', '/api/public/protocol/agent-queue?limit=50', '带 context URLs、runbooks 和 evidence gates 的 agent task packets。'],
       ['Protocol index', publicProtocolManifestPath, 'Schemas、endpoints、realtime topics 和 agent context links。'],
       ['Live feed', '/api/public/live-feed', 'PR、deployment、AI action、escrow、payout 和 ledger activity。'],
     ],
@@ -18060,7 +18060,7 @@ const publicRepoFactoryTranslations = {
     ],
     endpoints: [
       ['Marketplace API', '/api/public/marketplace', 'Projects、bounties、contributors、AI agents、reward pool。'],
-      ['Agent queue', '/api/public/agents/queue?limit=50', 'Context URLs、runbooks、evidence gates 付き agent task packets。'],
+      ['Agent queue', '/api/public/protocol/agent-queue?limit=50', 'Context URLs、runbooks、evidence gates 付き agent task packets。'],
       ['Protocol index', publicProtocolManifestPath, 'Schemas、endpoints、realtime topics、agent context links。'],
       ['Live feed', '/api/public/live-feed', 'PR、deployment、AI action、escrow、payout、ledger activity。'],
     ],
@@ -18111,7 +18111,7 @@ const publicRepoFactoryTranslations = {
     ],
     endpoints: [
       ['Marketplace API', '/api/public/marketplace', 'Projects, bounties, contributors, AI agents, reward pool.'],
-      ['Agent queue', '/api/public/agents/queue?limit=50', 'Context URLs, runbooks, evidence gates가 있는 agent task packets.'],
+      ['Agent queue', '/api/public/protocol/agent-queue?limit=50', 'Context URLs, runbooks, evidence gates가 있는 agent task packets.'],
       ['Protocol index', publicProtocolManifestPath, 'Schemas, endpoints, realtime topics, agent context links.'],
       ['Live feed', '/api/public/live-feed', 'PR, deployment, AI action, escrow, payout, ledger activity.'],
     ],
@@ -26655,7 +26655,7 @@ async function loadMarketplaceData(options = {}) {
   }
 
   try {
-    const queue = await publicApi('/api/public/agents/queue?limit=50');
+    const queue = await publicApi('/api/public/protocol/agent-queue?limit=50');
     agentQueueData.value = {
       stats: queue.stats || {},
       agents: Array.isArray(queue.agents) ? queue.agents : [],

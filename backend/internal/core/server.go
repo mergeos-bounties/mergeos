@@ -43,6 +43,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/public/protocol/tasks", s.publicProtocolTasks)
 	mux.HandleFunc("GET /api/public/protocol/agents", s.publicProtocolAgents)
 	mux.HandleFunc("GET /api/public/protocol/agent-queue", s.publicProtocolAgentQueue)
+	mux.HandleFunc("GET /api/public/agents/queue", s.publicProtocolAgentQueue)
 	mux.HandleFunc("GET /api/public/protocol/contributors", s.publicProtocolContributors)
 	mux.HandleFunc("GET /api/public/protocol/events", s.publicProtocolEvents)
 	mux.HandleFunc("GET /api/public/projects/{id}/deployment", s.publicProjectDeployment)

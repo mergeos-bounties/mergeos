@@ -1069,6 +1069,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 		"GET /api/public/protocol/tasks",
 		"GET /api/public/protocol/agents",
 		"GET /api/public/protocol/agent-queue",
+		"GET /api/public/agents/queue",
 		"GET /protocol/runbooks/mergeide-agent.v1.json",
 		"GET /api/public/protocol/contributors",
 		"GET /downloads/mergeide-windows-latest.json",
@@ -1474,6 +1475,22 @@ func TestPublicMarketplaceRouteReturnsSanitizedLiveData(t *testing.T) {
 	}
 	if queueProtocol.ProtocolVersion != "mergeos.agent-queue.v1" || queueProtocol.Kind != "agent_queue" {
 		t.Fatalf("unexpected agent queue header: %#v", queueProtocol)
+	}
+	queueAliasReq := httptest.NewRequest(http.MethodGet, "/api/public/agents/queue?limit=20", nil)
+	queueAliasResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(queueAliasResp, queueAliasReq)
+	if queueAliasResp.Code != http.StatusOK {
+		t.Fatalf("agent queue alias status = %d, body = %s", queueAliasResp.Code, queueAliasResp.Body.String())
+	}
+	var queueAliasProtocol AgentQueueResponse
+	if err := json.Unmarshal(queueAliasResp.Body.Bytes(), &queueAliasProtocol); err != nil {
+		t.Fatal(err)
+	}
+	if queueAliasProtocol.ProtocolVersion != queueProtocol.ProtocolVersion ||
+		queueAliasProtocol.Kind != queueProtocol.Kind ||
+		queueAliasProtocol.Stats.ReadyCount != queueProtocol.Stats.ReadyCount ||
+		len(queueAliasProtocol.Tasks) != len(queueProtocol.Tasks) {
+		t.Fatalf("agent queue alias diverged from canonical response: alias=%#v canonical=%#v", queueAliasProtocol, queueProtocol)
 	}
 	if queueProtocol.Stats.ReadyCount == 0 || len(queueProtocol.Tasks) == 0 || len(queueProtocol.Agents) == 0 {
 		t.Fatalf("agent queue missing ready work: %#v", queueProtocol)
