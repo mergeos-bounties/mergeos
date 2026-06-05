@@ -700,7 +700,15 @@ export function protocolTypeFromMessage(message = {}) {
     return message.protocol_type.trim();
   }
   const messageType = String(message?.type || '').trim();
-  if (!messageType || messageType === 'connection_ready' || messageType === 'live_feed_snapshot' || messageType === 'admin_ops_updated') {
+  if (
+    !messageType ||
+    messageType === 'connection_ready' ||
+    messageType === 'realtime_ready' ||
+    messageType === 'live_feed_snapshot' ||
+    messageType === 'realtime_snapshot' ||
+    messageType === 'realtime_heartbeat' ||
+    messageType === 'admin_ops_updated'
+  ) {
     return '';
   }
   return liveFeedTypeToProtocolEventType(message?.type, message?.action);

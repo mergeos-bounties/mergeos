@@ -252,6 +252,9 @@ func TestWebSocketBroadcastsSanitizedTaskAcceptedFeed(t *testing.T) {
 	if event["type"] != "task_accepted" {
 		t.Fatalf("unexpected websocket event: %#v", event)
 	}
+	if event["protocol_version"] != "mergeos.event.v1" || event["kind"] != "live_feed_delta" || event["event_id"] == "" {
+		t.Fatalf("task accepted websocket missing event envelope: %#v", event)
+	}
 	if event["protocol_type"] != "task.claimed" {
 		t.Fatalf("task accepted websocket missing protocol type: %#v", event)
 	}
@@ -396,6 +399,9 @@ func TestWebSocketBroadcastsProposalProtocolEvents(t *testing.T) {
 	if submitted["protocol_type"] != "proposal.submitted" {
 		t.Fatalf("proposal created websocket missing proposal protocol type: %#v", submitted)
 	}
+	if submitted["protocol_version"] != "mergeos.event.v1" || submitted["kind"] != "proposal_delta" || submitted["event_id"] == "" {
+		t.Fatalf("proposal created websocket missing event envelope: %#v", submitted)
+	}
 	event, ok := submitted["event"].(map[string]interface{})
 	if !ok || event["type"] != "proposal.submitted" || event["task_id"] != publicTaskID {
 		t.Fatalf("proposal created websocket missing protocol event: %#v", submitted)
@@ -429,6 +435,9 @@ func TestWebSocketBroadcastsProposalProtocolEvents(t *testing.T) {
 	}
 	if decided["protocol_type"] != "proposal.accepted" {
 		t.Fatalf("proposal decision websocket missing proposal protocol type: %#v", decided)
+	}
+	if decided["protocol_version"] != "mergeos.event.v1" || decided["kind"] != "proposal_delta" || decided["event_id"] == "" {
+		t.Fatalf("proposal decision websocket missing event envelope: %#v", decided)
 	}
 	decisionEvent, ok := decided["event"].(map[string]interface{})
 	if !ok || decisionEvent["type"] != "proposal.accepted" || decisionEvent["task_id"] != publicTaskID {
@@ -526,6 +535,9 @@ func TestWebSocketBroadcastsAdminManualCreditLedgerEvent(t *testing.T) {
 	}
 	if event["type"] != "ledger_manual_credit" {
 		t.Fatalf("unexpected websocket event: %#v", event)
+	}
+	if event["protocol_version"] != "mergeos.event.v1" || event["kind"] != "live_feed_delta" || event["event_id"] == "" {
+		t.Fatalf("manual credit websocket missing event envelope: %#v", event)
 	}
 	if event["protocol_type"] != "ledger.recorded" {
 		t.Fatalf("manual credit websocket missing protocol type: %#v", event)

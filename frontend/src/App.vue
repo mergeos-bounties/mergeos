@@ -27036,7 +27036,7 @@ const realtimeProposalEventTypes = new Set(['proposal_created', 'proposal_decide
 const realtimeDeploymentEventTypes = new Set(['deployment_status']);
 const realtimeAgentEventTypes = new Set(['agent_action']);
 const realtimeLedgerEventTypes = new Set(['ledger_task_payment']);
-const realtimeLifecycleEventTypes = new Set(['realtime_ready', 'realtime_snapshot', 'realtime_heartbeat']);
+const realtimeLifecycleEventTypes = new Set(['realtime_ready', 'connection_ready', 'realtime_snapshot', 'live_feed_snapshot', 'realtime_heartbeat']);
 
 function wsURL() {
   if (!hasWindow) return '';
@@ -27182,7 +27182,7 @@ function handleWSEvent(payload = {}) {
 
 function handleWSLifecycle(payload = {}) {
   if (payload.type === 'realtime_heartbeat') return;
-  if (payload.type === 'realtime_ready') {
+  if (payload.type === 'realtime_ready' || payload.type === 'connection_ready') {
     wsConnectionState.value = 'connected';
     wsLastEventAt.value = payload.created_at || new Date().toISOString();
     if (payload.event_id) rememberWSEvent(payload.event_id);
@@ -27192,11 +27192,11 @@ function handleWSLifecycle(payload = {}) {
   if (rememberWSEvent(eventID)) return;
   wsConnectionState.value = 'synced';
   wsLastEventAt.value = payload.created_at || new Date().toISOString();
-  hydrateRealtimeSnapshot(payload.snapshot || {});
+  hydrateRealtimeSnapshot(payload.snapshot || payload);
 }
 
 function hydrateRealtimeSnapshot(snapshot = {}) {
-  const liveFeed = snapshot.live_feed || snapshot.liveFeed;
+  const liveFeed = snapshot.live_feed || snapshot.liveFeed || snapshot.feed;
   if (liveFeed && typeof liveFeed === 'object') {
     liveFeedData.value = {
       stats: liveFeed.stats || {},

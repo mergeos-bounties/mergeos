@@ -950,13 +950,17 @@ func (s *Server) wsInitialEvents() []map[string]interface{} {
 
 func (s *Server) broadcastLiveFeedEvent(eventType string) {
 	feed := s.store.PublicLiveFeed(20)
+	now := time.Now().UTC()
 	payload := map[string]interface{}{
-		"type":       eventType,
-		"feed":       feed,
-		"created_at": time.Now().UTC(),
+		"protocol_version": "mergeos.event.v1",
+		"kind":             "live_feed_delta",
+		"type":             eventType,
+		"feed":             feed,
+		"created_at":       now,
 	}
 	if event := protocolEventForBroadcast(eventType, feed); event != nil {
 		payload["event"] = event
+		payload["event_id"] = event.ID
 		payload["protocol_type"] = event.Type
 	}
 	s.eventHub.broadcastAll(payload)
@@ -964,13 +968,17 @@ func (s *Server) broadcastLiveFeedEvent(eventType string) {
 
 func (s *Server) broadcastProposalEvent(eventType string, response CreateProposalResponse) {
 	feed := s.store.PublicLiveFeed(20)
+	now := time.Now().UTC()
 	payload := map[string]interface{}{
-		"type":       eventType,
-		"feed":       feed,
-		"created_at": time.Now().UTC(),
+		"protocol_version": "mergeos.event.v1",
+		"kind":             "proposal_delta",
+		"type":             eventType,
+		"feed":             feed,
+		"created_at":       now,
 	}
 	if event := proposalProtocolEventForBroadcast(eventType, response); event != nil {
 		payload["event"] = event
+		payload["event_id"] = event.ID
 		payload["protocol_type"] = event.Type
 	}
 	s.eventHub.broadcastAll(payload)
