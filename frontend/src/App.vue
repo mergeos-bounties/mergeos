@@ -3138,7 +3138,7 @@
                     </div>
                     <div class="routing-board-actions">
                       <span :class="['dashboard-status-pill', dashboardStatusClass(dashboardRoutingView.status)]">{{ dashboardRoutingView.status }}</span>
-                      <button type="button" :disabled="dashboardRoutingLoading || !dashboardSelectedProject" @click="loadDashboardRoutingData(dashboardSelectedProject?.id)">
+                      <button type="button" :disabled="dashboardRoutingLoading || dashboardProjectDashboardLoading || !dashboardSelectedProject" @click="refreshDashboardRoutingPanel">
                         <RefreshCw :size="14" />
                         Refresh
                       </button>
@@ -3168,6 +3168,41 @@
                         <b>{{ lane.readyCount }}/{{ lane.taskCount }}</b>
                       </article>
                     </div>
+
+                    <section
+                      v-if="dashboardProjectProposalRows.length || dashboardProjectDashboardLoading || dashboardProjectDashboardError"
+                      class="routing-proposal-list"
+                      aria-label="Submitted worker proposals"
+                    >
+                      <div class="routing-proposal-head">
+                        <div>
+                          <strong>Submitted proposals</strong>
+                          <small>Review worker bids before assigning or releasing work.</small>
+                        </div>
+                        <span>{{ dashboardProjectProposalRows.length }}</span>
+                      </div>
+                      <article v-if="dashboardProjectDashboardLoading && !dashboardProjectProposalRows.length" class="routing-proposal-state">
+                        <strong>Loading proposals...</strong>
+                        <small>Syncing customer proposal records from the project dashboard.</small>
+                      </article>
+                      <article v-else-if="dashboardProjectDashboardError && !dashboardProjectProposalRows.length" class="routing-proposal-state error">
+                        <strong>Proposal sync failed</strong>
+                        <small>{{ dashboardProjectDashboardError }}</small>
+                      </article>
+                      <article v-for="proposal in dashboardProjectProposalRows" :key="proposal.id">
+                        <span>#{{ proposal.issueNumber }}</span>
+                        <div class="routing-proposal-main">
+                          <strong>{{ proposal.title }}</strong>
+                          <small>{{ proposal.worker }} · {{ proposal.when }}</small>
+                          <p>{{ proposal.cover }}</p>
+                        </div>
+                        <div class="routing-proposal-bid">
+                          <strong>{{ proposal.bid }}</strong>
+                          <small>{{ proposal.hours }}</small>
+                        </div>
+                        <em :class="proposal.statusTone">{{ proposal.statusLabel }}</em>
+                      </article>
+                    </section>
 
                     <div v-if="dashboardRoutingRouteRows.length" class="routing-route-list">
                       <article v-for="route in dashboardRoutingRouteRows" :key="route.id">
@@ -10344,6 +10379,9 @@ const dashboardEscrowError = ref('');
 const dashboardDeliverySnapshot = ref(null);
 const dashboardDeliverySnapshotLoading = ref(false);
 const dashboardDeliverySnapshotError = ref('');
+const dashboardProjectDashboard = ref(null);
+const dashboardProjectDashboardLoading = ref(false);
+const dashboardProjectDashboardError = ref('');
 const dashboardDeployment = ref(null);
 const dashboardDeploymentLoading = ref(false);
 const dashboardDeploymentError = ref('');
@@ -18642,6 +18680,9 @@ const dashboardPullRequestEmptyActions = computed(() => {
   ];
 });
 const dashboardRoutingStats = computed(() => dashboardRouting.value?.stats || {});
+const dashboardProjectProposalRows = computed(() =>
+  (dashboardProjectDashboard.value?.proposals || []).map(mapDashboardProjectProposal),
+);
 const dashboardRoutingView = computed(() => {
   if (!dashboardSelectedProject.value) {
     return {
@@ -18693,6 +18734,11 @@ const dashboardRoutingStatRows = computed(() => [
     label: 'Agents',
     value: String(Number(dashboardRoutingStats.value.agent_candidate_count) || 0),
     tone: 'purple',
+  },
+  {
+    label: 'Proposals',
+    value: String(dashboardProjectProposalRows.value.length),
+    tone: dashboardProjectProposalRows.value.length ? 'amber' : 'green',
   },
 ]);
 const dashboardRoutingLaneRows = computed(() =>
@@ -21267,6 +21313,15 @@ function refreshDashboardPullRequests() {
   const projectID = dashboardSelectedProject.value?.id || '';
   if (!projectID || dashboardPullRequestsLoading.value) return;
   void loadDashboardPullRequestsData(projectID);
+}
+
+function refreshDashboardRoutingPanel() {
+  const projectID = dashboardSelectedProject.value?.id || '';
+  if (!projectID || dashboardRoutingLoading.value || dashboardProjectDashboardLoading.value) return;
+  void Promise.allSettled([
+    loadDashboardRoutingData(projectID),
+    loadDashboardProjectDashboardData(projectID, { silent: true }),
+  ]);
 }
 
 function refreshDashboardAILogs() {
@@ -24844,6 +24899,25 @@ function mapDashboardRoutingRoute(row = {}) {
   };
 }
 
+function mapDashboardProjectProposal(row = {}) {
+  const status = String(row.status || 'submitted').trim().toLowerCase();
+  const when = formatLedgerDateTime(row.updated_at || row.created_at);
+  const hours = Number(row.estimated_hours) || 0;
+  return {
+    id: row.id || row.reference || `${row.project_id}-${row.issue_number}-${row.worker_id}`,
+    issueNumber: Number(row.issue_number) || '-',
+    title: row.title || 'Worker proposal',
+    worker: row.worker_id ? formatClaimWorkerID(row.worker_id) : 'Contributor',
+    cover: trimMarketplaceText(row.cover_letter, 'Proposal details are attached to this project.'),
+    bid: formatMRGFromCents(row.bid_cents),
+    hours: hours ? `${hours} hours` : 'Hours pending',
+    statusLabel: toTitleLabel(status || 'submitted'),
+    statusTone: status === 'accepted' ? 'accepted' : status === 'declined' || status === 'withdrawn' ? 'declined' : 'submitted',
+    when: when.full,
+    reference: row.reference || '',
+  };
+}
+
 function repoSeverityTone(value = '') {
   const normalized = String(value || '').toLowerCase();
   if (normalized === 'high' || normalized === 'critical') return 'red';
@@ -25989,7 +26063,10 @@ async function loadDashboardData(options = {}) {
       ? requestedProjectID
       : (dashboardSortedProjects.value[0]?.id || '');
     if (selectedDashboardProjectID.value) {
-      await loadDashboardDeliverySnapshotData(selectedDashboardProjectID.value, { silent: true });
+      await Promise.all([
+        loadDashboardDeliverySnapshotData(selectedDashboardProjectID.value, { silent: true }),
+        loadDashboardProjectDashboardData(selectedDashboardProjectID.value, { silent: true }),
+      ]);
     } else {
       resetDashboardProjectProtocolState();
     }
@@ -26278,6 +26355,9 @@ function applyDashboardDeliverySnapshotPayload(payload = {}, fallbackProjectID =
 }
 
 function resetDashboardProjectProtocolState() {
+  dashboardProjectDashboard.value = null;
+  dashboardProjectDashboardLoading.value = false;
+  dashboardProjectDashboardError.value = '';
   dashboardDeliverySnapshot.value = null;
   dashboardDeliverySnapshotLoading.value = false;
   dashboardDeliverySnapshotError.value = '';
@@ -26305,6 +26385,42 @@ function resetDashboardProjectProtocolState() {
   dashboardTaskGraph.value = null;
   dashboardTaskGraphLoading.value = false;
   dashboardTaskGraphError.value = '';
+}
+
+async function loadDashboardProjectDashboardData(projectID, options = {}) {
+  const targetProjectID = String(projectID || '').trim();
+  if (!token.value || !targetProjectID) {
+    dashboardProjectDashboard.value = null;
+    dashboardProjectDashboardLoading.value = false;
+    dashboardProjectDashboardError.value = '';
+    return;
+  }
+
+  const silent = Boolean(options.silent);
+  if (!silent) dashboardProjectDashboardLoading.value = true;
+  dashboardProjectDashboardError.value = '';
+  try {
+    const payload = await api(`/api/projects/${encodeURIComponent(targetProjectID)}/dashboard`);
+    if (targetProjectID !== selectedDashboardProjectID.value) return;
+    dashboardProjectDashboard.value = normalizeDashboardProjectDashboardPayload(payload, targetProjectID);
+  } catch (error) {
+    if (targetProjectID === selectedDashboardProjectID.value) {
+      dashboardProjectDashboard.value = null;
+      dashboardProjectDashboardError.value = error.message || 'Could not load project proposals';
+    }
+  } finally {
+    dashboardProjectDashboardLoading.value = false;
+  }
+}
+
+function normalizeDashboardProjectDashboardPayload(payload = {}, fallbackProjectID = '') {
+  return {
+    protocol_version: payload.protocol_version || 'mergeos.customer-dashboard.v1',
+    kind: payload.kind || 'customer_dashboard',
+    project: payload.project || { project_id: fallbackProjectID },
+    proposals: Array.isArray(payload.proposals) ? payload.proposals : [],
+    updated_at: payload.updated_at || '',
+  };
 }
 
 async function loadDashboardDeliverySnapshotData(projectID, options = {}) {
@@ -26855,6 +26971,10 @@ function handleWSEvent(payload = {}) {
     handleWSRepositoryScan(payload);
     return;
   }
+  if (payload.type === 'proposal_created') {
+    handleWSProposalCreated(payload);
+    return;
+  }
   if (realtimeTaskEventTypes.has(payload.type)) {
     handleWSTaskLifecycle(payload);
     return;
@@ -27122,6 +27242,27 @@ function handleWSRepositoryScan(payload = {}) {
   if (item.id) {
     prependRealtimeLiveFeedItem(item);
   }
+}
+
+function handleWSProposalCreated(payload = {}) {
+  const eventID = payload.event_id || `proposal_created:${payload.created_at || ''}:${payload.project_id || ''}`;
+  if (rememberWSEvent(eventID)) return;
+  const projectID = payload.project_id || selectedDashboardProjectID.value || '';
+
+  if (user.value) {
+    if (projectID && projectID === selectedDashboardProjectID.value) {
+      void loadDashboardProjectDashboardData(projectID, { silent: true });
+      void loadDashboardNotifications();
+    } else if (selectedDashboardProjectID.value) {
+      void loadDashboardProjectDashboardData(selectedDashboardProjectID.value, { silent: true });
+      void loadDashboardNotifications();
+    }
+    if (dashboardSection.value === 'admin' && isAdminUser.value) {
+      void loadAdminConsoleData({ silent: true });
+    }
+  }
+  void loadMarketplaceData({ silent: true });
+  void loadLiveFeedData({ silent: true });
 }
 
 function handleWSTaskLifecycle(payload = {}) {
