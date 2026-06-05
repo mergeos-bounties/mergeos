@@ -273,6 +273,10 @@ export class MergeOSClient {
     return this.request('/api/payments/paypal/orders', { method: 'POST', body: payload });
   }
 
+  createCardPaymentIntent(payload) {
+    return this.request('/api/payments/card/intents', { method: 'POST', body: payload });
+  }
+
   uploadAttachment(body, options = {}) {
     return this.request('/api/uploads', {
       method: 'POST',

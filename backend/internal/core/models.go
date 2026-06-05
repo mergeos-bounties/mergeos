@@ -744,7 +744,9 @@ type RuntimeConfigResponse struct {
 	PayPalReady       bool                `json:"paypal_ready"`
 	CryptoReady       bool                `json:"crypto_ready"`
 	StripeReady       bool                `json:"stripe_ready"`
+	CardReady         bool                `json:"card_ready"`
 	StripePublicKey   string              `json:"stripe_publishable_key,omitempty"`
+	CardPublicKey     string              `json:"card_public_key,omitempty"`
 	PaymentRails      []PaymentRailOption `json:"payment_rails"`
 	GitHubReady       bool                `json:"github_ready"`
 	SMTPReady         bool                `json:"smtp_ready"`
@@ -816,6 +818,24 @@ type CreatePayPalOrderResponse struct {
 	OrderID     string `json:"order_id"`
 	ApprovalURL string `json:"approval_url"`
 	Status      string `json:"status"`
+}
+
+type CreateCardPaymentIntentRequest struct {
+	AmountCents int64  `json:"amount_cents"`
+	Description string `json:"description"`
+	Flow        string `json:"flow,omitempty"`
+}
+
+type CreateCardPaymentIntentResponse struct {
+	PaymentReference string `json:"payment_reference"`
+	PaymentIntentID  string `json:"payment_intent_id,omitempty"`
+	ClientSecret     string `json:"client_secret,omitempty"`
+	Status           string `json:"status"`
+	Provider         string `json:"provider"`
+	Mode             string `json:"mode"`
+	PublicKey        string `json:"public_key,omitempty"`
+	Brand            string `json:"brand,omitempty"`
+	Last4            string `json:"last4,omitempty"`
 }
 
 type ImportRepoIssuesRequest struct {

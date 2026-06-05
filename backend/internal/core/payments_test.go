@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -88,4 +90,77 @@ func TestVerifyCryptoAcceptsSolanaSPLTransfer(t *testing.T) {
 	if calls["getSignatureStatuses"] != 1 || calls["getTransaction"] != 1 {
 		t.Fatalf("rpc calls = %#v", calls)
 	}
+}
+
+func TestCreateCardPaymentIntentUsesDevStripeWhenVerifierIsLocal(t *testing.T) {
+	payments := NewPaymentManager(Config{
+		DevPaymentEnabled: true,
+		DevPaymentCode:    defaultDevPaymentCode,
+	})
+	intent, err := payments.CreateCardPaymentIntent(context.Background(), CreateCardPaymentIntentRequest{
+		AmountCents: 120000,
+		Description: "MergeOS test funding",
+		Flow:        "project_funding",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if intent.PaymentReference != defaultDevPaymentCode || intent.Provider != "dev-stripe" || intent.Status != "succeeded" {
+		t.Fatalf("intent = %#v", intent)
+	}
+}
+
+func TestCreateCardPaymentIntentPostsStripePaymentIntent(t *testing.T) {
+	payments := NewPaymentManager(Config{
+		StripePublishableKey: "pk_test_mergeos",
+		StripeSecretKey:      "sk_test_secret",
+		StripeWebhookSecret:  "whsec_secret",
+	})
+	payments.client = &http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+		if req.Method != http.MethodPost || req.URL.String() != "https://api.stripe.com/v1/payment_intents" {
+			t.Fatalf("unexpected stripe request %s %s", req.Method, req.URL.String())
+		}
+		if got := req.Header.Get("Authorization"); got != "Bearer sk_test_secret" {
+			t.Fatalf("authorization header = %q", got)
+		}
+		body, err := io.ReadAll(req.Body)
+		if err != nil {
+			t.Fatal(err)
+		}
+		form := string(body)
+		for _, expected := range []string{
+			"amount=120000",
+			"currency=usd",
+			"automatic_payment_methods%5Benabled%5D=true",
+			"description=MergeOS+project",
+			"metadata%5Bmergeos_flow%5D=project_funding",
+		} {
+			if !strings.Contains(form, expected) {
+				t.Fatalf("stripe form %q missing %q", form, expected)
+			}
+		}
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Header:     make(http.Header),
+			Body:       io.NopCloser(strings.NewReader(`{"id":"pi_mergeos_123","client_secret":"pi_mergeos_123_secret_abc","status":"requires_payment_method"}`)),
+		}, nil
+	})}
+
+	intent, err := payments.CreateCardPaymentIntent(context.Background(), CreateCardPaymentIntentRequest{
+		AmountCents: 120000,
+		Description: "MergeOS project",
+		Flow:        "project_funding",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if intent.PaymentReference != "pi_mergeos_123" || intent.ClientSecret == "" || intent.PublicKey != "pk_test_mergeos" || intent.Provider != "stripe" {
+		t.Fatalf("intent = %#v", intent)
+	}
+}
+
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (fn roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return fn(req)
 }

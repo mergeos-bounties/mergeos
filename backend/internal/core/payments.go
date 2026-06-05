@@ -147,6 +147,76 @@ func (p *PaymentManager) CreatePayPalOrder(ctx context.Context, req CreatePayPal
 	}, nil
 }
 
+func (p *PaymentManager) CreateCardPaymentIntent(ctx context.Context, req CreateCardPaymentIntentRequest) (*CreateCardPaymentIntentResponse, error) {
+	if req.AmountCents < 10000 {
+		return nil, errors.New("amount must be at least 100 USD")
+	}
+	if !p.cfg.StripeReady() {
+		if !p.cfg.DevPaymentEnabled {
+			return nil, errors.New("stripe payment intents are not configured")
+		}
+		return &CreateCardPaymentIntentResponse{
+			PaymentReference: p.cfg.DevPaymentCode,
+			Status:           "succeeded",
+			Provider:         "dev-stripe",
+			Mode:             "local-dev-verifier",
+			Brand:            "test-card",
+			Last4:            "4242",
+		}, nil
+	}
+
+	form := url.Values{}
+	form.Set("amount", fmt.Sprintf("%d", req.AmountCents))
+	form.Set("currency", "usd")
+	form.Set("automatic_payment_methods[enabled]", "true")
+	description := strings.TrimSpace(req.Description)
+	if description != "" {
+		form.Set("description", description)
+	}
+	flow := strings.TrimSpace(req.Flow)
+	if flow != "" {
+		form.Set("metadata[mergeos_flow]", flow)
+	}
+
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://api.stripe.com/v1/payment_intents", strings.NewReader(form.Encode()))
+	if err != nil {
+		return nil, err
+	}
+	httpReq.Header.Set("Authorization", "Bearer "+strings.TrimSpace(p.cfg.StripeSecretKey))
+	httpReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	httpReq.Header.Set("Idempotency-Key", fmt.Sprintf("mergeos-card-intent-%d-%d", req.AmountCents, time.Now().UnixNano()))
+
+	resp, err := p.client.Do(httpReq)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, fmt.Errorf("stripe payment intent create failed: %s", readBody(resp.Body))
+	}
+
+	var decoded struct {
+		ID           string `json:"id"`
+		ClientSecret string `json:"client_secret"`
+		Status       string `json:"status"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&decoded); err != nil {
+		return nil, err
+	}
+	if decoded.ID == "" {
+		return nil, errors.New("stripe returned an empty PaymentIntent id")
+	}
+	return &CreateCardPaymentIntentResponse{
+		PaymentReference: decoded.ID,
+		PaymentIntentID:  decoded.ID,
+		ClientSecret:     decoded.ClientSecret,
+		Status:           decoded.Status,
+		Provider:         "stripe",
+		Mode:             "stripe-payment-intent",
+		PublicKey:        p.cfg.StripePublishableKey,
+	}, nil
+}
+
 func (p *PaymentManager) verifyDev(reference, provider string) (PaymentVerification, error) {
 	if !p.cfg.DevPaymentEnabled {
 		return PaymentVerification{}, errors.New("dev payment verifier is disabled")

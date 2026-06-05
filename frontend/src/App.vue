@@ -23023,6 +23023,10 @@ function projectDevPaymentReference() {
     : '';
 }
 
+function cardCheckoutReady(config = runtimeConfig.value) {
+  return Boolean(config?.card_ready || (config?.card_ready === undefined && config?.dev_payment_enabled && config?.dev_payment_code));
+}
+
 function projectFundingValidationErrorsForCurrentSelection() {
   const errors = {};
   const amount = Number(projectFundingAmount.value);
@@ -23037,7 +23041,7 @@ function projectFundingValidationErrorsForCurrentSelection() {
   }
 
   if (config) {
-    if (paymentMethod === 'card' && !config.card_ready) {
+    if (paymentMethod === 'card' && !cardCheckoutReady(config)) {
       errors.paymentMethod = 'Card checkout is not configured for this environment.';
     }
     if (paymentMethod === 'paypal' && !config.paypal_ready && !devPaymentReference) {
@@ -23112,7 +23116,7 @@ function repoTaskFundingValidationErrorsForCurrentSelection() {
   }
 
   if (config) {
-    if (paymentMethod === 'card' && !config.card_ready) {
+    if (paymentMethod === 'card' && !cardCheckoutReady(config)) {
       errors.paymentMethod = 'Card checkout is not configured for this environment.';
     }
     if (paymentMethod === 'paypal' && !config.paypal_ready && !devPaymentReference) {
@@ -23770,7 +23774,7 @@ async function completeProjectFunding() {
     if (paymentMethod === 'card') {
       const intent = await createProjectCardPaymentIntent();
       await submitProjectFunding(buildCreateProjectPayload({
-        payment_method: 'card',
+        payment_method: 'stripe',
         payment_reference: intent.payment_reference,
       }), {
         paymentMethodLabel: cardPaymentLabel(intent),
@@ -23817,11 +23821,11 @@ async function completeProjectFunding() {
 }
 
 async function createProjectCardPaymentIntent() {
+  const payload = buildCreateProjectPayload({ payment_method: 'stripe' });
   return createCardPaymentIntent({
     amount_cents: projectPaymentAmountCents.value,
-    card_number: projectCardDigits(),
-    expiry: projectCardExpiryForPayload(),
-    cvc: projectCardCvcDigits(),
+    description: projectPayPalDescription(payload),
+    flow: 'project_funding',
     cardholder_name: projectCardForm.cardholderName || user.value?.name || '',
   });
 }
@@ -23921,6 +23925,12 @@ function resetProjectPaymentInputs() {
 function projectPayPalDescription(payload = {}) {
   const title = String(payload.title || projectTitleLabel.value || 'MergeOS project').trim();
   const runes = Array.from(`MergeOS project funding: ${title}`);
+  return runes.length <= 120 ? runes.join('') : `${runes.slice(0, 117).join('').trim()}...`;
+}
+
+function repositorySuggestedTaskFundingDescription(task = {}) {
+  const title = String(task.title || task.name || 'repository task').trim();
+  const runes = Array.from(`MergeOS repository task funding: ${title}`);
   return runes.length <= 120 ? runes.join('') : `${runes.slice(0, 117).join('').trim()}...`;
 }
 
@@ -24580,12 +24590,11 @@ async function submitRepositorySuggestedTaskFunding() {
     if (paymentMethod === 'card') {
       const intent = await createCardPaymentIntent({
         amount_cents: repoTaskFundingAmountCents.value,
-        card_number: repoTaskCardDigits(),
-        expiry: repoTaskCardExpiryForPayload(),
-        cvc: repoTaskCardCvcDigits(),
+        description: repositorySuggestedTaskFundingDescription(task),
+        flow: 'repo_task_funding',
         cardholder_name: repoTaskFundingCardForm.cardholderName || user.value?.name || '',
       });
-      await submitRepositorySuggestedTaskFundingRequest(projectID, task.id, rewardCents, 'card', intent.payment_reference, { task });
+      await submitRepositorySuggestedTaskFundingRequest(projectID, task.id, rewardCents, 'stripe', intent.payment_reference, { task });
       closeRepositoryTaskFunding({ force: true });
       return;
     }

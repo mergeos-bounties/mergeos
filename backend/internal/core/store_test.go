@@ -166,7 +166,7 @@ func TestRuntimeConfigReturnsPaymentRails(t *testing.T) {
 	if err := json.Unmarshal(resp.Body.Bytes(), &payload); err != nil {
 		t.Fatal(err)
 	}
-	if !payload.PayPalReady || !payload.CryptoReady || !payload.StripeReady || payload.StripePublicKey != "pk_test_mergeos" {
+	if !payload.PayPalReady || !payload.CryptoReady || !payload.StripeReady || !payload.CardReady || payload.StripePublicKey != "pk_test_mergeos" || payload.CardPublicKey != "pk_test_mergeos" {
 		t.Fatalf("unexpected payment readiness: %#v", payload)
 	}
 	if !payload.GoogleOAuthReady || !payload.GitHubOAuthReady || payload.GitHubOAuthClient != "github-client" {
@@ -198,6 +198,85 @@ func TestRuntimeConfigReturnsPaymentRails(t *testing.T) {
 	}
 	if rails["bank"].Enabled || rails["bank"].DisabledReason == "" {
 		t.Fatalf("bank rail should be disabled with reason: %#v", rails["bank"])
+	}
+}
+
+func TestCreateCardPaymentIntentRouteUsesDevVerifier(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:       defaultTokenSymbol,
+		StatePath:         filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:    1000,
+		DevPaymentEnabled: true,
+		DevPaymentCode:    defaultDevPaymentCode,
+		GitHubOwner:       defaultGitHubOwner,
+		BountyRoot:        filepath.Join(tempDir, "bounties"),
+		SMTPFrom:          "noreply@mergeos.local",
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	auth, err := store.Register(RegisterRequest{
+		Name:        "Card Client",
+		CompanyName: "Card Co",
+		Email:       "card-client@example.com",
+		Password:    "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	server := NewServer(cfg, store, payments)
+	req := httptest.NewRequest(http.MethodPost, "/api/payments/card/intents", strings.NewReader(`{"amount_cents":120000,"description":"MergeOS card funding","flow":"project_funding"}`))
+	req.Header.Set("Authorization", "Bearer "+auth.Token)
+	req.Header.Set("Content-Type", "application/json")
+	resp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(resp, req)
+	if resp.Code != http.StatusCreated {
+		t.Fatalf("card intent status = %d, body = %s", resp.Code, resp.Body.String())
+	}
+	var payload CreateCardPaymentIntentResponse
+	if err := json.Unmarshal(resp.Body.Bytes(), &payload); err != nil {
+		t.Fatal(err)
+	}
+	if payload.PaymentReference != defaultDevPaymentCode || payload.Provider != "dev-stripe" || payload.Status != "succeeded" {
+		t.Fatalf("unexpected card intent: %#v", payload)
+	}
+}
+
+func TestRuntimeConfigSeparatesCardCheckoutFromStripeVerifier(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:          defaultTokenSymbol,
+		StatePath:            filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:       1000,
+		StripePublishableKey: "pk_test_mergeos",
+		StripeSecretKey:      "sk_test_secret",
+		StripeWebhookSecret:  "whsec_secret",
+		GitHubOwner:          defaultGitHubOwner,
+		BountyRoot:           filepath.Join(tempDir, "bounties"),
+		SMTPFrom:             "noreply@mergeos.local",
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	server := NewServer(cfg, store, payments)
+	req := httptest.NewRequest(http.MethodGet, "/api/config", nil)
+	resp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(resp, req)
+	if resp.Code != http.StatusOK {
+		t.Fatalf("config status = %d, body = %s", resp.Code, resp.Body.String())
+	}
+	var payload RuntimeConfigResponse
+	if err := json.Unmarshal(resp.Body.Bytes(), &payload); err != nil {
+		t.Fatal(err)
+	}
+	if !payload.StripeReady || payload.CardReady {
+		t.Fatalf("unexpected card/stripe readiness: %#v", payload)
 	}
 }
 

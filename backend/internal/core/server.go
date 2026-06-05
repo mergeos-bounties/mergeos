@@ -69,6 +69,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("POST /api/wallets/link", s.linkWallet)
 	mux.HandleFunc("POST /api/wallets/migrations", s.createWalletMigration)
 	mux.HandleFunc("POST /api/payments/paypal/orders", s.createPayPalOrder)
+	mux.HandleFunc("POST /api/payments/card/intents", s.createCardPaymentIntent)
 	mux.HandleFunc("POST /api/payments/paypal/webhook", s.handlePayPalWebhook)
 	mux.HandleFunc("POST /api/uploads", s.uploadAttachment)
 	mux.HandleFunc("GET /api/uploads/", s.downloadAttachment)
@@ -171,7 +172,9 @@ func (s *Server) config(w http.ResponseWriter, _ *http.Request) {
 		PayPalReady:       s.cfg.PayPalReady(),
 		CryptoReady:       s.cfg.CryptoReady(),
 		StripeReady:       s.cfg.StripeReady(),
+		CardReady:         s.cfg.DevPaymentEnabled,
 		StripePublicKey:   s.cfg.StripePublishableKey,
+		CardPublicKey:     s.cfg.StripePublishableKey,
 		PaymentRails:      paymentRails(s.cfg),
 		GitHubReady:       s.cfg.GitHubReady(),
 		SMTPReady:         s.cfg.SMTPReady(),
@@ -1555,6 +1558,23 @@ func (s *Server) createPayPalOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusCreated, order)
+}
+
+func (s *Server) createCardPaymentIntent(w http.ResponseWriter, r *http.Request) {
+	if _, ok := s.requireUser(w, r); !ok {
+		return
+	}
+	var req CreateCardPaymentIntentRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	intent, err := s.payments.CreateCardPaymentIntent(r.Context(), req)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusCreated, intent)
 }
 
 func (s *Server) acceptTask(w http.ResponseWriter, r *http.Request) {

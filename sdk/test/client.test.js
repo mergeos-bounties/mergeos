@@ -618,6 +618,7 @@ test('supports wallet, payment, and raw upload helper routes', async () => {
     { status: 200, body: { linked: true } },
     { status: 201, body: { protocol_version: 'mergeos.wallet-migration.v1', kind: 'wallet_migration' } },
     { status: 201, body: { order_id: 'ord_1' } },
+    { status: 201, body: { payment_reference: 'pi_1', provider: 'stripe' } },
     { status: 201, body: { id: 'att_1' } },
   ]);
   const client = createMergeOSClient({ token: 'abc', fetchImpl });
@@ -627,6 +628,7 @@ test('supports wallet, payment, and raw upload helper routes', async () => {
   await client.linkWallet({ address: 'mrg_1' });
   await client.createWalletMigration({ legacy_chain: 'trc20', legacy_address: 'TXYZ987654321987654321987654321999' });
   await client.createPayPalOrder({ project_id: 'prj_1' });
+  await client.createCardPaymentIntent({ amount_cents: 120000, description: 'MergeOS card funding' });
   await client.uploadAttachment(uploadBody, { headers: { 'X-Upload': '1' } });
 
   assert.equal(fetchImpl.calls[0].url, '/api/wallets');
@@ -640,10 +642,14 @@ test('supports wallet, payment, and raw upload helper routes', async () => {
     legacy_address: 'TXYZ987654321987654321987654321999',
   }));
   assert.equal(fetchImpl.calls[4].url, '/api/payments/paypal/orders');
-  assert.equal(fetchImpl.calls[5].url, '/api/uploads');
-  assert.equal(fetchImpl.calls[5].options.body, uploadBody);
-  assert.equal(fetchImpl.calls[5].options.headers['Content-Type'], undefined);
-  assert.equal(fetchImpl.calls[5].options.headers['X-Upload'], '1');
+  assert.equal(fetchImpl.calls[5].url, '/api/payments/card/intents');
+  assert.equal(fetchImpl.calls[5].options.method, 'POST');
+  assert.equal(fetchImpl.calls[5].options.headers.Authorization, 'Bearer abc');
+  assert.equal(fetchImpl.calls[5].options.body, JSON.stringify({ amount_cents: 120000, description: 'MergeOS card funding' }));
+  assert.equal(fetchImpl.calls[6].url, '/api/uploads');
+  assert.equal(fetchImpl.calls[6].options.body, uploadBody);
+  assert.equal(fetchImpl.calls[6].options.headers['Content-Type'], undefined);
+  assert.equal(fetchImpl.calls[6].options.headers['X-Upload'], '1');
 });
 
 test('exposes project estimate protocol route', async () => {
