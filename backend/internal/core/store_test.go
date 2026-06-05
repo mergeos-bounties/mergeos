@@ -1035,6 +1035,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 		"GET /api/public/protocol/events",
 		"GET /api/public/projects/{id}/deployment",
 		"GET /api/public/projects/{id}/ai-workflow",
+		"GET /api/public/projects/{id}/workflow",
 		"GET /api/public/projects/{id}/pull-requests",
 		"POST /api/public/repo/issues",
 		"WS /api/ws",
@@ -2651,6 +2652,123 @@ func TestPublicProjectAIWorkflowRouteReturnsSanitizedWorkflow(t *testing.T) {
 	}
 	if !foundReviewSignal {
 		t.Fatalf("public ai workflow missing agent action signal: %#v", payload.Signals)
+	}
+}
+
+func TestPublicProjectWorkflowRouteReturnsSanitizedGraph(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:       defaultTokenSymbol,
+		StatePath:         filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:    1000,
+		DevPaymentEnabled: true,
+		DevPaymentCode:    defaultDevPaymentCode,
+		GitHubOwner:       defaultGitHubOwner,
+		BountyRoot:        filepath.Join(tempDir, "bounties"),
+		SMTPFrom:          "noreply@mergeos.local",
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	auth, err := store.Register(RegisterRequest{
+		Name:        "Public Graph Client",
+		CompanyName: "Public Graph Co",
+		Email:       "public-graph-client@example.com",
+		Password:    "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	project, err := store.CreateProject(context.Background(), auth.User.ID, CreateProjectRequest{
+		Title:            "Public workflow graph",
+		ClientName:       "Private Graph Buyer",
+		CompanyName:      "Public Graph Co",
+		ClientEmail:      "public-graph-client@example.com",
+		Phone:            "+1 555 0166",
+		Brief:            "Source repository: https://github.com/mergeos-bounties/public-workflow-demo\n\nExpose a public graph for external agents without leaking private task identifiers.",
+		BudgetCents:      260000,
+		PaymentMethod:    PaymentPayPal,
+		PaymentReference: defaultDevPaymentCode,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	server := NewServer(cfg, store, payments)
+	reqHTTP := httptest.NewRequest(http.MethodGet, "/api/public/projects/"+project.ID+"/workflow", nil)
+	resp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(resp, reqHTTP)
+	if resp.Code != http.StatusOK {
+		t.Fatalf("public workflow status = %d, body = %s", resp.Code, resp.Body.String())
+	}
+
+	body := resp.Body.String()
+	for _, value := range []string{
+		"public-graph-client@example.com",
+		"+1 555 0166",
+		auth.User.ID,
+		defaultDevPaymentCode,
+		tempDir,
+	} {
+		if strings.Contains(body, value) {
+			t.Fatalf("public workflow leaked private value %q: %s", value, body)
+		}
+	}
+	for _, task := range project.Tasks {
+		if strings.Contains(body, task.ID) {
+			t.Fatalf("public workflow leaked internal task id %q: %s", task.ID, body)
+		}
+	}
+
+	var document WorkflowProtocolDocument
+	if err := json.Unmarshal(resp.Body.Bytes(), &document); err != nil {
+		t.Fatal(err)
+	}
+	if document.ProtocolVersion != "mergeos.workflow.v1" || document.Kind != "workflow" || document.ProjectID != project.ID {
+		t.Fatalf("unexpected public workflow header: %#v", document)
+	}
+	if document.ID != project.ID+":public-workflow" {
+		t.Fatalf("unexpected public workflow id: %#v", document.ID)
+	}
+	if len(document.Nodes) != len(project.Tasks) || len(document.Edges) == 0 {
+		t.Fatalf("public workflow graph mismatch: %#v", document)
+	}
+
+	publicIDs := map[string]bool{}
+	for _, node := range document.Nodes {
+		if strings.TrimSpace(node.ID) == "" || node.ID != node.TaskID {
+			t.Fatalf("public workflow node did not use claim-safe task id: %#v", node)
+		}
+		if !strings.HasPrefix(node.TaskID, project.ID+":") {
+			t.Fatalf("public workflow node is not keyed by public claim id: %#v", node)
+		}
+		publicIDs[node.TaskID] = true
+	}
+	for _, node := range document.Nodes {
+		for _, dependency := range node.Dependencies {
+			if !publicIDs[dependency] {
+				t.Fatalf("public workflow dependency does not reference a public node id: node=%#v dependency=%q", node, dependency)
+			}
+		}
+	}
+	for _, edge := range document.Edges {
+		if !publicIDs[edge.From] || !publicIDs[edge.To] {
+			t.Fatalf("public workflow edge does not reference public node ids: %#v", edge)
+		}
+	}
+	if document.Metadata["public"] != true ||
+		document.Metadata["workflow_endpoint"] != "/api/public/projects/{id}/workflow" ||
+		document.Metadata["task_protocol_endpoint"] != "/api/public/protocol/tasks" {
+		t.Fatalf("public workflow missing agent context metadata: %#v", document.Metadata)
+	}
+
+	missingReq := httptest.NewRequest(http.MethodGet, "/api/public/projects/missing/workflow", nil)
+	missingResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(missingResp, missingReq)
+	if missingResp.Code != http.StatusNotFound {
+		t.Fatalf("missing public workflow status = %d", missingResp.Code)
 	}
 }
 

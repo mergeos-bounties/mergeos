@@ -30,6 +30,19 @@ func (s *Store) ProjectWorkflowProtocol(projectID string) (WorkflowProtocolDocum
 	return workflowProtocolDocument(project, s.projectTaskGraphLocked(project), s.projectAIWorkflowLocked(project)), nil
 }
 
+func (s *Store) PublicProjectWorkflowProtocol(projectID string) (WorkflowProtocolDocument, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	project, ok := s.projects[strings.TrimSpace(projectID)]
+	if !ok {
+		return WorkflowProtocolDocument{}, errors.New("project not found")
+	}
+	graph := s.projectTaskGraphLocked(project)
+	document := workflowProtocolDocument(project, graph, s.projectAIWorkflowLocked(project))
+	return publicWorkflowProtocolDocument(document, graph), nil
+}
+
 func (s *Store) projectTaskGraphLocked(project *Project) ProjectTaskGraphResponse {
 	tasks := s.projectDeploymentTasksLocked(project)
 	nodes := make([]TaskGraphNode, 0, len(tasks))
@@ -286,6 +299,82 @@ func workflowProtocolDocument(project *Project, graph ProjectTaskGraphResponse, 
 			"updated_at":     graph.UpdatedAt,
 		},
 	}
+}
+
+func publicWorkflowProtocolDocument(document WorkflowProtocolDocument, graph ProjectTaskGraphResponse) WorkflowProtocolDocument {
+	idMap := map[string]string{}
+	for index, node := range graph.Nodes {
+		publicID := publicWorkflowNodeID(document.ProjectID, node, index)
+		for _, value := range []string{node.ID, node.TaskID} {
+			value = strings.TrimSpace(value)
+			if value != "" {
+				idMap[value] = publicID
+			}
+		}
+	}
+
+	for index := range document.Nodes {
+		node := &document.Nodes[index]
+		publicID := idMap[strings.TrimSpace(node.ID)]
+		if publicID == "" {
+			publicID = idMap[strings.TrimSpace(node.TaskID)]
+		}
+		if publicID == "" {
+			publicID = publicTaskProtocolID(fmt.Sprintf("%s:node:%d", document.ProjectID, index+1))
+		}
+		node.ID = publicID
+		node.TaskID = publicID
+		node.Dependencies = publicWorkflowIDList(node.Dependencies, idMap)
+	}
+
+	edges := make([]WorkflowProtocolEdge, 0, len(document.Edges))
+	for _, edge := range document.Edges {
+		from := idMap[strings.TrimSpace(edge.From)]
+		to := idMap[strings.TrimSpace(edge.To)]
+		if from == "" || to == "" || from == to {
+			continue
+		}
+		edges = append(edges, WorkflowProtocolEdge{
+			From:     from,
+			To:       to,
+			Relation: edge.Relation,
+		})
+	}
+	document.ID = document.ProjectID + ":public-workflow"
+	document.Edges = edges
+	if document.Metadata == nil {
+		document.Metadata = map[string]any{}
+	}
+	document.Metadata["public"] = true
+	document.Metadata["task_protocol_endpoint"] = "/api/public/protocol/tasks"
+	document.Metadata["ai_workflow_endpoint"] = "/api/public/projects/{id}/ai-workflow"
+	document.Metadata["pr_monitor_endpoint"] = "/api/public/projects/{id}/pull-requests"
+	document.Metadata["workflow_endpoint"] = "/api/public/projects/{id}/workflow"
+	return document
+}
+
+func publicWorkflowNodeID(projectID string, node TaskGraphNode, index int) string {
+	if node.IssueNumber > 0 {
+		return publicTaskProtocolID(marketplaceBountyID(projectID, node.IssueNumber))
+	}
+	return publicTaskProtocolID(fmt.Sprintf("%s:node:%d", projectID, index+1))
+}
+
+func publicWorkflowIDList(values []string, idMap map[string]string) []string {
+	if len(values) == 0 {
+		return nil
+	}
+	ids := []string{}
+	seen := map[string]bool{}
+	for _, value := range values {
+		id := idMap[strings.TrimSpace(value)]
+		if id == "" || seen[id] {
+			continue
+		}
+		seen[id] = true
+		ids = append(ids, id)
+	}
+	return ids
 }
 
 func workflowProtocolSteps() []string {

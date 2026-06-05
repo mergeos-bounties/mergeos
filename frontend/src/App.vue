@@ -4281,6 +4281,12 @@
               </article>
             </div>
 
+            <div class="home-public-graph-proof" aria-label="Public workflow graph endpoint">
+              <span>NEW PUBLIC GRAPH</span>
+              <strong>/api/public/projects/{id}/workflow</strong>
+              <small>Claim-safe workflow nodes linked to tasks, AI workflow, and PR monitor.</small>
+            </div>
+
             <div class="public-notification-feed" aria-live="polite">
               <div class="public-notification-head">
                 <span>

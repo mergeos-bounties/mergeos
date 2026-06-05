@@ -23199,6 +23199,48 @@ body {
   max-width: 16ch;
 }
 
+.home-public-graph-proof {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+  margin-top: 12px;
+  border: 1px solid rgba(15, 159, 120, 0.18);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(236, 253, 245, 0.94), rgba(239, 246, 255, 0.86)),
+    #ffffff;
+  padding: 12px;
+}
+
+.home-public-graph-proof span,
+.home-public-graph-proof strong,
+.home-public-graph-proof small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.home-public-graph-proof span {
+  color: var(--green-dark);
+  font-size: 10px;
+  font-weight: 940;
+  letter-spacing: 0.08em;
+}
+
+.home-public-graph-proof strong {
+  color: #0f172a;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
+  line-height: 1.25;
+  font-weight: 820;
+}
+
+.home-public-graph-proof small {
+  color: #556371;
+  font-size: 11px;
+  line-height: 1.38;
+  font-weight: 720;
+}
+
 .home-command-panel .public-notification-feed {
   gap: 8px;
   margin-top: 12px;

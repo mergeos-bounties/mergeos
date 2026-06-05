@@ -51,7 +51,7 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Version:     "mergeos.workflow.v1",
 				Kind:        "workflow",
 				SchemaURL:   "https://mergeos.shop/protocol/workflow.v1.schema.json",
-				Description: "Project workflow graph with progress, current AI workflow step, task nodes, dependency edges, readiness, and release status.",
+				Description: "Project workflow graph with progress, current AI workflow step, public task nodes, dependency edges, readiness, and release status.",
 			},
 			{
 				Version:     "mergeos.estimate.v1",
@@ -219,6 +219,13 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Protocol:    "mergeos.ai-workflow.v1",
 				Auth:        "none",
 				Description: "Public sanitized AI workflow timeline for marketplace projects across repository import, issue scan, task generation, routing, PR review, and deployment validation.",
+			},
+			{
+				Method:      "GET",
+				Path:        "/api/public/projects/{id}/workflow",
+				Protocol:    "mergeos.workflow.v1",
+				Auth:        "none",
+				Description: "Public sanitized project workflow graph with claim-safe task IDs, dependency edges, readiness, and agent context endpoints.",
 			},
 			{
 				Method:      "GET",
