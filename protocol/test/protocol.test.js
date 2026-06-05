@@ -1580,6 +1580,7 @@ test('rejects invalid task fields and unknown versions', () => {
 });
 
 test('validates workflow node and edge references', () => {
+  const now = '2026-06-05T00:00:00.000Z';
   const valid = validateProtocolDocument({
     protocol_version: 'mergeos.workflow.v1',
     kind: 'workflow',
@@ -1593,6 +1594,50 @@ test('validates workflow node and edge references', () => {
       { id: 'n2', task_id: 'tsk_2', issue_number: 2, title: 'Validate', lane: 'validation', status: 'ready', reward_mrg: 10, estimated_hours: 1.5, worker_kind: 'agent', agent_type: 'qa-agent', dependencies: ['tsk_1'] },
     ],
     edges: [{ from: 'n1', to: 'n2', relation: 'sequence' }],
+    stages: [
+      {
+        id: 'contributor_routing',
+        title: 'Contributor routing',
+        summary: 'Tasks are routed to human, agent, or hybrid lanes.',
+        status: 'complete',
+        tone: 'green',
+        reference: 'project:prj_0001',
+        updated_at: now,
+      },
+    ],
+    checks: [
+      {
+        id: 'check:contributor_routing',
+        stage_id: 'contributor_routing',
+        title: 'Contributor routing',
+        status: 'passed',
+        required: true,
+        summary: 'Contributor routing passed.',
+      },
+    ],
+    next_actions: [
+      {
+        id: 'next:route-1',
+        type: 'submit_proposal',
+        label: 'Submit worker proposal',
+        target_step: 'contributor_routing',
+        target_node_id: 'n1',
+        task_id: 'tsk_1',
+        worker_kind: 'human',
+        method: 'POST',
+        endpoint: '/api/proposals',
+      },
+    ],
+    evidence: [
+      {
+        id: 'deployment:prj_0001',
+        type: 'deployment_validation',
+        title: 'Deployment validation',
+        status: 'validating',
+        reference: 'project:prj_0001',
+        created_at: now,
+      },
+    ],
   });
   assert.equal(valid.valid, true);
 
@@ -1605,11 +1650,17 @@ test('validates workflow node and edge references', () => {
     current_step: 'unknown',
     nodes: [{ id: 'n1', task_id: 'tsk_1', title: 'Implement', lane: 'implementation', status: 'open' }],
     edges: [{ from: 'n1', to: 'missing', relation: 'sequence' }],
+    checks: [{ id: 'check:repo_import', stage_id: 'repo_import', title: 'Repository', status: 'stale', required: true }],
+    next_actions: [{ id: 'next:route-1', type: 'submit_proposal', label: 'Submit', target_step: 'contributor_routing', task_id: 'missing' }],
+    evidence: [{ id: 'deployment:prj_0001', type: 'deployment_validation', title: 'Deployment', status: 'validating', created_at: 'not-a-date' }],
   });
   assert.equal(invalid.valid, false);
   assert(invalid.errors.some((error) => error.path === 'progress'));
   assert(invalid.errors.some((error) => error.path === 'current_step'));
   assert(invalid.errors.some((error) => error.path === 'edges[0].to'));
+  assert(invalid.errors.some((error) => error.path === 'checks[0].status'));
+  assert(invalid.errors.some((error) => error.path === 'next_actions[0].task_id'));
+  assert(invalid.errors.some((error) => error.path === 'evidence[0].created_at'));
 });
 
 test('validates event protocol documents and assertion helper', () => {

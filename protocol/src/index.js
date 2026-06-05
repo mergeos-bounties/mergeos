@@ -272,13 +272,32 @@ function validateNumber(value, schema, path, errors) {
 }
 
 function validateWorkflowEdges(document, errors) {
-  const nodeIDs = new Set((document.nodes || []).map((node) => node.id));
+  const nodeIDs = new Set();
+  for (const node of document.nodes || []) {
+    if (node.id) nodeIDs.add(node.id);
+    if (node.task_id) nodeIDs.add(node.task_id);
+  }
   for (const [index, edge] of (document.edges || []).entries()) {
     if (!nodeIDs.has(edge.from)) {
       errors.push({ path: `edges[${index}].from`, message: 'must reference an existing node id' });
     }
     if (!nodeIDs.has(edge.to)) {
       errors.push({ path: `edges[${index}].to`, message: 'must reference an existing node id' });
+    }
+  }
+  for (const [nodeIndex, node] of (document.nodes || []).entries()) {
+    for (const [dependencyIndex, dependency] of (node.dependencies || []).entries()) {
+      if (!nodeIDs.has(dependency)) {
+        errors.push({ path: `nodes[${nodeIndex}].dependencies[${dependencyIndex}]`, message: 'must reference an existing node id' });
+      }
+    }
+  }
+  for (const [actionIndex, action] of (document.next_actions || []).entries()) {
+    if (action.target_node_id && !nodeIDs.has(action.target_node_id)) {
+      errors.push({ path: `next_actions[${actionIndex}].target_node_id`, message: 'must reference an existing node id' });
+    }
+    if (action.task_id && !nodeIDs.has(action.task_id)) {
+      errors.push({ path: `next_actions[${actionIndex}].task_id`, message: 'must reference an existing node id' });
     }
   }
 }

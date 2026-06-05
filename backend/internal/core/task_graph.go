@@ -3,6 +3,7 @@ package core
 import (
 	"errors"
 	"fmt"
+	"net/http"
 	"sort"
 	"strings"
 	"time"
@@ -276,6 +277,7 @@ func workflowProtocolDocument(project *Project, graph ProjectTaskGraphResponse, 
 	}
 
 	currentStep := workflowProtocolCurrentStepWithAI(graph, aiWorkflow)
+	stages := workflowProtocolStages(aiWorkflow)
 	return WorkflowProtocolDocument{
 		ProtocolVersion: "mergeos.workflow.v1",
 		Kind:            "workflow",
@@ -286,6 +288,10 @@ func workflowProtocolDocument(project *Project, graph ProjectTaskGraphResponse, 
 		CurrentStep:     currentStep,
 		Nodes:           nodes,
 		Edges:           edges,
+		Stages:          stages,
+		Checks:          workflowProtocolChecks(stages, graph, currentStep),
+		NextActions:     workflowProtocolNextActions(project.ID, currentStep, nodes),
+		Evidence:        workflowProtocolEvidence(aiWorkflow.Signals),
 		Metadata: map[string]any{
 			"project_title":  graph.ProjectTitle,
 			"workflow_steps": workflowProtocolSteps(),
@@ -326,6 +332,15 @@ func publicWorkflowProtocolDocument(document WorkflowProtocolDocument, graph Pro
 		node.TaskID = publicID
 		node.Dependencies = publicWorkflowIDList(node.Dependencies, idMap)
 	}
+	for index := range document.NextActions {
+		action := &document.NextActions[index]
+		if publicID := idMap[strings.TrimSpace(action.TaskID)]; publicID != "" {
+			action.TaskID = publicID
+		}
+		if publicID := idMap[strings.TrimSpace(action.TargetNodeID)]; publicID != "" {
+			action.TargetNodeID = publicID
+		}
+	}
 
 	edges := make([]WorkflowProtocolEdge, 0, len(document.Edges))
 	for _, edge := range document.Edges {
@@ -351,6 +366,207 @@ func publicWorkflowProtocolDocument(document WorkflowProtocolDocument, graph Pro
 	document.Metadata["pr_monitor_endpoint"] = "/api/public/projects/{id}/pull-requests"
 	document.Metadata["workflow_endpoint"] = "/api/public/projects/{id}/workflow"
 	return document
+}
+
+func workflowProtocolStages(aiWorkflow ProjectAIWorkflowResponse) []WorkflowProtocolStage {
+	if len(aiWorkflow.Stages) == 0 {
+		return nil
+	}
+	stages := make([]WorkflowProtocolStage, 0, len(aiWorkflow.Stages))
+	for _, stage := range aiWorkflow.Stages {
+		stages = append(stages, WorkflowProtocolStage{
+			ID:        stage.ID,
+			Title:     stage.Title,
+			Summary:   stage.Body,
+			Status:    stage.Status,
+			Tone:      stage.Tone,
+			Reference: stage.Reference,
+			URL:       stage.URL,
+			UpdatedAt: stage.UpdatedAt,
+		})
+	}
+	return stages
+}
+
+func workflowProtocolChecks(stages []WorkflowProtocolStage, graph ProjectTaskGraphResponse, currentStep string) []WorkflowProtocolCheck {
+	if len(stages) == 0 {
+		return nil
+	}
+	checks := make([]WorkflowProtocolCheck, 0, len(stages))
+	workflowBlocked := workflowProtocolStatus(graph) == "blocked"
+	for _, stage := range stages {
+		status := workflowProtocolCheckStatus(stage.Status)
+		if workflowBlocked && stage.ID == currentStep {
+			status = "blocked"
+		}
+		checks = append(checks, WorkflowProtocolCheck{
+			ID:       "check:" + stage.ID,
+			StageID:  stage.ID,
+			Title:    stage.Title,
+			Status:   status,
+			Required: true,
+			Summary:  stage.Summary,
+		})
+	}
+	return checks
+}
+
+func workflowProtocolCheckStatus(stageStatus string) string {
+	switch stageStatus {
+	case deploymentStageComplete:
+		return "passed"
+	case deploymentStageInProgress:
+		return "running"
+	default:
+		return "pending"
+	}
+}
+
+func workflowProtocolNextActions(projectID, currentStep string, nodes []WorkflowProtocolNode) []WorkflowProtocolAction {
+	actions := []WorkflowProtocolAction{}
+	add := func(action WorkflowProtocolAction) {
+		if strings.TrimSpace(action.ID) == "" || strings.TrimSpace(action.Type) == "" {
+			return
+		}
+		actions = append(actions, action)
+	}
+
+	switch currentStep {
+	case "repo_import":
+		add(WorkflowProtocolAction{
+			ID:         "next:repo-import",
+			Type:       "import_repository",
+			Label:      "Import repository context",
+			TargetStep: currentStep,
+			Method:     http.MethodPost,
+			Endpoint:   "/api/public/repo/issues",
+		})
+	case "issue_scan":
+		add(WorkflowProtocolAction{
+			ID:         "next:repo-sync",
+			Type:       "sync_repository_issues",
+			Label:      "Sync repository issues",
+			TargetStep: currentStep,
+			Method:     http.MethodPost,
+			Endpoint:   fmt.Sprintf("/api/projects/%s/repo-sync", projectID),
+		})
+	case "task_generation", "reward_estimation":
+		add(WorkflowProtocolAction{
+			ID:         "next:estimate-scope",
+			Type:       "evaluate_scope",
+			Label:      "Evaluate scope and reward allocation",
+			TargetStep: currentStep,
+			Method:     http.MethodPost,
+			Endpoint:   "/api/projects/evaluate-price",
+		})
+	case "contributor_routing":
+		for _, node := range nodes {
+			if node.Status != "ready" {
+				continue
+			}
+			actionType := "submit_proposal"
+			label := "Submit worker proposal"
+			endpoint := "/api/proposals"
+			if node.RequiredWorkerKind == WorkerAgent {
+				actionType = "claim_with_agent"
+				label = "Claim with AI agent"
+				endpoint = "/api/tasks/{task_id}/accept"
+			}
+			add(WorkflowProtocolAction{
+				ID:           fmt.Sprintf("next:route-%d", len(actions)+1),
+				Type:         actionType,
+				Label:        label,
+				TargetStep:   currentStep,
+				TargetNodeID: node.ID,
+				TaskID:       node.TaskID,
+				WorkerKind:   node.RequiredWorkerKind,
+				Method:       http.MethodPost,
+				Endpoint:     endpoint,
+			})
+			if len(actions) >= 4 {
+				break
+			}
+		}
+	case "pr_review":
+		for _, node := range nodes {
+			if node.Status != "accepted" {
+				continue
+			}
+			add(WorkflowProtocolAction{
+				ID:           fmt.Sprintf("next:review-%d", len(actions)+1),
+				Type:         "record_agent_review",
+				Label:        "Record AI review evidence",
+				TargetStep:   currentStep,
+				TargetNodeID: node.ID,
+				TaskID:       node.TaskID,
+				WorkerKind:   WorkerAgent,
+				Method:       http.MethodPost,
+				Endpoint:     fmt.Sprintf("/api/projects/%s/agent-actions", projectID),
+			})
+			if len(actions) >= 3 {
+				break
+			}
+		}
+		if len(actions) == 0 {
+			for _, node := range nodes {
+				if node.Status != "ready" {
+					continue
+				}
+				actionType := "submit_proposal"
+				label := "Submit worker proposal"
+				endpoint := "/api/proposals"
+				if node.RequiredWorkerKind == WorkerAgent {
+					actionType = "claim_with_agent"
+					label = "Claim with AI agent"
+					endpoint = "/api/tasks/{task_id}/accept"
+				}
+				add(WorkflowProtocolAction{
+					ID:           fmt.Sprintf("next:route-%d", len(actions)+1),
+					Type:         actionType,
+					Label:        label,
+					TargetStep:   "contributor_routing",
+					TargetNodeID: node.ID,
+					TaskID:       node.TaskID,
+					WorkerKind:   node.RequiredWorkerKind,
+					Method:       http.MethodPost,
+					Endpoint:     endpoint,
+				})
+				if len(actions) >= 4 {
+					break
+				}
+			}
+		}
+	case "deployment_validation":
+		add(WorkflowProtocolAction{
+			ID:         "next:deployment-evidence",
+			Type:       "record_deployment_evidence",
+			Label:      "Record deployment validation",
+			TargetStep: currentStep,
+			WorkerKind: WorkerAgent,
+			Method:     http.MethodPost,
+			Endpoint:   fmt.Sprintf("/api/projects/%s/agent-actions", projectID),
+		})
+	}
+	return actions
+}
+
+func workflowProtocolEvidence(signals []AIWorkflowSignal) []WorkflowProtocolEvidence {
+	if len(signals) == 0 {
+		return nil
+	}
+	evidence := make([]WorkflowProtocolEvidence, 0, len(signals))
+	for _, signal := range signals {
+		evidence = append(evidence, WorkflowProtocolEvidence{
+			ID:        signal.ID,
+			Type:      signal.Type,
+			Title:     signal.Title,
+			Status:    signal.Status,
+			Reference: signal.Reference,
+			URL:       signal.URL,
+			CreatedAt: signal.CreatedAt,
+		})
+	}
+	return evidence
 }
 
 func publicWorkflowNodeID(projectID string, node TaskGraphNode, index int) string {

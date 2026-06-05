@@ -61,6 +61,116 @@
         }
       }
     },
+    "stages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "title", "summary", "status", "updated_at"],
+        "properties": {
+          "id": {
+            "enum": [
+              "repo_import",
+              "issue_scan",
+              "task_generation",
+              "reward_estimation",
+              "contributor_routing",
+              "pr_review",
+              "deployment_validation"
+            ]
+          },
+          "title": { "type": "string", "minLength": 1, "maxLength": 160 },
+          "summary": { "type": "string", "minLength": 1, "maxLength": 1000 },
+          "status": { "enum": ["pending", "in_progress", "complete"] },
+          "tone": { "enum": ["green", "blue", "amber", "red", "gray"] },
+          "reference": { "type": "string", "maxLength": 512 },
+          "url": { "type": "string", "maxLength": 512 },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "stage_id", "title", "status", "required"],
+        "properties": {
+          "id": { "type": "string", "minLength": 3, "maxLength": 120 },
+          "stage_id": {
+            "enum": [
+              "repo_import",
+              "issue_scan",
+              "task_generation",
+              "reward_estimation",
+              "contributor_routing",
+              "pr_review",
+              "deployment_validation"
+            ]
+          },
+          "title": { "type": "string", "minLength": 1, "maxLength": 160 },
+          "status": { "enum": ["pending", "running", "passed", "blocked"] },
+          "required": { "type": "boolean" },
+          "summary": { "type": "string", "maxLength": 1000 }
+        }
+      }
+    },
+    "next_actions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "type", "label", "target_step"],
+        "properties": {
+          "id": { "type": "string", "minLength": 3, "maxLength": 120 },
+          "type": {
+            "enum": [
+              "import_repository",
+              "sync_repository_issues",
+              "evaluate_scope",
+              "submit_proposal",
+              "claim_with_agent",
+              "record_agent_review",
+              "record_deployment_evidence"
+            ]
+          },
+          "label": { "type": "string", "minLength": 1, "maxLength": 160 },
+          "target_step": {
+            "enum": [
+              "repo_import",
+              "issue_scan",
+              "task_generation",
+              "reward_estimation",
+              "contributor_routing",
+              "pr_review",
+              "deployment_validation"
+            ]
+          },
+          "target_node_id": { "type": "string", "minLength": 1, "maxLength": 96 },
+          "task_id": { "type": "string", "minLength": 1, "maxLength": 96 },
+          "worker_kind": { "enum": ["human", "agent", "hybrid"] },
+          "method": { "enum": ["GET", "POST", "PATCH", "DELETE"] },
+          "endpoint": { "type": "string", "minLength": 1, "maxLength": 240 }
+        }
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "type", "title", "status", "created_at"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "type": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "title": { "type": "string", "minLength": 1, "maxLength": 240 },
+          "status": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "reference": { "type": "string", "maxLength": 512 },
+          "url": { "type": "string", "maxLength": 512 },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      }
+    },
     "metadata": { "type": "object" }
   }
 }

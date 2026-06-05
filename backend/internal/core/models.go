@@ -1194,16 +1194,20 @@ type ProjectTaskGraphResponse struct {
 }
 
 type WorkflowProtocolDocument struct {
-	ProtocolVersion string                 `json:"protocol_version"`
-	Kind            string                 `json:"kind"`
-	ID              string                 `json:"id"`
-	ProjectID       string                 `json:"project_id"`
-	Status          string                 `json:"status,omitempty"`
-	Progress        int                    `json:"progress,omitempty"`
-	CurrentStep     string                 `json:"current_step,omitempty"`
-	Nodes           []WorkflowProtocolNode `json:"nodes"`
-	Edges           []WorkflowProtocolEdge `json:"edges"`
-	Metadata        map[string]any         `json:"metadata,omitempty"`
+	ProtocolVersion string                     `json:"protocol_version"`
+	Kind            string                     `json:"kind"`
+	ID              string                     `json:"id"`
+	ProjectID       string                     `json:"project_id"`
+	Status          string                     `json:"status,omitempty"`
+	Progress        int                        `json:"progress,omitempty"`
+	CurrentStep     string                     `json:"current_step,omitempty"`
+	Nodes           []WorkflowProtocolNode     `json:"nodes"`
+	Edges           []WorkflowProtocolEdge     `json:"edges"`
+	Stages          []WorkflowProtocolStage    `json:"stages,omitempty"`
+	Checks          []WorkflowProtocolCheck    `json:"checks,omitempty"`
+	NextActions     []WorkflowProtocolAction   `json:"next_actions,omitempty"`
+	Evidence        []WorkflowProtocolEvidence `json:"evidence,omitempty"`
+	Metadata        map[string]any             `json:"metadata,omitempty"`
 }
 
 type WorkflowProtocolNode struct {
@@ -1225,6 +1229,48 @@ type WorkflowProtocolEdge struct {
 	From     string `json:"from"`
 	To       string `json:"to"`
 	Relation string `json:"relation"`
+}
+
+type WorkflowProtocolStage struct {
+	ID        string    `json:"id"`
+	Title     string    `json:"title"`
+	Summary   string    `json:"summary"`
+	Status    string    `json:"status"`
+	Tone      string    `json:"tone,omitempty"`
+	Reference string    `json:"reference,omitempty"`
+	URL       string    `json:"url,omitempty"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+type WorkflowProtocolCheck struct {
+	ID       string `json:"id"`
+	StageID  string `json:"stage_id"`
+	Title    string `json:"title"`
+	Status   string `json:"status"`
+	Required bool   `json:"required"`
+	Summary  string `json:"summary,omitempty"`
+}
+
+type WorkflowProtocolAction struct {
+	ID           string     `json:"id"`
+	Type         string     `json:"type"`
+	Label        string     `json:"label"`
+	TargetStep   string     `json:"target_step"`
+	TargetNodeID string     `json:"target_node_id,omitempty"`
+	TaskID       string     `json:"task_id,omitempty"`
+	WorkerKind   WorkerKind `json:"worker_kind,omitempty"`
+	Method       string     `json:"method,omitempty"`
+	Endpoint     string     `json:"endpoint,omitempty"`
+}
+
+type WorkflowProtocolEvidence struct {
+	ID        string    `json:"id"`
+	Type      string    `json:"type"`
+	Title     string    `json:"title"`
+	Status    string    `json:"status"`
+	Reference string    `json:"reference,omitempty"`
+	URL       string    `json:"url,omitempty"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 type ProjectRepositoryScanResponse struct {

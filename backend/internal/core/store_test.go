@@ -2927,6 +2927,9 @@ func TestPublicProjectWorkflowRouteReturnsSanitizedGraph(t *testing.T) {
 	if len(document.Nodes) != len(project.Tasks) || len(document.Edges) == 0 {
 		t.Fatalf("public workflow graph mismatch: %#v", document)
 	}
+	if len(document.Stages) != 7 || len(document.Checks) != 7 || len(document.Evidence) == 0 {
+		t.Fatalf("public workflow missing orchestration stages, checks, or evidence: %#v", document)
+	}
 
 	publicIDs := map[string]bool{}
 	for _, node := range document.Nodes {
@@ -2943,6 +2946,14 @@ func TestPublicProjectWorkflowRouteReturnsSanitizedGraph(t *testing.T) {
 			if !publicIDs[dependency] {
 				t.Fatalf("public workflow dependency does not reference a public node id: node=%#v dependency=%q", node, dependency)
 			}
+		}
+	}
+	for _, action := range document.NextActions {
+		if action.TaskID != "" && !publicIDs[action.TaskID] {
+			t.Fatalf("public workflow action does not reference a public task id: %#v", action)
+		}
+		if action.TargetNodeID != "" && !publicIDs[action.TargetNodeID] {
+			t.Fatalf("public workflow action does not reference a public node id: %#v", action)
 		}
 	}
 	for _, edge := range document.Edges {
@@ -3292,6 +3303,25 @@ func TestProjectTaskGraphRouteReturnsAcyclicDependencyGraph(t *testing.T) {
 	workflowSteps, ok := document.Metadata["workflow_steps"].([]interface{})
 	if !ok || len(workflowSteps) != 7 || document.Metadata["current_step"] != "contributor_routing" {
 		t.Fatalf("workflow protocol missing AI workflow stage metadata: %#v", document.Metadata)
+	}
+	if len(document.Stages) != 7 || len(document.Checks) != 7 || len(document.Evidence) == 0 {
+		t.Fatalf("workflow protocol missing execution stages, checks, or evidence: %#v", document)
+	}
+	if len(document.NextActions) == 0 {
+		t.Fatalf("workflow protocol missing executable next actions: %#v", document)
+	}
+	nodeIDs := map[string]bool{}
+	for _, node := range document.Nodes {
+		nodeIDs[node.ID] = true
+		nodeIDs[node.TaskID] = true
+	}
+	for _, action := range document.NextActions {
+		if action.TaskID != "" && !nodeIDs[action.TaskID] {
+			t.Fatalf("workflow action references unknown task: %#v", action)
+		}
+		if action.TargetNodeID != "" && !nodeIDs[action.TargetNodeID] {
+			t.Fatalf("workflow action references unknown node: %#v", action)
+		}
 	}
 	if err := store.AddGeminiWebhookLog(GeminiWebhookLog{
 		EventName:  "pull_request",
