@@ -1,0 +1,131 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mergeos.shop/protocol/agent-runbook.v1.schema.json",
+  "title": "MergeOS Agent Runbook v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "protocol_version",
+    "kind",
+    "id",
+    "title",
+    "audience",
+    "supervisor_agent_type",
+    "supported_agent_types",
+    "context_urls",
+    "workflow",
+    "claim_flow",
+    "action_templates",
+    "evidence_contract",
+    "guardrails"
+  ],
+  "properties": {
+    "protocol_version": { "const": "mergeos.agent-runbook.v1" },
+    "kind": { "const": "agent_runbook" },
+    "id": { "type": "string", "minLength": 3, "maxLength": 120 },
+    "title": { "type": "string", "minLength": 1, "maxLength": 180 },
+    "summary": { "type": "string", "maxLength": 800 },
+    "audience": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "enum": ["external_agent", "mergeide", "contributor", "admin"] }
+    },
+    "supervisor_agent_type": { "type": "string", "minLength": 1, "maxLength": 120 },
+    "supported_agent_types": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1, "maxLength": 120 }
+    },
+    "context_urls": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/contextUrl" }
+    },
+    "workflow": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/workflowStep" }
+    },
+    "claim_flow": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/claimStep" }
+    },
+    "action_templates": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/actionTemplate" }
+    },
+    "evidence_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["required", "optional"],
+      "properties": {
+        "required": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1, "maxLength": 160 }
+        },
+        "optional": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1, "maxLength": 160 }
+        }
+      }
+    },
+    "guardrails": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1, "maxLength": 260 }
+    },
+    "links": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/contextUrl" }
+    }
+  },
+  "$defs": {
+    "contextUrl": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["label", "url"],
+      "properties": {
+        "label": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "url": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "protocol": { "type": "string", "maxLength": 120 },
+        "auth": { "type": "string", "enum": ["none", "project", "worker", "admin"] }
+      }
+    },
+    "workflowStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["step", "id", "title", "description", "agent_action"],
+      "properties": {
+        "step": { "type": "integer", "minimum": 1 },
+        "id": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "title": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "description": { "type": "string", "minLength": 1, "maxLength": 360 },
+        "agent_action": { "type": "string", "enum": ["review", "test", "generate", "deploy", "scan"] }
+      }
+    },
+    "claimStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["step", "method", "endpoint", "description"],
+      "properties": {
+        "step": { "type": "integer", "minimum": 1 },
+        "method": { "type": "string", "enum": ["GET", "POST"] },
+        "endpoint": { "type": "string", "minLength": 1, "maxLength": 240 },
+        "description": { "type": "string", "minLength": 1, "maxLength": 320 }
+      }
+    },
+    "actionTemplate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["action", "method", "endpoint", "body"],
+      "properties": {
+        "action": { "type": "string", "enum": ["review", "test", "generate", "deploy", "scan"] },
+        "method": { "const": "POST" },
+        "endpoint": { "type": "string", "minLength": 1, "maxLength": 240 },
+        "body": { "type": "object", "additionalProperties": true }
+      }
+    }
+  }
+}

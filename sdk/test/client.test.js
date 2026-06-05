@@ -172,6 +172,30 @@ test('derives Solana ledger references and legacy wallet hashes for operators', 
   assert.equal(pda.legacy_address_hash_bytes.length, 32);
 });
 
+test('loads public external agent runbook without auth', async () => {
+  const fetchImpl = fakeFetch([
+    {
+      status: 200,
+      body: {
+        protocol_version: 'mergeos.agent-runbook.v1',
+        kind: 'agent_runbook',
+        id: 'mergeide-agent.v1',
+      },
+    },
+  ]);
+  const client = new MergeOSClient({
+    baseURL: 'https://mergeos.shop',
+    token: 'secret-token',
+    fetchImpl,
+  });
+
+  const runbook = await client.publicAgentRunbook();
+
+  assert.equal(runbook.protocol_version, 'mergeos.agent-runbook.v1');
+  assert.equal(fetchImpl.calls[0].url, 'https://mergeos.shop/protocol/runbooks/mergeide-agent.v1.json');
+  assert.equal(fetchImpl.calls[0].options.headers.Authorization, undefined);
+});
+
 test('maps typed agent action event protocol values', () => {
   assert.equal(agentActionEventTypes.test, 'agent.tested');
   assert.equal(agentActionEventType('review'), 'agent.reviewed');

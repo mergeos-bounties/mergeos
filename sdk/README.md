@@ -98,6 +98,7 @@ await mergeos.publicProtocolManifest();
 await mergeos.publicProtocolTasks({ limit: 80 });
 await mergeos.publicProtocolTasks({ taskID: 'prj_public_0001:12' });
 await mergeos.publicProtocolAgentQueue({ limit: 80 });
+await mergeos.publicAgentRunbook();
 await mergeos.publicProtocolAgents({ limit: 80 });
 await mergeos.publicProtocolContributors({ limit: 80 });
 await mergeos.publicProtocolLedger();
@@ -198,6 +199,15 @@ const dispute = await mergeos.createDispute({
 console.log(dispute.protocol_version, dispute.severity);
 await mergeos.workerDashboard();
 ```
+
+## External Agent Runbook
+
+```js
+const runbook = await mergeos.publicAgentRunbook();
+console.log(runbook.protocol_version, runbook.supervisor_agent_type, runbook.workflow.length);
+```
+
+The default runbook is `/protocol/runbooks/mergeide-agent.v1.json`. It gives MergeIDE, Codex-style coding agents, review agents, QA agents, deployment agents, security agents, and design review subagents a shared public order of operations before claiming funded work.
 
 ## Admin APIs
 

@@ -168,9 +168,11 @@ test('production server serves MergeIDE download manifest and preview kit', asyn
   const cwd = await fs.mkdtemp(path.join(os.tmpdir(), 'mergeos-frontend-downloads-'));
   const clientDist = path.join(cwd, 'client');
   const downloadsDir = path.join(clientDist, 'downloads');
+  const runbooksDir = path.join(clientDist, 'protocol', 'runbooks');
   const serverDir = path.join(cwd, 'server');
   const serverEntry = path.join(serverDir, 'entry-server.mjs');
   await fs.mkdir(downloadsDir, { recursive: true });
+  await fs.mkdir(runbooksDir, { recursive: true });
   await fs.mkdir(serverDir, { recursive: true });
   await fs.writeFile(
     path.join(clientDist, 'index.html'),
@@ -179,6 +181,10 @@ test('production server serves MergeIDE download manifest and preview kit', asyn
   await fs.writeFile(
     path.join(downloadsDir, 'mergeide-windows-latest.json'),
     JSON.stringify({ protocol_version: 'mergeos.release-artifact.v1', kind: 'release_artifact' }),
+  );
+  await fs.writeFile(
+    path.join(runbooksDir, 'mergeide-agent.v1.json'),
+    JSON.stringify({ protocol_version: 'mergeos.agent-runbook.v1', kind: 'agent_runbook' }),
   );
   await fs.writeFile(path.join(downloadsDir, 'mergeide-preview-kit.md'), '# MergeIDE Preview Kit\n');
   await fs.writeFile(serverEntry, "export async function render() { return '<main></main>'; }\n");
@@ -202,6 +208,8 @@ test('production server serves MergeIDE download manifest and preview kit', asyn
   const manifest = await manifestResponse.json();
   const kitResponse = await fetch(`http://127.0.0.1:${address.port}/downloads/mergeide-preview-kit.md`);
   const kit = await kitResponse.text();
+  const runbookResponse = await fetch(`http://127.0.0.1:${address.port}/protocol/runbooks/mergeide-agent.v1.json`);
+  const runbook = await runbookResponse.json();
 
   assert.equal(manifestResponse.status, 200);
   assert.match(manifestResponse.headers.get('content-type') || '', /application\/json/);
@@ -209,6 +217,9 @@ test('production server serves MergeIDE download manifest and preview kit', asyn
   assert.equal(kitResponse.status, 200);
   assert.match(kitResponse.headers.get('content-type') || '', /text\/markdown/);
   assert.match(kit, /MergeIDE Preview Kit/);
+  assert.equal(runbookResponse.status, 200);
+  assert.match(runbookResponse.headers.get('content-type') || '', /application\/json/);
+  assert.equal(runbook.protocol_version, 'mergeos.agent-runbook.v1');
 });
 
 test('production server marks hashed assets as immutable', async (t) => {

@@ -146,6 +146,11 @@ export class MergeOSClient {
     return this.request(`/api/public/protocol/agent-queue${query}`, { auth: false });
   }
 
+  publicAgentRunbook(id = 'mergeide-agent.v1') {
+    const runbookID = encodeURIComponent(String(id || 'mergeide-agent.v1'));
+    return this.request(`/protocol/runbooks/${runbookID}.json`, { auth: false });
+  }
+
   publicProtocolAgents(options = {}) {
     const limit = Number(options.limit) > 0 ? `?limit=${encodeURIComponent(Number(options.limit))}` : '';
     return this.request(`/api/public/protocol/agents${limit}`, { auth: false });

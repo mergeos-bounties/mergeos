@@ -42,6 +42,12 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Description: "Public AI agent work queue with executable work packets, task context URLs, claim endpoints, and evidence payload templates.",
 			},
 			{
+				Version:     "mergeos.agent-runbook.v1",
+				Kind:        "agent_runbook",
+				SchemaURL:   "https://mergeos.shop/protocol/agent-runbook.v1.schema.json",
+				Description: "Public external AI agent runbook with context URLs, claim flow, action templates, evidence contract, and safety guardrails.",
+			},
+			{
 				Version:     "mergeos.marketplace.v1",
 				Kind:        "marketplace",
 				SchemaURL:   "https://mergeos.shop/protocol/marketplace.v1.schema.json",
@@ -233,6 +239,13 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Protocol:    "mergeos.agent-queue.v1",
 				Auth:        "none",
 				Description: "Public claim-safe AI agent queue with executable work packets for agent-ready and hybrid bounties.",
+			},
+			{
+				Method:      "GET",
+				Path:        "/protocol/runbooks/mergeide-agent.v1.json",
+				Protocol:    "mergeos.agent-runbook.v1",
+				Auth:        "none",
+				Description: "Public MergeIDE and external-agent runbook with protocol context URLs, claim flow, action templates, and evidence guardrails.",
 			},
 			{
 				Method:      "GET",

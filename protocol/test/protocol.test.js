@@ -19,6 +19,7 @@ test('loads stable task, workflow, ledger, and event schemas', () => {
     'mergeos.admin-ops.v1',
     'mergeos.agent-action.v1',
     'mergeos.agent-queue.v1',
+    'mergeos.agent-runbook.v1',
     'mergeos.agent.v1',
     'mergeos.ai-workflow.v1',
     'mergeos.contributor.v1',
@@ -49,6 +50,84 @@ test('loads stable task, workflow, ledger, and event schemas', () => {
     'mergeos.workflow.v1',
   ]);
   assert.equal(schemaForProtocol('mergeos.task.v1').title, 'MergeOS Task v1');
+});
+
+test('validates agent runbook protocol documents', () => {
+  const runbook = {
+    protocol_version: 'mergeos.agent-runbook.v1',
+    kind: 'agent_runbook',
+    id: 'mergeide-agent.v1',
+    title: 'MergeIDE external agent runbook',
+    summary: 'Claim-safe runbook for external AI agents.',
+    audience: ['external_agent', 'mergeide'],
+    supervisor_agent_type: 'ceo-strategy-agent',
+    supported_agent_types: ['coding-agent', 'review-agent', 'qa-agent'],
+    context_urls: [
+      { label: 'Agent queue', url: '/api/public/protocol/agent-queue', protocol: 'mergeos.agent-queue.v1', auth: 'none' },
+    ],
+    workflow: [
+      {
+        step: 1,
+        id: 'repo_import',
+        title: 'Import repository context',
+        description: 'Read public task and queue context.',
+        agent_action: 'scan',
+      },
+    ],
+    claim_flow: [
+      {
+        step: 1,
+        method: 'GET',
+        endpoint: '/api/public/protocol/agent-queue',
+        description: 'Read agent-ready work packets.',
+      },
+    ],
+    action_templates: [
+      {
+        action: 'test',
+        method: 'POST',
+        endpoint: '/api/projects/{id}/agent-actions',
+        body: { action: 'test', agent_type: 'qa-agent', status: 'processed' },
+      },
+    ],
+    evidence_contract: {
+      required: ['task packet URL', 'test result'],
+      optional: ['deployment preview URL'],
+    },
+    guardrails: ['Do not expose private customer data.'],
+    links: [{ label: 'MergeIDE', url: '/mergeide', auth: 'none' }],
+  };
+
+  assert.equal(validateProtocolDocument(runbook).valid, true);
+
+  const invalid = validateProtocolDocument({
+    ...runbook,
+    audience: ['robot'],
+    workflow: [{ ...runbook.workflow[0], agent_action: 'pay' }],
+    claim_flow: [{ ...runbook.claim_flow[0], method: 'PATCH' }],
+  });
+  assert.equal(invalid.valid, false);
+  assert(invalid.errors.some((error) => error.path === 'audience[0]'));
+  assert(invalid.errors.some((error) => error.path === 'workflow[0].agent_action'));
+  assert(invalid.errors.some((error) => error.path === 'claim_flow[0].method'));
+});
+
+test('validates the public MergeIDE agent runbook', () => {
+  const runbook = JSON.parse(readFileSync(new URL('../../frontend/public/protocol/runbooks/mergeide-agent.v1.json', import.meta.url), 'utf8'));
+  const result = validateProtocolDocument(runbook);
+
+  assert.equal(result.valid, true);
+  assert.equal(runbook.protocol_version, 'mergeos.agent-runbook.v1');
+  assert.equal(runbook.supervisor_agent_type, 'ceo-strategy-agent');
+  assert.deepEqual(runbook.workflow.map((step) => step.id), [
+    'repo_import',
+    'issue_scan',
+    'task_generation',
+    'reward_estimation',
+    'contributor_routing',
+    'pr_review',
+    'deployment_validation',
+  ]);
 });
 
 test('validates release artifact protocol documents', () => {

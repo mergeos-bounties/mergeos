@@ -328,6 +328,7 @@ Public:
 - `GET /api/public/protocol/ledger`
 - `GET /api/public/protocol/events`
 - `WS /api/ws`
+- `GET /protocol/runbooks/mergeide-agent.v1.json`
 - `POST /api/public/repo/issues`
 - `GET /downloads/mergeide-windows-latest.json`
 - `GET /downloads/mergeide-preview-kit.md`

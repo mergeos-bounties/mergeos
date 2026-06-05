@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 const schemaFiles = {
   'mergeos.agent-action.v1': '../schemas/agent-action.v1.schema.json',
   'mergeos.agent-queue.v1': '../schemas/agent-queue.v1.schema.json',
+  'mergeos.agent-runbook.v1': '../schemas/agent-runbook.v1.schema.json',
   'mergeos.admin-ops.v1': '../schemas/admin-ops.v1.schema.json',
   'mergeos.agent.v1': '../schemas/agent.v1.schema.json',
   'mergeos.ai-workflow.v1': '../schemas/ai-workflow.v1.schema.json',
