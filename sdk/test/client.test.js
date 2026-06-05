@@ -372,6 +372,7 @@ test('sends bearer token and JSON body for task acceptance, proposals, and dispu
   const fetchImpl = fakeFetch([
     { status: 200, body: { protocol_version: 'mergeos.task-claim.v1', kind: 'task_claim', id: 'tsk_1', task_id: 'tsk_1', status: 'accepted' } },
     { status: 201, body: { protocol_version: 'mergeos.proposal.v1', kind: 'proposal', proposal: { id: 'ntf_1', status: 'submitted' } } },
+    { status: 200, body: { protocol_version: 'mergeos.proposal.v1', kind: 'proposal', proposal: { id: 'ntf_1', status: 'accepted' } } },
     { status: 201, body: { protocol_version: 'mergeos.dispute.v1', kind: 'dispute', notification: { id: 'ntf_1', status: 'dispute:high' } } },
   ]);
   const client = createMergeOSClient({ baseURL: 'http://127.0.0.1:8080', token: 'abc', fetchImpl });
@@ -386,6 +387,7 @@ test('sends bearer token and JSON body for task acceptance, proposals, and dispu
     availability: 'Available this week',
   };
   const proposal = await client.createProposal(proposalPayload);
+  const proposalDecision = await client.decideProposal('ntf_1', { decision: 'accepted' });
   const disputePayload = { task_id: 'tsk_1', body: 'Evidence needs maintainer review.' };
   const dispute = await client.createDispute(disputePayload);
 
@@ -395,6 +397,7 @@ test('sends bearer token and JSON body for task acceptance, proposals, and dispu
   assert.equal(proposal.protocol_version, 'mergeos.proposal.v1');
   assert.equal(proposal.kind, 'proposal');
   assert.equal(proposal.proposal.status, 'submitted');
+  assert.equal(proposalDecision.proposal.status, 'accepted');
   assert.equal(dispute.protocol_version, 'mergeos.dispute.v1');
   assert.equal(dispute.kind, 'dispute');
   assert.equal(dispute.notification.status, 'dispute:high');
@@ -406,10 +409,14 @@ test('sends bearer token and JSON body for task acceptance, proposals, and dispu
   assert.equal(fetchImpl.calls[1].options.method, 'POST');
   assert.equal(fetchImpl.calls[1].options.headers.Authorization, 'Bearer abc');
   assert.equal(fetchImpl.calls[1].options.body, JSON.stringify(proposalPayload));
-  assert.equal(fetchImpl.calls[2].url, 'http://127.0.0.1:8080/api/disputes');
+  assert.equal(fetchImpl.calls[2].url, 'http://127.0.0.1:8080/api/proposals/ntf_1/decision');
   assert.equal(fetchImpl.calls[2].options.method, 'POST');
   assert.equal(fetchImpl.calls[2].options.headers.Authorization, 'Bearer abc');
-  assert.equal(fetchImpl.calls[2].options.body, JSON.stringify(disputePayload));
+  assert.equal(fetchImpl.calls[2].options.body, JSON.stringify({ decision: 'accepted' }));
+  assert.equal(fetchImpl.calls[3].url, 'http://127.0.0.1:8080/api/disputes');
+  assert.equal(fetchImpl.calls[3].options.method, 'POST');
+  assert.equal(fetchImpl.calls[3].options.headers.Authorization, 'Bearer abc');
+  assert.equal(fetchImpl.calls[3].options.body, JSON.stringify(disputePayload));
 });
 
 test('supports wallet, payment, and raw upload helper routes', async () => {

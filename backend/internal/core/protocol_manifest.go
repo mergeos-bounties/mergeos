@@ -360,6 +360,13 @@ func ProtocolManifest() ProtocolManifestResponse {
 			},
 			{
 				Method:      "POST",
+				Path:        "/api/proposals/{id}/decision",
+				Protocol:    "mergeos.proposal.v1",
+				Auth:        "project",
+				Description: "Authenticated customer or admin proposal decision that accepts a worker bid into a claimed task or declines it with dashboard status updates.",
+			},
+			{
+				Method:      "POST",
 				Path:        "/api/projects/evaluate-price",
 				Protocol:    "mergeos.estimate.v1",
 				Auth:        "user",

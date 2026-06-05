@@ -139,6 +139,10 @@ type CreateProposalResponse struct {
 	CustomerNotification Notification            `json:"customer_notification"`
 }
 
+type ProposalDecisionRequest struct {
+	Decision string `json:"decision"`
+}
+
 type Attachment struct {
 	ID           string    `json:"id"`
 	UserID       string    `json:"user_id,omitempty"`

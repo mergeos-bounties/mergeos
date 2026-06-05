@@ -125,6 +125,93 @@ func (s *Store) hasOpenProposalLocked(userID, taskID string) bool {
 	return false
 }
 
+func (s *Store) DecideProposal(userID string, role UserRole, proposalID string, req ProposalDecisionRequest) (CreateProposalResponse, error) {
+	userID = strings.TrimSpace(userID)
+	proposalID = strings.TrimSpace(proposalID)
+	decision := normalizeProposalDecision(req.Decision)
+	if decision == "" {
+		return CreateProposalResponse{}, errors.New("decision must be accepted or declined")
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	workerNote := s.notifications[proposalID]
+	if workerNote == nil || workerNote.Channel != "proposal" {
+		return CreateProposalResponse{}, errors.New("proposal not found")
+	}
+	fields := splitLedgerReference(workerNote.Status)
+	if !proposalOpenStatus(fields["proposal"]) {
+		return CreateProposalResponse{}, fmt.Errorf("proposal is already %s", proposalStatusLabel(fields["proposal"]))
+	}
+	taskID, err := s.resolveTaskClaimIDLocked(fields["task"])
+	if err != nil {
+		return CreateProposalResponse{}, err
+	}
+	task := s.tasks[taskID]
+	if task == nil {
+		return CreateProposalResponse{}, errors.New("task not found")
+	}
+	project := s.projects[task.ProjectID]
+	if project == nil {
+		return CreateProposalResponse{}, errors.New("project not found")
+	}
+	if workerNote.UserID == project.ClientUserID || strings.TrimSpace(fields["worker"]) == "" {
+		return CreateProposalResponse{}, errors.New("proposal not found")
+	}
+	if normalizeRole(role) != RoleAdmin && project.ClientUserID != userID {
+		return CreateProposalResponse{}, errors.New("access denied")
+	}
+
+	bidCents, _ := strconv.ParseInt(fields["bid"], 10, 64)
+	if bidCents <= 0 {
+		bidCents = task.RewardCents
+	}
+	estimatedHours, _ := strconv.ParseFloat(fields["hours"], 64)
+	availability := fields["availability"]
+
+	if decision == "accepted" {
+		if task.Status == TaskAccepted {
+			return CreateProposalResponse{}, errors.New("task is already accepted")
+		}
+		acceptReq := AcceptTaskRequest{
+			WorkerKind: task.RequiredWorkerKind,
+			WorkerID:   fields["worker"],
+		}
+		if acceptReq.WorkerKind != WorkerHuman {
+			acceptReq.AgentType = strings.TrimSpace(task.SuggestedAgentType)
+			if acceptReq.AgentType == "" {
+				acceptReq.AgentType = "proposal-approved"
+			}
+		}
+		reference := proposalReferenceWithStatus("accepted", task.ID, fields["worker"], bidCents, estimatedHours, availability)
+		if _, _, err := s.acceptTaskWithReviewReferenceLocked(task.ID, acceptReq, bidCents, "worker-proposal", reference); err != nil {
+			return CreateProposalResponse{}, err
+		}
+	}
+
+	selectedWorkerNote, selectedCustomerNote := s.updateProposalDecisionStatusesLocked(project, task.ID, fields["worker"], decision)
+	if selectedWorkerNote == nil {
+		workerNote.Status = proposalReferenceWithStatus(decision, task.ID, fields["worker"], bidCents, estimatedHours, availability)
+		selectedWorkerNote = workerNote
+	}
+	if selectedCustomerNote == nil {
+		selectedCustomerNote = selectedWorkerNote
+	}
+	if err := s.saveLocked(); err != nil {
+		return CreateProposalResponse{}, err
+	}
+
+	proposal := s.workerSubmittedProposalFromNotificationLocked(selectedWorkerNote)
+	return CreateProposalResponse{
+		ProtocolVersion:      "mergeos.proposal.v1",
+		Kind:                 "proposal",
+		Proposal:             proposal,
+		WorkerNotification:   publicProposalNotification(selectedWorkerNote, proposal.Reference),
+		CustomerNotification: publicProposalNotification(selectedCustomerNote, proposal.Reference),
+	}, nil
+}
+
 func (s *Store) workerSubmittedProposalsLocked(userID string) []WorkerSubmittedProposal {
 	rows := []WorkerSubmittedProposal{}
 	for _, note := range s.notifications {
@@ -142,13 +229,17 @@ func (s *Store) workerSubmittedProposalsLocked(userID string) []WorkerSubmittedP
 func (s *Store) projectSubmittedProposalsLocked(projectID string) []WorkerSubmittedProposal {
 	rows := []WorkerSubmittedProposal{}
 	seen := map[string]bool{}
+	project := s.projects[projectID]
 	for _, note := range s.notifications {
 		if note == nil || note.Channel != "proposal" || note.ProjectID != projectID {
 			continue
 		}
+		if project != nil && note.UserID == project.ClientUserID {
+			continue
+		}
 		fields := splitLedgerReference(note.Status)
 		key := fields["task"] + "|" + fields["worker"]
-		if seen[key] || fields["proposal"] != "submitted" {
+		if seen[key] || !proposalDashboardStatus(fields["proposal"]) {
 			continue
 		}
 		seen[key] = true
@@ -218,8 +309,16 @@ func publicProposalNotification(note *Notification, reference string) Notificati
 }
 
 func proposalReference(taskID, workerID string, bidCents int64, estimatedHours float64, availability string) string {
+	return proposalReferenceWithStatus("submitted", taskID, workerID, bidCents, estimatedHours, availability)
+}
+
+func proposalReferenceWithStatus(status, taskID, workerID string, bidCents int64, estimatedHours float64, availability string) string {
+	status = normalizeProposalStatus(status)
+	if status == "" {
+		status = "submitted"
+	}
 	parts := []string{
-		"proposal:submitted",
+		"proposal:" + status,
 		"task:" + sanitizeLedgerReferenceValue(taskID),
 		"worker:" + sanitizeLedgerReferenceValue(workerID),
 		"bid:" + strconv.FormatInt(bidCents, 10),
@@ -231,6 +330,80 @@ func proposalReference(taskID, workerID string, bidCents int64, estimatedHours f
 		parts = append(parts, "availability:"+availability)
 	}
 	return strings.Join(parts, ";")
+}
+
+func (s *Store) updateProposalDecisionStatusesLocked(project *Project, taskID, selectedWorkerID, decision string) (*Notification, *Notification) {
+	if project == nil {
+		return nil, nil
+	}
+	selectedWorkerID = strings.TrimSpace(selectedWorkerID)
+	var selectedWorkerNote *Notification
+	var selectedCustomerNote *Notification
+	for _, note := range s.notifications {
+		if note == nil || note.Channel != "proposal" || note.ProjectID != project.ID {
+			continue
+		}
+		fields := splitLedgerReference(note.Status)
+		noteTaskID, err := s.resolveTaskClaimIDLocked(fields["task"])
+		if err != nil || noteTaskID != taskID || strings.TrimSpace(fields["worker"]) == "" {
+			continue
+		}
+		currentStatus := normalizeProposalStatus(fields["proposal"])
+		if !proposalOpenStatus(currentStatus) {
+			continue
+		}
+		workerID := strings.TrimSpace(fields["worker"])
+		nextStatus := ""
+		if workerID == selectedWorkerID {
+			nextStatus = decision
+		} else if decision == "accepted" {
+			nextStatus = "declined"
+		}
+		if nextStatus == "" {
+			continue
+		}
+		bidCents, _ := strconv.ParseInt(fields["bid"], 10, 64)
+		estimatedHours, _ := strconv.ParseFloat(fields["hours"], 64)
+		note.Status = proposalReferenceWithStatus(nextStatus, taskID, workerID, bidCents, estimatedHours, fields["availability"])
+		if workerID == selectedWorkerID {
+			if note.UserID == project.ClientUserID {
+				selectedCustomerNote = note
+			} else {
+				selectedWorkerNote = note
+			}
+		}
+	}
+	return selectedWorkerNote, selectedCustomerNote
+}
+
+func normalizeProposalDecision(value string) string {
+	value = normalizeProposalStatus(value)
+	if value == "accepted" || value == "declined" {
+		return value
+	}
+	return ""
+}
+
+func normalizeProposalStatus(value string) string {
+	return strings.ToLower(strings.TrimSpace(value))
+}
+
+func proposalOpenStatus(status string) bool {
+	status = normalizeProposalStatus(status)
+	return status == "submitted" || status == "reviewing"
+}
+
+func proposalDashboardStatus(status string) bool {
+	status = normalizeProposalStatus(status)
+	return status == "submitted" || status == "reviewing" || status == "accepted" || status == "declined"
+}
+
+func proposalStatusLabel(status string) string {
+	status = normalizeProposalStatus(status)
+	if status == "" {
+		return "unknown"
+	}
+	return status
 }
 
 func proposalWorkerID(user *User) string {

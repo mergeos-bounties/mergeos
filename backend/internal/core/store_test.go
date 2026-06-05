@@ -1044,6 +1044,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 		"POST /api/projects/{id}/repo-sync",
 		"POST /api/disputes",
 		"POST /api/proposals",
+		"POST /api/proposals/{id}/decision",
 		"GET /api/projects/{id}/escrow",
 		"GET /api/projects/{id}/payouts",
 		"POST /api/projects/{id}/auto-release",
@@ -3771,6 +3772,66 @@ func TestWorkerProposalSubmissionRoutesToCustomerDashboardAndAdminOps(t *testing
 	}
 	if store.WorkerDashboard(workerAuth.User.ID).Stats.SubmittedProposalCount != 1 {
 		t.Fatal("duplicate proposal created another submitted proposal")
+	}
+
+	secondWorkerAuth, err := store.AuthenticateGitHub(GitHubAuthProfile{
+		ID:       "proposal-worker-2",
+		Username: "backup-dev",
+		Name:     "Backup Dev",
+		Email:    "backup-dev@example.com",
+	}, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	secondBody := fmt.Sprintf(`{"task_id":%q,"cover_letter":"I can also ship this with review notes.","bid_cents":15000,"estimated_hours":11,"availability":"Next week"}`, publicTaskID)
+	secondReq := httptest.NewRequest(http.MethodPost, "/api/proposals", strings.NewReader(secondBody))
+	secondReq.Header.Set("Authorization", "Bearer "+secondWorkerAuth.Token)
+	secondResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(secondResp, secondReq)
+	if secondResp.Code != http.StatusCreated {
+		t.Fatalf("second proposal status = %d, body = %s", secondResp.Code, secondResp.Body.String())
+	}
+
+	decisionReq := httptest.NewRequest(http.MethodPost, "/api/proposals/"+proposal.Proposal.ID+"/decision", strings.NewReader(`{"decision":"accepted"}`))
+	decisionReq.Header.Set("Authorization", "Bearer "+clientAuth.Token)
+	decisionResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(decisionResp, decisionReq)
+	if decisionResp.Code != http.StatusOK {
+		t.Fatalf("proposal decision status = %d, body = %s", decisionResp.Code, decisionResp.Body.String())
+	}
+	var decision CreateProposalResponse
+	if err := json.Unmarshal(decisionResp.Body.Bytes(), &decision); err != nil {
+		t.Fatal(err)
+	}
+	if decision.Proposal.Status != "accepted" || decision.Proposal.BidCents != 12345 {
+		t.Fatalf("proposal decision did not return accepted bid: %#v", decision.Proposal)
+	}
+	acceptedTask := store.tasks[humanTask.ID]
+	if acceptedTask.Status != TaskAccepted || acceptedTask.WorkerID != "github:proposal-dev" || acceptedTask.RewardCents != 12345 {
+		t.Fatalf("proposal decision did not accept task with proposal worker and bid: %#v", acceptedTask)
+	}
+
+	acceptedWorkerDashboard := store.WorkerDashboard(workerAuth.User.ID)
+	if acceptedWorkerDashboard.Stats.ClaimedTaskCount != 1 || acceptedWorkerDashboard.SubmittedProposals[0].Status != "accepted" {
+		t.Fatalf("accepted worker dashboard missing accepted proposal and claim: %#v", acceptedWorkerDashboard)
+	}
+	declinedWorkerDashboard := store.WorkerDashboard(secondWorkerAuth.User.ID)
+	if declinedWorkerDashboard.SubmittedProposals[0].Status != "declined" {
+		t.Fatalf("unselected worker proposal was not declined: %#v", declinedWorkerDashboard.SubmittedProposals)
+	}
+	customerDashboard, err = store.ProjectDashboard(project.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	statusByWorker := map[string]string{}
+	for _, row := range customerDashboard.Proposals {
+		statusByWorker[row.WorkerID] = row.Status
+	}
+	if statusByWorker["github:proposal-dev"] != "accepted" || statusByWorker["github:backup-dev"] != "declined" {
+		t.Fatalf("customer dashboard proposal statuses not updated: %#v", customerDashboard.Proposals)
+	}
+	if store.AdminOpsQueue().Stats.ProposalCount != 0 {
+		t.Fatalf("accepted proposal left stale admin review item: %#v", store.AdminOpsQueue())
 	}
 }
 

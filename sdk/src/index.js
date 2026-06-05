@@ -343,6 +343,10 @@ export class MergeOSClient {
     return this.request('/api/proposals', { method: 'POST', body: payload });
   }
 
+  decideProposal(proposalID, payload) {
+    return this.request(`/api/proposals/${encodeURIComponent(proposalID)}/decision`, { method: 'POST', body: payload });
+  }
+
   createDispute(payload) {
     return this.request('/api/disputes', { method: 'POST', body: payload });
   }

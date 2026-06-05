@@ -27,7 +27,7 @@ The live app exposes protocol discovery at `GET /api/public/protocol`, and serve
 - `mergeos.deployment.v1`: an authenticated deployment validation document with rollout stages, release gate progress, and ledger/AI evidence signals.
 - `mergeos.wallet-migration.v1`: an authenticated legacy TRC20/EVM wallet migration document with Solana target wallet, legacy address hash, and Anchor `register_legacy_wallet` arguments.
 - `mergeos.pr-monitor.v1`: an authenticated live pull request monitor with task linkage, readiness gates, merge risk, labels, authors, and GitHub sync health.
-- `mergeos.proposal.v1`: an authenticated worker proposal submission with bid, availability, customer notification, and admin review routing.
+- `mergeos.proposal.v1`: an authenticated worker proposal submission and customer decision record with bid, availability, customer notification, admin review routing, and accepted/declined status.
 - `mergeos.scan.v1`: a repository scan document with dependency manifests, language counts, and security/debt findings.
 - `mergeos.customer-dashboard.v1`: an authenticated customer delivery dashboard with project overview, escrow, payouts, deployment, AI workflow, task graph, repository scan, PR monitor modules, and submitted worker proposals.
 - `mergeos.worker-dashboard.v1`: an authenticated worker dashboard document with claimed tasks, submitted proposals, payout references, reputation audit, proposal matches, and identity status.

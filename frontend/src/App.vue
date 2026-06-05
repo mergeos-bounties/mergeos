@@ -3053,7 +3053,7 @@
                       <strong>{{ item.value }}</strong>
                     </span>
                   </div>
-                  <button type="button" :disabled="dashboardRoutingLoading || !dashboardSelectedProject" @click="loadDashboardRoutingData(dashboardSelectedProject?.id)">
+                  <button type="button" :disabled="dashboardRoutingLoading || dashboardProjectDashboardLoading || !dashboardSelectedProject" @click="refreshDashboardRoutingPanel">
                     {{ dashboardRoutingLoading ? 'Refreshing' : 'Refresh Routing' }}
                   </button>
                 </article>
@@ -3193,14 +3193,35 @@
                         <span>#{{ proposal.issueNumber }}</span>
                         <div class="routing-proposal-main">
                           <strong>{{ proposal.title }}</strong>
-                          <small>{{ proposal.worker }} · {{ proposal.when }}</small>
+                          <small>{{ proposal.worker }} - {{ proposal.when }}</small>
                           <p>{{ proposal.cover }}</p>
                         </div>
                         <div class="routing-proposal-bid">
                           <strong>{{ proposal.bid }}</strong>
                           <small>{{ proposal.hours }}</small>
                         </div>
-                        <em :class="proposal.statusTone">{{ proposal.statusLabel }}</em>
+                        <div class="routing-proposal-decision">
+                          <em :class="proposal.statusTone">{{ proposal.statusLabel }}</em>
+                          <div v-if="proposal.canDecide" class="routing-proposal-buttons">
+                            <button
+                              type="button"
+                              :disabled="decidingProposalID === proposal.id"
+                              @click="decideDashboardProposal(proposal, 'accepted')"
+                            >
+                              <CheckCircle2 :size="12" />
+                              Accept
+                            </button>
+                            <button
+                              class="decline"
+                              type="button"
+                              :disabled="decidingProposalID === proposal.id"
+                              @click="decideDashboardProposal(proposal, 'declined')"
+                            >
+                              <X :size="12" />
+                              Decline
+                            </button>
+                          </div>
+                        </div>
                       </article>
                     </section>
 
@@ -10382,6 +10403,7 @@ const dashboardDeliverySnapshotError = ref('');
 const dashboardProjectDashboard = ref(null);
 const dashboardProjectDashboardLoading = ref(false);
 const dashboardProjectDashboardError = ref('');
+const decidingProposalID = ref('');
 const dashboardDeployment = ref(null);
 const dashboardDeploymentLoading = ref(false);
 const dashboardDeploymentError = ref('');
@@ -21324,6 +21346,41 @@ function refreshDashboardRoutingPanel() {
   ]);
 }
 
+async function decideDashboardProposal(proposal = {}, decision = '') {
+  const proposalID = String(proposal.id || '').trim();
+  const normalizedDecision = String(decision || '').trim().toLowerCase();
+  if (!proposalID || decidingProposalID.value || !['accepted', 'declined'].includes(normalizedDecision)) return;
+  if (!token.value || !user.value) {
+    openAuth('login');
+    showToast('Log in to review proposals.');
+    return;
+  }
+
+  decidingProposalID.value = proposalID;
+  try {
+    const response = await api(`/api/proposals/${encodeURIComponent(proposalID)}/decision`, {
+      method: 'POST',
+      body: JSON.stringify({ decision: normalizedDecision }),
+    });
+    const projectID = dashboardSelectedProject.value?.id || proposal.projectID || '';
+    await Promise.allSettled([
+      projectID ? loadDashboardProjectDashboardData(projectID, { silent: true }) : Promise.resolve(),
+      projectID ? loadDashboardRoutingData(projectID, { silent: true }) : Promise.resolve(),
+      loadMarketplaceData({ silent: true }),
+      loadLiveFeedData({ silent: true }),
+      loadDashboardNotifications(),
+      loadWorkerDashboardData({ silent: true }),
+      isAdminUser.value ? loadAdminConsoleData({ silent: true }) : Promise.resolve(),
+    ]);
+    const status = response?.proposal?.status || normalizedDecision;
+    showToast(status === 'accepted' ? `Accepted proposal for #${proposal.issueNumber || ''}.` : `Declined proposal for #${proposal.issueNumber || ''}.`);
+  } catch (error) {
+    showToast(error.message || 'Could not update proposal.');
+  } finally {
+    decidingProposalID.value = '';
+  }
+}
+
 function refreshDashboardAILogs() {
   const projectID = dashboardSelectedProject.value?.id || '';
   if (!projectID || dashboardAILogsLoading.value) return;
@@ -24905,6 +24962,7 @@ function mapDashboardProjectProposal(row = {}) {
   const hours = Number(row.estimated_hours) || 0;
   return {
     id: row.id || row.reference || `${row.project_id}-${row.issue_number}-${row.worker_id}`,
+    projectID: row.project_id || '',
     issueNumber: Number(row.issue_number) || '-',
     title: row.title || 'Worker proposal',
     worker: row.worker_id ? formatClaimWorkerID(row.worker_id) : 'Contributor',
@@ -24913,6 +24971,7 @@ function mapDashboardProjectProposal(row = {}) {
     hours: hours ? `${hours} hours` : 'Hours pending',
     statusLabel: toTitleLabel(status || 'submitted'),
     statusTone: status === 'accepted' ? 'accepted' : status === 'declined' || status === 'withdrawn' ? 'declined' : 'submitted',
+    canDecide: status === 'submitted' || status === 'reviewing',
     when: when.full,
     reference: row.reference || '',
   };
@@ -26971,7 +27030,7 @@ function handleWSEvent(payload = {}) {
     handleWSRepositoryScan(payload);
     return;
   }
-  if (payload.type === 'proposal_created') {
+  if (payload.type === 'proposal_created' || payload.type === 'proposal_decided') {
     handleWSProposalCreated(payload);
     return;
   }
@@ -27245,7 +27304,7 @@ function handleWSRepositoryScan(payload = {}) {
 }
 
 function handleWSProposalCreated(payload = {}) {
-  const eventID = payload.event_id || `proposal_created:${payload.created_at || ''}:${payload.project_id || ''}`;
+  const eventID = payload.event_id || `${payload.type || 'proposal'}:${payload.created_at || ''}:${payload.project_id || ''}`;
   if (rememberWSEvent(eventID)) return;
   const projectID = payload.project_id || selectedDashboardProjectID.value || '';
 

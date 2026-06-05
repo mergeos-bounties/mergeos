@@ -110,6 +110,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("POST /api/tasks/", s.acceptTask)
 	mux.HandleFunc("GET /api/workers/me", s.workerDashboard)
 	mux.HandleFunc("POST /api/proposals", s.createProposal)
+	mux.HandleFunc("POST /api/proposals/{id}/decision", s.decideProposal)
 	mux.HandleFunc("GET /api/notifications", s.notifications)
 	mux.HandleFunc("POST /api/notifications/read", s.markNotificationRead)
 	mux.HandleFunc("POST /api/notifications/read-all", s.markAllNotificationsRead)
@@ -802,6 +803,35 @@ func (s *Server) createProposal(w http.ResponseWriter, r *http.Request) {
 	s.broadcastAdminOpsUpdated()
 	s.broadcastLiveFeedEvent("proposal_created")
 	writeJSON(w, http.StatusCreated, response)
+}
+
+func (s *Server) decideProposal(w http.ResponseWriter, r *http.Request) {
+	user, ok := s.requireUser(w, r)
+	if !ok {
+		return
+	}
+	var req ProposalDecisionRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil && err != io.EOF {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	response, err := s.store.DecideProposal(user.ID, user.Role, r.PathValue("id"), req)
+	if err != nil {
+		status := http.StatusBadRequest
+		if strings.Contains(err.Error(), "access") {
+			status = http.StatusForbidden
+		} else if strings.Contains(err.Error(), "not found") {
+			status = http.StatusNotFound
+		}
+		writeError(w, status, err.Error())
+		return
+	}
+	s.broadcastAdminOpsUpdated()
+	if response.Proposal.Status == "accepted" {
+		s.broadcastLiveFeedEvent("task_accepted")
+	}
+	s.broadcastLiveFeedEvent("proposal_decided")
+	writeJSON(w, http.StatusOK, response)
 }
 
 func (s *Server) createDispute(w http.ResponseWriter, r *http.Request) {

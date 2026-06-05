@@ -12042,7 +12042,7 @@ svg {
 .routing-proposal-list article {
   min-width: 0;
   display: grid;
-  grid-template-columns: 38px minmax(160px, 1fr) minmax(104px, auto) auto;
+  grid-template-columns: 38px minmax(160px, 1fr) minmax(104px, auto) minmax(118px, auto);
   align-items: center;
   gap: 11px;
   border: 1px solid #eef0f2;
@@ -12101,6 +12101,13 @@ svg {
   overflow-wrap: anywhere;
 }
 
+.routing-proposal-decision {
+  min-width: 0;
+  display: grid;
+  justify-items: end;
+  gap: 7px;
+}
+
 .routing-proposal-list em {
   justify-self: end;
   border-radius: 999px;
@@ -12109,6 +12116,39 @@ svg {
   font-style: normal;
   font-weight: 900;
   white-space: nowrap;
+}
+
+.routing-proposal-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.routing-proposal-buttons button {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: 1px solid #bbf7d0;
+  border-radius: 7px;
+  background: #ecfdf5;
+  color: #047857;
+  padding: 0 8px;
+  font-size: 9px;
+  font-weight: 920;
+  white-space: nowrap;
+}
+
+.routing-proposal-buttons button.decline {
+  border-color: #fecaca;
+  background: #fff1f2;
+  color: #be123c;
+}
+
+.routing-proposal-buttons button:disabled {
+  cursor: wait;
+  opacity: 0.58;
 }
 
 .routing-proposal-list em.submitted {
@@ -16439,7 +16479,7 @@ svg {
   }
 
   .routing-proposal-list article {
-    grid-template-columns: 34px minmax(150px, 1fr) minmax(96px, auto) auto;
+    grid-template-columns: 34px minmax(150px, 1fr) minmax(96px, auto) minmax(112px, auto);
     gap: 9px;
   }
 
@@ -16876,9 +16916,20 @@ svg {
   }
 
   .routing-proposal-list article > span,
-  .routing-proposal-list em {
+  .routing-proposal-list em,
+  .routing-proposal-decision,
+  .routing-proposal-buttons {
     justify-self: start;
     max-width: 100%;
+  }
+
+  .routing-proposal-decision {
+    justify-items: start;
+  }
+
+  .routing-proposal-buttons {
+    justify-content: flex-start;
+    flex-wrap: wrap;
   }
 
   .auto-release-command-head > b {

@@ -65,6 +65,9 @@ func (s *Store) AdminOpsQueue() AdminOpsQueueResponse {
 				continue
 			}
 			fields := splitLedgerReference(note.Status)
+			if !proposalOpenStatus(fields["proposal"]) {
+				continue
+			}
 			taskID := fields["task"]
 			task := s.tasks[taskID]
 			add(AdminOpsQueueItem{

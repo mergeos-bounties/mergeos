@@ -169,6 +169,10 @@ const proposal = await mergeos.createProposal({
   availability: 'Available this week',
 });
 console.log(proposal.protocol_version, proposal.proposal.status);
+const proposalDecision = await mergeos.decideProposal(proposal.proposal.id, {
+  decision: 'accepted',
+});
+console.log(proposalDecision.protocol_version, proposalDecision.proposal.status);
 const dispute = await mergeos.createDispute({
   task_id: 'tsk_0001',
   body: 'Evidence needs maintainer review.',
