@@ -1159,6 +1159,17 @@ test('validates AI workflow protocol documents', () => {
         body: 'Repository context is attached to the delivery workflow.',
         status: 'complete',
         tone: 'green',
+        artifact_kind: 'repository_context',
+        input_endpoint: '/api/public/repo/issues',
+        output_endpoint: '/api/public/repo/issues',
+        output_protocol: 'mergeos.repo-import.v1',
+        output_protocol_url: '/protocol/repo-import.v1.schema.json',
+        context_urls: {
+          protocol_manifest: '/api/public/protocol',
+          workflow: '/api/public/projects/prj_0001/workflow',
+        },
+        output_ids: ['prj_0001'],
+        produced_count: 1,
         reference: 'https://github.com/mergeos-bounties/mergeos',
         url: 'https://github.com/mergeos-bounties/mergeos',
         updated_at: now,
@@ -1169,6 +1180,19 @@ test('validates AI workflow protocol documents', () => {
         body: '1 opened PRs are waiting for AI review or agent execution.',
         status: 'in_progress',
         tone: 'blue',
+        artifact_kind: 'agent_action',
+        input_endpoint: '/api/public/projects/prj_0001/pull-requests',
+        output_endpoint: '/api/projects/prj_0001/agent-actions',
+        output_protocol: 'mergeos.agent-action.v1',
+        output_protocol_url: '/protocol/agent-action.v1.schema.json',
+        action_endpoint: '/api/projects/prj_0001/agent-actions',
+        context_urls: {
+          agent_queue: '/api/public/protocol/agent-queue',
+          pull_requests: '/api/public/projects/prj_0001/pull-requests',
+          agent_action_template: '/api/projects/prj_0001/agent-actions',
+        },
+        output_ids: ['pr:151'],
+        produced_count: 2,
         reference: 'mergeos-bounties/mergeos',
         updated_at: now,
       },
@@ -1178,6 +1202,19 @@ test('validates AI workflow protocol documents', () => {
         body: 'Deployment validation is 60% complete.',
         status: 'in_progress',
         tone: 'blue',
+        artifact_kind: 'deployment_evidence',
+        input_endpoint: '/api/public/projects/prj_0001/pull-requests',
+        output_endpoint: '/api/public/projects/prj_0001/deployment',
+        output_protocol: 'mergeos.deployment.v1',
+        output_protocol_url: '/protocol/deployment.v1.schema.json',
+        action_endpoint: '/api/projects/prj_0001/agent-actions',
+        context_urls: {
+          deployment: '/api/public/projects/prj_0001/deployment',
+          deployment_evidence: '/api/public/projects/prj_0001/deployment',
+          protocol_manifest: '/api/public/protocol',
+        },
+        output_ids: ['deployment:prj_0001'],
+        produced_count: 1,
         reference: 'project:prj_0001',
         updated_at: now,
       },
@@ -1212,7 +1249,7 @@ test('validates AI workflow protocol documents', () => {
     kind: 'workflow',
     progress: 101,
     current_step: 'manual_review',
-    stages: [{ ...workflow.stages[0], id: 'unknown_stage', status: 'running' }],
+    stages: [{ ...workflow.stages[0], id: 'unknown_stage', status: 'running', artifact_kind: 'raw_note', output_protocol: 'mergeos.future.v1', context_urls: {}, produced_count: -1 }],
     signals: [{ ...workflow.signals[0], created_at: 'not-a-date' }],
   });
   assert.equal(invalid.valid, false);
@@ -1221,6 +1258,10 @@ test('validates AI workflow protocol documents', () => {
   assert(invalid.errors.some((error) => error.path === 'current_step'));
   assert(invalid.errors.some((error) => error.path === 'stages[0].id'));
   assert(invalid.errors.some((error) => error.path === 'stages[0].status'));
+  assert(invalid.errors.some((error) => error.path === 'stages[0].artifact_kind'));
+  assert(invalid.errors.some((error) => error.path === 'stages[0].output_protocol'));
+  assert(invalid.errors.some((error) => error.path === 'stages[0].context_urls'));
+  assert(invalid.errors.some((error) => error.path === 'stages[0].produced_count'));
   assert(invalid.errors.some((error) => error.path === 'signals[0].created_at'));
 });
 
@@ -2084,6 +2125,18 @@ test('validates workflow node and edge references', () => {
         summary: 'Tasks are routed to human, agent, or hybrid lanes.',
         status: 'complete',
         tone: 'green',
+        artifact_kind: 'routing_plan',
+        input_endpoint: '/api/public/projects/prj_0001/workflow',
+        output_endpoint: '/api/projects/prj_0001/routing',
+        output_protocol: 'mergeos.routing.v1',
+        output_protocol_url: '/protocol/routing.v1.schema.json',
+        context_urls: {
+          protocol_manifest: '/api/public/protocol',
+          routing: '/api/projects/prj_0001/routing',
+          workflow: '/api/public/projects/prj_0001/workflow',
+        },
+        output_ids: ['prj_0001:1'],
+        produced_count: 2,
         reference: 'project:prj_0001',
         updated_at: now,
       },

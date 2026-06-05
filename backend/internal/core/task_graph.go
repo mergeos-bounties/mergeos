@@ -375,14 +375,23 @@ func workflowProtocolStages(aiWorkflow ProjectAIWorkflowResponse) []WorkflowProt
 	stages := make([]WorkflowProtocolStage, 0, len(aiWorkflow.Stages))
 	for _, stage := range aiWorkflow.Stages {
 		stages = append(stages, WorkflowProtocolStage{
-			ID:        stage.ID,
-			Title:     stage.Title,
-			Summary:   stage.Body,
-			Status:    stage.Status,
-			Tone:      stage.Tone,
-			Reference: stage.Reference,
-			URL:       stage.URL,
-			UpdatedAt: stage.UpdatedAt,
+			ID:                stage.ID,
+			Title:             stage.Title,
+			Summary:           stage.Body,
+			Status:            stage.Status,
+			Tone:              stage.Tone,
+			ArtifactKind:      stage.ArtifactKind,
+			InputEndpoint:     stage.InputEndpoint,
+			OutputEndpoint:    stage.OutputEndpoint,
+			OutputProtocol:    stage.OutputProtocol,
+			OutputProtocolURL: stage.OutputProtocolURL,
+			ActionEndpoint:    stage.ActionEndpoint,
+			ContextURLs:       stage.ContextURLs,
+			OutputIDs:         stage.OutputIDs,
+			ProducedCount:     stage.ProducedCount,
+			Reference:         stage.Reference,
+			URL:               stage.URL,
+			UpdatedAt:         stage.UpdatedAt,
 		})
 	}
 	return stages

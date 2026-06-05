@@ -239,6 +239,20 @@ function resolveSchemaRef(ref, rootSchema) {
 function validateObject(value, schema, path, errors, rootSchema) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return;
 
+  const fields = Object.keys(value);
+  if (schema.minProperties !== undefined && fields.length < schema.minProperties) {
+    errors.push({ path, message: `must contain at least ${schema.minProperties} propert${schema.minProperties === 1 ? 'y' : 'ies'}` });
+  }
+  if (schema.maxProperties !== undefined && fields.length > schema.maxProperties) {
+    errors.push({ path, message: `must contain at most ${schema.maxProperties} propert${schema.maxProperties === 1 ? 'y' : 'ies'}` });
+  }
+
+  if (schema.propertyNames) {
+    for (const field of fields) {
+      validateValue(field, schema.propertyNames, joinPath(path, field), errors, rootSchema);
+    }
+  }
+
   for (const field of schema.required || []) {
     if (value[field] === undefined) {
       errors.push({ path: joinPath(path, field), message: 'is required' });
@@ -247,9 +261,15 @@ function validateObject(value, schema, path, errors, rootSchema) {
 
   const properties = schema.properties || {};
   if (schema.additionalProperties === false) {
-    for (const field of Object.keys(value)) {
+    for (const field of fields) {
       if (!properties[field]) {
         errors.push({ path: joinPath(path, field), message: 'is not allowed' });
+      }
+    }
+  } else if (schema.additionalProperties && typeof schema.additionalProperties === 'object') {
+    for (const field of fields) {
+      if (!properties[field]) {
+        validateValue(value[field], schema.additionalProperties, joinPath(path, field), errors, rootSchema);
       }
     }
   }

@@ -2934,9 +2934,21 @@ func TestProjectAIWorkflowRouteReturnsWorkflowAndSanitizesData(t *testing.T) {
 		t.Fatalf("unexpected ai workflow task mix: %#v", payload)
 	}
 	seenStages := map[string]bool{}
+	stageByID := map[string]AIWorkflowStage{}
 	prReviewStatus := ""
 	for _, stage := range payload.Stages {
 		seenStages[stage.ID] = true
+		stageByID[stage.ID] = stage
+		if strings.TrimSpace(stage.ArtifactKind) == "" ||
+			strings.TrimSpace(stage.OutputEndpoint) == "" ||
+			strings.TrimSpace(stage.OutputProtocol) == "" ||
+			strings.TrimSpace(stage.OutputProtocolURL) == "" ||
+			len(stage.ContextURLs) == 0 {
+			t.Fatalf("ai workflow stage missing executable contract: %#v", stage)
+		}
+		if stage.ProducedCount < 0 {
+			t.Fatalf("ai workflow stage produced invalid count: %#v", stage)
+		}
 		if stage.ID == "pr_review" {
 			prReviewStatus = stage.Status
 		}
@@ -2949,8 +2961,22 @@ func TestProjectAIWorkflowRouteReturnsWorkflowAndSanitizesData(t *testing.T) {
 	if prReviewStatus != deploymentStageInProgress {
 		t.Fatalf("PR opened should leave review stage in progress, got %q", prReviewStatus)
 	}
+	prReviewStage := stageByID["pr_review"]
+	if prReviewStage.ArtifactKind != "agent_action" ||
+		prReviewStage.OutputProtocol != "mergeos.agent-action.v1" ||
+		prReviewStage.OutputProtocolURL != "/protocol/agent-action.v1.schema.json" ||
+		prReviewStage.ActionEndpoint != "/api/projects/"+project.ID+"/agent-actions" ||
+		prReviewStage.ContextURLs["pull_requests"] != "/api/public/projects/"+project.ID+"/pull-requests" ||
+		!containsString(prReviewStage.OutputIDs, "pr:333") {
+		t.Fatalf("pr_review stage missing agent action contract: %#v", prReviewStage)
+	}
 	if len(payload.Signals) == 0 {
 		t.Fatalf("ai workflow missing signals: %#v", payload.Signals)
+	}
+	for _, signal := range payload.Signals {
+		if strings.HasPrefix(signal.ID, "ai:log") {
+			t.Fatalf("ai workflow leaked internal log id in signal: %#v", signal)
+		}
 	}
 
 	otherAuth, err := store.Register(RegisterRequest{
@@ -3060,16 +3086,41 @@ func TestPublicProjectAIWorkflowRouteReturnsSanitizedWorkflow(t *testing.T) {
 		t.Fatalf("expected public current step deployment_validation, got %q", payload.CurrentStep)
 	}
 	seenStages := map[string]bool{}
+	stageByID := map[string]AIWorkflowStage{}
 	for _, stage := range payload.Stages {
 		seenStages[stage.ID] = true
+		stageByID[stage.ID] = stage
+		if strings.TrimSpace(stage.ArtifactKind) == "" ||
+			strings.TrimSpace(stage.OutputEndpoint) == "" ||
+			strings.TrimSpace(stage.OutputProtocol) == "" ||
+			strings.TrimSpace(stage.OutputProtocolURL) == "" ||
+			len(stage.ContextURLs) == 0 {
+			t.Fatalf("public ai workflow stage missing executable contract: %#v", stage)
+		}
 	}
 	for _, required := range []string{"repo_import", "issue_scan", "task_generation", "reward_estimation", "contributor_routing", "pr_review", "deployment_validation"} {
 		if !seenStages[required] {
 			t.Fatalf("public ai workflow missing stage %s: %#v", required, payload.Stages)
 		}
 	}
+	reviewStage := stageByID["pr_review"]
+	if reviewStage.OutputProtocol != "mergeos.agent-action.v1" ||
+		reviewStage.ActionEndpoint != "/api/projects/"+project.ID+"/agent-actions" ||
+		!containsString(reviewStage.OutputIDs, "pr:444") {
+		t.Fatalf("public ai workflow review stage missing public-safe action output: %#v", reviewStage)
+	}
+	deploymentStage := stageByID["deployment_validation"]
+	if deploymentStage.ArtifactKind != "deployment_evidence" ||
+		deploymentStage.OutputProtocol != "mergeos.deployment.v1" ||
+		deploymentStage.OutputEndpoint != "/api/public/projects/"+project.ID+"/deployment" ||
+		deploymentStage.OutputProtocolURL != "/protocol/deployment.v1.schema.json" {
+		t.Fatalf("public ai workflow deployment stage missing output contract: %#v", deploymentStage)
+	}
 	foundReviewSignal := false
 	for _, signal := range payload.Signals {
+		if strings.HasPrefix(signal.ID, "ai:log") {
+			t.Fatalf("public ai workflow leaked internal log id in signal: %#v", signal)
+		}
 		if signal.Type == "agent_action" && signal.Status == "processed" {
 			foundReviewSignal = true
 			break
@@ -3162,6 +3213,22 @@ func TestPublicProjectWorkflowRouteReturnsSanitizedGraph(t *testing.T) {
 	}
 	if len(document.Stages) != 7 || len(document.Checks) != 7 || len(document.Evidence) == 0 {
 		t.Fatalf("public workflow missing orchestration stages, checks, or evidence: %#v", document)
+	}
+	for _, stage := range document.Stages {
+		if strings.TrimSpace(stage.ArtifactKind) == "" ||
+			strings.TrimSpace(stage.OutputEndpoint) == "" ||
+			strings.TrimSpace(stage.OutputProtocol) == "" ||
+			strings.TrimSpace(stage.OutputProtocolURL) == "" ||
+			len(stage.ContextURLs) == 0 {
+			t.Fatalf("public workflow stage missing executable contract: %#v", stage)
+		}
+		for _, outputID := range stage.OutputIDs {
+			for _, task := range project.Tasks {
+				if outputID == task.ID {
+					t.Fatalf("public workflow stage leaked internal output id %q: %#v", outputID, stage)
+				}
+			}
+		}
 	}
 
 	publicIDs := map[string]bool{}
@@ -3677,6 +3744,21 @@ func TestProjectTaskGraphRouteReturnsAcyclicDependencyGraph(t *testing.T) {
 	}
 	if len(document.Stages) != 7 || len(document.Checks) != 7 || len(document.Evidence) == 0 {
 		t.Fatalf("workflow protocol missing execution stages, checks, or evidence: %#v", document)
+	}
+	stageByID := map[string]WorkflowProtocolStage{}
+	for _, stage := range document.Stages {
+		stageByID[stage.ID] = stage
+		if strings.TrimSpace(stage.ArtifactKind) == "" ||
+			strings.TrimSpace(stage.OutputEndpoint) == "" ||
+			strings.TrimSpace(stage.OutputProtocol) == "" ||
+			strings.TrimSpace(stage.OutputProtocolURL) == "" ||
+			len(stage.ContextURLs) == 0 {
+			t.Fatalf("workflow protocol stage missing executable contract: %#v", stage)
+		}
+	}
+	if stageByID["contributor_routing"].OutputProtocol != "mergeos.routing.v1" ||
+		stageByID["contributor_routing"].OutputEndpoint != "/api/projects/"+project.ID+"/routing" {
+		t.Fatalf("workflow protocol routing stage missing routing contract: %#v", stageByID["contributor_routing"])
 	}
 	if len(document.NextActions) == 0 {
 		t.Fatalf("workflow protocol missing executable next actions: %#v", document)

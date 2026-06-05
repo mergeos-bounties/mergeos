@@ -1503,14 +1503,23 @@ type WorkflowProtocolEdge struct {
 }
 
 type WorkflowProtocolStage struct {
-	ID        string    `json:"id"`
-	Title     string    `json:"title"`
-	Summary   string    `json:"summary"`
-	Status    string    `json:"status"`
-	Tone      string    `json:"tone,omitempty"`
-	Reference string    `json:"reference,omitempty"`
-	URL       string    `json:"url,omitempty"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID                string            `json:"id"`
+	Title             string            `json:"title"`
+	Summary           string            `json:"summary"`
+	Status            string            `json:"status"`
+	Tone              string            `json:"tone,omitempty"`
+	ArtifactKind      string            `json:"artifact_kind"`
+	InputEndpoint     string            `json:"input_endpoint,omitempty"`
+	OutputEndpoint    string            `json:"output_endpoint"`
+	OutputProtocol    string            `json:"output_protocol"`
+	OutputProtocolURL string            `json:"output_protocol_url"`
+	ActionEndpoint    string            `json:"action_endpoint,omitempty"`
+	ContextURLs       map[string]string `json:"context_urls"`
+	OutputIDs         []string          `json:"output_ids,omitempty"`
+	ProducedCount     int               `json:"produced_count"`
+	Reference         string            `json:"reference,omitempty"`
+	URL               string            `json:"url,omitempty"`
+	UpdatedAt         time.Time         `json:"updated_at"`
 }
 
 type WorkflowProtocolCheck struct {
@@ -1698,14 +1707,23 @@ type TaskGraphEdge struct {
 }
 
 type AIWorkflowStage struct {
-	ID        string    `json:"id"`
-	Title     string    `json:"title"`
-	Body      string    `json:"body"`
-	Status    string    `json:"status"`
-	Tone      string    `json:"tone"`
-	Reference string    `json:"reference,omitempty"`
-	URL       string    `json:"url,omitempty"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID                string            `json:"id"`
+	Title             string            `json:"title"`
+	Body              string            `json:"body"`
+	Status            string            `json:"status"`
+	Tone              string            `json:"tone"`
+	ArtifactKind      string            `json:"artifact_kind"`
+	InputEndpoint     string            `json:"input_endpoint,omitempty"`
+	OutputEndpoint    string            `json:"output_endpoint"`
+	OutputProtocol    string            `json:"output_protocol"`
+	OutputProtocolURL string            `json:"output_protocol_url"`
+	ActionEndpoint    string            `json:"action_endpoint,omitempty"`
+	ContextURLs       map[string]string `json:"context_urls"`
+	OutputIDs         []string          `json:"output_ids,omitempty"`
+	ProducedCount     int               `json:"produced_count"`
+	Reference         string            `json:"reference,omitempty"`
+	URL               string            `json:"url,omitempty"`
+	UpdatedAt         time.Time         `json:"updated_at"`
 }
 
 type AIWorkflowSignal struct {

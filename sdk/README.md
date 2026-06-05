@@ -48,6 +48,7 @@ const deployment = await mergeos.projectDeployment(projects[0].id);
 console.log(deployment.protocol_version, deployment.progress);
 const workflow = await mergeos.projectAIWorkflow(projects[0].id);
 console.log(workflow.protocol_version, workflow.current_step);
+console.log(workflow.stages[0]?.artifact_kind, workflow.stages[0]?.output_protocol_url);
 const agentAction = await mergeos.createProjectAgentAction(projects[0].id, {
   action: 'test',
   agent_type: 'qa-agent',

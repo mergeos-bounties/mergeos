@@ -66,7 +66,7 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["id", "title", "summary", "status", "updated_at"],
+        "required": ["id", "title", "summary", "status", "artifact_kind", "output_endpoint", "output_protocol", "output_protocol_url", "context_urls", "produced_count", "updated_at"],
         "properties": {
           "id": {
             "enum": [
@@ -83,6 +83,46 @@
           "summary": { "type": "string", "minLength": 1, "maxLength": 1000 },
           "status": { "enum": ["pending", "in_progress", "complete"] },
           "tone": { "enum": ["green", "blue", "amber", "red", "gray"] },
+          "artifact_kind": {
+            "enum": [
+              "repository_context",
+              "repository_scan",
+              "task_protocol",
+              "project_estimate",
+              "routing_plan",
+              "agent_action",
+              "deployment_evidence",
+              "workflow_stage"
+            ]
+          },
+          "input_endpoint": { "type": "string", "minLength": 1, "maxLength": 512 },
+          "output_endpoint": { "type": "string", "minLength": 1, "maxLength": 512 },
+          "output_protocol": {
+            "enum": [
+              "mergeos.agent-action.v1",
+              "mergeos.ai-workflow.v1",
+              "mergeos.deployment.v1",
+              "mergeos.estimate.v1",
+              "mergeos.repo-import.v1",
+              "mergeos.routing.v1",
+              "mergeos.scan.v1",
+              "mergeos.task.v1",
+              "mergeos.workflow.v1"
+            ]
+          },
+          "output_protocol_url": { "type": "string", "minLength": 1, "maxLength": 512 },
+          "action_endpoint": { "type": "string", "minLength": 1, "maxLength": 512 },
+          "context_urls": {
+            "type": "object",
+            "minProperties": 1,
+            "propertyNames": { "type": "string", "minLength": 1, "maxLength": 80 },
+            "additionalProperties": { "type": "string", "minLength": 1, "maxLength": 512 }
+          },
+          "output_ids": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1, "maxLength": 160 }
+          },
+          "produced_count": { "type": "integer", "minimum": 0 },
           "reference": { "type": "string", "maxLength": 512 },
           "url": { "type": "string", "maxLength": 512 },
           "updated_at": { "type": "string", "format": "date-time" }
