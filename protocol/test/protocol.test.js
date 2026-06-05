@@ -1,6 +1,15 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { assertProtocolDocument, protocolSchemas, schemaForProtocol, validateProtocolDocument } from '../src/index.js';
+import {
+  assertProtocolDocument,
+  contractReferenceBytes,
+  contractReferenceFromLedger,
+  legacyWalletAddressHash,
+  normalizeLegacyChain,
+  protocolSchemas,
+  schemaForProtocol,
+  validateProtocolDocument,
+} from '../src/index.js';
 
 test('loads stable task, workflow, ledger, and event schemas', () => {
   assert.deepEqual(Object.keys(protocolSchemas).sort(), [
@@ -813,4 +822,38 @@ test('validates repository issue sync events', () => {
 
   assert.equal(result.valid, true);
   assert.deepEqual(result.errors, []);
+});
+
+test('derives deterministic Solana contract references from ledger entries', () => {
+  const entryHash = 'A'.repeat(64);
+  const ledgerEntry = {
+    sequence: 7,
+    type: 'task_payment',
+    reference: 'pr:https://github.com/mergeos-bounties/mergeos/pull/120',
+    entry_hash: entryHash,
+  };
+
+  assert.equal(contractReferenceFromLedger(ledgerEntry), entryHash.toLowerCase());
+  assert.equal(contractReferenceFromLedger(`0x${entryHash}`), entryHash.toLowerCase());
+  assert.deepEqual(contractReferenceBytes(ledgerEntry), Array(32).fill(170));
+  assert.equal(contractReferenceFromLedger(ledgerEntry, { format: 'prefixed-hex' }), `0x${entryHash.toLowerCase()}`);
+
+  const referenceHash = contractReferenceFromLedger({ reference: ledgerEntry.reference });
+  assert.match(referenceHash, /^[0-9a-f]{64}$/);
+  assert.equal(referenceHash, contractReferenceFromLedger({ reference: ledgerEntry.reference }));
+  assert.notEqual(referenceHash, entryHash.toLowerCase());
+});
+
+test('derives deterministic legacy wallet migration hashes', () => {
+  const tronHash = legacyWalletAddressHash('tron', '  TXYZ987654321  ');
+  const trc20Hash = legacyWalletAddressHash('trc20', 'txyz987654321');
+  const evmBytes = legacyWalletAddressHash('ethereum', '0xAbC0000000000000000000000000000000000000', { format: 'bytes' });
+
+  assert.equal(normalizeLegacyChain('TRON'), 'trc20');
+  assert.equal(normalizeLegacyChain('Ethereum'), 'evm');
+  assert.equal(tronHash, trc20Hash);
+  assert.match(tronHash, /^[0-9a-f]{64}$/);
+  assert.equal(evmBytes.length, 32);
+  assert.throws(() => normalizeLegacyChain('btc'), /trc20 or evm/);
+  assert.throws(() => legacyWalletAddressHash('trc20', ''), /address is required/);
 });

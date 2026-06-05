@@ -33,6 +33,15 @@ The `WalletMigration` account stores:
 
 References are deterministic 32-byte proof anchors from MergeOS public ledger rows. Backend operators should derive them from ledger `entry_hash`, `public_hash`, or the `contractReferenceFromLedger` helper in `@mergeos/sdk` / `@mergeos/protocol`.
 
+```js
+import { contractReferenceFromLedger, legacyWalletAddressHash } from '@mergeos/sdk';
+
+const reference = contractReferenceFromLedger(publicLedgerEntry, { format: 'bytes' });
+const legacyAddressHash = legacyWalletAddressHash('trc20', legacyAddress, { format: 'bytes' });
+```
+
+Use the resulting arrays directly for Anchor instruction args such as `reference: [u8; 32]` and `legacy_address_hash: [u8; 32]`.
+
 ## Test
 
 ```powershell

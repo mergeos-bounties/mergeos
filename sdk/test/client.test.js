@@ -5,12 +5,16 @@ import {
   agentActionPayload,
   agentActionEventType,
   agentActionEventTypes,
+  contractReferenceBytes,
+  contractReferenceFromLedger,
   createMergeOSClient,
   deploymentAgentActionPayload,
   isAgentActionEventType,
   isWorkflowEventType,
+  legacyWalletAddressHash,
   liveFeedTypeToProtocolEventType,
   normalizeAgentAction,
+  normalizeLegacyChain,
   protocolEventFromMessage,
   protocolEventsFromMessage,
   protocolEventGroup,
@@ -79,6 +83,31 @@ test('creates public feed and ledger verification requests without auth', async 
   assert.equal(fetchImpl.calls[5].options.headers.Authorization, undefined);
   assert.equal(fetchImpl.calls[6].url, 'https://mergeos.shop/api/public/ledger/verify');
   assert.equal(fetchImpl.calls[6].options.headers.Authorization, undefined);
+});
+
+test('derives Solana ledger references and legacy wallet hashes for operators', () => {
+  const entryHash = 'B'.repeat(64);
+  const ledgerEntry = {
+    sequence: 11,
+    type: 'manual_credit',
+    reference: 'pr:https://github.com/mergeos-bounties/mergeos/pull/151',
+    entry_hash: entryHash,
+  };
+
+  assert.equal(contractReferenceFromLedger(ledgerEntry), entryHash.toLowerCase());
+  assert.equal(contractReferenceFromLedger(`0x${entryHash}`), entryHash.toLowerCase());
+  assert.deepEqual(contractReferenceBytes(ledgerEntry), Array(32).fill(187));
+  assert.equal(contractReferenceFromLedger(ledgerEntry, { format: '0x' }), `0x${entryHash.toLowerCase()}`);
+
+  const fallback = contractReferenceFromLedger({ reference: ledgerEntry.reference });
+  assert.match(fallback, /^[0-9a-f]{64}$/);
+  assert.equal(fallback, contractReferenceFromLedger({ reference: ledgerEntry.reference }));
+  assert.notEqual(fallback, entryHash.toLowerCase());
+
+  assert.equal(normalizeLegacyChain('TRON'), 'trc20');
+  assert.equal(normalizeLegacyChain('ethereum'), 'evm');
+  assert.equal(legacyWalletAddressHash('tron', 'TXYZ987654321'), legacyWalletAddressHash('trc20', 'txyz987654321'));
+  assert.equal(legacyWalletAddressHash('evm', '0xAbC0000000000000000000000000000000000000', { format: 'bytes' }).length, 32);
 });
 
 test('maps typed agent action event protocol values', () => {

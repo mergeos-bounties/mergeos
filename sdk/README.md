@@ -15,8 +15,10 @@ npm test
 import {
   agentActionPayload,
   agentActionEventType,
+  contractReferenceFromLedger,
   createMergeOSClient,
   deploymentAgentActionPayload,
+  legacyWalletAddressHash,
   protocolEventFromMessage,
   protocolEventsFromMessage,
   protocolEventGroup,
@@ -54,6 +56,8 @@ console.log(workflowProtocol.current_step, workflowProtocol.progress);
 const scan = await mergeos.projectRepositoryScan(projects[0].id);
 const scanProtocol = await mergeos.projectRepositoryScanProtocol(projects[0].id);
 const syncReport = await mergeos.syncProjectRepoIssues(projects[0].id);
+const solanaReference = contractReferenceFromLedger({ entry_hash: 'a'.repeat(64) }, { format: 'bytes' });
+const legacyHash = legacyWalletAddressHash('trc20', 'TXYZ987654321', { format: 'bytes' });
 ```
 
 ## Public APIs
@@ -166,3 +170,12 @@ socket.onmessage = (event) => {
 ```
 
 The stream sends `connection_ready` and `live_feed_snapshot` events immediately after connect, then broadcasts live project, PR, payout, and ledger events. SDK helpers map live feed records such as `pr_opened`, `agent_action`, `ledger_task_payment`, and `ledger_manual_credit` to stable protocol events such as `pr.opened`, `agent.tested`, `task.paid`, and `ledger.recorded`.
+
+## Solana Contract Helpers
+
+```js
+const reference = contractReferenceFromLedger(ledgerEntry, { format: 'bytes' });
+const legacyAddressHash = legacyWalletAddressHash('evm', '0xabc...', { format: 'bytes' });
+```
+
+Use these helpers when sending `reference: [u8; 32]` or `legacy_address_hash: [u8; 32]` to the MergeOS Anchor program. They prefer ledger `entry_hash` / `public_hash` and only hash a sanitized reference when no ledger hash exists.

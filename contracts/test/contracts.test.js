@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 const root = fileURLToPath(new URL("..", import.meta.url));
 const programPath = join(root, "programs", "mergeos", "src", "lib.rs");
 const programSource = readFileSync(programPath, "utf8");
+const readmeSource = readFileSync(join(root, "README.md"), "utf8");
 
 describe("contract package", () => {
   it("uses a Solana Anchor workspace instead of Solidity sources", () => {
@@ -62,6 +63,13 @@ describe("contract package", () => {
       const eventBlock = programSource.match(new RegExp(`pub struct ${eventName} \\{([\\s\\S]*?)\\}`))?.[1] || "";
       assert.match(eventBlock, /reference: \[u8; 32\]/, `${eventName} should carry a ledger reference`);
     }
+  });
+
+  it("documents SDK and protocol helpers for off-chain reference derivation", () => {
+    assert.match(readmeSource, /contractReferenceFromLedger/);
+    assert.match(readmeSource, /legacyWalletAddressHash/);
+    assert.match(readmeSource, /reference: \[u8; 32\]/);
+    assert.match(readmeSource, /legacy_address_hash: \[u8; 32\]/);
   });
 
   it("avoids EVM and unsafe Solana primitives", () => {

@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+
 const jsonHeaders = { 'Content-Type': 'application/json' };
 
 export const agentActionEventTypes = Object.freeze({
@@ -451,9 +453,93 @@ export function createMergeOSClient(options = {}) {
   return new MergeOSClient(options);
 }
 
+export function contractReferenceFromLedger(entry, options = {}) {
+  return formatContractReference(contractReferenceHex(entry), options);
+}
+
+export function contractReferenceBytes(entry) {
+  return hexToBytes(contractReferenceHex(entry));
+}
+
+export function legacyWalletAddressHash(chain, address, options = {}) {
+  const normalizedChain = normalizeLegacyChain(chain);
+  const normalizedAddress = String(address || '').trim().toLowerCase();
+  if (!normalizedAddress) {
+    throw new Error('legacy wallet address is required');
+  }
+  return formatContractReference(sha256Hex(`mergeos:legacy-wallet:v1:${normalizedChain}:${normalizedAddress}`), options);
+}
+
+export function normalizeLegacyChain(value = '') {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (normalized === 'trc20' || normalized === 'tron') return 'trc20';
+  if (normalized === 'evm' || normalized === 'ethereum') return 'evm';
+  throw new Error('legacy chain must be trc20 or evm');
+}
+
 export function agentActionEventType(action = '') {
   const normalized = String(action || '').trim().toLowerCase();
   return agentActionEventTypes[normalized] || 'agent.action';
+}
+
+function contractReferenceHex(entry) {
+  if (entry === null || entry === undefined) {
+    throw new Error('ledger entry is required');
+  }
+  if (typeof entry === 'string') {
+    return contractReferenceFromValue(entry, 'value');
+  }
+  if (typeof entry !== 'object' || Array.isArray(entry)) {
+    return sha256Hex(`mergeos:contract-reference:v1:value:${String(entry)}`);
+  }
+
+  for (const field of ['entry_hash', 'public_hash', 'hash']) {
+    const value = String(entry[field] || '').trim();
+    if (value) {
+      return contractReferenceFromValue(value, field);
+    }
+  }
+  if (String(entry.reference || '').trim()) {
+    return sha256Hex(`mergeos:contract-reference:v1:reference:${String(entry.reference).trim()}`);
+  }
+  return sha256Hex(`mergeos:contract-reference:v1:ledger:${stableStringify(entry)}`);
+}
+
+function contractReferenceFromValue(value, field) {
+  const normalized = String(value || '').trim();
+  if (!normalized) {
+    throw new Error('ledger reference value is required');
+  }
+  const hex = normalized.replace(/^0x/i, '');
+  if (/^[0-9a-f]{64}$/i.test(hex)) {
+    return hex.toLowerCase();
+  }
+  return sha256Hex(`mergeos:contract-reference:v1:${field}:${normalized}`);
+}
+
+function formatContractReference(hex, options = {}) {
+  const format = String(options.format || 'hex').trim().toLowerCase();
+  if (format === 'bytes' || format === 'array') return hexToBytes(hex);
+  if (format === 'prefixed-hex' || format === '0x') return `0x${hex}`;
+  return hex;
+}
+
+function hexToBytes(hex) {
+  const normalized = String(hex || '').replace(/^0x/i, '').toLowerCase();
+  if (!/^[0-9a-f]{64}$/.test(normalized)) {
+    throw new Error('contract reference must be a 32-byte hex string');
+  }
+  return Array.from({ length: 32 }, (_, index) => Number.parseInt(normalized.slice(index * 2, index * 2 + 2), 16));
+}
+
+function sha256Hex(value) {
+  return createHash('sha256').update(String(value)).digest('hex');
+}
+
+function stableStringify(value) {
+  if (value === null || typeof value !== 'object') return JSON.stringify(value);
+  if (Array.isArray(value)) return `[${value.map((item) => stableStringify(item)).join(',')}]`;
+  return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`).join(',')}}`;
 }
 
 export function deploymentAgentActionPayload(payload = {}) {

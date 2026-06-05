@@ -53,3 +53,14 @@ if (!result.valid) {
 ```
 
 The validator is intentionally dependency-free. It covers the fields MergeOS agents need before submitting work, without requiring a full JSON Schema engine.
+
+## Solana References
+
+```js
+import { contractReferenceFromLedger, legacyWalletAddressHash } from '@mergeos/protocol';
+
+const reference = contractReferenceFromLedger(ledgerEntry, { format: 'bytes' });
+const legacyHash = legacyWalletAddressHash('trc20', oldTronAddress, { format: 'bytes' });
+```
+
+Contract references are deterministic 32-byte anchors for the Solana MRG program. Prefer public ledger `entry_hash` or `public_hash`; the helper hashes sanitized references only when a ledger hash is not available.
