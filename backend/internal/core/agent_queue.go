@@ -173,21 +173,24 @@ func agentQueueActionPayloads(bounty *MarketplaceBounty, endpoint string, contex
 	actions := agentQueueActions(bounty)
 	rows := make([]AgentActionPayload, 0, len(actions))
 	for _, action := range actions {
+		agentType := protocolText(bounty.SuggestedAgentType, 120, "general-ai-agent")
 		rows = append(rows, AgentActionPayload{
 			Action:   action,
 			Label:    marketplaceTitle(action),
 			Method:   "POST",
 			Endpoint: endpoint,
 			Body: map[string]any{
-				"action":        action,
-				"status":        "queued",
-				"project_id":    bounty.ProjectID,
-				"claim_id":      bounty.ClaimID,
-				"bounty_id":     bounty.ClaimID,
-				"agent_type":    protocolText(bounty.SuggestedAgentType, 120, "general-ai-agent"),
-				"delegated_by":  ceoAgentType,
-				"design_agent":  designReviewAgentType,
-				"reference_url": bounty.IssueURL,
+				"action":           action,
+				"status":           "queued",
+				"project_id":       bounty.ProjectID,
+				"claim_id":         bounty.ClaimID,
+				"bounty_id":        bounty.ClaimID,
+				"agent_type":       agentType,
+				"delegated_by":     ceoAgentType,
+				"design_agent":     designReviewAgentType,
+				"subagent_type":    agentType,
+				"delegation_chain": agentDelegationChain(agentType),
+				"reference_url":    bounty.IssueURL,
 				"context_urls": []string{
 					contextURLs["task_protocol"],
 					contextURLs["workflow_protocol"],

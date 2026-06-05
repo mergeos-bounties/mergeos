@@ -1518,6 +1518,16 @@ func TestPublicMarketplaceRouteReturnsSanitizedLiveData(t *testing.T) {
 	if firstPacket.ClaimEndpoint == "" || firstPacket.ActionEndpoint == "" || len(firstPacket.Runbook) < 4 || len(firstPacket.ActionPayloads) == 0 {
 		t.Fatalf("agent work packet missing executable details: %#v", firstPacket)
 	}
+	firstPayload := firstPacket.ActionPayloads[0].Body
+	if firstPayload["delegated_by"] != ceoAgentType ||
+		firstPayload["design_agent"] != designReviewAgentType ||
+		firstPayload["subagent_type"] == "" {
+		t.Fatalf("agent work packet action payload missing delegation metadata: %#v", firstPayload)
+	}
+	payloadChain, ok := firstPayload["delegation_chain"].([]any)
+	if !ok || len(payloadChain) < 2 || payloadChain[0] != ceoAgentType || payloadChain[1] != designReviewAgentType {
+		t.Fatalf("agent work packet action payload missing delegation chain: %#v", firstPayload)
+	}
 
 	contributorReq := httptest.NewRequest(http.MethodGet, "/api/public/protocol/contributors?limit=20", nil)
 	contributorResp := httptest.NewRecorder()
@@ -3404,11 +3414,18 @@ func TestProjectAgentActionRouteRecordsWorkflowEventAndSanitizesData(t *testing.
 	if len(created.Checks) != 2 || created.Checks[0].Status != "passed" || created.Checks[0].ReferenceURL == "" || created.Checks[1].Status != "warning" || created.Checks[1].ReferenceURL != "" {
 		t.Fatalf("agent action checks were not normalized: %#v", created.Checks)
 	}
+	if created.DelegatedBy != ceoAgentType || created.DesignAgent != designReviewAgentType || created.SubagentType != "qa-agent" ||
+		len(created.DelegationChain) != 3 || created.DelegationChain[0] != ceoAgentType || created.DelegationChain[1] != designReviewAgentType || created.DelegationChain[2] != "qa-agent" {
+		t.Fatalf("agent action missing delegation chain: %#v", created)
+	}
 	if created.Log.EventName != "agent_action" || created.Log.Action != "test" || created.Log.Repository != project.BountyRepoName || created.Log.PullNumber != 777 {
 		t.Fatalf("unexpected agent action log: %#v", created.Log)
 	}
 	if created.Log.Status != "processed" || created.Log.CommentURL != "https://github.com/mergeos-bounties/mergeos/pull/777" || created.Log.DurationMillis != 1234 {
 		t.Fatalf("unexpected agent action status fields: %#v", created.Log)
+	}
+	if created.Log.DelegatedBy != ceoAgentType || created.Log.DesignAgent != designReviewAgentType || created.Log.SubagentType != "qa-agent" || len(created.Log.DelegationChain) != 3 {
+		t.Fatalf("agent action log missing delegation chain: %#v", created.Log)
 	}
 
 	workflowReq := httptest.NewRequest(http.MethodGet, "/api/projects/"+project.ID+"/ai-workflow", nil)
@@ -3468,6 +3485,9 @@ func TestProjectAgentActionRouteRecordsWorkflowEventAndSanitizesData(t *testing.
 			if len(item.Evidence) != 2 || len(item.Runbook) != 3 || len(item.Checks) != 2 {
 				t.Fatalf("live feed agent action missing packet fields: %#v", item)
 			}
+			if item.DelegatedBy != ceoAgentType || item.DesignAgent != designReviewAgentType || item.SubagentType != "qa-agent" || len(item.DelegationChain) != 3 {
+				t.Fatalf("live feed agent action missing delegation fields: %#v", item)
+			}
 		}
 	}
 	if !seenAgentItem {
@@ -3498,7 +3518,7 @@ func TestProjectAgentActionRouteRecordsWorkflowEventAndSanitizesData(t *testing.
 				t.Fatal(err)
 			}
 			payloadText := string(payloadBytes)
-			for _, required := range []string{"context_urls", "evidence", "runbook", "checks", "Smoke tests passed", "https://mergeos.shop/api/public/projects/prj_0001/workflow"} {
+			for _, required := range []string{"context_urls", "evidence", "runbook", "checks", "delegated_by", "design_agent", "delegation_chain", "Smoke tests passed", "https://mergeos.shop/api/public/projects/prj_0001/workflow"} {
 				if !strings.Contains(payloadText, required) {
 					t.Fatalf("public protocol event missing %q in payload: %s", required, payloadText)
 				}

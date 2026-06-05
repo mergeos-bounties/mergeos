@@ -111,6 +111,14 @@
           "status": { "type": "string", "minLength": 1, "maxLength": 80 },
           "reference": { "type": "string", "maxLength": 512 },
           "url": { "type": "string", "maxLength": 512 },
+          "delegated_by": { "type": "string", "maxLength": 120 },
+          "design_agent": { "type": "string", "maxLength": 120 },
+          "subagent_type": { "type": "string", "maxLength": 120 },
+          "delegation_chain": {
+            "type": "array",
+            "maxItems": 8,
+            "items": { "type": "string", "minLength": 1, "maxLength": 120 }
+          },
           "created_at": { "type": "string", "format": "date-time" }
         }
       }

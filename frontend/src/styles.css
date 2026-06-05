@@ -22128,7 +22128,7 @@ svg {
   }
 
   .project-flow-main {
-    padding-bottom: 22px;
+    padding-bottom: calc(132px + env(safe-area-inset-bottom));
   }
 }
 

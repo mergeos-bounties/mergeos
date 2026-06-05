@@ -279,6 +279,10 @@ test('builds and sends typed AI agent action helpers', async () => {
     checks: [
       { name: 'Smoke suite', status: 'passed', summary: 'Preview route passed.' },
     ],
+    delegatedBy: 'ceo-strategy-agent',
+    designAgent: 'design-review-agent',
+    subagentType: 'qa-agent',
+    delegationChain: ['ceo-strategy-agent', 'design-review-agent', 'qa-agent'],
   }), {
     action: 'test',
     agent_type: 'qa-agent',
@@ -295,6 +299,10 @@ test('builds and sends typed AI agent action helpers', async () => {
     checks: [
       { name: 'Smoke suite', status: 'passed', summary: 'Preview route passed.' },
     ],
+    delegated_by: 'ceo-strategy-agent',
+    design_agent: 'design-review-agent',
+    subagent_type: 'qa-agent',
+    delegation_chain: ['ceo-strategy-agent', 'design-review-agent', 'qa-agent'],
   });
 
   const fetchImpl = fakeFetch([
@@ -304,7 +312,15 @@ test('builds and sends typed AI agent action helpers', async () => {
     { status: 201, body: { log: { action: 'scan' } } },
   ]);
   const client = new MergeOSClient({ token: 'agent-token', fetchImpl });
-  await client.recordAgentReview('prj_1', { pullNumber: 10, claimId: 'claim_public_2', bountyId: 'prj_1:14' });
+  await client.recordAgentReview('prj_1', {
+    pullNumber: 10,
+    claimId: 'claim_public_2',
+    bountyId: 'prj_1:14',
+    delegatedBy: 'ceo-strategy-agent',
+    designAgent: 'design-review-agent',
+    subagentType: 'review-agent',
+    delegationChain: ['ceo-strategy-agent', 'design-review-agent', 'review-agent'],
+  });
   await client.recordAgentTest('prj_1', { status: 'running' });
   await client.recordAgentGeneration('prj_1', { agentType: 'code-agent' });
   await client.recordAgentScan('prj_1', { url: 'https://scan.example/report' });
@@ -322,6 +338,10 @@ test('builds and sends typed AI agent action helpers', async () => {
     evidence: [],
     runbook: [],
     checks: [],
+    delegated_by: 'ceo-strategy-agent',
+    design_agent: 'design-review-agent',
+    subagent_type: 'review-agent',
+    delegation_chain: ['ceo-strategy-agent', 'design-review-agent', 'review-agent'],
     claim_id: 'claim_public_2',
     bounty_id: 'prj_1:14',
   }));

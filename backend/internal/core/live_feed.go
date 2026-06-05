@@ -550,20 +550,24 @@ func publicProposalLiveFeedType(status string) string {
 func publicAILiveFeedItem(log *GeminiWebhookLog) PublicLiveFeedItem {
 	reference := publicLiveFeedAIReference(log)
 	return PublicLiveFeedItem{
-		ID:          "ai:" + log.ID,
-		Type:        publicLiveFeedAIType(log),
-		Title:       publicLiveFeedAITitle(log),
-		Body:        publicLiveFeedAIBody(log),
-		Actor:       publicLiveFeedAIActor(log),
-		Action:      publicLiveFeedAIAction(log),
-		Reference:   reference,
-		ContextURLs: publicAgentActionContextURLs(log),
-		Evidence:    normalizeAgentActionTextList(log.Evidence, 12, 220),
-		Runbook:     normalizeAgentActionTextList(log.Runbook, 12, 220),
-		Checks:      normalizeAgentActionChecks(log.Checks),
-		URL:         publicLiveFeedURL(log.CommentURL),
-		Status:      publicLiveFeedStatus(log.Status),
-		CreatedAt:   log.ReceivedAt,
+		ID:              "ai:" + log.ID,
+		Type:            publicLiveFeedAIType(log),
+		Title:           publicLiveFeedAITitle(log),
+		Body:            publicLiveFeedAIBody(log),
+		Actor:           publicLiveFeedAIActor(log),
+		Action:          publicLiveFeedAIAction(log),
+		Reference:       reference,
+		ContextURLs:     publicAgentActionContextURLs(log),
+		Evidence:        normalizeAgentActionTextList(log.Evidence, 12, 220),
+		Runbook:         normalizeAgentActionTextList(log.Runbook, 12, 220),
+		Checks:          normalizeAgentActionChecks(log.Checks),
+		DelegatedBy:     log.DelegatedBy,
+		DesignAgent:     log.DesignAgent,
+		SubagentType:    log.SubagentType,
+		DelegationChain: normalizeAgentDelegationChain(log.DelegationChain, log.DelegatedBy, log.DesignAgent, log.SubagentType),
+		URL:             publicLiveFeedURL(log.CommentURL),
+		Status:          publicLiveFeedStatus(log.Status),
+		CreatedAt:       log.ReceivedAt,
 	}
 }
 
@@ -961,6 +965,18 @@ func publicLiveFeedProtocolEvent(item PublicLiveFeedItem) EventProtocolDocument 
 	}
 	if len(item.Checks) > 0 {
 		payload["checks"] = normalizeAgentActionChecks(item.Checks)
+	}
+	if item.DelegatedBy != "" {
+		payload["delegated_by"] = item.DelegatedBy
+	}
+	if item.DesignAgent != "" {
+		payload["design_agent"] = item.DesignAgent
+	}
+	if item.SubagentType != "" {
+		payload["subagent_type"] = item.SubagentType
+	}
+	if len(item.DelegationChain) > 0 {
+		payload["delegation_chain"] = item.DelegationChain
 	}
 
 	event := EventProtocolDocument{

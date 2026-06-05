@@ -30,6 +30,11 @@
           "reference_url": { "type": "string", "maxLength": 512 }
         }
       }
+    },
+    "delegationChain": {
+      "type": "array",
+      "maxItems": 8,
+      "items": { "type": "string", "minLength": 1, "maxLength": 120 }
     }
   },
   "properties": {
@@ -50,6 +55,10 @@
       "maxItems": 12,
       "items": { "type": "string", "minLength": 1, "maxLength": 160 }
     },
+    "delegated_by": { "type": "string", "maxLength": 120 },
+    "design_agent": { "type": "string", "maxLength": 120 },
+    "subagent_type": { "type": "string", "maxLength": 120 },
+    "delegation_chain": { "$ref": "#/$defs/delegationChain" },
     "context_urls": { "$ref": "#/$defs/contextUrls" },
     "evidence": { "$ref": "#/$defs/packetText" },
     "runbook": { "$ref": "#/$defs/packetText" },
@@ -79,6 +88,10 @@
           "maxItems": 12,
           "items": { "type": "string", "minLength": 1, "maxLength": 160 }
         },
+        "delegated_by": { "type": "string", "maxLength": 120 },
+        "design_agent": { "type": "string", "maxLength": 120 },
+        "subagent_type": { "type": "string", "maxLength": 120 },
+        "delegation_chain": { "$ref": "#/$defs/delegationChain" },
         "context_urls": { "$ref": "#/$defs/contextUrls" },
         "evidence": { "$ref": "#/$defs/packetText" },
         "runbook": { "$ref": "#/$defs/packetText" },

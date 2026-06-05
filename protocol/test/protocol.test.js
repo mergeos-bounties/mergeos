@@ -391,6 +391,10 @@ test('validates live feed protocol documents', () => {
           { name: 'Smoke suite', status: 'passed', summary: 'Frontend route smoke tests passed.', reference_url: 'https://ci.example/run/1' },
           { name: 'Security note', status: 'warning', summary: 'Manual review still required.' },
         ],
+        delegated_by: 'ceo-strategy-agent',
+        design_agent: 'design-review-agent',
+        subagent_type: 'qa-agent',
+        delegation_chain: ['ceo-strategy-agent', 'design-review-agent', 'qa-agent'],
         status: 'processed',
         created_at: now,
       },
@@ -621,6 +625,10 @@ test('validates agent action protocol documents', () => {
     pull_number: 777,
     reference_url: 'https://github.com/mergeos-bounties/mergeos/pull/777',
     labels: ['smoke', 'release-gate'],
+    delegated_by: 'ceo-strategy-agent',
+    design_agent: 'design-review-agent',
+    subagent_type: 'qa-agent',
+    delegation_chain: ['ceo-strategy-agent', 'design-review-agent', 'qa-agent'],
     context_urls: [
       'https://mergeos.shop/api/public/projects/prj_0001/workflow',
       'https://mergeos.shop/api/public/protocol/tasks?project_id=prj_0001',
@@ -645,6 +653,10 @@ test('validates agent action protocol documents', () => {
       status_code: 200,
       comment_url: 'https://github.com/mergeos-bounties/mergeos/pull/777',
       labels: ['smoke', 'release-gate'],
+      delegated_by: 'ceo-strategy-agent',
+      design_agent: 'design-review-agent',
+      subagent_type: 'qa-agent',
+      delegation_chain: ['ceo-strategy-agent', 'design-review-agent', 'qa-agent'],
       context_urls: [
         'https://mergeos.shop/api/public/projects/prj_0001/workflow',
         'https://mergeos.shop/api/public/protocol/tasks?project_id=prj_0001',
@@ -669,6 +681,7 @@ test('validates agent action protocol documents', () => {
     action: 'lint',
     status: 'done',
     checks: [{ name: 'Smoke suite', status: 'done' }],
+    delegation_chain: ['ceo-strategy-agent', 'design-review-agent', 'qa-agent', 'one', 'two', 'three', 'four', 'five', 'six'],
     log: { ...action.log, event_name: 'webhook', status_code: 99, checks: [{ name: 'Smoke suite', status: 'done' }] },
   });
   assert.equal(invalid.valid, false);
@@ -676,6 +689,7 @@ test('validates agent action protocol documents', () => {
   assert(invalid.errors.some((error) => error.path === 'action'));
   assert(invalid.errors.some((error) => error.path === 'status'));
   assert(invalid.errors.some((error) => error.path === 'checks[0].status'));
+  assert(invalid.errors.some((error) => error.path === 'delegation_chain'));
   assert(invalid.errors.some((error) => error.path === 'log.event_name'));
   assert(invalid.errors.some((error) => error.path === 'log.status_code'));
   assert(invalid.errors.some((error) => error.path === 'log.checks[0].status'));
@@ -795,6 +809,10 @@ test('validates public agent queue protocol documents', () => {
                 status: 'queued',
                 claim_id: 'prj_0001:12',
                 bounty_id: 'prj_0001:12',
+                delegated_by: 'ceo-strategy-agent',
+                design_agent: 'design-review-agent',
+                subagent_type: 'qa-agent',
+                delegation_chain: ['ceo-strategy-agent', 'design-review-agent', 'qa-agent'],
                 context_urls: ['/api/public/protocol/tasks?task_id=prj_0001:12'],
               },
             },
@@ -1230,6 +1248,10 @@ test('validates AI workflow protocol documents', () => {
         status: 'processed',
         reference: 'mergeos-bounties/mergeos#151',
         url: 'https://github.com/mergeos-bounties/mergeos/pull/151#issuecomment-1',
+        delegated_by: 'ceo-strategy-agent',
+        design_agent: 'design-review-agent',
+        subagent_type: 'review-agent',
+        delegation_chain: ['ceo-strategy-agent', 'design-review-agent', 'review-agent'],
         created_at: now,
       },
       {

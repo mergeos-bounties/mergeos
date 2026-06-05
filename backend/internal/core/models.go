@@ -1016,6 +1016,10 @@ type PublicLiveFeedItem struct {
 	Evidence         []string           `json:"evidence,omitempty"`
 	Runbook          []string           `json:"runbook,omitempty"`
 	Checks           []AgentActionCheck `json:"checks,omitempty"`
+	DelegatedBy      string             `json:"delegated_by,omitempty"`
+	DesignAgent      string             `json:"design_agent,omitempty"`
+	SubagentType     string             `json:"subagent_type,omitempty"`
+	DelegationChain  []string           `json:"delegation_chain,omitempty"`
 	URL              string             `json:"url,omitempty"`
 	Status           string             `json:"status"`
 	CreatedAt        time.Time          `json:"created_at"`
@@ -1786,14 +1790,18 @@ type AIWorkflowStage struct {
 }
 
 type AIWorkflowSignal struct {
-	ID        string    `json:"id"`
-	Type      string    `json:"type"`
-	Title     string    `json:"title"`
-	Body      string    `json:"body"`
-	Status    string    `json:"status"`
-	Reference string    `json:"reference,omitempty"`
-	URL       string    `json:"url,omitempty"`
-	CreatedAt time.Time `json:"created_at"`
+	ID              string    `json:"id"`
+	Type            string    `json:"type"`
+	Title           string    `json:"title"`
+	Body            string    `json:"body"`
+	Status          string    `json:"status"`
+	Reference       string    `json:"reference,omitempty"`
+	URL             string    `json:"url,omitempty"`
+	DelegatedBy     string    `json:"delegated_by,omitempty"`
+	DesignAgent     string    `json:"design_agent,omitempty"`
+	SubagentType    string    `json:"subagent_type,omitempty"`
+	DelegationChain []string  `json:"delegation_chain,omitempty"`
+	CreatedAt       time.Time `json:"created_at"`
 }
 
 type WorkerDashboardResponse struct {
@@ -2055,26 +2063,30 @@ type GeminiAPIKey struct {
 }
 
 type GeminiWebhookLog struct {
-	ID             string             `json:"id"`
-	DeliveryID     string             `json:"delivery_id,omitempty"`
-	EventName      string             `json:"event_name"`
-	Action         string             `json:"action,omitempty"`
-	Repository     string             `json:"repository,omitempty"`
-	PullNumber     int                `json:"pull_number,omitempty"`
-	Sender         string             `json:"sender,omitempty"`
-	Status         string             `json:"status"`
-	StatusCode     int                `json:"status_code"`
-	Error          string             `json:"error,omitempty"`
-	CommentURL     string             `json:"comment_url,omitempty"`
-	KeyID          string             `json:"key_id,omitempty"`
-	Labels         []string           `json:"labels,omitempty"`
-	ContextURLs    []string           `json:"context_urls,omitempty"`
-	Evidence       []string           `json:"evidence,omitempty"`
-	Runbook        []string           `json:"runbook,omitempty"`
-	Checks         []AgentActionCheck `json:"checks,omitempty"`
-	DurationMillis int64              `json:"duration_millis"`
-	ReceivedAt     time.Time          `json:"received_at"`
-	CompletedAt    *time.Time         `json:"completed_at,omitempty"`
+	ID              string             `json:"id"`
+	DeliveryID      string             `json:"delivery_id,omitempty"`
+	EventName       string             `json:"event_name"`
+	Action          string             `json:"action,omitempty"`
+	Repository      string             `json:"repository,omitempty"`
+	PullNumber      int                `json:"pull_number,omitempty"`
+	Sender          string             `json:"sender,omitempty"`
+	Status          string             `json:"status"`
+	StatusCode      int                `json:"status_code"`
+	Error           string             `json:"error,omitempty"`
+	CommentURL      string             `json:"comment_url,omitempty"`
+	KeyID           string             `json:"key_id,omitempty"`
+	Labels          []string           `json:"labels,omitempty"`
+	ContextURLs     []string           `json:"context_urls,omitempty"`
+	Evidence        []string           `json:"evidence,omitempty"`
+	Runbook         []string           `json:"runbook,omitempty"`
+	Checks          []AgentActionCheck `json:"checks,omitempty"`
+	DelegatedBy     string             `json:"delegated_by,omitempty"`
+	DesignAgent     string             `json:"design_agent,omitempty"`
+	SubagentType    string             `json:"subagent_type,omitempty"`
+	DelegationChain []string           `json:"delegation_chain,omitempty"`
+	DurationMillis  int64              `json:"duration_millis"`
+	ReceivedAt      time.Time          `json:"received_at"`
+	CompletedAt     *time.Time         `json:"completed_at,omitempty"`
 }
 
 type AgentActionCheck struct {
@@ -2085,19 +2097,23 @@ type AgentActionCheck struct {
 }
 
 type AgentActionRequest struct {
-	Action         string             `json:"action"`
-	ClaimID        string             `json:"claim_id,omitempty"`
-	BountyID       string             `json:"bounty_id,omitempty"`
-	AgentType      string             `json:"agent_type,omitempty"`
-	Status         string             `json:"status,omitempty"`
-	PullNumber     int                `json:"pull_number,omitempty"`
-	ReferenceURL   string             `json:"reference_url,omitempty"`
-	Labels         []string           `json:"labels,omitempty"`
-	ContextURLs    []string           `json:"context_urls,omitempty"`
-	Evidence       []string           `json:"evidence,omitempty"`
-	Runbook        []string           `json:"runbook,omitempty"`
-	Checks         []AgentActionCheck `json:"checks,omitempty"`
-	DurationMillis int64              `json:"duration_millis,omitempty"`
+	Action          string             `json:"action"`
+	ClaimID         string             `json:"claim_id,omitempty"`
+	BountyID        string             `json:"bounty_id,omitempty"`
+	AgentType       string             `json:"agent_type,omitempty"`
+	DelegatedBy     string             `json:"delegated_by,omitempty"`
+	DesignAgent     string             `json:"design_agent,omitempty"`
+	SubagentType    string             `json:"subagent_type,omitempty"`
+	DelegationChain []string           `json:"delegation_chain,omitempty"`
+	Status          string             `json:"status,omitempty"`
+	PullNumber      int                `json:"pull_number,omitempty"`
+	ReferenceURL    string             `json:"reference_url,omitempty"`
+	Labels          []string           `json:"labels,omitempty"`
+	ContextURLs     []string           `json:"context_urls,omitempty"`
+	Evidence        []string           `json:"evidence,omitempty"`
+	Runbook         []string           `json:"runbook,omitempty"`
+	Checks          []AgentActionCheck `json:"checks,omitempty"`
+	DurationMillis  int64              `json:"duration_millis,omitempty"`
 }
 
 type AgentActionResponse struct {
@@ -2118,6 +2134,10 @@ type AgentActionResponse struct {
 	Evidence        []string           `json:"evidence,omitempty"`
 	Runbook         []string           `json:"runbook,omitempty"`
 	Checks          []AgentActionCheck `json:"checks,omitempty"`
+	DelegatedBy     string             `json:"delegated_by,omitempty"`
+	DesignAgent     string             `json:"design_agent,omitempty"`
+	SubagentType    string             `json:"subagent_type,omitempty"`
+	DelegationChain []string           `json:"delegation_chain,omitempty"`
 	DurationMillis  int64              `json:"duration_millis"`
 	ReceivedAt      time.Time          `json:"received_at"`
 	CompletedAt     *time.Time         `json:"completed_at,omitempty"`

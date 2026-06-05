@@ -521,6 +521,7 @@ func (p *postgresPersistence) loadGeminiWebhookLogs(ctx context.Context, state *
 	rows, err := p.db.QueryContext(ctx, `
 SELECT id, delivery_id, event_name, action, repository, pull_number, sender, status, status_code,
        error, comment_url, key_id, labels, context_urls, evidence, runbook, checks,
+       delegated_by, design_agent, subagent_type, delegation_chain,
        duration_millis, received_at, completed_at
 FROM gemini_webhook_logs
 ORDER BY received_at DESC
@@ -537,11 +538,13 @@ LIMIT 200`)
 		var evidenceRaw string
 		var runbookRaw string
 		var checksRaw string
+		var delegationChainRaw string
 		var completedAt sql.NullTime
 		if err := rows.Scan(
 			&log.ID, &log.DeliveryID, &log.EventName, &log.Action, &log.Repository, &log.PullNumber, &log.Sender,
 			&log.Status, &log.StatusCode, &log.Error, &log.CommentURL, &log.KeyID, &labelsRaw,
 			&contextURLsRaw, &evidenceRaw, &runbookRaw, &checksRaw,
+			&log.DelegatedBy, &log.DesignAgent, &log.SubagentType, &delegationChainRaw,
 			&log.DurationMillis, &log.ReceivedAt, &completedAt,
 		); err != nil {
 			return fmt.Errorf("scan gemini webhook log: %w", err)
@@ -560,6 +563,9 @@ LIMIT 200`)
 		}
 		if checksRaw != "" {
 			_ = json.Unmarshal([]byte(checksRaw), &log.Checks)
+		}
+		if delegationChainRaw != "" {
+			_ = json.Unmarshal([]byte(delegationChainRaw), &log.DelegationChain)
 		}
 		log.CompletedAt = timePtr(completedAt)
 		state.GeminiWebhookLogs = append(state.GeminiWebhookLogs, &log)
@@ -915,19 +921,26 @@ func saveGeminiWebhookLogs(ctx context.Context, tx *sql.Tx, logs []*GeminiWebhoo
 		if err != nil {
 			return fmt.Errorf("encode gemini webhook checks %s: %w", log.ID, err)
 		}
+		delegationChain, err := json.Marshal(log.DelegationChain)
+		if err != nil {
+			return fmt.Errorf("encode gemini webhook delegation chain %s: %w", log.ID, err)
+		}
 		if _, err := tx.ExecContext(ctx, `
 INSERT INTO gemini_webhook_logs (
   id, delivery_id, event_name, action, repository, pull_number, sender, status, status_code,
   error, comment_url, key_id, labels, context_urls, evidence, runbook, checks,
+  delegated_by, design_agent, subagent_type, delegation_chain,
   duration_millis, received_at, completed_at
 ) VALUES (
   $1, $2, $3, $4, $5, $6, $7, $8,
   $9, $10, $11, $12, $13::jsonb, $14::jsonb, $15::jsonb, $16::jsonb, $17::jsonb,
-  $18, $19, $20
+  $18, $19, $20, $21::jsonb,
+  $22, $23, $24
 )`,
 			log.ID, log.DeliveryID, log.EventName, log.Action, log.Repository, log.PullNumber, log.Sender,
 			log.Status, log.StatusCode, log.Error, log.CommentURL, log.KeyID, string(labels),
 			string(contextURLs), string(evidence), string(runbook), string(checks),
+			log.DelegatedBy, log.DesignAgent, log.SubagentType, string(delegationChain),
 			log.DurationMillis, log.ReceivedAt, log.CompletedAt,
 		); err != nil {
 			return fmt.Errorf("save gemini webhook log %s: %w", log.ID, err)

@@ -144,6 +144,10 @@
         "action": "scan",
         "agent_type": "security-review-agent",
         "status": "processed",
+        "delegated_by": "ceo-strategy-agent",
+        "design_agent": "design-review-agent",
+        "subagent_type": "security-review-agent",
+        "delegation_chain": ["ceo-strategy-agent", "design-review-agent", "security-review-agent"],
         "context_urls": ["/api/public/protocol/agent-queue"],
         "evidence": ["Repository scan summary"],
         "runbook": ["Read task packet", "Scan changed files", "Record findings"]
@@ -157,6 +161,10 @@
         "action": "generate",
         "agent_type": "coding-agent",
         "status": "processed",
+        "delegated_by": "ceo-strategy-agent",
+        "design_agent": "design-review-agent",
+        "subagent_type": "coding-agent",
+        "delegation_chain": ["ceo-strategy-agent", "design-review-agent", "coding-agent"],
         "context_urls": ["/api/public/protocol/tasks"],
         "evidence": ["Implementation plan or generated patch summary"],
         "runbook": ["Map acceptance criteria", "Implement scoped change", "Prepare PR evidence"]
@@ -170,6 +178,10 @@
         "action": "review",
         "agent_type": "review-agent",
         "status": "processed",
+        "delegated_by": "ceo-strategy-agent",
+        "design_agent": "design-review-agent",
+        "subagent_type": "review-agent",
+        "delegation_chain": ["ceo-strategy-agent", "design-review-agent", "review-agent"],
         "context_urls": ["/api/public/projects/{id}/pull-requests"],
         "evidence": ["Review notes and risk assessment"],
         "checks": [{ "name": "Acceptance criteria", "status": "passed" }]
@@ -183,6 +195,10 @@
         "action": "test",
         "agent_type": "qa-agent",
         "status": "processed",
+        "delegated_by": "ceo-strategy-agent",
+        "design_agent": "design-review-agent",
+        "subagent_type": "qa-agent",
+        "delegation_chain": ["ceo-strategy-agent", "design-review-agent", "qa-agent"],
         "evidence": ["Test command output"],
         "checks": [{ "name": "Targeted test suite", "status": "passed" }]
       }
@@ -195,6 +211,10 @@
         "action": "deploy",
         "agent_type": "deployment-agent",
         "status": "processed",
+        "delegated_by": "ceo-strategy-agent",
+        "design_agent": "design-review-agent",
+        "subagent_type": "deployment-agent",
+        "delegation_chain": ["ceo-strategy-agent", "design-review-agent", "deployment-agent"],
         "reference_url": "https://example.com/deployments/preview",
         "evidence": ["Deployment URL and health check"],
         "checks": [{ "name": "Deployment validation", "status": "passed" }]

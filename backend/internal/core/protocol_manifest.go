@@ -45,7 +45,7 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Version:     "mergeos.agent-action.v1",
 				Kind:        "agent_action",
 				SchemaURL:   "https://mergeos.shop/protocol/agent-action.v1.schema.json",
-				Description: "Authenticated AI agent action document for review, test, generate, scan, and deployment evidence.",
+				Description: "Authenticated AI agent action document for review, test, generate, scan, deployment evidence, CEO delegation, and design-review handoff.",
 			},
 			{
 				Version:     "mergeos.agent-queue.v1",

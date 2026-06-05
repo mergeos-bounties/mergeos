@@ -288,6 +288,9 @@ function validateArray(value, schema, path, errors, rootSchema) {
   if (schema.minItems !== undefined && value.length < schema.minItems) {
     errors.push({ path, message: `must contain at least ${schema.minItems} item(s)` });
   }
+  if (schema.maxItems !== undefined && value.length > schema.maxItems) {
+    errors.push({ path, message: `must contain at most ${schema.maxItems} item(s)` });
+  }
   if (!schema.items) return;
   value.forEach((item, index) => validateValue(item, schema.items, `${path}[${index}]`, errors, rootSchema));
 }

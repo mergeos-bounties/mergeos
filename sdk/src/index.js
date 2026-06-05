@@ -678,6 +678,10 @@ export function agentActionPayload(action, payload = {}) {
   const evidence = payload.evidence || [];
   const runbook = payload.runbook || [];
   const checks = payload.checks || [];
+  const delegatedBy = payload.delegated_by || payload.delegatedBy || '';
+  const designAgent = payload.design_agent || payload.designAgent || '';
+  const subagentType = payload.subagent_type || payload.subagentType || '';
+  const delegationChain = payload.delegation_chain || payload.delegationChain || [];
   const body = {
     action: normalizedAction,
     agent_type: payload.agent_type || payload.agentType || defaultAgentTypeForAction(normalizedAction),
@@ -691,6 +695,10 @@ export function agentActionPayload(action, payload = {}) {
     runbook: Array.isArray(runbook) ? runbook : [],
     checks: Array.isArray(checks) ? checks : [],
   };
+  if (delegatedBy) body.delegated_by = delegatedBy;
+  if (designAgent) body.design_agent = designAgent;
+  if (subagentType) body.subagent_type = subagentType;
+  if (Array.isArray(delegationChain) && delegationChain.length) body.delegation_chain = delegationChain;
   const claimID = payload.claim_id || payload.claimId || '';
   const bountyID = payload.bounty_id || payload.bountyId || '';
   if (claimID) body.claim_id = claimID;

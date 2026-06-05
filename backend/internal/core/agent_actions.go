@@ -21,6 +21,10 @@ func (s *Store) RecordProjectAgentAction(projectID string, req AgentActionReques
 	if agentType == "" {
 		agentType = defaultAgentActionActor
 	}
+	delegatedBy := normalizeAgentDelegate(req.DelegatedBy, ceoAgentType)
+	designAgent := normalizeAgentDelegate(req.DesignAgent, designReviewAgentType)
+	subagentType := normalizeAgentDelegate(req.SubagentType, agentType)
+	delegationChain := normalizeAgentDelegationChain(req.DelegationChain, delegatedBy, designAgent, subagentType)
 	durationMillis := req.DurationMillis
 	if durationMillis < 0 {
 		durationMillis = 0
@@ -51,22 +55,26 @@ func (s *Store) RecordProjectAgentAction(projectID string, req AgentActionReques
 
 	now := time.Now().UTC()
 	log := GeminiWebhookLog{
-		ID:             geminiWebhookLogID(),
-		EventName:      "agent_action",
-		Action:         action,
-		Repository:     projectAgentActionRepository(project),
-		PullNumber:     pullNumber,
-		Sender:         "agent:" + agentType,
-		Status:         status,
-		StatusCode:     agentActionStatusCode(status),
-		CommentURL:     publicLiveFeedURL(req.ReferenceURL),
-		Labels:         normalizeAgentActionLabels(req.Labels),
-		ContextURLs:    contextURLs,
-		Evidence:       evidence,
-		Runbook:        runbook,
-		Checks:         checks,
-		DurationMillis: durationMillis,
-		ReceivedAt:     now,
+		ID:              geminiWebhookLogID(),
+		EventName:       "agent_action",
+		Action:          action,
+		Repository:      projectAgentActionRepository(project),
+		PullNumber:      pullNumber,
+		Sender:          "agent:" + agentType,
+		Status:          status,
+		StatusCode:      agentActionStatusCode(status),
+		CommentURL:      publicLiveFeedURL(req.ReferenceURL),
+		Labels:          normalizeAgentActionLabels(req.Labels),
+		ContextURLs:     contextURLs,
+		Evidence:        evidence,
+		Runbook:         runbook,
+		Checks:          checks,
+		DelegatedBy:     delegatedBy,
+		DesignAgent:     designAgent,
+		SubagentType:    subagentType,
+		DelegationChain: delegationChain,
+		DurationMillis:  durationMillis,
+		ReceivedAt:      now,
 	}
 	if durationMillis > 0 || status == "processed" || status == "failed" {
 		completedAt := now
@@ -95,6 +103,10 @@ func (s *Store) RecordProjectAgentAction(projectID string, req AgentActionReques
 		Evidence:        log.Evidence,
 		Runbook:         log.Runbook,
 		Checks:          log.Checks,
+		DelegatedBy:     log.DelegatedBy,
+		DesignAgent:     log.DesignAgent,
+		SubagentType:    log.SubagentType,
+		DelegationChain: log.DelegationChain,
 		DurationMillis:  log.DurationMillis,
 		ReceivedAt:      log.ReceivedAt,
 		CompletedAt:     log.CompletedAt,
@@ -251,6 +263,47 @@ func normalizeAgentActionLabels(values []string) []string {
 		return labels[:12]
 	}
 	return labels
+}
+
+func normalizeAgentDelegate(value string, fallback string) string {
+	normalized := sanitizeLedgerReferenceValue(value)
+	if normalized != "" {
+		return normalized
+	}
+	return sanitizeLedgerReferenceValue(fallback)
+}
+
+func normalizeAgentDelegationChain(values []string, delegatedBy string, designAgent string, subagentType string) []string {
+	chain := make([]string, 0, len(values)+3)
+	seen := map[string]bool{}
+	add := func(value string) {
+		value = sanitizeLedgerReferenceValue(value)
+		if value == "" {
+			return
+		}
+		key := strings.ToLower(value)
+		if seen[key] {
+			return
+		}
+		seen[key] = true
+		chain = append(chain, value)
+	}
+	if len(values) == 0 {
+		add(delegatedBy)
+		add(designAgent)
+		add(subagentType)
+	} else {
+		for _, value := range values {
+			add(value)
+		}
+		add(delegatedBy)
+		add(designAgent)
+		add(subagentType)
+	}
+	if len(chain) > 8 {
+		return chain[:8]
+	}
+	return chain
 }
 
 func normalizeAgentActionURLs(values []string) []string {

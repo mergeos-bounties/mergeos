@@ -466,14 +466,18 @@ func aiWorkflowSignals(project *Project, logs []GeminiWebhookLog, deployment Pro
 	for _, log := range logs {
 		reference := publicLiveFeedAIReference(&log)
 		signals = append(signals, AIWorkflowSignal{
-			ID:        aiWorkflowSignalID(project.ID, log),
-			Type:      publicLiveFeedAIType(&log),
-			Title:     publicLiveFeedAITitle(&log),
-			Body:      publicLiveFeedAIBody(&log),
-			Status:    publicLiveFeedStatus(log.Status),
-			Reference: reference,
-			URL:       publicLiveFeedURL(log.CommentURL),
-			CreatedAt: log.ReceivedAt,
+			ID:              aiWorkflowSignalID(project.ID, log),
+			Type:            publicLiveFeedAIType(&log),
+			Title:           publicLiveFeedAITitle(&log),
+			Body:            publicLiveFeedAIBody(&log),
+			Status:          publicLiveFeedStatus(log.Status),
+			Reference:       reference,
+			URL:             publicLiveFeedURL(log.CommentURL),
+			DelegatedBy:     log.DelegatedBy,
+			DesignAgent:     log.DesignAgent,
+			SubagentType:    log.SubagentType,
+			DelegationChain: normalizeAgentDelegationChain(log.DelegationChain, log.DelegatedBy, log.DesignAgent, log.SubagentType),
+			CreatedAt:       log.ReceivedAt,
 		})
 	}
 	signals = append(signals, AIWorkflowSignal{

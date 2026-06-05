@@ -103,7 +103,7 @@
       </nav>
 
       <div class="nav-actions project-flow-actions">
-        <div class="locale-menu" :class="{ open: activeNavMenu === 'locale' }" @mouseleave="closeNavContextMenu" @keydown.escape.stop="closeNavContextMenu">
+        <div class="locale-menu" :class="{ open: activeNavMenu === 'locale' }" @mouseleave="scheduleNavContextClose" @keydown.escape.stop="closeNavContextMenu">
           <button
             class="locale-button icon-only"
             type="button"
@@ -136,7 +136,7 @@
             </button>
           </div>
         </div>
-        <div class="account-menu project-account-menu" :class="{ open: activeNavMenu === 'account' }" @mouseleave="closeNavContextMenu" @keydown.escape.stop="closeNavContextMenu">
+        <div class="account-menu project-account-menu" :class="{ open: activeNavMenu === 'account' }" @mouseleave="scheduleNavContextClose" @keydown.escape.stop="closeNavContextMenu">
           <button
             class="account-icon-button"
             type="button"
@@ -4263,7 +4263,7 @@
         </nav>
 
         <div class="nav-actions public-nav-actions" :key="publicNavActionsRenderKey">
-          <div class="locale-menu public-locale-menu" :class="{ open: activeNavMenu === 'locale' }" @mouseleave="closeNavContextMenu" @keydown.escape.stop="closeNavContextMenu">
+          <div class="locale-menu public-locale-menu" :class="{ open: activeNavMenu === 'locale' }" @mouseleave="scheduleNavContextClose" @keydown.escape.stop="closeNavContextMenu">
             <button
               class="locale-button icon-only"
               type="button"
@@ -4297,7 +4297,7 @@
             </div>
           </div>
 
-          <div class="account-menu" :class="{ open: activeNavMenu === 'account' }" @mouseleave="closeNavContextMenu" @keydown.escape.stop="closeNavContextMenu">
+          <div class="account-menu" :class="{ open: activeNavMenu === 'account' }" @mouseleave="scheduleNavContextClose" @keydown.escape.stop="closeNavContextMenu">
             <button
               class="account-icon-button"
               type="button"
@@ -6461,7 +6461,7 @@
                     <span>{{ item.status }}</span>
                   </div>
                   <p>{{ item.body }}</p>
-                  <small>{{ item.project }} · {{ item.actor }} · {{ item.meta }}<template v-if="item.auditLabel"> · {{ item.auditLabel }}</template></small>
+                  <small>{{ item.project }} · {{ item.actor }} · {{ item.meta }}<template v-if="item.delegationSummary"> · {{ item.delegationSummary }}</template><template v-if="item.auditLabel"> · {{ item.auditLabel }}</template></small>
                 </div>
                 <div class="live-feed-row-meta">
                   <strong v-if="item.amount" :class="['ledger-amount', item.amountTone]">{{ item.amount }}</strong>
@@ -10482,6 +10482,7 @@ const errorMessage = ref('');
 const authNotice = ref('');
 const mobileMenuOpen = ref(false);
 const activeNavMenu = ref('');
+const pinnedNavMenu = ref('');
 const navContextGeometry = ref({ menu: '', left: 16, top: 64, width: 920, anchorLeft: 160 });
 let navContextCloseTimer = 0;
 const activeLocale = ref(readStoredLocale());
@@ -18970,6 +18971,24 @@ const dashboardAILogRows = computed(() => {
     });
   });
 
+  (dashboardAIWorkflow.value?.signals || []).slice(0, 4).forEach((signal, index) => {
+    const delegation = liveFeedDelegationSummary(signal);
+    pushRow({
+      key: `ai-workflow-signal-${signal.id || index}`,
+      title: signal.title || toTitleLabel(signal.type || 'Agent signal'),
+      body: signal.body,
+      source: 'Agent signal',
+      status: toTitleLabel(signal.status || 'live'),
+      tone: signal.type === 'deployment_validation' ? 'blue' : 'purple',
+      icon: signal.type === 'deployment_validation' ? Rocket : Bot,
+      meta: delegation || dashboardAIWorkflowView.value.status,
+      reference: shortLedgerReference(signal.reference || ''),
+      url: signal.url || '',
+      createdAt: signal.created_at,
+      order: 20 + index,
+    });
+  });
+
   dashboardWorkflowPulseStages.value
     .filter((stage) => /ai|agent|scan|routing|review|deploy|validation|task/i.test(`${stage.title} ${stage.body}`))
     .slice(0, 4)
@@ -21829,31 +21848,33 @@ function measureNavContextMenu(menu, event = {}) {
 
 function openNavContextMenu(menu, event = {}) {
   cancelNavContextClose();
+  if (pinnedNavMenu.value && pinnedNavMenu.value !== menu) {
+    pinnedNavMenu.value = '';
+  }
   measureNavContextMenu(menu, event);
   activeNavMenu.value = menu;
 }
 
 function toggleNavContextMenu(menu, event = {}) {
   cancelNavContextClose();
-  if (activeNavMenu.value === menu) {
-    if (menu === 'product' || menu === 'solutions') {
-      measureNavContextMenu(menu, event);
-      return;
-    }
+  if (activeNavMenu.value === menu && pinnedNavMenu.value === menu) {
     closeNavContextMenu();
     return;
   }
   measureNavContextMenu(menu, event);
   activeNavMenu.value = menu;
+  pinnedNavMenu.value = menu;
 }
 
 function closeNavContextMenu() {
   cancelNavContextClose();
   activeNavMenu.value = '';
+  pinnedNavMenu.value = '';
 }
 
 function scheduleNavContextClose() {
   cancelNavContextClose();
+  if (pinnedNavMenu.value && pinnedNavMenu.value === activeNavMenu.value) return;
   if (!hasWindow) {
     closeNavContextMenu();
     return;
@@ -26307,8 +26328,24 @@ function mapPublicLiveFeedItem(item = {}) {
     evidence: Array.isArray(item.evidence) ? item.evidence.filter(Boolean) : [],
     runbook: Array.isArray(item.runbook) ? item.runbook.filter(Boolean) : [],
     checks: Array.isArray(item.checks) ? item.checks.filter((check) => check && check.name) : [],
+    delegatedBy: item.delegated_by || '',
+    designAgent: item.design_agent || '',
+    subagentType: item.subagent_type || '',
+    delegationChain: Array.isArray(item.delegation_chain) ? item.delegation_chain.filter(Boolean) : [],
+    delegationSummary: liveFeedDelegationSummary(item),
     rawContributor: item.contributor && typeof item.contributor === 'object' ? item.contributor : null,
   };
+}
+
+function liveFeedDelegationSummary(item = {}) {
+  const chain = Array.isArray(item.delegation_chain)
+    ? item.delegation_chain.filter(Boolean).map((value) => toTitleLabel(value)).slice(0, 4)
+    : [];
+  if (chain.length >= 2) return chain.join(' -> ');
+  const delegatedBy = item.delegated_by ? toTitleLabel(item.delegated_by) : '';
+  const designAgent = item.design_agent ? toTitleLabel(item.design_agent) : '';
+  const subagent = item.subagent_type ? toTitleLabel(item.subagent_type) : '';
+  return [delegatedBy, designAgent, subagent].filter(Boolean).join(' -> ');
 }
 
 function deploymentRealtimeLiveFeedItem(payload = {}) {
