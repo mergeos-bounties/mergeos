@@ -106,6 +106,7 @@ svg {
   background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(14px);
   isolation: isolate;
+  overflow: visible;
 }
 
 .nav-inner {
@@ -217,10 +218,12 @@ svg {
 .nav-menu.open::after {
   content: "";
   position: absolute;
-  left: -20px;
-  right: -20px;
+  left: -34px;
+  right: -34px;
   top: 100%;
-  height: 34px;
+  z-index: 255;
+  height: 54px;
+  pointer-events: auto;
 }
 
 .nav-menu-trigger {
@@ -245,8 +248,7 @@ svg {
     #ffffff;
   box-shadow: 0 22px 54px rgba(11, 21, 17, 0.12);
   max-height: min(560px, calc(100dvh - var(--nav-context-top, 66px) - 16px));
-  overflow-x: hidden;
-  overflow-y: auto;
+  overflow: visible;
   overscroll-behavior: contain;
   padding: 0;
   opacity: 0;
@@ -265,8 +267,9 @@ svg {
   position: absolute;
   left: 0;
   right: 0;
-  top: -24px;
-  height: 24px;
+  top: -40px;
+  height: 40px;
+  pointer-events: auto;
 }
 
 .nav-context-menu::after {
@@ -23253,14 +23256,14 @@ body {
 .public-home-hero {
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(0, 0.95fr) minmax(380px, 0.72fr);
+  grid-template-columns: minmax(0, 0.94fr) minmax(390px, 0.74fr);
   align-items: start;
-  gap: clamp(22px, 3.5vw, 48px);
-  padding: clamp(36px, 6vh, 62px) 0 clamp(28px, 5vh, 56px);
+  gap: clamp(22px, 3vw, 42px);
+  padding: clamp(20px, 3.4vh, 36px) 0 clamp(24px, 4.4vh, 46px);
 }
 
 .public-home-copy {
-  max-width: 760px;
+  max-width: 720px;
   padding: 0 0 10px;
 }
 
@@ -23275,16 +23278,16 @@ body {
   max-width: 780px;
   margin: 12px 0 0;
   color: var(--ink);
-  font-size: clamp(46px, 8vw, 92px);
-  line-height: 0.96;
+  font-size: clamp(44px, 6vw, 76px);
+  line-height: 0.98;
   font-weight: 900;
 }
 
 .public-home-copy p {
   max-width: 620px;
-  margin-top: 18px;
+  margin-top: 16px;
   color: #34433e;
-  font-size: clamp(17px, 2vw, 21px);
+  font-size: clamp(16px, 1.5vw, 19px);
   line-height: 1.48;
   font-weight: 560;
 }
@@ -23293,6 +23296,7 @@ body {
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
+  margin-top: 22px;
 }
 
 .primary-button,
@@ -23312,7 +23316,7 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  margin-top: 28px;
+  margin-top: 22px;
 }
 
 .home-proof-stack article {
@@ -23460,7 +23464,7 @@ body {
 .home-command-panel {
   position: relative;
   overflow: hidden;
-  margin-top: clamp(44px, 7vh, 84px);
+  margin-top: clamp(28px, 4vh, 44px);
   border: 1px solid rgba(11, 21, 17, 0.12);
   border-radius: 8px;
   background:

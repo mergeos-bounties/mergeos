@@ -21237,7 +21237,7 @@ function scheduleNavContextClose() {
   navContextCloseTimer = window.setTimeout(() => {
     navContextCloseTimer = 0;
     activeNavMenu.value = '';
-  }, 360);
+  }, 560);
 }
 
 function cancelNavContextClose() {
