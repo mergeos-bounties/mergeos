@@ -837,13 +837,15 @@ type EventProtocolDocument struct {
 }
 
 type ProjectDeploymentResponse struct {
-	ProjectID    string             `json:"project_id"`
-	ProjectTitle string             `json:"project_title"`
-	Status       string             `json:"status"`
-	Progress     int                `json:"progress"`
-	UpdatedAt    time.Time          `json:"updated_at"`
-	Stages       []DeploymentStage  `json:"stages"`
-	Signals      []DeploymentSignal `json:"signals"`
+	ProtocolVersion string             `json:"protocol_version"`
+	Kind            string             `json:"kind"`
+	ProjectID       string             `json:"project_id"`
+	ProjectTitle    string             `json:"project_title"`
+	Status          string             `json:"status"`
+	Progress        int                `json:"progress"`
+	UpdatedAt       time.Time          `json:"updated_at"`
+	Stages          []DeploymentStage  `json:"stages"`
+	Signals         []DeploymentSignal `json:"signals"`
 }
 
 type ProjectEscrowResponse struct {

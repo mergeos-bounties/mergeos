@@ -16,6 +16,7 @@ test('loads stable task, workflow, ledger, and event schemas', () => {
     'mergeos.admin-ops.v1',
     'mergeos.agent.v1',
     'mergeos.customer-dashboard.v1',
+    'mergeos.deployment.v1',
     'mergeos.escrow.v1',
     'mergeos.event.v1',
     'mergeos.ledger.v1',
@@ -282,6 +283,77 @@ test('validates escrow protocol documents', () => {
   assert(invalid.errors.some((error) => error.path === 'release_status'));
   assert(invalid.errors.some((error) => error.path === 'tasks[0].release_status'));
   assert(invalid.errors.some((error) => error.path === 'tasks[0].paid_cents'));
+});
+
+test('validates deployment protocol documents', () => {
+  const now = '2026-06-05T00:00:00.000Z';
+  const deployment = {
+    protocol_version: 'mergeos.deployment.v1',
+    kind: 'deployment',
+    project_id: 'prj_0001',
+    project_title: 'Customer portal rebuild',
+    status: 'validating',
+    progress: 60,
+    updated_at: now,
+    stages: [
+      {
+        id: 'deployment_handoff',
+        title: 'Deployment handoff',
+        body: 'Deployment pipeline and handoff notes have been accepted.',
+        status: 'complete',
+        tone: 'green',
+        source_task_issue_number: 13,
+        reference: 'https://github.com/mergeos-bounties/mergeos/issues/13',
+        url: 'https://github.com/mergeos-bounties/mergeos/issues/13',
+        updated_at: now,
+      },
+      {
+        id: 'release_gate',
+        title: 'Release gate',
+        body: '1 of 3 delivery tasks are accepted and paid.',
+        status: 'in_progress',
+        tone: 'blue',
+        reference: 'project:prj_0001',
+        updated_at: now,
+      },
+    ],
+    signals: [
+      {
+        id: 'ledger:7',
+        type: 'ledger_task_payment',
+        title: 'Task payout released',
+        body: 'Customer portal rebuild recorded Task payout released.',
+        status: 'verified',
+        reference: 'project:prj_0001;issue:13',
+        url: 'https://github.com/mergeos-bounties/mergeos/issues/13',
+        created_at: now,
+      },
+      {
+        id: 'ai:log_0001',
+        type: 'agent_action',
+        title: 'AI agent deployed PR #151',
+        body: 'Deploy Agent ran deployment handoff for mergeos-bounties/mergeos PR #151.',
+        status: 'processed',
+        reference: 'mergeos-bounties/mergeos#151',
+        created_at: now,
+      },
+    ],
+  };
+
+  assert.equal(validateProtocolDocument(deployment).valid, true);
+
+  const invalid = validateProtocolDocument({
+    ...deployment,
+    kind: 'deployments',
+    progress: 101,
+    stages: [{ ...deployment.stages[0], tone: 'success' }],
+    signals: [{ ...deployment.signals[0], created_at: 'not-a-date' }],
+  });
+  assert.equal(invalid.valid, false);
+  assert(invalid.errors.some((error) => error.path === 'kind'));
+  assert(invalid.errors.some((error) => error.path === 'progress'));
+  assert(invalid.errors.some((error) => error.path === 'stages[0].tone'));
+  assert(invalid.errors.some((error) => error.path === 'signals[0].created_at'));
 });
 
 test('validates PR monitor protocol documents', () => {

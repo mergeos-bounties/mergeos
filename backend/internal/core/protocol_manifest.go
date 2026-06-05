@@ -54,6 +54,12 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Description: "Authenticated project escrow document with reserve, release, payout, remaining balance, and per-task settlement state.",
 			},
 			{
+				Version:     "mergeos.deployment.v1",
+				Kind:        "deployment",
+				SchemaURL:   "https://mergeos.shop/protocol/deployment.v1.schema.json",
+				Description: "Authenticated deployment validation document with release gate progress, rollout stages, deployment evidence, and AI/deployment signals.",
+			},
+			{
 				Version:     "mergeos.pr-monitor.v1",
 				Kind:        "pr_monitor",
 				SchemaURL:   "https://mergeos.shop/protocol/pr-monitor.v1.schema.json",
@@ -160,6 +166,13 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Protocol:    "mergeos.escrow.v1",
 				Auth:        "project",
 				Description: "Authenticated project escrow reserve, release, payout, and task settlement document.",
+			},
+			{
+				Method:      "GET",
+				Path:        "/api/projects/{id}/deployment",
+				Protocol:    "mergeos.deployment.v1",
+				Auth:        "project",
+				Description: "Authenticated deployment validation state with rollout stages, release gates, and evidence signals.",
 			},
 			{
 				Method:      "GET",

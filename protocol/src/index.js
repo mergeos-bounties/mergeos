@@ -5,6 +5,7 @@ const schemaFiles = {
   'mergeos.admin-ops.v1': '../schemas/admin-ops.v1.schema.json',
   'mergeos.agent.v1': '../schemas/agent.v1.schema.json',
   'mergeos.customer-dashboard.v1': '../schemas/customer-dashboard.v1.schema.json',
+  'mergeos.deployment.v1': '../schemas/deployment.v1.schema.json',
   'mergeos.escrow.v1': '../schemas/escrow.v1.schema.json',
   'mergeos.event.v1': '../schemas/event.v1.schema.json',
   'mergeos.ledger.v1': '../schemas/ledger.v1.schema.json',

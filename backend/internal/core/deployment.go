@@ -93,13 +93,15 @@ func (s *Store) projectDeploymentLocked(project *Project) ProjectDeploymentRespo
 	}
 
 	return ProjectDeploymentResponse{
-		ProjectID:    project.ID,
-		ProjectTitle: publicLiveFeedProjectTitle(project),
-		Status:       status,
-		Progress:     progress,
-		UpdatedAt:    updatedAt,
-		Stages:       stages,
-		Signals:      signals,
+		ProtocolVersion: "mergeos.deployment.v1",
+		Kind:            "deployment",
+		ProjectID:       project.ID,
+		ProjectTitle:    publicLiveFeedProjectTitle(project),
+		Status:          status,
+		Progress:        progress,
+		UpdatedAt:       updatedAt,
+		Stages:          stages,
+		Signals:         signals,
 	}
 }
 

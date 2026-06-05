@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mergeos.shop/protocol/deployment.v1.schema.json",
+  "title": "MergeOS Deployment v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["protocol_version", "kind", "project_id", "project_title", "status", "progress", "updated_at", "stages", "signals"],
+  "properties": {
+    "protocol_version": { "const": "mergeos.deployment.v1" },
+    "kind": { "const": "deployment" },
+    "project_id": { "type": "string", "minLength": 1, "maxLength": 96 },
+    "project_title": { "type": "string", "maxLength": 240 },
+    "status": { "enum": ["queued", "validating", "ready"] },
+    "progress": { "type": "integer", "minimum": 0, "maximum": 100 },
+    "updated_at": { "type": "string", "format": "date-time" },
+    "stages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "title", "body", "status", "tone", "updated_at"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "title": { "type": "string", "minLength": 1, "maxLength": 160 },
+          "body": { "type": "string", "maxLength": 1000 },
+          "status": { "enum": ["pending", "in_progress", "complete"] },
+          "tone": { "enum": ["amber", "blue", "green"] },
+          "source_task_issue_number": { "type": "integer", "minimum": 0 },
+          "reference": { "type": "string", "maxLength": 512 },
+          "url": { "type": "string", "maxLength": 512 },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+    "signals": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "type", "title", "body", "status", "created_at"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1, "maxLength": 160 },
+          "type": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "title": { "type": "string", "minLength": 1, "maxLength": 160 },
+          "body": { "type": "string", "maxLength": 1000 },
+          "status": { "type": "string", "minLength": 1, "maxLength": 80 },
+          "reference": { "type": "string", "maxLength": 512 },
+          "url": { "type": "string", "maxLength": 512 },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      }
+    }
+  }
+}
