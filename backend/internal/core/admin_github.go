@@ -637,6 +637,30 @@ func (c *adminGitHubClient) listPullRequestsLinkedToIssue(ctx context.Context, t
 	return pulls, nil
 }
 
+func (c *adminGitHubClient) listRecentPullRequests(ctx context.Context, target githubIssueTarget, limit int) ([]AdminTaskPullRequest, error) {
+	if limit <= 0 || limit > 100 {
+		limit = 100
+	}
+	endpoint := fmt.Sprintf(
+		"https://api.github.com/repos/%s/%s/pulls?state=all&sort=updated&direction=desc&per_page=%d",
+		url.PathEscape(target.Owner),
+		url.PathEscape(target.Repo),
+		limit,
+	)
+	var rows []githubPullRequestRow
+	if err := c.githubJSON(ctx, http.MethodGet, endpoint, nil, &rows); err != nil {
+		return nil, err
+	}
+	pulls := make([]AdminTaskPullRequest, 0, len(rows))
+	for _, row := range rows {
+		pulls = append(pulls, row.adminRow(target))
+	}
+	sort.SliceStable(pulls, func(i, j int) bool {
+		return pulls[i].UpdatedAt.After(pulls[j].UpdatedAt)
+	})
+	return pulls, nil
+}
+
 func (c *adminGitHubClient) timelinePullNumbers(ctx context.Context, target githubIssueTarget) ([]int, error) {
 	endpoint := fmt.Sprintf(
 		"https://api.github.com/repos/%s/%s/issues/%d/timeline?per_page=100",
@@ -934,6 +958,9 @@ type githubPullRequestRow struct {
 	User           *struct {
 		Login string `json:"login"`
 	} `json:"user"`
+	Labels []struct {
+		Name string `json:"name"`
+	} `json:"labels"`
 	Base *struct {
 		Ref string `json:"ref"`
 	} `json:"base"`
@@ -951,7 +978,7 @@ func (row githubPullRequestRow) adminRow(target githubIssueTarget) AdminTaskPull
 		HTMLURL:        row.HTMLURL,
 		MergeURL:       githubCommitURL(target, row.MergeCommitSHA),
 		Draft:          row.Draft,
-		Merged:         row.Merged,
+		Merged:         row.Merged || row.MergedAt != nil,
 		MergeableState: row.MergeableState,
 		CreatedAt:      row.CreatedAt,
 		UpdatedAt:      row.UpdatedAt,
@@ -966,5 +993,12 @@ func (row githubPullRequestRow) adminRow(target githubIssueTarget) AdminTaskPull
 	if row.Head != nil {
 		result.HeadRef = row.Head.Ref
 	}
+	for _, label := range row.Labels {
+		name := strings.TrimSpace(label.Name)
+		if name != "" {
+			result.Labels = append(result.Labels, name)
+		}
+	}
+	sort.Strings(result.Labels)
 	return result
 }

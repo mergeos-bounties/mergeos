@@ -24,6 +24,29 @@ func (f fakeProjectPullLister) listPullRequestsLinkedToIssue(_ context.Context, 
 	return copied, nil
 }
 
+type fakeRecentProjectPullLister struct {
+	recent        map[string][]AdminTaskPullRequest
+	recentCalls   int
+	perIssueCalls int
+	err           error
+}
+
+func (f *fakeRecentProjectPullLister) listPullRequestsLinkedToIssue(_ context.Context, _ githubIssueTarget) ([]AdminTaskPullRequest, error) {
+	f.perIssueCalls++
+	return nil, errors.New("per-issue lookup should not be used by public recent monitor")
+}
+
+func (f *fakeRecentProjectPullLister) listRecentPullRequests(_ context.Context, target githubIssueTarget, _ int) ([]AdminTaskPullRequest, error) {
+	f.recentCalls++
+	if f.err != nil {
+		return nil, f.err
+	}
+	rows := f.recent[target.fullName()]
+	copied := make([]AdminTaskPullRequest, len(rows))
+	copy(copied, rows)
+	return copied, nil
+}
+
 func TestProjectPullRequestsMonitorSummarizesReadinessWithoutAdminFields(t *testing.T) {
 	now := time.Now().UTC()
 	project := &Project{
@@ -109,6 +132,94 @@ func TestProjectPullRequestsMonitorSummarizesReadinessWithoutAdminFields(t *test
 	}
 	if payload.Tasks[0].PullRequests[1].Readiness.Status != "blocked" || payload.Tasks[0].PullRequests[1].Readiness.CanMerge {
 		t.Fatalf("expected second PR to be blocked: %#v", payload.Tasks[0].PullRequests[1])
+	}
+}
+
+func TestPublicProjectPullRequestsMonitorUsesRecentRepoSnapshot(t *testing.T) {
+	now := time.Now().UTC()
+	project := &Project{
+		ID:           "prj_recent",
+		Title:        "Recent PR proof",
+		RepoProvider: "local-git",
+		Tasks: []*Task{
+			{
+				ID:                 "tsk_10",
+				ProjectID:          "prj_recent",
+				IssueNumber:        10,
+				Title:              "Wire public PR monitor",
+				RewardCents:        50,
+				RequiredWorkerKind: WorkerHuman,
+				Status:             TaskOpen,
+				IssueURL:           "https://github.com/mergeos-bounties/mergeos/issues/10",
+				CreatedAt:          now.Add(-2 * time.Hour),
+			},
+			{
+				ID:                 "tsk_11",
+				ProjectID:          "prj_recent",
+				IssueNumber:        11,
+				Title:              "Show PR readiness",
+				RewardCents:        50,
+				RequiredWorkerKind: WorkerHuman,
+				Status:             TaskOpen,
+				IssueURL:           "https://github.com/mergeos-bounties/mergeos/issues/11",
+				CreatedAt:          now.Add(-time.Hour),
+			},
+		},
+		CreatedAt: now.Add(-3 * time.Hour),
+	}
+	lister := &fakeRecentProjectPullLister{
+		recent: map[string][]AdminTaskPullRequest{
+			"mergeos-bounties/mergeos": {
+				{
+					Number:         91,
+					Title:          "Fix #10 public PR monitor",
+					Body:           "Adds a recent snapshot for marketplace PR proof.",
+					State:          "open",
+					HTMLURL:        "https://github.com/mergeos-bounties/mergeos/pull/91",
+					Author:         "builder",
+					MergeableState: "clean",
+					Labels:         []string{"evidence: provided", "star: verified"},
+					CreatedAt:      now.Add(-40 * time.Minute),
+					UpdatedAt:      now.Add(-30 * time.Minute),
+				},
+				{
+					Number:         92,
+					Title:          "Route PR readiness",
+					Body:           "Fixes #11 with public readiness evidence.",
+					State:          "open",
+					HTMLURL:        "https://github.com/mergeos-bounties/mergeos/pull/92",
+					Author:         "review-agent",
+					MergeableState: "clean",
+					Labels:         []string{"evidence: provided", "star: verified"},
+					CreatedAt:      now.Add(-20 * time.Minute),
+					UpdatedAt:      now.Add(-10 * time.Minute),
+				},
+			},
+		},
+	}
+
+	payload := publicProjectPullRequestsMonitor(context.Background(), lister, project)
+	if lister.recentCalls != 1 || lister.perIssueCalls != 0 {
+		t.Fatalf("expected one repo snapshot call and no per-issue calls, got recent=%d per_issue=%d", lister.recentCalls, lister.perIssueCalls)
+	}
+	if payload.Stats.LinkedTaskCount != 2 || payload.Stats.PullRequestCount != 2 || payload.Stats.ErrorCount != 0 {
+		t.Fatalf("unexpected public recent PR stats: %#v", payload.Stats)
+	}
+	if len(payload.Tasks) != 2 || payload.Tasks[0].MonitorStatus != "synced" || payload.Tasks[1].MonitorStatus != "synced" {
+		t.Fatalf("expected synced public task rows: %#v", payload.Tasks)
+	}
+	if len(payload.Tasks[0].PullRequests) != 1 || payload.Tasks[0].PullRequests[0].Number != 91 {
+		t.Fatalf("expected issue 10 to receive PR 91: %#v", payload.Tasks[0])
+	}
+	if len(payload.Tasks[1].PullRequests) != 1 || payload.Tasks[1].PullRequests[0].Number != 92 {
+		t.Fatalf("expected issue 11 to receive PR 92: %#v", payload.Tasks[1])
+	}
+	body, err := json.Marshal(payload)
+	if err != nil {
+		t.Fatalf("marshal public recent PR monitor: %v", err)
+	}
+	if strings.Contains(string(body), `"task_id"`) || strings.Contains(string(body), "tsk_10") || strings.Contains(string(body), "tsk_11") {
+		t.Fatalf("public recent PR monitor leaked internal task ids: %s", string(body))
 	}
 }
 
