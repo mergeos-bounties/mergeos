@@ -5188,6 +5188,121 @@
           </div>
         </section>
 
+        <section v-if="publicPage === 'solutions'" id="solution-routing-center" class="public-solution-router" aria-labelledby="solution-routing-center-title">
+          <div class="public-solution-router-head">
+            <div>
+              <span class="marketplace-eyebrow">{{ publicSolutionRouterCopy.eyebrow }}</span>
+              <h2 id="solution-routing-center-title">{{ publicSolutionRouterCopy.title }}</h2>
+              <p>{{ publicSolutionRouterCopy.body }}</p>
+            </div>
+            <div class="public-solution-actions">
+              <span :class="['ledger-public-badge', publicSolutionRouterStatus.tone]">
+                <GitBranch :size="14" />
+                {{ publicSolutionRouterStatus.label }}
+              </span>
+              <button type="button" @click="handlePublicAction({ command: 'project' })">
+                <FileCheck2 :size="13" />
+                {{ publicSolutionRouterCopy.startProject }}
+              </button>
+              <button type="button" @click="openMarketplaceSection('marketplace-bounties')">
+                <ListTodo :size="13" />
+                {{ publicSolutionRouterCopy.openMarketplace }}
+              </button>
+              <button type="button" :disabled="publicSolutionRouterLoading" @click="refreshPublicSolutionRouter">
+                <RefreshCw :class="{ 'loading-spin': publicSolutionRouterLoading }" :size="13" />
+                {{ publicSolutionRouterCopy.refresh }}
+              </button>
+            </div>
+          </div>
+
+          <div class="public-solution-stat-grid" aria-label="Solution routing summary">
+            <article v-for="stat in publicSolutionRouterStats" :key="stat.label">
+              <span :class="['public-card-icon', stat.tone]">
+                <component :is="stat.icon" :size="17" />
+              </span>
+              <div>
+                <strong>{{ stat.value }}</strong>
+                <small>{{ stat.label }}</small>
+                <em>{{ stat.caption }}</em>
+              </div>
+            </article>
+          </div>
+
+          <div class="public-solution-router-body">
+            <section class="public-solution-lanes" :aria-labelledby="`solution-lanes-${activeLocale}`">
+              <div class="public-solution-panel-head">
+                <span class="marketplace-eyebrow">{{ publicSolutionRouterCopy.lanesEyebrow }}</span>
+                <h3 :id="`solution-lanes-${activeLocale}`">{{ publicSolutionRouterCopy.lanesTitle }}</h3>
+              </div>
+              <button
+                v-for="lane in publicSolutionLaneRows"
+                :key="lane.key"
+                type="button"
+                @click="handlePublicAction(lane.action)"
+              >
+                <span :class="['public-card-icon', lane.tone]">
+                  <component :is="lane.icon" :size="16" />
+                </span>
+                <div>
+                  <strong>{{ lane.title }}</strong>
+                  <p>{{ lane.body }}</p>
+                  <small>{{ lane.signal }}</small>
+                </div>
+                <ArrowRight :size="14" />
+              </button>
+            </section>
+
+            <section class="public-solution-route-map" :aria-labelledby="`solution-route-${activeLocale}`">
+              <div class="public-solution-panel-head row">
+                <div>
+                  <span class="marketplace-eyebrow">{{ publicSolutionRouterCopy.routeEyebrow }}</span>
+                  <h3 :id="`solution-route-${activeLocale}`">{{ publicSolutionRouterCopy.routeTitle }}</h3>
+                </div>
+                <button type="button" @click="openPublicPage('protocol')">
+                  {{ publicSolutionRouterCopy.openProtocol }}
+                  <Code2 :size="12" />
+                </button>
+              </div>
+              <ol>
+                <li v-for="step in publicSolutionRouteRows" :key="step.key" :class="{ active: step.active }">
+                  <span :class="step.tone">{{ step.sequence }}</span>
+                  <div>
+                    <strong>{{ step.title }}</strong>
+                    <p>{{ step.body }}</p>
+                    <small>{{ step.signal }}</small>
+                  </div>
+                </li>
+              </ol>
+            </section>
+
+            <aside class="public-solution-proof-rail" :aria-labelledby="`solution-proof-${activeLocale}`">
+              <div class="public-solution-panel-head row">
+                <div>
+                  <span class="marketplace-eyebrow">{{ publicSolutionRouterCopy.proofEyebrow }}</span>
+                  <h3 :id="`solution-proof-${activeLocale}`">{{ publicSolutionRouterCopy.proofTitle }}</h3>
+                </div>
+                <button type="button" @click="openPublicPage('ledger')">
+                  {{ publicSolutionRouterCopy.openLedger }}
+                  <ArrowRight :size="12" />
+                </button>
+              </div>
+              <div class="public-solution-proof-list">
+                <article v-for="proof in publicSolutionProofRows" :key="proof.key">
+                  <span :class="['ledger-economy-mini-icon', proof.tone]">
+                    <component :is="proof.icon" :size="13" />
+                  </span>
+                  <div>
+                    <strong>{{ proof.title }}</strong>
+                    <small>{{ proof.meta }}</small>
+                    <p>{{ proof.reference }}</p>
+                  </div>
+                  <b :class="proof.statusTone">{{ proof.status }}</b>
+                </article>
+              </div>
+            </aside>
+          </div>
+        </section>
+
         <section v-if="publicPage === 'product'" id="repo-bounty-factory" class="public-repo-factory" aria-labelledby="repo-bounty-factory-title">
           <div class="public-repo-factory-head">
             <div>
@@ -17292,6 +17407,420 @@ const publicAgentContextRows = computed(() => [
   { label: 'Marketplace', value: absolutePublicPath('/api/public/marketplace'), icon: ListTodo, tone: 'amber' },
 ]);
 
+const publicSolutionRouterTranslations = {
+  'en-US': {
+    eyebrow: 'DELIVERY ROUTER OS',
+    title: 'Pick a delivery lane, keep the same proof chain',
+    body: 'Solutions are not separate pages in MergeOS. Each lane uses the same funded graph: brief or repo context, task packets, escrow, human or AI routing, PR review, deployment gates, and public ledger proof.',
+    startProject: 'Start project',
+    openMarketplace: 'Browse marketplace',
+    refresh: 'Refresh router',
+    openProtocol: 'Protocol',
+    openLedger: 'Open ledger',
+    lanesEyebrow: 'LANE PICKER',
+    lanesTitle: 'Choose the route before the page changes',
+    routeEyebrow: 'ROUTE MAP',
+    routeTitle: 'One workflow across every solution',
+    proofEyebrow: 'PROOF RAIL',
+    proofTitle: 'Escrow, work, payout, ledger',
+    status: { syncing: 'Syncing', review: 'Review needed', live: 'Live router', standby: 'Standby' },
+    ready: 'Ready',
+    pending: 'Pending',
+    stats: [
+      ['Funded projects', 'Briefs and repo imports'],
+      ['Task packets', 'Open work and agent queue'],
+      ['Routed lanes', 'Human, AI, hybrid, ops'],
+      ['Verified escrow', 'Funding attached to work'],
+    ],
+    lanes: [
+      ['Founders', 'Turn a product idea into a scoped, funded build with review and release gates.'],
+      ['Repo owners', 'Import issues, debt, bugs, and dependencies, then publish scored fix lanes.'],
+      ['Product teams', 'Split bigger roadmaps into contributor work, AI work, QA, and deploy checks.'],
+      ['Contributors', 'Claim funded tasks with acceptance criteria, PR evidence, and payout state.'],
+      ['AI agents', 'Route coding, review, test, security, and DevOps packets with context URLs.'],
+      ['Admin ops', 'Watch disputes, treasury signals, payout exceptions, and proof readiness.'],
+    ],
+    laneSignals: ['live projects', 'repo tasks', 'delivery lanes', 'claimable tasks', 'agent lanes', 'proof rows'],
+    route: [
+      ['Brief or repo context', 'Start from a project brief, imported repository, issue list, uploaded file, or deployment need.'],
+      ['Task graph', 'AI and the task engine split scope into packets with acceptance criteria, dependencies, and reward estimates.'],
+      ['Escrow reserve', 'Funding is verified before work becomes claimable, so each route has a payout source.'],
+      ['Human and AI routing', 'Contributor profiles, agent capabilities, review lanes, and operations rules receive the right work.'],
+      ['PR review and deploy', 'Pull requests, tests, AI review notes, deployment health, and release gates stay visible.'],
+      ['Ledger proof', 'Accepted work writes escrow, token, PR, payout, and release references into the public proof layer.'],
+    ],
+    routeSignals: ['context rows', 'task packets', 'verified escrow', 'active lanes', 'review events', 'proof rows'],
+    proof: [
+      ['Escrow status', 'Funding reserve'],
+      ['Accepted work', 'PR, review, deploy evidence'],
+      ['Payout readiness', 'Release and payout signals'],
+      ['Ledger references', 'Public proof anchors'],
+    ],
+  },
+  'vi-VN': {
+    eyebrow: 'DELIVERY ROUTER OS',
+    title: 'Chọn lane delivery, giữ nguyên proof chain',
+    body: 'Solutions trong MergeOS không phải các trang rời rạc. Mỗi lane dùng cùng funded graph: brief hoặc repo context, task packet, escrow, human hoặc AI routing, PR review, deployment gate và public ledger proof.',
+    startProject: 'Bắt đầu dự án',
+    openMarketplace: 'Xem marketplace',
+    refresh: 'Làm mới router',
+    openProtocol: 'Protocol',
+    openLedger: 'Mở ledger',
+    lanesEyebrow: 'LANE PICKER',
+    lanesTitle: 'Chọn route trước khi trang đổi',
+    routeEyebrow: 'ROUTE MAP',
+    routeTitle: 'Một workflow cho mọi solution',
+    proofEyebrow: 'PROOF RAIL',
+    proofTitle: 'Escrow, work, payout, ledger',
+    status: { syncing: 'Đang sync', review: 'Cần review', live: 'Router live', standby: 'Standby' },
+    ready: 'Sẵn sàng',
+    pending: 'Đang chờ',
+    stats: [
+      ['Dự án funded', 'Brief và repo import'],
+      ['Task packet', 'Open work và agent queue'],
+      ['Lane đã route', 'Human, AI, hybrid, ops'],
+      ['Escrow verified', 'Funding gắn với work'],
+    ],
+    lanes: [
+      ['Founders', 'Biến ý tưởng sản phẩm thành build có scope, funding, review và release gate.'],
+      ['Repo owners', 'Import issue, debt, bug và dependency rồi publish fix lane đã score.'],
+      ['Product teams', 'Chia roadmap lớn thành contributor work, AI work, QA và deploy check.'],
+      ['Contributors', 'Claim task đã fund với acceptance criteria, PR evidence và payout state.'],
+      ['AI agents', 'Route coding, review, test, security và DevOps packet với context URL.'],
+      ['Admin ops', 'Theo dõi dispute, treasury signal, payout exception và proof readiness.'],
+    ],
+    laneSignals: ['live projects', 'repo tasks', 'delivery lanes', 'claimable tasks', 'agent lanes', 'proof rows'],
+    route: [
+      ['Brief hoặc repo context', 'Bắt đầu từ project brief, repository import, issue list, uploaded file hoặc deployment need.'],
+      ['Task graph', 'AI và task engine tách scope thành packet có acceptance criteria, dependency và reward estimate.'],
+      ['Escrow reserve', 'Funding được verify trước khi work claimable để mỗi route có payout source.'],
+      ['Human và AI routing', 'Contributor profile, agent capability, review lane và ops rule nhận đúng work.'],
+      ['PR review và deploy', 'Pull request, test, AI review note, deployment health và release gate luôn visible.'],
+      ['Ledger proof', 'Accepted work ghi escrow, token, PR, payout và release reference vào public proof layer.'],
+    ],
+    routeSignals: ['context rows', 'task packets', 'verified escrow', 'active lanes', 'review events', 'proof rows'],
+    proof: [
+      ['Escrow status', 'Funding reserve'],
+      ['Accepted work', 'PR, review, deploy evidence'],
+      ['Payout readiness', 'Release và payout signals'],
+      ['Ledger references', 'Public proof anchors'],
+    ],
+  },
+  'zh-CN': {
+    eyebrow: '交付路由 OS',
+    title: '选择交付 lane，同时保留同一条 proof chain',
+    body: 'MergeOS 的 solutions 不是分散页面。每个 lane 都使用同一条 funded graph：brief 或 repo context、task packet、escrow、human 或 AI routing、PR review、deployment gate 和 public ledger proof。',
+    startProject: '开始项目',
+    openMarketplace: '浏览 marketplace',
+    refresh: '刷新 router',
+    openProtocol: 'Protocol',
+    openLedger: '打开 ledger',
+    lanesEyebrow: 'LANE PICKER',
+    lanesTitle: '在页面切换前先选择 route',
+    routeEyebrow: 'ROUTE MAP',
+    routeTitle: '所有 solution 共用一个 workflow',
+    proofEyebrow: 'PROOF RAIL',
+    proofTitle: 'Escrow, work, payout, ledger',
+    status: { syncing: '同步中', review: '需要 review', live: 'Router live', standby: 'Standby' },
+    ready: 'Ready',
+    pending: 'Pending',
+    stats: [
+      ['Funded projects', 'Brief 和 repo import'],
+      ['Task packets', 'Open work 和 agent queue'],
+      ['Routed lanes', 'Human, AI, hybrid, ops'],
+      ['Verified escrow', 'Funding 已绑定 work'],
+    ],
+    lanes: [
+      ['Founders', '把产品想法变成有 scope、funding、review 和 release gate 的 build。'],
+      ['Repo owners', '导入 issue、debt、bug 和 dependency，然后发布已评分的 fix lane。'],
+      ['Product teams', '把 roadmap 拆成 contributor work、AI work、QA 和 deploy check。'],
+      ['Contributors', '领取已 fund 的 task，并带上 acceptance criteria、PR evidence 和 payout state。'],
+      ['AI agents', '用 context URL 路由 coding、review、test、security 和 DevOps packet。'],
+      ['Admin ops', '跟踪 dispute、treasury signal、payout exception 和 proof readiness。'],
+    ],
+    laneSignals: ['live projects', 'repo tasks', 'delivery lanes', 'claimable tasks', 'agent lanes', 'proof rows'],
+    route: [
+      ['Brief 或 repo context', '从 project brief、repository import、issue list、uploaded file 或 deployment need 开始。'],
+      ['Task graph', 'AI 和 task engine 将 scope 拆成带 acceptance criteria、dependency 和 reward estimate 的 packet。'],
+      ['Escrow reserve', 'Work 变成 claimable 之前先验证 funding，让每条 route 都有 payout source。'],
+      ['Human 和 AI routing', 'Contributor profile、agent capability、review lane 和 ops rule 接收正确 work。'],
+      ['PR review 和 deploy', 'Pull request、test、AI review note、deployment health 和 release gate 保持可见。'],
+      ['Ledger proof', 'Accepted work 写入 escrow、token、PR、payout 和 release reference 到 public proof layer。'],
+    ],
+    routeSignals: ['context rows', 'task packets', 'verified escrow', 'active lanes', 'review events', 'proof rows'],
+    proof: [
+      ['Escrow status', 'Funding reserve'],
+      ['Accepted work', 'PR, review, deploy evidence'],
+      ['Payout readiness', 'Release 和 payout signals'],
+      ['Ledger references', 'Public proof anchors'],
+    ],
+  },
+  'ja-JP': {
+    eyebrow: 'DELIVERY ROUTER OS',
+    title: 'Delivery lane を選び、同じ proof chain を保つ',
+    body: 'MergeOS の solutions は別々のページではありません。各 lane は同じ funded graph、つまり brief または repo context、task packet、escrow、human/AI routing、PR review、deployment gate、public ledger proof を使います。',
+    startProject: 'プロジェクト開始',
+    openMarketplace: 'Marketplace を見る',
+    refresh: 'Router 更新',
+    openProtocol: 'Protocol',
+    openLedger: 'Ledger を開く',
+    lanesEyebrow: 'LANE PICKER',
+    lanesTitle: 'ページが変わる前に route を選ぶ',
+    routeEyebrow: 'ROUTE MAP',
+    routeTitle: 'すべての solution に 1 つの workflow',
+    proofEyebrow: 'PROOF RAIL',
+    proofTitle: 'Escrow, work, payout, ledger',
+    status: { syncing: '同期中', review: 'Review needed', live: 'Router live', standby: 'Standby' },
+    ready: 'Ready',
+    pending: 'Pending',
+    stats: [
+      ['Funded projects', 'Brief と repo import'],
+      ['Task packets', 'Open work と agent queue'],
+      ['Routed lanes', 'Human, AI, hybrid, ops'],
+      ['Verified escrow', 'Funding が work に接続'],
+    ],
+    lanes: [
+      ['Founders', 'Product idea を scope、funding、review、release gate 付きの build に変えます。'],
+      ['Repo owners', 'Issue、debt、bug、dependency を import し、score 済み fix lane を publish します。'],
+      ['Product teams', 'Roadmap を contributor work、AI work、QA、deploy check に分割します。'],
+      ['Contributors', 'Funded task を claim し、acceptance criteria、PR evidence、payout state を保持します。'],
+      ['AI agents', 'Context URL 付きで coding、review、test、security、DevOps packet を route します。'],
+      ['Admin ops', 'Dispute、treasury signal、payout exception、proof readiness を監視します。'],
+    ],
+    laneSignals: ['live projects', 'repo tasks', 'delivery lanes', 'claimable tasks', 'agent lanes', 'proof rows'],
+    route: [
+      ['Brief または repo context', 'Project brief、repository import、issue list、uploaded file、deployment need から開始します。'],
+      ['Task graph', 'AI と task engine が scope を acceptance criteria、dependency、reward estimate 付き packet に分割します。'],
+      ['Escrow reserve', 'Work が claimable になる前に funding を verify し、route ごとに payout source を持たせます。'],
+      ['Human と AI routing', 'Contributor profile、agent capability、review lane、ops rule が適切な work を受け取ります。'],
+      ['PR review と deploy', 'Pull request、test、AI review note、deployment health、release gate を visible に保ちます。'],
+      ['Ledger proof', 'Accepted work は escrow、token、PR、payout、release reference を public proof layer に記録します。'],
+    ],
+    routeSignals: ['context rows', 'task packets', 'verified escrow', 'active lanes', 'review events', 'proof rows'],
+    proof: [
+      ['Escrow status', 'Funding reserve'],
+      ['Accepted work', 'PR, review, deploy evidence'],
+      ['Payout readiness', 'Release と payout signals'],
+      ['Ledger references', 'Public proof anchors'],
+    ],
+  },
+  'ko-KR': {
+    eyebrow: 'DELIVERY ROUTER OS',
+    title: 'Delivery lane 을 고르고 같은 proof chain 을 유지',
+    body: 'MergeOS 의 solutions 는 분리된 페이지가 아닙니다. 모든 lane 은 brief 또는 repo context, task packet, escrow, human/AI routing, PR review, deployment gate, public ledger proof 로 이어지는 같은 funded graph 를 사용합니다.',
+    startProject: '프로젝트 시작',
+    openMarketplace: 'Marketplace 보기',
+    refresh: 'Router 새로고침',
+    openProtocol: 'Protocol',
+    openLedger: 'Ledger 열기',
+    lanesEyebrow: 'LANE PICKER',
+    lanesTitle: '페이지가 바뀌기 전에 route 선택',
+    routeEyebrow: 'ROUTE MAP',
+    routeTitle: '모든 solution 을 위한 하나의 workflow',
+    proofEyebrow: 'PROOF RAIL',
+    proofTitle: 'Escrow, work, payout, ledger',
+    status: { syncing: '동기화 중', review: 'Review needed', live: 'Router live', standby: 'Standby' },
+    ready: 'Ready',
+    pending: 'Pending',
+    stats: [
+      ['Funded projects', 'Brief 와 repo import'],
+      ['Task packets', 'Open work 와 agent queue'],
+      ['Routed lanes', 'Human, AI, hybrid, ops'],
+      ['Verified escrow', 'Funding 이 work 에 연결됨'],
+    ],
+    lanes: [
+      ['Founders', 'Product idea 를 scope, funding, review, release gate 가 있는 build 로 전환합니다.'],
+      ['Repo owners', 'Issue, debt, bug, dependency 를 import 하고 score 된 fix lane 을 publish 합니다.'],
+      ['Product teams', 'Roadmap 을 contributor work, AI work, QA, deploy check 로 나눕니다.'],
+      ['Contributors', 'Funded task 를 claim 하고 acceptance criteria, PR evidence, payout state 를 유지합니다.'],
+      ['AI agents', 'Context URL 과 함께 coding, review, test, security, DevOps packet 을 route 합니다.'],
+      ['Admin ops', 'Dispute, treasury signal, payout exception, proof readiness 를 모니터링합니다.'],
+    ],
+    laneSignals: ['live projects', 'repo tasks', 'delivery lanes', 'claimable tasks', 'agent lanes', 'proof rows'],
+    route: [
+      ['Brief 또는 repo context', 'Project brief, repository import, issue list, uploaded file, deployment need 에서 시작합니다.'],
+      ['Task graph', 'AI 와 task engine 이 scope 를 acceptance criteria, dependency, reward estimate 가 있는 packet 으로 나눕니다.'],
+      ['Escrow reserve', 'Work 가 claimable 이 되기 전에 funding 을 verify 해서 route 마다 payout source 를 둡니다.'],
+      ['Human 과 AI routing', 'Contributor profile, agent capability, review lane, ops rule 이 알맞은 work 를 받습니다.'],
+      ['PR review 와 deploy', 'Pull request, test, AI review note, deployment health, release gate 를 visible 하게 유지합니다.'],
+      ['Ledger proof', 'Accepted work 는 escrow, token, PR, payout, release reference 를 public proof layer 에 기록합니다.'],
+    ],
+    routeSignals: ['context rows', 'task packets', 'verified escrow', 'active lanes', 'review events', 'proof rows'],
+    proof: [
+      ['Escrow status', 'Funding reserve'],
+      ['Accepted work', 'PR, review, deploy evidence'],
+      ['Payout readiness', 'Release 와 payout signals'],
+      ['Ledger references', 'Public proof anchors'],
+    ],
+  },
+};
+
+const publicSolutionRouterCopy = computed(() =>
+  publicSolutionRouterTranslations[activeLocale.value] || publicSolutionRouterTranslations['en-US'],
+);
+const publicSolutionRouterLoading = computed(() =>
+  marketplaceLoading.value || agentQueueLoading.value || ledgerLoading.value || liveFeedLoading.value || protocolLoading.value,
+);
+const publicSolutionRouterSummary = computed(() => {
+  const stats = marketplaceStats.value || {};
+  const marketplaceProjects = Array.isArray(marketplaceData.value.projects) ? marketplaceData.value.projects : [];
+  const marketplaceBounties = Array.isArray(marketplaceData.value.bounties) ? marketplaceData.value.bounties : [];
+  const contributors = Array.isArray(marketplaceData.value.contributors) ? marketplaceData.value.contributors : [];
+  const agentSummary = publicAgentQueueSummary.value;
+  const projectCount = Number(stats.project_count) || marketplaceProjects.length || agentSummary.projectCount || 0;
+  const bountyCount = Number(stats.open_task_count) || marketplaceBounties.length || agentSummary.bountyCount || 0;
+  const taskPacketCount = Math.max(bountyCount, agentSummary.openTaskCount || 0, marketplaceAgentWorkPacketRows.value.length);
+  const agentLaneCount = agentSummary.agentRows.length || marketplaceAgentSourceRows.value.length || 0;
+  const routeLaneCount = Math.max(3, contributors.length, agentLaneCount, agentSummary.activeLaneCount || 0);
+  const escrowCents = Number(stats.total_budget_cents)
+    || Number(stats.open_task_reward_cents)
+    || agentSummary.totalRewardCents
+    || publicVerifiedFundingCents.value
+    || 0;
+  const liveCount = liveFeedAllItemsView.value.length;
+  const ledgerCount = ledgerEventItems.value.length;
+  const proofCount = ledgerCount || liveCount;
+  const acceptedCount = liveFeedAllItemsView.value.filter((item) => {
+    const haystack = `${item.rawType} ${item.typeLabel} ${item.title} ${item.body} ${item.status}`.toLowerCase();
+    return /accepted|review|pull|deploy|release/.test(haystack);
+  }).length;
+  const payoutCount = ledgerEventItems.value.filter((item) => /payout|release|payment/.test(ledgerProofItemText(item))).length;
+  return {
+    projectCount,
+    bountyCount,
+    taskPacketCount,
+    agentLaneCount,
+    routeLaneCount,
+    escrowCents,
+    liveCount,
+    ledgerCount,
+    proofCount,
+    acceptedCount,
+    payoutCount,
+  };
+});
+const publicSolutionRouterStatus = computed(() => {
+  const copy = publicSolutionRouterCopy.value.status;
+  if (publicSolutionRouterLoading.value) return { label: copy.syncing, tone: 'blue' };
+  if (marketplaceError.value || agentQueueError.value || ledgerError.value || liveFeedError.value || protocolError.value) {
+    return { label: copy.review, tone: 'amber' };
+  }
+  const summary = publicSolutionRouterSummary.value;
+  if (summary.projectCount || summary.taskPacketCount || summary.escrowCents || summary.proofCount) return { label: copy.live, tone: 'green' };
+  return { label: copy.standby, tone: 'amber' };
+});
+const publicSolutionRouterStats = computed(() => {
+  const copy = publicSolutionRouterCopy.value;
+  const summary = publicSolutionRouterSummary.value;
+  const values = [
+    String(summary.projectCount),
+    String(summary.taskPacketCount),
+    String(summary.routeLaneCount),
+    formatPublicMRGFromCents(summary.escrowCents),
+  ];
+  const icons = [Rocket, ListTodo, GitBranch, CircleDollarSign];
+  const tones = ['green', 'blue', 'purple', 'amber'];
+  return (copy.stats || publicSolutionRouterTranslations['en-US'].stats).map((row, index) => ({
+    label: row[0],
+    caption: row[1],
+    value: values[index] || '0',
+    icon: icons[index] || ShieldCheck,
+    tone: tones[index] || 'green',
+  }));
+});
+const publicSolutionLaneDefinitions = [
+  { key: 'founders', icon: Rocket, tone: 'green', action: { command: 'project' } },
+  { key: 'repo-owners', icon: GitBranch, tone: 'blue', action: { command: 'repo-import' } },
+  { key: 'teams', icon: UsersRound, tone: 'purple', action: { page: 'customers' } },
+  { key: 'contributors', icon: UserCheck, tone: 'green', action: { command: 'contributors' } },
+  { key: 'agents', icon: Bot, tone: 'purple', action: { command: 'agents' } },
+  { key: 'admin-ops', icon: ShieldCheck, tone: 'amber', action: { command: 'admin-ops' } },
+];
+const publicSolutionLaneRows = computed(() => {
+  const copy = publicSolutionRouterCopy.value;
+  const summary = publicSolutionRouterSummary.value;
+  const values = [
+    summary.projectCount,
+    summary.bountyCount,
+    summary.routeLaneCount,
+    summary.taskPacketCount,
+    summary.agentLaneCount,
+    summary.proofCount,
+  ];
+  const laneCopy = copy.lanes || publicSolutionRouterTranslations['en-US'].lanes;
+  const signals = copy.laneSignals || publicSolutionRouterTranslations['en-US'].laneSignals;
+  return publicSolutionLaneDefinitions.map((definition, index) => ({
+    ...definition,
+    title: laneCopy[index]?.[0] || definition.key,
+    body: laneCopy[index]?.[1] || '',
+    signal: `${values[index] || 0} ${signals[index] || ''}`.trim(),
+  }));
+});
+const publicSolutionRouteRows = computed(() => {
+  const copy = publicSolutionRouterCopy.value;
+  const summary = publicSolutionRouterSummary.value;
+  const values = [
+    summary.projectCount,
+    summary.taskPacketCount,
+    formatPublicMRGFromCents(summary.escrowCents),
+    summary.routeLaneCount,
+    summary.liveCount,
+    summary.proofCount,
+  ];
+  const active = [
+    summary.projectCount > 0,
+    summary.taskPacketCount > 0,
+    summary.escrowCents > 0,
+    summary.routeLaneCount > 0,
+    summary.liveCount > 0,
+    summary.proofCount > 0,
+  ];
+  const tones = ['green', 'blue', 'amber', 'purple', 'blue', 'green'];
+  const routeCopy = copy.route || publicSolutionRouterTranslations['en-US'].route;
+  const signals = copy.routeSignals || publicSolutionRouterTranslations['en-US'].routeSignals;
+  return routeCopy.map((row, index) => ({
+    key: `solution-route-${index}`,
+    sequence: String(index + 1).padStart(2, '0'),
+    title: row[0],
+    body: row[1],
+    signal: `${values[index] || 0} ${signals[index] || ''}`.trim(),
+    active: active[index],
+    tone: tones[index] || 'green',
+  }));
+});
+const publicSolutionProofRows = computed(() => {
+  const copy = publicSolutionRouterCopy.value;
+  const summary = publicSolutionRouterSummary.value;
+  const proofCopy = copy.proof || publicSolutionRouterTranslations['en-US'].proof;
+  const values = [
+    formatPublicMRGFromCents(summary.escrowCents),
+    String(summary.acceptedCount || summary.liveCount || 0),
+    String(summary.payoutCount || 0),
+    String(summary.proofCount || 0),
+  ];
+  const references = [
+    summary.escrowCents ? `${formatPublicMRGFromCents(summary.escrowCents)} reserve` : 'Waiting for verified funding',
+    summary.acceptedCount || summary.liveCount ? `${summary.acceptedCount || summary.liveCount} PR, review, or deploy rows` : 'Evidence appears after work starts',
+    summary.payoutCount ? `${summary.payoutCount} payout or release rows` : 'Release policy pending accepted work',
+    summary.proofCount ? `${summary.proofCount} public proof rows` : 'Ledger references appear after events sync',
+  ];
+  const icons = [LockKeyhole, GitPullRequest, CircleDollarSign, Link2];
+  const tones = ['green', 'blue', 'amber', 'purple'];
+  return proofCopy.map((row, index) => {
+    const active = index === 0 ? summary.escrowCents > 0 : Number(values[index]) > 0;
+    return {
+      key: `solution-proof-${index}`,
+      title: row[0],
+      meta: `${values[index]} ${row[1] || ''}`.trim(),
+      reference: references[index] || '',
+      icon: icons[index] || ShieldCheck,
+      tone: tones[index] || 'green',
+      status: active ? copy.ready : copy.pending,
+      statusTone: active ? 'green' : 'slate',
+    };
+  });
+});
+
 const publicRepoFactoryTranslations = {
   'en-US': {
     eyebrow: 'REPO-TO-BOUNTY FACTORY',
@@ -21001,6 +21530,13 @@ function loadPublicPageData(page) {
     void loadProtocolManifest({ silent: true });
     return;
   }
+  if (page === 'solutions' || page === 'agents') {
+    void loadMarketplaceData({ silent: true });
+    void loadLedgerData({ silent: true });
+    void loadLiveFeedData({ silent: true });
+    void loadProtocolManifest({ silent: true });
+    return;
+  }
   if (page === 'admins') {
     void loadMarketplaceData({ silent: true });
     void loadLedgerData({ silent: true });
@@ -21016,6 +21552,13 @@ function loadPublicPageData(page) {
 }
 
 function refreshPublicRepoFactory() {
+  void loadMarketplaceData();
+  void loadLedgerData({ silent: true });
+  void loadLiveFeedData({ silent: true });
+  void loadProtocolManifest({ silent: true });
+}
+
+function refreshPublicSolutionRouter() {
   void loadMarketplaceData();
   void loadLedgerData({ silent: true });
   void loadLiveFeedData({ silent: true });
@@ -28043,7 +28586,7 @@ onMounted(async () => {
     loadMarketplaceData({ silent: true }),
     loadLedgerData({ silent: true }),
     loadLiveFeedData({ silent: true }),
-    (publicPage.value === 'protocol' || publicPage.value === 'sdk') ? loadProtocolManifest({ silent: true }) : Promise.resolve(),
+    (publicPage.value === 'protocol' || publicPage.value === 'sdk' || publicPage.value === 'solutions') ? loadProtocolManifest({ silent: true }) : Promise.resolve(),
   ]);
   if (paypalCheckoutPath) {
     await handlePayPalCheckoutReturn();
