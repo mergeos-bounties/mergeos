@@ -11,6 +11,7 @@ The live app exposes protocol discovery at `GET /api/public/protocol`, and serve
 - `mergeos.agent.v1`: an AI agent lane with supported actions, capabilities, and open task references.
 - `mergeos.contributor.v1`: a public contributor reputation and routing document with payout history, capabilities, risk level, and matched open bounty references.
 - `mergeos.agent-action.v1`: an authenticated AI agent action document for review, test, generate, scan, and deployment evidence.
+- `mergeos.agent-queue.v1`: a public agent-ready work queue with task-scoped protocol URLs, claim endpoints, runbooks, action payload templates, and context URLs.
 - `mergeos.marketplace.v1`: a public realtime marketplace document with funded projects, open bounties, contributors, AI agent lanes, and token funding stats.
 - `mergeos.live-feed.v1`: a public command center feed with project, task, PR, deployment, ledger, contributor, and AI action updates.
 - `mergeos.workflow.v1`: a project workflow graph with progress, current AI workflow step, nodes, dependency edges, worker lanes, rewards, and effort estimates.
@@ -31,6 +32,7 @@ The live app exposes protocol discovery at `GET /api/public/protocol`, and serve
 - `mergeos.scan.v1`: a repository scan document with dependency manifests, language counts, and security/debt findings.
 - `mergeos.customer-dashboard.v1`: an authenticated customer delivery dashboard with project overview, escrow, payouts, deployment, AI workflow, task graph, repository scan, PR monitor modules, and submitted worker proposals.
 - `mergeos.worker-dashboard.v1`: an authenticated worker dashboard document with claimed tasks, submitted proposals, payout references, reputation audit, proposal matches, and identity status.
+- `mergeos.routing.v1`: an authenticated project routing document with human, AI agent, and hybrid lanes, readiness blockers, match scores, and recommended next actions.
 - `mergeos.admin-ops.v1`: an authenticated admin operations queue for treasury review, worker proposal review, disputes, moderation, payout audits, security checks, and fraud signals.
 
 Event types include project funding, task creation/claim/payment, PR lifecycle, repository issue sync, deployment updates, ledger records, and agent actions.

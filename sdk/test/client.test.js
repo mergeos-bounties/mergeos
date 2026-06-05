@@ -45,6 +45,8 @@ test('creates public feed and ledger verification requests without auth', async 
     { status: 200, body: { items: [] } },
     { status: 200, body: { protocol_version: 'mergeos.protocol.manifest.v1' } },
     { status: 200, body: { tasks: [] } },
+    { status: 200, body: { tasks: [{ id: 'prj_1:12' }] } },
+    { status: 200, body: { protocol_version: 'mergeos.agent-queue.v1', kind: 'agent_queue', tasks: [] } },
     { status: 200, body: { agents: [] } },
     { status: 200, body: { contributors: [] } },
     { status: 200, body: { protocol_version: 'mergeos.ledger.v1', entries: [] } },
@@ -64,6 +66,8 @@ test('creates public feed and ledger verification requests without auth', async 
   const payload = await client.publicLiveFeed({ limit: 80 });
   const manifest = await client.publicProtocolManifest();
   const tasks = await client.publicProtocolTasks({ limit: 80 });
+  const scopedTasks = await client.publicProtocolTasks({ taskID: 'prj_1:12' });
+  const queue = await client.publicProtocolAgentQueue({ limit: 80 });
   const agents = await client.publicProtocolAgents({ limit: 80 });
   const contributors = await client.publicProtocolContributors({ limit: 80 });
   const ledger = await client.publicProtocolLedger();
@@ -77,6 +81,8 @@ test('creates public feed and ledger verification requests without auth', async 
   assert.deepEqual(payload, { items: [] });
   assert.equal(manifest.protocol_version, 'mergeos.protocol.manifest.v1');
   assert.deepEqual(tasks, { tasks: [] });
+  assert.equal(scopedTasks.tasks[0].id, 'prj_1:12');
+  assert.equal(queue.protocol_version, 'mergeos.agent-queue.v1');
   assert.deepEqual(agents, { agents: [] });
   assert.deepEqual(contributors, { contributors: [] });
   assert.equal(ledger.protocol_version, 'mergeos.ledger.v1');
@@ -92,24 +98,28 @@ test('creates public feed and ledger verification requests without auth', async 
   assert.equal(fetchImpl.calls[1].options.headers.Authorization, undefined);
   assert.equal(fetchImpl.calls[2].url, 'https://mergeos.shop/api/public/protocol/tasks?limit=80');
   assert.equal(fetchImpl.calls[2].options.headers.Authorization, undefined);
-  assert.equal(fetchImpl.calls[3].url, 'https://mergeos.shop/api/public/protocol/agents?limit=80');
+  assert.equal(fetchImpl.calls[3].url, 'https://mergeos.shop/api/public/protocol/tasks?task_id=prj_1%3A12');
   assert.equal(fetchImpl.calls[3].options.headers.Authorization, undefined);
-  assert.equal(fetchImpl.calls[4].url, 'https://mergeos.shop/api/public/protocol/contributors?limit=80');
+  assert.equal(fetchImpl.calls[4].url, 'https://mergeos.shop/api/public/protocol/agent-queue?limit=80');
   assert.equal(fetchImpl.calls[4].options.headers.Authorization, undefined);
-  assert.equal(fetchImpl.calls[5].url, 'https://mergeos.shop/api/public/protocol/ledger');
+  assert.equal(fetchImpl.calls[5].url, 'https://mergeos.shop/api/public/protocol/agents?limit=80');
   assert.equal(fetchImpl.calls[5].options.headers.Authorization, undefined);
-  assert.equal(fetchImpl.calls[6].url, 'https://mergeos.shop/api/public/protocol/events?limit=80');
+  assert.equal(fetchImpl.calls[6].url, 'https://mergeos.shop/api/public/protocol/contributors?limit=80');
   assert.equal(fetchImpl.calls[6].options.headers.Authorization, undefined);
-  assert.equal(fetchImpl.calls[7].url, 'https://mergeos.shop/api/public/projects/prj_public/deployment');
+  assert.equal(fetchImpl.calls[7].url, 'https://mergeos.shop/api/public/protocol/ledger');
   assert.equal(fetchImpl.calls[7].options.headers.Authorization, undefined);
-  assert.equal(fetchImpl.calls[8].url, 'https://mergeos.shop/api/public/projects/prj_public/ai-workflow');
+  assert.equal(fetchImpl.calls[8].url, 'https://mergeos.shop/api/public/protocol/events?limit=80');
   assert.equal(fetchImpl.calls[8].options.headers.Authorization, undefined);
-  assert.equal(fetchImpl.calls[9].url, 'https://mergeos.shop/api/public/projects/prj_public/workflow');
+  assert.equal(fetchImpl.calls[9].url, 'https://mergeos.shop/api/public/projects/prj_public/deployment');
   assert.equal(fetchImpl.calls[9].options.headers.Authorization, undefined);
-  assert.equal(fetchImpl.calls[10].url, 'https://mergeos.shop/api/public/projects/prj_public/pull-requests');
+  assert.equal(fetchImpl.calls[10].url, 'https://mergeos.shop/api/public/projects/prj_public/ai-workflow');
   assert.equal(fetchImpl.calls[10].options.headers.Authorization, undefined);
-  assert.equal(fetchImpl.calls[11].url, 'https://mergeos.shop/api/public/ledger/verify');
+  assert.equal(fetchImpl.calls[11].url, 'https://mergeos.shop/api/public/projects/prj_public/workflow');
   assert.equal(fetchImpl.calls[11].options.headers.Authorization, undefined);
+  assert.equal(fetchImpl.calls[12].url, 'https://mergeos.shop/api/public/projects/prj_public/pull-requests');
+  assert.equal(fetchImpl.calls[12].options.headers.Authorization, undefined);
+  assert.equal(fetchImpl.calls[13].url, 'https://mergeos.shop/api/public/ledger/verify');
+  assert.equal(fetchImpl.calls[13].options.headers.Authorization, undefined);
 });
 
 test('derives Solana ledger references and legacy wallet hashes for operators', () => {
@@ -537,6 +547,7 @@ test('exposes project workflow and admin ops routes', async () => {
     { status: 200, body: { protocol_version: 'mergeos.ai-workflow.v1', status: 'orchestrating' } },
     { status: 201, body: { protocol_version: 'mergeos.agent-action.v1', kind: 'agent_action', log: { event_name: 'agent_action', action: 'test' } } },
     { status: 200, body: { stats: { node_count: 2 }, nodes: [], edges: [] } },
+    { status: 200, body: { protocol_version: 'mergeos.routing.v1', kind: 'project_routing', stats: { ready_count: 1 }, routes: [] } },
     { status: 200, body: { protocol_version: 'mergeos.workflow.v1', progress: 25, current_step: 'contributor_routing', nodes: [], edges: [] } },
     { status: 200, body: { status: 'ready', stats: { scanned_files: 3 }, findings: [] } },
     { status: 200, body: { protocol_version: 'mergeos.scan.v1', findings: [] } },
@@ -573,6 +584,7 @@ test('exposes project workflow and admin ops routes', async () => {
   const aiWorkflow = await client.projectAIWorkflow('prj_1');
   const agentAction = await client.createProjectAgentAction('prj_1', { action: 'test', agent_type: 'qa-agent' });
   const graph = await client.projectTaskGraph('prj_1');
+  const routing = await client.projectRouting('prj_1');
   const workflowProtocol = await client.projectWorkflowProtocol('prj_1');
   const scan = await client.projectRepositoryScan('prj_1');
   const scanProtocol = await client.projectRepositoryScanProtocol('prj_1');
@@ -592,6 +604,8 @@ test('exposes project workflow and admin ops routes', async () => {
   assert.equal(agentAction.protocol_version, 'mergeos.agent-action.v1');
   assert.equal(agentAction.log.action, 'test');
   assert.equal(graph.stats.node_count, 2);
+  assert.equal(routing.protocol_version, 'mergeos.routing.v1');
+  assert.equal(routing.kind, 'project_routing');
   assert.equal(workflowProtocol.protocol_version, 'mergeos.workflow.v1');
   assert.equal(workflowProtocol.progress, 25);
   assert.equal(workflowProtocol.current_step, 'contributor_routing');
@@ -632,13 +646,14 @@ test('exposes project workflow and admin ops routes', async () => {
   assert.equal(fetchImpl.calls[7].url, '/api/projects/prj_1/agent-actions');
   assert.equal(fetchImpl.calls[7].options.method, 'POST');
   assert.equal(fetchImpl.calls[8].url, '/api/projects/prj_1/task-graph');
-  assert.equal(fetchImpl.calls[9].url, '/api/projects/prj_1/protocol/workflow');
-  assert.equal(fetchImpl.calls[10].url, '/api/projects/prj_1/repo-scan');
-  assert.equal(fetchImpl.calls[11].url, '/api/projects/prj_1/protocol/scan');
-  assert.equal(fetchImpl.calls[12].url, '/api/projects/prj_1/repo-sync');
-  assert.equal(fetchImpl.calls[12].options.method, 'POST');
-  assert.equal(fetchImpl.calls[13].url, '/api/admin/ops-queue');
-  assert.equal(fetchImpl.calls[14].url, '/api/admin/reputation');
+  assert.equal(fetchImpl.calls[9].url, '/api/projects/prj_1/routing');
+  assert.equal(fetchImpl.calls[10].url, '/api/projects/prj_1/protocol/workflow');
+  assert.equal(fetchImpl.calls[11].url, '/api/projects/prj_1/repo-scan');
+  assert.equal(fetchImpl.calls[12].url, '/api/projects/prj_1/protocol/scan');
+  assert.equal(fetchImpl.calls[13].url, '/api/projects/prj_1/repo-sync');
+  assert.equal(fetchImpl.calls[13].options.method, 'POST');
+  assert.equal(fetchImpl.calls[14].url, '/api/admin/ops-queue');
+  assert.equal(fetchImpl.calls[15].url, '/api/admin/reputation');
 });
 
 test('exposes admin operations, review, settings, and integration routes', async () => {

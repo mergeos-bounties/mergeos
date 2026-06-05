@@ -65,6 +65,8 @@ await mergeos.recordDeployment(projects[0].id, {
 const deployPayload = deploymentAgentActionPayload({ url: 'https://vercel.example/deployments/mergeos-preview' });
 const testPayload = agentActionPayload('test', { status: 'processed' });
 const graph = await mergeos.projectTaskGraph(projects[0].id);
+const routing = await mergeos.projectRouting(projects[0].id);
+console.log(routing.protocol_version, routing.stats.ready_count);
 const workflowProtocol = await mergeos.projectWorkflowProtocol(projects[0].id);
 console.log(workflowProtocol.current_step, workflowProtocol.progress);
 const scan = await mergeos.projectRepositoryScan(projects[0].id);
@@ -91,6 +93,8 @@ await mergeos.publicLedgerVerification();
 await mergeos.publicLiveFeed({ limit: 80 });
 await mergeos.publicProtocolManifest();
 await mergeos.publicProtocolTasks({ limit: 80 });
+await mergeos.publicProtocolTasks({ taskID: 'prj_public_0001:12' });
+await mergeos.publicProtocolAgentQueue({ limit: 80 });
 await mergeos.publicProtocolAgents({ limit: 80 });
 await mergeos.publicProtocolContributors({ limit: 80 });
 await mergeos.publicProtocolLedger();
@@ -151,6 +155,7 @@ await mergeos.recordDeployment('prj_0001', {
   labels: ['preview', 'release-gate'],
 });
 await mergeos.projectTaskGraph('prj_0001');
+await mergeos.projectRouting('prj_0001');
 await mergeos.projectWorkflowProtocol('prj_0001');
 await mergeos.projectRepositoryScan('prj_0001');
 await mergeos.projectRepositoryScanProtocol('prj_0001');

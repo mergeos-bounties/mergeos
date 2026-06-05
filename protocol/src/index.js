@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 
 const schemaFiles = {
   'mergeos.agent-action.v1': '../schemas/agent-action.v1.schema.json',
+  'mergeos.agent-queue.v1': '../schemas/agent-queue.v1.schema.json',
   'mergeos.admin-ops.v1': '../schemas/admin-ops.v1.schema.json',
   'mergeos.agent.v1': '../schemas/agent.v1.schema.json',
   'mergeos.ai-workflow.v1': '../schemas/ai-workflow.v1.schema.json',
@@ -22,6 +23,7 @@ const schemaFiles = {
   'mergeos.proposal.v1': '../schemas/proposal.v1.schema.json',
   'mergeos.repo-import.v1': '../schemas/repo-import.v1.schema.json',
   'mergeos.repo-sync.v1': '../schemas/repo-sync.v1.schema.json',
+  'mergeos.routing.v1': '../schemas/routing.v1.schema.json',
   'mergeos.scan.v1': '../schemas/scan.v1.schema.json',
   'mergeos.task-claim.v1': '../schemas/task-claim.v1.schema.json',
   'mergeos.task.v1': '../schemas/task.v1.schema.json',

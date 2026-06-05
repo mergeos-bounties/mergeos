@@ -119,8 +119,18 @@ export class MergeOSClient {
   }
 
   publicProtocolTasks(options = {}) {
-    const limit = Number(options.limit) > 0 ? `?limit=${encodeURIComponent(Number(options.limit))}` : '';
-    return this.request(`/api/public/protocol/tasks${limit}`, { auth: false });
+    const query = queryString({
+      limit: Number(options.limit) > 0 ? Number(options.limit) : '',
+      task_id: options.task_id || options.taskID || '',
+    });
+    return this.request(`/api/public/protocol/tasks${query}`, { auth: false });
+  }
+
+  publicProtocolAgentQueue(options = {}) {
+    const query = queryString({
+      limit: Number(options.limit) > 0 ? Number(options.limit) : '',
+    });
+    return this.request(`/api/public/protocol/agent-queue${query}`, { auth: false });
   }
 
   publicProtocolAgents(options = {}) {
@@ -312,6 +322,10 @@ export class MergeOSClient {
 
   projectTaskGraph(projectID) {
     return this.request(`/api/projects/${encodeURIComponent(projectID)}/task-graph`);
+  }
+
+  projectRouting(projectID) {
+    return this.request(`/api/projects/${encodeURIComponent(projectID)}/routing`);
   }
 
   projectWorkflowProtocol(projectID) {
@@ -743,6 +757,17 @@ function parseJSON(text) {
   } catch {
     return { raw: text };
   }
+}
+
+function queryString(params = {}) {
+  const search = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== null && String(value).trim() !== '') {
+      search.set(key, String(value));
+    }
+  }
+  const value = search.toString();
+  return value ? `?${value}` : '';
 }
 
 function passwordPayload(passwordOrPayload) {

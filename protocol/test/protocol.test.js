@@ -17,6 +17,7 @@ test('loads stable task, workflow, ledger, and event schemas', () => {
   assert.deepEqual(Object.keys(protocolSchemas).sort(), [
     'mergeos.admin-ops.v1',
     'mergeos.agent-action.v1',
+    'mergeos.agent-queue.v1',
     'mergeos.agent.v1',
     'mergeos.ai-workflow.v1',
     'mergeos.contributor.v1',
@@ -35,6 +36,7 @@ test('loads stable task, workflow, ledger, and event schemas', () => {
     'mergeos.proposal.v1',
     'mergeos.repo-import.v1',
     'mergeos.repo-sync.v1',
+    'mergeos.routing.v1',
     'mergeos.scan.v1',
     'mergeos.task-claim.v1',
     'mergeos.task.v1',
@@ -466,6 +468,178 @@ test('validates agent action protocol documents', () => {
   assert(invalid.errors.some((error) => error.path === 'log.event_name'));
   assert(invalid.errors.some((error) => error.path === 'log.status_code'));
   assert(invalid.errors.some((error) => error.path === 'log.checks[0].status'));
+});
+
+test('validates public agent queue protocol documents', () => {
+  const now = '2026-06-05T00:00:00.000Z';
+  const queue = {
+    protocol_version: 'mergeos.agent-queue.v1',
+    kind: 'agent_queue',
+    stats: {
+      total_count: 1,
+      agent_count: 1,
+      ready_count: 1,
+      reward_cents: 12000,
+      token_symbol: 'MRG',
+      updated_at: now,
+    },
+    agents: [
+      {
+        type: 'qa-agent',
+        title: 'QA Agent',
+        worker_kind: 'agent',
+        task_count: 4,
+        open_task_count: 1,
+        budget_cents: 12000,
+        status: 'active',
+        supported_actions: ['review', 'test'],
+        queue_depth: 1,
+      },
+    ],
+    tasks: [
+      {
+        id: 'prj_0001:12',
+        bounty_id: 'prj_0001:12',
+        project_id: 'prj_0001',
+        project_title: 'Customer portal rebuild',
+        issue_number: 12,
+        title: 'Validate checkout PR',
+        summary: 'Run smoke checks and attach evidence.',
+        reward_cents: 12000,
+        worker_kind: 'agent',
+        agent_type: 'qa-agent',
+        readiness: 'agent_ready',
+        evidence_required: ['tests', 'pull_request'],
+        claim_endpoint: '/api/tasks/prj_0001:12/claim',
+        action_endpoint: '/api/projects/prj_0001/agent-actions',
+        protocol_url: '/api/public/protocol/tasks?task_id=prj_0001:12',
+        work_packet: {
+          claim_endpoint: '/api/tasks/prj_0001:12/claim',
+          action_endpoint: '/api/projects/prj_0001/agent-actions',
+          submit_endpoint: '/api/projects/prj_0001/agent-actions',
+          context_urls: {
+            task_protocol: '/api/public/protocol/tasks?task_id=prj_0001:12',
+            agent_queue: '/api/public/protocol/agent-queue',
+            workflow_protocol: '/api/public/projects/prj_0001/workflow',
+            workflow_pulse: '/api/public/projects/prj_0001/ai-workflow',
+            pr_monitor: '/api/public/projects/prj_0001/pull-requests',
+          },
+          runbook: [
+            {
+              step: 1,
+              action: 'fetch_context',
+              label: 'Fetch task protocol',
+              method: 'GET',
+              endpoint: '/api/public/protocol/tasks?task_id=prj_0001:12',
+            },
+          ],
+          action_payloads: [
+            {
+              action: 'test',
+              label: 'Test',
+              method: 'POST',
+              endpoint: '/api/projects/prj_0001/agent-actions',
+              body: {
+                action: 'test',
+                status: 'queued',
+                context_urls: ['/api/public/protocol/tasks?task_id=prj_0001:12'],
+              },
+            },
+          ],
+        },
+      },
+    ],
+  };
+
+  assert.equal(validateProtocolDocument(queue).valid, true);
+
+  const invalid = validateProtocolDocument({
+    ...queue,
+    kind: 'queue',
+    stats: { ...queue.stats, ready_count: -1 },
+    agents: [{ ...queue.agents[0], supported_actions: ['lint'] }],
+    tasks: [{ ...queue.tasks[0], readiness: 'cold' }],
+  });
+  assert.equal(invalid.valid, false);
+  assert(invalid.errors.some((error) => error.path === 'kind'));
+  assert(invalid.errors.some((error) => error.path === 'stats.ready_count'));
+  assert(invalid.errors.some((error) => error.path === 'agents[0].supported_actions[0]'));
+  assert(invalid.errors.some((error) => error.path === 'tasks[0].readiness'));
+});
+
+test('validates project routing protocol documents', () => {
+  const routing = {
+    protocol_version: 'mergeos.routing.v1',
+    kind: 'project_routing',
+    project_id: 'prj_0001',
+    project_title: 'Customer portal rebuild',
+    status: 'ready',
+    summary: '1 tasks are ready across 1 routing lanes.',
+    stats: {
+      task_count: 1,
+      ready_count: 1,
+      blocked_count: 0,
+      contributor_candidate_count: 0,
+      agent_candidate_count: 1,
+      human_lane_count: 0,
+      agent_lane_count: 1,
+      hybrid_lane_count: 0,
+    },
+    lanes: [
+      {
+        id: 'agent:qa-agent',
+        title: 'QA Agent',
+        worker_kind: 'agent',
+        agent_type: 'qa-agent',
+        recommended_for: 'automated execution',
+        task_count: 1,
+        ready_count: 1,
+        blocked_count: 0,
+        reward_cents: 12000,
+        status: 'ready',
+      },
+    ],
+    routes: [
+      {
+        id: 'route:tsk_0001',
+        task_id: 'tsk_0001',
+        issue_number: 12,
+        title: 'Validate checkout PR',
+        lane: 'qa-agent',
+        status: 'open',
+        ready: true,
+        reward_cents: 12000,
+        required_worker_kind: 'agent',
+        suggested_agent_type: 'qa-agent',
+        recommended_next_action: 'route_to_agent',
+        match_score: 88,
+        routing_reason: ['Escrow-backed task is visible in the marketplace.'],
+        recommended_agent: {
+          type: 'qa-agent',
+          title: 'QA Agent',
+          status: 'active',
+          queue_depth: 1,
+        },
+      },
+    ],
+    updated_at: '2026-06-05T00:00:00.000Z',
+  };
+
+  assert.equal(validateProtocolDocument(routing).valid, true);
+
+  const invalid = validateProtocolDocument({
+    ...routing,
+    kind: 'routing',
+    stats: { ...routing.stats, task_count: -1 },
+    lanes: [{ ...routing.lanes[0], worker_kind: 'bot' }],
+    routes: [{ ...routing.routes[0], recommended_next_action: 'teleport', match_score: 101 }],
+  });
+  assert.equal(invalid.valid, false);
+  assert(invalid.errors.some((error) => error.path === 'kind'));
+  assert(invalid.errors.some((error) => error.path === 'stats.task_count'));
+  assert(invalid.errors.some((error) => error.path === 'lanes[0].worker_kind'));
+  assert(invalid.errors.some((error) => error.path === 'routes[0].recommended_next_action'));
+  assert(invalid.errors.some((error) => error.path === 'routes[0].match_score'));
 });
 
 test('validates escrow protocol documents', () => {
