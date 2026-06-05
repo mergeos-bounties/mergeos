@@ -81,6 +81,8 @@ jobs:
           "MERGEIDE_RELEASE_TAG=$tag" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
           "MERGEIDE_RELEASE_URL=$repoUrl/releases/tag/$tag" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
           "MERGEIDE_DOWNLOAD_URL=$repoUrl/releases/download/$tag/$env:MERGEIDE_EXE_NAME" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "MERGEIDE_CHECKSUM_URL=$repoUrl/releases/download/$tag/$env:MERGEIDE_CHECKSUM_NAME" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "MERGEIDE_BUILD_INFO_URL=$repoUrl/releases/download/$tag/$env:MERGEIDE_BUILD_INFO_NAME" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
           "MERGEIDE_WORKFLOW_RUN_URL=$repoUrl/actions/runs/$env:GITHUB_RUN_ID" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
           "MERGEIDE_WORKFLOW_ARTIFACTS_URL=$repoUrl/actions/runs/$env:GITHUB_RUN_ID#artifacts" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
 
@@ -109,6 +111,8 @@ jobs:
             release_tag = $env:MERGEIDE_RELEASE_TAG
             release_url = $env:MERGEIDE_RELEASE_URL
             download_url = $env:MERGEIDE_DOWNLOAD_URL
+            checksum_url = $env:MERGEIDE_CHECKSUM_URL
+            build_metadata_url = $env:MERGEIDE_BUILD_INFO_URL
             built_at = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
           }
           $buildInfo | ConvertTo-Json | Set-Content -Path "MergeIDE/dist/$env:MERGEIDE_BUILD_INFO_NAME" -Encoding utf8
@@ -168,11 +172,26 @@ jobs:
             "MergeIDE/dist/$env:MERGEIDE_BUILD_INFO_NAME" `
             --clobber
 
+          $release = gh release view $tag --json assets,tagName,url | ConvertFrom-Json
+          $assetNames = @($release.assets | ForEach-Object { $_.name })
+          $expectedAssets = @(
+            $env:MERGEIDE_EXE_NAME,
+            $env:MERGEIDE_CHECKSUM_NAME,
+            $env:MERGEIDE_BUILD_INFO_NAME
+          )
+          foreach ($asset in $expectedAssets) {
+            if ($assetNames -notcontains $asset) {
+              throw "Release $tag is missing required MergeIDE asset: $asset"
+            }
+          }
+
           "### MergeIDE Windows exe" >> $env:GITHUB_STEP_SUMMARY
           "" >> $env:GITHUB_STEP_SUMMARY
           "- MergeIDE page: $mergeIDEPage" >> $env:GITHUB_STEP_SUMMARY
           "- Release: $env:MERGEIDE_RELEASE_URL" >> $env:GITHUB_STEP_SUMMARY
           "- Download: $env:MERGEIDE_DOWNLOAD_URL" >> $env:GITHUB_STEP_SUMMARY
+          "- SHA256 file: $env:MERGEIDE_CHECKSUM_URL" >> $env:GITHUB_STEP_SUMMARY
+          "- Build metadata: $env:MERGEIDE_BUILD_INFO_URL" >> $env:GITHUB_STEP_SUMMARY
           "- Workflow run: $env:MERGEIDE_WORKFLOW_RUN_URL" >> $env:GITHUB_STEP_SUMMARY
           "- Workflow artifact: $env:MERGEIDE_WORKFLOW_ARTIFACTS_URL" >> $env:GITHUB_STEP_SUMMARY
           "- SHA256: ``$env:MERGEIDE_SHA256``" >> $env:GITHUB_STEP_SUMMARY
