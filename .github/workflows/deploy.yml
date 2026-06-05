@@ -83,6 +83,7 @@ jobs:
       - name: Package release
         run: |
           mkdir -p release/frontend/dist
+          mkdir -p release/frontend/src
           mkdir -p release/admin/dist
           mkdir -p release/scan/dist
           cp backend/dist/mergeos release/mergeos
@@ -90,6 +91,7 @@ jobs:
           cp -R admin/dist/. release/admin/dist/
           cp -R scan/dist/. release/scan/dist/
           cp frontend/server.js frontend/package.json frontend/package-lock.json release/frontend/
+          cp frontend/src/seo.js release/frontend/src/seo.js
           cp admin/server.js admin/package.json admin/package-lock.json release/admin/
           tar -czf mergeos-release.tar.gz -C release .
 
