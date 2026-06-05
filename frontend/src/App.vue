@@ -211,7 +211,10 @@
               <CheckCircle2 v-if="projectStepNavDone(step.number)" :size="16" />
               <template v-else>{{ step.number }}</template>
             </span>
-            <strong>{{ step.label }}</strong>
+            <strong>
+              <span class="project-step-full-label">{{ step.label }}</span>
+              <span class="project-step-short-label">{{ step.shortLabel || step.label }}</span>
+            </strong>
             <small>{{ step.description }}</small>
           </button>
         </nav>
@@ -10686,6 +10689,7 @@ const projectSetupSteps = [
   {
     number: 1,
     label: 'Project details',
+    shortLabel: 'Brief',
     title: 'Let\'s start with the basics',
     description: 'Describe your project',
     helper: 'Tell us about your idea and we will help you build it with the right people and AI.',
@@ -10693,6 +10697,7 @@ const projectSetupSteps = [
   {
     number: 2,
     label: 'Scope & requirements',
+    shortLabel: 'Scope',
     title: 'Define the work to be done',
     description: 'Define what you need',
     helper: 'Write the goals, key deliverables, and constraints that contributors should understand.',
@@ -10700,6 +10705,7 @@ const projectSetupSteps = [
   {
     number: 3,
     label: 'Budget & timeline',
+    shortLabel: 'Budget',
     title: 'Set budget, deadline, and funding method',
     description: 'Set budget and deadline',
     helper: 'Choose how much you want to spend and how payment should be protected.',
@@ -10707,6 +10713,7 @@ const projectSetupSteps = [
   {
     number: 4,
     label: 'Review & publish',
+    shortLabel: 'Review',
     title: 'Review your project details and publish',
     description: 'Review and post your project',
     helper: 'Confirm everything before publishing your project to top talent.',
@@ -21729,8 +21736,8 @@ function measureNavContextMenu(menu, event = {}) {
   const contentRight = Math.min(safeRight, Math.round((shellRect?.right ?? viewportWidth) - shellPaddingRight));
   const shellWidth = Math.max(320, contentRight - contentLeft);
   const availableWidth = Math.max(320, safeRight - safeLeft);
-  const maxDesktopWidth = menu === 'product' ? 1000 : 920;
-  const maxTabletWidth = menu === 'product' ? 920 : 860;
+  const maxDesktopWidth = menu === 'product' ? 1080 : 920;
+  const maxTabletWidth = menu === 'product' ? 940 : 860;
   const targetWidth = viewportWidth < 1120 ? maxTabletWidth : maxDesktopWidth;
   const width = viewportWidth < 720 ? availableWidth : Math.min(shellWidth, availableWidth, targetWidth);
   const centeredLeft = Math.round(contentLeft + ((shellWidth - width) / 2));
@@ -21784,7 +21791,7 @@ function scheduleNavContextClose() {
   navContextCloseTimer = window.setTimeout(() => {
     navContextCloseTimer = 0;
     activeNavMenu.value = '';
-  }, 560);
+  }, 900);
 }
 
 function cancelNavContextClose() {
