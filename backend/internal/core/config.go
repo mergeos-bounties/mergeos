@@ -61,6 +61,7 @@ type Config struct {
 	GitHubOwnerType string
 
 	GeminiAPIKeys             []string
+	LLMAPIKeys                []LLMAPIKeyConfig
 	GeminiReviewModel         string
 	GeminiReviewWebhookSecret string
 	GeminiReviewMaxPatchBytes int64
@@ -82,6 +83,12 @@ type Config struct {
 	GoogleClientSecret string
 	GitHubClientID     string
 	GitHubClientSecret string
+}
+
+type LLMAPIKeyConfig struct {
+	Provider  string
+	Model     string
+	KeyValues []string
 }
 
 func LoadConfig() Config {
@@ -122,6 +129,13 @@ func LoadConfig() Config {
 	)
 	googleClientID := firstEnv("GOOGLE_CLIENT_ID", "MERGEOS_GOOGLE_CLIENT_ID")
 	googleClientSecret := firstEnv("GOOGLE_CLIENT_SECRET", "MERGEOS_GOOGLE_CLIENT_SECRET")
+	geminiAPIKeys := splitEnvList(firstEnv(
+		"GEMINI_API_KEYS",
+		"MERGEOS_GEMINI_API_KEYS",
+		"GEMINI_API_KEY",
+		"MERGEOS_GEMINI_API_KEY",
+	))
+	geminiReviewModel := getenv("GEMINI_REVIEW_MODEL", "gemini-2.5-flash")
 
 	return Config{
 		Environment:              env,
@@ -165,13 +179,9 @@ func LoadConfig() Config {
 		GitHubOwner:     getenv("GITHUB_OWNER", defaultGitHubOwner),
 		GitHubOwnerType: strings.ToLower(getenv("GITHUB_OWNER_TYPE", "org")),
 
-		GeminiAPIKeys: splitEnvList(firstEnv(
-			"GEMINI_API_KEYS",
-			"MERGEOS_GEMINI_API_KEYS",
-			"GEMINI_API_KEY",
-			"MERGEOS_GEMINI_API_KEY",
-		)),
-		GeminiReviewModel:         getenv("GEMINI_REVIEW_MODEL", "gemini-2.5-flash"),
+		GeminiAPIKeys:             geminiAPIKeys,
+		LLMAPIKeys:                llmAPIKeyConfigsFromEnv(geminiAPIKeys, geminiReviewModel),
+		GeminiReviewModel:         geminiReviewModel,
 		GeminiReviewWebhookSecret: firstEnv("GEMINI_REVIEW_WEBHOOK_SECRET", "MERGEOS_GEMINI_REVIEW_WEBHOOK_SECRET"),
 		GeminiReviewMaxPatchBytes: getenvInt64("GEMINI_REVIEW_MAX_PATCH_BYTES", 70000),
 
@@ -193,6 +203,39 @@ func LoadConfig() Config {
 		GitHubClientID:     githubOAuthClientID,
 		GitHubClientSecret: githubOAuthClientSecret,
 	}
+}
+
+func llmAPIKeyConfigsFromEnv(geminiAPIKeys []string, geminiReviewModel string) []LLMAPIKeyConfig {
+	configs := []LLMAPIKeyConfig{}
+	add := func(provider, model string, keyValues []string) {
+		if len(keyValues) == 0 {
+			return
+		}
+		configs = append(configs, LLMAPIKeyConfig{
+			Provider:  provider,
+			Model:     model,
+			KeyValues: keyValues,
+		})
+	}
+
+	add("gemini", geminiReviewModel, geminiAPIKeys)
+	for _, provider := range []string{"openai", "anthropic", "groq", "openrouter", "deepseek", "mistral"} {
+		upper := strings.ToUpper(provider)
+		keys := splitEnvList(firstEnv(
+			upper+"_API_KEYS",
+			"MERGEOS_"+upper+"_API_KEYS",
+			upper+"_API_KEY",
+			"MERGEOS_"+upper+"_API_KEY",
+		))
+		model := firstEnv(
+			upper+"_REVIEW_MODEL",
+			"MERGEOS_"+upper+"_REVIEW_MODEL",
+			upper+"_MODEL",
+			"MERGEOS_"+upper+"_MODEL",
+		)
+		add(provider, model, keys)
+	}
+	return configs
 }
 
 func sslReviewDomains(primaryDomain, adminDomain, scanDomain string) []string {

@@ -299,10 +299,10 @@ Important backend variables:
 - `MRG_SOLANA_PROGRAM_ID`: deployed MergeOS Anchor program id used by wallet migration and MRG ledger instruction metadata. Leave empty until the program is deployed; the migration API will then return `program_ready: false`.
 - `GITHUB_TOKEN`, `GITHUB_OWNER`, `GITHUB_OWNER_TYPE`: backend runtime values for GitHub bounty repo creation and admin PR merge actions
 - `MERGEOS_GITHUB_TOKEN`: Docker Compose and GitHub Actions secret name that maps into backend `GITHUB_TOKEN`; use a personal access token with repo write access, not the automatic GitHub Actions token
-- `GEMINI_API_KEYS`: comma-separated Gemini API key pool used to seed the initial LLM key table; admins can add Gemini, OpenAI, Anthropic, Groq, OpenRouter, DeepSeek, and Mistral tokens later in the admin UI, while request counts and key status are tracked in the database
-- `GEMINI_REVIEW_MODEL`: legacy Gemini reviewer model default. Admin settings can now select the active LLM provider and model at runtime.
+- `GEMINI_API_KEYS`, `OPENAI_API_KEYS`, `ANTHROPIC_API_KEYS`, `GROQ_API_KEYS`, `OPENROUTER_API_KEYS`, `DEEPSEEK_API_KEYS`, `MISTRAL_API_KEYS`: comma-separated LLM key pools used to seed the initial provider-aware LLM key table. Admins can still add Gemini, OpenAI, Anthropic, Groq, OpenRouter, DeepSeek, and Mistral tokens later in the admin UI, while request counts and key status are tracked in the database.
+- `GEMINI_REVIEW_MODEL`, `OPENAI_REVIEW_MODEL`, `ANTHROPIC_REVIEW_MODEL`, `GROQ_REVIEW_MODEL`, `OPENROUTER_REVIEW_MODEL`, `DEEPSEEK_REVIEW_MODEL`, `MISTRAL_REVIEW_MODEL`: reviewer model defaults for seeded provider keys. Admin settings can select the active LLM provider and model at runtime.
 - `GEMINI_REVIEW_WEBHOOK_SECRET`: GitHub webhook secret used to verify `X-Hub-Signature-256`
-- `GEMINI_REVIEW_MAX_PATCH_BYTES`: max patch context sent to Gemini, default `70000`
+- `GEMINI_REVIEW_MAX_PATCH_BYTES`: max patch context sent to the active LLM reviewer, default `70000`
 - `GITHUB_APP_ID`, `GITHUB_APP_CLIENT_ID`, `GITHUB_APP_CLIENT_SECRET`: backend runtime values for GitHub App user authorization, login, and MRG wallet linking
 - `MERGEOS_GITHUB_APP_ID`, `MERGEOS_GITHUB_APP_CLIENT_ID`, `MERGEOS_GITHUB_APP_CLIENT_SECRET`: Docker Compose and GitHub Actions secret names that map into the backend runtime values
 - `GITHUB_OAUTH_CLIENT_ID`, `GITHUB_OAUTH_CLIENT_SECRET`: legacy backend aliases still accepted for older OAuth configuration

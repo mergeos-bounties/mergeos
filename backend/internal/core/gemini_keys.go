@@ -74,7 +74,15 @@ type TestGeminiAPIKeyResponse struct {
 }
 
 func (s *Store) SeedGeminiAPIKeysFromConfig() error {
-	if len(s.cfg.GeminiAPIKeys) == 0 {
+	configs := s.cfg.LLMAPIKeys
+	if len(configs) == 0 && len(s.cfg.GeminiAPIKeys) > 0 {
+		configs = []LLMAPIKeyConfig{{
+			Provider:  "gemini",
+			Model:     s.cfg.GeminiReviewModel,
+			KeyValues: s.cfg.GeminiAPIKeys,
+		}}
+	}
+	if len(configs) == 0 {
 		return nil
 	}
 	s.mu.Lock()
@@ -85,37 +93,44 @@ func (s *Store) SeedGeminiAPIKeysFromConfig() error {
 
 	now := time.Now().UTC()
 	changed := false
-	for _, raw := range s.cfg.GeminiAPIKeys {
-		keyValue := strings.TrimSpace(raw)
-		if keyValue == "" {
+	for _, config := range configs {
+		provider, err := normalizeLLMProvider(config.Provider)
+		if err != nil {
 			continue
 		}
-		id := geminiAPIKeyID(keyValue)
-		key, ok := s.geminiAPIKeys[id]
-		if !ok {
-			s.geminiAPIKeys[id] = &GeminiAPIKey{
-				ID:        id,
-				Provider:  "gemini",
-				Model:     normalizedLLMModelOrDefault("gemini", ""),
-				KeyValue:  keyValue,
-				KeyHint:   geminiAPIKeyHint(keyValue),
-				Status:    GeminiAPIKeyStatusActive,
-				CreatedAt: now,
-				UpdatedAt: now,
+		model := normalizedLLMModelOrDefault(provider, config.Model)
+		for _, raw := range config.KeyValues {
+			keyValue := strings.TrimSpace(raw)
+			if keyValue == "" {
+				continue
 			}
-			changed = true
-			continue
-		}
-		if key.KeyValue != keyValue || key.KeyHint == "" || key.Status == "" || key.Provider == "" || key.Model == "" {
-			key.KeyValue = keyValue
-			key.Provider = "gemini"
-			key.Model = normalizedLLMModelOrDefault("gemini", key.Model)
-			key.KeyHint = geminiAPIKeyHint(keyValue)
-			if key.Status == "" {
-				key.Status = GeminiAPIKeyStatusActive
+			id := geminiAPIKeyID(keyValue)
+			key, ok := s.geminiAPIKeys[id]
+			if !ok {
+				s.geminiAPIKeys[id] = &GeminiAPIKey{
+					ID:        id,
+					Provider:  provider,
+					Model:     model,
+					KeyValue:  keyValue,
+					KeyHint:   geminiAPIKeyHint(keyValue),
+					Status:    GeminiAPIKeyStatusActive,
+					CreatedAt: now,
+					UpdatedAt: now,
+				}
+				changed = true
+				continue
 			}
-			key.UpdatedAt = now
-			changed = true
+			if key.KeyValue != keyValue || key.KeyHint == "" || key.Status == "" || normalizedLLMProviderOrDefault(key.Provider) != provider || normalizedLLMModelOrDefault(provider, key.Model) != model {
+				key.KeyValue = keyValue
+				key.Provider = provider
+				key.Model = model
+				key.KeyHint = geminiAPIKeyHint(keyValue)
+				if key.Status == "" {
+					key.Status = GeminiAPIKeyStatusActive
+				}
+				key.UpdatedAt = now
+				changed = true
+			}
 		}
 	}
 	if !changed {

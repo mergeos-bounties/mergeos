@@ -54,6 +54,49 @@ func TestSplitEnvList(t *testing.T) {
 	}
 }
 
+func TestLLMAPIKeyConfigSeedsProviderKeys(t *testing.T) {
+	store := &Store{
+		cfg: Config{
+			LLMAPIKeys: []LLMAPIKeyConfig{
+				{
+					Provider:  "gemini",
+					Model:     "gemini-2.0-flash",
+					KeyValues: []string{"gemini-env-token"},
+				},
+				{
+					Provider:  "openai",
+					Model:     "gpt-4.1-mini",
+					KeyValues: []string{"sk-openai-env-token"},
+				},
+			},
+		},
+		adminSettings: AdminSettings{
+			LLMProvider: "openai",
+			LLMModel:    "gpt-4.1-mini",
+		},
+		geminiAPIKeys: map[string]*GeminiAPIKey{},
+	}
+	if err := store.SeedGeminiAPIKeysFromConfig(); err != nil {
+		t.Fatalf("seed provider keys: %v", err)
+	}
+	stats := store.ListGeminiAPIKeyStats()
+	if len(stats) != 2 {
+		t.Fatalf("expected two LLM keys, got %#v", stats)
+	}
+	var sawOpenAI bool
+	for _, item := range stats {
+		if item.Provider == "openai" && item.Model == "gpt-4.1-mini" {
+			sawOpenAI = true
+		}
+	}
+	if !sawOpenAI {
+		t.Fatalf("missing OpenAI provider key: %#v", stats)
+	}
+	if !store.HasRunnableGeminiAPIKey() {
+		t.Fatal("selected OpenAI provider should have a runnable seeded key")
+	}
+}
+
 func TestGeminiAPIKeyStats(t *testing.T) {
 	store := &Store{
 		cfg:           Config{GeminiAPIKeys: []string{"first-key", "second-key"}},

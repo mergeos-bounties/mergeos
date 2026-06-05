@@ -42,6 +42,59 @@ var configEnvKeys = []string{
 	"GITHUB_TOKEN",
 	"GITHUB_OWNER",
 	"GITHUB_OWNER_TYPE",
+	"GEMINI_API_KEYS",
+	"MERGEOS_GEMINI_API_KEYS",
+	"GEMINI_API_KEY",
+	"MERGEOS_GEMINI_API_KEY",
+	"GEMINI_REVIEW_MODEL",
+	"OPENAI_API_KEYS",
+	"MERGEOS_OPENAI_API_KEYS",
+	"OPENAI_API_KEY",
+	"MERGEOS_OPENAI_API_KEY",
+	"OPENAI_REVIEW_MODEL",
+	"MERGEOS_OPENAI_REVIEW_MODEL",
+	"OPENAI_MODEL",
+	"MERGEOS_OPENAI_MODEL",
+	"ANTHROPIC_API_KEYS",
+	"MERGEOS_ANTHROPIC_API_KEYS",
+	"ANTHROPIC_API_KEY",
+	"MERGEOS_ANTHROPIC_API_KEY",
+	"ANTHROPIC_REVIEW_MODEL",
+	"MERGEOS_ANTHROPIC_REVIEW_MODEL",
+	"ANTHROPIC_MODEL",
+	"MERGEOS_ANTHROPIC_MODEL",
+	"GROQ_API_KEYS",
+	"MERGEOS_GROQ_API_KEYS",
+	"GROQ_API_KEY",
+	"MERGEOS_GROQ_API_KEY",
+	"GROQ_REVIEW_MODEL",
+	"MERGEOS_GROQ_REVIEW_MODEL",
+	"GROQ_MODEL",
+	"MERGEOS_GROQ_MODEL",
+	"OPENROUTER_API_KEYS",
+	"MERGEOS_OPENROUTER_API_KEYS",
+	"OPENROUTER_API_KEY",
+	"MERGEOS_OPENROUTER_API_KEY",
+	"OPENROUTER_REVIEW_MODEL",
+	"MERGEOS_OPENROUTER_REVIEW_MODEL",
+	"OPENROUTER_MODEL",
+	"MERGEOS_OPENROUTER_MODEL",
+	"DEEPSEEK_API_KEYS",
+	"MERGEOS_DEEPSEEK_API_KEYS",
+	"DEEPSEEK_API_KEY",
+	"MERGEOS_DEEPSEEK_API_KEY",
+	"DEEPSEEK_REVIEW_MODEL",
+	"MERGEOS_DEEPSEEK_REVIEW_MODEL",
+	"DEEPSEEK_MODEL",
+	"MERGEOS_DEEPSEEK_MODEL",
+	"MISTRAL_API_KEYS",
+	"MERGEOS_MISTRAL_API_KEYS",
+	"MISTRAL_API_KEY",
+	"MERGEOS_MISTRAL_API_KEY",
+	"MISTRAL_REVIEW_MODEL",
+	"MERGEOS_MISTRAL_REVIEW_MODEL",
+	"MISTRAL_MODEL",
+	"MERGEOS_MISTRAL_MODEL",
 	"GITHUB_APP_ID",
 	"GITHUB_APP_CLIENT_ID",
 	"GITHUB_APP_CLIENT_SECRET",
@@ -205,6 +258,35 @@ func TestLoadConfigUsesGitHubAppCredentialsForOAuth(t *testing.T) {
 	}
 	if cfg.GitHubClientID != cfg.GitHubOAuthClientID || cfg.GitHubClientSecret != cfg.GitHubOAuthClientSecret {
 		t.Fatal("legacy github client fields should use the same GitHub App credentials")
+	}
+}
+
+func TestLoadConfigSeedsLLMProviderAPIKeysFromEnv(t *testing.T) {
+	withTempConfigDir(t)
+	clearConfigEnv(t)
+
+	t.Setenv("GEMINI_API_KEY", "gemini-env-key")
+	t.Setenv("GEMINI_REVIEW_MODEL", "gemini-2.0-flash")
+	t.Setenv("OPENAI_API_KEYS", "sk-openai-one,sk-openai-two")
+	t.Setenv("OPENAI_REVIEW_MODEL", "gpt-4.1-mini")
+	t.Setenv("MERGEOS_ANTHROPIC_API_KEY", "anthropic-env-key")
+
+	cfg := LoadConfig()
+	if len(cfg.GeminiAPIKeys) != 1 || cfg.GeminiAPIKeys[0] != "gemini-env-key" {
+		t.Fatalf("legacy gemini keys = %#v", cfg.GeminiAPIKeys)
+	}
+	byProvider := map[string]LLMAPIKeyConfig{}
+	for _, item := range cfg.LLMAPIKeys {
+		byProvider[item.Provider] = item
+	}
+	if got := byProvider["gemini"]; got.Model != "gemini-2.0-flash" || len(got.KeyValues) != 1 || got.KeyValues[0] != "gemini-env-key" {
+		t.Fatalf("gemini LLM key config = %#v", got)
+	}
+	if got := byProvider["openai"]; got.Model != "gpt-4.1-mini" || len(got.KeyValues) != 2 {
+		t.Fatalf("openai LLM key config = %#v", got)
+	}
+	if got := byProvider["anthropic"]; got.Model != "" || len(got.KeyValues) != 1 || got.KeyValues[0] != "anthropic-env-key" {
+		t.Fatalf("anthropic LLM key config = %#v", got)
 	}
 }
 

@@ -58,7 +58,7 @@ func TestCheckForEnvCollision(t *testing.T) {
 	runtimeEnvNames = nil
 	runtimeEnvOnce = sync.Once{}
 
-	for _, name := range []string{"GITHUB_TOKEN", "ADMIN_EMAIL", "ADMIN_PASSWORD", "PAYPAL_CLIENT_ID", "PAYPAL_ENV", "CRYPTO_RECEIVER", "GEMINI_API_KEYS", "runtime_secret_name"} {
+	for _, name := range []string{"GITHUB_TOKEN", "ADMIN_EMAIL", "ADMIN_PASSWORD", "PAYPAL_CLIENT_ID", "PAYPAL_ENV", "CRYPTO_RECEIVER", "GEMINI_API_KEYS", "OPENAI_API_KEYS", "ANTHROPIC_API_KEYS", "runtime_secret_name"} {
 		if err := checkForEnvCollision(name, nil); err == nil {
 			t.Errorf("expected collision for %q", name)
 		}
