@@ -48,6 +48,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/public/projects/{id}/deployment", s.publicProjectDeployment)
 	mux.HandleFunc("GET /api/public/projects/{id}/ai-workflow", s.publicProjectAIWorkflow)
 	mux.HandleFunc("GET /api/public/projects/{id}/workflow", s.publicProjectWorkflow)
+	mux.HandleFunc("GET /api/public/projects/{id}/repo-scan", s.publicProjectRepositoryScan)
 	mux.HandleFunc("GET /api/public/projects/{id}/pull-requests", s.publicProjectPullRequests)
 	mux.HandleFunc("POST /api/public/repo/issues", s.importRepoIssues)
 	mux.HandleFunc("POST /api/integrations/github/pr-review", s.geminiReviewWebhook)
@@ -337,6 +338,15 @@ func (s *Server) publicProjectWorkflow(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, workflow)
+}
+
+func (s *Server) publicProjectRepositoryScan(w http.ResponseWriter, r *http.Request) {
+	scan, err := s.store.PublicProjectRepositoryScanProtocol(r.PathValue("id"))
+	if err != nil {
+		writeError(w, http.StatusNotFound, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, scan)
 }
 
 func (s *Server) publicProjectPullRequests(w http.ResponseWriter, r *http.Request) {

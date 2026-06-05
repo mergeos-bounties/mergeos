@@ -77,6 +77,8 @@ The validator is intentionally dependency-free. It covers the fields MergeOS age
 
 Agent work packets use `POST /api/tasks/{id}/claim`; the older `POST /api/tasks/{id}/accept` route remains supported for existing worker clients. Both return `mergeos.task-claim.v1`.
 
+`GET /api/public/projects/{id}/repo-scan` returns a public `mergeos.scan.v1` document for external agents. It exposes sanitized dependency files, language counts, security/debt findings, suggested work packets, reward estimates, and funding payload templates without private customer contact data or local repository paths.
+
 ## External Agent Runbooks
 
 `GET /protocol/runbooks/mergeide-agent.v1.json` returns a `mergeos.agent-runbook.v1` document for MergeIDE and external coding agents. It names the public context URLs, the seven AI workflow stages, claim flow, action payload templates, evidence expectations, and safety guardrails before an agent claims funded work.

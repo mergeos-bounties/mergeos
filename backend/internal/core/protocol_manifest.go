@@ -326,6 +326,13 @@ func ProtocolManifest() ProtocolManifestResponse {
 			},
 			{
 				Method:      "GET",
+				Path:        "/api/public/projects/{id}/repo-scan",
+				Protocol:    "mergeos.scan.v1",
+				Auth:        "none",
+				Description: "Public claim-safe repository scan with dependency, technical debt, security findings, suggested tasks, and funding packet templates.",
+			},
+			{
+				Method:      "GET",
 				Path:        "/api/public/projects/{id}/pull-requests",
 				Protocol:    "mergeos.pr-monitor.v1",
 				Auth:        "none",

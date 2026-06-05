@@ -45,6 +45,18 @@ func (s *Store) ProjectRepositoryScanProtocol(projectID string) (RepositoryScanP
 	return repositoryScanProtocolDocument(project, scan), nil
 }
 
+func (s *Store) PublicProjectRepositoryScanProtocol(projectID string) (RepositoryScanProtocolDocument, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	project, ok := s.projects[strings.TrimSpace(projectID)]
+	if !ok {
+		return RepositoryScanProtocolDocument{}, errors.New("project not found")
+	}
+	scan := s.projectRepositoryScanLocked(project)
+	return repositoryScanProtocolDocument(project, scan), nil
+}
+
 func (s *Store) projectRepositoryScanLocked(project *Project) ProjectRepositoryScanResponse {
 	response := ProjectRepositoryScanResponse{
 		ProjectID:    project.ID,

@@ -1047,6 +1047,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 		"GET /api/public/projects/{id}/deployment",
 		"GET /api/public/projects/{id}/ai-workflow",
 		"GET /api/public/projects/{id}/workflow",
+		"GET /api/public/projects/{id}/repo-scan",
 		"GET /api/public/projects/{id}/pull-requests",
 		"POST /api/public/repo/issues",
 		"WS /api/ws",
@@ -3949,6 +3950,32 @@ func TestProjectRepositoryScanRouteReturnsStaticFindings(t *testing.T) {
 	}
 	if len(protocolPayload.SuggestedTasks) != len(rescanPayload.SuggestedTasks) {
 		t.Fatalf("repo scan protocol suggested tasks = %d, want %d", len(protocolPayload.SuggestedTasks), len(rescanPayload.SuggestedTasks))
+	}
+
+	publicReq := httptest.NewRequest(http.MethodGet, "/api/public/projects/"+project.ID+"/repo-scan", nil)
+	publicResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(publicResp, publicReq)
+	if publicResp.Code != http.StatusOK {
+		t.Fatalf("public repo scan status = %d, body = %s", publicResp.Code, publicResp.Body.String())
+	}
+	publicBody := publicResp.Body.String()
+	for _, value := range []string{"scan-client@example.com", "+1 555 0155", auth.User.ID, defaultDevPaymentCode, tempDir, "super-secret-token"} {
+		if strings.Contains(publicBody, value) {
+			t.Fatalf("public repo scan leaked private value %q: %s", value, publicBody)
+		}
+	}
+	var publicPayload RepositoryScanProtocolDocument
+	if err := json.Unmarshal(publicResp.Body.Bytes(), &publicPayload); err != nil {
+		t.Fatal(err)
+	}
+	if publicPayload.ProtocolVersion != "mergeos.scan.v1" || publicPayload.Kind != "repository_scan" || publicPayload.ProjectID != project.ID {
+		t.Fatalf("unexpected public repo scan protocol payload: %#v", publicPayload)
+	}
+	if publicPayload.Stats.FindingCount != rescanPayload.Stats.FindingCount || len(publicPayload.SuggestedTasks) != len(rescanPayload.SuggestedTasks) {
+		t.Fatalf("public repo scan missing findings or suggested tasks: %#v", publicPayload)
+	}
+	if strings.Contains(publicPayload.SourceRepo, tempDir) {
+		t.Fatalf("public repo scan source repo leaked local path: %q", publicPayload.SourceRepo)
 	}
 
 	otherAuth, err := store.Register(RegisterRequest{

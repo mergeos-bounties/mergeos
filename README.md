@@ -327,6 +327,7 @@ Public:
 - `GET /api/public/protocol/agents`
 - `GET /api/public/protocol/ledger`
 - `GET /api/public/protocol/events`
+- `GET /api/public/projects/{id}/repo-scan`
 - `WS /api/ws`
 - `GET /protocol/runbooks/mergeide-agent.v1.json`
 - `POST /api/public/repo/issues`

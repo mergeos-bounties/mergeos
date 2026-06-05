@@ -58,6 +58,7 @@ test('creates public feed and ledger verification requests without auth', async 
     { status: 200, body: { protocol_version: 'mergeos.deployment.v1', status: 'validating' } },
     { status: 200, body: { protocol_version: 'mergeos.ai-workflow.v1', status: 'orchestrating' } },
     { status: 200, body: { protocol_version: 'mergeos.workflow.v1', progress: 20, current_step: 'contributor_routing', nodes: [], edges: [] } },
+    { status: 200, body: { protocol_version: 'mergeos.scan.v1', kind: 'repository_scan', suggested_tasks: [] } },
     { status: 200, body: { protocol_version: 'mergeos.pr-monitor.v1', stats: { pull_request_count: 1 }, tasks: [] } },
     { status: 200, body: { valid: true } },
   ]);
@@ -83,6 +84,7 @@ test('creates public feed and ledger verification requests without auth', async 
   const deployment = await client.publicProjectDeployment('prj_public');
   const workflow = await client.publicProjectAIWorkflow('prj_public');
   const workflowGraph = await client.publicProjectWorkflow('prj_public');
+  const repositoryScan = await client.publicProjectRepositoryScan('prj_public');
   const pulls = await client.publicProjectPullRequests('prj_public');
   const verification = await client.publicLedgerVerification();
 
@@ -102,6 +104,7 @@ test('creates public feed and ledger verification requests without auth', async 
   assert.equal(deployment.protocol_version, 'mergeos.deployment.v1');
   assert.equal(workflow.protocol_version, 'mergeos.ai-workflow.v1');
   assert.equal(workflowGraph.protocol_version, 'mergeos.workflow.v1');
+  assert.equal(repositoryScan.protocol_version, 'mergeos.scan.v1');
   assert.equal(pulls.protocol_version, 'mergeos.pr-monitor.v1');
   assert.deepEqual(verification, { valid: true });
   assert.equal(fetchImpl.calls[0].url, 'https://mergeos.shop/api/public/live-feed?limit=80');
@@ -136,10 +139,12 @@ test('creates public feed and ledger verification requests without auth', async 
   assert.equal(fetchImpl.calls[14].options.headers.Authorization, undefined);
   assert.equal(fetchImpl.calls[15].url, 'https://mergeos.shop/api/public/projects/prj_public/workflow');
   assert.equal(fetchImpl.calls[15].options.headers.Authorization, undefined);
-  assert.equal(fetchImpl.calls[16].url, 'https://mergeos.shop/api/public/projects/prj_public/pull-requests');
+  assert.equal(fetchImpl.calls[16].url, 'https://mergeos.shop/api/public/projects/prj_public/repo-scan');
   assert.equal(fetchImpl.calls[16].options.headers.Authorization, undefined);
-  assert.equal(fetchImpl.calls[17].url, 'https://mergeos.shop/api/public/ledger/verify');
+  assert.equal(fetchImpl.calls[17].url, 'https://mergeos.shop/api/public/projects/prj_public/pull-requests');
   assert.equal(fetchImpl.calls[17].options.headers.Authorization, undefined);
+  assert.equal(fetchImpl.calls[18].url, 'https://mergeos.shop/api/public/ledger/verify');
+  assert.equal(fetchImpl.calls[18].options.headers.Authorization, undefined);
 });
 
 test('derives Solana ledger references and legacy wallet hashes for operators', () => {
