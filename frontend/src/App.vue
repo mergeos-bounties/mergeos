@@ -3134,6 +3134,10 @@
                         <CircleDollarSign :size="12" />
                         {{ releasingTaskID === task.id ? 'Releasing' : 'Release' }}
                       </button>
+                      <button v-if="task.canRequestChanges" type="button" :disabled="requestingChangesTaskID === task.id" @click="requestTaskChanges(task)">
+                        <RefreshCw :size="12" />
+                        {{ requestingChangesTaskID === task.id ? 'Sending' : 'Changes' }}
+                      </button>
                     </article>
                   </div>
                   <article v-else class="dash-empty-state compact">
@@ -3672,6 +3676,15 @@
                         <CircleDollarSign :size="12" />
                         {{ releasingTaskID === pr.id ? 'Releasing' : 'Release' }}
                       </button>
+                      <button
+                        v-if="pr.canRequestChanges"
+                        type="button"
+                        :disabled="requestingChangesTaskID === pr.id"
+                        @click="requestTaskChanges(pr)"
+                      >
+                        <RefreshCw :size="12" />
+                        {{ requestingChangesTaskID === pr.id ? 'Sending' : 'Changes' }}
+                      </button>
                     </div>
                     <div v-if="pr.signals.length" class="pr-monitor-signals">
                       <span v-for="signal in pr.signals" :key="signal">{{ signal }}</span>
@@ -3739,6 +3752,15 @@
                       >
                         <CircleDollarSign :size="12" />
                         {{ releasingTaskID === task.id ? 'Releasing' : 'Release' }}
+                      </button>
+                      <button
+                        v-if="task.canRequestChanges"
+                        type="button"
+                        :disabled="requestingChangesTaskID === task.id"
+                        @click="requestTaskChanges(task)"
+                      >
+                        <RefreshCw :size="12" />
+                        {{ requestingChangesTaskID === task.id ? 'Sending' : 'Changes' }}
                       </button>
                     </div>
                   </article>
@@ -4639,7 +4661,7 @@
           </div>
 
           <div class="mergeide-platform-list">
-            <article v-for="(platform, index) in publicMergeIdeCopy.platformRows" :key="platform[0]">
+            <article v-for="(platform, index) in publicMergeIdePlatformRows" :key="platform[0]">
               <span>{{ platform[2] }}</span>
               <strong>{{ platform[0] }}</strong>
               <p>{{ platform[1] }}</p>
@@ -4647,10 +4669,12 @@
                 v-if="platform[3] || index === 0"
                 :href="platform[3] || mergeIdeDownloadPath"
                 :download="platform[4] || (index === 0 ? mergeIdeDownloadFileName : null)"
+                :target="platform[6] ? '_blank' : null"
+                :rel="platform[6] ? 'noreferrer' : null"
                 @click="closeNavContextMenu"
               >
                 {{ platform[5] || publicMergeIdeCopy.downloadAction }}
-                <Download :size="14" />
+                <component :is="platform[7] || Download" :size="14" />
               </a>
               <button v-else type="button" disabled>
                 {{ platform[2] }}
@@ -10008,14 +10032,27 @@ const publicContractsTranslations = {
   },
 };
 
+const mergeIdeRepositorySlug = 'mergeos-bounties/mergeos';
+const mergeIdeRepositoryPath = `https://github.com/${mergeIdeRepositorySlug}`;
 const mergeIdeReleaseTag = 'mergeide-windows-latest';
-const mergeIdeReleasePath = `https://github.com/mergeos-bounties/mergeos/releases/tag/${mergeIdeReleaseTag}`;
-const mergeIdeDownloadPath = `https://github.com/mergeos-bounties/mergeos/releases/download/${mergeIdeReleaseTag}/MergeIDE-Windows-x64.exe`;
+const mergeIdeDownloadFileName = 'MergeIDE-Windows-x64.exe';
+const mergeIdeReleasePath = `${mergeIdeRepositoryPath}/releases/tag/${mergeIdeReleaseTag}`;
+const mergeIdeDownloadPath = `${mergeIdeRepositoryPath}/releases/download/${mergeIdeReleaseTag}/${mergeIdeDownloadFileName}`;
+const mergeIdeWorkflowPath = `${mergeIdeRepositoryPath}/actions/workflows/mergeide-windows-exe.yml`;
 const mergeIdeManifestPath = '/downloads/mergeide-windows-latest.json';
 const mergeIdePreviewKitPath = '/downloads/mergeide-preview-kit.md';
-const mergeIdeDownloadFileName = 'MergeIDE-Windows-x64.exe';
 const mergeIdeManifestFileName = 'mergeide-windows-latest.json';
 const mergeIdePreviewKitFileName = 'MergeIDE-Preview-Kit.md';
+const mergeIdeBuildWorkflowRow = [
+  'Build workflow',
+  'GitHub Actions tests, packages, and uploads the Windows exe release asset.',
+  'CI',
+  mergeIdeWorkflowPath,
+  null,
+  'Open workflow',
+  true,
+  ExternalLink,
+];
 const solanaMRGIDLPath = '/contracts/solana/mergeos_mrg.v1.idl.json';
 
 const publicMergeIdeTranslations = {
@@ -10551,6 +10588,7 @@ const repoTaskFundingCardForm = reactive({
 });
 const expandedReviewTaskID = ref('');
 const reviewSubmittingTaskID = ref('');
+const requestingChangesTaskID = ref('');
 const recordingAgentActionKey = ref('');
 const taskReviewDrafts = reactive({});
 const taskReviewErrors = reactive({});
@@ -11235,6 +11273,10 @@ const publicContractsCopy = computed(() =>
 const publicMergeIdeCopy = computed(() =>
   localizedLocaleCopy(publicMergeIdeTranslations, activeLocale.value),
 );
+const publicMergeIdePlatformRows = computed(() => [
+  ...(publicMergeIdeCopy.value.platformRows || []),
+  mergeIdeBuildWorkflowRow,
+]);
 const productNavIsActive = computed(() => ['product', 'system', 'mergeide', 'contracts', 'sdk', 'backend'].includes(publicPage.value));
 const solutionNavIsActive = computed(() => ['solutions', 'customers', 'agents', 'contributors', 'admins'].includes(publicPage.value));
 const clientHydrationKey = computed(() => (clientHydrated.value ? 'client' : 'ssr'));
@@ -11776,7 +11818,7 @@ const liveFeedProofLanes = computed(() => {
       body: 'Review submissions and accepted pull requests tied to funded tasks.',
       icon: GitPullRequest,
       tone: 'green',
-      rawTypes: ['task_submitted', 'task_accepted'],
+      rawTypes: ['task_submitted', 'task_changes_requested', 'task_accepted'],
       fallbackFilter: 'Review Submitted',
       actionNoun: 'PRs',
     },
@@ -11860,7 +11902,7 @@ const liveFeedSignalSummary = computed(() => {
       body: 'Review submissions, accepted PRs, deployment status, and validation events stay visible.',
       icon: GitPullRequest,
       tone: 'blue',
-      rawTypes: ['task_submitted', 'task_accepted', 'deployment_validation', 'deployment_status'],
+      rawTypes: ['task_submitted', 'task_changes_requested', 'task_accepted', 'deployment_validation', 'deployment_status'],
       fallbackFilter: 'Review Submitted',
       emptyLabel: 'Waiting for PR or deploy',
     },
@@ -11975,9 +12017,9 @@ const liveFeedWorkflowTraceDefinitions = [
     body: 'PR submissions, acceptances, and AI review webhooks keep acceptance evidence public.',
     icon: GitPullRequest,
     tone: 'blue',
-    rawTypes: ['task_submitted', 'task_accepted', 'ai_review'],
+    rawTypes: ['task_submitted', 'task_changes_requested', 'task_accepted', 'ai_review'],
     fallbackFilter: 'Review Submitted',
-    schema: 'task_submitted | task_accepted | ai_review',
+    schema: 'task_submitted | task_changes_requested | task_accepted | ai_review',
     sourcePath: '/api/public/live-feed',
     emptyLabel: 'Waiting for review evidence',
   },
@@ -12044,9 +12086,9 @@ const liveFeedEventContractDefinitions = [
     body: 'Review submissions and accepted work carry task evidence, PR references, and release readiness before payout.',
     icon: GitPullRequest,
     tone: 'green',
-    rawTypes: ['task_submitted', 'task_accepted'],
+    rawTypes: ['task_submitted', 'task_changes_requested', 'task_accepted'],
     fallbackFilter: 'Review Submitted',
-    schema: 'task_submitted | task_accepted',
+    schema: 'task_submitted | task_changes_requested | task_accepted',
     version: 'mergeos.pr.monitor.v1',
     sourcePath: '/api/public/live-feed',
   },
@@ -12294,7 +12336,7 @@ const publicDeliveryVerificationGateDefinitions = [
     key: 'pr-evidence',
     icon: GitPullRequest,
     tone: 'green',
-    rawTypes: ['task_submitted', 'task_accepted'],
+    rawTypes: ['task_submitted', 'task_changes_requested', 'task_accepted'],
     fallbackFilter: 'Review Submitted',
     ledgerPredicate: (item) => String(item.type || '').startsWith('task_') || /pull request|pr accepted|review submitted|workflow event/i.test(ledgerProofItemText(item)),
   },
@@ -24785,6 +24827,40 @@ async function releaseTaskPayment(task = {}) {
   }
 }
 
+async function requestTaskChanges(task = {}) {
+  if (!task?.id || requestingChangesTaskID.value) return;
+  const currentNotes = task.reviewNotes || task.review_notes || '';
+  const promptText = 'Describe the changes needed before payout release.';
+  const notes = hasWindow
+    ? String(window.prompt(promptText, currentNotes) || '').trim()
+    : '';
+  if (!notes) return;
+  if (notes.length < 12) {
+    showToast('Add at least 12 characters for requested changes.');
+    return;
+  }
+  requestingChangesTaskID.value = task.id;
+  try {
+    const response = await api(`/api/tasks/${encodeURIComponent(task.id)}/request-changes`, {
+      method: 'POST',
+      body: JSON.stringify({ review_notes: notes }),
+    });
+    await Promise.all([
+      loadDashboardData({ silent: true }),
+      loadDashboardPullRequestsData(selectedDashboardProjectID.value, { silent: true }),
+      loadDashboardEscrowData(selectedDashboardProjectID.value, { silent: true }),
+      loadWorkerDashboardData({ silent: true }),
+      loadMarketplaceData({ silent: true }),
+      loadLiveFeedData({ silent: true }),
+    ]);
+    showToast(`Requested changes for task #${response.issue_number || task.issueNumber || ''}.`);
+  } catch (error) {
+    showToast(error.message || 'Could not request changes.');
+  } finally {
+    requestingChangesTaskID.value = '';
+  }
+}
+
 async function runProjectAutoRelease() {
   const projectID = dashboardSelectedProject.value?.id || selectedDashboardProjectID.value;
   const readyRows = dashboardAutoReleaseReadyRows.value;
@@ -25441,10 +25517,12 @@ function mapDashboardEscrowTask(row = {}) {
     statusClass: escrowStatusTone(releaseStatus),
     taskStatus: toTitleLabel(status),
     canRelease: releasePacket.can_release === true,
+    canRequestChanges: status === 'submitted' && Boolean(row.worker_id),
     releaseCommand: releasePacket.release_endpoint
       ? `${releasePacket.method || 'POST'} ${releasePacket.release_endpoint}`
       : releasePacket.status ? `Release ${toTitleLabel(releasePacket.status)}` : '',
     releasePacket,
+    reviewNotes: row.review_notes || '',
     workerKind: releasePayload.worker_kind || row.worker_kind || '',
     workerID: releasePayload.worker_id || row.worker_id || '',
     agentType: releasePayload.agent_type || row.agent_type || '',
@@ -25479,7 +25557,9 @@ function mapDashboardTask(task = {}) {
     status,
     statusClass: rawStatus === 'accepted' ? 'accepted' : rawStatus === 'submitted' ? 'submitted' : rawStatus === 'claimed' ? 'claimed' : 'open',
     reviewURL,
+    reviewNotes: task.review_notes || '',
     canRelease: releasePacket.can_release === true || (!task.release_packet && rawStatus === 'submitted' && Boolean(workerID)),
+    canRequestChanges: rawStatus === 'submitted' && Boolean(workerID),
     releasePacket,
     autoReleasePacket,
     canAutoRelease: autoReleasePacket.can_auto_release === true,
@@ -25553,6 +25633,7 @@ function mapDashboardPullRequest(row = {}) {
     primaryLabel: pullRequestURL ? 'PR' : evidenceURL ? 'Evidence' : 'Issue',
     pullRequestURL,
     evidenceURL,
+    reviewNotes: row.review_notes || '',
     reference: row.repository && row.pull_number
       ? `${row.repository}#${row.pull_number}`
       : shortLedgerReference(pullRequestURL || evidenceURL || issueURL || `issue:${row.issue_number || '-'}`),
@@ -25560,6 +25641,7 @@ function mapDashboardPullRequest(row = {}) {
     rawContractReference: contractReference,
     signals: signals.slice(0, 5),
     canRelease: releasePacket.can_release === true || (!row.release_packet && (readiness.can_release === true || (!readiness.status && row.status === 'submitted' && Boolean(workerID)))),
+    canRequestChanges: Boolean(workerID) && (reviewStatus === 'needs_review' || String(row.status || '').toLowerCase() === 'submitted'),
     releaseCommand,
     releasePacket,
     canAutoRelease: autoReleasePacket.can_auto_release === true,
@@ -26118,6 +26200,9 @@ function liveFeedMetaFor(type = '') {
   }
   if (normalized === 'task_submitted') {
     return { type: 'Review Submitted', icon: GitPullRequest, tone: 'amber', amountTone: 'neutral' };
+  }
+  if (normalized === 'task_changes_requested') {
+    return { type: 'Changes Requested', icon: RefreshCw, tone: 'amber', amountTone: 'neutral' };
   }
   if (normalized === 'task_accepted') {
     return { type: 'PR Accepted', icon: GitPullRequest, tone: 'green', amountTone: 'positive' };
@@ -27621,7 +27706,7 @@ let _wsReconnectTimer = 0;
 let _wsReconnectDelay = 1000;
 const _wsSeenProjectIDs = new Set();
 const _wsSeenEventIDs = new Set();
-const realtimeTaskEventTypes = new Set(['task_opened', 'task_claimed', 'task_submitted', 'task_accepted']);
+const realtimeTaskEventTypes = new Set(['task_opened', 'task_claimed', 'task_submitted', 'task_changes_requested', 'task_accepted']);
 const realtimeProposalEventTypes = new Set(['proposal_created', 'proposal_decided', 'proposal_submitted', 'proposal_accepted', 'proposal_declined']);
 const realtimeDeploymentEventTypes = new Set(['deployment_status']);
 const realtimeAgentEventTypes = new Set(['agent_action']);
@@ -28035,7 +28120,7 @@ function handleWSTaskLifecycle(payload = {}) {
         void loadDashboardRepositoryIntelligenceData(projectID, { silent: true });
       }
     }
-    if (dashboardSection.value === 'worker' || payload.type === 'task_claimed' || payload.type === 'task_submitted' || payload.type === 'task_accepted' || realtimeProposalEventTypes.has(payload.type)) {
+    if (dashboardSection.value === 'worker' || payload.type === 'task_claimed' || payload.type === 'task_submitted' || payload.type === 'task_changes_requested' || payload.type === 'task_accepted' || realtimeProposalEventTypes.has(payload.type)) {
       void loadWorkerDashboardData({ silent: true });
     }
     if (dashboardSection.value === 'admin' && isAdminUser.value) {

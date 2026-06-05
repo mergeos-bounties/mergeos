@@ -68,6 +68,7 @@
               "task_opened",
               "task_claimed",
               "task_submitted",
+              "task_changes_requested",
               "task_accepted",
               "ledger_payment_verified",
               "ledger_token_mint",

@@ -1042,7 +1042,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 	if payload.ProtocolVersion != "mergeos.protocol.manifest.v1" || payload.Kind != "protocol_manifest" {
 		t.Fatalf("unexpected manifest header: %#v", payload)
 	}
-	if len(payload.Schemas) != 33 {
+	if len(payload.Schemas) != 34 {
 		t.Fatalf("manifest schemas = %d: %#v", len(payload.Schemas), payload.Schemas)
 	}
 	schemas := map[string]bool{}
@@ -1051,7 +1051,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 		schemas[schema.Version] = true
 		descriptions[schema.Version] = schema.Description
 	}
-	for _, required := range []string{"mergeos.task.v1", "mergeos.task-claim.v1", "mergeos.task-submission.v1", "mergeos.agent.v1", "mergeos.contributor.v1", "mergeos.agent-action.v1", "mergeos.agent-queue.v1", "mergeos.agent-runbook.v1", "mergeos.marketplace.v1", "mergeos.live-feed.v1", "mergeos.workflow.v1", "mergeos.estimate.v1", "mergeos.wallet-migration.v1", "mergeos.release-artifact.v1", "mergeos.repo-import.v1", "mergeos.repo-sync.v1", "mergeos.dispute.v1", "mergeos.proposal.v1", "mergeos.ai-workflow.v1", "mergeos.event.v1", "mergeos.ledger.v1", "mergeos.ledger-proof.v1", "mergeos.token-economy.v1", "mergeos.escrow.v1", "mergeos.payouts.v1", "mergeos.payout-release.v1", "mergeos.deployment.v1", "mergeos.pr-monitor.v1", "mergeos.scan.v1", "mergeos.customer-dashboard.v1", "mergeos.worker-dashboard.v1", "mergeos.routing.v1", "mergeos.admin-ops.v1"} {
+	for _, required := range []string{"mergeos.task.v1", "mergeos.task-claim.v1", "mergeos.task-submission.v1", "mergeos.task-review.v1", "mergeos.agent.v1", "mergeos.contributor.v1", "mergeos.agent-action.v1", "mergeos.agent-queue.v1", "mergeos.agent-runbook.v1", "mergeos.marketplace.v1", "mergeos.live-feed.v1", "mergeos.workflow.v1", "mergeos.estimate.v1", "mergeos.wallet-migration.v1", "mergeos.release-artifact.v1", "mergeos.repo-import.v1", "mergeos.repo-sync.v1", "mergeos.dispute.v1", "mergeos.proposal.v1", "mergeos.ai-workflow.v1", "mergeos.event.v1", "mergeos.ledger.v1", "mergeos.ledger-proof.v1", "mergeos.token-economy.v1", "mergeos.escrow.v1", "mergeos.payouts.v1", "mergeos.payout-release.v1", "mergeos.deployment.v1", "mergeos.pr-monitor.v1", "mergeos.scan.v1", "mergeos.customer-dashboard.v1", "mergeos.worker-dashboard.v1", "mergeos.routing.v1", "mergeos.admin-ops.v1"} {
 		if !schemas[required] {
 			t.Fatalf("manifest missing schema %s: %#v", required, payload.Schemas)
 		}
@@ -1105,6 +1105,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 		"POST /api/tasks/{id}/accept",
 		"POST /api/tasks/{id}/claim",
 		"POST /api/tasks/{id}/submit",
+		"POST /api/tasks/{id}/request-changes",
 		"POST /api/wallets/migrations",
 		"GET /api/admin/ops-queue",
 	} {
@@ -4399,6 +4400,64 @@ func TestTaskSubmissionRouteRecordsReviewEvidence(t *testing.T) {
 	}
 	if !foundSubmitted {
 		t.Fatalf("live feed missing task_submitted item: %#v", feed.Items)
+	}
+
+	workerChangesReq := httptest.NewRequest(http.MethodPost, "/api/tasks/"+url.PathEscape(claimID)+"/request-changes", strings.NewReader(`{"review_notes":"Please attach the missing acceptance screenshot before payout release."}`))
+	workerChangesReq.Header.Set("Authorization", "Bearer "+workerAuth.Token)
+	workerChangesResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(workerChangesResp, workerChangesReq)
+	if workerChangesResp.Code != http.StatusForbidden {
+		t.Fatalf("worker request changes status = %d, body = %s", workerChangesResp.Code, workerChangesResp.Body.String())
+	}
+
+	shortChangesReq := httptest.NewRequest(http.MethodPost, "/api/tasks/"+url.PathEscape(claimID)+"/request-changes", strings.NewReader(`{"notes":"short"}`))
+	shortChangesReq.Header.Set("Authorization", "Bearer "+clientAuth.Token)
+	shortChangesResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(shortChangesResp, shortChangesReq)
+	if shortChangesResp.Code != http.StatusBadRequest {
+		t.Fatalf("short request changes status = %d, body = %s", shortChangesResp.Code, shortChangesResp.Body.String())
+	}
+
+	changesBody := `{"review_notes":"Please attach the missing acceptance screenshot before payout release."}`
+	changesReq := httptest.NewRequest(http.MethodPost, "/api/tasks/"+url.PathEscape(claimID)+"/request-changes", strings.NewReader(changesBody))
+	changesReq.Header.Set("Authorization", "Bearer "+clientAuth.Token)
+	changesResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(changesResp, changesReq)
+	if changesResp.Code != http.StatusOK {
+		t.Fatalf("request changes status = %d, body = %s", changesResp.Code, changesResp.Body.String())
+	}
+	var review TaskReviewResponse
+	if err := json.Unmarshal(changesResp.Body.Bytes(), &review); err != nil {
+		t.Fatal(err)
+	}
+	if review.ProtocolVersion != "mergeos.task-review.v1" || review.Kind != "task_review" || review.Decision != taskReviewChangesRequested || review.Status != TaskClaimed {
+		t.Fatalf("unexpected request changes response: %#v", review)
+	}
+	if review.ClaimID != claimID || review.Task.Status != TaskClaimed || review.Task.SubmittedAt == nil || !strings.Contains(review.ReviewNotes, "missing acceptance screenshot") {
+		t.Fatalf("request changes did not return task to claimed review lane: %#v", review)
+	}
+
+	dashboardResp = httptest.NewRecorder()
+	server.Routes().ServeHTTP(dashboardResp, dashboardReq)
+	if dashboardResp.Code != http.StatusOK {
+		t.Fatalf("worker dashboard after changes status = %d, body = %s", dashboardResp.Code, dashboardResp.Body.String())
+	}
+	if err := json.Unmarshal(dashboardResp.Body.Bytes(), &dashboard); err != nil {
+		t.Fatal(err)
+	}
+	if len(dashboard.ClaimedTasks) != 1 || dashboard.ClaimedTasks[0].Status != string(TaskClaimed) || dashboard.ClaimedTasks[0].SubmittedAt == nil || !strings.Contains(dashboard.ClaimedTasks[0].ReviewNotes, "missing acceptance screenshot") {
+		t.Fatalf("worker dashboard did not expose requested changes: %#v", dashboard.ClaimedTasks)
+	}
+
+	changesFeed := store.PublicLiveFeed(30)
+	foundChanges := false
+	for _, item := range changesFeed.Items {
+		if item.Type == "task_changes_requested" && item.TaskID == claimID && item.Status == taskReviewChangesRequested {
+			foundChanges = true
+		}
+	}
+	if !foundChanges {
+		t.Fatalf("live feed missing task_changes_requested item: %#v", changesFeed.Items)
 	}
 
 	forbiddenReq := httptest.NewRequest(http.MethodPost, "/api/tasks/"+url.PathEscape(claimID)+"/submit", strings.NewReader(body))

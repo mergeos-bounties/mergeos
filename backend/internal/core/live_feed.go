@@ -134,6 +134,33 @@ func (s *Store) PublicLiveFeed(limit int) PublicLiveFeedResponse {
 		response.Items = append(response.Items, publicProposalLiveFeedItem(proposal))
 	}
 
+	for _, note := range s.notifications {
+		if note == nil || note.Channel != "task_review" {
+			continue
+		}
+		fields := splitLedgerReference(note.Status)
+		if strings.TrimSpace(fields["task_review"]) != taskReviewChangesRequested || strings.TrimSpace(fields["task"]) == "" {
+			continue
+		}
+		taskID, err := s.resolveTaskClaimIDLocked(fields["task"])
+		if err != nil {
+			continue
+		}
+		task := s.tasks[taskID]
+		if task == nil {
+			continue
+		}
+		project := s.projects[task.ProjectID]
+		if project != nil && note.UserID != project.ClientUserID {
+			continue
+		}
+		touch(note.CreatedAt)
+		if workerID := strings.ToLower(strings.TrimSpace(normalizeWorkerID(task.WorkerID))); workerID != "" {
+			activeContributors[workerID] = true
+		}
+		response.Items = append(response.Items, publicTaskChangesRequestedLiveFeedItem(note, task, project))
+	}
+
 	for _, log := range s.geminiWebhookLogs {
 		touch(log.ReceivedAt)
 		publicLiveFeedTrackAgentLog(activeAgents, log)
@@ -347,6 +374,44 @@ func publicTaskSubmittedLiveFeedItem(task *Task, project *Project) PublicLiveFee
 		Evidence:         publicTaskSubmissionEvidence(task),
 		URL:              publicTaskSubmissionURL(task),
 		Status:           submittedTaskStatus,
+		CreatedAt:        createdAt,
+	}
+}
+
+func publicTaskChangesRequestedLiveFeedItem(note *Notification, task *Task, project *Project) PublicLiveFeedItem {
+	projectID, projectTitle := publicLiveFeedProjectScope(task, project)
+	claimID := marketplaceBountyID(projectID, task.IssueNumber)
+	body := compactText(note.Body)
+	if body == "" {
+		body = fmt.Sprintf("Task #%d needs changes before payout release.", task.IssueNumber)
+	}
+	actor := marketplaceClientDisplayName(project)
+	if actor == "" {
+		actor = projectTitle
+	}
+	createdAt := time.Now().UTC()
+	itemID := publicLiveFeedTaskID("task-changes-requested", task)
+	if note != nil && !note.CreatedAt.IsZero() {
+		createdAt = note.CreatedAt
+	}
+	if note != nil && strings.TrimSpace(note.ID) != "" {
+		itemID = "task-changes-requested:" + sanitizeLedgerReferenceValue(note.ID)
+	}
+	return PublicLiveFeedItem{
+		ID:               itemID,
+		Type:             "task_changes_requested",
+		Title:            fmt.Sprintf("Task #%d changes requested", task.IssueNumber),
+		Body:             body,
+		ProjectID:        projectID,
+		ProjectTitle:     projectTitle,
+		TaskID:           claimID,
+		Actor:            actor,
+		Action:           taskReviewChangesRequested,
+		AmountCents:      task.RewardCents,
+		Reference:        taskReviewReference(taskReviewChangesRequested, claimID, task.WorkerID),
+		EvidenceRequired: publicTaskEvidenceRequiredForTask(task),
+		URL:              publicTaskSubmissionURL(task),
+		Status:           taskReviewChangesRequested,
 		CreatedAt:        createdAt,
 	}
 }
@@ -931,6 +996,8 @@ func publicEventType(item PublicLiveFeedItem) string {
 		return "task.claimed"
 	case "task_submitted":
 		return "task.submitted"
+	case "task_changes_requested":
+		return "task.changes_requested"
 	case "task_accepted":
 		return "task.accepted"
 	case "deployment_validation":

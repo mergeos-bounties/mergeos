@@ -14,6 +14,23 @@ The first implementation is intentionally dependency-free:
 - `mergeide claim <task-id>` only calls the MergeOS claim API.
 - The same package can be loaded as a VS Code extension with MergeIDE commands.
 
+## Windows exe
+
+GitHub Actions builds the Windows executable with `.github/workflows/mergeide-windows-exe.yml`. The workflow runs MergeIDE tests, packages `MergeIDE-Windows-x64.exe`, writes a SHA256 checksum and build metadata, uploads a workflow artifact, and publishes the same files to the pinned `mergeide-windows-latest` release.
+
+- Download: https://github.com/mergeos-bounties/mergeos/releases/download/mergeide-windows-latest/MergeIDE-Windows-x64.exe
+- Release: https://github.com/mergeos-bounties/mergeos/releases/tag/mergeide-windows-latest
+- Workflow: https://github.com/mergeos-bounties/mergeos/actions/workflows/mergeide-windows-exe.yml
+
+Local build:
+
+```powershell
+cd MergeIDE
+npm ci
+npm run build:exe
+.\dist\MergeIDE-Windows-x64.exe --help
+```
+
 ## Configure
 
 ```powershell

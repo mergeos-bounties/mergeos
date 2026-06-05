@@ -15,13 +15,19 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Version:     "mergeos.task-claim.v1",
 				Kind:        "task_claim",
 				SchemaURL:   "https://mergeos.shop/protocol/task-claim.v1.schema.json",
-				Description: "Authenticated bounty claim document with worker identity, payout proof hash, accepted task, and ledger-backed status.",
+				Description: "Authenticated bounty claim or release document with worker identity, claimed task status, and optional payout proof after acceptance.",
 			},
 			{
 				Version:     "mergeos.task-submission.v1",
 				Kind:        "task_submission",
 				SchemaURL:   "https://mergeos.shop/protocol/task-submission.v1.schema.json",
 				Description: "Authenticated task evidence submission with pull request URL, review evidence, notes, assigned worker authorization, and public-safe submitted status.",
+			},
+			{
+				Version:     "mergeos.task-review.v1",
+				Kind:        "task_review",
+				SchemaURL:   "https://mergeos.shop/protocol/task-review.v1.schema.json",
+				Description: "Authenticated customer/admin review decision that requests changes and returns a submitted task to the claimed lane before payout release.",
 			},
 			{
 				Version:     "mergeos.agent.v1",
@@ -509,8 +515,8 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Method:      "POST",
 				Path:        "/api/tasks/{id}/accept",
 				Protocol:    "mergeos.task-claim.v1",
-				Auth:        "worker",
-				Description: "Authenticated task claim endpoint for public bounty claim ids or internal task ids.",
+				Auth:        "project_owner_or_admin",
+				Description: "Authenticated payout release endpoint for submitted or claimed task ids after review approval.",
 			},
 			{
 				Method:      "POST",
@@ -525,6 +531,13 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Protocol:    "mergeos.task-submission.v1",
 				Auth:        "assigned_worker_or_project",
 				Description: "Authenticated task evidence submission for a claimed bounty, including GitHub PR, evidence URL, and review notes.",
+			},
+			{
+				Method:      "POST",
+				Path:        "/api/tasks/{id}/request-changes",
+				Protocol:    "mergeos.task-review.v1",
+				Auth:        "project_owner_or_admin",
+				Description: "Authenticated review decision that asks the assigned worker to update evidence before payout release.",
 			},
 			{
 				Method:      "GET",

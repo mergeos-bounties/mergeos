@@ -5,8 +5,11 @@ MergeIDE is the MergeOS workspace bridge for funded software delivery. It keeps 
 ## Download
 
 - Windows executable: https://github.com/mergeos-bounties/mergeos/releases/download/mergeide-windows-latest/MergeIDE-Windows-x64.exe
+- SHA256 checksum: https://github.com/mergeos-bounties/mergeos/releases/download/mergeide-windows-latest/MergeIDE-Windows-x64.exe.sha256
+- Build metadata: https://github.com/mergeos-bounties/mergeos/releases/download/mergeide-windows-latest/MergeIDE-Windows-x64.build.json
 - Release manifest: /downloads/mergeide-windows-latest.json
 - Release page: https://github.com/mergeos-bounties/mergeos/releases/tag/mergeide-windows-latest
+- GitHub Actions workflow: https://github.com/mergeos-bounties/mergeos/actions/workflows/mergeide-windows-exe.yml
 
 ## Configure
 

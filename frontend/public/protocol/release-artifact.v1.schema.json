@@ -39,6 +39,8 @@
     "content_type": { "type": "string", "maxLength": 120 },
     "size_hint": { "type": "string", "maxLength": 80 },
     "download_url": { "type": "string", "pattern": "^https?://", "maxLength": 500 },
+    "checksum_url": { "type": "string", "pattern": "^https?://", "maxLength": 500 },
+    "build_metadata_url": { "type": "string", "pattern": "^https?://", "maxLength": 500 },
     "release_url": { "type": "string", "pattern": "^https?://", "maxLength": 500 },
     "manifest_url": { "type": "string", "maxLength": 240 },
     "fallback_url": { "type": "string", "maxLength": 240 },
@@ -58,7 +60,8 @@
         "release_tag": { "type": "string", "minLength": 1, "maxLength": 120 },
         "asset_name": { "type": "string", "minLength": 1, "maxLength": 180 },
         "digest_source_url": { "type": "string", "pattern": "^https?://", "maxLength": 500 },
-        "workflow_url": { "type": "string", "pattern": "^https?://", "maxLength": 500 }
+        "workflow_url": { "type": "string", "pattern": "^https?://", "maxLength": 500 },
+        "workflow_dispatch_url": { "type": "string", "pattern": "^https?://", "maxLength": 500 }
       }
     },
     "install": {

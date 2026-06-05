@@ -16,6 +16,8 @@
   "content_type": "application/x-msdownload",
   "size_hint": "about 55 MB",
   "download_url": "https://github.com/mergeos-bounties/mergeos/releases/download/mergeide-windows-latest/MergeIDE-Windows-x64.exe",
+  "checksum_url": "https://github.com/mergeos-bounties/mergeos/releases/download/mergeide-windows-latest/MergeIDE-Windows-x64.exe.sha256",
+  "build_metadata_url": "https://github.com/mergeos-bounties/mergeos/releases/download/mergeide-windows-latest/MergeIDE-Windows-x64.build.json",
   "release_url": "https://github.com/mergeos-bounties/mergeos/releases/tag/mergeide-windows-latest",
   "manifest_url": "/downloads/mergeide-windows-latest.json",
   "fallback_url": "/downloads/mergeide-preview-kit.md",
@@ -25,7 +27,8 @@
     "release_tag": "mergeide-windows-latest",
     "asset_name": "MergeIDE-Windows-x64.exe",
     "digest_source_url": "https://api.github.com/repos/mergeos-bounties/mergeos/releases/tags/mergeide-windows-latest",
-    "workflow_url": "https://github.com/mergeos-bounties/mergeos/actions/workflows/mergeide-windows-exe.yml"
+    "workflow_url": "https://github.com/mergeos-bounties/mergeos/actions/workflows/mergeide-windows-exe.yml",
+    "workflow_dispatch_url": "https://github.com/mergeos-bounties/mergeos/actions/workflows/mergeide-windows-exe.yml"
   },
   "install": {
     "summary": "Download the executable, configure MergeOS, then run tasks from a funded repository workspace.",

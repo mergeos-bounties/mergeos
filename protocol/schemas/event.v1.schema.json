@@ -15,6 +15,7 @@
         "task.created",
         "task.claimed",
         "task.submitted",
+        "task.changes_requested",
         "task.accepted",
         "pr.opened",
         "pr.reviewed",

@@ -1,7 +1,10 @@
 const siteName = 'MergeOS';
 const defaultOrigin = 'https://mergeos.dev';
 const defaultImagePath = '/favicon.svg';
-const mergeIdeWindowsDownloadUrl = 'https://github.com/mergeos-bounties/mergeos/releases/download/mergeide-windows-latest/MergeIDE-Windows-x64.exe';
+const mergeIdeRepositorySlug = 'mergeos-bounties/mergeos';
+const mergeIdeReleaseTag = 'mergeide-windows-latest';
+const mergeIdeDownloadFileName = 'MergeIDE-Windows-x64.exe';
+const mergeIdeWindowsDownloadUrl = `https://github.com/${mergeIdeRepositorySlug}/releases/download/${mergeIdeReleaseTag}/${mergeIdeDownloadFileName}`;
 
 const publicSeoPaths = {
   home: '/',

@@ -554,6 +554,31 @@ type TaskSubmissionResponse struct {
 	Task              Task       `json:"task"`
 }
 
+type TaskReviewRequest struct {
+	Notes       string `json:"notes"`
+	ReviewNotes string `json:"review_notes"`
+	Reason      string `json:"reason"`
+}
+
+type TaskReviewResponse struct {
+	ProtocolVersion string     `json:"protocol_version"`
+	Kind            string     `json:"kind"`
+	ID              string     `json:"id"`
+	ClaimID         string     `json:"claim_id"`
+	TaskID          string     `json:"task_id"`
+	ProjectID       string     `json:"project_id"`
+	IssueNumber     int        `json:"issue_number,omitempty"`
+	Title           string     `json:"title"`
+	Decision        string     `json:"decision"`
+	Status          TaskStatus `json:"status"`
+	WorkerKind      WorkerKind `json:"worker_kind"`
+	WorkerID        string     `json:"worker_id"`
+	AgentType       string     `json:"agent_type,omitempty"`
+	ReviewNotes     string     `json:"review_notes"`
+	RequestedAt     time.Time  `json:"requested_at"`
+	Task            Task       `json:"task"`
+}
+
 type AdminTaskPullRequestsResponse struct {
 	TaskID       string                 `json:"task_id"`
 	IssueNumber  int                    `json:"issue_number"`

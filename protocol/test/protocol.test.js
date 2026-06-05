@@ -43,6 +43,7 @@ test('loads stable task, workflow, ledger, and event schemas', () => {
     'mergeos.routing.v1',
     'mergeos.scan.v1',
     'mergeos.task-claim.v1',
+    'mergeos.task-review.v1',
     'mergeos.task-submission.v1',
     'mergeos.task.v1',
     'mergeos.token-economy.v1',
@@ -2101,6 +2102,55 @@ test('validates task submission protocol documents', () => {
   assert(invalid.errors.some((error) => error.path === 'kind'));
   assert(invalid.errors.some((error) => error.path === 'status'));
   assert(invalid.errors.some((error) => error.path === 'submitted_at'));
+});
+
+test('validates task review protocol documents', () => {
+  const now = '2026-06-05T00:00:00.000Z';
+  const review = {
+    protocol_version: 'mergeos.task-review.v1',
+    kind: 'task_review',
+    id: 'review:claim_public_1',
+    claim_id: 'claim_public_1',
+    task_id: 'tsk_0001',
+    project_id: 'prj_0001',
+    issue_number: 12,
+    title: 'Fix PayPal return capture',
+    decision: 'changes_requested',
+    status: 'claimed',
+    worker_kind: 'human',
+    worker_id: 'github:worker-dev',
+    review_notes: 'Please update the checkout test evidence before release.',
+    requested_at: now,
+    task: {
+      id: 'tsk_0001',
+      project_id: 'prj_0001',
+      issue_number: 12,
+      title: 'Fix PayPal return capture',
+      acceptance: 'Frontend test passes',
+      reward_cents: 5000,
+      required_worker_kind: 'human',
+      suggested_agent_type: '',
+      status: 'claimed',
+      worker_kind: 'human',
+      worker_id: 'github:worker-dev',
+      review_notes: 'Please update the checkout test evidence before release.',
+      created_at: now,
+      accepted_at: now,
+    },
+  };
+
+  assert.equal(validateProtocolDocument(review).valid, true);
+
+  const invalid = validateProtocolDocument({
+    ...review,
+    decision: 'accepted',
+    status: 'submitted',
+    review_notes: 'too short',
+  });
+  assert.equal(invalid.valid, false);
+  assert(invalid.errors.some((error) => error.path === 'decision'));
+  assert(invalid.errors.some((error) => error.path === 'status'));
+  assert(invalid.errors.some((error) => error.path === 'review_notes'));
 });
 
 test('validates project estimate protocol documents', () => {

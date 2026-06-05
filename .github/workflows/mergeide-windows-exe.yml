@@ -64,6 +64,26 @@ jobs:
         working-directory: MergeIDE
         run: npm run build:exe
 
+      - name: Resolve release target
+        shell: pwsh
+        env:
+          RELEASE_TAG_INPUT: ${{ github.event.inputs.release_tag || '' }}
+        run: |
+          $tag = $env:RELEASE_TAG_INPUT
+          if (-not $tag -and "${{ github.ref_type }}" -eq "tag") {
+            $tag = "${{ github.ref_name }}"
+          }
+          if (-not $tag) {
+            $tag = $env:MERGEIDE_DEFAULT_RELEASE_TAG
+          }
+
+          $repoUrl = "https://github.com/$env:GITHUB_REPOSITORY"
+          "MERGEIDE_RELEASE_TAG=$tag" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "MERGEIDE_RELEASE_URL=$repoUrl/releases/tag/$tag" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "MERGEIDE_DOWNLOAD_URL=$repoUrl/releases/download/$tag/$env:MERGEIDE_EXE_NAME" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "MERGEIDE_WORKFLOW_RUN_URL=$repoUrl/actions/runs/$env:GITHUB_RUN_ID" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "MERGEIDE_WORKFLOW_ARTIFACTS_URL=$repoUrl/actions/runs/$env:GITHUB_RUN_ID#artifacts" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
       - name: Generate release metadata
         shell: pwsh
         run: |
@@ -84,6 +104,11 @@ jobs:
             ref = $env:GITHUB_REF
             run_id = $env:GITHUB_RUN_ID
             run_attempt = $env:GITHUB_RUN_ATTEMPT
+            workflow_run_url = $env:MERGEIDE_WORKFLOW_RUN_URL
+            workflow_artifacts_url = $env:MERGEIDE_WORKFLOW_ARTIFACTS_URL
+            release_tag = $env:MERGEIDE_RELEASE_TAG
+            release_url = $env:MERGEIDE_RELEASE_URL
+            download_url = $env:MERGEIDE_DOWNLOAD_URL
             built_at = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
           }
           $buildInfo | ConvertTo-Json | Set-Content -Path "MergeIDE/dist/$env:MERGEIDE_BUILD_INFO_NAME" -Encoding utf8
@@ -110,15 +135,8 @@ jobs:
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG_INPUT: ${{ github.event.inputs.release_tag || '' }}
         run: |
-          $tag = $env:RELEASE_TAG_INPUT
-          if (-not $tag -and "${{ github.ref_type }}" -eq "tag") {
-            $tag = "${{ github.ref_name }}"
-          }
-          if (-not $tag) {
-            $tag = $env:MERGEIDE_DEFAULT_RELEASE_TAG
-          }
+          $tag = $env:MERGEIDE_RELEASE_TAG
 
           $mergeIDEPage = "https://mergeos.shop/mergeide"
           $isDefaultRelease = $tag -eq $env:MERGEIDE_DEFAULT_RELEASE_TAG
@@ -150,11 +168,11 @@ jobs:
             "MergeIDE/dist/$env:MERGEIDE_BUILD_INFO_NAME" `
             --clobber
 
-          $releaseUrl = "https://github.com/$env:GITHUB_REPOSITORY/releases/tag/$tag"
-          $downloadUrl = "https://github.com/$env:GITHUB_REPOSITORY/releases/download/$tag/$env:MERGEIDE_EXE_NAME"
           "### MergeIDE Windows exe" >> $env:GITHUB_STEP_SUMMARY
           "" >> $env:GITHUB_STEP_SUMMARY
           "- MergeIDE page: $mergeIDEPage" >> $env:GITHUB_STEP_SUMMARY
-          "- Release: $releaseUrl" >> $env:GITHUB_STEP_SUMMARY
-          "- Download: $downloadUrl" >> $env:GITHUB_STEP_SUMMARY
+          "- Release: $env:MERGEIDE_RELEASE_URL" >> $env:GITHUB_STEP_SUMMARY
+          "- Download: $env:MERGEIDE_DOWNLOAD_URL" >> $env:GITHUB_STEP_SUMMARY
+          "- Workflow run: $env:MERGEIDE_WORKFLOW_RUN_URL" >> $env:GITHUB_STEP_SUMMARY
+          "- Workflow artifact: $env:MERGEIDE_WORKFLOW_ARTIFACTS_URL" >> $env:GITHUB_STEP_SUMMARY
           "- SHA256: ``$env:MERGEIDE_SHA256``" >> $env:GITHUB_STEP_SUMMARY

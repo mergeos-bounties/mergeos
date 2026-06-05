@@ -15,6 +15,7 @@ export const workflowEventTypes = Object.freeze({
   taskCreated: 'task.created',
   taskClaimed: 'task.claimed',
   taskSubmitted: 'task.submitted',
+  taskChangesRequested: 'task.changes_requested',
   taskAccepted: 'task.accepted',
   taskPaid: 'task.paid',
   prOpened: 'pr.opened',
@@ -391,6 +392,10 @@ export class MergeOSClient {
     return this.request(`/api/tasks/${encodeURIComponent(taskID)}/submit`, { method: 'POST', body: payload });
   }
 
+  requestTaskChanges(taskID, payload) {
+    return this.request(`/api/tasks/${encodeURIComponent(taskID)}/request-changes`, { method: 'POST', body: payload });
+  }
+
   workerDashboard() {
     return this.request('/api/workers/me');
   }
@@ -725,6 +730,7 @@ export function liveFeedTypeToProtocolEventType(type = '', action = '') {
     task_opened: workflowEventTypes.taskCreated,
     task_claimed: workflowEventTypes.taskClaimed,
     task_submitted: workflowEventTypes.taskSubmitted,
+    task_changes_requested: workflowEventTypes.taskChangesRequested,
     task_accepted: workflowEventTypes.taskAccepted,
     proposal_submitted: workflowEventTypes.proposalSubmitted,
     proposal_accepted: workflowEventTypes.proposalAccepted,

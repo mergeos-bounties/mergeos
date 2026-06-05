@@ -68,6 +68,28 @@ test('public protocol schemas mirror the protocol package schemas', async () => 
   }
 });
 
+test('MergeIDE release manifest points to pinned GitHub release assets', async () => {
+  const manifestURL = new URL('./public/downloads/mergeide-windows-latest.json', import.meta.url);
+  const manifest = JSON.parse(await fs.readFile(manifestURL, 'utf-8'));
+  const repo = 'mergeos-bounties/mergeos';
+  const tag = 'mergeide-windows-latest';
+  const exe = 'MergeIDE-Windows-x64.exe';
+
+  assert.equal(manifest.protocol_version, 'mergeos.release-artifact.v1');
+  assert.equal(manifest.product, 'MergeIDE');
+  assert.equal(manifest.release_tag, tag);
+  assert.equal(manifest.file_name, exe);
+  assert.equal(manifest.provenance.source_repository, repo);
+  assert.equal(manifest.provenance.workflow_file, '.github/workflows/mergeide-windows-exe.yml');
+  assert.equal(manifest.download_url, `https://github.com/${repo}/releases/download/${tag}/${exe}`);
+  assert.equal(manifest.checksum_url, `https://github.com/${repo}/releases/download/${tag}/${exe}.sha256`);
+  assert.equal(manifest.build_metadata_url, `https://github.com/${repo}/releases/download/${tag}/MergeIDE-Windows-x64.build.json`);
+  assert.equal(manifest.release_url, `https://github.com/${repo}/releases/tag/${tag}`);
+  assert.equal(manifest.provenance.workflow_url, `https://github.com/${repo}/actions/workflows/mergeide-windows-exe.yml`);
+  assert.ok(manifest.links.some((link) => link.label === 'Windows exe' && link.url === manifest.download_url));
+  assert.ok(manifest.links.some((link) => link.label === 'Release workflow' && link.url === manifest.provenance.workflow_url));
+});
+
 test('creates runtime config for production defaults', () => {
   const env = {
     NODE_ENV: 'production',

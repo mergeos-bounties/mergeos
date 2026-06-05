@@ -117,6 +117,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("POST /api/projects/evaluate-llm", s.evaluateProjectWithLLM)
 	mux.HandleFunc("GET /api/tasks", s.tasks)
 	mux.HandleFunc("POST /api/tasks/{id}/submit", s.submitTaskReview)
+	mux.HandleFunc("POST /api/tasks/{id}/request-changes", s.requestTaskChanges)
 	mux.HandleFunc("POST /api/tasks/", s.acceptTask)
 	mux.HandleFunc("GET /api/workers/me", s.workerDashboard)
 	mux.HandleFunc("POST /api/proposals", s.createProposal)
@@ -1643,12 +1644,51 @@ func (s *Server) submitTaskReview(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, submitted)
 }
 
+func (s *Server) requestTaskChanges(w http.ResponseWriter, r *http.Request) {
+	user, ok := s.requireUser(w, r)
+	if !ok {
+		return
+	}
+	taskID := strings.TrimSpace(r.PathValue("id"))
+	if taskID == "" {
+		writeError(w, http.StatusNotFound, "task id is required")
+		return
+	}
+
+	var req TaskReviewRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil && err != io.EOF {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	review, err := s.store.RequestTaskChanges(user.ID, user.Role, taskID, req)
+	if err != nil {
+		writeError(w, taskReviewErrorStatus(err), err.Error())
+		return
+	}
+	s.broadcastLiveFeedEvent("task_changes_requested")
+	writeJSON(w, http.StatusOK, review)
+}
+
 func taskSubmissionErrorStatus(err error) int {
 	message := strings.ToLower(strings.TrimSpace(err.Error()))
 	switch {
 	case strings.Contains(message, "not found"):
 		return http.StatusNotFound
 	case strings.Contains(message, "access") || strings.Contains(message, "identity"):
+		return http.StatusForbidden
+	default:
+		return http.StatusBadRequest
+	}
+}
+
+func taskReviewErrorStatus(err error) int {
+	message := strings.ToLower(strings.TrimSpace(err.Error()))
+	switch {
+	case strings.Contains(message, "login"):
+		return http.StatusUnauthorized
+	case strings.Contains(message, "not found"):
+		return http.StatusNotFound
+	case strings.Contains(message, "access"):
 		return http.StatusForbidden
 	default:
 		return http.StatusBadRequest

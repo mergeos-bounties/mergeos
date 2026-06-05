@@ -9,6 +9,7 @@ import (
 )
 
 const submittedTaskStatus = "submitted"
+const taskReviewChangesRequested = "changes_requested"
 
 func (s *Store) SubmitTaskReview(userID string, role UserRole, taskRef string, req TaskSubmissionRequest) (TaskSubmissionResponse, error) {
 	submission, err := normalizeTaskSubmissionRequest(req)
@@ -68,6 +69,72 @@ func taskCanSubmitReview(task *Task) bool {
 		return false
 	}
 	return task.Status == TaskClaimed || task.Status == TaskSubmitted || task.Status == TaskAccepted
+}
+
+func (s *Store) RequestTaskChanges(userID string, role UserRole, taskRef string, req TaskReviewRequest) (TaskReviewResponse, error) {
+	notes, err := normalizeTaskReviewNotes(req)
+	if err != nil {
+		return TaskReviewResponse{}, err
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	user := s.users[strings.TrimSpace(userID)]
+	if user == nil {
+		return TaskReviewResponse{}, errors.New("login is required")
+	}
+	taskID, err := s.resolveTaskClaimIDLocked(taskRef)
+	if err != nil {
+		return TaskReviewResponse{}, err
+	}
+	task, ok := s.tasks[taskID]
+	if !ok || task == nil {
+		return TaskReviewResponse{}, errors.New("task not found")
+	}
+	project, ok := s.projects[task.ProjectID]
+	if !ok || project == nil {
+		return TaskReviewResponse{}, errors.New("project not found")
+	}
+	if normalizeRole(role) != RoleAdmin && project.ClientUserID != user.ID {
+		return TaskReviewResponse{}, errors.New("project owner or admin access is required")
+	}
+	if task.Status != TaskSubmitted {
+		return TaskReviewResponse{}, errors.New("task must be submitted before changes can be requested")
+	}
+
+	now := time.Now().UTC()
+	task.Status = TaskClaimed
+	task.ReviewNotes = notes
+	updateProjectTaskLocked(project, task)
+
+	claimID := marketplaceBountyID(task.ProjectID, task.IssueNumber)
+	reference := taskReviewReference(taskReviewChangesRequested, claimID, task.WorkerID)
+	subject := "MergeOS changes requested: " + task.Title
+	body := taskReviewChangesRequestedBody(task, notes)
+	s.addNotificationLocked(project.ClientUserID, project.ID, "task_review", subject, body, reference)
+	if worker := s.userForWorkerIDLocked(task.WorkerID); worker != nil && worker.ID != project.ClientUserID {
+		s.addNotificationLocked(worker.ID, project.ID, "task_review", subject, body, reference)
+	}
+
+	if err := s.saveLocked(); err != nil {
+		return TaskReviewResponse{}, err
+	}
+	return taskReviewProtocolDocument(claimID, taskReviewChangesRequested, now, task), nil
+}
+
+func normalizeTaskReviewNotes(req TaskReviewRequest) (string, error) {
+	notes := protocolText(req.ReviewNotes, 2000, "")
+	if notes == "" {
+		notes = protocolText(req.Notes, 2000, "")
+	}
+	if notes == "" {
+		notes = protocolText(req.Reason, 2000, "")
+	}
+	if len([]rune(notes)) < 12 {
+		return "", errors.New("review_notes must be at least 12 characters")
+	}
+	return notes, nil
 }
 
 func normalizeTaskSubmissionRequest(req TaskSubmissionRequest) (TaskSubmissionRequest, error) {
@@ -164,6 +231,23 @@ func canSubmitTaskEvidenceLocked(user *User, role UserRole, project *Project, ta
 	return workerIDs[workerIdentityKey(task.WorkerID)]
 }
 
+func (s *Store) userForWorkerIDLocked(workerID string) *User {
+	key := workerIdentityKey(workerID)
+	if key == "" {
+		return nil
+	}
+	for _, user := range s.users {
+		if user == nil {
+			continue
+		}
+		workerIDs, _ := workerIdentitySets(user)
+		if workerIDs[key] {
+			return user
+		}
+	}
+	return nil
+}
+
 func updateProjectTaskLocked(project *Project, task *Task) {
 	if project == nil || task == nil {
 		return
@@ -192,6 +276,23 @@ func taskSubmissionNotificationBody(task *Task) string {
 	}
 	if task.ReviewNotes != "" {
 		parts = append(parts, "Notes: "+task.ReviewNotes)
+	}
+	return strings.Join(parts, "\n")
+}
+
+func taskReviewChangesRequestedBody(task *Task, notes string) string {
+	if task == nil {
+		return "Changes were requested before payout release."
+	}
+	parts := []string{fmt.Sprintf("Task #%d needs changes before payout release.", task.IssueNumber)}
+	if strings.TrimSpace(notes) != "" {
+		parts = append(parts, "Requested changes: "+notes)
+	}
+	if task.PullRequestURL != "" {
+		parts = append(parts, "Pull request: "+task.PullRequestURL)
+	}
+	if task.ReviewEvidenceURL != "" {
+		parts = append(parts, "Evidence: "+task.ReviewEvidenceURL)
 	}
 	return strings.Join(parts, "\n")
 }
@@ -233,4 +334,48 @@ func taskSubmissionProtocolDocument(claimID string, task *Task) TaskSubmissionRe
 		SubmittedAt:       submittedAt,
 		Task:              taskCopy,
 	}
+}
+
+func taskReviewProtocolDocument(claimID, decision string, requestedAt time.Time, task *Task) TaskReviewResponse {
+	if task == nil {
+		return TaskReviewResponse{
+			ProtocolVersion: "mergeos.task-review.v1",
+			Kind:            "task_review",
+		}
+	}
+	claimID = strings.TrimSpace(claimID)
+	if claimID == "" {
+		claimID = marketplaceBountyID(task.ProjectID, task.IssueNumber)
+	}
+	taskCopy := *task
+	taskCopy.IssueURL = marketplacePublicRepoURL(taskCopy.IssueURL)
+	if requestedAt.IsZero() {
+		requestedAt = time.Now().UTC()
+	}
+	return TaskReviewResponse{
+		ProtocolVersion: "mergeos.task-review.v1",
+		Kind:            "task_review",
+		ID:              "review:" + claimID,
+		ClaimID:         claimID,
+		TaskID:          task.ID,
+		ProjectID:       task.ProjectID,
+		IssueNumber:     task.IssueNumber,
+		Title:           task.Title,
+		Decision:        strings.TrimSpace(decision),
+		Status:          task.Status,
+		WorkerKind:      task.WorkerKind,
+		WorkerID:        task.WorkerID,
+		AgentType:       task.AgentType,
+		ReviewNotes:     task.ReviewNotes,
+		RequestedAt:     requestedAt,
+		Task:            taskCopy,
+	}
+}
+
+func taskReviewReference(decision, taskID, workerID string) string {
+	return strings.Join([]string{
+		"task_review:" + sanitizeLedgerReferenceValue(decision),
+		"task:" + sanitizeLedgerReferenceValue(taskID),
+		"worker:" + sanitizeLedgerReferenceValue(workerID),
+	}, ";")
 }
