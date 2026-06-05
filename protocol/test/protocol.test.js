@@ -148,7 +148,7 @@ test('validates release artifact protocol documents', () => {
     file_name: 'MergeIDE-Windows-x64.exe',
     content_type: 'application/x-msdownload',
     size_hint: 'about 55 MB',
-    download_url: 'https://github.com/mergeos-bounties/mergeos/releases/latest/download/MergeIDE-Windows-x64.exe',
+    download_url: 'https://github.com/mergeos-bounties/mergeos/releases/download/mergeide-windows-latest/MergeIDE-Windows-x64.exe',
     release_url: 'https://github.com/mergeos-bounties/mergeos/releases/tag/mergeide-windows-latest',
     manifest_url: '/downloads/mergeide-windows-latest.json',
     fallback_url: '/downloads/mergeide-preview-kit.md',
@@ -188,7 +188,7 @@ test('validates the public MergeIDE release manifest', () => {
   assert.equal(result.valid, true);
   assert.equal(manifest.protocol_version, 'mergeos.release-artifact.v1');
   assert.equal(manifest.file_name, 'MergeIDE-Windows-x64.exe');
-  assert.match(manifest.download_url, /releases\/latest\/download\/MergeIDE-Windows-x64\.exe$/);
+  assert.match(manifest.download_url, /releases\/download\/mergeide-windows-latest\/MergeIDE-Windows-x64\.exe$/);
 });
 
 test('validates marketplace protocol documents', () => {

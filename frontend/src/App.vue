@@ -10008,10 +10008,13 @@ const publicContractsTranslations = {
   },
 };
 
-const mergeIdeReleasePath = 'https://github.com/mergeos-bounties/mergeos/releases/latest';
-const mergeIdeDownloadPath = `${mergeIdeReleasePath}/download/MergeIDE-Windows-x64.exe`;
+const mergeIdeReleaseTag = 'mergeide-windows-latest';
+const mergeIdeReleasePath = `https://github.com/mergeos-bounties/mergeos/releases/tag/${mergeIdeReleaseTag}`;
+const mergeIdeDownloadPath = `https://github.com/mergeos-bounties/mergeos/releases/download/${mergeIdeReleaseTag}/MergeIDE-Windows-x64.exe`;
+const mergeIdeManifestPath = '/downloads/mergeide-windows-latest.json';
 const mergeIdePreviewKitPath = '/downloads/mergeide-preview-kit.md';
 const mergeIdeDownloadFileName = 'MergeIDE-Windows-x64.exe';
+const mergeIdeManifestFileName = 'mergeide-windows-latest.json';
 const mergeIdePreviewKitFileName = 'MergeIDE-Preview-Kit.md';
 const solanaMRGIDLPath = '/contracts/solana/mergeos_mrg.v1.idl.json';
 
@@ -10027,7 +10030,7 @@ const publicMergeIdeTranslations = {
     homeTitle: 'An IDE built for funded work, agents, and proof-backed delivery.',
     homeBody: 'MergeIDE gives builders and AI agents the same repo context, task packet, acceptance criteria, and ledger references before they touch a branch.',
     openAction: 'Open MergeIDE',
-    downloadMeta: 'Windows x64 exe / GitHub Releases / preview kit fallback',
+    downloadMeta: 'Windows x64 exe / pinned release / manifest fallback',
     consoleTitle: 'Command workspace',
     consoleSubtitle: 'Repo, task graph, agents, and proof in one pane',
     command: 'mergeide open --repo mergeos-app --context funded-task',
@@ -10048,8 +10051,9 @@ const publicMergeIdeTranslations = {
     downloadTitle: 'Download MergeIDE for Windows',
     downloadBody: 'The Windows preview ships as a GitHub Release executable built from the MergeIDE task runner and workspace bridge.',
     platformRows: [
-      ['Windows x64 exe', 'Download the latest executable from GitHub Releases.', 'Ready', mergeIdeDownloadPath, mergeIdeDownloadFileName],
-      ['Latest release', 'Open the release page if the direct asset is still publishing.', 'Fallback', mergeIdeReleasePath, null, 'Open release'],
+      ['Windows x64 exe', 'Download the pinned Windows executable from the release tag.', 'Ready', mergeIdeDownloadPath, mergeIdeDownloadFileName],
+      ['Pinned release', 'Open the fixed release tag if the direct asset is still publishing.', 'Fallback', mergeIdeReleasePath, null, 'Open release'],
+      ['Release manifest', 'Public JSON with download URL, release tag, and workflow provenance.', 'Protocol', mergeIdeManifestPath, mergeIdeManifestFileName, 'Open manifest'],
       ['Preview kit', 'Markdown package with setup notes and integration links.', 'Fallback', mergeIdePreviewKitPath, mergeIdePreviewKitFileName, 'Download kit'],
       ['macOS and Linux', 'Cross-platform build checklist for SDK, agents, and protocol contexts.', 'Planned'],
     ],
@@ -10072,7 +10076,7 @@ const publicMergeIdeTranslations = {
     homeTitle: 'IDE cho funded work, agents và delivery có proof.',
     homeBody: 'MergeIDE cho builder và AI agent cùng repo context, task packet, acceptance criteria và ledger reference trước khi đụng vào branch.',
     openAction: 'Mở MergeIDE',
-    downloadMeta: 'Windows x64 exe / GitHub Releases / preview kit fallback',
+    downloadMeta: 'Windows x64 exe / pinned release / manifest fallback',
     consoleTitle: 'Command workspace',
     consoleSubtitle: 'Repo, task graph, agents và proof trong một pane',
     command: 'mergeide open --repo mergeos-app --context funded-task',
@@ -10093,7 +10097,8 @@ const publicMergeIdeTranslations = {
     downloadTitle: 'Tải MergeIDE cho Windows',
     downloadBody: 'Bản Windows preview được phát hành dưới dạng executable trên GitHub Releases, build từ MergeIDE task runner và workspace bridge.',
     platformRows: [
-      ['Windows x64 exe', 'Tải executable mới nhất từ GitHub Releases.', 'Ready', mergeIdeDownloadPath, mergeIdeDownloadFileName],
+      ['Windows x64 exe', 'Tải executable Windows từ release tag cố định.', 'Ready', mergeIdeDownloadPath, mergeIdeDownloadFileName],
+      ['Release manifest', 'Public JSON với download URL, release tag và workflow provenance.', 'Protocol', mergeIdeManifestPath, mergeIdeManifestFileName, 'Mở manifest'],
       ['Preview kit', 'Markdown package với setup notes và integration links.', 'Fallback', mergeIdePreviewKitPath, mergeIdePreviewKitFileName, 'Tải kit'],
       ['macOS và Linux', 'Checklist cross-platform cho SDK, agents và protocol contexts.', 'Planned'],
     ],
@@ -10116,7 +10121,7 @@ const publicMergeIdeTranslations = {
     homeTitle: '为 funded work、agents 和 proof-backed delivery 构建的 IDE。',
     homeBody: 'MergeIDE 让 builders 和 AI agents 在动手改 branch 之前共享 repo context、task packet、acceptance criteria 和 ledger references。',
     openAction: '打开 MergeIDE',
-    downloadMeta: 'Windows x64 exe / GitHub Releases / preview kit fallback',
+    downloadMeta: 'Windows x64 exe / pinned release / manifest fallback',
     consoleTitle: 'Command workspace',
     consoleSubtitle: 'Repo、task graph、agents 和 proof 在同一 pane 中',
     command: 'mergeide open --repo mergeos-app --context funded-task',
@@ -10137,7 +10142,8 @@ const publicMergeIdeTranslations = {
     downloadTitle: '下载 Windows 版 MergeIDE',
     downloadBody: 'Windows preview 以 GitHub Releases executable 发布，由 MergeIDE task runner 和 workspace bridge 构建。',
     platformRows: [
-      ['Windows x64 exe', '从 GitHub Releases 下载最新 executable。', 'Ready', mergeIdeDownloadPath, mergeIdeDownloadFileName],
+      ['Windows x64 exe', '从固定 release tag 下载 Windows executable。', 'Ready', mergeIdeDownloadPath, mergeIdeDownloadFileName],
+      ['Release manifest', '包含 download URL、release tag 和 workflow provenance 的 public JSON。', 'Protocol', mergeIdeManifestPath, mergeIdeManifestFileName, '打开 manifest'],
       ['Preview kit', '包含 setup notes 和 integration links 的 Markdown package。', 'Fallback', mergeIdePreviewKitPath, mergeIdePreviewKitFileName, '下载 kit'],
       ['macOS and Linux', '面向 SDK、agents 和 protocol contexts 的 cross-platform build checklist。', 'Planned'],
     ],
@@ -10160,7 +10166,7 @@ const publicMergeIdeTranslations = {
     homeTitle: 'Funded work、agents、proof-backed delivery のための IDE。',
     homeBody: 'MergeIDE は builders と AI agents に、branch を触る前の repo context、task packet、acceptance criteria、ledger references を共有します。',
     openAction: 'MergeIDE を開く',
-    downloadMeta: 'Windows x64 exe / GitHub Releases / preview kit fallback',
+    downloadMeta: 'Windows x64 exe / pinned release / manifest fallback',
     consoleTitle: 'Command workspace',
     consoleSubtitle: 'Repo、task graph、agents、proof を 1 つの pane に',
     command: 'mergeide open --repo mergeos-app --context funded-task',
@@ -10181,7 +10187,8 @@ const publicMergeIdeTranslations = {
     downloadTitle: 'Windows 版 MergeIDE をダウンロード',
     downloadBody: 'Windows preview は GitHub Releases の executable として配布され、MergeIDE task runner と workspace bridge から build されます。',
     platformRows: [
-      ['Windows x64 exe', 'GitHub Releases から最新 executable をダウンロード。', 'Ready', mergeIdeDownloadPath, mergeIdeDownloadFileName],
+      ['Windows x64 exe', '固定 release tag から Windows executable をダウンロード。', 'Ready', mergeIdeDownloadPath, mergeIdeDownloadFileName],
+      ['Release manifest', 'Download URL、release tag、workflow provenance を含む public JSON。', 'Protocol', mergeIdeManifestPath, mergeIdeManifestFileName, 'Manifest を開く'],
       ['Preview kit', 'Setup notes と integration links 付き Markdown package。', 'Fallback', mergeIdePreviewKitPath, mergeIdePreviewKitFileName, 'Kit をダウンロード'],
       ['macOS and Linux', 'SDK、agents、protocol contexts 向け cross-platform build checklist。', 'Planned'],
     ],
@@ -10204,7 +10211,7 @@ const publicMergeIdeTranslations = {
     homeTitle: 'Funded work, agents, proof-backed delivery를 위한 IDE.',
     homeBody: 'MergeIDE는 builder와 AI agent가 branch를 만지기 전에 같은 repo context, task packet, acceptance criteria, ledger references를 보게 합니다.',
     openAction: 'MergeIDE 열기',
-    downloadMeta: 'Windows x64 exe / GitHub Releases / preview kit fallback',
+    downloadMeta: 'Windows x64 exe / pinned release / manifest fallback',
     consoleTitle: 'Command workspace',
     consoleSubtitle: 'Repo, task graph, agents, proof를 하나의 pane에',
     command: 'mergeide open --repo mergeos-app --context funded-task',
@@ -10225,7 +10232,8 @@ const publicMergeIdeTranslations = {
     downloadTitle: 'Windows용 MergeIDE 다운로드',
     downloadBody: 'Windows preview는 MergeIDE task runner와 workspace bridge에서 빌드된 GitHub Releases executable로 배포됩니다.',
     platformRows: [
-      ['Windows x64 exe', 'GitHub Releases에서 최신 executable을 다운로드.', 'Ready', mergeIdeDownloadPath, mergeIdeDownloadFileName],
+      ['Windows x64 exe', '고정 release tag에서 Windows executable을 다운로드.', 'Ready', mergeIdeDownloadPath, mergeIdeDownloadFileName],
+      ['Release manifest', 'Download URL, release tag, workflow provenance를 담은 public JSON.', 'Protocol', mergeIdeManifestPath, mergeIdeManifestFileName, 'Manifest 열기'],
       ['Preview kit', 'Setup notes와 integration links가 포함된 Markdown package.', 'Fallback', mergeIdePreviewKitPath, mergeIdePreviewKitFileName, 'Kit 다운로드'],
       ['macOS and Linux', 'SDK, agents, protocol contexts를 위한 cross-platform build checklist.', 'Planned'],
     ],
