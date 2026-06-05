@@ -126,6 +126,7 @@ func taskClaimProtocolDocument(claimID string, task *Task) TaskClaimResponse {
 		claimID = task.ID
 	}
 	taskCopy := *task
+	taskCopy.IssueURL = marketplacePublicRepoURL(taskCopy.IssueURL)
 	return TaskClaimResponse{
 		ProtocolVersion: "mergeos.task-claim.v1",
 		Kind:            "task_claim",
