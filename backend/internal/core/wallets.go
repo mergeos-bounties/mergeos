@@ -361,6 +361,13 @@ func (s *Store) payoutAccountForWorkerLocked(workerID string) string {
 			return walletAccount(address)
 		}
 	}
+	if username, ok := strings.CutPrefix(strings.ToLower(workerID), "worker:github:"); ok {
+		username = normalizeGitHubUsername(username)
+		if wallet := s.walletByGitHubLocked(username); wallet != nil {
+			return walletAccount(wallet.Address)
+		}
+		return githubWorkerAccount(username)
+	}
 	if username, ok := strings.CutPrefix(strings.ToLower(workerID), "github:"); ok {
 		username = normalizeGitHubUsername(username)
 		if wallet := s.walletByGitHubLocked(username); wallet != nil {
