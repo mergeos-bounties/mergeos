@@ -72,7 +72,7 @@ console.log(workflowProtocol.current_step, workflowProtocol.progress);
 const scan = await mergeos.projectRepositoryScan(projects[0].id);
 const scanProtocol = await mergeos.projectRepositoryScanProtocol(projects[0].id);
 const syncReport = await mergeos.syncProjectRepoIssues(projects[0].id);
-console.log(syncReport.protocol_version, syncReport.added_task_count);
+console.log(syncReport.protocol_version, syncReport.added_task_count, syncReport.issue_mappings[0]?.claim_endpoint);
 const solanaReference = contractReferenceFromLedger({ entry_hash: 'a'.repeat(64) }, { format: 'bytes' });
 const legacyHash = legacyWalletAddressHash('trc20', 'TXYZ987654321', { format: 'bytes' });
 const pda = walletMigrationPDASeedMetadata('trc20', 'TXYZ987654321');
@@ -167,7 +167,8 @@ await mergeos.projectRouting('prj_0001');
 await mergeos.projectWorkflowProtocol('prj_0001');
 await mergeos.projectRepositoryScan('prj_0001');
 await mergeos.projectRepositoryScanProtocol('prj_0001');
-await mergeos.syncProjectRepoIssues('prj_0001');
+const repoSync = await mergeos.syncProjectRepoIssues('prj_0001');
+console.log(repoSync.issue_mappings[0]?.claim_id, repoSync.issue_mappings[0]?.routing?.recommended_next_action);
 await mergeos.listTasks();
 const agentClaim = await mergeos.claimTask('prj_0001:12', {
   worker_kind: 'agent',

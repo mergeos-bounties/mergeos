@@ -488,6 +488,48 @@ test('validates repository sync protocol documents', () => {
     updated_task_count: 2,
     open_issue_count: 6,
     closed_issue_count: 2,
+    issue_mappings: [
+      {
+        issue_number: 12,
+        issue_title: 'Fix checkout webhook',
+        issue_state: 'open',
+        issue_url: 'https://github.com/mergeos-bounties/mergeos/issues/12',
+        sync_status: 'added',
+        task_id: 'tsk_0012',
+        task_title: 'Fix #12: Fix checkout webhook',
+        task_status: 'open',
+        claim_id: 'prj_0001:12',
+        claim_endpoint: '/api/tasks/prj_0001:12/claim',
+        task_protocol_url: '/api/public/protocol/tasks?task_id=prj_0001:12',
+        action_endpoint: '/api/projects/prj_0001/agent-actions',
+        reward_cents: 25000,
+        reward_mrg: 250,
+        estimated_hours: 2.5,
+        required_worker_kind: 'agent',
+        suggested_agent_type: 'backend-agent',
+        routing: {
+          id: 'route:tsk_0012',
+          task_id: 'tsk_0012',
+          issue_number: 12,
+          title: 'Fix #12: Fix checkout webhook',
+          lane: 'backend-agent',
+          status: 'open',
+          ready: true,
+          reward_cents: 25000,
+          required_worker_kind: 'agent',
+          suggested_agent_type: 'backend-agent',
+          recommended_next_action: 'route_to_agent',
+          match_score: 88,
+          routing_reason: ['Agent lane has a scoped work packet.'],
+          recommended_agent: {
+            type: 'backend-agent',
+            title: 'Backend Agent',
+            status: 'active',
+            queue_depth: 2,
+          },
+        },
+      },
+    ],
     synced_at: '2026-06-05T00:00:00.000Z',
   };
 
@@ -497,11 +539,25 @@ test('validates repository sync protocol documents', () => {
     ...sync,
     kind: 'sync',
     added_task_count: -1,
+    issue_mappings: [{
+      ...sync.issue_mappings[0],
+      sync_status: 'pending',
+      reward_cents: -1,
+      required_worker_kind: 'bot',
+      routing: {
+        ...sync.issue_mappings[0].routing,
+        recommended_next_action: 'guess',
+      },
+    }],
     synced_at: 'not-a-date',
   });
   assert.equal(invalid.valid, false);
   assert(invalid.errors.some((error) => error.path === 'kind'));
   assert(invalid.errors.some((error) => error.path === 'added_task_count'));
+  assert(invalid.errors.some((error) => error.path === 'issue_mappings[0].sync_status'));
+  assert(invalid.errors.some((error) => error.path === 'issue_mappings[0].reward_cents'));
+  assert(invalid.errors.some((error) => error.path === 'issue_mappings[0].required_worker_kind'));
+  assert(invalid.errors.some((error) => error.path === 'issue_mappings[0].routing.recommended_next_action'));
   assert(invalid.errors.some((error) => error.path === 'synced_at'));
 });
 

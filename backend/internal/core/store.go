@@ -1085,9 +1085,17 @@ func (s *Store) SyncProjectImportedIssuesReport(projectID, sourceRepoURL string,
 		ProjectID:       project.ID,
 		ProjectTitle:    project.Title,
 		SourceRepoURL:   strings.TrimSpace(sourceRepoURL),
+		IssueMappings:   []ProjectIssueSyncMapping{},
 		SyncedAt:        now,
 	}
 
+	type syncMappingCandidate struct {
+		issue      *ImportedRepoIssue
+		task       *Task
+		state      string
+		syncStatus string
+	}
+	candidates := []syncMappingCandidate{}
 	existing := map[int]*Task{}
 	for _, task := range s.tasks {
 		if task.ProjectID == project.ID && task.IssueNumber > 0 {
@@ -1122,6 +1130,11 @@ func (s *Store) SyncProjectImportedIssuesReport(projectID, sourceRepoURL string,
 				changed = true
 				report.UpdatedTaskCount++
 			}
+			syncStatus := "unchanged"
+			if taskChanged {
+				syncStatus = "updated"
+			}
+			candidates = append(candidates, syncMappingCandidate{issue: issue, task: task, state: state, syncStatus: syncStatus})
 			continue
 		}
 
@@ -1147,13 +1160,68 @@ func (s *Store) SyncProjectImportedIssuesReport(projectID, sourceRepoURL string,
 		s.syncProjectTaskSnapshotLocked(project, task)
 		changed = true
 		report.AddedTaskCount++
+		candidates = append(candidates, syncMappingCandidate{issue: issue, task: task, state: state, syncStatus: "added"})
 	}
+
+	agentDepth := projectRoutingAgentDepthLocked(s.tasks)
+	contributor := projectRoutingTopContributorLocked(s.tasks)
+	for _, candidate := range candidates {
+		report.IssueMappings = append(report.IssueMappings, projectIssueSyncMapping(candidate.issue, candidate.task, candidate.state, candidate.syncStatus, agentDepth, contributor))
+	}
+	sort.Slice(report.IssueMappings, func(i, j int) bool {
+		if report.IssueMappings[i].IssueNumber == report.IssueMappings[j].IssueNumber {
+			return report.IssueMappings[i].TaskID < report.IssueMappings[j].TaskID
+		}
+		return report.IssueMappings[i].IssueNumber < report.IssueMappings[j].IssueNumber
+	})
 
 	if !changed {
 		return report, nil
 	}
 	sortTasks(project.Tasks)
 	return report, s.saveLocked()
+}
+
+func projectIssueSyncMapping(issue *ImportedRepoIssue, task *Task, issueState, syncStatus string, agentDepth map[string]int, contributor *ProjectRoutingContributor) ProjectIssueSyncMapping {
+	if task == nil {
+		return ProjectIssueSyncMapping{}
+	}
+	claimID := marketplaceBountyID(task.ProjectID, task.IssueNumber)
+	issueTitle := task.Title
+	issueURL := task.IssueURL
+	if issue != nil {
+		if title := strings.TrimSpace(issue.Title); title != "" {
+			issueTitle = title
+		}
+		if url := strings.TrimSpace(issue.URL); url != "" {
+			issueURL = url
+		}
+	}
+	if issueState == "" {
+		issueState = normalizeIssueState(task.IssueState)
+	}
+	ready, blockedBy := projectRoutingReadiness(task)
+	route := projectRoutingRoute(task, ready, blockedBy, agentDepth, contributor)
+	return ProjectIssueSyncMapping{
+		IssueNumber:        task.IssueNumber,
+		IssueTitle:         protocolText(issueTitle, 500, task.Title),
+		IssueState:         issueState,
+		IssueURL:           marketplacePublicRepoURL(issueURL),
+		SyncStatus:         syncStatus,
+		TaskID:             task.ID,
+		TaskTitle:          task.Title,
+		TaskStatus:         task.Status,
+		ClaimID:            claimID,
+		ClaimEndpoint:      "/api/tasks/" + claimID + "/claim",
+		TaskProtocolURL:    "/api/public/protocol/tasks?task_id=" + claimID,
+		ActionEndpoint:     "/api/projects/" + task.ProjectID + "/agent-actions",
+		RewardCents:        task.RewardCents,
+		RewardMRG:          float64(task.RewardCents) / 100,
+		EstimatedHours:     marketplaceEstimatedHours(task),
+		RequiredWorkerKind: task.RequiredWorkerKind,
+		SuggestedAgentType: strings.TrimSpace(task.SuggestedAgentType),
+		Routing:            route,
+	}
 }
 
 func (s *Store) TaskWithProject(taskID string) (*Task, *Project, bool) {

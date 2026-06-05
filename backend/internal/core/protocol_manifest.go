@@ -93,7 +93,7 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Version:     "mergeos.repo-sync.v1",
 				Kind:        "repo_sync",
 				SchemaURL:   "https://mergeos.shop/protocol/repo-sync.v1.schema.json",
-				Description: "Authenticated project repository sync report with imported, added, updated, open, and closed issue counts for task generation.",
+				Description: "Authenticated repository sync report with issue-to-task mappings, public claim endpoints, rewards, effort, and routing lanes.",
 			},
 			{
 				Version:     "mergeos.dispute.v1",

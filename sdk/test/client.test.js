@@ -644,7 +644,24 @@ test('exposes project workflow and admin ops routes', async () => {
     { status: 200, body: { protocol_version: 'mergeos.workflow.v1', progress: 25, current_step: 'contributor_routing', nodes: [], edges: [] } },
     { status: 200, body: { status: 'ready', stats: { scanned_files: 3 }, findings: [] } },
     { status: 200, body: { protocol_version: 'mergeos.scan.v1', findings: [] } },
-    { status: 200, body: { protocol_version: 'mergeos.repo-sync.v1', added_task_count: 1, updated_task_count: 2 } },
+    {
+      status: 200,
+      body: {
+        protocol_version: 'mergeos.repo-sync.v1',
+        added_task_count: 1,
+        updated_task_count: 2,
+        issue_mappings: [{
+          issue_number: 12,
+          task_id: 'tsk_12',
+          claim_id: 'prj_1:12',
+          claim_endpoint: '/api/tasks/prj_1:12/claim',
+          task_protocol_url: '/api/public/protocol/tasks?task_id=prj_1:12',
+          reward_cents: 25000,
+          required_worker_kind: 'agent',
+          routing: { recommended_next_action: 'route_to_agent' },
+        }],
+      },
+    },
     { status: 200, body: { stats: { total_count: 1 }, items: [] } },
     { status: 200, body: { stats: { worker_count: 1 }, workers: [] } },
   ]);
@@ -706,6 +723,9 @@ test('exposes project workflow and admin ops routes', async () => {
   assert.equal(scanProtocol.protocol_version, 'mergeos.scan.v1');
   assert.equal(sync.protocol_version, 'mergeos.repo-sync.v1');
   assert.equal(sync.added_task_count, 1);
+  assert.equal(sync.issue_mappings[0].claim_id, 'prj_1:12');
+  assert.equal(sync.issue_mappings[0].claim_endpoint, '/api/tasks/prj_1:12/claim');
+  assert.equal(sync.issue_mappings[0].routing.recommended_next_action, 'route_to_agent');
   assert.equal(ops.stats.total_count, 1);
   assert.equal(reputation.stats.worker_count, 1);
   assert.equal(fetchImpl.calls[0].url, '/api/projects/prj_1/escrow');

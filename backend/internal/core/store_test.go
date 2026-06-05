@@ -882,6 +882,32 @@ func TestSyncProjectImportedIssuesAddsMissingAndTracksState(t *testing.T) {
 	if report.ProjectID != project.ID || report.SourceRepoURL == "" || report.ImportedIssueCount != 2 || report.AddedTaskCount != 1 || report.UpdatedTaskCount != 1 || report.OpenIssueCount != 1 || report.ClosedIssueCount != 1 {
 		t.Fatalf("sync report = %#v", report)
 	}
+	if len(report.IssueMappings) != 2 {
+		t.Fatalf("sync mappings = %d, want 2: %#v", len(report.IssueMappings), report.IssueMappings)
+	}
+	mappings := map[int]ProjectIssueSyncMapping{}
+	for _, mapping := range report.IssueMappings {
+		mappings[mapping.IssueNumber] = mapping
+	}
+	if mappings[1].TaskID != existing.ID || mappings[1].ClaimID != marketplaceBountyID(project.ID, 1) || mappings[1].SyncStatus != "updated" || mappings[1].IssueState != "closed" {
+		t.Fatalf("existing issue mapping = %#v", mappings[1])
+	}
+	if mappings[1].Routing.RecommendedNextAction != "paid" || mappings[1].TaskProtocolURL != "/api/public/protocol/tasks?task_id="+mappings[1].ClaimID {
+		t.Fatalf("existing issue routing/protocol mapping = %#v", mappings[1])
+	}
+	addedMapping := mappings[7]
+	if addedMapping.SyncStatus != "added" || addedMapping.TaskID == "" || addedMapping.TaskID == existing.ID || addedMapping.ClaimID != marketplaceBountyID(project.ID, 7) {
+		t.Fatalf("new issue mapping = %#v", addedMapping)
+	}
+	if addedMapping.ClaimEndpoint != "/api/tasks/"+addedMapping.ClaimID+"/claim" || addedMapping.ActionEndpoint != "/api/projects/"+project.ID+"/agent-actions" {
+		t.Fatalf("new issue endpoints = %#v", addedMapping)
+	}
+	if addedMapping.RewardCents <= 0 || addedMapping.RewardMRG <= 0 || addedMapping.EstimatedHours <= 0 || addedMapping.RequiredWorkerKind != WorkerAgent || addedMapping.SuggestedAgentType != "backend-agent" {
+		t.Fatalf("new issue reward/routing fields = %#v", addedMapping)
+	}
+	if addedMapping.Routing.RecommendedNextAction != "route_to_agent" || addedMapping.Routing.MatchScore <= 0 || addedMapping.Routing.RecommendedAgent == nil {
+		t.Fatalf("new issue route = %#v", addedMapping.Routing)
+	}
 	tasks := store.ListTasks("")
 	if len(tasks) != 2 {
 		t.Fatalf("tasks = %d, want 2", len(tasks))
@@ -958,7 +984,7 @@ func TestSyncProjectImportedIssuesHonorsHumanOnlyPolicy(t *testing.T) {
 	}
 	store.projects[project.ID] = project
 
-	if _, err := store.SyncProjectImportedIssuesReport(project.ID, "https://github.com/mergeos-bounties/mergeos", []*ImportedRepoIssue{{
+	report, err := store.SyncProjectImportedIssuesReport(project.ID, "https://github.com/mergeos-bounties/mergeos", []*ImportedRepoIssue{{
 		Number:             8,
 		Title:              "Agent-looking issue",
 		State:              "open",
@@ -966,7 +992,8 @@ func TestSyncProjectImportedIssuesHonorsHumanOnlyPolicy(t *testing.T) {
 		EstimatedCents:     100,
 		RequiredWorkerKind: WorkerAgent,
 		SuggestedAgentType: "backend-agent",
-	}}); err != nil {
+	}})
+	if err != nil {
 		t.Fatal(err)
 	}
 
@@ -976,6 +1003,12 @@ func TestSyncProjectImportedIssuesHonorsHumanOnlyPolicy(t *testing.T) {
 	}
 	if tasks[0].RequiredWorkerKind != WorkerHuman || strings.TrimSpace(tasks[0].SuggestedAgentType) != "" {
 		t.Fatalf("synced task did not honor human-only policy: %#v", tasks[0])
+	}
+	if len(report.IssueMappings) != 1 || report.IssueMappings[0].RequiredWorkerKind != WorkerHuman || report.IssueMappings[0].SuggestedAgentType != "" {
+		t.Fatalf("human-only sync mapping did not honor policy: %#v", report.IssueMappings)
+	}
+	if report.IssueMappings[0].Routing.RecommendedNextAction != "invite_contributor" || report.IssueMappings[0].Routing.RecommendedAgent != nil {
+		t.Fatalf("human-only route mapping = %#v", report.IssueMappings[0].Routing)
 	}
 }
 

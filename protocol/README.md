@@ -18,7 +18,7 @@ The live app exposes protocol discovery at `GET /api/public/protocol`, and serve
 - `mergeos.workflow.v1`: a project workflow graph with progress, current AI workflow step, nodes, dependency edges, worker lanes, rewards, and effort estimates.
 - `mergeos.estimate.v1`: an authenticated project estimate document with editable budget range, confidence, assumptions, risks, and cost breakdown.
 - `mergeos.repo-import.v1`: a public repository issue import document with scored GitHub issues, effort estimates, worker lane routing, and AI task generation inputs.
-- `mergeos.repo-sync.v1`: an authenticated project repository sync report that turns imported GitHub issues into MergeOS task rows.
+- `mergeos.repo-sync.v1`: an authenticated project repository sync report that maps imported GitHub issues to task IDs, public claim endpoints, rewards, effort, and routing lanes.
 - `mergeos.dispute.v1`: an authenticated delivery dispute document that escalates customer, worker, or admin concerns into moderation.
 - `mergeos.ai-workflow.v1`: an authenticated AI orchestration workflow covering repository import, issue scan, task generation, reward estimation, contributor routing, PR review, and deployment validation.
 - `mergeos.event.v1`: a realtime ledger/workflow event emitted by apps, agents, or integrations, including typed agent review/test/generate/deploy/scan events.

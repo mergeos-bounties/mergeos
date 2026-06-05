@@ -775,17 +775,39 @@ type ImportRepoIssuesResponse struct {
 }
 
 type ProjectIssueSyncResponse struct {
-	ProtocolVersion    string    `json:"protocol_version"`
-	Kind               string    `json:"kind"`
-	ProjectID          string    `json:"project_id"`
-	ProjectTitle       string    `json:"project_title"`
-	SourceRepoURL      string    `json:"source_repo_url"`
-	ImportedIssueCount int       `json:"imported_issue_count"`
-	AddedTaskCount     int       `json:"added_task_count"`
-	UpdatedTaskCount   int       `json:"updated_task_count"`
-	OpenIssueCount     int       `json:"open_issue_count"`
-	ClosedIssueCount   int       `json:"closed_issue_count"`
-	SyncedAt           time.Time `json:"synced_at"`
+	ProtocolVersion    string                    `json:"protocol_version"`
+	Kind               string                    `json:"kind"`
+	ProjectID          string                    `json:"project_id"`
+	ProjectTitle       string                    `json:"project_title"`
+	SourceRepoURL      string                    `json:"source_repo_url"`
+	ImportedIssueCount int                       `json:"imported_issue_count"`
+	AddedTaskCount     int                       `json:"added_task_count"`
+	UpdatedTaskCount   int                       `json:"updated_task_count"`
+	OpenIssueCount     int                       `json:"open_issue_count"`
+	ClosedIssueCount   int                       `json:"closed_issue_count"`
+	IssueMappings      []ProjectIssueSyncMapping `json:"issue_mappings"`
+	SyncedAt           time.Time                 `json:"synced_at"`
+}
+
+type ProjectIssueSyncMapping struct {
+	IssueNumber        int                 `json:"issue_number"`
+	IssueTitle         string              `json:"issue_title"`
+	IssueState         string              `json:"issue_state"`
+	IssueURL           string              `json:"issue_url,omitempty"`
+	SyncStatus         string              `json:"sync_status"`
+	TaskID             string              `json:"task_id"`
+	TaskTitle          string              `json:"task_title"`
+	TaskStatus         TaskStatus          `json:"task_status"`
+	ClaimID            string              `json:"claim_id"`
+	ClaimEndpoint      string              `json:"claim_endpoint"`
+	TaskProtocolURL    string              `json:"task_protocol_url"`
+	ActionEndpoint     string              `json:"action_endpoint"`
+	RewardCents        int64               `json:"reward_cents"`
+	RewardMRG          float64             `json:"reward_mrg"`
+	EstimatedHours     float64             `json:"estimated_hours"`
+	RequiredWorkerKind WorkerKind          `json:"required_worker_kind"`
+	SuggestedAgentType string              `json:"suggested_agent_type,omitempty"`
+	Routing            ProjectRoutingRoute `json:"routing"`
 }
 
 type ImportedRepoIssue struct {
