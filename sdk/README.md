@@ -61,6 +61,7 @@ console.log(workflowProtocol.current_step, workflowProtocol.progress);
 const scan = await mergeos.projectRepositoryScan(projects[0].id);
 const scanProtocol = await mergeos.projectRepositoryScanProtocol(projects[0].id);
 const syncReport = await mergeos.syncProjectRepoIssues(projects[0].id);
+console.log(syncReport.protocol_version, syncReport.added_task_count);
 const solanaReference = contractReferenceFromLedger({ entry_hash: 'a'.repeat(64) }, { format: 'bytes' });
 const legacyHash = legacyWalletAddressHash('trc20', 'TXYZ987654321', { format: 'bytes' });
 ```
@@ -78,7 +79,8 @@ await mergeos.publicProtocolTasks({ limit: 80 });
 await mergeos.publicProtocolAgents({ limit: 80 });
 await mergeos.publicProtocolLedger();
 await mergeos.publicProtocolEvents({ limit: 80 });
-await mergeos.importRepoIssues({ repo_url: 'https://github.com/acme/repo' });
+const repoImport = await mergeos.importRepoIssues({ repo_url: 'https://github.com/acme/repo' });
+console.log(repoImport.protocol_version, repoImport.issue_count);
 await mergeos.publicTestSettingsStatus();
 await mergeos.publicTestSettingsAuth('shared-password');
 await mergeos.publicTestSettingsEntries('shared-password');

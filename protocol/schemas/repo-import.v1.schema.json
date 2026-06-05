@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mergeos.shop/protocol/repo-import.v1.schema.json",
+  "title": "MergeOS Repository Import v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["protocol_version", "kind", "owner", "name", "repo_url", "issue_count", "total_estimated_cents", "total_estimated_hours", "issues"],
+  "properties": {
+    "protocol_version": { "const": "mergeos.repo-import.v1" },
+    "kind": { "const": "repo_import" },
+    "owner": { "type": "string", "minLength": 1, "maxLength": 120 },
+    "name": { "type": "string", "minLength": 1, "maxLength": 160 },
+    "repo_url": { "type": "string", "minLength": 1, "maxLength": 512 },
+    "issue_count": { "type": "integer", "minimum": 0 },
+    "total_estimated_cents": { "type": "integer", "minimum": 0 },
+    "total_estimated_hours": { "type": "number", "minimum": 0 },
+    "issues": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["number", "title", "state", "url", "labels", "comments", "score", "complexity", "estimated_cents", "estimated_hours", "required_worker_kind", "reasons", "created_at", "updated_at"],
+        "properties": {
+          "number": { "type": "integer", "minimum": 1 },
+          "title": { "type": "string", "minLength": 1, "maxLength": 500 },
+          "state": { "type": "string", "minLength": 1, "maxLength": 80 },
+          "url": { "type": "string", "maxLength": 512 },
+          "labels": { "type": "array", "items": { "type": "string", "maxLength": 120 } },
+          "comments": { "type": "integer", "minimum": 0 },
+          "score": { "type": "integer", "minimum": 0, "maximum": 100 },
+          "complexity": { "enum": ["low", "medium", "high"] },
+          "estimated_cents": { "type": "integer", "minimum": 0 },
+          "estimated_hours": { "type": "number", "minimum": 0 },
+          "required_worker_kind": { "enum": ["human", "agent", "hybrid"] },
+          "suggested_agent_type": { "type": "string", "maxLength": 120 },
+          "reasons": { "type": "array", "items": { "type": "string", "maxLength": 160 } },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      }
+    }
+  }
+}

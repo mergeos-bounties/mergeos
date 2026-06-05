@@ -582,6 +582,8 @@ type ImportRepoIssuesRequest struct {
 }
 
 type ImportRepoIssuesResponse struct {
+	ProtocolVersion     string               `json:"protocol_version"`
+	Kind                string               `json:"kind"`
 	Owner               string               `json:"owner"`
 	Name                string               `json:"name"`
 	RepoURL             string               `json:"repo_url"`
@@ -592,6 +594,8 @@ type ImportRepoIssuesResponse struct {
 }
 
 type ProjectIssueSyncResponse struct {
+	ProtocolVersion    string    `json:"protocol_version"`
+	Kind               string    `json:"kind"`
 	ProjectID          string    `json:"project_id"`
 	ProjectTitle       string    `json:"project_title"`
 	SourceRepoURL      string    `json:"source_repo_url"`

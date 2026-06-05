@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mergeos.shop/protocol/repo-sync.v1.schema.json",
+  "title": "MergeOS Repository Sync v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["protocol_version", "kind", "project_id", "project_title", "source_repo_url", "imported_issue_count", "added_task_count", "updated_task_count", "open_issue_count", "closed_issue_count", "synced_at"],
+  "properties": {
+    "protocol_version": { "const": "mergeos.repo-sync.v1" },
+    "kind": { "const": "repo_sync" },
+    "project_id": { "type": "string", "minLength": 1, "maxLength": 96 },
+    "project_title": { "type": "string", "maxLength": 240 },
+    "source_repo_url": { "type": "string", "maxLength": 512 },
+    "imported_issue_count": { "type": "integer", "minimum": 0 },
+    "added_task_count": { "type": "integer", "minimum": 0 },
+    "updated_task_count": { "type": "integer", "minimum": 0 },
+    "open_issue_count": { "type": "integer", "minimum": 0 },
+    "closed_issue_count": { "type": "integer", "minimum": 0 },
+    "synced_at": { "type": "string", "format": "date-time" }
+  }
+}

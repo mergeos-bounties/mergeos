@@ -36,6 +36,18 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Description: "Project workflow graph with progress, current AI workflow step, task nodes, dependency edges, readiness, and release status.",
 			},
 			{
+				Version:     "mergeos.repo-import.v1",
+				Kind:        "repo_import",
+				SchemaURL:   "https://mergeos.shop/protocol/repo-import.v1.schema.json",
+				Description: "Public repository issue import document with scored GitHub issues, effort estimates, worker lane routing, and AI task generation inputs.",
+			},
+			{
+				Version:     "mergeos.repo-sync.v1",
+				Kind:        "repo_sync",
+				SchemaURL:   "https://mergeos.shop/protocol/repo-sync.v1.schema.json",
+				Description: "Authenticated project repository sync report with imported, added, updated, open, and closed issue counts for task generation.",
+			},
+			{
 				Version:     "mergeos.ai-workflow.v1",
 				Kind:        "ai_workflow",
 				SchemaURL:   "https://mergeos.shop/protocol/ai-workflow.v1.schema.json",
@@ -152,6 +164,13 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Description: "Public live-feed events as protocol documents.",
 			},
 			{
+				Method:      "POST",
+				Path:        "/api/public/repo/issues",
+				Protocol:    "mergeos.repo-import.v1",
+				Auth:        "none",
+				Description: "Public GitHub repository issue import and AI scoring report.",
+			},
+			{
 				Method:      "WS",
 				Path:        "/api/ws",
 				Protocol:    "mergeos.event.v1",
@@ -171,6 +190,13 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Protocol:    "mergeos.scan.v1",
 				Auth:        "project",
 				Description: "Authenticated repository scan protocol document.",
+			},
+			{
+				Method:      "POST",
+				Path:        "/api/projects/{id}/repo-sync",
+				Protocol:    "mergeos.repo-sync.v1",
+				Auth:        "project",
+				Description: "Authenticated issue sync report that converts imported GitHub issues into MergeOS task rows.",
 			},
 			{
 				Method:      "GET",

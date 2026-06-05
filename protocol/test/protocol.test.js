@@ -25,6 +25,8 @@ test('loads stable task, workflow, ledger, and event schemas', () => {
     'mergeos.marketplace.v1',
     'mergeos.payouts.v1',
     'mergeos.pr-monitor.v1',
+    'mergeos.repo-import.v1',
+    'mergeos.repo-sync.v1',
     'mergeos.scan.v1',
     'mergeos.task.v1',
     'mergeos.worker-dashboard.v1',
@@ -216,6 +218,100 @@ test('validates live feed protocol documents', () => {
   assert(invalid.errors.some((error) => error.path === 'stats.active_agent_count'));
   assert(invalid.errors.some((error) => error.path === 'items[0].type'));
   assert(invalid.errors.some((error) => error.path === 'items[0].created_at'));
+});
+
+test('validates repository import protocol documents', () => {
+  const now = '2026-06-05T00:00:00.000Z';
+  const report = {
+    protocol_version: 'mergeos.repo-import.v1',
+    kind: 'repo_import',
+    owner: 'mergeos-bounties',
+    name: 'mergeos',
+    repo_url: 'https://github.com/mergeos-bounties/mergeos',
+    issue_count: 2,
+    total_estimated_cents: 21000,
+    total_estimated_hours: 10.5,
+    issues: [
+      {
+        number: 42,
+        title: 'Payment checkout crashes after auth token refresh',
+        state: 'open',
+        url: 'https://github.com/mergeos-bounties/mergeos/issues/42',
+        labels: ['bug', 'checkout'],
+        comments: 4,
+        score: 91,
+        complexity: 'high',
+        estimated_cents: 15000,
+        estimated_hours: 7.5,
+        required_worker_kind: 'hybrid',
+        suggested_agent_type: 'security-review-agent',
+        reasons: ['GitHub issue', 'production risk'],
+        created_at: now,
+        updated_at: now,
+      },
+      {
+        number: 43,
+        title: 'Responsive footer polish',
+        state: 'open',
+        url: 'https://github.com/mergeos-bounties/mergeos/issues/43',
+        labels: ['frontend'],
+        comments: 1,
+        score: 45,
+        complexity: 'medium',
+        estimated_cents: 6000,
+        estimated_hours: 3,
+        required_worker_kind: 'agent',
+        suggested_agent_type: 'frontend-agent',
+        reasons: ['frontend surface'],
+        created_at: now,
+        updated_at: now,
+      },
+    ],
+  };
+
+  assert.equal(validateProtocolDocument(report).valid, true);
+
+  const invalid = validateProtocolDocument({
+    ...report,
+    kind: 'repo_scan',
+    issue_count: -1,
+    issues: [{ ...report.issues[0], score: 101, required_worker_kind: 'bot', updated_at: 'not-a-date' }],
+  });
+  assert.equal(invalid.valid, false);
+  assert(invalid.errors.some((error) => error.path === 'kind'));
+  assert(invalid.errors.some((error) => error.path === 'issue_count'));
+  assert(invalid.errors.some((error) => error.path === 'issues[0].score'));
+  assert(invalid.errors.some((error) => error.path === 'issues[0].required_worker_kind'));
+  assert(invalid.errors.some((error) => error.path === 'issues[0].updated_at'));
+});
+
+test('validates repository sync protocol documents', () => {
+  const sync = {
+    protocol_version: 'mergeos.repo-sync.v1',
+    kind: 'repo_sync',
+    project_id: 'prj_0001',
+    project_title: 'Customer portal rebuild',
+    source_repo_url: 'https://github.com/mergeos-bounties/mergeos',
+    imported_issue_count: 8,
+    added_task_count: 3,
+    updated_task_count: 2,
+    open_issue_count: 6,
+    closed_issue_count: 2,
+    synced_at: '2026-06-05T00:00:00.000Z',
+  };
+
+  assert.equal(validateProtocolDocument(sync).valid, true);
+
+  const invalid = validateProtocolDocument({
+    ...sync,
+    kind: 'sync',
+    added_task_count: -1,
+    synced_at: 'not-a-date',
+  });
+  assert.equal(invalid.valid, false);
+  assert(invalid.errors.some((error) => error.path === 'kind'));
+  assert(invalid.errors.some((error) => error.path === 'added_task_count'));
+  assert(invalid.errors.some((error) => error.path === 'synced_at'));
 });
 
 test('validates escrow protocol documents', () => {

@@ -796,6 +796,9 @@ func TestSyncProjectImportedIssuesAddsMissingAndTracksState(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if report.ProtocolVersion != "mergeos.repo-sync.v1" || report.Kind != "repo_sync" {
+		t.Fatalf("unexpected repo sync protocol header: %#v", report)
+	}
 	if report.ProjectID != project.ID || report.SourceRepoURL == "" || report.ImportedIssueCount != 2 || report.AddedTaskCount != 1 || report.UpdatedTaskCount != 1 || report.OpenIssueCount != 1 || report.ClosedIssueCount != 1 {
 		t.Fatalf("sync report = %#v", report)
 	}
@@ -926,7 +929,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 	if payload.ProtocolVersion != "mergeos.protocol.manifest.v1" || payload.Kind != "protocol_manifest" {
 		t.Fatalf("unexpected manifest header: %#v", payload)
 	}
-	if len(payload.Schemas) != 16 {
+	if len(payload.Schemas) != 18 {
 		t.Fatalf("manifest schemas = %d: %#v", len(payload.Schemas), payload.Schemas)
 	}
 	schemas := map[string]bool{}
@@ -935,7 +938,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 		schemas[schema.Version] = true
 		descriptions[schema.Version] = schema.Description
 	}
-	for _, required := range []string{"mergeos.task.v1", "mergeos.agent.v1", "mergeos.marketplace.v1", "mergeos.live-feed.v1", "mergeos.workflow.v1", "mergeos.ai-workflow.v1", "mergeos.event.v1", "mergeos.ledger.v1", "mergeos.escrow.v1", "mergeos.payouts.v1", "mergeos.deployment.v1", "mergeos.pr-monitor.v1", "mergeos.scan.v1", "mergeos.customer-dashboard.v1", "mergeos.worker-dashboard.v1", "mergeos.admin-ops.v1"} {
+	for _, required := range []string{"mergeos.task.v1", "mergeos.agent.v1", "mergeos.marketplace.v1", "mergeos.live-feed.v1", "mergeos.workflow.v1", "mergeos.repo-import.v1", "mergeos.repo-sync.v1", "mergeos.ai-workflow.v1", "mergeos.event.v1", "mergeos.ledger.v1", "mergeos.escrow.v1", "mergeos.payouts.v1", "mergeos.deployment.v1", "mergeos.pr-monitor.v1", "mergeos.scan.v1", "mergeos.customer-dashboard.v1", "mergeos.worker-dashboard.v1", "mergeos.admin-ops.v1"} {
 		if !schemas[required] {
 			t.Fatalf("manifest missing schema %s: %#v", required, payload.Schemas)
 		}
@@ -954,9 +957,11 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 		"GET /api/public/protocol/agents",
 		"GET /api/public/protocol/ledger",
 		"GET /api/public/protocol/events",
+		"POST /api/public/repo/issues",
 		"WS /api/ws",
 		"GET /api/projects/{id}/protocol/workflow",
 		"GET /api/projects/{id}/protocol/scan",
+		"POST /api/projects/{id}/repo-sync",
 		"GET /api/projects/{id}/escrow",
 		"GET /api/projects/{id}/payouts",
 		"GET /api/projects/{id}/deployment",

@@ -837,10 +837,12 @@ func (s *Store) SyncProjectImportedIssuesReport(projectID, sourceRepoURL string,
 	}
 	now := time.Now().UTC()
 	report := ProjectIssueSyncResponse{
-		ProjectID:     project.ID,
-		ProjectTitle:  project.Title,
-		SourceRepoURL: strings.TrimSpace(sourceRepoURL),
-		SyncedAt:      now,
+		ProtocolVersion: "mergeos.repo-sync.v1",
+		Kind:            "repo_sync",
+		ProjectID:       project.ID,
+		ProjectTitle:    project.Title,
+		SourceRepoURL:   strings.TrimSpace(sourceRepoURL),
+		SyncedAt:        now,
 	}
 
 	existing := map[int]*Task{}

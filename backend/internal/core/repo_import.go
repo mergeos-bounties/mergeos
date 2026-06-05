@@ -58,6 +58,8 @@ func ImportRepoIssues(ctx context.Context, cfg Config, req ImportRepoIssuesReque
 	})
 
 	return &ImportRepoIssuesResponse{
+		ProtocolVersion:     "mergeos.repo-import.v1",
+		Kind:                "repo_import",
 		Owner:               owner,
 		Name:                name,
 		RepoURL:             "https://github.com/" + owner + "/" + name,

@@ -287,7 +287,7 @@ test('maps live feed records to workflow event protocol values', () => {
 
 test('exposes public repo import and password-gated test settings without auth', async () => {
   const fetchImpl = fakeFetch([
-    { status: 200, body: { issue_count: 2 } },
+    { status: 200, body: { protocol_version: 'mergeos.repo-import.v1', issue_count: 2 } },
     { status: 200, body: { test_mode_enabled: true } },
     { status: 200, body: { authenticated: true } },
     { status: 200, body: [{ id: 'tse_1' }] },
@@ -298,7 +298,7 @@ test('exposes public repo import and password-gated test settings without auth',
   ]);
   const client = new MergeOSClient({ token: 'secret-token', fetchImpl });
 
-  await client.importRepoIssues({ repo_url: 'https://github.com/acme/repo' });
+  const imported = await client.importRepoIssues({ repo_url: 'https://github.com/acme/repo' });
   await client.publicTestSettingsStatus();
   await client.publicTestSettingsAuth('pw');
   await client.publicTestSettingsEntries('pw');
@@ -312,6 +312,8 @@ test('exposes public repo import and password-gated test settings without auth',
   const revealed = await client.publicRevealTestSettingsEntry('tse_2', 'pw');
 
   assert.equal(fetchImpl.calls[0].url, '/api/public/repo/issues');
+  assert.equal(imported.protocol_version, 'mergeos.repo-import.v1');
+  assert.equal(imported.issue_count, 2);
   assert.equal(fetchImpl.calls[1].url, '/api/public/test-settings/status');
   assert.equal(fetchImpl.calls[2].url, '/api/public/test-settings/auth');
   assert.equal(fetchImpl.calls[3].url, '/api/public/test-settings/entries/list');
@@ -396,7 +398,7 @@ test('exposes project workflow and admin ops routes', async () => {
     { status: 200, body: { protocol_version: 'mergeos.workflow.v1', progress: 25, current_step: 'contributor_routing', nodes: [], edges: [] } },
     { status: 200, body: { status: 'ready', stats: { scanned_files: 3 }, findings: [] } },
     { status: 200, body: { protocol_version: 'mergeos.scan.v1', findings: [] } },
-    { status: 200, body: { added_task_count: 1, updated_task_count: 2 } },
+    { status: 200, body: { protocol_version: 'mergeos.repo-sync.v1', added_task_count: 1, updated_task_count: 2 } },
     { status: 200, body: { stats: { total_count: 1 }, items: [] } },
     { status: 200, body: { stats: { worker_count: 1 }, workers: [] } },
   ]);
@@ -431,6 +433,7 @@ test('exposes project workflow and admin ops routes', async () => {
   assert.equal(workflowProtocol.current_step, 'contributor_routing');
   assert.equal(scan.stats.scanned_files, 3);
   assert.equal(scanProtocol.protocol_version, 'mergeos.scan.v1');
+  assert.equal(sync.protocol_version, 'mergeos.repo-sync.v1');
   assert.equal(sync.added_task_count, 1);
   assert.equal(ops.stats.total_count, 1);
   assert.equal(reputation.stats.worker_count, 1);
