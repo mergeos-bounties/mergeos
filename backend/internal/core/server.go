@@ -91,6 +91,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/projects", s.projects)
 	mux.HandleFunc("GET /api/projects/{id}/escrow", s.projectEscrow)
 	mux.HandleFunc("GET /api/projects/{id}/payouts", s.projectPayouts)
+	mux.HandleFunc("POST /api/projects/{id}/auto-release", s.projectAutoRelease)
 	mux.HandleFunc("GET /api/projects/{id}/dashboard", s.projectDashboard)
 	mux.HandleFunc("GET /api/projects/{id}/pull-requests", s.projectPullRequests)
 	mux.HandleFunc("GET /api/projects/{id}/deployment", s.projectDeployment)
@@ -526,6 +527,32 @@ func (s *Server) projectPayouts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, payouts)
+}
+
+func (s *Server) projectAutoRelease(w http.ResponseWriter, r *http.Request) {
+	user, ok := s.requireUser(w, r)
+	if !ok {
+		return
+	}
+	projectID := strings.TrimSpace(r.PathValue("id"))
+	if !s.store.CanAccessProject(user.ID, user.Role, projectID) {
+		writeError(w, http.StatusForbidden, "project access is required")
+		return
+	}
+	var req ProjectAutoReleaseRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil && err != io.EOF {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	release, err := s.store.AutoReleaseProjectPayouts(projectID, req)
+	if err != nil {
+		writeError(w, http.StatusNotFound, err.Error())
+		return
+	}
+	if release.ReleasedCount > 0 {
+		s.broadcastLiveFeedEvent("ledger_task_payment")
+	}
+	writeJSON(w, http.StatusOK, release)
 }
 
 func (s *Server) projectDashboard(w http.ResponseWriter, r *http.Request) {

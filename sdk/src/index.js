@@ -267,6 +267,10 @@ export class MergeOSClient {
     return this.request(`/api/projects/${encodeURIComponent(projectID)}/payouts`);
   }
 
+  projectAutoRelease(projectID, payload = {}) {
+    return this.request(`/api/projects/${encodeURIComponent(projectID)}/auto-release`, { method: 'POST', body: payload });
+  }
+
   projectDashboard(projectID) {
     return this.request(`/api/projects/${encodeURIComponent(projectID)}/dashboard`);
   }

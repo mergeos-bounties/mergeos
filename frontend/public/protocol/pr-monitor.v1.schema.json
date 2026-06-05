@@ -14,7 +14,7 @@
     "stats": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["task_count", "linked_task_count", "pull_request_count", "open_pull_request_count", "merged_pull_request_count", "ready_count", "needs_review_count", "blocked_count", "error_count"],
+      "required": ["task_count", "linked_task_count", "pull_request_count", "open_pull_request_count", "merged_pull_request_count", "ready_count", "needs_review_count", "blocked_count", "error_count", "auto_release_ready_count"],
       "properties": {
         "task_count": { "type": "integer", "minimum": 0 },
         "linked_task_count": { "type": "integer", "minimum": 0 },
@@ -24,7 +24,8 @@
         "ready_count": { "type": "integer", "minimum": 0 },
         "needs_review_count": { "type": "integer", "minimum": 0 },
         "blocked_count": { "type": "integer", "minimum": 0 },
-        "error_count": { "type": "integer", "minimum": 0 }
+        "error_count": { "type": "integer", "minimum": 0 },
+        "auto_release_ready_count": { "type": "integer", "minimum": 0 }
       }
     },
     "tasks": {
@@ -38,10 +39,22 @@
           "issue_number": { "type": "integer", "minimum": 0 },
           "title": { "type": "string", "minLength": 1, "maxLength": 240 },
           "status": { "enum": ["open", "accepted"] },
+          "reward_cents": { "type": "integer", "minimum": 0 },
+          "worker_kind": { "enum": ["human", "agent", "hybrid"] },
+          "worker_id": { "type": "string", "maxLength": 160 },
+          "agent_type": { "type": "string", "maxLength": 160 },
           "issue_url": { "type": "string", "maxLength": 512 },
           "repository": { "type": "string", "maxLength": 240 },
           "monitor_status": { "enum": ["unlinked", "linked", "synced", "error"] },
           "monitor_error": { "type": "string", "maxLength": 500 },
+          "release_packet": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "auto_release_packet": {
+            "type": "object",
+            "additionalProperties": true
+          },
           "updated_at": { "type": "string", "format": "date-time" },
           "pull_requests": {
             "type": "array",

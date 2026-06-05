@@ -485,19 +485,26 @@ type ProjectPullRequestStats struct {
 	NeedsReviewCount       int `json:"needs_review_count"`
 	BlockedCount           int `json:"blocked_count"`
 	ErrorCount             int `json:"error_count"`
+	AutoReleaseReadyCount  int `json:"auto_release_ready_count"`
 }
 
 type ProjectTaskPullRequests struct {
-	TaskID        string                      `json:"task_id,omitempty"`
-	IssueNumber   int                         `json:"issue_number"`
-	Title         string                      `json:"title"`
-	Status        string                      `json:"status"`
-	IssueURL      string                      `json:"issue_url,omitempty"`
-	Repository    string                      `json:"repository,omitempty"`
-	MonitorStatus string                      `json:"monitor_status"`
-	MonitorError  string                      `json:"monitor_error,omitempty"`
-	PullRequests  []ProjectPullRequestSummary `json:"pull_requests"`
-	UpdatedAt     time.Time                   `json:"updated_at"`
+	TaskID            string                      `json:"task_id,omitempty"`
+	IssueNumber       int                         `json:"issue_number"`
+	Title             string                      `json:"title"`
+	Status            string                      `json:"status"`
+	RewardCents       int64                       `json:"reward_cents,omitempty"`
+	WorkerKind        WorkerKind                  `json:"worker_kind,omitempty"`
+	WorkerID          string                      `json:"worker_id,omitempty"`
+	AgentType         string                      `json:"agent_type,omitempty"`
+	IssueURL          string                      `json:"issue_url,omitempty"`
+	Repository        string                      `json:"repository,omitempty"`
+	MonitorStatus     string                      `json:"monitor_status"`
+	MonitorError      string                      `json:"monitor_error,omitempty"`
+	ReleasePacket     map[string]any              `json:"release_packet,omitempty"`
+	AutoReleasePacket map[string]any              `json:"auto_release_packet,omitempty"`
+	PullRequests      []ProjectPullRequestSummary `json:"pull_requests"`
+	UpdatedAt         time.Time                   `json:"updated_at"`
 }
 
 type ProjectPullRequestSummary struct {
@@ -1032,6 +1039,46 @@ type ProjectPayoutRow struct {
 	URL              string     `json:"url,omitempty"`
 	ReleasedAt       *time.Time `json:"released_at,omitempty"`
 	UpdatedAt        time.Time  `json:"updated_at"`
+}
+
+type ProjectAutoReleaseRequest struct {
+	TaskIDs    []string                      `json:"task_ids"`
+	Policy     string                        `json:"policy,omitempty"`
+	Candidates []ProjectAutoReleaseCandidate `json:"candidates,omitempty"`
+}
+
+type ProjectAutoReleaseCandidate struct {
+	TaskID            string     `json:"task_id"`
+	WorkerKind        WorkerKind `json:"worker_kind"`
+	WorkerID          string     `json:"worker_id"`
+	AgentType         string     `json:"agent_type,omitempty"`
+	RewardCents       int64      `json:"reward_cents"`
+	Repository        string     `json:"repository,omitempty"`
+	PullRequestNumber int        `json:"pull_request_number"`
+	PullRequestURL    string     `json:"pull_request_url,omitempty"`
+	PullRequestTitle  string     `json:"pull_request_title,omitempty"`
+	ReadinessStatus   string     `json:"readiness_status"`
+	CanMerge          bool       `json:"can_merge"`
+	RiskLevel         string     `json:"risk_level"`
+	Draft             bool       `json:"draft"`
+	CanRelease        bool       `json:"can_release"`
+}
+
+type ProjectAutoReleaseResponse struct {
+	ProtocolVersion string                   `json:"protocol_version"`
+	Kind            string                   `json:"kind"`
+	ProjectID       string                   `json:"project_id"`
+	Policy          string                   `json:"policy"`
+	ReleasedCount   int                      `json:"released_count"`
+	SkippedCount    int                      `json:"skipped_count"`
+	Released        []TaskClaimResponse      `json:"released"`
+	Skipped         []ProjectAutoReleaseSkip `json:"skipped"`
+	Payouts         ProjectPayoutsResponse   `json:"payouts"`
+}
+
+type ProjectAutoReleaseSkip struct {
+	TaskID string `json:"task_id"`
+	Reason string `json:"reason"`
 }
 
 type DeploymentStage struct {

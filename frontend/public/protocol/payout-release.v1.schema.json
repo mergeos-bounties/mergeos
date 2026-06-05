@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mergeos.shop/protocol/payout-release.v1.schema.json",
+  "title": "MergeOS Payout Release v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["protocol_version", "kind", "project_id", "policy", "released_count", "skipped_count", "released", "skipped", "payouts"],
+  "properties": {
+    "protocol_version": { "const": "mergeos.payout-release.v1" },
+    "kind": { "const": "auto_release" },
+    "project_id": { "type": "string", "minLength": 1, "maxLength": 96 },
+    "policy": { "type": "string", "minLength": 1, "maxLength": 160 },
+    "released_count": { "type": "integer", "minimum": 0 },
+    "skipped_count": { "type": "integer", "minimum": 0 },
+    "released": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    "skipped": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["task_id", "reason"],
+        "properties": {
+          "task_id": { "type": "string", "maxLength": 96 },
+          "reason": { "type": "string", "minLength": 1, "maxLength": 500 }
+        }
+      }
+    },
+    "payouts": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["protocol_version", "kind", "project_id", "payouts"],
+      "properties": {
+        "protocol_version": { "const": "mergeos.payouts.v1" },
+        "kind": { "const": "payouts" },
+        "project_id": { "type": "string", "minLength": 1, "maxLength": 96 },
+        "payouts": { "type": "array" }
+      }
+    }
+  }
+}

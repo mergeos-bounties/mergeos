@@ -259,7 +259,7 @@
         "stats": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["task_count", "linked_task_count", "pull_request_count", "open_pull_request_count", "merged_pull_request_count", "ready_count", "needs_review_count", "blocked_count", "error_count"],
+          "required": ["task_count", "linked_task_count", "pull_request_count", "open_pull_request_count", "merged_pull_request_count", "ready_count", "needs_review_count", "blocked_count", "error_count", "auto_release_ready_count"],
           "properties": {
             "task_count": { "type": "integer", "minimum": 0 },
             "linked_task_count": { "type": "integer", "minimum": 0 },
@@ -269,7 +269,8 @@
             "ready_count": { "type": "integer", "minimum": 0 },
             "needs_review_count": { "type": "integer", "minimum": 0 },
             "blocked_count": { "type": "integer", "minimum": 0 },
-            "error_count": { "type": "integer", "minimum": 0 }
+            "error_count": { "type": "integer", "minimum": 0 },
+            "auto_release_ready_count": { "type": "integer", "minimum": 0 }
           }
         },
         "tasks": { "type": "array", "items": { "type": "object" } }

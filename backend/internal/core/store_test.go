@@ -1004,7 +1004,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 	if payload.ProtocolVersion != "mergeos.protocol.manifest.v1" || payload.Kind != "protocol_manifest" {
 		t.Fatalf("unexpected manifest header: %#v", payload)
 	}
-	if len(payload.Schemas) != 24 {
+	if len(payload.Schemas) != 25 {
 		t.Fatalf("manifest schemas = %d: %#v", len(payload.Schemas), payload.Schemas)
 	}
 	schemas := map[string]bool{}
@@ -1013,7 +1013,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 		schemas[schema.Version] = true
 		descriptions[schema.Version] = schema.Description
 	}
-	for _, required := range []string{"mergeos.task.v1", "mergeos.task-claim.v1", "mergeos.agent.v1", "mergeos.contributor.v1", "mergeos.agent-action.v1", "mergeos.marketplace.v1", "mergeos.live-feed.v1", "mergeos.workflow.v1", "mergeos.estimate.v1", "mergeos.wallet-migration.v1", "mergeos.repo-import.v1", "mergeos.repo-sync.v1", "mergeos.dispute.v1", "mergeos.ai-workflow.v1", "mergeos.event.v1", "mergeos.ledger.v1", "mergeos.escrow.v1", "mergeos.payouts.v1", "mergeos.deployment.v1", "mergeos.pr-monitor.v1", "mergeos.scan.v1", "mergeos.customer-dashboard.v1", "mergeos.worker-dashboard.v1", "mergeos.admin-ops.v1"} {
+	for _, required := range []string{"mergeos.task.v1", "mergeos.task-claim.v1", "mergeos.agent.v1", "mergeos.contributor.v1", "mergeos.agent-action.v1", "mergeos.marketplace.v1", "mergeos.live-feed.v1", "mergeos.workflow.v1", "mergeos.estimate.v1", "mergeos.wallet-migration.v1", "mergeos.repo-import.v1", "mergeos.repo-sync.v1", "mergeos.dispute.v1", "mergeos.ai-workflow.v1", "mergeos.event.v1", "mergeos.ledger.v1", "mergeos.escrow.v1", "mergeos.payouts.v1", "mergeos.payout-release.v1", "mergeos.deployment.v1", "mergeos.pr-monitor.v1", "mergeos.scan.v1", "mergeos.customer-dashboard.v1", "mergeos.worker-dashboard.v1", "mergeos.admin-ops.v1"} {
 		if !schemas[required] {
 			t.Fatalf("manifest missing schema %s: %#v", required, payload.Schemas)
 		}
@@ -1045,6 +1045,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 		"POST /api/disputes",
 		"GET /api/projects/{id}/escrow",
 		"GET /api/projects/{id}/payouts",
+		"POST /api/projects/{id}/auto-release",
 		"GET /api/projects/{id}/deployment",
 		"GET /api/projects/{id}/ai-workflow",
 		"POST /api/projects/{id}/agent-actions",
@@ -2300,6 +2301,195 @@ func TestProjectPayoutsRouteReturnsSettlementContractAndSanitizesData(t *testing
 	server.Routes().ServeHTTP(forbiddenResp, forbiddenReq)
 	if forbiddenResp.Code != http.StatusForbidden {
 		t.Fatalf("other client payouts status = %d", forbiddenResp.Code)
+	}
+}
+
+func TestProjectAutoReleaseRouteReleasesReadyCandidateAndRecordsPolicy(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:       defaultTokenSymbol,
+		StatePath:         filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:    1000,
+		DevPaymentEnabled: true,
+		DevPaymentCode:    defaultDevPaymentCode,
+		GitHubOwner:       defaultGitHubOwner,
+		BountyRoot:        filepath.Join(tempDir, "bounties"),
+		SMTPFrom:          "noreply@mergeos.local",
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	auth, err := store.Register(RegisterRequest{
+		Name:        "Auto Release Client",
+		CompanyName: "Auto Co",
+		Email:       "auto-release-client@example.com",
+		Password:    "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	project, err := store.CreateProject(context.Background(), auth.User.ID, CreateProjectRequest{
+		Title:            "Auto-release proof",
+		ClientName:       "Private Auto Client",
+		CompanyName:      "Auto Co",
+		ClientEmail:      "auto-release-client@example.com",
+		Phone:            "+1 555 0188",
+		Brief:            "Release low-risk PR payouts automatically without leaking payment references.",
+		BudgetCents:      190000,
+		PaymentMethod:    PaymentPayPal,
+		PaymentReference: defaultDevPaymentCode,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	task := project.Tasks[0]
+	publicTaskID := marketplaceBountyID(project.ID, task.IssueNumber)
+	agentType := ""
+	if task.RequiredWorkerKind != WorkerHuman {
+		agentType = strings.TrimSpace(task.SuggestedAgentType)
+		if agentType == "" {
+			agentType = "github-pr"
+		}
+	}
+	request := ProjectAutoReleaseRequest{
+		TaskIDs: []string{publicTaskID},
+		Policy:  defaultAutoReleasePolicy,
+		Candidates: []ProjectAutoReleaseCandidate{
+			{
+				TaskID:            publicTaskID,
+				WorkerKind:        task.RequiredWorkerKind,
+				WorkerID:          "github:auto-builder",
+				AgentType:         agentType,
+				RewardCents:       task.RewardCents,
+				Repository:        "mergeos-bounties/mergeos",
+				PullRequestNumber: 222,
+				PullRequestURL:    "https://github.com/mergeos-bounties/mergeos/pull/222",
+				PullRequestTitle:  "Auto release proof",
+				ReadinessStatus:   "ready",
+				CanMerge:          true,
+				RiskLevel:         "low",
+				CanRelease:        true,
+			},
+		},
+	}
+
+	server := NewServer(cfg, store, payments)
+	unsafeRequest := request
+	unsafeRequest.Candidates = []ProjectAutoReleaseCandidate{
+		{
+			TaskID:           publicTaskID,
+			WorkerKind:       task.RequiredWorkerKind,
+			WorkerID:         "github:auto-builder",
+			AgentType:        agentType,
+			PullRequestURL:   "https://github.com/mergeos-bounties/mergeos/pull/222",
+			PullRequestTitle: "Auto release proof",
+		},
+	}
+	unsafeBody, err := json.Marshal(unsafeRequest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	unsafeReq := httptest.NewRequest(http.MethodPost, "/api/projects/"+project.ID+"/auto-release", bytes.NewReader(unsafeBody))
+	unsafeReq.Header.Set("Authorization", "Bearer "+auth.Token)
+	unsafeResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(unsafeResp, unsafeReq)
+	if unsafeResp.Code != http.StatusOK {
+		t.Fatalf("unsafe auto-release status = %d, body = %s", unsafeResp.Code, unsafeResp.Body.String())
+	}
+	var unsafePayload ProjectAutoReleaseResponse
+	if err := json.Unmarshal(unsafeResp.Body.Bytes(), &unsafePayload); err != nil {
+		t.Fatalf("decode unsafe auto-release: %v", err)
+	}
+	if unsafePayload.ReleasedCount != 0 || unsafePayload.SkippedCount != 1 || !strings.Contains(unsafePayload.Skipped[0].Reason, "release-ready") {
+		t.Fatalf("unsafe auto-release should be skipped by release gate: %#v", unsafePayload)
+	}
+
+	bodyBytes, err := json.Marshal(request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	reqHTTP := httptest.NewRequest(http.MethodPost, "/api/projects/"+project.ID+"/auto-release", bytes.NewReader(bodyBytes))
+	reqHTTP.Header.Set("Authorization", "Bearer "+auth.Token)
+	resp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(resp, reqHTTP)
+	if resp.Code != http.StatusOK {
+		t.Fatalf("auto-release status = %d, body = %s", resp.Code, resp.Body.String())
+	}
+
+	body := resp.Body.String()
+	for _, value := range []string{
+		"auto-release-client@example.com",
+		"+1 555 0188",
+		auth.User.ID,
+		defaultDevPaymentCode,
+		tempDir,
+	} {
+		if strings.Contains(body, value) {
+			t.Fatalf("auto-release response leaked private value %q: %s", value, body)
+		}
+	}
+
+	var payload ProjectAutoReleaseResponse
+	if err := json.Unmarshal(resp.Body.Bytes(), &payload); err != nil {
+		t.Fatal(err)
+	}
+	if payload.ProtocolVersion != "mergeos.payout-release.v1" || payload.Kind != "auto_release" || payload.ProjectID != project.ID {
+		t.Fatalf("unexpected auto-release protocol header: %#v", payload)
+	}
+	if payload.ReleasedCount != 1 || payload.SkippedCount != 0 || len(payload.Released) != 1 {
+		t.Fatalf("unexpected auto-release counts: %#v", payload)
+	}
+	if payload.Payouts.ReleaseCount != 1 || payload.Payouts.ReleasedCents != task.RewardCents {
+		t.Fatalf("auto-release did not update payout settlement: %#v", payload.Payouts)
+	}
+	var paidRow *ProjectPayoutRow
+	for index := range payload.Payouts.Payouts {
+		if payload.Payouts.Payouts[index].TaskID == task.ID {
+			paidRow = &payload.Payouts.Payouts[index]
+			break
+		}
+	}
+	if paidRow == nil {
+		t.Fatalf("auto-release response missing paid task row: %#v", payload.Payouts.Payouts)
+	}
+	if paidRow.WorkerID != "github:auto-builder" || paidRow.PayoutAccount != "github:auto-builder" || paidRow.PaidCents != task.RewardCents {
+		t.Fatalf("unexpected auto-release payout row: %#v", paidRow)
+	}
+	if !strings.Contains(paidRow.Reference, "pr:https://github.com/mergeos-bounties/mergeos/pull/222") || !strings.Contains(paidRow.Reference, "auto_release:"+defaultAutoReleasePolicy) {
+		t.Fatalf("payout row missing auto-release proof reference: %#v", paidRow)
+	}
+
+	secondReq := httptest.NewRequest(http.MethodPost, "/api/projects/"+project.ID+"/auto-release", bytes.NewReader(bodyBytes))
+	secondReq.Header.Set("Authorization", "Bearer "+auth.Token)
+	secondResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(secondResp, secondReq)
+	if secondResp.Code != http.StatusOK {
+		t.Fatalf("second auto-release status = %d, body = %s", secondResp.Code, secondResp.Body.String())
+	}
+	var secondPayload ProjectAutoReleaseResponse
+	if err := json.Unmarshal(secondResp.Body.Bytes(), &secondPayload); err != nil {
+		t.Fatal(err)
+	}
+	if secondPayload.ReleasedCount != 0 || secondPayload.SkippedCount != 1 {
+		t.Fatalf("expected accepted task to be skipped on second run: %#v", secondPayload)
+	}
+
+	otherAuth, err := store.Register(RegisterRequest{
+		Name:     "Other Auto Client",
+		Email:    "other-auto-client@example.com",
+		Password: "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	forbiddenReq := httptest.NewRequest(http.MethodPost, "/api/projects/"+project.ID+"/auto-release", bytes.NewReader(bodyBytes))
+	forbiddenReq.Header.Set("Authorization", "Bearer "+otherAuth.Token)
+	forbiddenResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(forbiddenResp, forbiddenReq)
+	if forbiddenResp.Code != http.StatusForbidden {
+		t.Fatalf("other client auto-release status = %d", forbiddenResp.Code)
 	}
 }
 

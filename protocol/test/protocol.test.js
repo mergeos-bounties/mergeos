@@ -29,6 +29,7 @@ test('loads stable task, workflow, ledger, and event schemas', () => {
     'mergeos.ledger.v1',
     'mergeos.live-feed.v1',
     'mergeos.marketplace.v1',
+    'mergeos.payout-release.v1',
     'mergeos.payouts.v1',
     'mergeos.pr-monitor.v1',
     'mergeos.repo-import.v1',
@@ -557,6 +558,33 @@ test('validates payout settlement protocol documents', () => {
   assert(invalid.errors.some((error) => error.path === 'payouts[0].type'));
   assert(invalid.errors.some((error) => error.path === 'payouts[0].paid_cents'));
   assert(invalid.errors.some((error) => error.path === 'payouts[0].released_at'));
+
+  const release = {
+    protocol_version: 'mergeos.payout-release.v1',
+    kind: 'auto_release',
+    project_id: 'prj_0001',
+    policy: 'mergeos.auto_release.low_risk_pr.v1',
+    released_count: 1,
+    skipped_count: 0,
+    released: [{ protocol_version: 'mergeos.task-claim.v1', kind: 'task_claim', task_id: 'tsk_0001' }],
+    skipped: [],
+    payouts,
+  };
+  assert.equal(validateProtocolDocument(release).valid, true);
+
+  const unsupportedRelease = validateProtocolDocument({
+    ...release,
+    protocol_version: 'mergeos.payout-release.v2',
+  });
+  assert.equal(unsupportedRelease.valid, false);
+  assert(unsupportedRelease.errors.some((error) => error.path === 'protocol_version'));
+
+  const invalidRelease = validateProtocolDocument({
+    ...release,
+    skipped: [{ task_id: 'tsk_0002', reason: '' }],
+  });
+  assert.equal(invalidRelease.valid, false);
+  assert(invalidRelease.errors.some((error) => error.path === 'skipped[0].reason'));
 });
 
 test('validates deployment protocol documents', () => {
@@ -736,6 +764,7 @@ test('validates PR monitor protocol documents', () => {
       needs_review_count: 0,
       blocked_count: 1,
       error_count: 0,
+      auto_release_ready_count: 1,
     },
     tasks: [
       {
@@ -743,9 +772,37 @@ test('validates PR monitor protocol documents', () => {
         issue_number: 12,
         title: 'Fix checkout UI',
         status: 'open',
+        reward_cents: 12500,
+        worker_kind: 'human',
+        worker_id: 'github:maya-dev',
         issue_url: 'https://github.com/mergeos-bounties/mergeos/issues/12',
         repository: 'mergeos-bounties/mergeos',
         monitor_status: 'synced',
+        auto_release_packet: {
+          status: 'ready',
+          can_auto_release: true,
+          release_endpoint: '/api/projects/prj_0001/auto-release',
+          method: 'POST',
+          payload: {
+            task_ids: ['tsk_0001'],
+            policy: 'mergeos.auto_release.low_risk_pr.v1',
+            candidates: [{
+              task_id: 'tsk_0001',
+              worker_kind: 'human',
+              worker_id: 'github:maya-dev',
+              reward_cents: 12500,
+              repository: 'mergeos-bounties/mergeos',
+              pull_request_number: 151,
+              pull_request_url: 'https://github.com/mergeos-bounties/mergeos/pull/151',
+              pull_request_title: 'Fix checkout UI',
+              readiness_status: 'ready',
+              can_merge: true,
+              risk_level: 'low',
+              draft: false,
+              can_release: true,
+            }],
+          },
+        },
         updated_at: now,
         pull_requests: [
           {
@@ -1070,6 +1127,7 @@ test('validates customer dashboard protocol documents', () => {
         needs_review_count: 0,
         blocked_count: 0,
         error_count: 0,
+        auto_release_ready_count: 1,
       },
       tasks: [{ task_id: 'tsk_0001', monitor_status: 'ready' }],
       updated_at: now,

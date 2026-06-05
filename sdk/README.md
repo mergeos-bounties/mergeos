@@ -39,6 +39,11 @@ const payouts = await mergeos.projectPayouts(projects[0].id);
 console.log(payouts.protocol_version, payouts.release_status);
 const pulls = await mergeos.projectPullRequests(projects[0].id);
 console.log(pulls.protocol_version, pulls.stats.ready_count);
+const autoReleasePacket = pulls.tasks.find((row) => row.auto_release_packet)?.auto_release_packet;
+if (autoReleasePacket) {
+  const release = await mergeos.projectAutoRelease(projects[0].id, autoReleasePacket.payload);
+  console.log(release.kind, release.released_count);
+}
 const deployment = await mergeos.projectDeployment(projects[0].id);
 console.log(deployment.protocol_version, deployment.progress);
 const workflow = await mergeos.projectAIWorkflow(projects[0].id);
@@ -108,6 +113,24 @@ await mergeos.publicRevealTestSettingsEntry('tse_0001', 'shared-password');
 await mergeos.createProject(projectPayload);
 await mergeos.projectEscrow('prj_0001');
 await mergeos.projectPayouts('prj_0001');
+await mergeos.projectAutoRelease('prj_0001', {
+  task_ids: ['tsk_0001'],
+  candidates: [{
+    task_id: 'tsk_0001',
+    worker_kind: 'human',
+    worker_id: 'github:contributor',
+    reward_cents: 12000,
+    repository: 'acme/repo',
+    pull_request_number: 120,
+    pull_request_url: 'https://github.com/acme/repo/pull/120',
+    pull_request_title: 'Ship accepted work',
+    readiness_status: 'ready',
+    can_merge: true,
+    risk_level: 'low',
+    draft: false,
+    can_release: true,
+  }],
+});
 await mergeos.projectDashboard('prj_0001');
 await mergeos.projectPullRequests('prj_0001');
 await mergeos.projectDeployment('prj_0001');

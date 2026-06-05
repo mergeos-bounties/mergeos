@@ -1601,27 +1601,40 @@ func (s *Store) AcceptTaskWithReviewReference(taskID string, req AcceptTaskReque
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	task, _, err := s.acceptTaskWithReviewReferenceLocked(taskID, req, rewardCents, bountyType, reference)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.saveLocked(); err != nil {
+		return nil, err
+	}
+
+	copyTask := *task
+	return &copyTask, nil
+}
+
+func (s *Store) acceptTaskWithReviewReferenceLocked(taskID string, req AcceptTaskRequest, rewardCents int64, bountyType, reference string) (*Task, LedgerEntry, error) {
 	task, ok := s.tasks[taskID]
 	if !ok {
-		return nil, errors.New("task not found")
+		return nil, LedgerEntry{}, errors.New("task not found")
 	}
 	if task.Status == TaskAccepted {
-		return nil, errors.New("task is already accepted")
+		return nil, LedgerEntry{}, errors.New("task is already accepted")
 	}
 	if req.WorkerKind != WorkerHuman && req.WorkerKind != WorkerAgent && req.WorkerKind != WorkerHybrid {
-		return nil, errors.New("worker kind must be human, agent, or hybrid")
+		return nil, LedgerEntry{}, errors.New("worker kind must be human, agent, or hybrid")
 	}
 	if strings.TrimSpace(req.WorkerID) == "" {
-		return nil, errors.New("worker id is required")
+		return nil, LedgerEntry{}, errors.New("worker id is required")
 	}
 	if task.RequiredWorkerKind != req.WorkerKind {
-		return nil, fmt.Errorf("task requires %s work", task.RequiredWorkerKind)
+		return nil, LedgerEntry{}, fmt.Errorf("task requires %s work", task.RequiredWorkerKind)
 	}
 	if req.WorkerKind != WorkerHuman && strings.TrimSpace(req.AgentType) == "" {
-		return nil, errors.New("agent type is required for agent or hybrid work")
+		return nil, LedgerEntry{}, errors.New("agent type is required for agent or hybrid work")
 	}
 	if req.WorkerKind == WorkerHuman && strings.TrimSpace(req.AgentType) != "" {
-		return nil, errors.New("agent type must be empty for human work")
+		return nil, LedgerEntry{}, errors.New("agent type must be empty for human work")
 	}
 
 	workerID := normalizeWorkerID(req.WorkerID)
@@ -1653,12 +1666,7 @@ func (s *Store) AcceptTaskWithReviewReference(taskID string, req AcceptTaskReque
 		status := s.emailer.Send(project.ClientEmail, subject, body)
 		s.addNotificationLocked(project.ClientUserID, project.ID, "email", subject, body, status)
 	}
-	if err := s.saveLocked(); err != nil {
-		return nil, err
-	}
-
-	copyTask := *task
-	return &copyTask, nil
+	return task, entry, nil
 }
 
 func (s *Store) TaskPayoutAccount(taskID string) (string, bool) {

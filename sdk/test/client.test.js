@@ -464,6 +464,7 @@ test('exposes project workflow and admin ops routes', async () => {
   const fetchImpl = fakeFetch([
     { status: 200, body: { protocol_version: 'mergeos.escrow.v1', release_status: 'funded' } },
     { status: 200, body: { protocol_version: 'mergeos.payouts.v1', release_status: 'releasing', payouts: [] } },
+    { status: 200, body: { protocol_version: 'mergeos.payout-release.v1', kind: 'auto_release', released_count: 1, skipped_count: 0 } },
     { status: 200, body: { project: { project_id: 'prj_1' }, task_graph: { stats: { node_count: 2 } } } },
     { status: 200, body: { protocol_version: 'mergeos.pr-monitor.v1', stats: { pull_request_count: 2 }, tasks: [] } },
     { status: 200, body: { protocol_version: 'mergeos.deployment.v1', status: 'validating' } },
@@ -481,6 +482,25 @@ test('exposes project workflow and admin ops routes', async () => {
 
   const escrow = await client.projectEscrow('prj_1');
   const payouts = await client.projectPayouts('prj_1');
+  const release = await client.projectAutoRelease('prj_1', {
+    task_ids: ['tsk_1'],
+    policy: 'mergeos.auto_release.low_risk_pr.v1',
+    candidates: [{
+      task_id: 'tsk_1',
+      worker_kind: 'human',
+      worker_id: 'github:builder',
+      reward_cents: 5000,
+      repository: 'mergeos-bounties/mergeos',
+      pull_request_number: 151,
+      pull_request_url: 'https://github.com/mergeos-bounties/mergeos/pull/151',
+      pull_request_title: 'Ship accepted work',
+      readiness_status: 'ready',
+      can_merge: true,
+      risk_level: 'low',
+      draft: false,
+      can_release: true,
+    }],
+  });
   const dashboard = await client.projectDashboard('prj_1');
   const pulls = await client.projectPullRequests('prj_1');
   const deployment = await client.projectDeployment('prj_1');
@@ -496,6 +516,8 @@ test('exposes project workflow and admin ops routes', async () => {
 
   assert.equal(escrow.protocol_version, 'mergeos.escrow.v1');
   assert.equal(payouts.protocol_version, 'mergeos.payouts.v1');
+  assert.equal(release.protocol_version, 'mergeos.payout-release.v1');
+  assert.equal(release.released_count, 1);
   assert.equal(dashboard.project.project_id, 'prj_1');
   assert.equal(pulls.protocol_version, 'mergeos.pr-monitor.v1');
   assert.equal(pulls.stats.pull_request_count, 2);
@@ -515,20 +537,42 @@ test('exposes project workflow and admin ops routes', async () => {
   assert.equal(reputation.stats.worker_count, 1);
   assert.equal(fetchImpl.calls[0].url, '/api/projects/prj_1/escrow');
   assert.equal(fetchImpl.calls[1].url, '/api/projects/prj_1/payouts');
-  assert.equal(fetchImpl.calls[2].url, '/api/projects/prj_1/dashboard');
-  assert.equal(fetchImpl.calls[3].url, '/api/projects/prj_1/pull-requests');
-  assert.equal(fetchImpl.calls[4].url, '/api/projects/prj_1/deployment');
-  assert.equal(fetchImpl.calls[5].url, '/api/projects/prj_1/ai-workflow');
-  assert.equal(fetchImpl.calls[6].url, '/api/projects/prj_1/agent-actions');
-  assert.equal(fetchImpl.calls[6].options.method, 'POST');
-  assert.equal(fetchImpl.calls[7].url, '/api/projects/prj_1/task-graph');
-  assert.equal(fetchImpl.calls[8].url, '/api/projects/prj_1/protocol/workflow');
-  assert.equal(fetchImpl.calls[9].url, '/api/projects/prj_1/repo-scan');
-  assert.equal(fetchImpl.calls[10].url, '/api/projects/prj_1/protocol/scan');
-  assert.equal(fetchImpl.calls[11].url, '/api/projects/prj_1/repo-sync');
-  assert.equal(fetchImpl.calls[11].options.method, 'POST');
-  assert.equal(fetchImpl.calls[12].url, '/api/admin/ops-queue');
-  assert.equal(fetchImpl.calls[13].url, '/api/admin/reputation');
+  assert.equal(fetchImpl.calls[2].url, '/api/projects/prj_1/auto-release');
+  assert.equal(fetchImpl.calls[2].options.method, 'POST');
+  assert.equal(fetchImpl.calls[2].options.headers.Authorization, 'Bearer admin-token');
+  assert.equal(fetchImpl.calls[2].options.body, JSON.stringify({
+    task_ids: ['tsk_1'],
+    policy: 'mergeos.auto_release.low_risk_pr.v1',
+    candidates: [{
+      task_id: 'tsk_1',
+      worker_kind: 'human',
+      worker_id: 'github:builder',
+      reward_cents: 5000,
+      repository: 'mergeos-bounties/mergeos',
+      pull_request_number: 151,
+      pull_request_url: 'https://github.com/mergeos-bounties/mergeos/pull/151',
+      pull_request_title: 'Ship accepted work',
+      readiness_status: 'ready',
+      can_merge: true,
+      risk_level: 'low',
+      draft: false,
+      can_release: true,
+    }],
+  }));
+  assert.equal(fetchImpl.calls[3].url, '/api/projects/prj_1/dashboard');
+  assert.equal(fetchImpl.calls[4].url, '/api/projects/prj_1/pull-requests');
+  assert.equal(fetchImpl.calls[5].url, '/api/projects/prj_1/deployment');
+  assert.equal(fetchImpl.calls[6].url, '/api/projects/prj_1/ai-workflow');
+  assert.equal(fetchImpl.calls[7].url, '/api/projects/prj_1/agent-actions');
+  assert.equal(fetchImpl.calls[7].options.method, 'POST');
+  assert.equal(fetchImpl.calls[8].url, '/api/projects/prj_1/task-graph');
+  assert.equal(fetchImpl.calls[9].url, '/api/projects/prj_1/protocol/workflow');
+  assert.equal(fetchImpl.calls[10].url, '/api/projects/prj_1/repo-scan');
+  assert.equal(fetchImpl.calls[11].url, '/api/projects/prj_1/protocol/scan');
+  assert.equal(fetchImpl.calls[12].url, '/api/projects/prj_1/repo-sync');
+  assert.equal(fetchImpl.calls[12].options.method, 'POST');
+  assert.equal(fetchImpl.calls[13].url, '/api/admin/ops-queue');
+  assert.equal(fetchImpl.calls[14].url, '/api/admin/reputation');
 });
 
 test('exposes admin operations, review, settings, and integration routes', async () => {

@@ -118,7 +118,7 @@ func TestProjectPullRequestsMonitorSummarizesReadinessWithoutAdminFields(t *test
 	if payload.ProjectID != project.ID || payload.Stats.TaskCount != 2 || payload.Stats.LinkedTaskCount != 1 {
 		t.Fatalf("unexpected project PR summary: %#v", payload)
 	}
-	if payload.Stats.PullRequestCount != 2 || payload.Stats.OpenPullRequestCount != 2 || payload.Stats.ReadyCount != 1 || payload.Stats.BlockedCount != 1 || payload.Stats.ErrorCount != 0 {
+	if payload.Stats.PullRequestCount != 2 || payload.Stats.OpenPullRequestCount != 2 || payload.Stats.ReadyCount != 1 || payload.Stats.BlockedCount != 1 || payload.Stats.ErrorCount != 0 || payload.Stats.AutoReleaseReadyCount != 1 {
 		t.Fatalf("unexpected project PR stats: %#v", payload.Stats)
 	}
 	if len(payload.Tasks) != 2 || payload.Tasks[0].MonitorStatus != "synced" || payload.Tasks[1].MonitorStatus != "unlinked" {
@@ -132,6 +132,32 @@ func TestProjectPullRequestsMonitorSummarizesReadinessWithoutAdminFields(t *test
 	}
 	if payload.Tasks[0].PullRequests[1].Readiness.Status != "blocked" || payload.Tasks[0].PullRequests[1].Readiness.CanMerge {
 		t.Fatalf("expected second PR to be blocked: %#v", payload.Tasks[0].PullRequests[1])
+	}
+	if payload.Tasks[0].RewardCents != 50 || payload.Tasks[0].WorkerKind != WorkerHuman {
+		t.Fatalf("expected task release metadata: %#v", payload.Tasks[0])
+	}
+	if payload.Tasks[0].ReleasePacket == nil || payload.Tasks[0].ReleasePacket["can_release"] != true {
+		t.Fatalf("expected single release packet: %#v", payload.Tasks[0].ReleasePacket)
+	}
+	if payload.Tasks[0].AutoReleasePacket == nil || payload.Tasks[0].AutoReleasePacket["can_auto_release"] != true {
+		t.Fatalf("expected auto-release packet: %#v", payload.Tasks[0].AutoReleasePacket)
+	}
+	payloadMap, ok := payload.Tasks[0].AutoReleasePacket["payload"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected auto-release payload map: %#v", payload.Tasks[0].AutoReleasePacket)
+	}
+	if payloadMap["policy"] != defaultAutoReleasePolicy {
+		t.Fatalf("unexpected auto-release policy: %#v", payloadMap)
+	}
+	candidates, ok := payloadMap["candidates"].([]ProjectAutoReleaseCandidate)
+	if !ok || len(candidates) != 1 {
+		t.Fatalf("unexpected auto-release candidates: %#v", payloadMap["candidates"])
+	}
+	if candidates[0].TaskID != "tsk_1" || candidates[0].WorkerID != "github:builder" || candidates[0].PullRequestURL != "https://github.com/mergeos-bounties/mergeos/pull/12" {
+		t.Fatalf("unexpected auto-release candidate: %#v", candidates[0])
+	}
+	if candidates[0].RewardCents != 50 || candidates[0].Repository != "mergeos-bounties/mergeos" || candidates[0].PullRequestNumber != 12 || candidates[0].ReadinessStatus != "ready" || !candidates[0].CanMerge || candidates[0].RiskLevel != "low" || candidates[0].Draft || !candidates[0].CanRelease {
+		t.Fatalf("unexpected auto-release release gate: %#v", candidates[0])
 	}
 }
 
@@ -301,7 +327,9 @@ func TestPublicProjectPullRequestsMonitorOmitsInternalTaskIDs(t *testing.T) {
 	if err != nil {
 		t.Fatalf("marshal public PR monitor: %v", err)
 	}
-	if strings.Contains(string(body), "tsk_public") || strings.Contains(string(body), `"task_id"`) {
-		t.Fatalf("public PR monitor leaked internal task id: %s", string(body))
+	for _, value := range []string{"tsk_public", `"task_id"`, `"release_packet"`, `"auto_release_packet"`, "github:builder"} {
+		if strings.Contains(string(body), value) {
+			t.Fatalf("public PR monitor leaked private release value %q: %s", value, string(body))
+		}
 	}
 }

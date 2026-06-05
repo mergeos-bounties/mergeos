@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"fmt"
 	"regexp"
 	"sort"
 	"strconv"
@@ -39,6 +40,7 @@ func projectPullRequestsMonitor(ctx context.Context, lister projectPullRequestLi
 	}
 	sortTasks(tasks)
 	response.Stats.TaskCount = len(tasks)
+	autoReleaseRows := []projectAutoReleaseMonitorRow{}
 
 	for _, task := range tasks {
 		row := ProjectTaskPullRequests{
@@ -46,6 +48,10 @@ func projectPullRequestsMonitor(ctx context.Context, lister projectPullRequestLi
 			IssueNumber:   task.IssueNumber,
 			Title:         task.Title,
 			Status:        string(task.Status),
+			RewardCents:   task.RewardCents,
+			WorkerKind:    task.RequiredWorkerKind,
+			WorkerID:      task.WorkerID,
+			AgentType:     projectPullRequestTaskAgentType(task),
 			IssueURL:      marketplacePublicRepoURL(task.IssueURL),
 			MonitorStatus: "unlinked",
 			PullRequests:  []ProjectPullRequestSummary{},
@@ -83,11 +89,20 @@ func projectPullRequestsMonitor(ctx context.Context, lister projectPullRequestLi
 				row.UpdatedAt = summary.UpdatedAt
 			}
 		}
+		if candidate, ok := projectAutoReleaseCandidateForTask(task, row); ok {
+			autoReleaseRows = append(autoReleaseRows, projectAutoReleaseMonitorRow{
+				RowIndex:   len(response.Tasks),
+				Task:       task,
+				Candidate:  candidate,
+				Repository: row.Repository,
+			})
+		}
 		if row.UpdatedAt.After(response.UpdatedAt) {
 			response.UpdatedAt = row.UpdatedAt
 		}
 		response.Tasks = append(response.Tasks, row)
 	}
+	attachProjectAutoReleasePackets(&response, project.ID, autoReleaseRows)
 	return response
 }
 
@@ -98,6 +113,9 @@ func publicProjectPullRequestsMonitor(ctx context.Context, lister projectPullReq
 	response := projectPullRequestsMonitor(ctx, lister, project)
 	for i := range response.Tasks {
 		response.Tasks[i].TaskID = ""
+		response.Tasks[i].WorkerID = ""
+		response.Tasks[i].ReleasePacket = nil
+		response.Tasks[i].AutoReleasePacket = nil
 	}
 	return response
 }
@@ -266,4 +284,130 @@ func projectPullRequestsAddStats(stats *ProjectPullRequestStats, pull ProjectPul
 	case "blocked":
 		stats.BlockedCount++
 	}
+}
+
+type projectAutoReleaseMonitorRow struct {
+	RowIndex   int
+	Task       *Task
+	Candidate  ProjectAutoReleaseCandidate
+	Repository string
+}
+
+func projectPullRequestTaskAgentType(task *Task) string {
+	if task == nil {
+		return ""
+	}
+	if strings.TrimSpace(task.AgentType) != "" {
+		return strings.TrimSpace(task.AgentType)
+	}
+	return strings.TrimSpace(task.SuggestedAgentType)
+}
+
+func projectAutoReleaseCandidateForTask(task *Task, row ProjectTaskPullRequests) (ProjectAutoReleaseCandidate, bool) {
+	if task == nil || task.Status == TaskAccepted {
+		return ProjectAutoReleaseCandidate{}, false
+	}
+	var selected *ProjectPullRequestSummary
+	for index := range row.PullRequests {
+		pull := &row.PullRequests[index]
+		readiness := pull.Readiness
+		if !readiness.CanMerge || !strings.EqualFold(readiness.Status, "ready") || !strings.EqualFold(readiness.RiskLevel, "low") {
+			continue
+		}
+		if pull.Draft || normalizeLedgerPullURL(pull.HTMLURL) == "" {
+			continue
+		}
+		if selected == nil || pull.UpdatedAt.After(selected.UpdatedAt) {
+			selected = pull
+		}
+	}
+	if selected == nil {
+		return ProjectAutoReleaseCandidate{}, false
+	}
+	workerID, err := githubWorkerID(selected.Author)
+	if err != nil {
+		return ProjectAutoReleaseCandidate{}, false
+	}
+	candidate := ProjectAutoReleaseCandidate{
+		TaskID:            task.ID,
+		WorkerKind:        task.RequiredWorkerKind,
+		WorkerID:          workerID,
+		AgentType:         "",
+		RewardCents:       task.RewardCents,
+		Repository:        row.Repository,
+		PullRequestNumber: selected.Number,
+		PullRequestURL:    normalizeLedgerPullURL(selected.HTMLURL),
+		PullRequestTitle:  selected.Title,
+		ReadinessStatus:   selected.Readiness.Status,
+		CanMerge:          selected.Readiness.CanMerge,
+		RiskLevel:         selected.Readiness.RiskLevel,
+		Draft:             selected.Draft,
+		CanRelease:        true,
+	}
+	if candidate.WorkerKind != WorkerHuman {
+		candidate.AgentType = projectPullRequestTaskAgentType(task)
+		if candidate.AgentType == "" {
+			candidate.AgentType = "github-pr"
+		}
+	}
+	return candidate, true
+}
+
+func attachProjectAutoReleasePackets(response *ProjectPullRequestsResponse, projectID string, rows []projectAutoReleaseMonitorRow) {
+	if response == nil || len(rows) == 0 {
+		return
+	}
+	candidates := make([]ProjectAutoReleaseCandidate, 0, len(rows))
+	for _, row := range rows {
+		candidates = append(candidates, row.Candidate)
+	}
+	for _, row := range rows {
+		if row.RowIndex < 0 || row.RowIndex >= len(response.Tasks) {
+			continue
+		}
+		response.Tasks[row.RowIndex].ReleasePacket = projectAutoReleasePacket(projectID, []ProjectAutoReleaseCandidate{row.Candidate}, false, row.Repository)
+		response.Tasks[row.RowIndex].AutoReleasePacket = projectAutoReleasePacket(projectID, candidates, true, row.Repository)
+		response.Stats.AutoReleaseReadyCount++
+	}
+}
+
+func projectAutoReleasePacket(projectID string, candidates []ProjectAutoReleaseCandidate, auto bool, repository string) map[string]any {
+	taskIDs := make([]string, 0, len(candidates))
+	for _, candidate := range candidates {
+		if strings.TrimSpace(candidate.TaskID) != "" {
+			taskIDs = append(taskIDs, candidate.TaskID)
+		}
+	}
+	packet := map[string]any{
+		"status":           "ready",
+		"method":           "POST",
+		"release_endpoint": fmt.Sprintf("/api/projects/%s/auto-release", projectID),
+		"policy":           defaultAutoReleasePolicy,
+		"payload": map[string]any{
+			"task_ids":   taskIDs,
+			"policy":     defaultAutoReleasePolicy,
+			"candidates": candidates,
+		},
+		"context_urls": map[string]string{
+			"workflow": fmt.Sprintf("/api/projects/%s/protocol/workflow", projectID),
+			"payouts":  fmt.Sprintf("/api/projects/%s/payouts", projectID),
+			"ledger":   "/api/public/ledger",
+		},
+		"runbook": []map[string]any{
+			{"step": 1, "action": "verify_pr", "label": "Verify PR readiness", "purpose": "Evidence, repository star, and low-risk labels are present."},
+			{"step": 2, "action": "release_payout", "label": "Release escrow payout", "purpose": "Accept the task and write a task_payment ledger row."},
+			{"step": 3, "action": "prove_release", "label": "Record ledger proof", "purpose": "Expose payout, PR reference, and auto-release policy in payouts."},
+		},
+	}
+	if strings.TrimSpace(repository) != "" {
+		packet["repository"] = repository
+	}
+	if auto {
+		packet["can_auto_release"] = true
+		packet["mode"] = "batch"
+	} else {
+		packet["can_release"] = true
+		packet["mode"] = "single"
+	}
+	return packet
 }
