@@ -274,12 +274,20 @@ ORDER BY created_at, address`)
 	for rows.Next() {
 		wallet := &Wallet{}
 		var linkedAt sql.NullTime
+		var chain, legacyAddress, ownerUserID, githubID, githubUsername, recoverySalt, recoveryHash sql.NullString
 		if err := rows.Scan(
-			&wallet.Address, &wallet.Chain, &wallet.LegacyAddress, &wallet.OwnerUserID, &wallet.GitHubID, &wallet.GitHubUsername,
-			&wallet.RecoverySalt, &wallet.RecoveryHash, &wallet.CreatedAt, &linkedAt,
+			&wallet.Address, &chain, &legacyAddress, &ownerUserID, &githubID, &githubUsername,
+			&recoverySalt, &recoveryHash, &wallet.CreatedAt, &linkedAt,
 		); err != nil {
 			return fmt.Errorf("scan wallet: %w", err)
 		}
+		wallet.Chain = stringFromNull(chain)
+		wallet.LegacyAddress = stringFromNull(legacyAddress)
+		wallet.OwnerUserID = stringFromNull(ownerUserID)
+		wallet.GitHubID = stringFromNull(githubID)
+		wallet.GitHubUsername = stringFromNull(githubUsername)
+		wallet.RecoverySalt = stringFromNull(recoverySalt)
+		wallet.RecoveryHash = stringFromNull(recoveryHash)
 		wallet.LinkedAt = timePtr(linkedAt)
 		state.Wallets = append(state.Wallets, wallet)
 	}
@@ -904,6 +912,13 @@ func timePtr(value sql.NullTime) *time.Time {
 	}
 	t := value.Time
 	return &t
+}
+
+func stringFromNull(value sql.NullString) string {
+	if !value.Valid {
+		return ""
+	}
+	return value.String
 }
 func (p *postgresPersistence) loadTestSettingsConfig(ctx context.Context, state *persistedState) error {
 	var config TestSettingsConfig
