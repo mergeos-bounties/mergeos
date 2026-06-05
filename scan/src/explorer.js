@@ -19,8 +19,15 @@ export function normalizeLedgerAccount(account = '') {
   const normalized = value.toLowerCase();
   if (/^wallet:0x[0-9a-f]{40}$/.test(normalized)) return normalized.slice('wallet:'.length);
   if (/^0x[0-9a-f]{40}$/.test(normalized)) return normalized;
+  if (normalized.startsWith('worker:github:')) return githubAccount(value.slice('worker:github:'.length));
+  if (normalized.startsWith('github:')) return githubAccount(value.slice('github:'.length));
   if (normalized.startsWith('reserve:task:')) return 'reserve:task';
   return value;
+}
+
+function githubAccount(username = '') {
+  const normalized = String(username || '').trim().replace(/^\/+|\/+$/g, '').toLowerCase();
+  return normalized ? `github:${normalized}` : '';
 }
 
 export function sortLedgerEntries(entries = []) {
