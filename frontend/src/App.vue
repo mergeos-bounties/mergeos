@@ -1952,16 +1952,37 @@
                       <p>{{ item.body }}</p>
                       <small v-if="item.nextAction">{{ item.nextAction }}</small>
                       <small v-if="item.auditLabel || item.amount">{{ item.auditLabel }}<template v-if="item.auditLabel && item.amount"> / </template>{{ item.amount }}</small>
-                      <small>{{ item.project }} · {{ item.task || item.reference }} · {{ item.when }}</small>
+                      <small>{{ item.project }} - {{ item.task || item.reference }} - {{ item.when }}</small>
                     </div>
                     <b>{{ item.status }}</b>
-                    <a v-if="item.url" :href="item.url" target="_blank" rel="noreferrer">
-                      <Link2 :size="12" />
-                      Open
-                    </a>
-                    <button v-if="item.canExecute" type="button" :disabled="releasingTaskID === item.id" @click="executeAdminOpsAction(item)">
-                      {{ releasingTaskID === item.id ? item.busyLabel : item.actionLabel }}
-                    </button>
+                    <div class="admin-ops-row-actions">
+                      <a v-if="item.url" :href="item.url" target="_blank" rel="noreferrer">
+                        <Link2 :size="12" />
+                        Open
+                      </a>
+                      <button v-if="item.canExecute" type="button" :disabled="releasingTaskID === item.id" @click="executeAdminOpsAction(item)">
+                        {{ releasingTaskID === item.id ? item.busyLabel : item.actionLabel }}
+                      </button>
+                      <div v-if="item.canDecideProposal" class="admin-ops-decision-actions">
+                        <button
+                          type="button"
+                          :disabled="adminProposalDecisionID === item.proposalID"
+                          @click="decideAdminOpsProposal(item, 'accepted')"
+                        >
+                          <CheckCircle2 :size="12" />
+                          Accept
+                        </button>
+                        <button
+                          class="decline"
+                          type="button"
+                          :disabled="adminProposalDecisionID === item.proposalID"
+                          @click="decideAdminOpsProposal(item, 'declined')"
+                        >
+                          <X :size="12" />
+                          Decline
+                        </button>
+                      </div>
+                    </div>
                   </article>
                 </div>
                 <article v-else class="dash-empty-state compact">
@@ -10405,6 +10426,7 @@ const dashboardProjectDashboard = ref(null);
 const dashboardProjectDashboardLoading = ref(false);
 const dashboardProjectDashboardError = ref('');
 const decidingProposalID = ref('');
+const adminProposalDecisionID = ref('');
 const dashboardDeployment = ref(null);
 const dashboardDeploymentLoading = ref(false);
 const dashboardDeploymentError = ref('');
@@ -24241,6 +24263,33 @@ async function executeAdminOpsAction(item = {}) {
   }
 }
 
+async function decideAdminOpsProposal(item = {}, decision = '') {
+  const proposalID = String(item.proposalID || '').trim();
+  const normalizedDecision = String(decision || '').trim().toLowerCase();
+  if (!proposalID || adminProposalDecisionID.value || !['accepted', 'declined'].includes(normalizedDecision)) return;
+
+  adminProposalDecisionID.value = proposalID;
+  try {
+    const response = await api(`/api/proposals/${encodeURIComponent(proposalID)}/decision`, {
+      method: 'POST',
+      body: JSON.stringify({ decision: normalizedDecision }),
+    });
+    await Promise.allSettled([
+      loadAdminConsoleData({ silent: true }),
+      loadMarketplaceData({ silent: true }),
+      loadLiveFeedData({ silent: true }),
+      loadDashboardData({ silent: true }),
+      loadWorkerDashboardData({ silent: true }),
+    ]);
+    const status = response?.proposal?.status || normalizedDecision;
+    showToast(status === 'accepted' ? `Accepted proposal for ${item.task || 'task'}.` : `Declined proposal for ${item.task || 'task'}.`);
+  } catch (error) {
+    showToast(error.message || 'Could not update proposal.');
+  } finally {
+    adminProposalDecisionID.value = '';
+  }
+}
+
 function deploymentValidationActionID(projectID = '') {
   return `deployment-validation:${projectID || 'project'}`;
 }
@@ -24653,9 +24702,13 @@ function mapAdminOpsItem(item = {}) {
   const actionPacket = item.action_packet || {};
   const actionLabel = adminOpsActionLabel(actionPacket);
   const auditLabel = ledgerAuditLabel(item);
+  const rawType = String(item.type || '');
+  const rawStatus = String(item.status || 'needs review').toLowerCase();
+  const proposalID = rawType === 'proposal_review' ? adminOpsProposalID(item.id) : '';
   return {
     id: item.id || `${item.type || 'ops'}-${item.created_at || item.title}`,
-    type: toTitleLabel(item.type || 'ops item'),
+    rawType,
+    type: toTitleLabel(rawType || 'ops item'),
     severity: toTitleLabel(item.severity || 'medium'),
     tone: adminOpsTone(item.severity),
     title: item.title || 'Admin ops item',
@@ -24671,6 +24724,8 @@ function mapAdminOpsItem(item = {}) {
     amount: item.amount_cents ? formatMRGFromCents(item.amount_cents) : '',
     auditLabel,
     status: toTitleLabel(item.status || 'needs review'),
+    proposalID,
+    canDecideProposal: Boolean(proposalID && ['submitted', 'reviewing'].includes(rawStatus)),
     canExecute: actionPacket.can_execute === true,
     actionLabel,
     busyLabel: (actionPacket.resolution_payload || actionPacket.resolutionPayload) ? 'Recording' : 'Releasing',
@@ -24678,6 +24733,11 @@ function mapAdminOpsItem(item = {}) {
     nextAction: actionPacket.next_action || '',
     when: when.full,
   };
+}
+
+function adminOpsProposalID(itemID = '') {
+  const match = String(itemID || '').match(/^proposal:(.+)$/);
+  return match ? match[1] : '';
 }
 
 function adminOpsActionLabel(packet = {}) {

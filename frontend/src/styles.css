@@ -14408,7 +14408,7 @@ svg {
 }
 
 .admin-ops-row {
-  grid-template-columns: 82px minmax(0, 1fr) auto auto auto;
+  grid-template-columns: 82px minmax(0, 1fr) auto minmax(128px, auto);
 }
 
 .admin-ops-row div,
@@ -14467,6 +14467,23 @@ svg {
   white-space: nowrap;
 }
 
+.admin-ops-row-actions,
+.admin-ops-decision-actions {
+  min-width: 0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.admin-ops-row-actions {
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.admin-ops-decision-actions {
+  align-items: stretch;
+}
+
 .admin-user-list b.purple {
   background: #f3e8ff;
   color: #7e22ce;
@@ -14492,6 +14509,12 @@ svg {
 
 .admin-ops-row button {
   cursor: pointer;
+}
+
+.admin-ops-row button.decline {
+  border-color: #fecaca;
+  background: #fff1f2;
+  color: #be123c;
 }
 
 .admin-ops-row button:disabled {
@@ -17003,6 +17026,8 @@ svg {
 
   .admin-ops-row a,
   .admin-ops-row button,
+  .admin-ops-row-actions,
+  .admin-ops-decision-actions,
   .admin-dispute-item-actions,
   .admin-ops-row b,
   .admin-payout-list b,
@@ -17013,6 +17038,12 @@ svg {
 
   .admin-dispute-item-actions {
     justify-content: flex-start;
+  }
+
+  .admin-ops-row-actions,
+  .admin-ops-decision-actions {
+    justify-content: flex-start;
+    flex-wrap: wrap;
   }
 
   .dash-pr-stat {
