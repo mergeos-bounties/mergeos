@@ -535,7 +535,7 @@ func adminPullRequestSecretPath(path, name string) bool {
 }
 
 func adminPullRequestSecuritySensitivePath(path, name string) bool {
-	value := strings.Join([]string{path, name}, " ")
+	value := strings.ToLower(strings.Join([]string{path, name}, " "))
 	for _, keyword := range []string{
 		"admin", "auth", "oauth", "session", "token", "permission", "rbac",
 		"payment", "paypal", "usdt", "crypto", "webhook", "ledger", "escrow", "payout",
