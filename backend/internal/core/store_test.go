@@ -908,8 +908,91 @@ func TestCreateProjectCanDisableAgentRouting(t *testing.T) {
 		}
 	}
 	marketplace := store.Marketplace()
-	if len(marketplace.Agents) != 0 {
-		t.Fatalf("human-only project exposed agent lanes: %#v", marketplace.Agents)
+	if len(marketplace.Agents) != 2 {
+		t.Fatalf("human-only project should only expose baseline agent lanes: %#v", marketplace.Agents)
+	}
+	if agent := marketplaceAgentByType(marketplace.Agents, ceoAgentType); agent == nil ||
+		agent.Role != "ceo_planner" ||
+		!containsString(agent.SubagentTypes, designReviewAgentType) ||
+		agent.TaskCount != 0 ||
+		agent.OpenTaskCount != 0 ||
+		agent.BudgetCents != 0 {
+		t.Fatalf("human-only marketplace missing idle CEO agent: %#v", agent)
+	}
+	if agent := marketplaceAgentByType(marketplace.Agents, designReviewAgentType); agent == nil ||
+		agent.Role != "subagent" ||
+		agent.ParentAgentType != ceoAgentType ||
+		!containsString(agent.Focus, "visual_quality") ||
+		agent.TaskCount != 0 ||
+		agent.OpenTaskCount != 0 ||
+		agent.BudgetCents != 0 {
+		t.Fatalf("human-only marketplace missing idle design-review agent: %#v", agent)
+	}
+}
+
+func TestMarketplaceExposesBaselineAgentHierarchy(t *testing.T) {
+	store := &Store{
+		cfg:      Config{TokenSymbol: defaultTokenSymbol, StatePath: filepath.Join(t.TempDir(), "state.json")},
+		projects: map[string]*Project{},
+		tasks:    map[string]*Task{},
+	}
+
+	marketplace := store.Marketplace()
+	ceoAgent := marketplaceAgentByType(marketplace.Agents, ceoAgentType)
+	if ceoAgent == nil {
+		t.Fatalf("marketplace missing CEO strategy agent: %#v", marketplace.Agents)
+	}
+	if ceoAgent.Title != "CEO Strategy Agent" ||
+		ceoAgent.WorkerKind != WorkerAgent ||
+		ceoAgent.Role != "ceo_planner" ||
+		ceoAgent.DelegationEndpoint != agentQueueEndpoint ||
+		!containsString(ceoAgent.SubagentTypes, designReviewAgentType) ||
+		!containsString(ceoAgent.Focus, "idea_generation") ||
+		ceoAgent.TaskCount != 0 ||
+		ceoAgent.OpenTaskCount != 0 ||
+		ceoAgent.BudgetCents != 0 {
+		t.Fatalf("unexpected baseline CEO strategy agent: %#v", ceoAgent)
+	}
+
+	designAgent := marketplaceAgentByType(marketplace.Agents, designReviewAgentType)
+	if designAgent == nil {
+		t.Fatalf("marketplace missing design review agent: %#v", marketplace.Agents)
+	}
+	if designAgent.Title != "Design Review Agent" ||
+		designAgent.WorkerKind != WorkerAgent ||
+		designAgent.Role != "subagent" ||
+		designAgent.ParentAgentType != ceoAgentType ||
+		designAgent.DelegationEndpoint != agentQueueEndpoint ||
+		!containsString(designAgent.Focus, "visual_quality") ||
+		designAgent.TaskCount != 0 ||
+		designAgent.OpenTaskCount != 0 ||
+		designAgent.BudgetCents != 0 {
+		t.Fatalf("unexpected baseline design review agent: %#v", designAgent)
+	}
+
+	queue := store.PublicAgentQueue(20)
+	if queue.ProtocolVersion != "mergeos.agent-queue.v1" ||
+		queue.Kind != "agent_queue" ||
+		queue.Stats.TotalCount != 0 ||
+		queue.Stats.ReadyCount != 0 ||
+		queue.Stats.AgentCount != 2 ||
+		len(queue.Tasks) != 0 {
+		t.Fatalf("unexpected empty baseline agent queue: %#v", queue)
+	}
+	ceoQueueAgent := agentQueueAgentByType(queue.Agents, ceoAgentType)
+	if ceoQueueAgent == nil ||
+		ceoQueueAgent.Status != "standby" ||
+		ceoQueueAgent.QueueDepth != 0 ||
+		!containsString(ceoQueueAgent.SubagentTypes, designReviewAgentType) {
+		t.Fatalf("unexpected baseline CEO queue agent: %#v", ceoQueueAgent)
+	}
+	designQueueAgent := agentQueueAgentByType(queue.Agents, designReviewAgentType)
+	if designQueueAgent == nil ||
+		designQueueAgent.Status != "standby" ||
+		designQueueAgent.QueueDepth != 0 ||
+		designQueueAgent.ParentAgentType != ceoAgentType ||
+		!containsString(designQueueAgent.Focus, "visual_quality") {
+		t.Fatalf("unexpected baseline design queue agent: %#v", designQueueAgent)
 	}
 }
 
@@ -5798,4 +5881,22 @@ func protocolPayloadStringSliceContains(value any, expected string) bool {
 		}
 	}
 	return false
+}
+
+func marketplaceAgentByType(agents []*MarketplaceAgent, agentType string) *MarketplaceAgent {
+	for _, agent := range agents {
+		if agent != nil && agent.Type == agentType {
+			return agent
+		}
+	}
+	return nil
+}
+
+func agentQueueAgentByType(agents []AgentQueueAgent, agentType string) *AgentQueueAgent {
+	for i := range agents {
+		if agents[i].Type == agentType {
+			return &agents[i]
+		}
+	}
+	return nil
 }

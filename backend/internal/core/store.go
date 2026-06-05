@@ -1455,9 +1455,7 @@ func (s *Store) Marketplace() MarketplaceResponse {
 			contributor.LastPaidAt = *task.AcceptedAt
 		}
 	}
-	if len(agents) > 0 {
-		ensureAgentHierarchy(agents)
-	}
+	ensureAgentHierarchy(agents)
 
 	for _, contributor := range contributors {
 		hasGitHub, hasWallet, duplicateIdentityCount := s.workerIdentitySignalsForWorkerIDLocked(contributor.WorkerID)
