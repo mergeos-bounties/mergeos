@@ -122,9 +122,9 @@ func initLocalGit(repoPath string) {
 		return
 	}
 	commands := [][]string{
-		{"git", "init"},
-		{"git", "add", "."},
-		{"git", "-c", "user.name=MergeOS", "-c", "user.email=mergeos@local", "commit", "-m", "Initialize MergeOS bounty repo"},
+		{"git", "-c", "gc.auto=0", "-c", "maintenance.auto=false", "init"},
+		{"git", "-c", "gc.auto=0", "-c", "maintenance.auto=false", "add", "."},
+		{"git", "-c", "gc.auto=0", "-c", "maintenance.auto=false", "-c", "user.name=MergeOS", "-c", "user.email=mergeos@local", "commit", "-m", "Initialize MergeOS bounty repo"},
 	}
 	for _, parts := range commands {
 		cmd := exec.Command(parts[0], parts[1:]...)
