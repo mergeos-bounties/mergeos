@@ -219,6 +219,21 @@ func TestLocalOAuthRedirectBaseUsesForwardedFrontendHost(t *testing.T) {
 	}
 }
 
+func TestOAuthRedirectBaseOnlyDowngradesExactLoopbackHosts(t *testing.T) {
+	server := NewServer(Config{PrimaryDomain: "mergeos.shop"}, nil, nil)
+
+	spoofed := httptest.NewRequest("GET", "https://evil-localhost.example/api/auth/google/callback", nil)
+	spoofed.Host = "evil-localhost.example"
+	if got, want := server.getFrontRedirectBase(spoofed), "https://mergeos.shop"; got != want {
+		t.Fatalf("spoofed redirect base = %q, want %q", got, want)
+	}
+
+	loopback := httptest.NewRequest("GET", "http://127.0.0.1:18080/api/auth/google/callback", nil)
+	if got, want := server.getFrontRedirectBase(loopback), "http://mergeos.shop"; got != want {
+		t.Fatalf("loopback redirect base = %q, want %q", got, want)
+	}
+}
+
 func withTempConfigDir(t *testing.T) {
 	t.Helper()
 	previousDir, err := os.Getwd()
