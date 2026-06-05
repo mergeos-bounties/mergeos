@@ -120,24 +120,28 @@ func TestCreateProjectCreatesLocalBountyRepoAndPersistsLedger(t *testing.T) {
 func TestRuntimeConfigReturnsPaymentRails(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := Config{
-		TokenSymbol:          defaultTokenSymbol,
-		StatePath:            filepath.Join(tempDir, "state.json"),
-		PlatformFeeBps:       1000,
-		DevPaymentEnabled:    true,
-		DevPaymentCode:       defaultDevPaymentCode,
-		PayPalClientID:       "paypal-client",
-		PayPalClientSecret:   "paypal-secret",
-		StripePublishableKey: "pk_test_mergeos",
-		StripeSecretKey:      "sk_test_secret",
-		StripeWebhookSecret:  "whsec_secret",
-		CryptoRPCURL:         "https://rpc.example",
-		CryptoReceiver:       "So11111111111111111111111111111111111111112",
-		CryptoAsset:          "spl",
-		CryptoTokenContract:  "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
-		CryptoTokenDecimals:  6,
-		GitHubOwner:          defaultGitHubOwner,
-		BountyRoot:           filepath.Join(tempDir, "bounties"),
-		SMTPFrom:             "noreply@mergeos.local",
+		TokenSymbol:             defaultTokenSymbol,
+		StatePath:               filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:          1000,
+		DevPaymentEnabled:       true,
+		DevPaymentCode:          defaultDevPaymentCode,
+		PayPalClientID:          "paypal-client",
+		PayPalClientSecret:      "paypal-secret",
+		StripePublishableKey:    "pk_test_mergeos",
+		StripeSecretKey:         "sk_test_secret",
+		StripeWebhookSecret:     "whsec_secret",
+		CryptoRPCURL:            "https://rpc.example",
+		CryptoReceiver:          "So11111111111111111111111111111111111111112",
+		CryptoAsset:             "spl",
+		CryptoTokenContract:     "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+		CryptoTokenDecimals:     6,
+		GitHubOwner:             defaultGitHubOwner,
+		GitHubOAuthClientID:     "github-client",
+		GitHubOAuthClientSecret: "github-secret",
+		GoogleClientID:          "google-client",
+		GoogleClientSecret:      "google-secret",
+		BountyRoot:              filepath.Join(tempDir, "bounties"),
+		SMTPFrom:                "noreply@mergeos.local",
 	}
 	payments := NewPaymentManager(cfg)
 	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
@@ -164,6 +168,12 @@ func TestRuntimeConfigReturnsPaymentRails(t *testing.T) {
 	}
 	if !payload.PayPalReady || !payload.CryptoReady || !payload.StripeReady || payload.StripePublicKey != "pk_test_mergeos" {
 		t.Fatalf("unexpected payment readiness: %#v", payload)
+	}
+	if !payload.GoogleOAuthReady || !payload.GitHubOAuthReady || payload.GitHubOAuthClient != "github-client" {
+		t.Fatalf("unexpected oauth readiness: %#v", payload)
+	}
+	if strings.Contains(body, "google-secret") || strings.Contains(body, "github-secret") {
+		t.Fatalf("config leaked OAuth secrets: %s", body)
 	}
 	rails := map[string]PaymentRailOption{}
 	for _, rail := range payload.PaymentRails {

@@ -31,9 +31,12 @@ func (s *Server) googleLogin(w http.ResponseWriter, r *http.Request) {
 
 	clientID := s.cfg.GoogleClientID
 	if clientID == "" {
-		// Mock Flow Redirect
-		redirectURL := fmt.Sprintf("/api/auth/google/callback?code=mock_google_code_123&state=%s", state)
-		http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
+		if s.cfg.OAuthMockReady() {
+			redirectURL := fmt.Sprintf("/api/auth/google/callback?code=mock_google_code_123&state=%s", state)
+			http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
+			return
+		}
+		writeError(w, http.StatusServiceUnavailable, "Google OAuth is not configured")
 		return
 	}
 
@@ -63,9 +66,17 @@ func (s *Server) googleCallback(w http.ResponseWriter, r *http.Request) {
 	var email, name string
 
 	if code == "mock_google_code_123" {
+		if !s.cfg.OAuthMockReady() {
+			writeError(w, http.StatusBadRequest, "Mock Google OAuth is disabled")
+			return
+		}
 		email = "mock.google.user@gmail.com"
 		name = "Mock Google User"
 	} else {
+		if !s.cfg.GoogleOAuthReady() {
+			writeError(w, http.StatusServiceUnavailable, "Google OAuth is not configured")
+			return
+		}
 		// Real Token Exchange
 		redirectURI := s.getFrontRedirectBase(r) + "/api/auth/google/callback"
 		tokenURL := "https://oauth2.googleapis.com/token"
@@ -150,9 +161,12 @@ func (s *Server) githubBrowserLogin(w http.ResponseWriter, r *http.Request) {
 
 	clientID := s.cfg.GitHubOAuthClientID
 	if clientID == "" {
-		// Mock Flow Redirect
-		redirectURL := fmt.Sprintf("/api/auth/github/callback?code=mock_github_code_123&state=%s", state)
-		http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
+		if s.cfg.OAuthMockReady() {
+			redirectURL := fmt.Sprintf("/api/auth/github/callback?code=mock_github_code_123&state=%s", state)
+			http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
+			return
+		}
+		writeError(w, http.StatusServiceUnavailable, "GitHub OAuth is not configured")
 		return
 	}
 
@@ -181,9 +195,17 @@ func (s *Server) githubCallback(w http.ResponseWriter, r *http.Request) {
 	var email, name string
 
 	if code == "mock_github_code_123" {
+		if !s.cfg.OAuthMockReady() {
+			writeError(w, http.StatusBadRequest, "Mock GitHub OAuth is disabled")
+			return
+		}
 		email = "mock.github.user@gmail.com"
 		name = "Mock GitHub User"
 	} else {
+		if !s.cfg.GitHubOAuthReady() {
+			writeError(w, http.StatusServiceUnavailable, "GitHub OAuth is not configured")
+			return
+		}
 		// Real Token Exchange
 		redirectURI := s.getFrontRedirectBase(r) + "/api/auth/github/callback"
 		tokenURL := "https://github.com/login/oauth/access_token"

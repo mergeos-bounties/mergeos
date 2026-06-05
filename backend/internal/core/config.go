@@ -69,6 +69,7 @@ type Config struct {
 	GitHubAppID             string
 	GitHubOAuthClientID     string
 	GitHubOAuthClientSecret string
+	OAuthMockEnabled        bool
 
 	BountyRoot string
 	UploadRoot string
@@ -129,6 +130,7 @@ func LoadConfig() Config {
 	)
 	googleClientID := firstEnv("GOOGLE_CLIENT_ID", "MERGEOS_GOOGLE_CLIENT_ID")
 	googleClientSecret := firstEnv("GOOGLE_CLIENT_SECRET", "MERGEOS_GOOGLE_CLIENT_SECRET")
+	oauthMockDefault := env != "production"
 	geminiAPIKeys := splitEnvList(firstEnv(
 		"GEMINI_API_KEYS",
 		"MERGEOS_GEMINI_API_KEYS",
@@ -188,6 +190,7 @@ func LoadConfig() Config {
 		GitHubAppID:             firstEnv("GITHUB_APP_ID", "MERGEOS_GITHUB_APP_ID"),
 		GitHubOAuthClientID:     githubOAuthClientID,
 		GitHubOAuthClientSecret: githubOAuthClientSecret,
+		OAuthMockEnabled:        getenvBool("MERGEOS_OAUTH_MOCK_ENABLED", getenvBool("OAUTH_MOCK_ENABLED", oauthMockDefault)),
 
 		BountyRoot: bountyRoot,
 		UploadRoot: uploadRoot,
@@ -314,6 +317,14 @@ func (c Config) GeminiReviewReady() bool {
 
 func (c Config) GitHubOAuthReady() bool {
 	return c.GitHubOAuthClientID != "" && c.GitHubOAuthClientSecret != ""
+}
+
+func (c Config) GoogleOAuthReady() bool {
+	return c.GoogleClientID != "" && c.GoogleClientSecret != ""
+}
+
+func (c Config) OAuthMockReady() bool {
+	return c.Environment != "production" && c.OAuthMockEnabled
 }
 
 func (c Config) SMTPReady() bool {

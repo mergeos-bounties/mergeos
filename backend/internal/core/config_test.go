@@ -106,6 +106,8 @@ var configEnvKeys = []string{
 	"GOOGLE_CLIENT_SECRET",
 	"MERGEOS_GOOGLE_CLIENT_ID",
 	"MERGEOS_GOOGLE_CLIENT_SECRET",
+	"OAUTH_MOCK_ENABLED",
+	"MERGEOS_OAUTH_MOCK_ENABLED",
 	"MERGEOS_GITHUB_APP_ID",
 	"MERGEOS_GITHUB_APP_CLIENT_ID",
 	"MERGEOS_GITHUB_APP_CLIENT_SECRET",
@@ -303,6 +305,19 @@ func TestLoadConfigUsesMergeOSGoogleCredentials(t *testing.T) {
 	}
 	if cfg.GoogleClientSecret != "google-secret" {
 		t.Fatalf("google client secret = %q", cfg.GoogleClientSecret)
+	}
+}
+
+func TestOAuthMockReadinessIsNeverEnabledInProduction(t *testing.T) {
+	withTempConfigDir(t)
+	clearConfigEnv(t)
+
+	t.Setenv("MERGEOS_ENV", "production")
+	t.Setenv("MERGEOS_OAUTH_MOCK_ENABLED", "true")
+
+	cfg := LoadConfig()
+	if cfg.OAuthMockReady() {
+		t.Fatal("production OAuth mock flow must stay disabled even when explicitly requested")
 	}
 }
 

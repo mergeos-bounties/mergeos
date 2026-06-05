@@ -167,6 +167,7 @@ func (s *Server) config(w http.ResponseWriter, _ *http.Request) {
 		RepoProvider:      repoProvider(s.cfg),
 		GitHubOAuthReady:  s.cfg.GitHubOAuthReady(),
 		GitHubOAuthClient: s.cfg.GitHubOAuthClientID,
+		GoogleOAuthReady:  s.cfg.GoogleOAuthReady(),
 		PayPalReady:       s.cfg.PayPalReady(),
 		CryptoReady:       s.cfg.CryptoReady(),
 		StripeReady:       s.cfg.StripeReady(),

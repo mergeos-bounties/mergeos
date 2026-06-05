@@ -740,6 +740,7 @@ type RuntimeConfigResponse struct {
 	RepoProvider      string              `json:"repo_provider"`
 	GitHubOAuthReady  bool                `json:"github_oauth_ready"`
 	GitHubOAuthClient string              `json:"github_oauth_client_id,omitempty"`
+	GoogleOAuthReady  bool                `json:"google_oauth_ready"`
 	PayPalReady       bool                `json:"paypal_ready"`
 	CryptoReady       bool                `json:"crypto_ready"`
 	StripeReady       bool                `json:"stripe_ready"`
