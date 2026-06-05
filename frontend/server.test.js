@@ -116,6 +116,7 @@ test('production server injects SSR HTML into the app shell', async (t) => {
   const html = await response.text();
 
   assert.equal(response.status, 200);
+  assert.match(response.headers.get('cache-control') || '', /no-store/);
   assert.match(html, /id="ssr-proof"/);
   assert.match(html, />\/admin</);
   assert.doesNotMatch(html, /ssr-outlet/);
@@ -161,6 +162,41 @@ test('production server serves protocol schema assets as JSON', async (t) => {
   assert.equal(response.status, 200);
   assert.match(response.headers.get('content-type') || '', /application\/json/);
   assert.equal(payload.title, 'MergeOS Ledger v1');
+});
+
+test('production server marks hashed assets as immutable', async (t) => {
+  const cwd = await fs.mkdtemp(path.join(os.tmpdir(), 'mergeos-frontend-cache-'));
+  const clientDist = path.join(cwd, 'client');
+  const assetsDir = path.join(clientDist, 'assets');
+  const serverDir = path.join(cwd, 'server');
+  const serverEntry = path.join(serverDir, 'entry-server.mjs');
+  await fs.mkdir(assetsDir, { recursive: true });
+  await fs.mkdir(serverDir, { recursive: true });
+  await fs.writeFile(path.join(clientDist, 'index.html'), '<!doctype html><html><body><div id="app"><!--ssr-outlet--></div></body></html>');
+  await fs.writeFile(path.join(assetsDir, 'index-test.js'), 'window.__mergeos_asset = true;\n');
+  await fs.writeFile(serverEntry, "export async function render() { return '<main></main>'; }\n");
+
+  const server = await createMergeOSServer({
+    mode: 'production',
+    production: true,
+    cwd,
+    host: '127.0.0.1',
+    port: 0,
+    hmrPort: 0,
+    apiTarget: 'http://127.0.0.1:65535',
+    clientDist,
+    serverEntry,
+  });
+  t.after(() => server.close());
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+
+  const address = server.address();
+  const response = await fetch(`http://127.0.0.1:${address.port}/assets/index-test.js`);
+  const script = await response.text();
+
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get('cache-control') || '', /immutable/);
+  assert.match(script, /__mergeos_asset/);
 });
 
 test('API proxy forwards the public frontend host for auth redirects', async (t) => {

@@ -218,6 +218,7 @@ async function renderUrl(req, res, context) {
   const html = injectSeoHead(template, url, origin).replace('<!--ssr-outlet-->', appHtml);
   res.statusCode = 200;
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  setDocumentCacheHeaders(res);
   res.end(html);
 }
 
@@ -259,8 +260,23 @@ async function serveStatic(req, res, clientDist = defaultClientDist) {
 
   res.statusCode = 200;
   res.setHeader('Content-Type', mimeTypes[path.extname(requestedPath)] || 'application/octet-stream');
+  setStaticCacheHeaders(res, pathname);
   createReadStream(requestedPath).pipe(res);
   return true;
+}
+
+function setDocumentCacheHeaders(res) {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+}
+
+function setStaticCacheHeaders(res, pathname = '') {
+  if (pathname.startsWith('/assets/')) {
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    return;
+  }
+  res.setHeader('Cache-Control', 'public, max-age=300');
 }
 
 function proxyApi(req, res, apiTarget) {

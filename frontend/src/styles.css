@@ -22943,6 +22943,48 @@ body {
   color: var(--green-dark);
 }
 
+.home-system-signal {
+  width: min(100%, 640px);
+  display: grid;
+  gap: 6px;
+  border: 1px solid rgba(15, 95, 76, 0.14);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(236, 253, 245, 0.9), rgba(255, 255, 255, 0.86)),
+    #ffffff;
+  box-shadow: 0 16px 34px rgba(11, 21, 17, 0.06);
+  margin-top: 14px;
+  padding: 13px 14px;
+}
+
+.home-system-signal span {
+  color: var(--green-dark);
+  font-family: var(--mono-font);
+  font-size: 10px;
+  font-weight: 860;
+  letter-spacing: 0.12em;
+}
+
+.home-system-signal strong,
+.home-system-signal small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.home-system-signal strong {
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 1.25;
+  font-weight: 920;
+}
+
+.home-system-signal small {
+  color: #526071;
+  font-size: 11px;
+  line-height: 1.4;
+  font-weight: 780;
+}
+
 .home-command-panel {
   position: relative;
   overflow: hidden;

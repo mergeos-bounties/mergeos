@@ -4240,6 +4240,12 @@
                 <span>{{ item.label }}</span>
               </article>
             </div>
+
+            <div class="home-system-signal" :aria-label="publicSystemBlueprintCopy.mapLabel">
+              <span>{{ publicSystemBlueprintCopy.eyebrow }}</span>
+              <strong>{{ publicSystemBlueprintCopy.title }}</strong>
+              <small>{{ publicSystemBlueprintPipelineRows.join(' / ') }}</small>
+            </div>
           </div>
 
           <aside class="public-home-panel home-command-panel" :aria-label="publicHomeCopy.commandLabel">
@@ -4293,6 +4299,46 @@
               </article>
             </div>
           </aside>
+        </section>
+
+        <section class="public-system-blueprint home-system-blueprint" :aria-labelledby="`home-system-blueprint-${activeLocale}`">
+          <div class="public-system-blueprint-head">
+            <div>
+              <span class="marketplace-eyebrow">{{ publicSystemBlueprintCopy.eyebrow }}</span>
+              <h2 :id="`home-system-blueprint-${activeLocale}`">{{ publicSystemBlueprintCopy.title }}</h2>
+              <p>{{ publicSystemBlueprintCopy.body }}</p>
+            </div>
+            <div class="public-system-blueprint-proof">
+              <strong>{{ publicSystemBlueprintCopy.proofTitle }}</strong>
+              <small>{{ publicSystemBlueprintCopy.proofBody }}</small>
+            </div>
+          </div>
+
+          <div class="public-system-blueprint-map" :aria-label="publicSystemBlueprintCopy.mapLabel">
+            <article v-for="node in publicSystemBlueprintNodes" :key="`home-${node.title}`">
+              <span :class="['public-card-icon', node.tone]">
+                <component :is="node.icon" :size="16" />
+              </span>
+              <div>
+                <strong>{{ node.title }}</strong>
+                <p>{{ node.body }}</p>
+              </div>
+            </article>
+          </div>
+
+          <ol class="public-system-blueprint-pipeline" :aria-label="publicSystemBlueprintCopy.pipelineLabel">
+            <li v-for="(step, index) in publicSystemBlueprintPipelineRows" :key="`home-${step}`">
+              <span>{{ index + 1 }}</span>
+              <strong>{{ step }}</strong>
+            </li>
+          </ol>
+
+          <div class="public-system-blueprint-rails" :aria-label="publicSystemBlueprintCopy.railLabel">
+            <article v-for="rail in publicSystemBlueprintRails" :key="`home-${rail.title}`">
+              <strong>{{ rail.title }}</strong>
+              <p>{{ rail.body }}</p>
+            </article>
+          </div>
         </section>
 
         <section class="public-workflow-grid" :aria-label="publicHomeCopy.workflowLabel">
