@@ -821,6 +821,7 @@ type PublicLiveFeedStats struct {
 	ProjectCount           int        `json:"project_count"`
 	OpenTaskCount          int        `json:"open_task_count"`
 	AcceptedTaskCount      int        `json:"accepted_task_count"`
+	ProposalCount          int        `json:"proposal_count,omitempty"`
 	ActiveContributorCount int        `json:"active_contributor_count"`
 	ActiveAgentCount       int        `json:"active_agent_count"`
 	LedgerEntryCount       int        `json:"ledger_entry_count"`
@@ -837,6 +838,7 @@ type PublicLiveFeedItem struct {
 	Body             string    `json:"body"`
 	ProjectID        string    `json:"project_id,omitempty"`
 	ProjectTitle     string    `json:"project_title,omitempty"`
+	TaskID           string    `json:"task_id,omitempty"`
 	Actor            string    `json:"actor,omitempty"`
 	Action           string    `json:"action,omitempty"`
 	AmountCents      int64     `json:"amount_cents,omitempty"`

@@ -19,7 +19,7 @@
   --yellow: #eab308;
   --red: #dc2626;
   --shadow: 0 18px 48px rgba(15, 23, 42, 0.08);
-  --page-container: 1220px;
+  --page-container: 1420px;
   --page-gutter: 34px;
 }
 
@@ -101,10 +101,11 @@ svg {
 .home-navbar {
   position: sticky;
   top: 0;
-  z-index: 40;
+  z-index: 220;
   border-bottom: 1px solid rgba(229, 231, 235, 0.92);
   background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(14px);
+  isolation: isolate;
 }
 
 .nav-inner {
@@ -213,6 +214,15 @@ svg {
   align-items: center;
 }
 
+.nav-menu.open::after {
+  content: "";
+  position: absolute;
+  left: -20px;
+  right: -20px;
+  top: 100%;
+  height: 34px;
+}
+
 .nav-menu-trigger {
   position: relative;
 }
@@ -223,7 +233,7 @@ svg {
   top: var(--nav-context-top, 66px);
   left: var(--nav-context-left, var(--nav-context-gutter));
   right: auto;
-  z-index: 80;
+  z-index: 260;
   width: var(--nav-context-width, min(920px, calc(100vw - 36px)));
   display: grid;
   grid-template-columns: minmax(280px, 33%) minmax(0, 1fr);
@@ -241,8 +251,8 @@ svg {
   padding: 0;
   opacity: 0;
   pointer-events: none;
-  transform: translateY(8px);
-  transition: opacity 160ms ease, transform 160ms ease, visibility 160ms ease;
+  transform: translateY(4px);
+  transition: opacity 140ms ease, transform 140ms ease;
   visibility: hidden;
 }
 
@@ -255,8 +265,8 @@ svg {
   position: absolute;
   left: 0;
   right: 0;
-  top: -14px;
-  height: 14px;
+  top: -24px;
+  height: 24px;
 }
 
 .nav-context-menu::after {
@@ -23196,7 +23206,7 @@ svg {
   --amber: #b7791f;
   --purple: #6745d9;
   --shadow: 0 20px 48px rgba(11, 21, 17, 0.08);
-  --page-container: 1280px;
+  --page-container: 1420px;
   --page-gutter: clamp(18px, 4vw, 42px);
 }
 
@@ -23232,22 +23242,26 @@ body {
   padding-top: clamp(12px, 2.4vw, 28px);
 }
 
+.public-home-page {
+  padding-top: 0;
+}
+
 .public-home-layout {
   gap: clamp(18px, 3vw, 36px);
 }
 
 .public-home-hero {
-  min-height: min(680px, calc(100dvh - 88px));
+  min-height: 0;
   display: grid;
   grid-template-columns: minmax(0, 0.95fr) minmax(380px, 0.72fr);
-  align-items: center;
+  align-items: start;
   gap: clamp(22px, 3.5vw, 48px);
-  padding: clamp(6px, 1.6vw, 18px) 0 clamp(18px, 3vw, 38px);
+  padding: clamp(36px, 6vh, 62px) 0 clamp(28px, 5vh, 56px);
 }
 
 .public-home-copy {
   max-width: 760px;
-  padding: clamp(4px, 1vw, 12px) 0 10px;
+  padding: 0 0 10px;
 }
 
 .marketplace-eyebrow {
@@ -23446,6 +23460,7 @@ body {
 .home-command-panel {
   position: relative;
   overflow: hidden;
+  margin-top: clamp(44px, 7vh, 84px);
   border: 1px solid rgba(11, 21, 17, 0.12);
   border-radius: 8px;
   background:
@@ -24138,6 +24153,10 @@ body {
   .dashboard-shell,
   .dash-content {
     grid-template-columns: 1fr;
+  }
+
+  .home-command-panel {
+    margin-top: 0;
   }
 
   .dash-sidebar {

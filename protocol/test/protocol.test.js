@@ -147,6 +147,7 @@ test('validates live feed protocol documents', () => {
       project_count: 1,
       open_task_count: 2,
       accepted_task_count: 1,
+      proposal_count: 1,
       active_contributor_count: 3,
       active_agent_count: 2,
       ledger_entry_count: 6,
@@ -177,11 +178,27 @@ test('validates live feed protocol documents', () => {
         body: 'Fix checkout UI - Tests pass and deployment preview is linked.',
         project_id: 'prj_0001',
         project_title: 'Customer portal rebuild',
+        task_id: 'prj_0001:12',
         actor: 'maya-dev',
         amount_cents: 5000,
         reference: 'https://github.com/mergeos-bounties/mergeos/issues/12',
         evidence_required: ['tests', 'deploy_preview'],
         status: 'accepted',
+        created_at: now,
+      },
+      {
+        id: 'proposal:note_0001',
+        type: 'proposal_submitted',
+        title: 'Worker proposal submitted',
+        body: 'github:maya-dev proposed 50 MRG for issue #12 in Customer portal rebuild.',
+        project_id: 'prj_0001',
+        project_title: 'Customer portal rebuild',
+        task_id: 'prj_0001:12',
+        actor: 'github:maya-dev',
+        action: 'submitted',
+        amount_cents: 5000,
+        reference: 'proposal:submitted;task:prj_0001:12;worker:github:maya-dev;bid:5000',
+        status: 'submitted',
         created_at: now,
       },
       {
@@ -1690,6 +1707,20 @@ test('validates event protocol documents and assertion helper', () => {
     payload: { action: 'test' },
   });
   assert.equal(agentEvent.valid, true);
+
+  const proposalEvent = validateProtocolDocument({
+    protocol_version: 'mergeos.event.v1',
+    kind: 'event',
+    id: 'evt_proposal_accepted',
+    type: 'proposal.accepted',
+    occurred_at: '2026-06-02T00:00:00.000Z',
+    actor: 'github:maya-dev',
+    project_id: 'prj_0001',
+    task_id: 'prj_0001:12',
+    amount_mrg: 50,
+    payload: { status: 'accepted', worker_id: 'github:maya-dev' },
+  });
+  assert.equal(proposalEvent.valid, true);
   assert.deepEqual(agentEvent.errors, []);
 
   const pullOpenedEvent = validateProtocolDocument({

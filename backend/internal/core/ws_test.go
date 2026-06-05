@@ -270,6 +270,172 @@ func TestWebSocketBroadcastsSanitizedTaskAcceptedFeed(t *testing.T) {
 	}
 }
 
+func TestWebSocketBroadcastsProposalProtocolEvents(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:       defaultTokenSymbol,
+		StatePath:         filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:    1000,
+		DevPaymentEnabled: true,
+		DevPaymentCode:    defaultDevPaymentCode,
+		GitHubOwner:       defaultGitHubOwner,
+		BountyRoot:        filepath.Join(tempDir, "bounties"),
+		SMTPFrom:          "noreply@mergeos.local",
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	workerAuth, err := store.AuthenticateGitHub(GitHubAuthProfile{
+		ID:        "3101",
+		Username:  "proposal-realtime-worker",
+		Name:      "Proposal Realtime Worker",
+		Email:     "proposal-realtime-worker@example.com",
+		AvatarURL: "https://avatars.githubusercontent.com/u/3101",
+	}, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	clientAuth, err := store.Register(RegisterRequest{
+		Name:        "Realtime Proposal Client",
+		CompanyName: "Realtime Proposal Co",
+		Email:       "realtime-proposal-client@example.com",
+		Password:    "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	project, err := store.CreateProject(context.Background(), clientAuth.User.ID, CreateProjectRequest{
+		Title:            "Realtime proposal feed",
+		ClientName:       "Realtime Proposal Client",
+		CompanyName:      "Realtime Proposal Co",
+		ClientEmail:      "realtime-proposal-client@example.com",
+		Brief:            "Create proposal websocket coverage without leaking private proposal text.",
+		BudgetCents:      150000,
+		PaymentMethod:    PaymentPayPal,
+		PaymentReference: defaultDevPaymentCode,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var humanTask *Task
+	for _, task := range project.Tasks {
+		if task.RequiredWorkerKind == WorkerHuman {
+			humanTask = task
+			break
+		}
+	}
+	if humanTask == nil {
+		t.Fatal("project did not create a human task")
+	}
+	publicTaskID := marketplaceBountyID(project.ID, humanTask.IssueNumber)
+
+	httpServer := httptest.NewServer(NewServer(cfg, store, payments).Routes())
+	defer httpServer.Close()
+	parsed, err := url.Parse(httpServer.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	conn, err := net.Dial("tcp", parsed.Host)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer conn.Close()
+
+	if _, err := conn.Write([]byte(websocketHandshake(parsed.Host))); err != nil {
+		t.Fatal(err)
+	}
+	reader := bufio.NewReader(conn)
+	if status, err := reader.ReadString('\n'); err != nil || !strings.Contains(status, "101 Switching Protocols") {
+		t.Fatalf("websocket status = %q, err = %v", status, err)
+	}
+	for {
+		line, err := reader.ReadString('\n')
+		if err != nil {
+			t.Fatal(err)
+		}
+		if line == "\r\n" {
+			break
+		}
+	}
+	_ = readWebSocketTextFrame(t, reader)
+	_ = readWebSocketTextFrame(t, reader)
+
+	privateCover := "I can deliver this with private staging notes and acceptance evidence."
+	body := fmt.Sprintf(`{"task_id":%q,"cover_letter":%q,"bid_cents":12345,"estimated_hours":8,"availability":"This week"}`, publicTaskID, privateCover)
+	req, err := http.NewRequest(http.MethodPost, httpServer.URL+"/api/proposals", strings.NewReader(body))
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Authorization", "Bearer "+workerAuth.Token)
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusCreated {
+		responseBody, _ := io.ReadAll(resp.Body)
+		t.Fatalf("proposal status = %d, body = %s", resp.StatusCode, string(responseBody))
+	}
+	var created CreateProposalResponse
+	if err := json.NewDecoder(resp.Body).Decode(&created); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := conn.SetReadDeadline(time.Now().Add(5 * time.Second)); err != nil {
+		t.Fatal(err)
+	}
+	submittedBytes, submitted := readWebSocketEventOfType(t, reader, "proposal_created", 4)
+	for _, value := range []string{"realtime-proposal-client@example.com", defaultDevPaymentCode, tempDir, privateCover, humanTask.ID} {
+		if strings.Contains(string(submittedBytes), value) {
+			t.Fatalf("proposal websocket leaked private value %q: %s", value, string(submittedBytes))
+		}
+	}
+	if submitted["protocol_type"] != "proposal.submitted" {
+		t.Fatalf("proposal created websocket missing proposal protocol type: %#v", submitted)
+	}
+	event, ok := submitted["event"].(map[string]interface{})
+	if !ok || event["type"] != "proposal.submitted" || event["task_id"] != publicTaskID {
+		t.Fatalf("proposal created websocket missing protocol event: %#v", submitted)
+	}
+	feed, ok := submitted["feed"].(map[string]interface{})
+	stats, statsOK := feed["stats"].(map[string]interface{})
+	proposalCount, countOK := stats["proposal_count"].(float64)
+	if !ok || !statsOK || !countOK || int(proposalCount) != 1 {
+		t.Fatalf("proposal created websocket missing live proposal count: %#v", submitted)
+	}
+
+	decisionReq, err := http.NewRequest(http.MethodPost, httpServer.URL+"/api/proposals/"+created.Proposal.ID+"/decision", strings.NewReader(`{"decision":"accepted"}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	decisionReq.Header.Set("Authorization", "Bearer "+clientAuth.Token)
+	decisionReq.Header.Set("Content-Type", "application/json")
+	decisionResp, err := http.DefaultClient.Do(decisionReq)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer decisionResp.Body.Close()
+	if decisionResp.StatusCode != http.StatusOK {
+		responseBody, _ := io.ReadAll(decisionResp.Body)
+		t.Fatalf("proposal decision status = %d, body = %s", decisionResp.StatusCode, string(responseBody))
+	}
+
+	decidedBytes, decided := readWebSocketEventOfType(t, reader, "proposal_decided", 6)
+	if strings.Contains(string(decidedBytes), privateCover) || strings.Contains(string(decidedBytes), humanTask.ID) {
+		t.Fatalf("proposal decision websocket leaked private data: %s", string(decidedBytes))
+	}
+	if decided["protocol_type"] != "proposal.accepted" {
+		t.Fatalf("proposal decision websocket missing proposal protocol type: %#v", decided)
+	}
+	decisionEvent, ok := decided["event"].(map[string]interface{})
+	if !ok || decisionEvent["type"] != "proposal.accepted" || decisionEvent["task_id"] != publicTaskID {
+		t.Fatalf("proposal decision websocket missing protocol event: %#v", decided)
+	}
+}
+
 func TestWebSocketBroadcastsAdminManualCreditLedgerEvent(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := Config{
@@ -522,4 +688,20 @@ func readWebSocketTextFrame(t *testing.T, reader *bufio.Reader) []byte {
 		t.Fatal(err)
 	}
 	return payload
+}
+
+func readWebSocketEventOfType(t *testing.T, reader *bufio.Reader, eventType string, maxFrames int) ([]byte, map[string]interface{}) {
+	t.Helper()
+	for i := 0; i < maxFrames; i++ {
+		eventBytes := readWebSocketTextFrame(t, reader)
+		var event map[string]interface{}
+		if err := json.Unmarshal(eventBytes, &event); err != nil {
+			t.Fatalf("invalid websocket JSON frame %q: %v", string(eventBytes), err)
+		}
+		if event["type"] == eventType {
+			return eventBytes, event
+		}
+	}
+	t.Fatalf("websocket did not receive event type %q within %d frames", eventType, maxFrames)
+	return nil, nil
 }

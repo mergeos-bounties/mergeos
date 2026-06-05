@@ -295,6 +295,9 @@ test('maps live feed records to workflow event protocol values', () => {
   assert.equal(liveFeedTypeToProtocolEventType('ai_review'), 'pr.reviewed');
   assert.equal(liveFeedTypeToProtocolEventType('deployment_validation'), 'deployment.updated');
   assert.equal(liveFeedTypeToProtocolEventType('repo_issues_synced'), 'repo.issues.synced');
+  assert.equal(liveFeedTypeToProtocolEventType('proposal_submitted'), 'proposal.submitted');
+  assert.equal(liveFeedTypeToProtocolEventType('proposal_accepted'), 'proposal.accepted');
+  assert.equal(liveFeedTypeToProtocolEventType('proposal_declined'), 'proposal.declined');
   assert.equal(liveFeedTypeToProtocolEventType('ledger_task_payment'), 'task.paid');
   assert.equal(liveFeedTypeToProtocolEventType('ledger_manual_credit'), 'ledger.recorded');
   assert.equal(liveFeedTypeToProtocolEventType('agent_action', 'test'), 'agent.tested');
@@ -312,6 +315,7 @@ test('maps live feed records to workflow event protocol values', () => {
   assert.equal(protocolTypeFromMessage({ type: 'admin_ops_updated' }), '');
   assert.equal(protocolEventGroup('pr.opened'), 'pull_request');
   assert.equal(protocolEventGroup('task.paid'), 'task');
+  assert.equal(protocolEventGroup('proposal.accepted'), 'proposal');
   assert.equal(protocolEventGroup('agent.tested'), 'agent');
   assert.equal(protocolEventGroup('repo.issues.synced'), 'repository');
   assert.equal(isWorkflowEventType('deployment.updated'), true);

@@ -7777,6 +7777,7 @@ import {
   Trophy,
   UploadCloud,
   User,
+  UserCheck,
   UsersRound,
   X,
   Zap,
@@ -21190,7 +21191,7 @@ function measureNavContextMenu(menu, event = {}) {
     ? safeLeft
     : Math.min(Math.max(safeLeft, centeredLeft), Math.max(safeLeft, safeRight - width));
   const headerBottom = Math.max(shellRect?.bottom ?? 0, rect.bottom);
-  const top = Math.max(58, Math.round(headerBottom + 8));
+  const top = Math.max(56, Math.round(headerBottom + 2));
   const anchorLeft = Math.min(Math.max(28, Math.round(rect.left + rect.width / 2 - left)), width - 28);
 
   navContextGeometry.value = {
@@ -21236,7 +21237,7 @@ function scheduleNavContextClose() {
   navContextCloseTimer = window.setTimeout(() => {
     navContextCloseTimer = 0;
     activeNavMenu.value = '';
-  }, 180);
+  }, 360);
 }
 
 function cancelNavContextClose() {
@@ -25531,6 +25532,15 @@ function liveFeedMetaFor(type = '') {
   if (normalized === 'task_accepted') {
     return { type: 'PR Accepted', icon: GitPullRequest, tone: 'green', amountTone: 'positive' };
   }
+  if (normalized === 'proposal_submitted') {
+    return { type: 'Proposal Submitted', icon: UserCheck, tone: 'blue', amountTone: 'neutral' };
+  }
+  if (normalized === 'proposal_accepted') {
+    return { type: 'Proposal Accepted', icon: UserCheck, tone: 'green', amountTone: 'positive' };
+  }
+  if (normalized === 'proposal_declined') {
+    return { type: 'Proposal Declined', icon: X, tone: 'amber', amountTone: 'muted' };
+  }
   if (normalized === 'deployment_validation' || normalized === 'deployment_status') {
     return { type: 'Deployment Validation', icon: Rocket, tone: 'blue', amountTone: 'muted' };
   }
@@ -27018,6 +27028,7 @@ let _wsReconnectDelay = 1000;
 const _wsSeenProjectIDs = new Set();
 const _wsSeenEventIDs = new Set();
 const realtimeTaskEventTypes = new Set(['task_opened', 'task_claimed', 'task_submitted', 'task_accepted']);
+const realtimeProposalEventTypes = new Set(['proposal_created', 'proposal_decided', 'proposal_submitted', 'proposal_accepted', 'proposal_declined']);
 const realtimeDeploymentEventTypes = new Set(['deployment_status']);
 const realtimeAgentEventTypes = new Set(['agent_action']);
 const realtimeLedgerEventTypes = new Set(['ledger_task_payment']);
@@ -27430,7 +27441,7 @@ function handleWSTaskLifecycle(payload = {}) {
         void loadDashboardRepositoryIntelligenceData(projectID, { silent: true });
       }
     }
-    if (dashboardSection.value === 'worker' || payload.type === 'task_claimed' || payload.type === 'task_submitted' || payload.type === 'task_accepted') {
+    if (dashboardSection.value === 'worker' || payload.type === 'task_claimed' || payload.type === 'task_submitted' || payload.type === 'task_accepted' || realtimeProposalEventTypes.has(payload.type)) {
       void loadWorkerDashboardData({ silent: true });
     }
     if (dashboardSection.value === 'admin' && isAdminUser.value) {

@@ -801,7 +801,7 @@ func (s *Server) createProposal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.broadcastAdminOpsUpdated()
-	s.broadcastLiveFeedEvent("proposal_created")
+	s.broadcastProposalEvent("proposal_created", response)
 	writeJSON(w, http.StatusCreated, response)
 }
 
@@ -830,7 +830,7 @@ func (s *Server) decideProposal(w http.ResponseWriter, r *http.Request) {
 	if response.Proposal.Status == "accepted" {
 		s.broadcastLiveFeedEvent("task_accepted")
 	}
-	s.broadcastLiveFeedEvent("proposal_decided")
+	s.broadcastProposalEvent("proposal_decided", response)
 	writeJSON(w, http.StatusOK, response)
 }
 
@@ -962,6 +962,20 @@ func (s *Server) broadcastLiveFeedEvent(eventType string) {
 	s.eventHub.broadcastAll(payload)
 }
 
+func (s *Server) broadcastProposalEvent(eventType string, response CreateProposalResponse) {
+	feed := s.store.PublicLiveFeed(20)
+	payload := map[string]interface{}{
+		"type":       eventType,
+		"feed":       feed,
+		"created_at": time.Now().UTC(),
+	}
+	if event := proposalProtocolEventForBroadcast(eventType, response); event != nil {
+		payload["event"] = event
+		payload["protocol_type"] = event.Type
+	}
+	s.eventHub.broadcastAll(payload)
+}
+
 func (s *Server) broadcastAdminOpsUpdated() {
 	s.eventHub.broadcastAll(map[string]interface{}{
 		"protocol_version": "mergeos.event.v1",
@@ -986,8 +1000,65 @@ func broadcastMatchesFeedType(eventType, feedType string) bool {
 	switch strings.TrimSpace(eventType) {
 	case "project_created":
 		return feedType == "project_funded"
+	case "proposal_created":
+		return feedType == "proposal_submitted"
+	case "proposal_decided":
+		return feedType == "proposal_accepted" || feedType == "proposal_declined"
 	default:
 		return strings.TrimSpace(eventType) == feedType
+	}
+}
+
+func proposalProtocolEventForBroadcast(eventType string, response CreateProposalResponse) *EventProtocolDocument {
+	proposal := response.Proposal
+	if strings.TrimSpace(proposal.ID) == "" {
+		return nil
+	}
+	status := normalizeProposalStatus(proposal.Status)
+	if status == "" {
+		status = "submitted"
+	}
+	eventTypeName := "proposal.submitted"
+	switch status {
+	case "accepted":
+		eventTypeName = "proposal.accepted"
+	case "declined":
+		eventTypeName = "proposal.declined"
+	}
+	occurredAt := time.Now().UTC()
+	if strings.TrimSpace(eventType) == "proposal_created" && !proposal.CreatedAt.IsZero() {
+		occurredAt = proposal.CreatedAt
+	}
+	actor := publicLedgerAccount(proposal.WorkerID, proposal.ProjectID, proposal.TaskID)
+	if actor == "" {
+		actor = "worker:contributor"
+	}
+	payload := map[string]any{
+		"feed_type":       publicProposalLiveFeedType(status),
+		"title":           proposal.Title,
+		"status":          status,
+		"project_title":   proposal.ProjectTitle,
+		"worker_id":       proposal.WorkerID,
+		"claim_id":        proposal.ClaimID,
+		"bid_cents":       proposal.BidCents,
+		"estimated_hours": proposal.EstimatedHours,
+	}
+	if proposal.IssueNumber > 0 {
+		payload["issue_number"] = proposal.IssueNumber
+	}
+	amount := float64(proposal.BidCents) / 100
+	return &EventProtocolDocument{
+		ProtocolVersion: "mergeos.event.v1",
+		Kind:            "event",
+		ID:              publicEventID("proposal:" + proposal.ID + ":" + status),
+		Type:            eventTypeName,
+		OccurredAt:      occurredAt,
+		Actor:           actor,
+		ProjectID:       strings.TrimSpace(proposal.ProjectID),
+		TaskID:          strings.TrimSpace(proposal.TaskID),
+		Reference:       publicEventReference(PublicLiveFeedItem{Reference: publicProposalReference(proposal)}),
+		AmountMRG:       &amount,
+		Payload:         payload,
 	}
 }
 

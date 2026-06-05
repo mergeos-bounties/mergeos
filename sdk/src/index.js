@@ -19,6 +19,9 @@ export const workflowEventTypes = Object.freeze({
   prReviewed: 'pr.reviewed',
   deploymentUpdated: 'deployment.updated',
   repoIssuesSynced: 'repo.issues.synced',
+  proposalSubmitted: 'proposal.submitted',
+  proposalAccepted: 'proposal.accepted',
+  proposalDeclined: 'proposal.declined',
   ledgerRecorded: 'ledger.recorded',
   agentAction: 'agent.action',
 });
@@ -655,6 +658,9 @@ export function liveFeedTypeToProtocolEventType(type = '', action = '') {
     project_funded: workflowEventTypes.projectFunded,
     task_opened: workflowEventTypes.taskCreated,
     task_accepted: workflowEventTypes.taskClaimed,
+    proposal_submitted: workflowEventTypes.proposalSubmitted,
+    proposal_accepted: workflowEventTypes.proposalAccepted,
+    proposal_declined: workflowEventTypes.proposalDeclined,
     pr_opened: workflowEventTypes.prOpened,
     ai_review: workflowEventTypes.prReviewed,
     deployment_validation: workflowEventTypes.deploymentUpdated,
@@ -697,6 +703,7 @@ export function protocolEventGroup(type = '') {
   if (normalized.startsWith('agent.')) return 'agent';
   if (normalized.startsWith('pr.')) return 'pull_request';
   if (normalized.startsWith('task.')) return 'task';
+  if (normalized.startsWith('proposal.')) return 'proposal';
   if (normalized.startsWith('project.')) return 'project';
   if (normalized.startsWith('deployment.')) return 'deployment';
   if (normalized.startsWith('repo.')) return 'repository';

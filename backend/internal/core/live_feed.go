@@ -87,6 +87,32 @@ func (s *Store) PublicLiveFeed(limit int) PublicLiveFeedResponse {
 		response.Items = append(response.Items, publicLedgerLiveFeedItem(entry, projectIDs, taskProjectIDs, s.projects))
 	}
 
+	proposalKeys := map[string]bool{}
+	for _, note := range s.notifications {
+		if note == nil || note.Channel != "proposal" {
+			continue
+		}
+		project := s.projects[note.ProjectID]
+		if project != nil && note.UserID == project.ClientUserID {
+			continue
+		}
+		proposal := s.workerSubmittedProposalFromNotificationLocked(note)
+		if strings.TrimSpace(proposal.WorkerID) == "" || strings.TrimSpace(proposal.TaskID) == "" {
+			continue
+		}
+		key := strings.TrimSpace(proposal.TaskID) + "|" + strings.TrimSpace(proposal.WorkerID) + "|" + strings.TrimSpace(proposal.Status)
+		if proposalKeys[key] {
+			continue
+		}
+		proposalKeys[key] = true
+		response.Stats.ProposalCount++
+		touch(proposal.UpdatedAt)
+		if workerID := strings.ToLower(strings.TrimSpace(normalizeWorkerID(proposal.WorkerID))); workerID != "" {
+			activeContributors[workerID] = true
+		}
+		response.Items = append(response.Items, publicProposalLiveFeedItem(proposal))
+	}
+
 	for _, log := range s.geminiWebhookLogs {
 		touch(log.ReceivedAt)
 		publicLiveFeedTrackAgentLog(activeAgents, log)
@@ -209,6 +235,7 @@ func publicDeploymentLiveFeedItem(deployment ProjectDeploymentResponse) PublicLi
 
 func publicTaskOpenLiveFeedItem(task *Task, project *Project) PublicLiveFeedItem {
 	projectID, projectTitle := publicLiveFeedProjectScope(task, project)
+	claimID := marketplaceBountyID(projectID, task.IssueNumber)
 	return PublicLiveFeedItem{
 		ID:               publicLiveFeedTaskID("task-open", task),
 		Type:             "task_opened",
@@ -216,6 +243,7 @@ func publicTaskOpenLiveFeedItem(task *Task, project *Project) PublicLiveFeedItem
 		Body:             publicLiveFeedTaskBody(task),
 		ProjectID:        projectID,
 		ProjectTitle:     projectTitle,
+		TaskID:           claimID,
 		Actor:            publicLiveFeedWorkerKind(task.RequiredWorkerKind, task.SuggestedAgentType),
 		AmountCents:      task.RewardCents,
 		Reference:        publicTaskReference(task),
@@ -228,6 +256,7 @@ func publicTaskOpenLiveFeedItem(task *Task, project *Project) PublicLiveFeedItem
 
 func publicTaskAcceptedLiveFeedItem(task *Task, project *Project) PublicLiveFeedItem {
 	projectID, projectTitle := publicLiveFeedProjectScope(task, project)
+	claimID := marketplaceBountyID(projectID, task.IssueNumber)
 	createdAt := task.CreatedAt
 	if task.AcceptedAt != nil {
 		createdAt = *task.AcceptedAt
@@ -239,6 +268,7 @@ func publicTaskAcceptedLiveFeedItem(task *Task, project *Project) PublicLiveFeed
 		Body:             publicLiveFeedTaskBody(task),
 		ProjectID:        projectID,
 		ProjectTitle:     projectTitle,
+		TaskID:           claimID,
 		Actor:            publicLiveFeedActor(task.WorkerID, task.AgentType),
 		AmountCents:      task.RewardCents,
 		Reference:        publicTaskReference(task),
@@ -252,10 +282,13 @@ func publicTaskAcceptedLiveFeedItem(task *Task, project *Project) PublicLiveFeed
 func publicLedgerLiveFeedItem(entry LedgerEntry, projectIDs map[string]bool, taskProjectIDs map[string]string, projects map[string]*Project) PublicLiveFeedItem {
 	projectID, taskID := publicLedgerScope(entry, projectIDs, taskProjectIDs)
 	projectTitle := ""
+	publicTaskID := ""
 	if projectID != "" {
-		projectTitle = publicLiveFeedProjectTitle(projects[projectID])
+		project := projects[projectID]
+		projectTitle = publicLiveFeedProjectTitle(project)
+		publicTaskID = publicLedgerTaskReferenceID(project, taskID)
 	}
-	reference := publicLedgerReference(projectID, taskID, entry.Sequence, entry.Reference)
+	reference := publicLedgerReference(projectID, publicTaskID, entry.Sequence, entry.Reference)
 	return PublicLiveFeedItem{
 		ID:             fmt.Sprintf("ledger:%d", entry.Sequence),
 		Type:           "ledger_" + entry.Type,
@@ -263,7 +296,8 @@ func publicLedgerLiveFeedItem(entry LedgerEntry, projectIDs map[string]bool, tas
 		Body:           publicLiveFeedLedgerBody(entry, projectTitle),
 		ProjectID:      projectID,
 		ProjectTitle:   projectTitle,
-		Actor:          publicLedgerAccount(entry.ToAccount, projectID, taskID),
+		TaskID:         publicTaskID,
+		Actor:          publicLedgerAccount(entry.ToAccount, projectID, publicTaskID),
 		AmountCents:    entry.AmountCents,
 		LedgerSequence: entry.Sequence,
 		EntryHash:      entry.EntryHash,
@@ -271,6 +305,108 @@ func publicLedgerLiveFeedItem(entry LedgerEntry, projectIDs map[string]bool, tas
 		URL:            publicLiveFeedReferenceURL(reference),
 		Status:         "verified",
 		CreatedAt:      entry.CreatedAt,
+	}
+}
+
+func publicLedgerTaskReferenceID(project *Project, taskID string) string {
+	taskID = strings.TrimSpace(taskID)
+	if project == nil || taskID == "" {
+		return ""
+	}
+	for _, task := range project.Tasks {
+		if task == nil || strings.TrimSpace(task.ID) != taskID {
+			continue
+		}
+		return marketplaceBountyID(project.ID, task.IssueNumber)
+	}
+	return ""
+}
+
+func publicProposalLiveFeedItem(proposal WorkerSubmittedProposal) PublicLiveFeedItem {
+	status := normalizeProposalStatus(proposal.Status)
+	if status == "" {
+		status = "submitted"
+	}
+	issueLabel := "task"
+	if proposal.IssueNumber > 0 {
+		issueLabel = fmt.Sprintf("issue #%d", proposal.IssueNumber)
+	}
+	projectTitle := strings.TrimSpace(proposal.ProjectTitle)
+	if projectTitle == "" {
+		projectTitle = "MergeOS project"
+	}
+	actor := publicLedgerAccount(proposal.WorkerID, proposal.ProjectID, proposal.TaskID)
+	if actor == "" {
+		actor = "worker:contributor"
+	}
+	title := "Worker proposal submitted"
+	body := fmt.Sprintf("%s proposed %s for %s in %s.", actor, formatTokenAmount(proposal.BidCents), issueLabel, projectTitle)
+	switch status {
+	case "accepted":
+		title = "Worker proposal accepted"
+		body = fmt.Sprintf("%s was accepted for %s in %s.", actor, issueLabel, projectTitle)
+	case "declined":
+		title = "Worker proposal declined"
+		body = fmt.Sprintf("%s was declined for %s in %s.", actor, issueLabel, projectTitle)
+	case "reviewing":
+		title = "Worker proposal under review"
+	}
+	createdAt := proposal.UpdatedAt
+	if createdAt.IsZero() {
+		createdAt = proposal.CreatedAt
+	}
+	return PublicLiveFeedItem{
+		ID:           "proposal:" + proposal.ID,
+		Type:         publicProposalLiveFeedType(status),
+		Title:        title,
+		Body:         body,
+		ProjectID:    proposal.ProjectID,
+		ProjectTitle: projectTitle,
+		TaskID:       proposal.TaskID,
+		Actor:        actor,
+		Action:       status,
+		AmountCents:  proposal.BidCents,
+		Reference:    publicProposalReference(proposal),
+		Status:       status,
+		CreatedAt:    createdAt,
+	}
+}
+
+func publicProposalReference(proposal WorkerSubmittedProposal) string {
+	status := normalizeProposalStatus(proposal.Status)
+	if status == "" {
+		status = "submitted"
+	}
+	proposalID := strings.TrimSpace(proposal.ID)
+	if proposalID == "" {
+		proposalID = "unknown"
+	}
+	parts := []string{"proposal:" + proposalID}
+	if projectID := strings.TrimSpace(proposal.ProjectID); projectID != "" {
+		parts = append(parts, "project:"+projectID)
+	}
+	taskID := strings.TrimSpace(proposal.ClaimID)
+	if taskID == "" {
+		taskID = strings.TrimSpace(proposal.TaskID)
+	}
+	if taskID != "" {
+		parts = append(parts, "task:"+taskID)
+	}
+	if proposal.IssueNumber > 0 {
+		parts = append(parts, fmt.Sprintf("issue:%d", proposal.IssueNumber))
+	}
+	parts = append(parts, "status:"+status)
+	return strings.Join(parts, ";")
+}
+
+func publicProposalLiveFeedType(status string) string {
+	switch normalizeProposalStatus(status) {
+	case "accepted":
+		return "proposal_accepted"
+	case "declined":
+		return "proposal_declined"
+	default:
+		return "proposal_submitted"
 	}
 }
 
@@ -619,6 +755,7 @@ func publicLiveFeedProtocolEvent(item PublicLiveFeedItem) EventProtocolDocument 
 		OccurredAt:      occurredAt,
 		Actor:           actor,
 		ProjectID:       strings.TrimSpace(item.ProjectID),
+		TaskID:          strings.TrimSpace(item.TaskID),
 		Reference:       reference,
 		Payload:         payload,
 	}
@@ -649,6 +786,12 @@ func publicEventType(item PublicLiveFeedItem) string {
 		return "pr.reviewed"
 	case "repo_issues_synced":
 		return "repo.issues.synced"
+	case "proposal_submitted":
+		return "proposal.submitted"
+	case "proposal_accepted":
+		return "proposal.accepted"
+	case "proposal_declined":
+		return "proposal.declined"
 	case "agent_action":
 		return publicAgentActionEventType(item.Action)
 	}

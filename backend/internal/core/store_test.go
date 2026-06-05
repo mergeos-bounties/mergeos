@@ -3761,6 +3761,22 @@ func TestWorkerProposalSubmissionRoutesToCustomerDashboardAndAdminOps(t *testing
 	if proposal.CustomerNotification.UserID != "" || proposal.WorkerNotification.UserID != "" || strings.Contains(proposal.CustomerNotification.Status, humanTask.ID) {
 		t.Fatalf("proposal notifications were not sanitized: %#v %#v", proposal.WorkerNotification, proposal.CustomerNotification)
 	}
+	proposalFeed := store.PublicLiveFeed(20)
+	if proposalFeed.Stats.ProposalCount != 1 {
+		t.Fatalf("public feed proposal count = %d, feed = %#v", proposalFeed.Stats.ProposalCount, proposalFeed)
+	}
+	submittedEventFound := false
+	for _, event := range store.PublicEventProtocol(20).Events {
+		if event.Type == "proposal.submitted" && event.TaskID == publicTaskID && event.ProjectID == project.ID {
+			submittedEventFound = true
+			if event.Payload["worker_id"] != nil {
+				t.Fatalf("proposal event leaked raw worker payload: %#v", event)
+			}
+		}
+	}
+	if !submittedEventFound {
+		t.Fatalf("public protocol events missing proposal submitted event: %#v", store.PublicEventProtocol(20).Events)
+	}
 
 	workerDashboard := store.WorkerDashboard(workerAuth.User.ID)
 	if workerDashboard.Stats.SubmittedProposalCount != 1 || len(workerDashboard.SubmittedProposals) != 1 {
@@ -3839,6 +3855,15 @@ func TestWorkerProposalSubmissionRoutesToCustomerDashboardAndAdminOps(t *testing
 	acceptedTask := store.tasks[humanTask.ID]
 	if acceptedTask.Status != TaskAccepted || acceptedTask.WorkerID != "github:proposal-dev" || acceptedTask.RewardCents != 12345 {
 		t.Fatalf("proposal decision did not accept task with proposal worker and bid: %#v", acceptedTask)
+	}
+	acceptedProposalEventFound := false
+	for _, event := range store.PublicEventProtocol(20).Events {
+		if event.Type == "proposal.accepted" && event.TaskID == publicTaskID && event.ProjectID == project.ID {
+			acceptedProposalEventFound = true
+		}
+	}
+	if !acceptedProposalEventFound {
+		t.Fatalf("public protocol events missing proposal accepted event: %#v", store.PublicEventProtocol(20).Events)
 	}
 
 	acceptedWorkerDashboard := store.WorkerDashboard(workerAuth.User.ID)
