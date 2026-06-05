@@ -409,6 +409,8 @@ test('validates agent action protocol documents', () => {
     kind: 'agent_action',
     action_id: 'gwh_0001',
     project_id: 'prj_0001',
+    claim_id: 'prj_0001:12',
+    bounty_id: 'prj_0001:12',
     action: 'test',
     agent_type: 'qa-agent',
     status: 'processed',
@@ -588,6 +590,8 @@ test('validates public agent queue protocol documents', () => {
               body: {
                 action: 'test',
                 status: 'queued',
+                claim_id: 'prj_0001:12',
+                bounty_id: 'prj_0001:12',
                 context_urls: ['/api/public/protocol/tasks?task_id=prj_0001:12'],
               },
             },

@@ -4641,12 +4641,12 @@
               <strong>{{ platform[0] }}</strong>
               <p>{{ platform[1] }}</p>
               <a
-                v-if="index === 0"
-                :href="mergeIdeDownloadPath"
-                :download="mergeIdeDownloadFileName"
+                v-if="platform[3] || index === 0"
+                :href="platform[3] || mergeIdeDownloadPath"
+                :download="platform[4] || (index === 0 ? mergeIdeDownloadFileName : null)"
                 @click="closeNavContextMenu"
               >
-                {{ publicMergeIdeCopy.downloadAction }}
+                {{ platform[5] || publicMergeIdeCopy.downloadAction }}
                 <Download :size="14" />
               </a>
               <button v-else type="button" disabled>
@@ -9999,22 +9999,25 @@ const publicContractsTranslations = {
   },
 };
 
-const mergeIdeDownloadPath = '/downloads/mergeide-preview-kit.md';
-const mergeIdeDownloadFileName = 'MergeIDE-Preview-Kit.md';
+const mergeIdeReleasePath = 'https://github.com/mergeos-bounties/mergeos/releases/latest';
+const mergeIdeDownloadPath = `${mergeIdeReleasePath}/download/MergeIDE-Windows-x64.exe`;
+const mergeIdePreviewKitPath = '/downloads/mergeide-preview-kit.md';
+const mergeIdeDownloadFileName = 'MergeIDE-Windows-x64.exe';
+const mergeIdePreviewKitFileName = 'MergeIDE-Preview-Kit.md';
 
 const publicMergeIdeTranslations = {
   'en-US': {
     eyebrow: 'MergeIDE',
     title: 'MergeIDE is the repo-aware workspace for MergeOS delivery.',
     body: 'Open repository context, AI task graphs, agent actions, PR review, deployment evidence, and ledger proof in one focused IDE surface.',
-    status: 'Early access preview',
-    downloadAction: 'Download preview kit',
+    status: 'Windows preview exe',
+    downloadAction: 'Download Windows exe',
     productAction: 'View product flow',
     homeEyebrow: 'MergeIDE Preview',
     homeTitle: 'An IDE built for funded work, agents, and proof-backed delivery.',
     homeBody: 'MergeIDE gives builders and AI agents the same repo context, task packet, acceptance criteria, and ledger references before they touch a branch.',
     openAction: 'Open MergeIDE',
-    downloadMeta: 'Markdown kit / setup checklist / protocol links',
+    downloadMeta: 'Windows x64 exe / GitHub Releases / preview kit fallback',
     consoleTitle: 'Command workspace',
     consoleSubtitle: 'Repo, task graph, agents, and proof in one pane',
     command: 'mergeide open --repo mergeos-app --context funded-task',
@@ -10030,13 +10033,14 @@ const publicMergeIdeTranslations = {
       ['Task packet sidebar', 'Scope, reward, acceptance criteria, files, issue links, and escrow state live beside code.'],
       ['AI agent console', 'Run implementation, review, QA, security, and DevOps agents with visible context URLs.'],
       ['PR and deploy proof', 'Track review status, deployment checks, release readiness, and payout anchors.'],
-      ['SDK and protocol ready', 'The preview kit includes protocol links, API surfaces, and integration checklists.'],
+      ['SDK and protocol ready', 'The package includes protocol links, API surfaces, and integration checklists.'],
     ],
-    downloadTitle: 'Download the MergeIDE preview kit',
-    downloadBody: 'This early-access package is a real downloadable starter kit for planning the desktop IDE, agent runbooks, and protocol integration.',
+    downloadTitle: 'Download MergeIDE for Windows',
+    downloadBody: 'The Windows preview ships as a GitHub Release executable built from the MergeIDE task runner and workspace bridge.',
     platformRows: [
-      ['Preview kit', 'Download now as a Markdown package with setup notes and integration links.', 'Ready'],
-      ['Windows desktop', 'Installer track for repo owners and contributors on MergeOS workflows.', 'Planned'],
+      ['Windows x64 exe', 'Download the latest executable from GitHub Releases.', 'Ready', mergeIdeDownloadPath, mergeIdeDownloadFileName],
+      ['Latest release', 'Open the release page if the direct asset is still publishing.', 'Fallback', mergeIdeReleasePath, null, 'Open release'],
+      ['Preview kit', 'Markdown package with setup notes and integration links.', 'Fallback', mergeIdePreviewKitPath, mergeIdePreviewKitFileName, 'Download kit'],
       ['macOS and Linux', 'Cross-platform build checklist for SDK, agents, and protocol contexts.', 'Planned'],
     ],
     flowTitle: 'How MergeIDE fits the delivery OS',
@@ -10051,14 +10055,14 @@ const publicMergeIdeTranslations = {
     eyebrow: 'MergeIDE',
     title: 'MergeIDE là workspace hiểu repo cho MergeOS delivery.',
     body: 'Mở repository context, AI task graph, agent actions, PR review, deployment evidence và ledger proof trong một IDE tập trung.',
-    status: 'Bản preview early access',
-    downloadAction: 'Tải preview kit',
+    status: 'Windows preview exe',
+    downloadAction: 'Tải Windows exe',
     productAction: 'Xem product flow',
     homeEyebrow: 'MergeIDE Preview',
     homeTitle: 'IDE cho funded work, agents và delivery có proof.',
     homeBody: 'MergeIDE cho builder và AI agent cùng repo context, task packet, acceptance criteria và ledger reference trước khi đụng vào branch.',
     openAction: 'Mở MergeIDE',
-    downloadMeta: 'Markdown kit / setup checklist / protocol links',
+    downloadMeta: 'Windows x64 exe / GitHub Releases / preview kit fallback',
     consoleTitle: 'Command workspace',
     consoleSubtitle: 'Repo, task graph, agents và proof trong một pane',
     command: 'mergeide open --repo mergeos-app --context funded-task',
@@ -10076,11 +10080,11 @@ const publicMergeIdeTranslations = {
       ['PR và deploy proof', 'Theo dõi review status, deployment checks, release readiness và payout anchors.'],
       ['SDK và protocol ready', 'Preview kit có protocol links, API surfaces và integration checklists.'],
     ],
-    downloadTitle: 'Tải MergeIDE preview kit',
-    downloadBody: 'Gói early-access này là starter kit tải xuống thật để lên kế hoạch desktop IDE, agent runbooks và protocol integration.',
+    downloadTitle: 'Tải MergeIDE cho Windows',
+    downloadBody: 'Bản Windows preview được phát hành dưới dạng executable trên GitHub Releases, build từ MergeIDE task runner và workspace bridge.',
     platformRows: [
-      ['Preview kit', 'Tải ngay dạng Markdown package với setup notes và integration links.', 'Ready'],
-      ['Windows desktop', 'Installer track cho repo owners và contributors trong MergeOS workflows.', 'Planned'],
+      ['Windows x64 exe', 'Tải executable mới nhất từ GitHub Releases.', 'Ready', mergeIdeDownloadPath, mergeIdeDownloadFileName],
+      ['Preview kit', 'Markdown package với setup notes và integration links.', 'Fallback', mergeIdePreviewKitPath, mergeIdePreviewKitFileName, 'Tải kit'],
       ['macOS và Linux', 'Checklist cross-platform cho SDK, agents và protocol contexts.', 'Planned'],
     ],
     flowTitle: 'MergeIDE nằm ở đâu trong delivery OS',
@@ -10095,14 +10099,14 @@ const publicMergeIdeTranslations = {
     eyebrow: 'MergeIDE',
     title: 'MergeIDE 是面向 MergeOS delivery 的 repo-aware workspace。',
     body: '在一个专注的 IDE surface 中打开 repository context、AI task graph、agent actions、PR review、deployment evidence 和 ledger proof。',
-    status: 'Early access preview',
-    downloadAction: '下载 preview kit',
+    status: 'Windows preview exe',
+    downloadAction: '下载 Windows exe',
     productAction: '查看 product flow',
     homeEyebrow: 'MergeIDE Preview',
     homeTitle: '为 funded work、agents 和 proof-backed delivery 构建的 IDE。',
     homeBody: 'MergeIDE 让 builders 和 AI agents 在动手改 branch 之前共享 repo context、task packet、acceptance criteria 和 ledger references。',
     openAction: '打开 MergeIDE',
-    downloadMeta: 'Markdown kit / setup checklist / protocol links',
+    downloadMeta: 'Windows x64 exe / GitHub Releases / preview kit fallback',
     consoleTitle: 'Command workspace',
     consoleSubtitle: 'Repo、task graph、agents 和 proof 在同一 pane 中',
     command: 'mergeide open --repo mergeos-app --context funded-task',
@@ -10120,11 +10124,11 @@ const publicMergeIdeTranslations = {
       ['PR and deploy proof', '跟踪 review status、deployment checks、release readiness 和 payout anchors。'],
       ['SDK and protocol ready', 'Preview kit 包含 protocol links、API surfaces 和 integration checklists。'],
     ],
-    downloadTitle: '下载 MergeIDE preview kit',
-    downloadBody: '这个 early-access package 是可立即下载的 starter kit，用于规划 desktop IDE、agent runbooks 和 protocol integration。',
+    downloadTitle: '下载 Windows 版 MergeIDE',
+    downloadBody: 'Windows preview 以 GitHub Releases executable 发布，由 MergeIDE task runner 和 workspace bridge 构建。',
     platformRows: [
-      ['Preview kit', '立即下载 Markdown package，包含 setup notes 和 integration links。', 'Ready'],
-      ['Windows desktop', '面向 repo owners 和 contributors 的 MergeOS workflow installer track。', 'Planned'],
+      ['Windows x64 exe', '从 GitHub Releases 下载最新 executable。', 'Ready', mergeIdeDownloadPath, mergeIdeDownloadFileName],
+      ['Preview kit', '包含 setup notes 和 integration links 的 Markdown package。', 'Fallback', mergeIdePreviewKitPath, mergeIdePreviewKitFileName, '下载 kit'],
       ['macOS and Linux', '面向 SDK、agents 和 protocol contexts 的 cross-platform build checklist。', 'Planned'],
     ],
     flowTitle: 'MergeIDE 如何进入 delivery OS',
@@ -10139,14 +10143,14 @@ const publicMergeIdeTranslations = {
     eyebrow: 'MergeIDE',
     title: 'MergeIDE は MergeOS delivery のための repo-aware workspace です。',
     body: 'Repository context、AI task graph、agent actions、PR review、deployment evidence、ledger proof を 1 つの集中 IDE surface で開けます。',
-    status: 'Early access preview',
-    downloadAction: 'Preview kit をダウンロード',
+    status: 'Windows preview exe',
+    downloadAction: 'Windows exe をダウンロード',
     productAction: 'Product flow を見る',
     homeEyebrow: 'MergeIDE Preview',
     homeTitle: 'Funded work、agents、proof-backed delivery のための IDE。',
     homeBody: 'MergeIDE は builders と AI agents に、branch を触る前の repo context、task packet、acceptance criteria、ledger references を共有します。',
     openAction: 'MergeIDE を開く',
-    downloadMeta: 'Markdown kit / setup checklist / protocol links',
+    downloadMeta: 'Windows x64 exe / GitHub Releases / preview kit fallback',
     consoleTitle: 'Command workspace',
     consoleSubtitle: 'Repo、task graph、agents、proof を 1 つの pane に',
     command: 'mergeide open --repo mergeos-app --context funded-task',
@@ -10164,11 +10168,11 @@ const publicMergeIdeTranslations = {
       ['PR and deploy proof', 'Review status、deployment checks、release readiness、payout anchors を追跡します。'],
       ['SDK and protocol ready', 'Preview kit には protocol links、API surfaces、integration checklists が含まれます。'],
     ],
-    downloadTitle: 'MergeIDE preview kit をダウンロード',
-    downloadBody: 'この early-access package は、desktop IDE、agent runbooks、protocol integration を計画するための実際にダウンロードできる starter kit です。',
+    downloadTitle: 'Windows 版 MergeIDE をダウンロード',
+    downloadBody: 'Windows preview は GitHub Releases の executable として配布され、MergeIDE task runner と workspace bridge から build されます。',
     platformRows: [
-      ['Preview kit', 'Setup notes と integration links 付き Markdown package を今すぐダウンロード。', 'Ready'],
-      ['Windows desktop', 'Repo owners と contributors 向け MergeOS workflows の installer track。', 'Planned'],
+      ['Windows x64 exe', 'GitHub Releases から最新 executable をダウンロード。', 'Ready', mergeIdeDownloadPath, mergeIdeDownloadFileName],
+      ['Preview kit', 'Setup notes と integration links 付き Markdown package。', 'Fallback', mergeIdePreviewKitPath, mergeIdePreviewKitFileName, 'Kit をダウンロード'],
       ['macOS and Linux', 'SDK、agents、protocol contexts 向け cross-platform build checklist。', 'Planned'],
     ],
     flowTitle: 'MergeIDE が delivery OS に入る流れ',
@@ -10183,14 +10187,14 @@ const publicMergeIdeTranslations = {
     eyebrow: 'MergeIDE',
     title: 'MergeIDE는 MergeOS delivery를 위한 repo-aware workspace입니다.',
     body: 'Repository context, AI task graph, agent actions, PR review, deployment evidence, ledger proof를 하나의 집중된 IDE surface에서 엽니다.',
-    status: 'Early access preview',
-    downloadAction: 'Preview kit 다운로드',
+    status: 'Windows preview exe',
+    downloadAction: 'Windows exe 다운로드',
     productAction: 'Product flow 보기',
     homeEyebrow: 'MergeIDE Preview',
     homeTitle: 'Funded work, agents, proof-backed delivery를 위한 IDE.',
     homeBody: 'MergeIDE는 builder와 AI agent가 branch를 만지기 전에 같은 repo context, task packet, acceptance criteria, ledger references를 보게 합니다.',
     openAction: 'MergeIDE 열기',
-    downloadMeta: 'Markdown kit / setup checklist / protocol links',
+    downloadMeta: 'Windows x64 exe / GitHub Releases / preview kit fallback',
     consoleTitle: 'Command workspace',
     consoleSubtitle: 'Repo, task graph, agents, proof를 하나의 pane에',
     command: 'mergeide open --repo mergeos-app --context funded-task',
@@ -10208,11 +10212,11 @@ const publicMergeIdeTranslations = {
       ['PR and deploy proof', 'Review status, deployment checks, release readiness, payout anchors를 추적합니다.'],
       ['SDK and protocol ready', 'Preview kit에는 protocol links, API surfaces, integration checklists가 포함됩니다.'],
     ],
-    downloadTitle: 'MergeIDE preview kit 다운로드',
-    downloadBody: '이 early-access package는 desktop IDE, agent runbooks, protocol integration을 계획하기 위한 실제 다운로드 가능한 starter kit입니다.',
+    downloadTitle: 'Windows용 MergeIDE 다운로드',
+    downloadBody: 'Windows preview는 MergeIDE task runner와 workspace bridge에서 빌드된 GitHub Releases executable로 배포됩니다.',
     platformRows: [
-      ['Preview kit', 'Setup notes와 integration links가 포함된 Markdown package를 지금 다운로드.', 'Ready'],
-      ['Windows desktop', 'Repo owners와 contributors를 위한 MergeOS workflows installer track.', 'Planned'],
+      ['Windows x64 exe', 'GitHub Releases에서 최신 executable을 다운로드.', 'Ready', mergeIdeDownloadPath, mergeIdeDownloadFileName],
+      ['Preview kit', 'Setup notes와 integration links가 포함된 Markdown package.', 'Fallback', mergeIdePreviewKitPath, mergeIdePreviewKitFileName, 'Kit 다운로드'],
       ['macOS and Linux', 'SDK, agents, protocol contexts를 위한 cross-platform build checklist.', 'Planned'],
     ],
     flowTitle: 'MergeIDE가 delivery OS에 들어가는 방식',
@@ -24382,9 +24386,11 @@ async function recordAgentQueueAction(task = {}, actionRow = {}) {
   if (recordingAgentActionKey.value) return;
   recordingAgentActionKey.value = key;
   try {
+    const claimID = body.claim_id || body.bounty_id || task.claimID || task.bountyID || task.bounty_id || task.id;
     const payload = {
       ...body,
-      bounty_id: body.bounty_id || task.bountyID || task.id,
+      claim_id: claimID,
+      bounty_id: body.bounty_id || claimID,
       project_id: body.project_id || task.projectID,
       agent_type: body.agent_type || task.agentType,
       action,

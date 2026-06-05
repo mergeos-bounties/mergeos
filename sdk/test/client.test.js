@@ -236,6 +236,8 @@ test('builds and sends typed AI agent action helpers', async () => {
     referenceURL: 'https://github.com/acme/repo/pull/12',
     status: 'running',
     pullNumber: 12,
+    claimId: 'claim_public_1',
+    bountyId: 'prj_1:12',
     labels: ['smoke'],
     contextURLs: ['https://mergeos.shop/api/public/projects/prj_1/workflow'],
     evidence: ['Smoke tests passed'],
@@ -250,6 +252,8 @@ test('builds and sends typed AI agent action helpers', async () => {
     reference_url: 'https://github.com/acme/repo/pull/12',
     duration_millis: 0,
     pull_number: 12,
+    claim_id: 'claim_public_1',
+    bounty_id: 'prj_1:12',
     labels: ['smoke'],
     context_urls: ['https://mergeos.shop/api/public/projects/prj_1/workflow'],
     evidence: ['Smoke tests passed'],
@@ -266,7 +270,7 @@ test('builds and sends typed AI agent action helpers', async () => {
     { status: 201, body: { log: { action: 'scan' } } },
   ]);
   const client = new MergeOSClient({ token: 'agent-token', fetchImpl });
-  await client.recordAgentReview('prj_1', { pullNumber: 10 });
+  await client.recordAgentReview('prj_1', { pullNumber: 10, claimId: 'claim_public_2', bountyId: 'prj_1:14' });
   await client.recordAgentTest('prj_1', { status: 'running' });
   await client.recordAgentGeneration('prj_1', { agentType: 'code-agent' });
   await client.recordAgentScan('prj_1', { url: 'https://scan.example/report' });
@@ -284,6 +288,8 @@ test('builds and sends typed AI agent action helpers', async () => {
     evidence: [],
     runbook: [],
     checks: [],
+    claim_id: 'claim_public_2',
+    bounty_id: 'prj_1:14',
   }));
   assert.equal(fetchImpl.calls[1].options.body, JSON.stringify({
     action: 'test',
@@ -323,6 +329,36 @@ test('builds and sends typed AI agent action helpers', async () => {
     evidence: [],
     runbook: [],
     checks: [],
+  }));
+});
+
+test('normalizes direct agent action claim identifiers', async () => {
+  const fetchImpl = fakeFetch([
+    { status: 201, body: { protocol_version: 'mergeos.agent-action.v1', kind: 'agent_action', claim_id: 'claim_public_3' } },
+  ]);
+  const client = new MergeOSClient({ token: 'agent-token', fetchImpl });
+  const response = await client.createProjectAgentAction('prj_1', {
+    action: 'test',
+    agentType: 'qa-agent',
+    claimId: 'claim_public_3',
+    bountyId: 'prj_1:15',
+  });
+
+  assert.equal(response.claim_id, 'claim_public_3');
+  assert.equal(fetchImpl.calls[0].options.body, JSON.stringify({
+    action: 'test',
+    agent_type: 'qa-agent',
+    status: 'processed',
+    reference_url: '',
+    duration_millis: 0,
+    pull_number: 0,
+    labels: [],
+    context_urls: [],
+    evidence: [],
+    runbook: [],
+    checks: [],
+    claim_id: 'claim_public_3',
+    bounty_id: 'prj_1:15',
   }));
 });
 

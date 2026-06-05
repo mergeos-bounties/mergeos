@@ -145,6 +145,8 @@ await mergeos.projectAIWorkflow('prj_0001');
 await mergeos.createProjectAgentAction('prj_0001', {
   action: 'review',
   agent_type: 'review-agent',
+  claimId: 'prj_0001:12',
+  bountyId: 'prj_0001:12',
   pull_number: 120,
   reference_url: 'https://github.com/acme/repo/pull/120',
 });

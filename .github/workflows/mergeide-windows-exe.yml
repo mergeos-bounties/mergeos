@@ -1,0 +1,88 @@
+name: Build MergeIDE Windows exe
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Optional release tag to create or update with the Windows exe.
+        required: false
+        type: string
+  push:
+    tags:
+      - "v*"
+      - "mergeide-v*"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mergeide-windows-exe-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows-exe:
+    name: Build Windows exe
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: MergeIDE/package-lock.json
+
+      - name: Install dependencies
+        working-directory: MergeIDE
+        run: npm ci
+
+      - name: Audit npm dependencies
+        working-directory: MergeIDE
+        run: npm audit --audit-level=high
+
+      - name: Test MergeIDE
+        working-directory: MergeIDE
+        run: npm test
+
+      - name: Build Windows executable
+        working-directory: MergeIDE
+        run: npm run build:exe
+
+      - name: Smoke Windows executable
+        working-directory: MergeIDE
+        shell: pwsh
+        run: .\dist\MergeIDE-Windows-x64.exe --help
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: MergeIDE-Windows-x64
+          path: MergeIDE/dist/MergeIDE-Windows-x64.exe
+          if-no-files-found: error
+
+      - name: Upload executable to release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG_INPUT: ${{ github.event.inputs.release_tag || '' }}
+        run: |
+          $tag = $env:RELEASE_TAG_INPUT
+          if (-not $tag -and "${{ github.ref_type }}" -eq "tag") {
+            $tag = "${{ github.ref_name }}"
+          }
+          if (-not $tag) {
+            Write-Host "No release tag supplied; workflow artifact uploaded only."
+            exit 0
+          }
+
+          gh release view $tag 2>$null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create $tag --title "MergeIDE $tag" --notes "MergeIDE Windows executable build."
+          }
+
+          gh release upload $tag MergeIDE/dist/MergeIDE-Windows-x64.exe --clobber

@@ -11,7 +11,8 @@
   "scripts": {
     "start": "node ./bin/mergeide.js",
     "tasks": "node ./bin/mergeide.js tasks",
-    "test": "node --test"
+    "test": "node --test",
+    "build:exe": "pkg . --targets node22-win-x64 --compress GZip --output dist/MergeIDE-Windows-x64.exe"
   },
   "keywords": [
     "mergeos",
@@ -107,5 +108,8 @@
         }
       }
     }
+  },
+  "devDependencies": {
+    "@yao-pkg/pkg": "^6.20.0"
   }
 }

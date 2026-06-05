@@ -1,6 +1,7 @@
 const siteName = 'MergeOS';
 const defaultOrigin = 'https://mergeos.dev';
 const defaultImagePath = '/favicon.svg';
+const mergeIdeWindowsDownloadUrl = 'https://github.com/mergeos-bounties/mergeos/releases/latest/download/MergeIDE-Windows-x64.exe';
 
 const publicSeoPaths = {
   home: '/',
@@ -122,9 +123,9 @@ const pageSeo = {
     keywords: ['MRG token', 'escrow contracts', 'token economy', 'treasury proof', 'payout contracts'],
   },
   mergeide: {
-    title: 'MergeIDE | Repo-aware IDE for MergeOS agents, task packets, and proof',
-    description: 'MergeIDE is the repo-aware workspace for MergeOS delivery, combining task packets, AI agent runbooks, PR review, deployment evidence, ledger proof, and SDK context.',
-    keywords: ['MergeIDE', 'AI IDE', 'repo-aware IDE', 'agent runbooks', 'task packet workspace', 'developer IDE'],
+    title: 'MergeIDE | Windows exe for MergeOS agents, task packets, and proof',
+    description: 'Download the MergeIDE Windows executable for MergeOS delivery, combining task packets, AI agent runbooks, PR review, deployment evidence, ledger proof, and SDK context.',
+    keywords: ['MergeIDE', 'MergeIDE Windows exe', 'AI IDE', 'repo-aware IDE', 'agent runbooks', 'task packet workspace', 'developer IDE'],
     type: 'SoftwareApplication',
   },
   terms: {
@@ -216,10 +217,10 @@ export function getSeoDataForPath(path = '/', options = {}) {
       '@id': `${canonical}#software`,
       name: 'MergeIDE',
       applicationCategory: 'DeveloperApplication',
-      operatingSystem: 'Windows, macOS, Linux',
+      operatingSystem: 'Windows',
       description: entry.description,
       url: canonical,
-      downloadUrl: absoluteUrl('/downloads/mergeide-preview-kit.md', origin),
+      downloadUrl: mergeIdeWindowsDownloadUrl,
       publisher: { '@id': absoluteUrl('/#organization', origin) },
       offers: {
         '@type': 'Offer',

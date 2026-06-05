@@ -41,6 +41,10 @@ func (s *Store) RecordProjectAgentAction(projectID string, req AgentActionReques
 	if !ok {
 		return AgentActionResponse{}, errors.New("project not found")
 	}
+	claimID, err := s.publicAgentActionClaimIDLocked(project, req)
+	if err != nil {
+		return AgentActionResponse{}, err
+	}
 	if s.geminiWebhookLogs == nil {
 		s.geminiWebhookLogs = map[string]*GeminiWebhookLog{}
 	}
@@ -78,6 +82,8 @@ func (s *Store) RecordProjectAgentAction(projectID string, req AgentActionReques
 		Kind:            "agent_action",
 		ActionID:        log.ID,
 		ProjectID:       project.ID,
+		ClaimID:         claimID,
+		BountyID:        claimID,
 		Action:          log.Action,
 		AgentType:       agentType,
 		Status:          log.Status,
@@ -94,6 +100,95 @@ func (s *Store) RecordProjectAgentAction(projectID string, req AgentActionReques
 		CompletedAt:     log.CompletedAt,
 		Log:             log,
 	}, nil
+}
+
+func (s *Store) AuthorizeAssignedWorkerAgentAction(userID, projectID string, req AgentActionRequest) (AgentActionRequest, error) {
+	projectID = strings.TrimSpace(projectID)
+	if projectID == "" {
+		return AgentActionRequest{}, errors.New("project not found")
+	}
+	claimRef := agentActionClaimRef(req)
+	if claimRef == "" {
+		return AgentActionRequest{}, errors.New("claim_id or bounty_id is required for assigned worker evidence")
+	}
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	user := s.users[strings.TrimSpace(userID)]
+	if user == nil {
+		return AgentActionRequest{}, errors.New("login is required")
+	}
+	taskID, err := s.resolveTaskClaimIDLocked(claimRef)
+	if err != nil {
+		return AgentActionRequest{}, err
+	}
+	task, ok := s.tasks[taskID]
+	if !ok || task == nil {
+		return AgentActionRequest{}, errors.New("task not found")
+	}
+	if task.ProjectID != projectID {
+		return AgentActionRequest{}, errors.New("claim_id does not belong to this project")
+	}
+	if _, ok := s.projects[projectID]; !ok {
+		return AgentActionRequest{}, errors.New("project not found")
+	}
+	if task.Status != TaskAccepted {
+		return AgentActionRequest{}, errors.New("task must be claimed before evidence can be recorded")
+	}
+	workerIDs, _ := workerIdentitySets(user)
+	if !workerIDs[workerIdentityKey(task.WorkerID)] {
+		return AgentActionRequest{}, errors.New("claimed task worker identity is required")
+	}
+
+	agentType := strings.TrimSpace(task.AgentType)
+	if agentType == "" {
+		agentType = strings.TrimSpace(task.SuggestedAgentType)
+	}
+	if task.WorkerKind != WorkerHuman && agentType != "" {
+		requestedType := strings.TrimSpace(req.AgentType)
+		if requestedType == "" {
+			req.AgentType = agentType
+		} else if !strings.EqualFold(requestedType, agentType) {
+			return AgentActionRequest{}, errors.New("agent_type must match the claimed task")
+		} else {
+			req.AgentType = agentType
+		}
+	}
+
+	publicClaimID := marketplaceBountyID(task.ProjectID, task.IssueNumber)
+	req.ClaimID = publicClaimID
+	req.BountyID = publicClaimID
+	return req, nil
+}
+
+func (s *Store) publicAgentActionClaimIDLocked(project *Project, req AgentActionRequest) (string, error) {
+	claimRef := agentActionClaimRef(req)
+	if claimRef == "" {
+		return "", nil
+	}
+	taskID, err := s.resolveTaskClaimIDLocked(claimRef)
+	if err != nil {
+		return "", err
+	}
+	task, ok := s.tasks[taskID]
+	if !ok || task == nil {
+		return "", errors.New("task not found")
+	}
+	if project == nil || task.ProjectID != project.ID {
+		return "", errors.New("claim_id does not belong to this project")
+	}
+	return marketplaceBountyID(task.ProjectID, task.IssueNumber), nil
+}
+
+func agentActionClaimRef(req AgentActionRequest) string {
+	for _, value := range []string{req.ClaimID, req.BountyID} {
+		value = strings.TrimSpace(value)
+		if value != "" {
+			return value
+		}
+	}
+	return ""
 }
 
 func normalizeAgentAction(value string) (string, error) {

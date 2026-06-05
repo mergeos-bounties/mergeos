@@ -400,8 +400,8 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Method:      "POST",
 				Path:        "/api/projects/{id}/agent-actions",
 				Protocol:    "mergeos.agent-action.v1",
-				Auth:        "project",
-				Description: "Authenticated AI agent evidence writer for review, test, generate, scan, and deployment actions.",
+				Auth:        "project_or_assigned_worker",
+				Description: "Authenticated AI agent evidence writer for project owners or assigned workers after a claim_id/bounty_id lane is accepted.",
 			},
 			{
 				Method:      "GET",

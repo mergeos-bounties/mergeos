@@ -872,14 +872,18 @@ func (s *Server) createProjectAgentAction(w http.ResponseWriter, r *http.Request
 		return
 	}
 	projectID := strings.TrimSpace(r.PathValue("id"))
-	if !s.store.CanAccessProject(user.ID, user.Role, projectID) {
-		writeError(w, http.StatusForbidden, "project access is required")
-		return
-	}
 	var req AgentActionRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid JSON body")
 		return
+	}
+	if !s.store.CanAccessProject(user.ID, user.Role, projectID) {
+		workerReq, err := s.store.AuthorizeAssignedWorkerAgentAction(user.ID, projectID, req)
+		if err != nil {
+			writeError(w, http.StatusForbidden, err.Error())
+			return
+		}
+		req = workerReq
 	}
 	response, err := s.store.RecordProjectAgentAction(projectID, req)
 	if err != nil {

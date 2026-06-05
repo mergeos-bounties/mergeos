@@ -309,8 +309,11 @@ export class MergeOSClient {
     return this.request(`/api/projects/${encodeURIComponent(projectID)}/ai-workflow`);
   }
 
-  createProjectAgentAction(projectID, payload) {
-    return this.request(`/api/projects/${encodeURIComponent(projectID)}/agent-actions`, { method: 'POST', body: payload });
+  createProjectAgentAction(projectID, payload = {}) {
+    return this.request(`/api/projects/${encodeURIComponent(projectID)}/agent-actions`, {
+      method: 'POST',
+      body: agentActionPayload(payload.action || 'review', payload),
+    });
   }
 
   recordAgentReview(projectID, payload = {}) {
@@ -651,7 +654,7 @@ export function agentActionPayload(action, payload = {}) {
   const evidence = payload.evidence || [];
   const runbook = payload.runbook || [];
   const checks = payload.checks || [];
-  return {
+  const body = {
     action: normalizedAction,
     agent_type: payload.agent_type || payload.agentType || defaultAgentTypeForAction(normalizedAction),
     status: payload.status || 'processed',
@@ -664,6 +667,11 @@ export function agentActionPayload(action, payload = {}) {
     runbook: Array.isArray(runbook) ? runbook : [],
     checks: Array.isArray(checks) ? checks : [],
   };
+  const claimID = payload.claim_id || payload.claimId || '';
+  const bountyID = payload.bounty_id || payload.bountyId || '';
+  if (claimID) body.claim_id = claimID;
+  if (bountyID) body.bounty_id = bountyID;
+  return body;
 }
 
 export function normalizeAgentAction(action = '') {

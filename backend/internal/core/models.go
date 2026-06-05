@@ -1982,6 +1982,8 @@ type AgentActionCheck struct {
 
 type AgentActionRequest struct {
 	Action         string             `json:"action"`
+	ClaimID        string             `json:"claim_id,omitempty"`
+	BountyID       string             `json:"bounty_id,omitempty"`
 	AgentType      string             `json:"agent_type,omitempty"`
 	Status         string             `json:"status,omitempty"`
 	PullNumber     int                `json:"pull_number,omitempty"`
@@ -1999,6 +2001,8 @@ type AgentActionResponse struct {
 	Kind            string             `json:"kind"`
 	ActionID        string             `json:"action_id"`
 	ProjectID       string             `json:"project_id"`
+	ClaimID         string             `json:"claim_id,omitempty"`
+	BountyID        string             `json:"bounty_id,omitempty"`
 	Action          string             `json:"action"`
 	AgentType       string             `json:"agent_type"`
 	Status          string             `json:"status"`

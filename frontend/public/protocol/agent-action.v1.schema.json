@@ -37,6 +37,8 @@
     "kind": { "const": "agent_action" },
     "action_id": { "type": "string", "minLength": 1, "maxLength": 96 },
     "project_id": { "type": "string", "minLength": 1, "maxLength": 96 },
+    "claim_id": { "type": "string", "minLength": 1, "maxLength": 160 },
+    "bounty_id": { "type": "string", "minLength": 1, "maxLength": 160 },
     "action": { "enum": ["review", "test", "generate", "deploy", "scan"] },
     "agent_type": { "type": "string", "minLength": 1, "maxLength": 160 },
     "status": { "enum": ["received", "running", "processed", "needs_review", "failed"] },

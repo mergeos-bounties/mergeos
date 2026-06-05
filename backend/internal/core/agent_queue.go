@@ -180,6 +180,7 @@ func agentQueueActionPayloads(bounty *MarketplaceBounty, endpoint string, contex
 				"action":        action,
 				"status":        "queued",
 				"project_id":    bounty.ProjectID,
+				"claim_id":      bounty.ClaimID,
 				"bounty_id":     bounty.ClaimID,
 				"agent_type":    protocolText(bounty.SuggestedAgentType, 120, "general-ai-agent"),
 				"delegated_by":  ceoAgentType,

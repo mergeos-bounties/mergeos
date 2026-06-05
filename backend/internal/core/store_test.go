@@ -3383,6 +3383,104 @@ func TestProjectAgentActionRouteRecordsWorkflowEventAndSanitizesData(t *testing.
 		t.Fatalf("public protocol events missing agent action: %#v", events.Events)
 	}
 
+	workerAuth, err := store.AuthenticateGitHub(GitHubAuthProfile{
+		ID:       "agent-action-worker-1",
+		Username: "evidence-agent",
+		Name:     "Evidence Agent",
+		Email:    "evidence-agent@example.com",
+	}, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var agentTask *Task
+	for _, task := range project.Tasks {
+		if task.RequiredWorkerKind != WorkerHuman {
+			agentTask = task
+			break
+		}
+	}
+	if agentTask == nil {
+		t.Fatalf("project did not create an agent or hybrid task: %#v", project.Tasks)
+	}
+	claimID := marketplaceBountyID(project.ID, agentTask.IssueNumber)
+	claimReq := httptest.NewRequest(http.MethodPost, "/api/tasks/"+claimID+"/claim", strings.NewReader(`{"worker_kind":"human","worker_id":"github:spoofed","agent_type":"wrong-agent"}`))
+	claimReq.Header.Set("Authorization", "Bearer "+workerAuth.Token)
+	claimResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(claimResp, claimReq)
+	if claimResp.Code != http.StatusOK {
+		t.Fatalf("worker claim status = %d, body = %s", claimResp.Code, claimResp.Body.String())
+	}
+	var accepted TaskClaimResponse
+	if err := json.Unmarshal(claimResp.Body.Bytes(), &accepted); err != nil {
+		t.Fatal(err)
+	}
+	if accepted.ClaimID != claimID || accepted.WorkerID != "github:evidence-agent" || accepted.WorkerKind != agentTask.RequiredWorkerKind {
+		t.Fatalf("worker claim did not bind public claim id and identity: %#v", accepted)
+	}
+	if accepted.WorkerKind != WorkerHuman && accepted.AgentType != agentTask.SuggestedAgentType {
+		t.Fatalf("worker claim did not use task agent type: %#v", accepted)
+	}
+
+	workerBody := fmt.Sprintf(`{
+		"action":"review",
+		"claim_id":%q,
+		"status":"processed",
+		"evidence":["Claimed lane review completed"]
+	}`, claimID)
+	workerReq := httptest.NewRequest(http.MethodPost, "/api/projects/"+project.ID+"/agent-actions", strings.NewReader(workerBody))
+	workerReq.Header.Set("Authorization", "Bearer "+workerAuth.Token)
+	workerResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(workerResp, workerReq)
+	if workerResp.Code != http.StatusCreated {
+		t.Fatalf("claimed worker agent action status = %d, body = %s", workerResp.Code, workerResp.Body.String())
+	}
+	if strings.Contains(workerResp.Body.String(), agentTask.ID) {
+		t.Fatalf("claimed worker agent action leaked internal task id %q: %s", agentTask.ID, workerResp.Body.String())
+	}
+	var workerAction AgentActionResponse
+	if err := json.Unmarshal(workerResp.Body.Bytes(), &workerAction); err != nil {
+		t.Fatal(err)
+	}
+	if workerAction.ClaimID != claimID || workerAction.BountyID != claimID || workerAction.ProjectID != project.ID {
+		t.Fatalf("claimed worker action missing public claim fields: %#v", workerAction)
+	}
+	if accepted.WorkerKind != WorkerHuman && workerAction.AgentType != accepted.AgentType {
+		t.Fatalf("claimed worker action did not inherit accepted agent type: %#v", workerAction)
+	}
+
+	missingClaimReq := httptest.NewRequest(http.MethodPost, "/api/projects/"+project.ID+"/agent-actions", strings.NewReader(`{"action":"test"}`))
+	missingClaimReq.Header.Set("Authorization", "Bearer "+workerAuth.Token)
+	missingClaimResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(missingClaimResp, missingClaimReq)
+	if missingClaimResp.Code != http.StatusForbidden {
+		t.Fatalf("worker action without claim status = %d, body = %s", missingClaimResp.Code, missingClaimResp.Body.String())
+	}
+
+	wrongAgentReq := httptest.NewRequest(http.MethodPost, "/api/projects/"+project.ID+"/agent-actions", strings.NewReader(fmt.Sprintf(`{"action":"test","bounty_id":%q,"agent_type":"wrong-agent"}`, claimID)))
+	wrongAgentReq.Header.Set("Authorization", "Bearer "+workerAuth.Token)
+	wrongAgentResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(wrongAgentResp, wrongAgentReq)
+	if wrongAgentResp.Code != http.StatusForbidden {
+		t.Fatalf("worker action with wrong agent type status = %d, body = %s", wrongAgentResp.Code, wrongAgentResp.Body.String())
+	}
+
+	otherWorkerAuth, err := store.AuthenticateGitHub(GitHubAuthProfile{
+		ID:       "agent-action-worker-2",
+		Username: "other-evidence-agent",
+		Name:     "Other Evidence Agent",
+		Email:    "other-evidence-agent@example.com",
+	}, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	otherWorkerReq := httptest.NewRequest(http.MethodPost, "/api/projects/"+project.ID+"/agent-actions", strings.NewReader(fmt.Sprintf(`{"action":"test","bounty_id":%q}`, claimID)))
+	otherWorkerReq.Header.Set("Authorization", "Bearer "+otherWorkerAuth.Token)
+	otherWorkerResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(otherWorkerResp, otherWorkerReq)
+	if otherWorkerResp.Code != http.StatusForbidden {
+		t.Fatalf("other worker action with claimed bounty status = %d, body = %s", otherWorkerResp.Code, otherWorkerResp.Body.String())
+	}
+
 	otherAuth, err := store.Register(RegisterRequest{
 		Name:     "Other Agent Client",
 		Email:    "other-agent-client@example.com",
