@@ -39,6 +39,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/public/protocol/ledger", s.publicProtocolLedger)
 	mux.HandleFunc("GET /api/public/protocol/tasks", s.publicProtocolTasks)
 	mux.HandleFunc("GET /api/public/protocol/agents", s.publicProtocolAgents)
+	mux.HandleFunc("GET /api/public/protocol/agent-queue", s.publicProtocolAgentQueue)
 	mux.HandleFunc("GET /api/public/protocol/contributors", s.publicProtocolContributors)
 	mux.HandleFunc("GET /api/public/protocol/events", s.publicProtocolEvents)
 	mux.HandleFunc("GET /api/public/projects/{id}/deployment", s.publicProjectDeployment)
@@ -97,6 +98,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/projects/{id}/deployment", s.projectDeployment)
 	mux.HandleFunc("GET /api/projects/{id}/ai-workflow", s.projectAIWorkflow)
 	mux.HandleFunc("GET /api/projects/{id}/task-graph", s.projectTaskGraph)
+	mux.HandleFunc("GET /api/projects/{id}/routing", s.projectRouting)
 	mux.HandleFunc("GET /api/projects/{id}/protocol/workflow", s.projectWorkflowProtocol)
 	mux.HandleFunc("GET /api/projects/{id}/repo-scan", s.projectRepositoryScan)
 	mux.HandleFunc("GET /api/projects/{id}/protocol/scan", s.projectRepositoryScanProtocol)
@@ -250,6 +252,16 @@ func (s *Server) publicProtocolAgents(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, s.store.PublicAgentProtocol(limit))
 }
 
+func (s *Server) publicProtocolAgentQueue(w http.ResponseWriter, r *http.Request) {
+	limit := 0
+	if raw := strings.TrimSpace(r.URL.Query().Get("limit")); raw != "" {
+		if parsed, err := strconv.Atoi(raw); err == nil {
+			limit = parsed
+		}
+	}
+	writeJSON(w, http.StatusOK, s.store.PublicAgentQueue(limit))
+}
+
 func (s *Server) publicProtocolContributors(w http.ResponseWriter, r *http.Request) {
 	limit := 0
 	if raw := strings.TrimSpace(r.URL.Query().Get("limit")); raw != "" {
@@ -261,6 +273,15 @@ func (s *Server) publicProtocolContributors(w http.ResponseWriter, r *http.Reque
 }
 
 func (s *Server) publicProtocolTasks(w http.ResponseWriter, r *http.Request) {
+	if taskID := strings.TrimSpace(r.URL.Query().Get("task_id")); taskID != "" {
+		response, ok := s.store.PublicTaskProtocolByID(taskID)
+		if !ok {
+			writeError(w, http.StatusNotFound, "task not found")
+			return
+		}
+		writeJSON(w, http.StatusOK, response)
+		return
+	}
 	limit := 0
 	if raw := strings.TrimSpace(r.URL.Query().Get("limit")); raw != "" {
 		if parsed, err := strconv.Atoi(raw); err == nil {
@@ -649,6 +670,24 @@ func (s *Server) projectTaskGraph(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, graph)
+}
+
+func (s *Server) projectRouting(w http.ResponseWriter, r *http.Request) {
+	user, ok := s.requireUser(w, r)
+	if !ok {
+		return
+	}
+	projectID := strings.TrimSpace(r.PathValue("id"))
+	if !s.store.CanAccessProject(user.ID, user.Role, projectID) {
+		writeError(w, http.StatusForbidden, "project access is required")
+		return
+	}
+	routing, err := s.store.ProjectRouting(projectID)
+	if err != nil {
+		writeError(w, http.StatusNotFound, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, routing)
 }
 
 func (s *Server) projectWorkflowProtocol(w http.ResponseWriter, r *http.Request) {

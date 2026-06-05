@@ -870,6 +870,79 @@ type PublicAgentProtocolResponse struct {
 	Agents []AgentProtocolDocument `json:"agents"`
 }
 
+type AgentQueueResponse struct {
+	ProtocolVersion string            `json:"protocol_version"`
+	Kind            string            `json:"kind"`
+	Stats           AgentQueueStats   `json:"stats"`
+	Agents          []AgentQueueAgent `json:"agents"`
+	Tasks           []AgentQueueTask  `json:"tasks"`
+}
+
+type AgentQueueStats struct {
+	TotalCount  int        `json:"total_count"`
+	AgentCount  int        `json:"agent_count"`
+	ReadyCount  int        `json:"ready_count"`
+	RewardCents int64      `json:"reward_cents"`
+	TokenSymbol string     `json:"token_symbol"`
+	UpdatedAt   *time.Time `json:"updated_at,omitempty"`
+}
+
+type AgentQueueAgent struct {
+	Type             string     `json:"type"`
+	Title            string     `json:"title"`
+	WorkerKind       WorkerKind `json:"worker_kind"`
+	TaskCount        int        `json:"task_count"`
+	OpenTaskCount    int        `json:"open_task_count"`
+	BudgetCents      int64      `json:"budget_cents"`
+	Status           string     `json:"status"`
+	SupportedActions []string   `json:"supported_actions"`
+	QueueDepth       int        `json:"queue_depth"`
+}
+
+type AgentQueueTask struct {
+	ID               string          `json:"id"`
+	BountyID         string          `json:"bounty_id"`
+	ProjectID        string          `json:"project_id"`
+	ProjectTitle     string          `json:"project_title"`
+	IssueNumber      int             `json:"issue_number"`
+	Title            string          `json:"title"`
+	Summary          string          `json:"summary"`
+	RewardCents      int64           `json:"reward_cents"`
+	WorkerKind       WorkerKind      `json:"worker_kind"`
+	AgentType        string          `json:"agent_type,omitempty"`
+	Readiness        string          `json:"readiness"`
+	EvidenceRequired []string        `json:"evidence_required"`
+	ClaimEndpoint    string          `json:"claim_endpoint"`
+	ActionEndpoint   string          `json:"action_endpoint"`
+	ProtocolURL      string          `json:"protocol_url"`
+	WorkPacket       AgentWorkPacket `json:"work_packet"`
+}
+
+type AgentWorkPacket struct {
+	ClaimEndpoint  string               `json:"claim_endpoint"`
+	ActionEndpoint string               `json:"action_endpoint"`
+	SubmitEndpoint string               `json:"submit_endpoint"`
+	ContextURLs    map[string]string    `json:"context_urls"`
+	Runbook        []AgentRunbookStep   `json:"runbook"`
+	ActionPayloads []AgentActionPayload `json:"action_payloads"`
+}
+
+type AgentRunbookStep struct {
+	Step     int    `json:"step"`
+	Action   string `json:"action"`
+	Label    string `json:"label"`
+	Method   string `json:"method"`
+	Endpoint string `json:"endpoint"`
+}
+
+type AgentActionPayload struct {
+	Action   string         `json:"action"`
+	Label    string         `json:"label"`
+	Method   string         `json:"method"`
+	Endpoint string         `json:"endpoint"`
+	Body     map[string]any `json:"body"`
+}
+
 type PublicContributorProtocolResponse struct {
 	Stats        MarketplaceStats              `json:"stats"`
 	Contributors []ContributorProtocolDocument `json:"contributors"`
@@ -1197,6 +1270,77 @@ type ProjectTaskGraphResponse struct {
 	Nodes        []TaskGraphNode `json:"nodes"`
 	Edges        []TaskGraphEdge `json:"edges"`
 	UpdatedAt    time.Time       `json:"updated_at"`
+}
+
+type ProjectRoutingResponse struct {
+	ProtocolVersion string                `json:"protocol_version"`
+	Kind            string                `json:"kind"`
+	ProjectID       string                `json:"project_id"`
+	ProjectTitle    string                `json:"project_title"`
+	Status          string                `json:"status"`
+	Summary         string                `json:"summary"`
+	Stats           ProjectRoutingStats   `json:"stats"`
+	Lanes           []ProjectRoutingLane  `json:"lanes"`
+	Routes          []ProjectRoutingRoute `json:"routes"`
+	UpdatedAt       time.Time             `json:"updated_at"`
+}
+
+type ProjectRoutingStats struct {
+	TaskCount                 int `json:"task_count"`
+	ReadyCount                int `json:"ready_count"`
+	BlockedCount              int `json:"blocked_count"`
+	ContributorCandidateCount int `json:"contributor_candidate_count"`
+	AgentCandidateCount       int `json:"agent_candidate_count"`
+	HumanLaneCount            int `json:"human_lane_count"`
+	AgentLaneCount            int `json:"agent_lane_count"`
+	HybridLaneCount           int `json:"hybrid_lane_count"`
+}
+
+type ProjectRoutingLane struct {
+	ID             string     `json:"id"`
+	Title          string     `json:"title"`
+	WorkerKind     WorkerKind `json:"worker_kind"`
+	AgentType      string     `json:"agent_type,omitempty"`
+	RecommendedFor string     `json:"recommended_for"`
+	TaskCount      int        `json:"task_count"`
+	ReadyCount     int        `json:"ready_count"`
+	BlockedCount   int        `json:"blocked_count"`
+	RewardCents    int64      `json:"reward_cents"`
+	Status         string     `json:"status"`
+}
+
+type ProjectRoutingRoute struct {
+	ID                    string                     `json:"id"`
+	TaskID                string                     `json:"task_id"`
+	IssueNumber           int                        `json:"issue_number"`
+	Title                 string                     `json:"title"`
+	Lane                  string                     `json:"lane"`
+	Status                string                     `json:"status"`
+	Ready                 bool                       `json:"ready"`
+	BlockedBy             []string                   `json:"blocked_by,omitempty"`
+	RewardCents           int64                      `json:"reward_cents"`
+	RequiredWorkerKind    WorkerKind                 `json:"required_worker_kind"`
+	SuggestedAgentType    string                     `json:"suggested_agent_type,omitempty"`
+	RecommendedNextAction string                     `json:"recommended_next_action"`
+	MatchScore            int                        `json:"match_score"`
+	RoutingReason         []string                   `json:"routing_reason,omitempty"`
+	RecommendedAgent      *ProjectRoutingAgent       `json:"recommended_agent,omitempty"`
+	RecommendedWorker     *ProjectRoutingContributor `json:"recommended_worker,omitempty"`
+}
+
+type ProjectRoutingAgent struct {
+	Type       string `json:"type"`
+	Title      string `json:"title"`
+	Status     string `json:"status"`
+	QueueDepth int    `json:"queue_depth"`
+}
+
+type ProjectRoutingContributor struct {
+	WorkerID        string     `json:"worker_id"`
+	Name            string     `json:"name"`
+	Kind            WorkerKind `json:"kind"`
+	ReputationScore int        `json:"reputation_score"`
+	RiskLevel       string     `json:"risk_level"`
 }
 
 type WorkflowProtocolDocument struct {

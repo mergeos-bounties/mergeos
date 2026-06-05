@@ -23,6 +23,21 @@ func (s *Store) PublicTaskProtocol(limit int) PublicTaskProtocolResponse {
 	}
 }
 
+func (s *Store) PublicTaskProtocolByID(taskID string) (PublicTaskProtocolResponse, bool) {
+	marketplace := s.Marketplace()
+	taskID = strings.TrimSpace(taskID)
+	for _, bounty := range marketplace.Bounties {
+		if strings.TrimSpace(bounty.ClaimID) != taskID && strings.TrimSpace(bounty.ID) != taskID {
+			continue
+		}
+		return PublicTaskProtocolResponse{
+			Stats: marketplace.Stats,
+			Tasks: []TaskProtocolDocument{publicTaskProtocolDocument(bounty)},
+		}, true
+	}
+	return PublicTaskProtocolResponse{}, false
+}
+
 func publicTaskProtocolDocument(bounty *MarketplaceBounty) TaskProtocolDocument {
 	workerKind := bounty.RequiredWorkerKind
 	if workerKind == "" {

@@ -36,6 +36,12 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Description: "Authenticated AI agent action document for review, test, generate, scan, and deployment evidence.",
 			},
 			{
+				Version:     "mergeos.agent-queue.v1",
+				Kind:        "agent_queue",
+				SchemaURL:   "https://mergeos.shop/protocol/agent-queue.v1.schema.json",
+				Description: "Public AI agent work queue with executable work packets, task context URLs, claim endpoints, and evidence payload templates.",
+			},
+			{
 				Version:     "mergeos.marketplace.v1",
 				Kind:        "marketplace",
 				SchemaURL:   "https://mergeos.shop/protocol/marketplace.v1.schema.json",
@@ -156,6 +162,12 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Description: "Authenticated worker dashboard with claimed tasks, rewards, reputation audit, matched proposals, and linked identity status.",
 			},
 			{
+				Version:     "mergeos.routing.v1",
+				Kind:        "project_routing",
+				SchemaURL:   "https://mergeos.shop/protocol/routing.v1.schema.json",
+				Description: "Authenticated project routing document with human, agent, and hybrid lanes, readiness blockers, candidate counts, and recommended next actions.",
+			},
+			{
 				Version:     "mergeos.admin-ops.v1",
 				Kind:        "admin_ops",
 				SchemaURL:   "https://mergeos.shop/protocol/admin-ops.v1.schema.json",
@@ -196,6 +208,13 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Protocol:    "mergeos.agent.v1",
 				Auth:        "none",
 				Description: "Public AI agent lanes as protocol documents.",
+			},
+			{
+				Method:      "GET",
+				Path:        "/api/public/protocol/agent-queue",
+				Protocol:    "mergeos.agent-queue.v1",
+				Auth:        "none",
+				Description: "Public claim-safe AI agent queue with executable work packets for agent-ready and hybrid bounties.",
 			},
 			{
 				Method:      "GET",
@@ -273,6 +292,13 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Protocol:    "mergeos.scan.v1",
 				Auth:        "project",
 				Description: "Authenticated repository scan protocol document.",
+			},
+			{
+				Method:      "GET",
+				Path:        "/api/projects/{id}/routing",
+				Protocol:    "mergeos.routing.v1",
+				Auth:        "project",
+				Description: "Authenticated contributor and AI agent routing plan for project tasks, readiness blockers, candidate lanes, and next actions.",
 			},
 			{
 				Method:      "POST",

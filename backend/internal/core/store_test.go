@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -1004,7 +1005,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 	if payload.ProtocolVersion != "mergeos.protocol.manifest.v1" || payload.Kind != "protocol_manifest" {
 		t.Fatalf("unexpected manifest header: %#v", payload)
 	}
-	if len(payload.Schemas) != 26 {
+	if len(payload.Schemas) != 28 {
 		t.Fatalf("manifest schemas = %d: %#v", len(payload.Schemas), payload.Schemas)
 	}
 	schemas := map[string]bool{}
@@ -1013,7 +1014,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 		schemas[schema.Version] = true
 		descriptions[schema.Version] = schema.Description
 	}
-	for _, required := range []string{"mergeos.task.v1", "mergeos.task-claim.v1", "mergeos.agent.v1", "mergeos.contributor.v1", "mergeos.agent-action.v1", "mergeos.marketplace.v1", "mergeos.live-feed.v1", "mergeos.workflow.v1", "mergeos.estimate.v1", "mergeos.wallet-migration.v1", "mergeos.repo-import.v1", "mergeos.repo-sync.v1", "mergeos.dispute.v1", "mergeos.proposal.v1", "mergeos.ai-workflow.v1", "mergeos.event.v1", "mergeos.ledger.v1", "mergeos.escrow.v1", "mergeos.payouts.v1", "mergeos.payout-release.v1", "mergeos.deployment.v1", "mergeos.pr-monitor.v1", "mergeos.scan.v1", "mergeos.customer-dashboard.v1", "mergeos.worker-dashboard.v1", "mergeos.admin-ops.v1"} {
+	for _, required := range []string{"mergeos.task.v1", "mergeos.task-claim.v1", "mergeos.agent.v1", "mergeos.contributor.v1", "mergeos.agent-action.v1", "mergeos.agent-queue.v1", "mergeos.marketplace.v1", "mergeos.live-feed.v1", "mergeos.workflow.v1", "mergeos.estimate.v1", "mergeos.wallet-migration.v1", "mergeos.repo-import.v1", "mergeos.repo-sync.v1", "mergeos.dispute.v1", "mergeos.proposal.v1", "mergeos.ai-workflow.v1", "mergeos.event.v1", "mergeos.ledger.v1", "mergeos.escrow.v1", "mergeos.payouts.v1", "mergeos.payout-release.v1", "mergeos.deployment.v1", "mergeos.pr-monitor.v1", "mergeos.scan.v1", "mergeos.customer-dashboard.v1", "mergeos.worker-dashboard.v1", "mergeos.routing.v1", "mergeos.admin-ops.v1"} {
 		if !schemas[required] {
 			t.Fatalf("manifest missing schema %s: %#v", required, payload.Schemas)
 		}
@@ -1030,6 +1031,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 		"GET /api/public/live-feed",
 		"GET /api/public/protocol/tasks",
 		"GET /api/public/protocol/agents",
+		"GET /api/public/protocol/agent-queue",
 		"GET /api/public/protocol/contributors",
 		"GET /api/public/protocol/ledger",
 		"GET /api/public/protocol/events",
@@ -1041,6 +1043,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 		"WS /api/ws",
 		"GET /api/projects/{id}/protocol/workflow",
 		"GET /api/projects/{id}/protocol/scan",
+		"GET /api/projects/{id}/routing",
 		"POST /api/projects/{id}/repo-sync",
 		"POST /api/disputes",
 		"POST /api/proposals",
@@ -1227,6 +1230,19 @@ func TestPublicMarketplaceRouteReturnsSanitizedLiveData(t *testing.T) {
 			t.Fatalf("task protocol missing public source repository: %#v", document)
 		}
 	}
+	filteredTaskReq := httptest.NewRequest(http.MethodGet, "/api/public/protocol/tasks?task_id="+url.QueryEscape(taskProtocol.Tasks[0].ID), nil)
+	filteredTaskResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(filteredTaskResp, filteredTaskReq)
+	if filteredTaskResp.Code != http.StatusOK {
+		t.Fatalf("filtered task protocol status = %d, body = %s", filteredTaskResp.Code, filteredTaskResp.Body.String())
+	}
+	var filteredTaskProtocol PublicTaskProtocolResponse
+	if err := json.Unmarshal(filteredTaskResp.Body.Bytes(), &filteredTaskProtocol); err != nil {
+		t.Fatal(err)
+	}
+	if len(filteredTaskProtocol.Tasks) != 1 || filteredTaskProtocol.Tasks[0].ID != taskProtocol.Tasks[0].ID {
+		t.Fatalf("filtered task protocol returned wrong task: %#v", filteredTaskProtocol)
+	}
 
 	agentReq := httptest.NewRequest(http.MethodGet, "/api/public/protocol/agents?limit=20", nil)
 	agentResp := httptest.NewRecorder()
@@ -1262,6 +1278,45 @@ func TestPublicMarketplaceRouteReturnsSanitizedLiveData(t *testing.T) {
 		if document.Metadata["event_protocol"] != "mergeos.event.v1" || document.Metadata["event_stream_endpoint"] != "WS /api/ws" || int(document.Metadata["queue_depth"].(float64)) != len(document.OpenTaskIDs) {
 			t.Fatalf("agent protocol missing event routing metadata: %#v", document.Metadata)
 		}
+	}
+	queueReq := httptest.NewRequest(http.MethodGet, "/api/public/protocol/agent-queue?limit=20", nil)
+	queueResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(queueResp, queueReq)
+	if queueResp.Code != http.StatusOK {
+		t.Fatalf("agent queue status = %d, body = %s", queueResp.Code, queueResp.Body.String())
+	}
+	queueBody := queueResp.Body.String()
+	for _, value := range []string{"client@example.com", "+1 555 0101", auth.User.ID, tempDir, defaultDevPaymentCode} {
+		if strings.Contains(queueBody, value) {
+			t.Fatalf("agent queue leaked private value %q: %s", value, queueBody)
+		}
+	}
+	for _, task := range project.Tasks {
+		if strings.Contains(queueBody, task.ID) {
+			t.Fatalf("agent queue leaked internal task id %q: %s", task.ID, queueBody)
+		}
+	}
+	var queueProtocol AgentQueueResponse
+	if err := json.Unmarshal(queueResp.Body.Bytes(), &queueProtocol); err != nil {
+		t.Fatal(err)
+	}
+	if queueProtocol.ProtocolVersion != "mergeos.agent-queue.v1" || queueProtocol.Kind != "agent_queue" {
+		t.Fatalf("unexpected agent queue header: %#v", queueProtocol)
+	}
+	if queueProtocol.Stats.ReadyCount == 0 || len(queueProtocol.Tasks) == 0 || len(queueProtocol.Agents) == 0 {
+		t.Fatalf("agent queue missing ready work: %#v", queueProtocol)
+	}
+	firstPacket := queueProtocol.Tasks[0].WorkPacket
+	for _, required := range []string{"task_protocol", "agent_queue", "workflow_protocol", "workflow_pulse", "pr_monitor"} {
+		if strings.TrimSpace(firstPacket.ContextURLs[required]) == "" {
+			t.Fatalf("agent work packet missing context URL %s: %#v", required, firstPacket)
+		}
+	}
+	if !strings.HasPrefix(firstPacket.ContextURLs["task_protocol"], "/api/public/protocol/tasks?task_id=") {
+		t.Fatalf("agent work packet task protocol is not task scoped: %#v", firstPacket.ContextURLs)
+	}
+	if firstPacket.ClaimEndpoint == "" || firstPacket.ActionEndpoint == "" || len(firstPacket.Runbook) < 4 || len(firstPacket.ActionPayloads) == 0 {
+		t.Fatalf("agent work packet missing executable details: %#v", firstPacket)
 	}
 
 	contributorReq := httptest.NewRequest(http.MethodGet, "/api/public/protocol/contributors?limit=20", nil)
@@ -3363,6 +3418,44 @@ func TestProjectTaskGraphRouteReturnsAcyclicDependencyGraph(t *testing.T) {
 			t.Fatalf("workflow action references unknown node: %#v", action)
 		}
 	}
+	routingReq := httptest.NewRequest(http.MethodGet, "/api/projects/"+project.ID+"/routing", nil)
+	routingReq.Header.Set("Authorization", "Bearer "+auth.Token)
+	routingResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(routingResp, routingReq)
+	if routingResp.Code != http.StatusOK {
+		t.Fatalf("project routing status = %d, body = %s", routingResp.Code, routingResp.Body.String())
+	}
+	routingBody := routingResp.Body.String()
+	for _, value := range []string{
+		"graph-client@example.com",
+		"+1 555 0144",
+		defaultDevPaymentCode,
+		tempDir,
+	} {
+		if strings.Contains(routingBody, value) {
+			t.Fatalf("project routing leaked private value %q: %s", value, routingBody)
+		}
+	}
+	var routing ProjectRoutingResponse
+	if err := json.Unmarshal(routingResp.Body.Bytes(), &routing); err != nil {
+		t.Fatal(err)
+	}
+	if routing.ProtocolVersion != "mergeos.routing.v1" || routing.Kind != "project_routing" || routing.ProjectID != project.ID {
+		t.Fatalf("unexpected project routing header: %#v", routing)
+	}
+	if routing.Stats.TaskCount != len(project.Tasks) || routing.Stats.ReadyCount == 0 || len(routing.Routes) != len(project.Tasks) || len(routing.Lanes) == 0 {
+		t.Fatalf("project routing missing lanes or ready routes: %#v", routing)
+	}
+	for _, route := range routing.Routes {
+		if route.TaskID == "" || route.RewardCents <= 0 || route.RequiredWorkerKind == "" || route.MatchScore <= 0 || route.RecommendedNextAction == "" {
+			t.Fatalf("project routing route missing decision fields: %#v", route)
+		}
+		if route.RequiredWorkerKind == WorkerAgent || route.RequiredWorkerKind == WorkerHybrid {
+			if route.RecommendedAgent == nil || route.RecommendedAgent.Type == "" {
+				t.Fatalf("project routing did not attach agent recommendation: %#v", route)
+			}
+		}
+	}
 	if err := store.AddGeminiWebhookLog(GeminiWebhookLog{
 		EventName:  "pull_request",
 		Action:     "opened",
@@ -3405,6 +3498,14 @@ func TestProjectTaskGraphRouteReturnsAcyclicDependencyGraph(t *testing.T) {
 	server.Routes().ServeHTTP(forbiddenResp, forbiddenReq)
 	if forbiddenResp.Code != http.StatusForbidden {
 		t.Fatalf("other client task graph status = %d", forbiddenResp.Code)
+	}
+
+	forbiddenRoutingReq := httptest.NewRequest(http.MethodGet, "/api/projects/"+project.ID+"/routing", nil)
+	forbiddenRoutingReq.Header.Set("Authorization", "Bearer "+otherAuth.Token)
+	forbiddenRoutingResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(forbiddenRoutingResp, forbiddenRoutingReq)
+	if forbiddenRoutingResp.Code != http.StatusForbidden {
+		t.Fatalf("other client routing status = %d", forbiddenRoutingResp.Code)
 	}
 
 	forbiddenProtocolReq := httptest.NewRequest(http.MethodGet, "/api/projects/"+project.ID+"/protocol/workflow", nil)
