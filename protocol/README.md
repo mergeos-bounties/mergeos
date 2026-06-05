@@ -22,6 +22,8 @@ The live app exposes protocol discovery at `GET /api/public/protocol`, and serve
 - `mergeos.ai-workflow.v1`: an authenticated AI orchestration workflow covering repository import, issue scan, task generation, reward estimation, contributor routing, PR review, and deployment validation.
 - `mergeos.event.v1`: a realtime ledger/workflow event emitted by apps, agents, or integrations, including typed agent review/test/generate/deploy/scan events.
 - `mergeos.ledger.v1`: a public ledger proof document with sanitized ledger rows and hash-chain verification metadata.
+- `mergeos.ledger-proof.v1`: a public proof manifest with original root hash, public redacted root hash, row verification, and contract reference anchor.
+- `mergeos.token-economy.v1`: a public MRG economy document with verified funding, minting, escrow reserve, treasury, payout totals, flow groups, and recent ledger rows.
 - `mergeos.escrow.v1`: an authenticated project escrow document with reserves, releases, balances, and per-task settlement state.
 - `mergeos.payouts.v1`: an authenticated payout settlement document with release status, payout accounts, ledger proof references, and per-task payment state.
 - `mergeos.payout-release.v1`: an authenticated auto-release result with released/skipped counts, task claim receipts, and the updated payout settlement.

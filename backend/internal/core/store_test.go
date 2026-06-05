@@ -1005,7 +1005,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 	if payload.ProtocolVersion != "mergeos.protocol.manifest.v1" || payload.Kind != "protocol_manifest" {
 		t.Fatalf("unexpected manifest header: %#v", payload)
 	}
-	if len(payload.Schemas) != 28 {
+	if len(payload.Schemas) != 30 {
 		t.Fatalf("manifest schemas = %d: %#v", len(payload.Schemas), payload.Schemas)
 	}
 	schemas := map[string]bool{}
@@ -1014,7 +1014,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 		schemas[schema.Version] = true
 		descriptions[schema.Version] = schema.Description
 	}
-	for _, required := range []string{"mergeos.task.v1", "mergeos.task-claim.v1", "mergeos.agent.v1", "mergeos.contributor.v1", "mergeos.agent-action.v1", "mergeos.agent-queue.v1", "mergeos.marketplace.v1", "mergeos.live-feed.v1", "mergeos.workflow.v1", "mergeos.estimate.v1", "mergeos.wallet-migration.v1", "mergeos.repo-import.v1", "mergeos.repo-sync.v1", "mergeos.dispute.v1", "mergeos.proposal.v1", "mergeos.ai-workflow.v1", "mergeos.event.v1", "mergeos.ledger.v1", "mergeos.escrow.v1", "mergeos.payouts.v1", "mergeos.payout-release.v1", "mergeos.deployment.v1", "mergeos.pr-monitor.v1", "mergeos.scan.v1", "mergeos.customer-dashboard.v1", "mergeos.worker-dashboard.v1", "mergeos.routing.v1", "mergeos.admin-ops.v1"} {
+	for _, required := range []string{"mergeos.task.v1", "mergeos.task-claim.v1", "mergeos.agent.v1", "mergeos.contributor.v1", "mergeos.agent-action.v1", "mergeos.agent-queue.v1", "mergeos.marketplace.v1", "mergeos.live-feed.v1", "mergeos.workflow.v1", "mergeos.estimate.v1", "mergeos.wallet-migration.v1", "mergeos.repo-import.v1", "mergeos.repo-sync.v1", "mergeos.dispute.v1", "mergeos.proposal.v1", "mergeos.ai-workflow.v1", "mergeos.event.v1", "mergeos.ledger.v1", "mergeos.ledger-proof.v1", "mergeos.token-economy.v1", "mergeos.escrow.v1", "mergeos.payouts.v1", "mergeos.payout-release.v1", "mergeos.deployment.v1", "mergeos.pr-monitor.v1", "mergeos.scan.v1", "mergeos.customer-dashboard.v1", "mergeos.worker-dashboard.v1", "mergeos.routing.v1", "mergeos.admin-ops.v1"} {
 		if !schemas[required] {
 			t.Fatalf("manifest missing schema %s: %#v", required, payload.Schemas)
 		}
@@ -1034,6 +1034,9 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 		"GET /api/public/protocol/agent-queue",
 		"GET /api/public/protocol/contributors",
 		"GET /api/public/protocol/ledger",
+		"GET /api/public/ledger/proof",
+		"GET /api/public/ledger/events",
+		"GET /api/public/token-economy",
 		"GET /api/public/protocol/events",
 		"GET /api/public/projects/{id}/deployment",
 		"GET /api/public/projects/{id}/ai-workflow",
@@ -1065,6 +1068,118 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 	} {
 		if !endpoints[required] {
 			t.Fatalf("manifest missing endpoint %s: %#v", required, payload.Endpoints)
+		}
+	}
+}
+
+func TestPublicLedgerEconomyProofAndEventsRoutesReturnLiveProof(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:       defaultTokenSymbol,
+		StatePath:         filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:    1000,
+		DevPaymentEnabled: true,
+		DevPaymentCode:    defaultDevPaymentCode,
+		GitHubOwner:       defaultGitHubOwner,
+		BountyRoot:        filepath.Join(tempDir, "bounties"),
+		SMTPFrom:          "noreply@mergeos.local",
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	auth, err := store.Register(RegisterRequest{
+		Name:     "Ledger Client",
+		Email:    "ledger-client@example.com",
+		Password: "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	project, err := store.CreateProject(context.Background(), auth.User.ID, CreateProjectRequest{
+		Title:            "Public economy proof",
+		ClientName:       "Ledger Client",
+		ClientEmail:      "ledger-client@example.com",
+		Brief:            "Create a funded project so the public ledger economy has mint, reserve, treasury, and payout rows.",
+		BudgetCents:      200000,
+		PaymentMethod:    PaymentPayPal,
+		PaymentReference: defaultDevPaymentCode,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, task := range project.Tasks {
+		if task.RequiredWorkerKind != WorkerHuman {
+			continue
+		}
+		if _, err := store.AcceptTask(task.ID, AcceptTaskRequest{
+			WorkerKind: WorkerHuman,
+			WorkerID:   "github:ledger-builder",
+		}); err != nil {
+			t.Fatal(err)
+		}
+		break
+	}
+
+	server := NewServer(cfg, store, payments)
+
+	economyResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(economyResp, httptest.NewRequest(http.MethodGet, "/api/public/token-economy", nil))
+	if economyResp.Code != http.StatusOK {
+		t.Fatalf("token economy status = %d, body = %s", economyResp.Code, economyResp.Body.String())
+	}
+	var economy PublicTokenEconomyResponse
+	if err := json.Unmarshal(economyResp.Body.Bytes(), &economy); err != nil {
+		t.Fatal(err)
+	}
+	if economy.ProtocolVersion != "mergeos.token-economy.v1" || economy.Kind != "token_economy" {
+		t.Fatalf("unexpected economy header: %#v", economy)
+	}
+	if economy.Totals.VerifiedFundingCents != project.BudgetCents || economy.Totals.MintedCents != project.BudgetCents {
+		t.Fatalf("economy funding/mint totals = %#v, want %d", economy.Totals, project.BudgetCents)
+	}
+	if economy.Totals.PlatformFeeCents <= 0 || economy.Totals.ReleasedCents <= 0 || economy.Totals.RemainingReserveCents <= 0 {
+		t.Fatalf("economy missing fee/release/reserve totals: %#v", economy.Totals)
+	}
+	if len(economy.Balances) < 5 || len(economy.Flows) == 0 || len(economy.RecentEntries) == 0 {
+		t.Fatalf("economy rows incomplete: balances=%d flows=%d recent=%d", len(economy.Balances), len(economy.Flows), len(economy.RecentEntries))
+	}
+
+	proofResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(proofResp, httptest.NewRequest(http.MethodGet, "/api/public/ledger/proof", nil))
+	if proofResp.Code != http.StatusOK {
+		t.Fatalf("ledger proof status = %d, body = %s", proofResp.Code, proofResp.Body.String())
+	}
+	var proof PublicLedgerProofResponse
+	if err := json.Unmarshal(proofResp.Body.Bytes(), &proof); err != nil {
+		t.Fatal(err)
+	}
+	if !proof.Valid || proof.EntryCount == 0 || proof.VerifiedCount != proof.EntryCount || proof.BrokenCount != 0 {
+		t.Fatalf("ledger proof invalid: %#v", proof)
+	}
+	if len(proof.RootHash) != 64 || len(proof.PublicRootHash) != 64 || proof.ContractReference != proof.PublicRootHash {
+		t.Fatalf("ledger proof hashes invalid: root=%q public=%q contract=%q", proof.RootHash, proof.PublicRootHash, proof.ContractReference)
+	}
+	if len(proof.Entries) != proof.EntryCount || len(proof.Entries[0].PublicHash) != 64 {
+		t.Fatalf("ledger proof rows invalid: %#v", proof.Entries)
+	}
+
+	eventsResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(eventsResp, httptest.NewRequest(http.MethodGet, "/api/public/ledger/events?limit=2", nil))
+	if eventsResp.Code != http.StatusOK {
+		t.Fatalf("ledger events status = %d, body = %s", eventsResp.Code, eventsResp.Body.String())
+	}
+	var events PublicLiveFeedResponse
+	if err := json.Unmarshal(eventsResp.Body.Bytes(), &events); err != nil {
+		t.Fatal(err)
+	}
+	if len(events.Items) != 2 {
+		t.Fatalf("ledger events = %d, want limit 2: %#v", len(events.Items), events.Items)
+	}
+	for _, item := range events.Items {
+		if !strings.HasPrefix(item.Type, "ledger_") || item.EntryHash == "" {
+			t.Fatalf("ledger event item missing ledger proof fields: %#v", item)
 		}
 	}
 }

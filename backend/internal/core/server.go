@@ -34,6 +34,9 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/public/marketplace", s.marketplace)
 	mux.HandleFunc("GET /api/public/ledger", s.publicLedger)
 	mux.HandleFunc("GET /api/public/ledger/verify", s.publicLedgerVerify)
+	mux.HandleFunc("GET /api/public/ledger/proof", s.publicLedgerProof)
+	mux.HandleFunc("GET /api/public/ledger/events", s.publicLedgerEvents)
+	mux.HandleFunc("GET /api/public/token-economy", s.publicTokenEconomy)
 	mux.HandleFunc("GET /api/public/live-feed", s.publicLiveFeed)
 	mux.HandleFunc("GET /api/public/protocol", s.publicProtocolManifest)
 	mux.HandleFunc("GET /api/public/protocol/ledger", s.publicProtocolLedger)
@@ -206,6 +209,24 @@ func (s *Server) publicLedger(w http.ResponseWriter, _ *http.Request) {
 
 func (s *Server) publicLedgerVerify(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, s.store.VerifyLedger())
+}
+
+func (s *Server) publicLedgerProof(w http.ResponseWriter, _ *http.Request) {
+	writeJSON(w, http.StatusOK, s.store.PublicLedgerProof())
+}
+
+func (s *Server) publicLedgerEvents(w http.ResponseWriter, r *http.Request) {
+	limit := 0
+	if raw := strings.TrimSpace(r.URL.Query().Get("limit")); raw != "" {
+		if parsed, err := strconv.Atoi(raw); err == nil {
+			limit = parsed
+		}
+	}
+	writeJSON(w, http.StatusOK, s.store.PublicLedgerEvents(limit))
+}
+
+func (s *Server) publicTokenEconomy(w http.ResponseWriter, _ *http.Request) {
+	writeJSON(w, http.StatusOK, s.store.PublicTokenEconomy())
 }
 
 func (s *Server) publicLiveFeed(w http.ResponseWriter, r *http.Request) {

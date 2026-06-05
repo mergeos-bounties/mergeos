@@ -90,6 +90,9 @@ await mergeos.publicMarketplace();
 await mergeos.runtimeConfig(); // includes payment_rails discovery
 await mergeos.publicLedger();
 await mergeos.publicLedgerVerification();
+await mergeos.publicLedgerProof();
+await mergeos.publicLedgerEvents({ limit: 40 });
+await mergeos.publicTokenEconomy();
 await mergeos.publicLiveFeed({ limit: 80 });
 await mergeos.publicProtocolManifest();
 await mergeos.publicProtocolTasks({ limit: 80 });

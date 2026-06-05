@@ -114,6 +114,18 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Description: "Public ledger entries with hash-chain verification metadata for payouts, fees, token minting, and manual credits.",
 			},
 			{
+				Version:     "mergeos.ledger-proof.v1",
+				Kind:        "ledger_proof",
+				SchemaURL:   "https://mergeos.shop/protocol/ledger-proof.v1.schema.json",
+				Description: "Public ledger proof manifest with original root hash, redacted public root hash, row verification, and contract reference anchor.",
+			},
+			{
+				Version:     "mergeos.token-economy.v1",
+				Kind:        "token_economy",
+				SchemaURL:   "https://mergeos.shop/protocol/token-economy.v1.schema.json",
+				Description: "Public MRG token economy document with verified funding, minting, escrow reserve, treasury, payout totals, flows, and recent ledger rows.",
+			},
+			{
 				Version:     "mergeos.escrow.v1",
 				Kind:        "escrow",
 				SchemaURL:   "https://mergeos.shop/protocol/escrow.v1.schema.json",
@@ -229,6 +241,27 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Protocol:    "mergeos.ledger.v1",
 				Auth:        "none",
 				Description: "Public ledger proof document with sanitized ledger rows and hash-chain verification.",
+			},
+			{
+				Method:      "GET",
+				Path:        "/api/public/ledger/proof",
+				Protocol:    "mergeos.ledger-proof.v1",
+				Auth:        "none",
+				Description: "Public proof manifest for full and redacted ledger hash chains, row verification, and contract anchor references.",
+			},
+			{
+				Method:      "GET",
+				Path:        "/api/public/ledger/events",
+				Protocol:    "mergeos.live-feed.v1",
+				Auth:        "none",
+				Description: "Ledger-scoped public event feed for escrow, token mint, treasury, payout, and release proof rows.",
+			},
+			{
+				Method:      "GET",
+				Path:        "/api/public/token-economy",
+				Protocol:    "mergeos.token-economy.v1",
+				Auth:        "none",
+				Description: "Public MRG economy totals for verified funding, token minting, escrow reserves, treasury fees, and released rewards.",
 			},
 			{
 				Method:      "GET",

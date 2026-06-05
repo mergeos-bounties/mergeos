@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mergeos.shop/protocol/ledger-proof.v1.schema.json",
+  "title": "MergeOS Ledger Proof v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "protocol_version",
+    "kind",
+    "token_symbol",
+    "valid",
+    "entry_count",
+    "verified_count",
+    "broken_count",
+    "root_hash",
+    "public_root_hash",
+    "contract_reference",
+    "generated_at",
+    "entries"
+  ],
+  "properties": {
+    "protocol_version": { "const": "mergeos.ledger-proof.v1" },
+    "kind": { "const": "ledger_proof" },
+    "token_symbol": { "type": "string", "minLength": 1, "maxLength": 16 },
+    "valid": { "type": "boolean" },
+    "entry_count": { "type": "integer", "minimum": 0 },
+    "verified_count": { "type": "integer", "minimum": 0 },
+    "broken_count": { "type": "integer", "minimum": 0 },
+    "root_hash": { "type": "string", "minLength": 64, "maxLength": 64 },
+    "public_root_hash": { "type": "string", "minLength": 64, "maxLength": 64 },
+    "contract_reference": { "type": "string", "minLength": 64, "maxLength": 64 },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "entries": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/proof_row" }
+    }
+  },
+  "$defs": {
+    "proof_row": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sequence",
+        "type",
+        "amount_cents",
+        "reference",
+        "entry_hash",
+        "public_hash",
+        "previous_hash",
+        "public_previous_hash",
+        "valid",
+        "created_at"
+      ],
+      "properties": {
+        "sequence": { "type": "integer", "minimum": 1 },
+        "type": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "amount_cents": { "type": "integer", "minimum": 0 },
+        "reference": { "type": "string", "maxLength": 512 },
+        "entry_hash": { "type": "string", "minLength": 64, "maxLength": 64 },
+        "public_hash": { "type": "string", "minLength": 64, "maxLength": 64 },
+        "previous_hash": { "type": "string", "minLength": 64, "maxLength": 64 },
+        "public_previous_hash": { "type": "string", "minLength": 64, "maxLength": 64 },
+        "valid": { "type": "boolean" },
+        "created_at": { "type": "string", "format": "date-time" }
+      }
+    }
+  }
+}

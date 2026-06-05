@@ -1,0 +1,130 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mergeos.shop/protocol/token-economy.v1.schema.json",
+  "title": "MergeOS Token Economy v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "protocol_version",
+    "kind",
+    "token_symbol",
+    "stats",
+    "totals",
+    "balances",
+    "flows",
+    "recent_entries"
+  ],
+  "properties": {
+    "protocol_version": { "const": "mergeos.token-economy.v1" },
+    "kind": { "const": "token_economy" },
+    "token_symbol": { "type": "string", "minLength": 1, "maxLength": 16 },
+    "stats": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ledger_entry_count",
+        "token_event_count",
+        "escrow_event_count",
+        "payout_count",
+        "balance_count",
+        "flow_count"
+      ],
+      "properties": {
+        "ledger_entry_count": { "type": "integer", "minimum": 0 },
+        "token_event_count": { "type": "integer", "minimum": 0 },
+        "escrow_event_count": { "type": "integer", "minimum": 0 },
+        "payout_count": { "type": "integer", "minimum": 0 },
+        "balance_count": { "type": "integer", "minimum": 0 },
+        "flow_count": { "type": "integer", "minimum": 0 },
+        "updated_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "totals": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "verified_funding_cents",
+        "minted_cents",
+        "platform_fee_cents",
+        "treasury_balance_cents",
+        "project_reserve_cents",
+        "task_reserve_cents",
+        "released_cents",
+        "manual_credit_cents",
+        "remaining_reserve_cents",
+        "token_supply_cents"
+      ],
+      "properties": {
+        "verified_funding_cents": { "type": "integer", "minimum": 0 },
+        "minted_cents": { "type": "integer", "minimum": 0 },
+        "platform_fee_cents": { "type": "integer", "minimum": 0 },
+        "treasury_balance_cents": { "type": "integer", "minimum": 0 },
+        "project_reserve_cents": { "type": "integer", "minimum": 0 },
+        "task_reserve_cents": { "type": "integer", "minimum": 0 },
+        "released_cents": { "type": "integer", "minimum": 0 },
+        "manual_credit_cents": { "type": "integer", "minimum": 0 },
+        "remaining_reserve_cents": { "type": "integer", "minimum": 0 },
+        "token_supply_cents": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "balances": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/balance" }
+    },
+    "flows": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/flow" }
+    },
+    "recent_entries": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/ledger_entry" }
+    }
+  },
+  "$defs": {
+    "balance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label", "role", "amount_cents", "entry_count"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "label": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "role": {
+          "type": "string",
+          "enum": ["token_supply", "treasury", "escrow_reserve", "task_reserve", "payouts"]
+        },
+        "amount_cents": { "type": "integer", "minimum": 0 },
+        "entry_count": { "type": "integer", "minimum": 0 },
+        "updated_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "flow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "label", "amount_cents", "count", "latest_sequence"],
+      "properties": {
+        "type": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "label": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "amount_cents": { "type": "integer", "minimum": 0 },
+        "count": { "type": "integer", "minimum": 0 },
+        "latest_sequence": { "type": "integer", "minimum": 0 },
+        "updated_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "ledger_entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sequence", "type", "amount_cents", "reference", "previous_hash", "entry_hash", "created_at"],
+      "properties": {
+        "sequence": { "type": "integer", "minimum": 1 },
+        "type": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "from_account": { "type": "string", "maxLength": 160 },
+        "to_account": { "type": "string", "maxLength": 160 },
+        "amount_cents": { "type": "integer", "minimum": 0 },
+        "reference": { "type": "string", "maxLength": 512 },
+        "previous_hash": { "type": "string", "minLength": 64, "maxLength": 64 },
+        "entry_hash": { "type": "string", "minLength": 64, "maxLength": 64 },
+        "created_at": { "type": "string", "format": "date-time" }
+      }
+    }
+  }
+}

@@ -239,6 +239,86 @@ type LedgerProtocolResponse struct {
 	Entries         []LedgerEntry              `json:"entries"`
 }
 
+type PublicLedgerProofResponse struct {
+	ProtocolVersion   string                 `json:"protocol_version"`
+	Kind              string                 `json:"kind"`
+	TokenSymbol       string                 `json:"token_symbol"`
+	Valid             bool                   `json:"valid"`
+	EntryCount        int                    `json:"entry_count"`
+	VerifiedCount     int                    `json:"verified_count"`
+	BrokenCount       int                    `json:"broken_count"`
+	RootHash          string                 `json:"root_hash"`
+	PublicRootHash    string                 `json:"public_root_hash"`
+	ContractReference string                 `json:"contract_reference"`
+	GeneratedAt       time.Time              `json:"generated_at"`
+	Entries           []PublicLedgerProofRow `json:"entries"`
+}
+
+type PublicLedgerProofRow struct {
+	Sequence           int       `json:"sequence"`
+	Type               string    `json:"type"`
+	AmountCents        int64     `json:"amount_cents"`
+	Reference          string    `json:"reference"`
+	EntryHash          string    `json:"entry_hash"`
+	PublicHash         string    `json:"public_hash"`
+	PreviousHash       string    `json:"previous_hash"`
+	PublicPreviousHash string    `json:"public_previous_hash"`
+	Valid              bool      `json:"valid"`
+	CreatedAt          time.Time `json:"created_at"`
+}
+
+type PublicTokenEconomyResponse struct {
+	ProtocolVersion string                   `json:"protocol_version"`
+	Kind            string                   `json:"kind"`
+	TokenSymbol     string                   `json:"token_symbol"`
+	Stats           PublicTokenEconomyStats  `json:"stats"`
+	Totals          PublicTokenEconomyTotals `json:"totals"`
+	Balances        []PublicTokenBalance     `json:"balances"`
+	Flows           []PublicTokenFlow        `json:"flows"`
+	RecentEntries   []LedgerEntry            `json:"recent_entries"`
+}
+
+type PublicTokenEconomyStats struct {
+	LedgerEntryCount int        `json:"ledger_entry_count"`
+	TokenEventCount  int        `json:"token_event_count"`
+	EscrowEventCount int        `json:"escrow_event_count"`
+	PayoutCount      int        `json:"payout_count"`
+	BalanceCount     int        `json:"balance_count"`
+	FlowCount        int        `json:"flow_count"`
+	UpdatedAt        *time.Time `json:"updated_at,omitempty"`
+}
+
+type PublicTokenEconomyTotals struct {
+	VerifiedFundingCents  int64 `json:"verified_funding_cents"`
+	MintedCents           int64 `json:"minted_cents"`
+	PlatformFeeCents      int64 `json:"platform_fee_cents"`
+	TreasuryBalanceCents  int64 `json:"treasury_balance_cents"`
+	ProjectReserveCents   int64 `json:"project_reserve_cents"`
+	TaskReserveCents      int64 `json:"task_reserve_cents"`
+	ReleasedCents         int64 `json:"released_cents"`
+	ManualCreditCents     int64 `json:"manual_credit_cents"`
+	RemainingReserveCents int64 `json:"remaining_reserve_cents"`
+	TokenSupplyCents      int64 `json:"token_supply_cents"`
+}
+
+type PublicTokenBalance struct {
+	ID          string     `json:"id"`
+	Label       string     `json:"label"`
+	Role        string     `json:"role"`
+	AmountCents int64      `json:"amount_cents"`
+	EntryCount  int        `json:"entry_count"`
+	UpdatedAt   *time.Time `json:"updated_at,omitempty"`
+}
+
+type PublicTokenFlow struct {
+	Type           string     `json:"type"`
+	Label          string     `json:"label"`
+	AmountCents    int64      `json:"amount_cents"`
+	Count          int        `json:"count"`
+	LatestSequence int        `json:"latest_sequence"`
+	UpdatedAt      *time.Time `json:"updated_at,omitempty"`
+}
+
 type RegisterRequest struct {
 	Name        string `json:"name"`
 	CompanyName string `json:"company_name"`

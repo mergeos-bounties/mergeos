@@ -27,6 +27,7 @@ test('loads stable task, workflow, ledger, and event schemas', () => {
     'mergeos.escrow.v1',
     'mergeos.estimate.v1',
     'mergeos.event.v1',
+    'mergeos.ledger-proof.v1',
     'mergeos.ledger.v1',
     'mergeos.live-feed.v1',
     'mergeos.marketplace.v1',
@@ -40,6 +41,7 @@ test('loads stable task, workflow, ledger, and event schemas', () => {
     'mergeos.scan.v1',
     'mergeos.task-claim.v1',
     'mergeos.task.v1',
+    'mergeos.token-economy.v1',
     'mergeos.wallet-migration.v1',
     'mergeos.worker-dashboard.v1',
     'mergeos.workflow.v1',
@@ -2038,6 +2040,120 @@ test('validates public ledger protocol documents', () => {
   });
   assert.equal(invalid.valid, false);
   assert(invalid.errors.some((error) => error.path === 'verification.last_hash'));
+});
+
+test('validates public ledger proof and token economy protocol documents', () => {
+  const now = '2026-06-03T00:00:00.000Z';
+  const ledgerEntry = {
+    sequence: 1,
+    type: 'token_mint',
+    from_account: 'issuer:mergeos',
+    to_account: 'project:prj_0001',
+    amount_cents: 250000,
+    reference: 'project:prj_0001',
+    previous_hash: '0'.repeat(64),
+    entry_hash: 'b'.repeat(64),
+    created_at: now,
+  };
+  const proof = {
+    protocol_version: 'mergeos.ledger-proof.v1',
+    kind: 'ledger_proof',
+    token_symbol: 'MRG',
+    valid: true,
+    entry_count: 1,
+    verified_count: 1,
+    broken_count: 0,
+    root_hash: 'b'.repeat(64),
+    public_root_hash: 'c'.repeat(64),
+    contract_reference: 'c'.repeat(64),
+    generated_at: now,
+    entries: [
+      {
+        sequence: 1,
+        type: 'token_mint',
+        amount_cents: 250000,
+        reference: 'project:prj_0001',
+        entry_hash: 'b'.repeat(64),
+        public_hash: 'c'.repeat(64),
+        previous_hash: '0'.repeat(64),
+        public_previous_hash: '0'.repeat(64),
+        valid: true,
+        created_at: now,
+      },
+    ],
+  };
+  const economy = {
+    protocol_version: 'mergeos.token-economy.v1',
+    kind: 'token_economy',
+    token_symbol: 'MRG',
+    stats: {
+      ledger_entry_count: 1,
+      token_event_count: 1,
+      escrow_event_count: 0,
+      payout_count: 0,
+      balance_count: 2,
+      flow_count: 1,
+      updated_at: now,
+    },
+    totals: {
+      verified_funding_cents: 250000,
+      minted_cents: 250000,
+      platform_fee_cents: 25000,
+      treasury_balance_cents: 25000,
+      project_reserve_cents: 225000,
+      task_reserve_cents: 50000,
+      released_cents: 0,
+      manual_credit_cents: 0,
+      remaining_reserve_cents: 225000,
+      token_supply_cents: 250000,
+    },
+    balances: [
+      {
+        id: 'token_supply',
+        label: 'MRG token supply',
+        role: 'token_supply',
+        amount_cents: 250000,
+        entry_count: 1,
+        updated_at: now,
+      },
+      {
+        id: 'treasury',
+        label: 'Treasury',
+        role: 'treasury',
+        amount_cents: 25000,
+        entry_count: 1,
+        updated_at: now,
+      },
+    ],
+    flows: [
+      {
+        type: 'token_mint',
+        label: 'MRG token mint',
+        amount_cents: 250000,
+        count: 1,
+        latest_sequence: 1,
+        updated_at: now,
+      },
+    ],
+    recent_entries: [ledgerEntry],
+  };
+
+  assert.equal(validateProtocolDocument(proof).valid, true);
+  assert.equal(validateProtocolDocument(economy).valid, true);
+
+  const invalidProof = validateProtocolDocument({
+    ...proof,
+    public_root_hash: 'short',
+  });
+  assert.equal(invalidProof.valid, false);
+  assert(invalidProof.errors.some((error) => error.path === 'public_root_hash'));
+
+  const invalidEconomy = validateProtocolDocument({
+    ...economy,
+    balances: [{ ...economy.balances[0], role: 'unknown' }],
+  });
+  assert.equal(invalidEconomy.valid, false);
+  assert(invalidEconomy.errors.some((error) => error.path === 'balances[0].role'));
 });
 
 test('validates repository scan protocol documents', () => {
