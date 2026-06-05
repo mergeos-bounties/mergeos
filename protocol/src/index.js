@@ -7,6 +7,7 @@ const schemaFiles = {
   'mergeos.event.v1': '../schemas/event.v1.schema.json',
   'mergeos.ledger.v1': '../schemas/ledger.v1.schema.json',
   'mergeos.scan.v1': '../schemas/scan.v1.schema.json',
+  'mergeos.worker-dashboard.v1': '../schemas/worker-dashboard.v1.schema.json',
 };
 
 export const protocolSchemas = Object.freeze(

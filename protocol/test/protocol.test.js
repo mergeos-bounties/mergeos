@@ -9,9 +9,111 @@ test('loads stable task, workflow, ledger, and event schemas', () => {
     'mergeos.ledger.v1',
     'mergeos.scan.v1',
     'mergeos.task.v1',
+    'mergeos.worker-dashboard.v1',
     'mergeos.workflow.v1',
   ]);
   assert.equal(schemaForProtocol('mergeos.task.v1').title, 'MergeOS Task v1');
+});
+
+test('validates worker dashboard protocol documents', () => {
+  const dashboard = {
+    protocol_version: 'mergeos.worker-dashboard.v1',
+    kind: 'worker_dashboard',
+    profile: {
+      user_id: 'usr_worker_1',
+      name: 'Worker Dev',
+      email: 'worker@example.com',
+      wallet_address: 'So1anaWorkerWallet1111111111111111111111111',
+      github_username: 'worker-dev',
+      github_avatar_url: 'https://avatars.githubusercontent.com/u/1001',
+    },
+    stats: {
+      claimed_task_count: 1,
+      open_proposal_count: 2,
+      reward_cents: 5000,
+      reputation_score: 88,
+      risk_level: 'low',
+      last_paid_at: '2026-06-05T00:00:00.000Z',
+    },
+    claimed_tasks: [
+      {
+        id: 'tsk_accepted',
+        project_id: 'prj_0001',
+        project_title: 'Worker dashboard proof',
+        issue_number: 12,
+        title: 'Ship worker route',
+        acceptance: 'Tests pass and evidence is linked.',
+        reward_cents: 5000,
+        worker_kind: 'human',
+        proof_hash: 'abc123',
+        issue_url: 'https://github.com/mergeos-bounties/mergeos/issues/12',
+        accepted_at: '2026-06-05T00:00:00.000Z',
+      },
+    ],
+    rewards: [
+      {
+        sequence: 7,
+        type: 'task_payment',
+        amount_cents: 5000,
+        reference: 'project:prj_0001;task:tsk_accepted',
+        entry_hash: 'b'.repeat(64),
+        created_at: '2026-06-05T00:00:00.000Z',
+      },
+    ],
+    reputation: [
+      { label: 'Score', value: '88 / 100', tone: 'success' },
+    ],
+    reputation_audit: {
+      worker_id: 'github:worker-dev',
+      name: 'Worker Dev',
+      kind: 'human',
+      score: 88,
+      level: 'Trusted',
+      risk_level: 'low',
+      completed_task_count: 1,
+      reward_cents: 5000,
+      reward_row_count: 1,
+      has_github: true,
+      has_wallet: true,
+      duplicate_identity_count: 0,
+      flags: [],
+      last_paid_at: '2026-06-05T00:00:00.000Z',
+    },
+    proposals: [
+      {
+        id: 'proposal_1',
+        claim_id: 'claim_public_1',
+        project_id: 'prj_0002',
+        project_title: 'Proposal routing',
+        issue_number: 18,
+        title: 'Add worker match',
+        acceptance: 'Route based on identity and reputation.',
+        reward_cents: 7000,
+        estimated_hours: 4,
+        required_worker_kind: 'human',
+        match_score: 91,
+        match_reasons: ['GitHub identity linked', 'Low risk reputation'],
+        evidence_required: ['tests'],
+        issue_url: 'https://github.com/mergeos-bounties/mergeos/issues/18',
+        created_at: '2026-06-05T00:00:00.000Z',
+      },
+    ],
+    identity_status: [
+      { label: 'GitHub', value: 'worker-dev', ready: true },
+      { label: 'Wallet', value: 'linked', ready: true },
+    ],
+  };
+
+  assert.equal(validateProtocolDocument(dashboard).valid, true);
+
+  const invalid = validateProtocolDocument({
+    ...dashboard,
+    kind: 'worker',
+    stats: { ...dashboard.stats, risk_level: 'critical' },
+  });
+  assert.equal(invalid.valid, false);
+  assert(invalid.errors.some((error) => error.path === 'kind'));
+  assert(invalid.errors.some((error) => error.path === 'stats.risk_level'));
 });
 
 test('validates an agent protocol document', () => {

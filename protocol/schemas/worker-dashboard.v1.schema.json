@@ -1,0 +1,159 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mergeos.shop/protocol/worker-dashboard.v1.schema.json",
+  "title": "MergeOS Worker Dashboard v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["protocol_version", "kind", "profile", "stats", "claimed_tasks", "rewards", "reputation", "reputation_audit", "proposals", "identity_status"],
+  "properties": {
+    "protocol_version": { "const": "mergeos.worker-dashboard.v1" },
+    "kind": { "const": "worker_dashboard" },
+    "profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["user_id", "name", "email"],
+      "properties": {
+        "user_id": { "type": "string", "minLength": 1, "maxLength": 96 },
+        "name": { "type": "string", "maxLength": 160 },
+        "email": { "type": "string", "maxLength": 254 },
+        "wallet_address": { "type": "string", "maxLength": 96 },
+        "github_username": { "type": "string", "maxLength": 120 },
+        "github_avatar_url": { "type": "string", "maxLength": 512 }
+      }
+    },
+    "stats": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["claimed_task_count", "open_proposal_count", "reward_cents", "reputation_score", "risk_level"],
+      "properties": {
+        "claimed_task_count": { "type": "integer", "minimum": 0 },
+        "open_proposal_count": { "type": "integer", "minimum": 0 },
+        "reward_cents": { "type": "integer", "minimum": 0 },
+        "reputation_score": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "risk_level": { "enum": ["low", "medium", "high", "unknown"] },
+        "last_paid_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "claimed_tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "project_id", "project_title", "issue_number", "title", "acceptance", "reward_cents", "worker_kind"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1, "maxLength": 96 },
+          "project_id": { "type": "string", "minLength": 1, "maxLength": 96 },
+          "project_title": { "type": "string", "maxLength": 240 },
+          "issue_number": { "type": "integer", "minimum": 0 },
+          "title": { "type": "string", "minLength": 1, "maxLength": 240 },
+          "acceptance": { "type": "string", "maxLength": 2000 },
+          "reward_cents": { "type": "integer", "minimum": 0 },
+          "worker_kind": { "enum": ["human", "agent", "hybrid"] },
+          "agent_type": { "type": "string", "maxLength": 120 },
+          "proof_hash": { "type": "string", "maxLength": 128 },
+          "issue_url": { "type": "string", "maxLength": 512 },
+          "accepted_at": { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+    "rewards": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["sequence", "type", "amount_cents", "reference", "entry_hash", "created_at"],
+        "properties": {
+          "sequence": { "type": "integer", "minimum": 1 },
+          "type": { "type": "string", "minLength": 1, "maxLength": 80 },
+          "amount_cents": { "type": "integer", "minimum": 0 },
+          "reference": { "type": "string", "maxLength": 512 },
+          "entry_hash": { "type": "string", "maxLength": 128 },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+    "reputation": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["label", "value", "tone"],
+        "properties": {
+          "label": { "type": "string", "minLength": 1, "maxLength": 80 },
+          "value": { "type": "string", "maxLength": 160 },
+          "tone": { "type": "string", "maxLength": 40 }
+        }
+      }
+    },
+    "reputation_audit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["worker_id", "score", "level", "risk_level", "completed_task_count", "reward_cents", "reward_row_count", "has_github", "has_wallet", "duplicate_identity_count"],
+      "properties": {
+        "worker_id": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "name": { "type": "string", "maxLength": 160 },
+        "kind": { "enum": ["human", "agent", "hybrid"] },
+        "agent_type": { "type": "string", "maxLength": 120 },
+        "score": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "level": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "risk_level": { "enum": ["low", "medium", "high", "unknown"] },
+        "completed_task_count": { "type": "integer", "minimum": 0 },
+        "reward_cents": { "type": "integer", "minimum": 0 },
+        "reward_row_count": { "type": "integer", "minimum": 0 },
+        "has_github": { "type": "boolean" },
+        "has_wallet": { "type": "boolean" },
+        "duplicate_identity_count": { "type": "integer", "minimum": 0 },
+        "flags": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1, "maxLength": 160 }
+        },
+        "last_paid_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "proposals": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "project_id", "project_title", "issue_number", "title", "acceptance", "reward_cents", "required_worker_kind", "match_score", "created_at"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1, "maxLength": 96 },
+          "claim_id": { "type": "string", "maxLength": 96 },
+          "project_id": { "type": "string", "minLength": 1, "maxLength": 96 },
+          "project_title": { "type": "string", "maxLength": 240 },
+          "issue_number": { "type": "integer", "minimum": 0 },
+          "title": { "type": "string", "minLength": 1, "maxLength": 240 },
+          "acceptance": { "type": "string", "maxLength": 2000 },
+          "reward_cents": { "type": "integer", "minimum": 0 },
+          "estimated_hours": { "type": "number", "minimum": 0 },
+          "required_worker_kind": { "enum": ["human", "agent", "hybrid"] },
+          "suggested_agent_type": { "type": "string", "maxLength": 120 },
+          "match_score": { "type": "integer", "minimum": 0, "maximum": 100 },
+          "match_reasons": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1, "maxLength": 240 }
+          },
+          "evidence_required": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1, "maxLength": 120 }
+          },
+          "issue_url": { "type": "string", "maxLength": 512 },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+    "identity_status": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["label", "value", "ready"],
+        "properties": {
+          "label": { "type": "string", "minLength": 1, "maxLength": 80 },
+          "value": { "type": "string", "maxLength": 160 },
+          "ready": { "type": "boolean" }
+        }
+      }
+    }
+  }
+}

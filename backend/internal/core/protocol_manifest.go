@@ -41,6 +41,12 @@ func ProtocolManifest() ProtocolManifestResponse {
 				SchemaURL:   "https://mergeos.shop/protocol/scan.v1.schema.json",
 				Description: "Repository scan findings for security, dependency, quality, and technical debt signals.",
 			},
+			{
+				Version:     "mergeos.worker-dashboard.v1",
+				Kind:        "worker_dashboard",
+				SchemaURL:   "https://mergeos.shop/protocol/worker-dashboard.v1.schema.json",
+				Description: "Authenticated worker dashboard with claimed tasks, rewards, reputation audit, matched proposals, and linked identity status.",
+			},
 		},
 		Endpoints: []ProtocolManifestEndpoint{
 			{
@@ -97,6 +103,13 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Protocol:    "mergeos.scan.v1",
 				Auth:        "project",
 				Description: "Authenticated repository scan protocol document.",
+			},
+			{
+				Method:      "GET",
+				Path:        "/api/workers/me",
+				Protocol:    "mergeos.worker-dashboard.v1",
+				Auth:        "worker",
+				Description: "Authenticated worker dashboard for claimed work, payout references, reputation, and proposal routing.",
 			},
 		},
 	}

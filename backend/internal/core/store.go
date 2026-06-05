@@ -1191,6 +1191,8 @@ func (s *Store) WorkerDashboard(userID string) WorkerDashboardResponse {
 
 	workerIDs, rewardAccounts := workerIdentitySets(user)
 	response := WorkerDashboardResponse{
+		ProtocolVersion: "mergeos.worker-dashboard.v1",
+		Kind:            "worker_dashboard",
 		Profile: WorkerProfile{
 			UserID:          user.ID,
 			Name:            user.Name,

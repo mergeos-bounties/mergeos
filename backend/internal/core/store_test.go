@@ -926,7 +926,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 	if payload.ProtocolVersion != "mergeos.protocol.manifest.v1" || payload.Kind != "protocol_manifest" {
 		t.Fatalf("unexpected manifest header: %#v", payload)
 	}
-	if len(payload.Schemas) != 6 {
+	if len(payload.Schemas) != 7 {
 		t.Fatalf("manifest schemas = %d: %#v", len(payload.Schemas), payload.Schemas)
 	}
 	schemas := map[string]bool{}
@@ -935,7 +935,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 		schemas[schema.Version] = true
 		descriptions[schema.Version] = schema.Description
 	}
-	for _, required := range []string{"mergeos.task.v1", "mergeos.agent.v1", "mergeos.workflow.v1", "mergeos.event.v1", "mergeos.ledger.v1", "mergeos.scan.v1"} {
+	for _, required := range []string{"mergeos.task.v1", "mergeos.agent.v1", "mergeos.workflow.v1", "mergeos.event.v1", "mergeos.ledger.v1", "mergeos.scan.v1", "mergeos.worker-dashboard.v1"} {
 		if !schemas[required] {
 			t.Fatalf("manifest missing schema %s: %#v", required, payload.Schemas)
 		}
@@ -955,6 +955,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 		"WS /api/ws",
 		"GET /api/projects/{id}/protocol/workflow",
 		"GET /api/projects/{id}/protocol/scan",
+		"GET /api/workers/me",
 	} {
 		if !endpoints[required] {
 			t.Fatalf("manifest missing endpoint %s: %#v", required, payload.Endpoints)
@@ -2785,6 +2786,9 @@ func TestWorkerDashboardRouteMatchesGitHubWorkerAndSanitizesData(t *testing.T) {
 	var payload WorkerDashboardResponse
 	if err := json.Unmarshal(resp.Body.Bytes(), &payload); err != nil {
 		t.Fatal(err)
+	}
+	if payload.ProtocolVersion != "mergeos.worker-dashboard.v1" || payload.Kind != "worker_dashboard" {
+		t.Fatalf("unexpected worker dashboard protocol header: %#v", payload)
 	}
 	if payload.Profile.GitHubUsername != "worker-dev" || payload.Profile.WalletAddress == "" {
 		t.Fatalf("worker profile missing linked identity: %#v", payload.Profile)

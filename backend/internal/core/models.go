@@ -1115,6 +1115,8 @@ type AIWorkflowSignal struct {
 }
 
 type WorkerDashboardResponse struct {
+	ProtocolVersion string                `json:"protocol_version"`
+	Kind            string                `json:"kind"`
 	Profile         WorkerProfile         `json:"profile"`
 	Stats           WorkerStats           `json:"stats"`
 	ClaimedTasks    []WorkerClaimedTask   `json:"claimed_tasks"`
