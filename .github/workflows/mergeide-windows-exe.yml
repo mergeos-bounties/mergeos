@@ -22,6 +22,8 @@ permissions:
 
 env:
   MERGEIDE_EXE_NAME: MergeIDE-Windows-x64.exe
+  MERGEIDE_CHECKSUM_NAME: MergeIDE-Windows-x64.exe.sha256
+  MERGEIDE_BUILD_INFO_NAME: MergeIDE-Windows-x64.build.json
   MERGEIDE_DEFAULT_RELEASE_TAG: mergeide-windows-latest
 
 concurrency:
@@ -62,6 +64,32 @@ jobs:
         working-directory: MergeIDE
         run: npm run build:exe
 
+      - name: Generate release metadata
+        shell: pwsh
+        run: |
+          $exePath = Join-Path "MergeIDE/dist" $env:MERGEIDE_EXE_NAME
+          if (-not (Test-Path $exePath)) {
+            throw "Expected executable was not built: $exePath"
+          }
+
+          $hash = (Get-FileHash -Path $exePath -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  $env:MERGEIDE_EXE_NAME" | Set-Content -Path "MergeIDE/dist/$env:MERGEIDE_CHECKSUM_NAME" -Encoding ascii
+
+          $buildInfo = [ordered]@{
+            product = "MergeIDE"
+            artifact = $env:MERGEIDE_EXE_NAME
+            sha256 = $hash
+            repository = $env:GITHUB_REPOSITORY
+            commit = $env:GITHUB_SHA
+            ref = $env:GITHUB_REF
+            run_id = $env:GITHUB_RUN_ID
+            run_attempt = $env:GITHUB_RUN_ATTEMPT
+            built_at = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+          }
+          $buildInfo | ConvertTo-Json | Set-Content -Path "MergeIDE/dist/$env:MERGEIDE_BUILD_INFO_NAME" -Encoding utf8
+
+          "MERGEIDE_SHA256=$hash" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
       - name: Smoke Windows executable
         working-directory: MergeIDE
         shell: pwsh
@@ -71,8 +99,12 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: MergeIDE-Windows-x64
-          path: MergeIDE/dist/${{ env.MERGEIDE_EXE_NAME }}
+          path: |
+            MergeIDE/dist/${{ env.MERGEIDE_EXE_NAME }}
+            MergeIDE/dist/${{ env.MERGEIDE_CHECKSUM_NAME }}
+            MergeIDE/dist/${{ env.MERGEIDE_BUILD_INFO_NAME }}
           if-no-files-found: error
+          retention-days: 30
 
       - name: Upload executable to release
         shell: pwsh
@@ -88,12 +120,13 @@ jobs:
             $tag = $env:MERGEIDE_DEFAULT_RELEASE_TAG
           }
 
+          $mergeIDEPage = "https://mergeos.shop/mergeide"
           $isDefaultRelease = $tag -eq $env:MERGEIDE_DEFAULT_RELEASE_TAG
           $releaseTitle = if ($isDefaultRelease) { "MergeIDE Windows latest" } else { "MergeIDE $tag" }
           $releaseNotes = if ($isDefaultRelease) {
-            "Latest MergeIDE Windows executable built by GitHub Actions."
+            "Latest MergeIDE Windows executable built by GitHub Actions.`n`nMergeIDE page: $mergeIDEPage`nSHA256: ``$env:MERGEIDE_SHA256``"
           } else {
-            "MergeIDE Windows executable build for $tag."
+            "MergeIDE Windows executable build for $tag.`n`nMergeIDE page: $mergeIDEPage`nSHA256: ``$env:MERGEIDE_SHA256``"
           }
 
           gh release view $tag 2>$null
@@ -110,4 +143,17 @@ jobs:
               --latest
           }
 
-          gh release upload $tag "MergeIDE/dist/$env:MERGEIDE_EXE_NAME" --clobber
+          gh release upload $tag `
+            "MergeIDE/dist/$env:MERGEIDE_EXE_NAME" `
+            "MergeIDE/dist/$env:MERGEIDE_CHECKSUM_NAME" `
+            "MergeIDE/dist/$env:MERGEIDE_BUILD_INFO_NAME" `
+            --clobber
+
+          $releaseUrl = "https://github.com/$env:GITHUB_REPOSITORY/releases/tag/$tag"
+          $downloadUrl = "https://github.com/$env:GITHUB_REPOSITORY/releases/download/$tag/$env:MERGEIDE_EXE_NAME"
+          "### MergeIDE Windows exe" >> $env:GITHUB_STEP_SUMMARY
+          "" >> $env:GITHUB_STEP_SUMMARY
+          "- MergeIDE page: $mergeIDEPage" >> $env:GITHUB_STEP_SUMMARY
+          "- Release: $releaseUrl" >> $env:GITHUB_STEP_SUMMARY
+          "- Download: $downloadUrl" >> $env:GITHUB_STEP_SUMMARY
+          "- SHA256: ``$env:MERGEIDE_SHA256``" >> $env:GITHUB_STEP_SUMMARY

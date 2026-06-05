@@ -10098,6 +10098,7 @@ const publicMergeIdeTranslations = {
     downloadBody: 'Bản Windows preview được phát hành dưới dạng executable trên GitHub Releases, build từ MergeIDE task runner và workspace bridge.',
     platformRows: [
       ['Windows x64 exe', 'Tải executable Windows từ release tag cố định.', 'Ready', mergeIdeDownloadPath, mergeIdeDownloadFileName],
+      ['Pinned release', 'Mở release tag cố định nếu direct asset vẫn đang publish.', 'Fallback', mergeIdeReleasePath, null, 'Mở release'],
       ['Release manifest', 'Public JSON với download URL, release tag và workflow provenance.', 'Protocol', mergeIdeManifestPath, mergeIdeManifestFileName, 'Mở manifest'],
       ['Preview kit', 'Markdown package với setup notes và integration links.', 'Fallback', mergeIdePreviewKitPath, mergeIdePreviewKitFileName, 'Tải kit'],
       ['macOS và Linux', 'Checklist cross-platform cho SDK, agents và protocol contexts.', 'Planned'],
@@ -10143,6 +10144,7 @@ const publicMergeIdeTranslations = {
     downloadBody: 'Windows preview 以 GitHub Releases executable 发布，由 MergeIDE task runner 和 workspace bridge 构建。',
     platformRows: [
       ['Windows x64 exe', '从固定 release tag 下载 Windows executable。', 'Ready', mergeIdeDownloadPath, mergeIdeDownloadFileName],
+      ['Pinned release', '如果 direct asset 仍在发布中，请打开固定 release tag。', 'Fallback', mergeIdeReleasePath, null, '打开 release'],
       ['Release manifest', '包含 download URL、release tag 和 workflow provenance 的 public JSON。', 'Protocol', mergeIdeManifestPath, mergeIdeManifestFileName, '打开 manifest'],
       ['Preview kit', '包含 setup notes 和 integration links 的 Markdown package。', 'Fallback', mergeIdePreviewKitPath, mergeIdePreviewKitFileName, '下载 kit'],
       ['macOS and Linux', '面向 SDK、agents 和 protocol contexts 的 cross-platform build checklist。', 'Planned'],
@@ -10188,6 +10190,7 @@ const publicMergeIdeTranslations = {
     downloadBody: 'Windows preview は GitHub Releases の executable として配布され、MergeIDE task runner と workspace bridge から build されます。',
     platformRows: [
       ['Windows x64 exe', '固定 release tag から Windows executable をダウンロード。', 'Ready', mergeIdeDownloadPath, mergeIdeDownloadFileName],
+      ['Pinned release', 'Direct asset の公開中は固定 release tag を開いてください。', 'Fallback', mergeIdeReleasePath, null, 'Release を開く'],
       ['Release manifest', 'Download URL、release tag、workflow provenance を含む public JSON。', 'Protocol', mergeIdeManifestPath, mergeIdeManifestFileName, 'Manifest を開く'],
       ['Preview kit', 'Setup notes と integration links 付き Markdown package。', 'Fallback', mergeIdePreviewKitPath, mergeIdePreviewKitFileName, 'Kit をダウンロード'],
       ['macOS and Linux', 'SDK、agents、protocol contexts 向け cross-platform build checklist。', 'Planned'],
@@ -10233,6 +10236,7 @@ const publicMergeIdeTranslations = {
     downloadBody: 'Windows preview는 MergeIDE task runner와 workspace bridge에서 빌드된 GitHub Releases executable로 배포됩니다.',
     platformRows: [
       ['Windows x64 exe', '고정 release tag에서 Windows executable을 다운로드.', 'Ready', mergeIdeDownloadPath, mergeIdeDownloadFileName],
+      ['Pinned release', 'Direct asset이 아직 publish 중이면 고정 release tag를 엽니다.', 'Fallback', mergeIdeReleasePath, null, 'Release 열기'],
       ['Release manifest', 'Download URL, release tag, workflow provenance를 담은 public JSON.', 'Protocol', mergeIdeManifestPath, mergeIdeManifestFileName, 'Manifest 열기'],
       ['Preview kit', 'Setup notes와 integration links가 포함된 Markdown package.', 'Fallback', mergeIdePreviewKitPath, mergeIdePreviewKitFileName, 'Kit 다운로드'],
       ['macOS and Linux', 'SDK, agents, protocol contexts를 위한 cross-platform build checklist.', 'Planned'],

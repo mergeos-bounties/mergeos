@@ -189,6 +189,9 @@ test('validates the public MergeIDE release manifest', () => {
   assert.equal(manifest.protocol_version, 'mergeos.release-artifact.v1');
   assert.equal(manifest.file_name, 'MergeIDE-Windows-x64.exe');
   assert.match(manifest.download_url, /releases\/download\/mergeide-windows-latest\/MergeIDE-Windows-x64\.exe$/);
+  assert(manifest.links.some((link) => link.label === 'Windows exe' && link.url === manifest.download_url));
+  assert(manifest.links.some((link) => link.label === 'SHA256 checksum' && link.url.endsWith('/MergeIDE-Windows-x64.exe.sha256')));
+  assert(manifest.links.some((link) => link.label === 'Build metadata' && link.url.endsWith('/MergeIDE-Windows-x64.build.json')));
 });
 
 test('validates marketplace protocol documents', () => {

@@ -31,11 +31,28 @@
     "summary": "Download the executable, configure MergeOS, then run tasks from a funded repository workspace.",
     "steps": [
       "Download MergeIDE-Windows-x64.exe from the GitHub Release asset.",
+      "Verify the SHA256 checksum from the release asset when installing on a new machine.",
       "Run configure with your MergeOS URL, worker id, and preferred AI CLI provider.",
       "Authenticate, list funded tasks, run a task, and optionally claim it after the AI CLI exits successfully."
     ]
   },
   "links": [
+    {
+      "label": "Windows exe",
+      "url": "https://github.com/mergeos-bounties/mergeos/releases/download/mergeide-windows-latest/MergeIDE-Windows-x64.exe"
+    },
+    {
+      "label": "Pinned release",
+      "url": "https://github.com/mergeos-bounties/mergeos/releases/tag/mergeide-windows-latest"
+    },
+    {
+      "label": "SHA256 checksum",
+      "url": "https://github.com/mergeos-bounties/mergeos/releases/download/mergeide-windows-latest/MergeIDE-Windows-x64.exe.sha256"
+    },
+    {
+      "label": "Build metadata",
+      "url": "https://github.com/mergeos-bounties/mergeos/releases/download/mergeide-windows-latest/MergeIDE-Windows-x64.build.json"
+    },
     {
       "label": "MergeIDE page",
       "url": "/mergeide"
