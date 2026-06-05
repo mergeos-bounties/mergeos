@@ -17,7 +17,9 @@ func (s *Store) AdminOpsQueue() AdminOpsQueueResponse {
 	defer s.mu.RUnlock()
 
 	response := AdminOpsQueueResponse{
-		Items: []AdminOpsQueueItem{},
+		ProtocolVersion: "mergeos.admin-ops.v1",
+		Kind:            "admin_ops",
+		Items:           []AdminOpsQueueItem{},
 	}
 	add := func(item AdminOpsQueueItem) {
 		if item.CreatedAt.IsZero() {

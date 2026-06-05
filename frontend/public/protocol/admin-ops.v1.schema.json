@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mergeos.shop/protocol/admin-ops.v1.schema.json",
+  "title": "MergeOS Admin Ops v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["protocol_version", "kind", "stats", "items"],
+  "properties": {
+    "protocol_version": { "const": "mergeos.admin-ops.v1" },
+    "kind": { "const": "admin_ops" },
+    "stats": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["total_count", "dispute_count", "moderation_count", "payout_review_count", "fraud_count", "security_count", "critical_count"],
+      "properties": {
+        "total_count": { "type": "integer", "minimum": 0 },
+        "dispute_count": { "type": "integer", "minimum": 0 },
+        "moderation_count": { "type": "integer", "minimum": 0 },
+        "payout_review_count": { "type": "integer", "minimum": 0 },
+        "fraud_count": { "type": "integer", "minimum": 0 },
+        "security_count": { "type": "integer", "minimum": 0 },
+        "critical_count": { "type": "integer", "minimum": 0 },
+        "updated_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "type", "severity", "title", "body", "status", "created_at"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "type": {
+            "enum": ["payout_review", "payout_audit", "dispute", "moderation", "security_moderation", "fraud_review"]
+          },
+          "severity": { "enum": ["low", "medium", "high", "critical"] },
+          "title": { "type": "string", "minLength": 1, "maxLength": 240 },
+          "body": { "type": "string", "maxLength": 2000 },
+          "project_id": { "type": "string", "maxLength": 96 },
+          "project_title": { "type": "string", "maxLength": 240 },
+          "task_id": { "type": "string", "maxLength": 96 },
+          "issue_number": { "type": "integer", "minimum": 0 },
+          "user_id": { "type": "string", "maxLength": 96 },
+          "reference": { "type": "string", "maxLength": 512 },
+          "url": { "type": "string", "maxLength": 512 },
+          "status": { "type": "string", "minLength": 1, "maxLength": 160 },
+          "actions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["id", "label", "type"],
+              "properties": {
+                "id": { "type": "string", "minLength": 1, "maxLength": 120 },
+                "label": { "type": "string", "minLength": 1, "maxLength": 160 },
+                "type": {
+                  "enum": ["review_task_pulls", "open_url", "run_ssl_review", "refresh_admin_ops"]
+                },
+                "url": { "type": "string", "maxLength": 512 }
+              }
+            }
+          },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      }
+    }
+  }
+}

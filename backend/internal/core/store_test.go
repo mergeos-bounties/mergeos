@@ -926,7 +926,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 	if payload.ProtocolVersion != "mergeos.protocol.manifest.v1" || payload.Kind != "protocol_manifest" {
 		t.Fatalf("unexpected manifest header: %#v", payload)
 	}
-	if len(payload.Schemas) != 8 {
+	if len(payload.Schemas) != 9 {
 		t.Fatalf("manifest schemas = %d: %#v", len(payload.Schemas), payload.Schemas)
 	}
 	schemas := map[string]bool{}
@@ -935,7 +935,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 		schemas[schema.Version] = true
 		descriptions[schema.Version] = schema.Description
 	}
-	for _, required := range []string{"mergeos.task.v1", "mergeos.agent.v1", "mergeos.workflow.v1", "mergeos.event.v1", "mergeos.ledger.v1", "mergeos.scan.v1", "mergeos.customer-dashboard.v1", "mergeos.worker-dashboard.v1"} {
+	for _, required := range []string{"mergeos.task.v1", "mergeos.agent.v1", "mergeos.workflow.v1", "mergeos.event.v1", "mergeos.ledger.v1", "mergeos.scan.v1", "mergeos.customer-dashboard.v1", "mergeos.worker-dashboard.v1", "mergeos.admin-ops.v1"} {
 		if !schemas[required] {
 			t.Fatalf("manifest missing schema %s: %#v", required, payload.Schemas)
 		}
@@ -957,6 +957,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 		"GET /api/projects/{id}/protocol/scan",
 		"GET /api/projects/{id}/dashboard",
 		"GET /api/workers/me",
+		"GET /api/admin/ops-queue",
 	} {
 		if !endpoints[required] {
 			t.Fatalf("manifest missing endpoint %s: %#v", required, payload.Endpoints)
@@ -3154,6 +3155,9 @@ func TestAdminOpsQueueReturnsDisputeModerationAndPayoutItems(t *testing.T) {
 	var payload AdminOpsQueueResponse
 	if err := json.Unmarshal(adminResp.Body.Bytes(), &payload); err != nil {
 		t.Fatal(err)
+	}
+	if payload.ProtocolVersion != "mergeos.admin-ops.v1" || payload.Kind != "admin_ops" {
+		t.Fatalf("unexpected admin ops protocol header: %#v", payload)
 	}
 	if payload.Stats.TotalCount < 7 || payload.Stats.DisputeCount < 1 || payload.Stats.ModerationCount < 2 || payload.Stats.PayoutReviewCount < 3 || payload.Stats.FraudCount < 2 || payload.Stats.SecurityCount < 1 || payload.Stats.CriticalCount < 1 {
 		t.Fatalf("unexpected ops queue stats: %#v", payload.Stats)

@@ -4,6 +4,7 @@ import { assertProtocolDocument, protocolSchemas, schemaForProtocol, validatePro
 
 test('loads stable task, workflow, ledger, and event schemas', () => {
   assert.deepEqual(Object.keys(protocolSchemas).sort(), [
+    'mergeos.admin-ops.v1',
     'mergeos.agent.v1',
     'mergeos.customer-dashboard.v1',
     'mergeos.event.v1',
@@ -14,6 +15,93 @@ test('loads stable task, workflow, ledger, and event schemas', () => {
     'mergeos.workflow.v1',
   ]);
   assert.equal(schemaForProtocol('mergeos.task.v1').title, 'MergeOS Task v1');
+});
+
+test('validates admin operations protocol documents', () => {
+  const now = '2026-06-05T00:00:00.000Z';
+  const queue = {
+    protocol_version: 'mergeos.admin-ops.v1',
+    kind: 'admin_ops',
+    stats: {
+      total_count: 6,
+      dispute_count: 1,
+      moderation_count: 2,
+      payout_review_count: 2,
+      fraud_count: 1,
+      security_count: 1,
+      critical_count: 1,
+      updated_at: now,
+    },
+    items: [
+      {
+        id: 'dispute:ntf_1',
+        type: 'dispute',
+        severity: 'critical',
+        title: 'Delivery notification needs review',
+        body: 'Milestone evidence mismatch.',
+        project_id: 'prj_0001',
+        project_title: 'Admin ops proof',
+        user_id: 'usr_1',
+        reference: 'dispute',
+        status: 'dispute:critical',
+        actions: [{ id: 'refresh-queue', label: 'Refresh Queue', type: 'refresh_admin_ops' }],
+        created_at: now,
+      },
+      {
+        id: 'payout:tsk_1',
+        type: 'payout_review',
+        severity: 'high',
+        title: 'Issue #12 needs payout review',
+        body: 'Issue closed while task is still open.',
+        project_id: 'prj_0001',
+        task_id: 'tsk_1',
+        issue_number: 12,
+        reference: 'issue:12',
+        url: 'https://github.com/mergeos-bounties/mergeos/issues/12',
+        status: 'needs_payout_review',
+        actions: [
+          { id: 'review-prs', label: 'Review PRs', type: 'review_task_pulls' },
+          { id: 'open-issue', label: 'Open Issue', type: 'open_url', url: 'https://github.com/mergeos-bounties/mergeos/issues/12' },
+        ],
+        created_at: now,
+      },
+      {
+        id: 'security:expired.mergeos.local',
+        type: 'security_moderation',
+        severity: 'critical',
+        title: 'SSL certificate needs review',
+        body: 'certificate expired',
+        reference: 'expired.mergeos.local',
+        status: 'expired',
+        actions: [{ id: 'run-ssl-review', label: 'Run SSL Review', type: 'run_ssl_review' }],
+        created_at: now,
+      },
+      {
+        id: 'fraud-duplicate:pr',
+        type: 'fraud_review',
+        severity: 'high',
+        title: 'Duplicate payout reference',
+        body: 'Two payout rows share one pull request.',
+        reference: 'pr:https://github.com/mergeos-bounties/mergeos/pull/404',
+        status: 'duplicate_payout_reference',
+        actions: [{ id: 'open-proof', label: 'Open Proof', type: 'open_url', url: 'https://github.com/mergeos-bounties/mergeos/pull/404' }],
+        created_at: now,
+      },
+    ],
+  };
+
+  assert.equal(validateProtocolDocument(queue).valid, true);
+
+  const invalid = validateProtocolDocument({
+    ...queue,
+    kind: 'admin_queue',
+    stats: { ...queue.stats, total_count: -1 },
+    items: [{ ...queue.items[0], type: 'unknown_review' }],
+  });
+  assert.equal(invalid.valid, false);
+  assert(invalid.errors.some((error) => error.path === 'kind'));
+  assert(invalid.errors.some((error) => error.path === 'stats.total_count'));
+  assert(invalid.errors.some((error) => error.path === 'items[0].type'));
 });
 
 test('validates customer dashboard protocol documents', () => {

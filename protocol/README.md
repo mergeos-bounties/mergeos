@@ -14,6 +14,7 @@ The live app exposes protocol discovery at `GET /api/public/protocol`, and serve
 - `mergeos.scan.v1`: a repository scan document with dependency manifests, language counts, and security/debt findings.
 - `mergeos.customer-dashboard.v1`: an authenticated customer delivery dashboard with project overview, escrow, deployment, AI workflow, task graph, repository scan, and PR monitor modules.
 - `mergeos.worker-dashboard.v1`: an authenticated worker dashboard document with claimed tasks, payout references, reputation audit, proposal matches, and identity status.
+- `mergeos.admin-ops.v1`: an authenticated admin operations queue for treasury review, disputes, moderation, payout audits, security checks, and fraud signals.
 
 Event types include project funding, task creation/claim/payment, PR lifecycle, repository issue sync, deployment updates, ledger records, and agent actions.
 

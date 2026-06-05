@@ -1263,8 +1263,10 @@ type AdminReputationStats struct {
 }
 
 type AdminOpsQueueResponse struct {
-	Stats AdminOpsQueueStats  `json:"stats"`
-	Items []AdminOpsQueueItem `json:"items"`
+	ProtocolVersion string              `json:"protocol_version"`
+	Kind            string              `json:"kind"`
+	Stats           AdminOpsQueueStats  `json:"stats"`
+	Items           []AdminOpsQueueItem `json:"items"`
 }
 
 type AdminOpsQueueStats struct {

@@ -53,6 +53,12 @@ func ProtocolManifest() ProtocolManifestResponse {
 				SchemaURL:   "https://mergeos.shop/protocol/worker-dashboard.v1.schema.json",
 				Description: "Authenticated worker dashboard with claimed tasks, rewards, reputation audit, matched proposals, and linked identity status.",
 			},
+			{
+				Version:     "mergeos.admin-ops.v1",
+				Kind:        "admin_ops",
+				SchemaURL:   "https://mergeos.shop/protocol/admin-ops.v1.schema.json",
+				Description: "Authenticated admin operations queue for treasury review, disputes, moderation, payout audits, security checks, and fraud signals.",
+			},
 		},
 		Endpoints: []ProtocolManifestEndpoint{
 			{
@@ -123,6 +129,13 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Protocol:    "mergeos.worker-dashboard.v1",
 				Auth:        "worker",
 				Description: "Authenticated worker dashboard for claimed work, payout references, reputation, and proposal routing.",
+			},
+			{
+				Method:      "GET",
+				Path:        "/api/admin/ops-queue",
+				Protocol:    "mergeos.admin-ops.v1",
+				Auth:        "admin",
+				Description: "Authenticated admin operations queue for disputes, moderation, payout review, treasury audit, security checks, and fraud signals.",
 			},
 		},
 	}
