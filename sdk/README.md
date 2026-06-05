@@ -119,10 +119,11 @@ await mergeos.projectRepositoryScan('prj_0001');
 await mergeos.projectRepositoryScanProtocol('prj_0001');
 await mergeos.syncProjectRepoIssues('prj_0001');
 await mergeos.listTasks();
-await mergeos.acceptTask('tsk_0001', {
+const claim = await mergeos.acceptTask('tsk_0001', {
   worker_kind: 'human',
   worker_id: 'github:contributor',
 });
+console.log(claim.protocol_version, claim.status);
 const dispute = await mergeos.createDispute({
   task_id: 'tsk_0001',
   body: 'Evidence needs maintainer review.',

@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mergeos.shop/protocol/task-claim.v1.schema.json",
+  "title": "MergeOS Task Claim v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["protocol_version", "kind", "id", "claim_id", "task_id", "project_id", "title", "status", "worker_kind", "worker_id", "reward_cents", "proof_hash", "accepted_at", "task"],
+  "properties": {
+    "protocol_version": { "const": "mergeos.task-claim.v1" },
+    "kind": { "const": "task_claim" },
+    "id": { "type": "string", "minLength": 1, "maxLength": 96 },
+    "claim_id": { "type": "string", "minLength": 1, "maxLength": 160 },
+    "task_id": { "type": "string", "minLength": 1, "maxLength": 96 },
+    "project_id": { "type": "string", "minLength": 1, "maxLength": 96 },
+    "issue_number": { "type": "integer", "minimum": 0 },
+    "title": { "type": "string", "minLength": 1, "maxLength": 240 },
+    "status": { "const": "accepted" },
+    "worker_kind": { "enum": ["human", "agent", "hybrid"] },
+    "worker_id": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "agent_type": { "type": "string", "maxLength": 160 },
+    "reward_cents": { "type": "integer", "minimum": 0 },
+    "proof_hash": { "type": "string", "minLength": 1, "maxLength": 160 },
+    "accepted_at": { "type": "string", "format": "date-time" },
+    "task": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "project_id", "issue_number", "title", "acceptance", "reward_cents", "required_worker_kind", "suggested_agent_type", "status", "created_at"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 96 },
+        "project_id": { "type": "string", "minLength": 1, "maxLength": 96 },
+        "issue_number": { "type": "integer", "minimum": 0 },
+        "title": { "type": "string", "minLength": 1, "maxLength": 240 },
+        "acceptance": { "type": "string", "maxLength": 2000 },
+        "reward_cents": { "type": "integer", "minimum": 0 },
+        "required_worker_kind": { "enum": ["human", "agent", "hybrid"] },
+        "suggested_agent_type": { "type": "string", "maxLength": 160 },
+        "bounty_type": { "type": "string", "maxLength": 120 },
+        "status": { "const": "accepted" },
+        "worker_kind": { "enum": ["human", "agent", "hybrid"] },
+        "worker_id": { "type": "string", "maxLength": 200 },
+        "agent_type": { "type": "string", "maxLength": 160 },
+        "proof_hash": { "type": "string", "maxLength": 160 },
+        "issue_url": { "type": "string", "maxLength": 512 },
+        "issue_state": { "type": "string", "maxLength": 80 },
+        "created_at": { "type": "string", "format": "date-time" },
+        "accepted_at": { "type": "string", "format": "date-time" }
+      }
+    }
+  }
+}

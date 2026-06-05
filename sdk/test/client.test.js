@@ -338,7 +338,7 @@ test('exposes public repo import and password-gated test settings without auth',
 
 test('sends bearer token and JSON body for task acceptance and disputes', async () => {
   const fetchImpl = fakeFetch([
-    { status: 200, body: { id: 'tsk_1', status: 'accepted' } },
+    { status: 200, body: { protocol_version: 'mergeos.task-claim.v1', kind: 'task_claim', id: 'tsk_1', task_id: 'tsk_1', status: 'accepted' } },
     { status: 201, body: { protocol_version: 'mergeos.dispute.v1', kind: 'dispute', notification: { id: 'ntf_1', status: 'dispute:high' } } },
   ]);
   const client = createMergeOSClient({ baseURL: 'http://127.0.0.1:8080', token: 'abc', fetchImpl });
@@ -348,6 +348,8 @@ test('sends bearer token and JSON body for task acceptance and disputes', async 
   const disputePayload = { task_id: 'tsk_1', body: 'Evidence needs maintainer review.' };
   const dispute = await client.createDispute(disputePayload);
 
+  assert.equal(task.protocol_version, 'mergeos.task-claim.v1');
+  assert.equal(task.kind, 'task_claim');
   assert.equal(task.status, 'accepted');
   assert.equal(dispute.protocol_version, 'mergeos.dispute.v1');
   assert.equal(dispute.kind, 'dispute');

@@ -12,6 +12,12 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Description: "Claimable bounty task with reward, worker lane, acceptance criteria, and evidence requirements.",
 			},
 			{
+				Version:     "mergeos.task-claim.v1",
+				Kind:        "task_claim",
+				SchemaURL:   "https://mergeos.shop/protocol/task-claim.v1.schema.json",
+				Description: "Authenticated bounty claim document with worker identity, payout proof hash, accepted task, and ledger-backed status.",
+			},
+			{
 				Version:     "mergeos.agent.v1",
 				Kind:        "agent",
 				SchemaURL:   "https://mergeos.shop/protocol/agent.v1.schema.json",
@@ -272,6 +278,13 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Protocol:    "mergeos.worker-dashboard.v1",
 				Auth:        "worker",
 				Description: "Authenticated worker dashboard for claimed work, payout references, reputation, and proposal routing.",
+			},
+			{
+				Method:      "POST",
+				Path:        "/api/tasks/{id}/accept",
+				Protocol:    "mergeos.task-claim.v1",
+				Auth:        "worker",
+				Description: "Authenticated task claim endpoint for public bounty claim ids or internal task ids.",
 			},
 			{
 				Method:      "GET",

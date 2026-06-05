@@ -357,6 +357,25 @@ type AcceptTaskRequest struct {
 	AgentType  string     `json:"agent_type"`
 }
 
+type TaskClaimResponse struct {
+	ProtocolVersion string     `json:"protocol_version"`
+	Kind            string     `json:"kind"`
+	ID              string     `json:"id"`
+	ClaimID         string     `json:"claim_id"`
+	TaskID          string     `json:"task_id"`
+	ProjectID       string     `json:"project_id"`
+	IssueNumber     int        `json:"issue_number,omitempty"`
+	Title           string     `json:"title"`
+	Status          TaskStatus `json:"status"`
+	WorkerKind      WorkerKind `json:"worker_kind"`
+	WorkerID        string     `json:"worker_id"`
+	AgentType       string     `json:"agent_type,omitempty"`
+	RewardCents     int64      `json:"reward_cents"`
+	ProofHash       string     `json:"proof_hash,omitempty"`
+	AcceptedAt      *time.Time `json:"accepted_at,omitempty"`
+	Task            Task       `json:"task"`
+}
+
 type AdminTaskPullRequestsResponse struct {
 	TaskID       string                 `json:"task_id"`
 	IssueNumber  int                    `json:"issue_number"`

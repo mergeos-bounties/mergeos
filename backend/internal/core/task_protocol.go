@@ -114,6 +114,38 @@ func publicTaskProtocolID(claimID string) string {
 	return "tsk_" + hex.EncodeToString(sum[:14])
 }
 
+func taskClaimProtocolDocument(claimID string, task *Task) TaskClaimResponse {
+	if task == nil {
+		return TaskClaimResponse{
+			ProtocolVersion: "mergeos.task-claim.v1",
+			Kind:            "task_claim",
+		}
+	}
+	claimID = strings.TrimSpace(claimID)
+	if claimID == "" {
+		claimID = task.ID
+	}
+	taskCopy := *task
+	return TaskClaimResponse{
+		ProtocolVersion: "mergeos.task-claim.v1",
+		Kind:            "task_claim",
+		ID:              task.ID,
+		ClaimID:         claimID,
+		TaskID:          task.ID,
+		ProjectID:       task.ProjectID,
+		IssueNumber:     task.IssueNumber,
+		Title:           task.Title,
+		Status:          task.Status,
+		WorkerKind:      task.WorkerKind,
+		WorkerID:        task.WorkerID,
+		AgentType:       task.AgentType,
+		RewardCents:     task.RewardCents,
+		ProofHash:       task.ProofHash,
+		AcceptedAt:      task.AcceptedAt,
+		Task:            taskCopy,
+	}
+}
+
 func publicTaskAcceptanceCriteria(acceptance string) []string {
 	acceptance = protocolText(acceptance, 500, "")
 	if acceptance == "" {

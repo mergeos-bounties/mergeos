@@ -30,6 +30,7 @@ test('loads stable task, workflow, ledger, and event schemas', () => {
     'mergeos.repo-import.v1',
     'mergeos.repo-sync.v1',
     'mergeos.scan.v1',
+    'mergeos.task-claim.v1',
     'mergeos.task.v1',
     'mergeos.worker-dashboard.v1',
     'mergeos.workflow.v1',
@@ -1242,6 +1243,57 @@ test('validates a task protocol document', () => {
 
   assert.equal(result.valid, true);
   assert.deepEqual(result.errors, []);
+});
+
+test('validates task claim protocol documents', () => {
+  const now = '2026-06-05T00:00:00.000Z';
+  const claim = {
+    protocol_version: 'mergeos.task-claim.v1',
+    kind: 'task_claim',
+    id: 'tsk_0001',
+    claim_id: 'claim_public_1',
+    task_id: 'tsk_0001',
+    project_id: 'prj_0001',
+    issue_number: 12,
+    title: 'Fix PayPal return capture',
+    status: 'accepted',
+    worker_kind: 'human',
+    worker_id: 'github:worker-dev',
+    reward_cents: 5000,
+    proof_hash: 'abc123proof',
+    accepted_at: now,
+    task: {
+      id: 'tsk_0001',
+      project_id: 'prj_0001',
+      issue_number: 12,
+      title: 'Fix PayPal return capture',
+      acceptance: 'Frontend test passes',
+      reward_cents: 5000,
+      required_worker_kind: 'human',
+      suggested_agent_type: '',
+      status: 'accepted',
+      worker_kind: 'human',
+      worker_id: 'github:worker-dev',
+      proof_hash: 'abc123proof',
+      created_at: now,
+      accepted_at: now,
+    },
+  };
+
+  assert.equal(validateProtocolDocument(claim).valid, true);
+
+  const invalid = validateProtocolDocument({
+    ...claim,
+    kind: 'task',
+    status: 'open',
+    worker_kind: 'bot',
+    reward_cents: -1,
+  });
+  assert.equal(invalid.valid, false);
+  assert(invalid.errors.some((error) => error.path === 'kind'));
+  assert(invalid.errors.some((error) => error.path === 'status'));
+  assert(invalid.errors.some((error) => error.path === 'worker_kind'));
+  assert(invalid.errors.some((error) => error.path === 'reward_cents'));
 });
 
 test('rejects invalid task fields and unknown versions', () => {

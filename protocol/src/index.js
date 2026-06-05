@@ -19,6 +19,7 @@ const schemaFiles = {
   'mergeos.repo-import.v1': '../schemas/repo-import.v1.schema.json',
   'mergeos.repo-sync.v1': '../schemas/repo-sync.v1.schema.json',
   'mergeos.scan.v1': '../schemas/scan.v1.schema.json',
+  'mergeos.task-claim.v1': '../schemas/task-claim.v1.schema.json',
   'mergeos.task.v1': '../schemas/task.v1.schema.json',
   'mergeos.worker-dashboard.v1': '../schemas/worker-dashboard.v1.schema.json',
   'mergeos.workflow.v1': '../schemas/workflow.v1.schema.json',

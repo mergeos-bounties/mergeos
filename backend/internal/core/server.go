@@ -1185,6 +1185,7 @@ func (s *Server) acceptTask(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "route not found")
 		return
 	}
+	claimID := taskID
 	resolvedTaskID, err := s.store.ResolveTaskClaimID(taskID)
 	if err != nil {
 		writeError(w, http.StatusNotFound, err.Error())
@@ -1212,7 +1213,7 @@ func (s *Server) acceptTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.broadcastLiveFeedEvent("task_accepted")
-	writeJSON(w, http.StatusOK, task)
+	writeJSON(w, http.StatusOK, taskClaimProtocolDocument(claimID, task))
 }
 
 func (s *Server) workerDashboard(w http.ResponseWriter, r *http.Request) {
