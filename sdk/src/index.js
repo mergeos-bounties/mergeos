@@ -616,6 +616,10 @@ export function agentActionPayload(action, payload = {}) {
   const referenceURL = payload.reference_url || payload.referenceURL || payload.deployment_url || payload.deploymentURL || payload.url || '';
   const durationMillis = payload.duration_millis ?? payload.durationMillis;
   const pullNumber = payload.pull_number ?? payload.pullNumber;
+  const contextURLs = payload.context_urls || payload.contextURLs || payload.contextUrls || [];
+  const evidence = payload.evidence || [];
+  const runbook = payload.runbook || [];
+  const checks = payload.checks || [];
   return {
     action: normalizedAction,
     agent_type: payload.agent_type || payload.agentType || defaultAgentTypeForAction(normalizedAction),
@@ -624,6 +628,10 @@ export function agentActionPayload(action, payload = {}) {
     duration_millis: Number(durationMillis) > 0 ? Number(durationMillis) : 0,
     pull_number: Number(pullNumber) > 0 ? Number(pullNumber) : 0,
     labels: Array.isArray(payload.labels) ? payload.labels : [],
+    context_urls: Array.isArray(contextURLs) ? contextURLs : [],
+    evidence: Array.isArray(evidence) ? evidence : [],
+    runbook: Array.isArray(runbook) ? runbook : [],
+    checks: Array.isArray(checks) ? checks : [],
   };
 }
 

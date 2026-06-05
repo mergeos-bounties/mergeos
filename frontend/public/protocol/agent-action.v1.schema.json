@@ -5,6 +5,33 @@
   "type": "object",
   "additionalProperties": false,
   "required": ["protocol_version", "kind", "action_id", "project_id", "action", "agent_type", "status", "duration_millis", "received_at", "log"],
+  "$defs": {
+    "contextUrls": {
+      "type": "array",
+      "maxItems": 8,
+      "items": { "type": "string", "minLength": 1, "maxLength": 512 }
+    },
+    "packetText": {
+      "type": "array",
+      "maxItems": 12,
+      "items": { "type": "string", "minLength": 1, "maxLength": 220 }
+    },
+    "checks": {
+      "type": "array",
+      "maxItems": 12,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "status"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "status": { "enum": ["passed", "failed", "warning", "running", "skipped"] },
+          "summary": { "type": "string", "maxLength": 260 },
+          "reference_url": { "type": "string", "maxLength": 512 }
+        }
+      }
+    }
+  },
   "properties": {
     "protocol_version": { "const": "mergeos.agent-action.v1" },
     "kind": { "const": "agent_action" },
@@ -21,6 +48,10 @@
       "maxItems": 12,
       "items": { "type": "string", "minLength": 1, "maxLength": 160 }
     },
+    "context_urls": { "$ref": "#/$defs/contextUrls" },
+    "evidence": { "$ref": "#/$defs/packetText" },
+    "runbook": { "$ref": "#/$defs/packetText" },
+    "checks": { "$ref": "#/$defs/checks" },
     "duration_millis": { "type": "integer", "minimum": 0 },
     "received_at": { "type": "string", "format": "date-time" },
     "completed_at": { "type": "string", "format": "date-time" },
@@ -46,6 +77,10 @@
           "maxItems": 12,
           "items": { "type": "string", "minLength": 1, "maxLength": 160 }
         },
+        "context_urls": { "$ref": "#/$defs/contextUrls" },
+        "evidence": { "$ref": "#/$defs/packetText" },
+        "runbook": { "$ref": "#/$defs/packetText" },
+        "checks": { "$ref": "#/$defs/checks" },
         "duration_millis": { "type": "integer", "minimum": 0 },
         "received_at": { "type": "string", "format": "date-time" },
         "completed_at": { "type": "string", "format": "date-time" }

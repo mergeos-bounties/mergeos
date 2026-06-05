@@ -171,6 +171,10 @@ test('builds deployment agent action payloads for deployment evidence', async ()
     duration_millis: 42000,
     pull_number: 120,
     labels: ['preview', 'release-gate'],
+    context_urls: [],
+    evidence: [],
+    runbook: [],
+    checks: [],
   });
 
   const fetchImpl = fakeFetch([
@@ -193,6 +197,10 @@ test('builds deployment agent action payloads for deployment evidence', async ()
     duration_millis: 0,
     pull_number: 0,
     labels: [],
+    context_urls: [],
+    evidence: [],
+    runbook: [],
+    checks: [],
   }));
 });
 
@@ -204,6 +212,12 @@ test('builds and sends typed AI agent action helpers', async () => {
     status: 'running',
     pullNumber: 12,
     labels: ['smoke'],
+    contextURLs: ['https://mergeos.shop/api/public/projects/prj_1/workflow'],
+    evidence: ['Smoke tests passed'],
+    runbook: ['Fetch task packet', 'Run smoke suite'],
+    checks: [
+      { name: 'Smoke suite', status: 'passed', summary: 'Preview route passed.' },
+    ],
   }), {
     action: 'test',
     agent_type: 'qa-agent',
@@ -212,6 +226,12 @@ test('builds and sends typed AI agent action helpers', async () => {
     duration_millis: 0,
     pull_number: 12,
     labels: ['smoke'],
+    context_urls: ['https://mergeos.shop/api/public/projects/prj_1/workflow'],
+    evidence: ['Smoke tests passed'],
+    runbook: ['Fetch task packet', 'Run smoke suite'],
+    checks: [
+      { name: 'Smoke suite', status: 'passed', summary: 'Preview route passed.' },
+    ],
   });
 
   const fetchImpl = fakeFetch([
@@ -235,6 +255,10 @@ test('builds and sends typed AI agent action helpers', async () => {
     duration_millis: 0,
     pull_number: 10,
     labels: [],
+    context_urls: [],
+    evidence: [],
+    runbook: [],
+    checks: [],
   }));
   assert.equal(fetchImpl.calls[1].options.body, JSON.stringify({
     action: 'test',
@@ -244,6 +268,10 @@ test('builds and sends typed AI agent action helpers', async () => {
     duration_millis: 0,
     pull_number: 0,
     labels: [],
+    context_urls: [],
+    evidence: [],
+    runbook: [],
+    checks: [],
   }));
   assert.equal(fetchImpl.calls[2].options.body, JSON.stringify({
     action: 'generate',
@@ -253,6 +281,10 @@ test('builds and sends typed AI agent action helpers', async () => {
     duration_millis: 0,
     pull_number: 0,
     labels: [],
+    context_urls: [],
+    evidence: [],
+    runbook: [],
+    checks: [],
   }));
   assert.equal(fetchImpl.calls[3].options.body, JSON.stringify({
     action: 'scan',
@@ -262,6 +294,10 @@ test('builds and sends typed AI agent action helpers', async () => {
     duration_millis: 0,
     pull_number: 0,
     labels: [],
+    context_urls: [],
+    evidence: [],
+    runbook: [],
+    checks: [],
   }));
 });
 

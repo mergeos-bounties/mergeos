@@ -3024,6 +3024,16 @@ func TestProjectAgentActionRouteRecordsWorkflowEventAndSanitizesData(t *testing.
 		"pull_number":777,
 		"reference_url":"https://github.com/mergeos-bounties/mergeos/pull/777",
 		"labels":["evidence: star"],
+		"context_urls":[
+			"https://mergeos.shop/api/public/projects/prj_0001/workflow",
+			"file:///D:/agent/private-plan"
+		],
+		"evidence":["Smoke tests passed","Preview deployment reachable"],
+		"runbook":["Fetch task packet","Run smoke suite","Attach deployment evidence"],
+		"checks":[
+			{"name":"Smoke suite","status":"passed","summary":"Preview route passed.","reference_url":"https://github.com/mergeos-bounties/mergeos/actions/runs/777"},
+			{"name":"Risk review","status":"needs_review","summary":"Manual acceptance note pending.","reference_url":"file:///D:/agent/internal"}
+		],
 		"duration_millis":1234
 	}`))
 	createReq.Header.Set("Authorization", "Bearer "+auth.Token)
@@ -3040,6 +3050,8 @@ func TestProjectAgentActionRouteRecordsWorkflowEventAndSanitizesData(t *testing.
 		defaultDevPaymentCode,
 		tempDir,
 		project.Tasks[0].ID,
+		"file:///D:/agent/private-plan",
+		"file:///D:/agent/internal",
 	}
 	body := createResp.Body.String()
 	for _, value := range privateValues {
@@ -3060,6 +3072,15 @@ func TestProjectAgentActionRouteRecordsWorkflowEventAndSanitizesData(t *testing.
 	}
 	if created.Repository != project.BountyRepoName || created.PullNumber != 777 || created.ReferenceURL != "https://github.com/mergeos-bounties/mergeos/pull/777" || created.DurationMillis != 1234 {
 		t.Fatalf("unexpected agent action protocol evidence: %#v", created)
+	}
+	if len(created.ContextURLs) != 1 || created.ContextURLs[0] != "https://mergeos.shop/api/public/projects/prj_0001/workflow" {
+		t.Fatalf("agent action context URLs were not sanitized: %#v", created.ContextURLs)
+	}
+	if len(created.Evidence) != 2 || created.Evidence[0] != "Smoke tests passed" || len(created.Runbook) != 3 {
+		t.Fatalf("unexpected agent action packet lists: evidence=%#v runbook=%#v", created.Evidence, created.Runbook)
+	}
+	if len(created.Checks) != 2 || created.Checks[0].Status != "passed" || created.Checks[0].ReferenceURL == "" || created.Checks[1].Status != "warning" || created.Checks[1].ReferenceURL != "" {
+		t.Fatalf("agent action checks were not normalized: %#v", created.Checks)
 	}
 	if created.Log.EventName != "agent_action" || created.Log.Action != "test" || created.Log.Repository != project.BountyRepoName || created.Log.PullNumber != 777 {
 		t.Fatalf("unexpected agent action log: %#v", created.Log)
@@ -3119,6 +3140,12 @@ func TestProjectAgentActionRouteRecordsWorkflowEventAndSanitizesData(t *testing.
 	for _, item := range feed.Items {
 		if item.Type == "agent_action" && item.Actor == "QA Agent" && item.Action == "test" {
 			seenAgentItem = true
+			if len(item.ContextURLs) != 2 || item.ContextURLs[0] != "https://mergeos.shop/api/public/projects/prj_0001/workflow" || item.ContextURLs[1] != "https://github.com/mergeos-bounties/mergeos/pull/777" {
+				t.Fatalf("live feed agent action missing public context URLs: %#v", item.ContextURLs)
+			}
+			if len(item.Evidence) != 2 || len(item.Runbook) != 3 || len(item.Checks) != 2 {
+				t.Fatalf("live feed agent action missing packet fields: %#v", item)
+			}
 		}
 	}
 	if !seenAgentItem {
@@ -3144,6 +3171,19 @@ func TestProjectAgentActionRouteRecordsWorkflowEventAndSanitizesData(t *testing.
 	for _, event := range events.Events {
 		if event.Type == "agent.tested" && event.Actor == "QA Agent" && event.Payload["action"] == "test" {
 			seenAgentEvent = true
+			payloadBytes, err := json.Marshal(event.Payload)
+			if err != nil {
+				t.Fatal(err)
+			}
+			payloadText := string(payloadBytes)
+			for _, required := range []string{"context_urls", "evidence", "runbook", "checks", "Smoke tests passed", "https://mergeos.shop/api/public/projects/prj_0001/workflow"} {
+				if !strings.Contains(payloadText, required) {
+					t.Fatalf("public protocol event missing %q in payload: %s", required, payloadText)
+				}
+			}
+			if strings.Contains(payloadText, "file:///") {
+				t.Fatalf("public protocol event leaked private URL: %s", payloadText)
+			}
 		}
 	}
 	if !seenAgentEvent {

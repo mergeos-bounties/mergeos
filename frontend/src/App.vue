@@ -25628,6 +25628,10 @@ function mapPublicLiveFeedItem(item = {}) {
     auditLabel,
     meta: `${when.full} • ${toTitleLabel(item.status || 'live')}`,
     createdAt: item.created_at,
+    contextUrls: Array.isArray(item.context_urls) ? item.context_urls.filter(Boolean) : [],
+    evidence: Array.isArray(item.evidence) ? item.evidence.filter(Boolean) : [],
+    runbook: Array.isArray(item.runbook) ? item.runbook.filter(Boolean) : [],
+    checks: Array.isArray(item.checks) ? item.checks.filter((check) => check && check.name) : [],
     rawContributor: item.contributor && typeof item.contributor === 'object' ? item.contributor : null,
   };
 }

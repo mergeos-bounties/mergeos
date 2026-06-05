@@ -5,6 +5,33 @@
   "type": "object",
   "additionalProperties": false,
   "required": ["protocol_version", "kind", "stats", "items"],
+  "$defs": {
+    "contextUrls": {
+      "type": "array",
+      "maxItems": 8,
+      "items": { "type": "string", "minLength": 1, "maxLength": 512 }
+    },
+    "packetText": {
+      "type": "array",
+      "maxItems": 12,
+      "items": { "type": "string", "minLength": 1, "maxLength": 220 }
+    },
+    "checks": {
+      "type": "array",
+      "maxItems": 12,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "status"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "status": { "enum": ["passed", "failed", "warning", "running", "skipped"] },
+          "summary": { "type": "string", "maxLength": 260 },
+          "reference_url": { "type": "string", "maxLength": 512 }
+        }
+      }
+    }
+  },
   "properties": {
     "protocol_version": { "const": "mergeos.live-feed.v1" },
     "kind": { "const": "live_feed" },
@@ -71,6 +98,10 @@
             "type": "array",
             "items": { "type": "string", "minLength": 1, "maxLength": 120 }
           },
+          "context_urls": { "$ref": "#/$defs/contextUrls" },
+          "evidence": { "$ref": "#/$defs/packetText" },
+          "runbook": { "$ref": "#/$defs/packetText" },
+          "checks": { "$ref": "#/$defs/checks" },
           "url": { "type": "string", "maxLength": 512 },
           "status": { "type": "string", "minLength": 1, "maxLength": 160 },
           "created_at": { "type": "string", "format": "date-time" }

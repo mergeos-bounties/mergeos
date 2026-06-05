@@ -54,7 +54,7 @@ export function validateProtocolDocument(document) {
   }
 
   const errors = [];
-  validateValue(document, schema, '', errors);
+  validateValue(document, schema, '', errors, schema);
   if (document && document.protocol_version === 'mergeos.workflow.v1') {
     validateWorkflowEdges(document, errors);
   }
@@ -115,7 +115,17 @@ export function normalizeLegacyWalletAddress(value = '') {
   return normalized;
 }
 
-function validateValue(value, schema, path, errors) {
+function validateValue(value, schema, path, errors, rootSchema = schema) {
+  if (schema.$ref) {
+    const resolved = resolveSchemaRef(schema.$ref, rootSchema);
+    if (!resolved) {
+      errors.push({ path, message: `unsupported schema reference ${schema.$ref}` });
+      return;
+    }
+    validateValue(value, resolved, path, errors, rootSchema);
+    return;
+  }
+
   if (schema.const !== undefined && value !== schema.const) {
     errors.push({ path, message: `must equal ${JSON.stringify(schema.const)}` });
     return;
@@ -132,12 +142,12 @@ function validateValue(value, schema, path, errors) {
   }
 
   if (schema.type === 'object') {
-    validateObject(value, schema, path, errors);
+    validateObject(value, schema, path, errors, rootSchema);
     return;
   }
 
   if (schema.type === 'array') {
-    validateArray(value, schema, path, errors);
+    validateArray(value, schema, path, errors, rootSchema);
     return;
   }
 
@@ -211,7 +221,16 @@ function stableStringify(value) {
   return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`).join(',')}}`;
 }
 
-function validateObject(value, schema, path, errors) {
+function resolveSchemaRef(ref, rootSchema) {
+  if (!ref.startsWith('#/')) return null;
+  return ref
+    .slice(2)
+    .split('/')
+    .map((part) => part.replace(/~1/g, '/').replace(/~0/g, '~'))
+    .reduce((current, part) => (current && typeof current === 'object' ? current[part] : undefined), rootSchema) || null;
+}
+
+function validateObject(value, schema, path, errors, rootSchema) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return;
 
   for (const field of schema.required || []) {
@@ -231,18 +250,18 @@ function validateObject(value, schema, path, errors) {
 
   for (const [field, fieldSchema] of Object.entries(properties)) {
     if (value[field] !== undefined) {
-      validateValue(value[field], fieldSchema, joinPath(path, field), errors);
+      validateValue(value[field], fieldSchema, joinPath(path, field), errors, rootSchema);
     }
   }
 }
 
-function validateArray(value, schema, path, errors) {
+function validateArray(value, schema, path, errors, rootSchema) {
   if (!Array.isArray(value)) return;
   if (schema.minItems !== undefined && value.length < schema.minItems) {
     errors.push({ path, message: `must contain at least ${schema.minItems} item(s)` });
   }
   if (!schema.items) return;
-  value.forEach((item, index) => validateValue(item, schema.items, `${path}[${index}]`, errors));
+  value.forEach((item, index) => validateValue(item, schema.items, `${path}[${index}]`, errors, rootSchema));
 }
 
 function validateString(value, schema, path, errors) {

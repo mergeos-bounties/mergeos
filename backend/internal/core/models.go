@@ -832,23 +832,27 @@ type PublicLiveFeedStats struct {
 }
 
 type PublicLiveFeedItem struct {
-	ID               string    `json:"id"`
-	Type             string    `json:"type"`
-	Title            string    `json:"title"`
-	Body             string    `json:"body"`
-	ProjectID        string    `json:"project_id,omitempty"`
-	ProjectTitle     string    `json:"project_title,omitempty"`
-	TaskID           string    `json:"task_id,omitempty"`
-	Actor            string    `json:"actor,omitempty"`
-	Action           string    `json:"action,omitempty"`
-	AmountCents      int64     `json:"amount_cents,omitempty"`
-	LedgerSequence   int       `json:"ledger_sequence,omitempty"`
-	EntryHash        string    `json:"entry_hash,omitempty"`
-	Reference        string    `json:"reference,omitempty"`
-	EvidenceRequired []string  `json:"evidence_required,omitempty"`
-	URL              string    `json:"url,omitempty"`
-	Status           string    `json:"status"`
-	CreatedAt        time.Time `json:"created_at"`
+	ID               string             `json:"id"`
+	Type             string             `json:"type"`
+	Title            string             `json:"title"`
+	Body             string             `json:"body"`
+	ProjectID        string             `json:"project_id,omitempty"`
+	ProjectTitle     string             `json:"project_title,omitempty"`
+	TaskID           string             `json:"task_id,omitempty"`
+	Actor            string             `json:"actor,omitempty"`
+	Action           string             `json:"action,omitempty"`
+	AmountCents      int64              `json:"amount_cents,omitempty"`
+	LedgerSequence   int                `json:"ledger_sequence,omitempty"`
+	EntryHash        string             `json:"entry_hash,omitempty"`
+	Reference        string             `json:"reference,omitempty"`
+	EvidenceRequired []string           `json:"evidence_required,omitempty"`
+	ContextURLs      []string           `json:"context_urls,omitempty"`
+	Evidence         []string           `json:"evidence,omitempty"`
+	Runbook          []string           `json:"runbook,omitempty"`
+	Checks           []AgentActionCheck `json:"checks,omitempty"`
+	URL              string             `json:"url,omitempty"`
+	Status           string             `json:"status"`
+	CreatedAt        time.Time          `json:"created_at"`
 }
 
 type PublicEventProtocolResponse struct {
@@ -1645,50 +1649,69 @@ type GeminiAPIKey struct {
 }
 
 type GeminiWebhookLog struct {
-	ID             string     `json:"id"`
-	DeliveryID     string     `json:"delivery_id,omitempty"`
-	EventName      string     `json:"event_name"`
-	Action         string     `json:"action,omitempty"`
-	Repository     string     `json:"repository,omitempty"`
-	PullNumber     int        `json:"pull_number,omitempty"`
-	Sender         string     `json:"sender,omitempty"`
-	Status         string     `json:"status"`
-	StatusCode     int        `json:"status_code"`
-	Error          string     `json:"error,omitempty"`
-	CommentURL     string     `json:"comment_url,omitempty"`
-	KeyID          string     `json:"key_id,omitempty"`
-	Labels         []string   `json:"labels,omitempty"`
-	DurationMillis int64      `json:"duration_millis"`
-	ReceivedAt     time.Time  `json:"received_at"`
-	CompletedAt    *time.Time `json:"completed_at,omitempty"`
+	ID             string             `json:"id"`
+	DeliveryID     string             `json:"delivery_id,omitempty"`
+	EventName      string             `json:"event_name"`
+	Action         string             `json:"action,omitempty"`
+	Repository     string             `json:"repository,omitempty"`
+	PullNumber     int                `json:"pull_number,omitempty"`
+	Sender         string             `json:"sender,omitempty"`
+	Status         string             `json:"status"`
+	StatusCode     int                `json:"status_code"`
+	Error          string             `json:"error,omitempty"`
+	CommentURL     string             `json:"comment_url,omitempty"`
+	KeyID          string             `json:"key_id,omitempty"`
+	Labels         []string           `json:"labels,omitempty"`
+	ContextURLs    []string           `json:"context_urls,omitempty"`
+	Evidence       []string           `json:"evidence,omitempty"`
+	Runbook        []string           `json:"runbook,omitempty"`
+	Checks         []AgentActionCheck `json:"checks,omitempty"`
+	DurationMillis int64              `json:"duration_millis"`
+	ReceivedAt     time.Time          `json:"received_at"`
+	CompletedAt    *time.Time         `json:"completed_at,omitempty"`
+}
+
+type AgentActionCheck struct {
+	Name         string `json:"name"`
+	Status       string `json:"status"`
+	Summary      string `json:"summary,omitempty"`
+	ReferenceURL string `json:"reference_url,omitempty"`
 }
 
 type AgentActionRequest struct {
-	Action         string   `json:"action"`
-	AgentType      string   `json:"agent_type,omitempty"`
-	Status         string   `json:"status,omitempty"`
-	PullNumber     int      `json:"pull_number,omitempty"`
-	ReferenceURL   string   `json:"reference_url,omitempty"`
-	Labels         []string `json:"labels,omitempty"`
-	DurationMillis int64    `json:"duration_millis,omitempty"`
+	Action         string             `json:"action"`
+	AgentType      string             `json:"agent_type,omitempty"`
+	Status         string             `json:"status,omitempty"`
+	PullNumber     int                `json:"pull_number,omitempty"`
+	ReferenceURL   string             `json:"reference_url,omitempty"`
+	Labels         []string           `json:"labels,omitempty"`
+	ContextURLs    []string           `json:"context_urls,omitempty"`
+	Evidence       []string           `json:"evidence,omitempty"`
+	Runbook        []string           `json:"runbook,omitempty"`
+	Checks         []AgentActionCheck `json:"checks,omitempty"`
+	DurationMillis int64              `json:"duration_millis,omitempty"`
 }
 
 type AgentActionResponse struct {
-	ProtocolVersion string           `json:"protocol_version"`
-	Kind            string           `json:"kind"`
-	ActionID        string           `json:"action_id"`
-	ProjectID       string           `json:"project_id"`
-	Action          string           `json:"action"`
-	AgentType       string           `json:"agent_type"`
-	Status          string           `json:"status"`
-	Repository      string           `json:"repository,omitempty"`
-	PullNumber      int              `json:"pull_number,omitempty"`
-	ReferenceURL    string           `json:"reference_url,omitempty"`
-	Labels          []string         `json:"labels,omitempty"`
-	DurationMillis  int64            `json:"duration_millis"`
-	ReceivedAt      time.Time        `json:"received_at"`
-	CompletedAt     *time.Time       `json:"completed_at,omitempty"`
-	Log             GeminiWebhookLog `json:"log"`
+	ProtocolVersion string             `json:"protocol_version"`
+	Kind            string             `json:"kind"`
+	ActionID        string             `json:"action_id"`
+	ProjectID       string             `json:"project_id"`
+	Action          string             `json:"action"`
+	AgentType       string             `json:"agent_type"`
+	Status          string             `json:"status"`
+	Repository      string             `json:"repository,omitempty"`
+	PullNumber      int                `json:"pull_number,omitempty"`
+	ReferenceURL    string             `json:"reference_url,omitempty"`
+	Labels          []string           `json:"labels,omitempty"`
+	ContextURLs     []string           `json:"context_urls,omitempty"`
+	Evidence        []string           `json:"evidence,omitempty"`
+	Runbook         []string           `json:"runbook,omitempty"`
+	Checks          []AgentActionCheck `json:"checks,omitempty"`
+	DurationMillis  int64              `json:"duration_millis"`
+	ReceivedAt      time.Time          `json:"received_at"`
+	CompletedAt     *time.Time         `json:"completed_at,omitempty"`
+	Log             GeminiWebhookLog   `json:"log"`
 }
 
 type EvaluateProjectRequest struct {

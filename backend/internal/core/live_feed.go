@@ -413,17 +413,33 @@ func publicProposalLiveFeedType(status string) string {
 func publicAILiveFeedItem(log *GeminiWebhookLog) PublicLiveFeedItem {
 	reference := publicLiveFeedAIReference(log)
 	return PublicLiveFeedItem{
-		ID:        "ai:" + log.ID,
-		Type:      publicLiveFeedAIType(log),
-		Title:     publicLiveFeedAITitle(log),
-		Body:      publicLiveFeedAIBody(log),
-		Actor:     publicLiveFeedAIActor(log),
-		Action:    publicLiveFeedAIAction(log),
-		Reference: reference,
-		URL:       publicLiveFeedURL(log.CommentURL),
-		Status:    publicLiveFeedStatus(log.Status),
-		CreatedAt: log.ReceivedAt,
+		ID:          "ai:" + log.ID,
+		Type:        publicLiveFeedAIType(log),
+		Title:       publicLiveFeedAITitle(log),
+		Body:        publicLiveFeedAIBody(log),
+		Actor:       publicLiveFeedAIActor(log),
+		Action:      publicLiveFeedAIAction(log),
+		Reference:   reference,
+		ContextURLs: publicAgentActionContextURLs(log),
+		Evidence:    normalizeAgentActionTextList(log.Evidence, 12, 220),
+		Runbook:     normalizeAgentActionTextList(log.Runbook, 12, 220),
+		Checks:      normalizeAgentActionChecks(log.Checks),
+		URL:         publicLiveFeedURL(log.CommentURL),
+		Status:      publicLiveFeedStatus(log.Status),
+		CreatedAt:   log.ReceivedAt,
 	}
+}
+
+func publicAgentActionContextURLs(log *GeminiWebhookLog) []string {
+	if log == nil {
+		return []string{}
+	}
+	values := make([]string, 0, len(log.ContextURLs)+1)
+	values = append(values, log.ContextURLs...)
+	if log.CommentURL != "" {
+		values = append(values, log.CommentURL)
+	}
+	return normalizeAgentActionURLs(values)
 }
 
 func publicLiveFeedProjectScope(task *Task, project *Project) (string, string) {
@@ -745,6 +761,18 @@ func publicLiveFeedProtocolEvent(item PublicLiveFeedItem) EventProtocolDocument 
 	}
 	if len(item.EvidenceRequired) > 0 {
 		payload["evidence_required"] = stableStrings(item.EvidenceRequired)
+	}
+	if len(item.ContextURLs) > 0 {
+		payload["context_urls"] = normalizeAgentActionURLs(item.ContextURLs)
+	}
+	if len(item.Evidence) > 0 {
+		payload["evidence"] = normalizeAgentActionTextList(item.Evidence, 12, 220)
+	}
+	if len(item.Runbook) > 0 {
+		payload["runbook"] = normalizeAgentActionTextList(item.Runbook, 12, 220)
+	}
+	if len(item.Checks) > 0 {
+		payload["checks"] = normalizeAgentActionChecks(item.Checks)
 	}
 
 	event := EventProtocolDocument{

@@ -516,7 +516,8 @@ ORDER BY request_count, last_used_at NULLS FIRST, id`)
 func (p *postgresPersistence) loadGeminiWebhookLogs(ctx context.Context, state *persistedState) error {
 	rows, err := p.db.QueryContext(ctx, `
 SELECT id, delivery_id, event_name, action, repository, pull_number, sender, status, status_code,
-       error, comment_url, key_id, labels, duration_millis, received_at, completed_at
+       error, comment_url, key_id, labels, context_urls, evidence, runbook, checks,
+       duration_millis, received_at, completed_at
 FROM gemini_webhook_logs
 ORDER BY received_at DESC
 LIMIT 200`)
@@ -528,16 +529,33 @@ LIMIT 200`)
 	for rows.Next() {
 		var log GeminiWebhookLog
 		var labelsRaw string
+		var contextURLsRaw string
+		var evidenceRaw string
+		var runbookRaw string
+		var checksRaw string
 		var completedAt sql.NullTime
 		if err := rows.Scan(
 			&log.ID, &log.DeliveryID, &log.EventName, &log.Action, &log.Repository, &log.PullNumber, &log.Sender,
 			&log.Status, &log.StatusCode, &log.Error, &log.CommentURL, &log.KeyID, &labelsRaw,
+			&contextURLsRaw, &evidenceRaw, &runbookRaw, &checksRaw,
 			&log.DurationMillis, &log.ReceivedAt, &completedAt,
 		); err != nil {
 			return fmt.Errorf("scan gemini webhook log: %w", err)
 		}
 		if labelsRaw != "" {
 			_ = json.Unmarshal([]byte(labelsRaw), &log.Labels)
+		}
+		if contextURLsRaw != "" {
+			_ = json.Unmarshal([]byte(contextURLsRaw), &log.ContextURLs)
+		}
+		if evidenceRaw != "" {
+			_ = json.Unmarshal([]byte(evidenceRaw), &log.Evidence)
+		}
+		if runbookRaw != "" {
+			_ = json.Unmarshal([]byte(runbookRaw), &log.Runbook)
+		}
+		if checksRaw != "" {
+			_ = json.Unmarshal([]byte(checksRaw), &log.Checks)
 		}
 		log.CompletedAt = timePtr(completedAt)
 		state.GeminiWebhookLogs = append(state.GeminiWebhookLogs, &log)
@@ -874,16 +892,35 @@ func saveGeminiWebhookLogs(ctx context.Context, tx *sql.Tx, logs []*GeminiWebhoo
 		if err != nil {
 			return fmt.Errorf("encode gemini webhook labels %s: %w", log.ID, err)
 		}
+		contextURLs, err := json.Marshal(log.ContextURLs)
+		if err != nil {
+			return fmt.Errorf("encode gemini webhook context urls %s: %w", log.ID, err)
+		}
+		evidence, err := json.Marshal(log.Evidence)
+		if err != nil {
+			return fmt.Errorf("encode gemini webhook evidence %s: %w", log.ID, err)
+		}
+		runbook, err := json.Marshal(log.Runbook)
+		if err != nil {
+			return fmt.Errorf("encode gemini webhook runbook %s: %w", log.ID, err)
+		}
+		checks, err := json.Marshal(log.Checks)
+		if err != nil {
+			return fmt.Errorf("encode gemini webhook checks %s: %w", log.ID, err)
+		}
 		if _, err := tx.ExecContext(ctx, `
 INSERT INTO gemini_webhook_logs (
   id, delivery_id, event_name, action, repository, pull_number, sender, status, status_code,
-  error, comment_url, key_id, labels, duration_millis, received_at, completed_at
+  error, comment_url, key_id, labels, context_urls, evidence, runbook, checks,
+  duration_millis, received_at, completed_at
 ) VALUES (
   $1, $2, $3, $4, $5, $6, $7, $8,
-  $9, $10, $11, $12, $13::jsonb, $14, $15, $16
+  $9, $10, $11, $12, $13::jsonb, $14::jsonb, $15::jsonb, $16::jsonb, $17::jsonb,
+  $18, $19, $20
 )`,
 			log.ID, log.DeliveryID, log.EventName, log.Action, log.Repository, log.PullNumber, log.Sender,
 			log.Status, log.StatusCode, log.Error, log.CommentURL, log.KeyID, string(labels),
+			string(contextURLs), string(evidence), string(runbook), string(checks),
 			log.DurationMillis, log.ReceivedAt, log.CompletedAt,
 		); err != nil {
 			return fmt.Errorf("save gemini webhook log %s: %w", log.ID, err)

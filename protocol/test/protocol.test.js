@@ -226,6 +226,16 @@ test('validates live feed protocol documents', () => {
         action: 'test',
         reference: 'mergeos-bounties/mergeos#151',
         url: 'https://github.com/mergeos-bounties/mergeos/pull/151#issuecomment-1',
+        context_urls: [
+          'https://mergeos.shop/api/public/projects/prj_0001/workflow',
+          'https://github.com/mergeos-bounties/mergeos/pull/151',
+        ],
+        evidence: ['smoke tests passed', 'preview deployment reachable'],
+        runbook: ['Fetch task packet', 'Run smoke suite', 'Attach deployment evidence'],
+        checks: [
+          { name: 'Smoke suite', status: 'passed', summary: 'Frontend route smoke tests passed.', reference_url: 'https://ci.example/run/1' },
+          { name: 'Security note', status: 'warning', summary: 'Manual review still required.' },
+        ],
         status: 'processed',
         created_at: now,
       },
@@ -238,13 +248,14 @@ test('validates live feed protocol documents', () => {
     ...feed,
     kind: 'feed',
     stats: { ...feed.stats, active_agent_count: -1 },
-    items: [{ ...feed.items[0], type: 'unknown_feed_type', created_at: 'not-a-date' }],
+    items: [{ ...feed.items[1], type: 'unknown_feed_type', created_at: 'not-a-date', checks: [{ name: 'Smoke suite', status: 'done' }] }],
   });
   assert.equal(invalid.valid, false);
   assert(invalid.errors.some((error) => error.path === 'kind'));
   assert(invalid.errors.some((error) => error.path === 'stats.active_agent_count'));
   assert(invalid.errors.some((error) => error.path === 'items[0].type'));
   assert(invalid.errors.some((error) => error.path === 'items[0].created_at'));
+  assert(invalid.errors.some((error) => error.path === 'items[0].checks[0].status'));
 });
 
 test('validates repository import protocol documents', () => {
@@ -397,6 +408,16 @@ test('validates agent action protocol documents', () => {
     pull_number: 777,
     reference_url: 'https://github.com/mergeos-bounties/mergeos/pull/777',
     labels: ['smoke', 'release-gate'],
+    context_urls: [
+      'https://mergeos.shop/api/public/projects/prj_0001/workflow',
+      'https://mergeos.shop/api/public/protocol/tasks?project_id=prj_0001',
+    ],
+    evidence: ['smoke tests passed', 'preview deployment reachable'],
+    runbook: ['Fetch task packet', 'Run smoke suite', 'Attach deployment evidence'],
+    checks: [
+      { name: 'Smoke suite', status: 'passed', summary: 'Frontend route smoke tests passed.', reference_url: 'https://ci.example/run/1' },
+      { name: 'Security note', status: 'warning', summary: 'Manual review still required.' },
+    ],
     duration_millis: 1234,
     received_at: now,
     completed_at: now,
@@ -411,6 +432,16 @@ test('validates agent action protocol documents', () => {
       status_code: 200,
       comment_url: 'https://github.com/mergeos-bounties/mergeos/pull/777',
       labels: ['smoke', 'release-gate'],
+      context_urls: [
+        'https://mergeos.shop/api/public/projects/prj_0001/workflow',
+        'https://mergeos.shop/api/public/protocol/tasks?project_id=prj_0001',
+      ],
+      evidence: ['smoke tests passed', 'preview deployment reachable'],
+      runbook: ['Fetch task packet', 'Run smoke suite', 'Attach deployment evidence'],
+      checks: [
+        { name: 'Smoke suite', status: 'passed', summary: 'Frontend route smoke tests passed.', reference_url: 'https://ci.example/run/1' },
+        { name: 'Security note', status: 'warning', summary: 'Manual review still required.' },
+      ],
       duration_millis: 1234,
       received_at: now,
       completed_at: now,
@@ -424,14 +455,17 @@ test('validates agent action protocol documents', () => {
     kind: 'agent',
     action: 'lint',
     status: 'done',
-    log: { ...action.log, event_name: 'webhook', status_code: 99 },
+    checks: [{ name: 'Smoke suite', status: 'done' }],
+    log: { ...action.log, event_name: 'webhook', status_code: 99, checks: [{ name: 'Smoke suite', status: 'done' }] },
   });
   assert.equal(invalid.valid, false);
   assert(invalid.errors.some((error) => error.path === 'kind'));
   assert(invalid.errors.some((error) => error.path === 'action'));
   assert(invalid.errors.some((error) => error.path === 'status'));
+  assert(invalid.errors.some((error) => error.path === 'checks[0].status'));
   assert(invalid.errors.some((error) => error.path === 'log.event_name'));
   assert(invalid.errors.some((error) => error.path === 'log.status_code'));
+  assert(invalid.errors.some((error) => error.path === 'log.checks[0].status'));
 });
 
 test('validates escrow protocol documents', () => {
