@@ -1562,9 +1562,11 @@ func (s *Server) acceptTask(w http.ResponseWriter, r *http.Request) {
 	}
 	path := strings.TrimPrefix(r.URL.Path, "/api/tasks/")
 	taskID := ""
+	action := ""
 	for _, suffix := range []string{"/accept", "/claim"} {
 		if strings.HasSuffix(path, suffix) {
 			taskID = strings.TrimSuffix(path, suffix)
+			action = strings.TrimPrefix(suffix, "/")
 			break
 		}
 	}
@@ -1586,6 +1588,10 @@ func (s *Server) acceptTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !s.store.CanAccessTask(user.ID, user.Role, taskID) {
+		if action != "claim" {
+			writeError(w, http.StatusForbidden, "project owner or admin access is required to release task")
+			return
+		}
 		selfReq, err := s.store.SelfAcceptTaskRequest(user.ID, taskID)
 		if err != nil {
 			writeError(w, http.StatusForbidden, err.Error())
@@ -1594,12 +1600,21 @@ func (s *Server) acceptTask(w http.ResponseWriter, r *http.Request) {
 		req = selfReq
 	}
 
-	task, err := s.store.AcceptTask(taskID, req)
+	var task *Task
+	if action == "claim" {
+		task, err = s.store.ClaimTask(taskID, req)
+	} else {
+		task, err = s.store.AcceptTask(taskID, req)
+	}
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	s.broadcastLiveFeedEvent("task_accepted")
+	if action == "claim" {
+		s.broadcastLiveFeedEvent("task_claimed")
+	} else {
+		s.broadcastLiveFeedEvent("task_accepted")
+	}
 	writeJSON(w, http.StatusOK, taskClaimProtocolDocument(claimID, task))
 }
 

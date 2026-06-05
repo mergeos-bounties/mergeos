@@ -1979,11 +1979,11 @@ func TestPublicLiveFeedRouteReturnsSanitizedTimeline(t *testing.T) {
 				t.Fatalf("task paid event missing ledger proof payload: %#v", event)
 			}
 		}
-		if (event.Type == "task.created" || event.Type == "task.claimed") && !protocolPayloadStringSliceContains(event.Payload["evidence_required"], "tests") {
+		if (event.Type == "task.created" || event.Type == "task.accepted") && !protocolPayloadStringSliceContains(event.Payload["evidence_required"], "tests") {
 			t.Fatalf("task event missing evidence requirements: %#v", event)
 		}
 	}
-	for _, required := range []string{"project.funded", "deployment.updated", "task.claimed", "task.paid", "pr.opened"} {
+	for _, required := range []string{"project.funded", "deployment.updated", "task.accepted", "task.paid", "pr.opened"} {
 		if !eventTypes[required] {
 			t.Fatalf("protocol events missing %s item: %#v", required, eventFeed.Events)
 		}
@@ -4328,7 +4328,7 @@ func TestTaskSubmissionRouteRecordsReviewEvidence(t *testing.T) {
 	if humanTask == nil {
 		t.Fatal("project did not create a human task")
 	}
-	if _, err := store.AcceptTask(humanTask.ID, AcceptTaskRequest{
+	if _, err := store.ClaimTask(humanTask.ID, AcceptTaskRequest{
 		WorkerKind: WorkerHuman,
 		WorkerID:   "github:submitter-dev",
 	}); err != nil {
@@ -4732,15 +4732,8 @@ func TestWorkerCanSelfClaimProposalRoute(t *testing.T) {
 	acceptReq.Header.Set("Authorization", "Bearer "+workerAuth.Token)
 	acceptResp := httptest.NewRecorder()
 	server.Routes().ServeHTTP(acceptResp, acceptReq)
-	if acceptResp.Code != http.StatusOK {
-		t.Fatalf("accept route self claim status = %d, body = %s", acceptResp.Code, acceptResp.Body.String())
-	}
-	var acceptedViaAccept TaskClaimResponse
-	if err := json.Unmarshal(acceptResp.Body.Bytes(), &acceptedViaAccept); err != nil {
-		t.Fatal(err)
-	}
-	if acceptedViaAccept.ClaimID != acceptRouteClaimID || acceptedViaAccept.TaskID != acceptRouteTask.ID || acceptedViaAccept.WorkerID != "github:self-claimer" {
-		t.Fatalf("accept route did not self claim with public claim id: %#v", acceptedViaAccept)
+	if acceptResp.Code != http.StatusForbidden {
+		t.Fatalf("accept route allowed worker self release status = %d, body = %s", acceptResp.Code, acceptResp.Body.String())
 	}
 
 	reqHTTP := httptest.NewRequest(http.MethodPost, "/api/tasks/"+claimID+"/claim", strings.NewReader(`{"worker_kind":"agent","worker_id":"github:spoofed","agent_type":"bad"}`))
@@ -4758,11 +4751,11 @@ func TestWorkerCanSelfClaimProposalRoute(t *testing.T) {
 	if accepted.ProtocolVersion != "mergeos.task-claim.v1" || accepted.Kind != "task_claim" || accepted.ClaimID != claimID {
 		t.Fatalf("unexpected self claim protocol header: %#v", accepted)
 	}
-	if accepted.Status != TaskAccepted || accepted.WorkerKind != WorkerHuman || accepted.WorkerID != "github:self-claimer" || accepted.Task.Status != TaskAccepted {
+	if accepted.Status != TaskClaimed || accepted.WorkerKind != WorkerHuman || accepted.WorkerID != "github:self-claimer" || accepted.Task.Status != TaskClaimed {
 		t.Fatalf("self claim used wrong worker identity: %#v", accepted)
 	}
-	if accepted.ProofHash == "" || accepted.AcceptedAt == nil || accepted.TaskID != humanTask.ID || accepted.ProjectID != project.ID {
-		t.Fatalf("self claim missing proof fields: %#v", accepted)
+	if accepted.ProofHash != "" || accepted.AcceptedAt == nil || accepted.TaskID != humanTask.ID || accepted.ProjectID != project.ID {
+		t.Fatalf("self claim returned wrong claim fields: %#v", accepted)
 	}
 
 	ledgerCount := len(store.ListLedger())

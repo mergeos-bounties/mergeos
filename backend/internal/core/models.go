@@ -35,8 +35,10 @@ const (
 type TaskStatus string
 
 const (
-	TaskOpen     TaskStatus = "open"
-	TaskAccepted TaskStatus = "accepted"
+	TaskOpen      TaskStatus = "open"
+	TaskClaimed   TaskStatus = "claimed"
+	TaskSubmitted TaskStatus = "submitted"
+	TaskAccepted  TaskStatus = "accepted"
 )
 
 type User struct {

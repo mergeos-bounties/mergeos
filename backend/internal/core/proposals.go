@@ -38,8 +38,8 @@ func (s *Store) CreateProposal(userID string, req CreateProposalRequest) (Create
 	if task == nil {
 		return CreateProposalResponse{}, errors.New("task not found")
 	}
-	if task.Status == TaskAccepted {
-		return CreateProposalResponse{}, errors.New("task is already accepted")
+	if !taskIsOpenForClaim(task) {
+		return CreateProposalResponse{}, errors.New("task is already claimed")
 	}
 	if task.RequiredWorkerKind == WorkerAgent {
 		return CreateProposalResponse{}, errors.New("agent-only tasks cannot receive worker proposals")
@@ -171,7 +171,7 @@ func (s *Store) DecideProposal(userID string, role UserRole, proposalID string, 
 	availability := fields["availability"]
 
 	if decision == "accepted" {
-		if task.Status == TaskAccepted {
+		if taskIsReleased(task) {
 			return CreateProposalResponse{}, errors.New("task is already accepted")
 		}
 		acceptReq := AcceptTaskRequest{

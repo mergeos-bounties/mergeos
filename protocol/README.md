@@ -46,7 +46,7 @@ Event types include project funding, task creation/claim/payment, PR lifecycle, 
 | Group | Event types |
 | --- | --- |
 | Project | `project.funded` |
-| Task | `task.created`, `task.claimed`, `task.paid` |
+| Task | `task.created`, `task.claimed`, `task.submitted`, `task.accepted`, `task.paid` |
 | Pull request | `pr.opened`, `pr.reviewed` |
 | Repository | `repo.issues.synced` |
 | Deployment | `deployment.updated` |

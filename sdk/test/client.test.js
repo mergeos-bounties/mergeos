@@ -421,8 +421,9 @@ test('maps live feed records to workflow event protocol values', () => {
   assert.equal(workflowEventTypes.prOpened, 'pr.opened');
   assert.equal(liveFeedTypeToProtocolEventType('project_funded'), 'project.funded');
   assert.equal(liveFeedTypeToProtocolEventType('task_opened'), 'task.created');
+  assert.equal(liveFeedTypeToProtocolEventType('task_claimed'), 'task.claimed');
   assert.equal(liveFeedTypeToProtocolEventType('task_submitted'), 'task.submitted');
-  assert.equal(liveFeedTypeToProtocolEventType('task_accepted'), 'task.claimed');
+  assert.equal(liveFeedTypeToProtocolEventType('task_accepted'), 'task.accepted');
   assert.equal(liveFeedTypeToProtocolEventType('pr_opened'), 'pr.opened');
   assert.equal(liveFeedTypeToProtocolEventType('ai_review'), 'pr.reviewed');
   assert.equal(liveFeedTypeToProtocolEventType('deployment_validation'), 'deployment.updated');
@@ -510,7 +511,7 @@ test('exposes public repo import and password-gated test settings without auth',
 test('sends bearer token and JSON body for task acceptance, proposals, and disputes', async () => {
   const fetchImpl = fakeFetch([
     { status: 200, body: { protocol_version: 'mergeos.task-claim.v1', kind: 'task_claim', id: 'tsk_1', task_id: 'tsk_1', status: 'accepted' } },
-    { status: 200, body: { protocol_version: 'mergeos.task-claim.v1', kind: 'task_claim', id: 'tsk_2', claim_id: 'prj_1:13', status: 'accepted' } },
+    { status: 200, body: { protocol_version: 'mergeos.task-claim.v1', kind: 'task_claim', id: 'tsk_2', claim_id: 'prj_1:13', status: 'claimed' } },
     { status: 200, body: { protocol_version: 'mergeos.task-submission.v1', kind: 'task_submission', claim_id: 'prj_1:13', status: 'submitted' } },
     { status: 201, body: { protocol_version: 'mergeos.proposal.v1', kind: 'proposal', proposal: { id: 'ntf_1', status: 'submitted' } } },
     { status: 200, body: { protocol_version: 'mergeos.proposal.v1', kind: 'proposal', proposal: { id: 'ntf_1', status: 'accepted' } } },
@@ -543,6 +544,7 @@ test('sends bearer token and JSON body for task acceptance, proposals, and dispu
   assert.equal(task.status, 'accepted');
   assert.equal(claimed.protocol_version, 'mergeos.task-claim.v1');
   assert.equal(claimed.claim_id, 'prj_1:13');
+  assert.equal(claimed.status, 'claimed');
   assert.equal(submitted.protocol_version, 'mergeos.task-submission.v1');
   assert.equal(submitted.status, 'submitted');
   assert.equal(proposal.protocol_version, 'mergeos.proposal.v1');

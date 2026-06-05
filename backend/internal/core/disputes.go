@@ -89,7 +89,7 @@ func (s *Store) canCreateDisputeLocked(user *User, role UserRole, project *Proje
 	if project != nil && project.ClientUserID == user.ID {
 		return true
 	}
-	if task == nil || task.Status != TaskAccepted {
+	if !taskHasWorker(task) {
 		return false
 	}
 	workerID := strings.ToLower(strings.TrimSpace(normalizeWorkerID(task.WorkerID)))

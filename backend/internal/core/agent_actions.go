@@ -133,7 +133,7 @@ func (s *Store) AuthorizeAssignedWorkerAgentAction(userID, projectID string, req
 	if _, ok := s.projects[projectID]; !ok {
 		return AgentActionRequest{}, errors.New("project not found")
 	}
-	if task.Status != TaskAccepted {
+	if !taskHasWorker(task) {
 		return AgentActionRequest{}, errors.New("task must be claimed before evidence can be recorded")
 	}
 	workerIDs, _ := workerIdentitySets(user)

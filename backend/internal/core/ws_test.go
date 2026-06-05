@@ -144,7 +144,7 @@ func TestWebSocketBroadcastsSanitizedTaskAcceptedFeed(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	workerAuth, err := store.AuthenticateGitHub(GitHubAuthProfile{
+	_, err = store.AuthenticateGitHub(GitHubAuthProfile{
 		ID:        "3001",
 		Username:  "realtime-worker",
 		Name:      "Realtime Worker",
@@ -220,11 +220,11 @@ func TestWebSocketBroadcastsSanitizedTaskAcceptedFeed(t *testing.T) {
 	_ = readWebSocketTextFrame(t, reader)
 
 	claimID := marketplaceBountyID(project.ID, humanTask.IssueNumber)
-	req, err := http.NewRequest(http.MethodPost, httpServer.URL+"/api/tasks/"+claimID+"/accept", strings.NewReader(`{}`))
+	req, err := http.NewRequest(http.MethodPost, httpServer.URL+"/api/tasks/"+claimID+"/accept", strings.NewReader(`{"worker_kind":"human","worker_id":"github:realtime-worker"}`))
 	if err != nil {
 		t.Fatal(err)
 	}
-	req.Header.Set("Authorization", "Bearer "+workerAuth.Token)
+	req.Header.Set("Authorization", "Bearer "+clientAuth.Token)
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -255,11 +255,11 @@ func TestWebSocketBroadcastsSanitizedTaskAcceptedFeed(t *testing.T) {
 	if event["protocol_version"] != "mergeos.event.v1" || event["kind"] != "live_feed_delta" || event["event_id"] == "" {
 		t.Fatalf("task accepted websocket missing event envelope: %#v", event)
 	}
-	if event["protocol_type"] != "task.claimed" {
+	if event["protocol_type"] != "task.accepted" {
 		t.Fatalf("task accepted websocket missing protocol type: %#v", event)
 	}
 	protocolEvent, ok := event["event"].(map[string]interface{})
-	if !ok || protocolEvent["type"] != "task.claimed" || protocolEvent["protocol_version"] != "mergeos.event.v1" {
+	if !ok || protocolEvent["type"] != "task.accepted" || protocolEvent["protocol_version"] != "mergeos.event.v1" {
 		t.Fatalf("task accepted websocket missing protocol event: %#v", event)
 	}
 	feed, ok := event["feed"].(map[string]interface{})

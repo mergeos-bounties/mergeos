@@ -66,6 +66,7 @@
               "project_funded",
               "deployment_validation",
               "task_opened",
+              "task_claimed",
               "task_submitted",
               "task_accepted",
               "ledger_payment_verified",

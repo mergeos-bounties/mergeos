@@ -35,7 +35,7 @@ func (s *Store) AdminOpsQueue() AdminOpsQueueResponse {
 	}
 
 	for _, task := range s.tasks {
-		if task == nil || task.Status == TaskAccepted || normalizeIssueState(task.IssueState) != "closed" {
+		if task == nil || taskIsReleased(task) || normalizeIssueState(task.IssueState) != "closed" {
 			continue
 		}
 		project := s.projects[task.ProjectID]

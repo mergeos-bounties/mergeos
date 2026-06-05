@@ -61,7 +61,7 @@ func (s *Store) PublicLiveFeed(limit int) PublicLiveFeedResponse {
 	for _, task := range s.tasks {
 		publicLiveFeedTrackAgent(activeAgents, task.RequiredWorkerKind, task.SuggestedAgentType, task.AgentType)
 		project := s.projects[task.ProjectID]
-		if task.Status == TaskAccepted {
+		if taskIsReleased(task) {
 			response.Stats.AcceptedTaskCount++
 			if workerID := strings.ToLower(strings.TrimSpace(normalizeWorkerID(task.WorkerID))); workerID != "" {
 				activeContributors[workerID] = true
@@ -76,9 +76,26 @@ func (s *Store) PublicLiveFeed(limit int) PublicLiveFeedResponse {
 			response.Items = append(response.Items, publicTaskAcceptedLiveFeedItem(task, project))
 			continue
 		}
-		response.Stats.OpenTaskCount++
-		touch(task.CreatedAt)
-		response.Items = append(response.Items, publicTaskOpenLiveFeedItem(task, project))
+		if taskHasWorker(task) {
+			if workerID := strings.ToLower(strings.TrimSpace(normalizeWorkerID(task.WorkerID))); workerID != "" {
+				activeContributors[workerID] = true
+			}
+			if task.SubmittedAt != nil {
+				touch(*task.SubmittedAt)
+				response.Items = append(response.Items, publicTaskSubmittedLiveFeedItem(task, project))
+				continue
+			}
+			if task.AcceptedAt != nil {
+				touch(*task.AcceptedAt)
+			}
+			response.Items = append(response.Items, publicTaskClaimedLiveFeedItem(task, project))
+			continue
+		}
+		if taskIsOpenForClaim(task) {
+			response.Stats.OpenTaskCount++
+			touch(task.CreatedAt)
+			response.Items = append(response.Items, publicTaskOpenLiveFeedItem(task, project))
+		}
 	}
 
 	for _, entry := range s.ledger {
@@ -269,6 +286,31 @@ func publicTaskAcceptedLiveFeedItem(task *Task, project *Project) PublicLiveFeed
 		ID:               publicLiveFeedTaskID("task-accepted", task),
 		Type:             "task_accepted",
 		Title:            fmt.Sprintf("Task #%d accepted", task.IssueNumber),
+		Body:             publicLiveFeedTaskBody(task),
+		ProjectID:        projectID,
+		ProjectTitle:     projectTitle,
+		TaskID:           claimID,
+		Actor:            publicLiveFeedActor(task.WorkerID, task.AgentType),
+		AmountCents:      task.RewardCents,
+		Reference:        publicTaskReference(task),
+		EvidenceRequired: publicTaskEvidenceRequiredForTask(task),
+		URL:              marketplacePublicRepoURL(task.IssueURL),
+		Status:           string(task.Status),
+		CreatedAt:        createdAt,
+	}
+}
+
+func publicTaskClaimedLiveFeedItem(task *Task, project *Project) PublicLiveFeedItem {
+	projectID, projectTitle := publicLiveFeedProjectScope(task, project)
+	claimID := marketplaceBountyID(projectID, task.IssueNumber)
+	createdAt := task.CreatedAt
+	if task.AcceptedAt != nil {
+		createdAt = *task.AcceptedAt
+	}
+	return PublicLiveFeedItem{
+		ID:               publicLiveFeedTaskID("task-claimed", task),
+		Type:             "task_claimed",
+		Title:            fmt.Sprintf("Task #%d claimed", task.IssueNumber),
 		Body:             publicLiveFeedTaskBody(task),
 		ProjectID:        projectID,
 		ProjectTitle:     projectTitle,
@@ -885,10 +927,12 @@ func publicEventType(item PublicLiveFeedItem) string {
 		return "project.funded"
 	case "task_opened":
 		return "task.created"
+	case "task_claimed":
+		return "task.claimed"
 	case "task_submitted":
 		return "task.submitted"
 	case "task_accepted":
-		return "task.claimed"
+		return "task.accepted"
 	case "deployment_validation":
 		return "deployment.updated"
 	case "pr_opened":

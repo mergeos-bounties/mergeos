@@ -2012,11 +2012,10 @@ test('validates task claim protocol documents', () => {
     project_id: 'prj_0001',
     issue_number: 12,
     title: 'Fix PayPal return capture',
-    status: 'accepted',
+    status: 'claimed',
     worker_kind: 'human',
     worker_id: 'github:worker-dev',
     reward_cents: 5000,
-    proof_hash: 'abc123proof',
     accepted_at: now,
     task: {
       id: 'tsk_0001',
@@ -2027,10 +2026,9 @@ test('validates task claim protocol documents', () => {
       reward_cents: 5000,
       required_worker_kind: 'human',
       suggested_agent_type: '',
-      status: 'accepted',
+      status: 'claimed',
       worker_kind: 'human',
       worker_id: 'github:worker-dev',
-      proof_hash: 'abc123proof',
       created_at: now,
       accepted_at: now,
     },
@@ -2079,7 +2077,7 @@ test('validates task submission protocol documents', () => {
       reward_cents: 5000,
       required_worker_kind: 'human',
       suggested_agent_type: '',
-      status: 'accepted',
+      status: 'submitted',
       worker_kind: 'human',
       worker_id: 'github:worker-dev',
       pull_request_url: 'https://github.com/mergeos-bounties/mergeos/pull/12',
@@ -2096,7 +2094,7 @@ test('validates task submission protocol documents', () => {
   const invalid = validateProtocolDocument({
     ...submission,
     kind: 'task_claim',
-    status: 'accepted',
+    status: 'claimed',
     submitted_at: 'not-a-date',
   });
   assert.equal(invalid.valid, false);

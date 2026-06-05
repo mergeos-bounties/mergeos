@@ -38,7 +38,7 @@
           "task_id": { "type": "string", "minLength": 1, "maxLength": 96 },
           "issue_number": { "type": "integer", "minimum": 0 },
           "title": { "type": "string", "minLength": 1, "maxLength": 240 },
-          "status": { "enum": ["open", "accepted"] },
+          "status": { "enum": ["open", "claimed", "submitted", "accepted"] },
           "reward_cents": { "type": "integer", "minimum": 0 },
           "worker_kind": { "enum": ["human", "agent", "hybrid"] },
           "worker_id": { "type": "string", "maxLength": 160 },

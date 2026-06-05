@@ -35,7 +35,7 @@
         "sync_status": { "enum": ["added", "updated", "unchanged"] },
         "task_id": { "type": "string", "minLength": 1, "maxLength": 96 },
         "task_title": { "type": "string", "minLength": 1, "maxLength": 240 },
-        "task_status": { "enum": ["open", "accepted"] },
+        "task_status": { "enum": ["open", "claimed", "submitted", "accepted"] },
         "claim_id": { "type": "string", "minLength": 1, "maxLength": 120 },
         "claim_endpoint": { "type": "string", "minLength": 1, "maxLength": 240 },
         "task_protocol_url": { "type": "string", "minLength": 1, "maxLength": 512 },

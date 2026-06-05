@@ -35,7 +35,7 @@ func (s *Store) SubmitTaskReview(userID string, role UserRole, taskRef string, r
 	if !ok || project == nil {
 		return TaskSubmissionResponse{}, errors.New("project not found")
 	}
-	if task.Status != TaskAccepted || strings.TrimSpace(task.WorkerID) == "" {
+	if !taskCanSubmitReview(task) || strings.TrimSpace(task.WorkerID) == "" {
 		return TaskSubmissionResponse{}, errors.New("task must be claimed before review evidence can be submitted")
 	}
 	if !canSubmitTaskEvidenceLocked(user, role, project, task) {
@@ -47,6 +47,9 @@ func (s *Store) SubmitTaskReview(userID string, role UserRole, taskRef string, r
 	task.ReviewEvidenceURL = submission.ReviewEvidenceURL
 	task.ReviewNotes = submission.ReviewNotes
 	task.SubmittedAt = &now
+	if task.Status != TaskAccepted {
+		task.Status = TaskSubmitted
+	}
 	updateProjectTaskLocked(project, task)
 
 	subject := "MergeOS task submitted: " + task.Title
@@ -58,6 +61,13 @@ func (s *Store) SubmitTaskReview(userID string, role UserRole, taskRef string, r
 		return TaskSubmissionResponse{}, err
 	}
 	return taskSubmissionProtocolDocument(marketplaceBountyID(task.ProjectID, task.IssueNumber), task), nil
+}
+
+func taskCanSubmitReview(task *Task) bool {
+	if task == nil {
+		return false
+	}
+	return task.Status == TaskClaimed || task.Status == TaskSubmitted || task.Status == TaskAccepted
 }
 
 func normalizeTaskSubmissionRequest(req TaskSubmissionRequest) (TaskSubmissionRequest, error) {

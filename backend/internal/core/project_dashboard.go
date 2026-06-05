@@ -77,10 +77,10 @@ func projectDashboardOverview(project *Project, updatedAt time.Time) ProjectDash
 			continue
 		}
 		overview.TaskCount++
-		switch task.Status {
-		case TaskAccepted:
+		switch {
+		case taskIsReleased(task):
 			overview.AcceptedTaskCount++
-		default:
+		case taskIsOpenForClaim(task):
 			overview.OpenTaskCount++
 		}
 		switch task.RequiredWorkerKind {

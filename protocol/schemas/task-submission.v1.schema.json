@@ -36,7 +36,7 @@
         "required_worker_kind": { "enum": ["human", "agent", "hybrid"] },
         "suggested_agent_type": { "type": "string", "maxLength": 160 },
         "bounty_type": { "type": "string", "maxLength": 120 },
-        "status": { "const": "accepted" },
+        "status": { "enum": ["submitted", "accepted"] },
         "worker_kind": { "enum": ["human", "agent", "hybrid"] },
         "worker_id": { "type": "string", "maxLength": 200 },
         "agent_type": { "type": "string", "maxLength": 160 },

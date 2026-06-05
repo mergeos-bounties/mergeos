@@ -1381,10 +1381,9 @@ func (s *Store) Marketplace() MarketplaceResponse {
 		}
 		for _, task := range project.Tasks {
 			row.TaskCount++
-			switch task.Status {
-			case TaskAccepted:
+			if taskIsReleased(task) {
 				row.AcceptedTaskCount++
-			default:
+			} else if taskIsOpenForClaim(task) {
 				row.OpenTaskCount++
 				response.Bounties = append(response.Bounties, marketplaceBountyRow(project, task))
 			}
@@ -1427,13 +1426,13 @@ func (s *Store) Marketplace() MarketplaceResponse {
 				agents[task.SuggestedAgentType] = agent
 			}
 			agent.TaskCount++
-			if task.Status != TaskAccepted {
+			if taskIsOpenForClaim(task) {
 				agent.OpenTaskCount++
 				agent.BudgetCents += task.RewardCents
 			}
 		}
 
-		if task.Status != TaskAccepted || strings.TrimSpace(task.WorkerID) == "" {
+		if !taskIsReleased(task) || strings.TrimSpace(task.WorkerID) == "" {
 			continue
 		}
 		key := task.WorkerID
@@ -1617,14 +1616,16 @@ func (s *Store) WorkerDashboard(userID string) WorkerDashboardResponse {
 	}
 
 	for _, task := range s.tasks {
-		if task.Status != TaskAccepted || !workerIDs[workerIdentityKey(task.WorkerID)] {
+		if !taskHasWorker(task) || !workerIDs[workerIdentityKey(task.WorkerID)] {
 			continue
 		}
 		project := s.projects[task.ProjectID]
 		response.ClaimedTasks = append(response.ClaimedTasks, workerClaimedTaskRow(project, task))
 		response.Stats.ClaimedTaskCount++
-		response.Stats.RewardCents += task.RewardCents
-		if task.AcceptedAt != nil && (response.Stats.LastPaidAt == nil || task.AcceptedAt.After(*response.Stats.LastPaidAt)) {
+		if taskIsReleased(task) {
+			response.Stats.RewardCents += task.RewardCents
+		}
+		if taskIsReleased(task) && task.AcceptedAt != nil && (response.Stats.LastPaidAt == nil || task.AcceptedAt.After(*response.Stats.LastPaidAt)) {
 			lastPaidAt := *task.AcceptedAt
 			response.Stats.LastPaidAt = &lastPaidAt
 		}
@@ -1781,7 +1782,7 @@ func (s *Store) AdminReputation() AdminReputationResponse {
 
 	audits := map[string]WorkerReputationAudit{}
 	for _, task := range s.tasks {
-		if task == nil || task.Status != TaskAccepted || strings.TrimSpace(task.WorkerID) == "" {
+		if !taskIsReleased(task) || strings.TrimSpace(task.WorkerID) == "" {
 			continue
 		}
 		key := workerReputationKey(task.WorkerID, task.AgentType)
@@ -1902,12 +1903,14 @@ func (s *Store) AdminSummary() AdminSummary {
 		summary.PlatformFeeCents += project.FeeCents
 	}
 	for _, task := range s.tasks {
-		if task.Status == TaskAccepted {
+		if taskIsReleased(task) {
 			summary.AcceptedTaskCount++
 			summary.PaidTaskCents += task.RewardCents
 			continue
 		}
-		summary.OpenTaskCount++
+		if taskIsOpenForClaim(task) {
+			summary.OpenTaskCount++
+		}
 	}
 	return summary
 }
@@ -1951,8 +1954,8 @@ func (s *Store) SelfAcceptTaskRequest(userID, taskID string) (AcceptTaskRequest,
 	if !ok {
 		return AcceptTaskRequest{}, errors.New("task not found")
 	}
-	if task.Status == TaskAccepted {
-		return AcceptTaskRequest{}, errors.New("task is already accepted")
+	if task.Status != TaskOpen {
+		return AcceptTaskRequest{}, errors.New("task is already claimed")
 	}
 
 	workerID := ""
@@ -1976,6 +1979,22 @@ func (s *Store) SelfAcceptTaskRequest(userID, taskID string) (AcceptTaskRequest,
 		}
 	}
 	return req, nil
+}
+
+func (s *Store) ClaimTask(taskID string, req AcceptTaskRequest) (*Task, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	task, err := s.claimTaskLocked(taskID, req)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.saveLocked(); err != nil {
+		return nil, err
+	}
+
+	copyTask := *task
+	return &copyTask, nil
 }
 
 func (s *Store) AcceptTask(taskID string, req AcceptTaskRequest) (*Task, error) {
@@ -2002,6 +2021,36 @@ func (s *Store) AcceptTaskWithReviewReference(taskID string, req AcceptTaskReque
 	return &copyTask, nil
 }
 
+func (s *Store) claimTaskLocked(taskID string, req AcceptTaskRequest) (*Task, error) {
+	task, ok := s.tasks[taskID]
+	if !ok {
+		return nil, errors.New("task not found")
+	}
+	if task.Status != TaskOpen {
+		return nil, errors.New("task is already claimed")
+	}
+	if err := validateTaskWorkerRequest(task, req); err != nil {
+		return nil, err
+	}
+
+	workerID := normalizeWorkerID(req.WorkerID)
+	now := time.Now().UTC()
+	task.Status = TaskClaimed
+	task.WorkerKind = req.WorkerKind
+	task.WorkerID = workerID
+	task.AgentType = strings.TrimSpace(req.AgentType)
+	task.AcceptedAt = &now
+
+	if project, ok := s.projects[task.ProjectID]; ok {
+		updateProjectTaskLocked(project, task)
+		subject := "MergeOS task claimed: " + task.Title
+		body := fmt.Sprintf("Task #%d was claimed by %s. Payout remains in escrow until review evidence is accepted.", task.IssueNumber, task.WorkerID)
+		status := s.emailer.Send(project.ClientEmail, subject, body)
+		s.addNotificationLocked(project.ClientUserID, project.ID, "task", subject, body, status)
+	}
+	return task, nil
+}
+
 func (s *Store) acceptTaskWithReviewReferenceLocked(taskID string, req AcceptTaskRequest, rewardCents int64, bountyType, reference string) (*Task, LedgerEntry, error) {
 	task, ok := s.tasks[taskID]
 	if !ok {
@@ -2010,23 +2059,14 @@ func (s *Store) acceptTaskWithReviewReferenceLocked(taskID string, req AcceptTas
 	if task.Status == TaskAccepted {
 		return nil, LedgerEntry{}, errors.New("task is already accepted")
 	}
-	if req.WorkerKind != WorkerHuman && req.WorkerKind != WorkerAgent && req.WorkerKind != WorkerHybrid {
-		return nil, LedgerEntry{}, errors.New("worker kind must be human, agent, or hybrid")
-	}
-	if strings.TrimSpace(req.WorkerID) == "" {
-		return nil, LedgerEntry{}, errors.New("worker id is required")
-	}
-	if task.RequiredWorkerKind != req.WorkerKind {
-		return nil, LedgerEntry{}, fmt.Errorf("task requires %s work", task.RequiredWorkerKind)
-	}
-	if req.WorkerKind != WorkerHuman && strings.TrimSpace(req.AgentType) == "" {
-		return nil, LedgerEntry{}, errors.New("agent type is required for agent or hybrid work")
-	}
-	if req.WorkerKind == WorkerHuman && strings.TrimSpace(req.AgentType) != "" {
-		return nil, LedgerEntry{}, errors.New("agent type must be empty for human work")
+	if err := validateTaskWorkerRequest(task, req); err != nil {
+		return nil, LedgerEntry{}, err
 	}
 
 	workerID := normalizeWorkerID(req.WorkerID)
+	if strings.TrimSpace(task.WorkerID) != "" && workerIdentityKey(task.WorkerID) != workerIdentityKey(workerID) {
+		return nil, LedgerEntry{}, errors.New("release worker must match the claimed task")
+	}
 	payoutCents := task.RewardCents
 	if rewardCents > 0 {
 		payoutCents = rewardCents
@@ -2056,6 +2096,28 @@ func (s *Store) acceptTaskWithReviewReferenceLocked(taskID string, req AcceptTas
 		s.addNotificationLocked(project.ClientUserID, project.ID, "email", subject, body, status)
 	}
 	return task, entry, nil
+}
+
+func validateTaskWorkerRequest(task *Task, req AcceptTaskRequest) error {
+	if task == nil {
+		return errors.New("task not found")
+	}
+	if req.WorkerKind != WorkerHuman && req.WorkerKind != WorkerAgent && req.WorkerKind != WorkerHybrid {
+		return errors.New("worker kind must be human, agent, or hybrid")
+	}
+	if strings.TrimSpace(req.WorkerID) == "" {
+		return errors.New("worker id is required")
+	}
+	if task.RequiredWorkerKind != req.WorkerKind {
+		return fmt.Errorf("task requires %s work", task.RequiredWorkerKind)
+	}
+	if req.WorkerKind != WorkerHuman && strings.TrimSpace(req.AgentType) == "" {
+		return errors.New("agent type is required for agent or hybrid work")
+	}
+	if req.WorkerKind == WorkerHuman && strings.TrimSpace(req.AgentType) != "" {
+		return errors.New("agent type must be empty for human work")
+	}
+	return nil
 }
 
 func (s *Store) TaskPayoutAccount(taskID string) (string, bool) {
@@ -3272,9 +3334,9 @@ func workerIdentityHints(user *User) []WorkerIdentityHint {
 }
 
 func workerClaimedTaskRow(project *Project, task *Task) WorkerClaimedTask {
-	status := "claimed"
-	if task.SubmittedAt != nil {
-		status = submittedTaskStatus
+	status := string(task.Status)
+	if status == "" || status == string(TaskOpen) {
+		status = "claimed"
 	}
 	return WorkerClaimedTask{
 		ID:                marketplaceBountyID(task.ProjectID, task.IssueNumber),
@@ -3297,6 +3359,18 @@ func workerClaimedTaskRow(project *Project, task *Task) WorkerClaimedTask {
 	}
 }
 
+func taskHasWorker(task *Task) bool {
+	return task != nil && task.Status != TaskOpen && strings.TrimSpace(task.WorkerID) != ""
+}
+
+func taskIsOpenForClaim(task *Task) bool {
+	return task != nil && task.Status == TaskOpen
+}
+
+func taskIsReleased(task *Task) bool {
+	return task != nil && task.Status == TaskAccepted
+}
+
 func publicWorkerRewardReference(reference string) string {
 	if pullReference := publicPullLedgerReference(reference); pullReference != "" {
 		return pullReference
@@ -3311,7 +3385,7 @@ func publicWorkerRewardReference(reference string) string {
 func workerProposalRows(projects map[string]*Project, tasks map[string]*Task, user *User) []WorkerProposal {
 	rows := []WorkerProposal{}
 	for _, task := range tasks {
-		if task.Status == TaskAccepted {
+		if !taskIsOpenForClaim(task) {
 			continue
 		}
 		project := projects[task.ProjectID]
@@ -3558,7 +3632,7 @@ func (s *Store) workerReputationAuditForUserLocked(user *User) WorkerReputationA
 		DuplicateIdentityCount: s.duplicateIdentityCountLocked(user),
 	}
 	for _, task := range s.tasks {
-		if task == nil || task.Status != TaskAccepted || !workerIDs[workerIdentityKey(task.WorkerID)] {
+		if !taskIsReleased(task) || !workerIDs[workerIdentityKey(task.WorkerID)] {
 			continue
 		}
 		audit.CompletedTaskCount++

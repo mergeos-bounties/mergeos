@@ -32,7 +32,7 @@
           "issue_number": { "type": "integer", "minimum": 0 },
           "title": { "type": "string", "minLength": 1, "maxLength": 240 },
           "type": { "enum": ["reserved", "task_payment", "manual_credit"] },
-          "status": { "enum": ["open", "accepted"] },
+          "status": { "enum": ["open", "claimed", "submitted", "accepted"] },
           "release_status": { "enum": ["reserved", "partial", "released", "overpaid"] },
           "worker_id": { "type": "string", "maxLength": 160 },
           "payout_account": { "type": "string", "maxLength": 200 },

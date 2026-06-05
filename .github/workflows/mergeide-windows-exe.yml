@@ -138,6 +138,7 @@ jobs:
               --latest
           } else {
             gh release edit $tag `
+              --target $env:GITHUB_SHA `
               --title $releaseTitle `
               --notes $releaseNotes `
               --latest

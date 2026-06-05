@@ -15,6 +15,7 @@ export const workflowEventTypes = Object.freeze({
   taskCreated: 'task.created',
   taskClaimed: 'task.claimed',
   taskSubmitted: 'task.submitted',
+  taskAccepted: 'task.accepted',
   taskPaid: 'task.paid',
   prOpened: 'pr.opened',
   prReviewed: 'pr.reviewed',
@@ -722,8 +723,9 @@ export function liveFeedTypeToProtocolEventType(type = '', action = '') {
   return {
     project_funded: workflowEventTypes.projectFunded,
     task_opened: workflowEventTypes.taskCreated,
+    task_claimed: workflowEventTypes.taskClaimed,
     task_submitted: workflowEventTypes.taskSubmitted,
-    task_accepted: workflowEventTypes.taskClaimed,
+    task_accepted: workflowEventTypes.taskAccepted,
     proposal_submitted: workflowEventTypes.proposalSubmitted,
     proposal_accepted: workflowEventTypes.proposalAccepted,
     proposal_declined: workflowEventTypes.proposalDeclined,

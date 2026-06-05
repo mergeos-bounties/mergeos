@@ -304,7 +304,7 @@ func projectPullRequestTaskAgentType(task *Task) string {
 }
 
 func projectAutoReleaseCandidateForTask(task *Task, row ProjectTaskPullRequests) (ProjectAutoReleaseCandidate, bool) {
-	if task == nil || task.Status == TaskAccepted {
+	if task == nil || taskIsReleased(task) {
 		return ProjectAutoReleaseCandidate{}, false
 	}
 	var selected *ProjectPullRequestSummary

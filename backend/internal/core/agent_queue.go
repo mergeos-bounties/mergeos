@@ -292,7 +292,7 @@ func (s *Store) ProjectRouting(projectID string) (ProjectRoutingResponse, error)
 		} else if len(blockedBy) > 0 {
 			lane.BlockedCount++
 		}
-		if task.Status == TaskAccepted && task.AcceptedAt != nil && task.AcceptedAt.After(response.UpdatedAt) {
+		if taskIsReleased(task) && task.AcceptedAt != nil && task.AcceptedAt.After(response.UpdatedAt) {
 			response.UpdatedAt = *task.AcceptedAt
 		}
 	}
@@ -332,7 +332,7 @@ func (s *Store) ProjectRouting(projectID string) (ProjectRoutingResponse, error)
 }
 
 func projectRoutingReadiness(task *Task) (bool, []string) {
-	if task.Status == TaskAccepted {
+	if !taskIsOpenForClaim(task) {
 		return false, nil
 	}
 	blockedBy := []string{}
@@ -355,10 +355,14 @@ func projectRoutingRoute(task *Task, ready bool, blockedBy []string, agentDepth 
 	score := 70
 	var agent *ProjectRoutingAgent
 	var worker *ProjectRoutingContributor
-	if task.Status == TaskAccepted {
+	if taskIsReleased(task) {
 		action = "paid"
 		score = 100
-		reasons = []string{"Task has already been claimed or accepted."}
+		reasons = []string{"Task has already been released and paid."}
+	} else if taskHasWorker(task) {
+		action = "review_evidence"
+		score = 92
+		reasons = []string{"Task is claimed and waiting for review evidence or payout release."}
 	} else if !ready {
 		action = "wait_for_dependencies"
 		score = 30
@@ -448,7 +452,7 @@ func projectRoutingRecommendedFor(task *Task) string {
 func projectRoutingAgentDepthLocked(tasks map[string]*Task) map[string]int {
 	depth := map[string]int{}
 	for _, task := range tasks {
-		if task == nil || task.Status == TaskAccepted || strings.TrimSpace(task.SuggestedAgentType) == "" {
+		if !taskIsOpenForClaim(task) || strings.TrimSpace(task.SuggestedAgentType) == "" {
 			continue
 		}
 		depth[task.SuggestedAgentType]++
@@ -459,7 +463,7 @@ func projectRoutingAgentDepthLocked(tasks map[string]*Task) map[string]int {
 func projectRoutingTopContributorLocked(tasks map[string]*Task) *ProjectRoutingContributor {
 	byWorker := map[string]*ProjectRoutingContributor{}
 	for _, task := range tasks {
-		if task == nil || task.Status != TaskAccepted || strings.TrimSpace(task.WorkerID) == "" {
+		if !taskIsReleased(task) || strings.TrimSpace(task.WorkerID) == "" {
 			continue
 		}
 		workerID := task.WorkerID

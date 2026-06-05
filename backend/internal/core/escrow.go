@@ -77,9 +77,9 @@ func (s *Store) projectEscrowLocked(project *Project) ProjectEscrowResponse {
 			updatedAt = taskUpdated
 		}
 		paid := taskPaid[task.ID]
-		if task.Status == TaskAccepted || paid > 0 {
+		if taskIsReleased(task) || paid > 0 {
 			paidTaskCount++
-		} else {
+		} else if taskIsOpenForClaim(task) {
 			openTaskCount++
 		}
 		taskRows = append(taskRows, projectEscrowTaskRow(task, paid))
