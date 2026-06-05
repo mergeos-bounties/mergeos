@@ -926,7 +926,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 	if payload.ProtocolVersion != "mergeos.protocol.manifest.v1" || payload.Kind != "protocol_manifest" {
 		t.Fatalf("unexpected manifest header: %#v", payload)
 	}
-	if len(payload.Schemas) != 15 {
+	if len(payload.Schemas) != 16 {
 		t.Fatalf("manifest schemas = %d: %#v", len(payload.Schemas), payload.Schemas)
 	}
 	schemas := map[string]bool{}
@@ -935,7 +935,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 		schemas[schema.Version] = true
 		descriptions[schema.Version] = schema.Description
 	}
-	for _, required := range []string{"mergeos.task.v1", "mergeos.agent.v1", "mergeos.marketplace.v1", "mergeos.live-feed.v1", "mergeos.workflow.v1", "mergeos.ai-workflow.v1", "mergeos.event.v1", "mergeos.ledger.v1", "mergeos.escrow.v1", "mergeos.deployment.v1", "mergeos.pr-monitor.v1", "mergeos.scan.v1", "mergeos.customer-dashboard.v1", "mergeos.worker-dashboard.v1", "mergeos.admin-ops.v1"} {
+	for _, required := range []string{"mergeos.task.v1", "mergeos.agent.v1", "mergeos.marketplace.v1", "mergeos.live-feed.v1", "mergeos.workflow.v1", "mergeos.ai-workflow.v1", "mergeos.event.v1", "mergeos.ledger.v1", "mergeos.escrow.v1", "mergeos.payouts.v1", "mergeos.deployment.v1", "mergeos.pr-monitor.v1", "mergeos.scan.v1", "mergeos.customer-dashboard.v1", "mergeos.worker-dashboard.v1", "mergeos.admin-ops.v1"} {
 		if !schemas[required] {
 			t.Fatalf("manifest missing schema %s: %#v", required, payload.Schemas)
 		}
@@ -958,6 +958,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 		"GET /api/projects/{id}/protocol/workflow",
 		"GET /api/projects/{id}/protocol/scan",
 		"GET /api/projects/{id}/escrow",
+		"GET /api/projects/{id}/payouts",
 		"GET /api/projects/{id}/deployment",
 		"GET /api/projects/{id}/ai-workflow",
 		"GET /api/projects/{id}/pull-requests",
@@ -1958,6 +1959,132 @@ func TestProjectEscrowRouteReturnsReserveReleaseSummary(t *testing.T) {
 	}
 }
 
+func TestProjectPayoutsRouteReturnsSettlementContractAndSanitizesData(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:       defaultTokenSymbol,
+		StatePath:         filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:    1000,
+		DevPaymentEnabled: true,
+		DevPaymentCode:    defaultDevPaymentCode,
+		GitHubOwner:       defaultGitHubOwner,
+		BountyRoot:        filepath.Join(tempDir, "bounties"),
+		SMTPFrom:          "noreply@mergeos.local",
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	auth, err := store.Register(RegisterRequest{
+		Name:        "Payout Client",
+		CompanyName: "Payout Co",
+		Email:       "payout-client@example.com",
+		Password:    "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	project, err := store.CreateProject(context.Background(), auth.User.ID, CreateProjectRequest{
+		Title:            "Payout proof",
+		ClientName:       "Private Payout Client",
+		CompanyName:      "Payout Co",
+		ClientEmail:      "payout-client@example.com",
+		Phone:            "+1 555 0190",
+		Brief:            "Create payout settlement data without leaking payment references.",
+		BudgetCents:      190000,
+		PaymentMethod:    PaymentPayPal,
+		PaymentReference: defaultDevPaymentCode,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	task := project.Tasks[0]
+	acceptedReward := task.RewardCents
+	req, err := acceptRequestForPullAuthor(task, "payout-author")
+	if err != nil {
+		t.Fatal(err)
+	}
+	pullReference := buildPullLedgerReference(task.ID, "https://github.com/mergeos-bounties/mergeos/pull/190", "Payout proof")
+	if _, err := store.AcceptTaskWithReviewReference(task.ID, req, 0, "", pullReference); err != nil {
+		t.Fatal(err)
+	}
+
+	server := NewServer(cfg, store, payments)
+	reqHTTP := httptest.NewRequest(http.MethodGet, "/api/projects/"+project.ID+"/payouts", nil)
+	reqHTTP.Header.Set("Authorization", "Bearer "+auth.Token)
+	resp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(resp, reqHTTP)
+	if resp.Code != http.StatusOK {
+		t.Fatalf("payouts status = %d, body = %s", resp.Code, resp.Body.String())
+	}
+
+	body := resp.Body.String()
+	for _, value := range []string{
+		"payout-client@example.com",
+		"+1 555 0190",
+		auth.User.ID,
+		defaultDevPaymentCode,
+		tempDir,
+	} {
+		if strings.Contains(body, value) {
+			t.Fatalf("payouts response leaked private value %q: %s", value, body)
+		}
+	}
+
+	var payload ProjectPayoutsResponse
+	if err := json.Unmarshal(resp.Body.Bytes(), &payload); err != nil {
+		t.Fatal(err)
+	}
+	if payload.ProtocolVersion != "mergeos.payouts.v1" || payload.Kind != "payouts" {
+		t.Fatalf("unexpected payouts protocol header: %#v", payload)
+	}
+	if payload.ProjectID != project.ID || payload.ReleaseStatus != "releasing" || payload.ReleasedCents != acceptedReward || payload.ReleaseCount != 1 {
+		t.Fatalf("unexpected payouts summary: %#v", payload)
+	}
+	if payload.PaidTaskCount != 1 || payload.OpenTaskCount != len(project.Tasks)-1 || len(payload.Payouts) != len(project.Tasks) {
+		t.Fatalf("unexpected payout counts: %#v", payload)
+	}
+	var paidRow *ProjectPayoutRow
+	for index := range payload.Payouts {
+		if payload.Payouts[index].TaskID == task.ID {
+			paidRow = &payload.Payouts[index]
+			break
+		}
+	}
+	if paidRow == nil {
+		t.Fatalf("payouts response missing paid task row: %#v", payload.Payouts)
+	}
+	if paidRow.Type != "task_payment" || paidRow.ReleaseStatus != "released" || paidRow.PaidCents != acceptedReward || paidRow.RemainingCents != 0 {
+		t.Fatalf("unexpected paid payout row: %#v", paidRow)
+	}
+	if paidRow.WorkerID != "github:payout-author" || paidRow.PayoutAccount != "github:payout-author" {
+		t.Fatalf("unexpected payout worker/account: %#v", paidRow)
+	}
+	if paidRow.LedgerSequence <= 0 || paidRow.LedgerEntryCount != 1 || len(paidRow.EntryHash) != 64 || paidRow.ProofHash != paidRow.EntryHash || paidRow.ReleasedAt == nil {
+		t.Fatalf("payout row missing ledger proof: %#v", paidRow)
+	}
+	if paidRow.Reference != "pr:https://github.com/mergeos-bounties/mergeos/pull/190;title:Payout proof" || paidRow.URL != "https://github.com/mergeos-bounties/mergeos/pull/190" {
+		t.Fatalf("unexpected payout proof reference: %#v", paidRow)
+	}
+
+	otherAuth, err := store.Register(RegisterRequest{
+		Name:     "Other Payout Client",
+		Email:    "other-payout-client@example.com",
+		Password: "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	forbiddenReq := httptest.NewRequest(http.MethodGet, "/api/projects/"+project.ID+"/payouts", nil)
+	forbiddenReq.Header.Set("Authorization", "Bearer "+otherAuth.Token)
+	forbiddenResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(forbiddenResp, forbiddenReq)
+	if forbiddenResp.Code != http.StatusForbidden {
+		t.Fatalf("other client payouts status = %d", forbiddenResp.Code)
+	}
+}
+
 func TestProjectDashboardRouteAggregatesCustomerWorkflowAndSanitizesData(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := Config{
@@ -2033,6 +2160,9 @@ func TestProjectDashboardRouteAggregatesCustomerWorkflowAndSanitizesData(t *test
 	}
 	if payload.Project.TaskCount != len(project.Tasks) || payload.Escrow.ProjectID != project.ID || payload.TaskGraph.Stats.NodeCount != len(project.Tasks) {
 		t.Fatalf("dashboard missing task or escrow aggregates: %#v", payload)
+	}
+	if payload.Payouts.ProtocolVersion != "mergeos.payouts.v1" || payload.Payouts.Kind != "payouts" || payload.Payouts.ProjectID != project.ID {
+		t.Fatalf("unexpected dashboard payouts protocol header: %#v", payload.Payouts)
 	}
 	if payload.Deployment.ProjectID != project.ID || payload.AIWorkflow.ProjectID != project.ID || payload.RepositoryScan.ProjectID != project.ID {
 		t.Fatalf("dashboard missing workflow modules: %#v", payload)

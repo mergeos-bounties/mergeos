@@ -238,6 +238,10 @@ export class MergeOSClient {
     return this.request(`/api/projects/${encodeURIComponent(projectID)}/escrow`);
   }
 
+  projectPayouts(projectID) {
+    return this.request(`/api/projects/${encodeURIComponent(projectID)}/payouts`);
+  }
+
   projectDashboard(projectID) {
     return this.request(`/api/projects/${encodeURIComponent(projectID)}/dashboard`);
   }

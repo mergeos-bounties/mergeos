@@ -60,6 +60,12 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Description: "Authenticated project escrow document with reserve, release, payout, remaining balance, and per-task settlement state.",
 			},
 			{
+				Version:     "mergeos.payouts.v1",
+				Kind:        "payouts",
+				SchemaURL:   "https://mergeos.shop/protocol/payouts.v1.schema.json",
+				Description: "Authenticated payout settlement document with release status, paid/open task counts, ledger proof references, payout accounts, and per-task payment state.",
+			},
+			{
 				Version:     "mergeos.deployment.v1",
 				Kind:        "deployment",
 				SchemaURL:   "https://mergeos.shop/protocol/deployment.v1.schema.json",
@@ -81,7 +87,7 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Version:     "mergeos.customer-dashboard.v1",
 				Kind:        "customer_dashboard",
 				SchemaURL:   "https://mergeos.shop/protocol/customer-dashboard.v1.schema.json",
-				Description: "Authenticated customer delivery dashboard with project overview, escrow, deployment, AI workflow, task graph, repository scan, and PR monitor data.",
+				Description: "Authenticated customer delivery dashboard with project overview, escrow, payouts, deployment, AI workflow, task graph, repository scan, and PR monitor data.",
 			},
 			{
 				Version:     "mergeos.worker-dashboard.v1",
@@ -172,6 +178,13 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Protocol:    "mergeos.escrow.v1",
 				Auth:        "project",
 				Description: "Authenticated project escrow reserve, release, payout, and task settlement document.",
+			},
+			{
+				Method:      "GET",
+				Path:        "/api/projects/{id}/payouts",
+				Protocol:    "mergeos.payouts.v1",
+				Auth:        "project",
+				Description: "Authenticated project payout settlement document with release state, payout rows, ledger proof references, and payout accounts.",
 			},
 			{
 				Method:      "GET",

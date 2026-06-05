@@ -32,6 +32,8 @@ const mergeos = createMergeOSClient({
 
 const projects = await mergeos.listProjects();
 const escrow = await mergeos.projectEscrow(projects[0].id);
+const payouts = await mergeos.projectPayouts(projects[0].id);
+console.log(payouts.protocol_version, payouts.release_status);
 const pulls = await mergeos.projectPullRequests(projects[0].id);
 console.log(pulls.protocol_version, pulls.stats.ready_count);
 const deployment = await mergeos.projectDeployment(projects[0].id);
@@ -88,6 +90,7 @@ await mergeos.publicRevealTestSettingsEntry('tse_0001', 'shared-password');
 ```js
 await mergeos.createProject(projectPayload);
 await mergeos.projectEscrow('prj_0001');
+await mergeos.projectPayouts('prj_0001');
 await mergeos.projectDashboard('prj_0001');
 await mergeos.projectPullRequests('prj_0001');
 await mergeos.projectDeployment('prj_0001');

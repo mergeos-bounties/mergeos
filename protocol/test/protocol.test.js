@@ -23,6 +23,7 @@ test('loads stable task, workflow, ledger, and event schemas', () => {
     'mergeos.ledger.v1',
     'mergeos.live-feed.v1',
     'mergeos.marketplace.v1',
+    'mergeos.payouts.v1',
     'mergeos.pr-monitor.v1',
     'mergeos.scan.v1',
     'mergeos.task.v1',
@@ -284,6 +285,81 @@ test('validates escrow protocol documents', () => {
   assert(invalid.errors.some((error) => error.path === 'release_status'));
   assert(invalid.errors.some((error) => error.path === 'tasks[0].release_status'));
   assert(invalid.errors.some((error) => error.path === 'tasks[0].paid_cents'));
+});
+
+test('validates payout settlement protocol documents', () => {
+  const now = '2026-06-05T00:00:00.000Z';
+  const payouts = {
+    protocol_version: 'mergeos.payouts.v1',
+    kind: 'payouts',
+    project_id: 'prj_0001',
+    project_title: 'Customer portal rebuild',
+    token_symbol: 'MRG',
+    release_status: 'releasing',
+    work_pool_cents: 225000,
+    released_cents: 5000,
+    remaining_cents: 220000,
+    overdrawn_cents: 0,
+    task_count: 2,
+    paid_task_count: 1,
+    open_task_count: 1,
+    release_count: 1,
+    updated_at: now,
+    payouts: [
+      {
+        task_id: 'tsk_0001',
+        issue_number: 12,
+        title: 'Fix checkout UI',
+        type: 'task_payment',
+        status: 'accepted',
+        release_status: 'released',
+        worker_id: 'github:maya-dev',
+        payout_account: 'So1anaWorkerWallet1111111111111111111111111',
+        reward_cents: 5000,
+        paid_cents: 5000,
+        remaining_cents: 0,
+        overpaid_cents: 0,
+        ledger_sequence: 7,
+        ledger_entry_count: 1,
+        entry_hash: 'c'.repeat(64),
+        proof_hash: 'c'.repeat(64),
+        reference: 'pr:https://github.com/mergeos-bounties/mergeos/pull/190;title:Payout proof',
+        url: 'https://github.com/mergeos-bounties/mergeos/pull/190',
+        released_at: now,
+        updated_at: now,
+      },
+      {
+        task_id: 'tsk_0002',
+        issue_number: 13,
+        title: 'Validate deployment preview',
+        type: 'reserved',
+        status: 'open',
+        release_status: 'reserved',
+        reward_cents: 10000,
+        paid_cents: 0,
+        remaining_cents: 10000,
+        overpaid_cents: 0,
+        ledger_entry_count: 0,
+        reference: 'https://github.com/mergeos-bounties/mergeos/issues/13',
+        updated_at: now,
+      },
+    ],
+  };
+
+  assert.equal(validateProtocolDocument(payouts).valid, true);
+
+  const invalid = validateProtocolDocument({
+    ...payouts,
+    kind: 'payments',
+    release_status: 'waiting',
+    payouts: [{ ...payouts.payouts[0], type: 'wire', paid_cents: -1, released_at: 'not-a-date' }],
+  });
+  assert.equal(invalid.valid, false);
+  assert(invalid.errors.some((error) => error.path === 'kind'));
+  assert(invalid.errors.some((error) => error.path === 'release_status'));
+  assert(invalid.errors.some((error) => error.path === 'payouts[0].type'));
+  assert(invalid.errors.some((error) => error.path === 'payouts[0].paid_cents'));
+  assert(invalid.errors.some((error) => error.path === 'payouts[0].released_at'));
 });
 
 test('validates deployment protocol documents', () => {
@@ -691,6 +767,46 @@ test('validates customer dashboard protocol documents', () => {
           remaining_cents: 0,
           overpaid_cents: 0,
           worker_id: 'github:worker-dev',
+          updated_at: now,
+        },
+      ],
+    },
+    payouts: {
+      protocol_version: 'mergeos.payouts.v1',
+      kind: 'payouts',
+      project_id: 'prj_0001',
+      project_title: 'Dashboard aggregate proof',
+      token_symbol: 'MRG',
+      release_status: 'releasing',
+      work_pool_cents: 189000,
+      released_cents: 5000,
+      remaining_cents: 184000,
+      overdrawn_cents: 0,
+      task_count: 3,
+      paid_task_count: 1,
+      open_task_count: 2,
+      release_count: 1,
+      updated_at: now,
+      payouts: [
+        {
+          task_id: 'tsk_0001',
+          issue_number: 1,
+          title: 'Wire dashboard data',
+          type: 'task_payment',
+          status: 'accepted',
+          release_status: 'released',
+          worker_id: 'github:worker-dev',
+          payout_account: 'github:worker-dev',
+          reward_cents: 5000,
+          paid_cents: 5000,
+          remaining_cents: 0,
+          overpaid_cents: 0,
+          ledger_sequence: 7,
+          ledger_entry_count: 1,
+          entry_hash: 'd'.repeat(64),
+          proof_hash: 'd'.repeat(64),
+          reference: 'project:prj_0001;task:tsk_0001',
+          released_at: now,
           updated_at: now,
         },
       ],

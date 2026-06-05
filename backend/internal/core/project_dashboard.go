@@ -16,6 +16,7 @@ func (s *Store) ProjectDashboard(projectID string) (ProjectDashboardResponse, er
 	}
 
 	escrow := s.projectEscrowLocked(project)
+	payouts := s.projectPayoutsLocked(project)
 	deployment := s.projectDeploymentLocked(project)
 	aiWorkflow := s.projectAIWorkflowLocked(project)
 	taskGraph := s.projectTaskGraphLocked(project)
@@ -23,6 +24,7 @@ func (s *Store) ProjectDashboard(projectID string) (ProjectDashboardResponse, er
 	updatedAt := latestTime(
 		project.CreatedAt,
 		escrow.UpdatedAt,
+		payouts.UpdatedAt,
 		deployment.UpdatedAt,
 		aiWorkflow.UpdatedAt,
 		taskGraph.UpdatedAt,
@@ -34,6 +36,7 @@ func (s *Store) ProjectDashboard(projectID string) (ProjectDashboardResponse, er
 		Kind:            "customer_dashboard",
 		Project:         projectDashboardOverview(project, updatedAt),
 		Escrow:          escrow,
+		Payouts:         payouts,
 		Deployment:      deployment,
 		AIWorkflow:      aiWorkflow,
 		TaskGraph:       taskGraph,

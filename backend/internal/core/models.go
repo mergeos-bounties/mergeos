@@ -888,6 +888,48 @@ type ProjectEscrowTask struct {
 	UpdatedAt      time.Time `json:"updated_at"`
 }
 
+type ProjectPayoutsResponse struct {
+	ProtocolVersion string             `json:"protocol_version"`
+	Kind            string             `json:"kind"`
+	ProjectID       string             `json:"project_id"`
+	ProjectTitle    string             `json:"project_title"`
+	TokenSymbol     string             `json:"token_symbol"`
+	ReleaseStatus   string             `json:"release_status"`
+	WorkPoolCents   int64              `json:"work_pool_cents"`
+	ReleasedCents   int64              `json:"released_cents"`
+	RemainingCents  int64              `json:"remaining_cents"`
+	OverdrawnCents  int64              `json:"overdrawn_cents"`
+	TaskCount       int                `json:"task_count"`
+	PaidTaskCount   int                `json:"paid_task_count"`
+	OpenTaskCount   int                `json:"open_task_count"`
+	ReleaseCount    int                `json:"release_count"`
+	UpdatedAt       time.Time          `json:"updated_at"`
+	Payouts         []ProjectPayoutRow `json:"payouts"`
+}
+
+type ProjectPayoutRow struct {
+	TaskID           string     `json:"task_id"`
+	IssueNumber      int        `json:"issue_number"`
+	Title            string     `json:"title"`
+	Type             string     `json:"type"`
+	Status           string     `json:"status"`
+	ReleaseStatus    string     `json:"release_status"`
+	WorkerID         string     `json:"worker_id,omitempty"`
+	PayoutAccount    string     `json:"payout_account,omitempty"`
+	RewardCents      int64      `json:"reward_cents"`
+	PaidCents        int64      `json:"paid_cents"`
+	RemainingCents   int64      `json:"remaining_cents"`
+	OverpaidCents    int64      `json:"overpaid_cents"`
+	LedgerSequence   int        `json:"ledger_sequence,omitempty"`
+	LedgerEntryCount int        `json:"ledger_entry_count"`
+	EntryHash        string     `json:"entry_hash,omitempty"`
+	ProofHash        string     `json:"proof_hash,omitempty"`
+	Reference        string     `json:"reference,omitempty"`
+	URL              string     `json:"url,omitempty"`
+	ReleasedAt       *time.Time `json:"released_at,omitempty"`
+	UpdatedAt        time.Time  `json:"updated_at"`
+}
+
 type DeploymentStage struct {
 	ID                    string    `json:"id"`
 	Title                 string    `json:"title"`
@@ -916,6 +958,7 @@ type ProjectDashboardResponse struct {
 	Kind             string                        `json:"kind"`
 	Project          ProjectDashboardOverview      `json:"project"`
 	Escrow           ProjectEscrowResponse         `json:"escrow"`
+	Payouts          ProjectPayoutsResponse        `json:"payouts"`
 	Deployment       ProjectDeploymentResponse     `json:"deployment"`
 	AIWorkflow       ProjectAIWorkflowResponse     `json:"ai_workflow"`
 	TaskGraph        ProjectTaskGraphResponse      `json:"task_graph"`

@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mergeos.shop/protocol/payouts.v1.schema.json",
+  "title": "MergeOS Payouts v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["protocol_version", "kind", "project_id", "project_title", "token_symbol", "release_status", "work_pool_cents", "released_cents", "remaining_cents", "overdrawn_cents", "task_count", "paid_task_count", "open_task_count", "release_count", "updated_at", "payouts"],
+  "properties": {
+    "protocol_version": { "const": "mergeos.payouts.v1" },
+    "kind": { "const": "payouts" },
+    "project_id": { "type": "string", "minLength": 1, "maxLength": 96 },
+    "project_title": { "type": "string", "maxLength": 240 },
+    "token_symbol": { "type": "string", "minLength": 1, "maxLength": 16 },
+    "release_status": { "enum": ["funded", "releasing", "released", "overdrawn"] },
+    "work_pool_cents": { "type": "integer", "minimum": 0 },
+    "released_cents": { "type": "integer", "minimum": 0 },
+    "remaining_cents": { "type": "integer", "minimum": 0 },
+    "overdrawn_cents": { "type": "integer", "minimum": 0 },
+    "task_count": { "type": "integer", "minimum": 0 },
+    "paid_task_count": { "type": "integer", "minimum": 0 },
+    "open_task_count": { "type": "integer", "minimum": 0 },
+    "release_count": { "type": "integer", "minimum": 0 },
+    "updated_at": { "type": "string", "format": "date-time" },
+    "payouts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["task_id", "issue_number", "title", "type", "status", "release_status", "reward_cents", "paid_cents", "remaining_cents", "overpaid_cents", "ledger_entry_count", "updated_at"],
+        "properties": {
+          "task_id": { "type": "string", "minLength": 1, "maxLength": 96 },
+          "issue_number": { "type": "integer", "minimum": 0 },
+          "title": { "type": "string", "minLength": 1, "maxLength": 240 },
+          "type": { "enum": ["reserved", "task_payment", "manual_credit"] },
+          "status": { "enum": ["open", "accepted"] },
+          "release_status": { "enum": ["reserved", "partial", "released", "overpaid"] },
+          "worker_id": { "type": "string", "maxLength": 160 },
+          "payout_account": { "type": "string", "maxLength": 200 },
+          "reward_cents": { "type": "integer", "minimum": 0 },
+          "paid_cents": { "type": "integer", "minimum": 0 },
+          "remaining_cents": { "type": "integer", "minimum": 0 },
+          "overpaid_cents": { "type": "integer", "minimum": 0 },
+          "ledger_sequence": { "type": "integer", "minimum": 0 },
+          "ledger_entry_count": { "type": "integer", "minimum": 0 },
+          "entry_hash": { "type": "string", "maxLength": 128 },
+          "proof_hash": { "type": "string", "maxLength": 128 },
+          "reference": { "type": "string", "maxLength": 512 },
+          "url": { "type": "string", "maxLength": 512 },
+          "released_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      }
+    }
+  }
+}

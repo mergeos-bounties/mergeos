@@ -4,7 +4,7 @@
   "title": "MergeOS Customer Dashboard v1",
   "type": "object",
   "additionalProperties": false,
-  "required": ["protocol_version", "kind", "project", "escrow", "deployment", "ai_workflow", "task_graph", "repository_scan", "pull_requests", "updated_at"],
+  "required": ["protocol_version", "kind", "project", "escrow", "payouts", "deployment", "ai_workflow", "task_graph", "repository_scan", "pull_requests", "updated_at"],
   "properties": {
     "protocol_version": { "const": "mergeos.customer-dashboard.v1" },
     "kind": { "const": "customer_dashboard" },
@@ -76,6 +76,56 @@
               "worker_id": { "type": "string", "maxLength": 160 },
               "proof_hash": { "type": "string", "maxLength": 128 },
               "issue_url": { "type": "string", "maxLength": 512 },
+              "updated_at": { "type": "string", "format": "date-time" }
+            }
+          }
+        }
+      }
+    },
+    "payouts": {
+      "type": "object",
+      "required": ["protocol_version", "kind", "project_id", "project_title", "token_symbol", "release_status", "work_pool_cents", "released_cents", "remaining_cents", "overdrawn_cents", "task_count", "paid_task_count", "open_task_count", "release_count", "updated_at", "payouts"],
+      "properties": {
+        "protocol_version": { "const": "mergeos.payouts.v1" },
+        "kind": { "const": "payouts" },
+        "project_id": { "type": "string", "minLength": 1, "maxLength": 96 },
+        "project_title": { "type": "string", "maxLength": 240 },
+        "token_symbol": { "type": "string", "minLength": 1, "maxLength": 16 },
+        "release_status": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "work_pool_cents": { "type": "integer", "minimum": 0 },
+        "released_cents": { "type": "integer", "minimum": 0 },
+        "remaining_cents": { "type": "integer", "minimum": 0 },
+        "overdrawn_cents": { "type": "integer", "minimum": 0 },
+        "task_count": { "type": "integer", "minimum": 0 },
+        "paid_task_count": { "type": "integer", "minimum": 0 },
+        "open_task_count": { "type": "integer", "minimum": 0 },
+        "release_count": { "type": "integer", "minimum": 0 },
+        "updated_at": { "type": "string", "format": "date-time" },
+        "payouts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["task_id", "issue_number", "title", "type", "status", "release_status", "reward_cents", "paid_cents", "remaining_cents", "overpaid_cents", "ledger_entry_count", "updated_at"],
+            "properties": {
+              "task_id": { "type": "string", "minLength": 1, "maxLength": 96 },
+              "issue_number": { "type": "integer", "minimum": 0 },
+              "title": { "type": "string", "minLength": 1, "maxLength": 240 },
+              "type": { "type": "string", "minLength": 1, "maxLength": 80 },
+              "status": { "type": "string", "minLength": 1, "maxLength": 80 },
+              "release_status": { "type": "string", "minLength": 1, "maxLength": 80 },
+              "worker_id": { "type": "string", "maxLength": 160 },
+              "payout_account": { "type": "string", "maxLength": 200 },
+              "reward_cents": { "type": "integer", "minimum": 0 },
+              "paid_cents": { "type": "integer", "minimum": 0 },
+              "remaining_cents": { "type": "integer", "minimum": 0 },
+              "overpaid_cents": { "type": "integer", "minimum": 0 },
+              "ledger_sequence": { "type": "integer", "minimum": 0 },
+              "ledger_entry_count": { "type": "integer", "minimum": 0 },
+              "entry_hash": { "type": "string", "maxLength": 128 },
+              "proof_hash": { "type": "string", "maxLength": 128 },
+              "reference": { "type": "string", "maxLength": 512 },
+              "url": { "type": "string", "maxLength": 512 },
+              "released_at": { "type": "string", "format": "date-time" },
               "updated_at": { "type": "string", "format": "date-time" }
             }
           }

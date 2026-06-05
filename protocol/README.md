@@ -15,10 +15,11 @@ The live app exposes protocol discovery at `GET /api/public/protocol`, and serve
 - `mergeos.event.v1`: a realtime ledger/workflow event emitted by apps, agents, or integrations, including typed agent review/test/generate/deploy/scan events.
 - `mergeos.ledger.v1`: a public ledger proof document with sanitized ledger rows and hash-chain verification metadata.
 - `mergeos.escrow.v1`: an authenticated project escrow document with reserves, releases, balances, and per-task settlement state.
+- `mergeos.payouts.v1`: an authenticated payout settlement document with release status, payout accounts, ledger proof references, and per-task payment state.
 - `mergeos.deployment.v1`: an authenticated deployment validation document with rollout stages, release gate progress, and ledger/AI evidence signals.
 - `mergeos.pr-monitor.v1`: an authenticated live pull request monitor with task linkage, readiness gates, merge risk, labels, authors, and GitHub sync health.
 - `mergeos.scan.v1`: a repository scan document with dependency manifests, language counts, and security/debt findings.
-- `mergeos.customer-dashboard.v1`: an authenticated customer delivery dashboard with project overview, escrow, deployment, AI workflow, task graph, repository scan, and PR monitor modules.
+- `mergeos.customer-dashboard.v1`: an authenticated customer delivery dashboard with project overview, escrow, payouts, deployment, AI workflow, task graph, repository scan, and PR monitor modules.
 - `mergeos.worker-dashboard.v1`: an authenticated worker dashboard document with claimed tasks, payout references, reputation audit, proposal matches, and identity status.
 - `mergeos.admin-ops.v1`: an authenticated admin operations queue for treasury review, disputes, moderation, payout audits, security checks, and fraud signals.
 
