@@ -4,16 +4,25 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: Optional release tag to create or update with the Windows exe.
+        description: Optional release tag to create or update with the Windows exe. Defaults to mergeide-windows-latest.
         required: false
         type: string
   push:
+    branches:
+      - master
     tags:
       - "v*"
       - "mergeide-v*"
+    paths:
+      - "MergeIDE/**"
+      - ".github/workflows/mergeide-windows-exe.yml"
 
 permissions:
   contents: write
+
+env:
+  MERGEIDE_EXE_NAME: MergeIDE-Windows-x64.exe
+  MERGEIDE_DEFAULT_RELEASE_TAG: mergeide-windows-latest
 
 concurrency:
   group: mergeide-windows-exe-${{ github.ref }}
@@ -62,7 +71,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: MergeIDE-Windows-x64
-          path: MergeIDE/dist/MergeIDE-Windows-x64.exe
+          path: MergeIDE/dist/${{ env.MERGEIDE_EXE_NAME }}
           if-no-files-found: error
 
       - name: Upload executable to release
@@ -76,13 +85,29 @@ jobs:
             $tag = "${{ github.ref_name }}"
           }
           if (-not $tag) {
-            Write-Host "No release tag supplied; workflow artifact uploaded only."
-            exit 0
+            $tag = $env:MERGEIDE_DEFAULT_RELEASE_TAG
+          }
+
+          $isDefaultRelease = $tag -eq $env:MERGEIDE_DEFAULT_RELEASE_TAG
+          $releaseTitle = if ($isDefaultRelease) { "MergeIDE Windows latest" } else { "MergeIDE $tag" }
+          $releaseNotes = if ($isDefaultRelease) {
+            "Latest MergeIDE Windows executable built by GitHub Actions."
+          } else {
+            "MergeIDE Windows executable build for $tag."
           }
 
           gh release view $tag 2>$null
           if ($LASTEXITCODE -ne 0) {
-            gh release create $tag --title "MergeIDE $tag" --notes "MergeIDE Windows executable build."
+            gh release create $tag `
+              --target $env:GITHUB_SHA `
+              --title $releaseTitle `
+              --notes $releaseNotes `
+              --latest
+          } else {
+            gh release edit $tag `
+              --title $releaseTitle `
+              --notes $releaseNotes `
+              --latest
           }
 
-          gh release upload $tag MergeIDE/dist/MergeIDE-Windows-x64.exe --clobber
+          gh release upload $tag "MergeIDE/dist/$env:MERGEIDE_EXE_NAME" --clobber

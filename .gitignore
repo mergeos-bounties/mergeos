@@ -6,6 +6,8 @@ admin/node_modules/
 admin/dist/
 scan/node_modules/
 scan/dist/
+MergeIDE/node_modules/
+MergeIDE/dist/
 MergeIDE/.mergeide/
 MergeIDE/task-artifacts/
 *.log
