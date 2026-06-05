@@ -41,6 +41,17 @@ func (s *Store) ProjectDeployment(projectID string) (ProjectDeploymentResponse, 
 	return s.projectDeploymentLocked(project), nil
 }
 
+func (s *Store) PublicProjectDeployment(projectID string) (ProjectDeploymentResponse, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	project, ok := s.projects[strings.TrimSpace(projectID)]
+	if !ok {
+		return ProjectDeploymentResponse{}, errors.New("project not found")
+	}
+	return s.projectDeploymentLocked(project), nil
+}
+
 func (s *Store) projectDeploymentLocked(project *Project) ProjectDeploymentResponse {
 	tasks := s.projectDeploymentTasksLocked(project)
 	stages := []DeploymentStage{

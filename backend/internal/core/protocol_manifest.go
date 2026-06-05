@@ -194,6 +194,13 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Description: "Public live-feed events as protocol documents.",
 			},
 			{
+				Method:      "GET",
+				Path:        "/api/public/projects/{id}/deployment",
+				Protocol:    "mergeos.deployment.v1",
+				Auth:        "none",
+				Description: "Public sanitized deployment readiness document for marketplace projects, release gates, agent signals, and deployment validation progress.",
+			},
+			{
 				Method:      "POST",
 				Path:        "/api/public/repo/issues",
 				Protocol:    "mergeos.repo-import.v1",

@@ -134,6 +134,10 @@ export class MergeOSClient {
     return this.request(`/api/public/protocol/events${limit}`, { auth: false });
   }
 
+  publicProjectDeployment(projectID) {
+    return this.request(`/api/public/projects/${encodeURIComponent(projectID)}/deployment`, { auth: false });
+  }
+
   importRepoIssues(payload) {
     return this.request('/api/public/repo/issues', { method: 'POST', body: payload, auth: false });
   }

@@ -1032,6 +1032,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 		"GET /api/public/protocol/agents",
 		"GET /api/public/protocol/ledger",
 		"GET /api/public/protocol/events",
+		"GET /api/public/projects/{id}/deployment",
 		"POST /api/public/repo/issues",
 		"WS /api/ws",
 		"GET /api/projects/{id}/protocol/workflow",
@@ -1923,6 +1924,98 @@ func TestProjectDeploymentUsesDeploymentAgentAction(t *testing.T) {
 	}
 	if !foundDeployStage || !foundDeploySignal {
 		t.Fatalf("deployment response missing deploy agent evidence: stage=%t signal=%t payload=%#v", foundDeployStage, foundDeploySignal, payload)
+	}
+}
+
+func TestPublicProjectDeploymentRouteReturnsSanitizedReadiness(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:       defaultTokenSymbol,
+		StatePath:         filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:    1000,
+		DevPaymentEnabled: true,
+		DevPaymentCode:    defaultDevPaymentCode,
+		GitHubOwner:       defaultGitHubOwner,
+		BountyRoot:        filepath.Join(tempDir, "bounties"),
+		SMTPFrom:          "noreply@mergeos.local",
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	auth, err := store.Register(RegisterRequest{
+		Name:        "Public Deploy Client",
+		CompanyName: "Public Deploy Co",
+		Email:       "public-deploy@example.com",
+		Password:    "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	project, err := store.CreateProject(context.Background(), auth.User.ID, CreateProjectRequest{
+		Title:            "Public deployment readiness",
+		ClientName:       "Private Public Deploy Client",
+		CompanyName:      "Public Deploy Co",
+		ClientEmail:      "public-deploy@example.com",
+		Phone:            "+1 555 0166",
+		Brief:            "Expose public release readiness without leaking private customer data.",
+		BudgetCents:      210000,
+		PaymentMethod:    PaymentPayPal,
+		PaymentReference: defaultDevPaymentCode,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.RecordProjectAgentAction(project.ID, AgentActionRequest{
+		Action:         "deploy",
+		AgentType:      "deployment-agent",
+		Status:         "processed",
+		ReferenceURL:   "https://vercel.example/deployments/public-readiness",
+		DurationMillis: 24000,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	server := NewServer(cfg, store, payments)
+	reqHTTP := httptest.NewRequest(http.MethodGet, "/api/public/projects/"+project.ID+"/deployment", nil)
+	resp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(resp, reqHTTP)
+	if resp.Code != http.StatusOK {
+		t.Fatalf("public deployment status = %d, body = %s", resp.Code, resp.Body.String())
+	}
+	body := resp.Body.String()
+	for _, value := range []string{
+		"public-deploy@example.com",
+		"+1 555 0166",
+		auth.User.ID,
+		defaultDevPaymentCode,
+		tempDir,
+	} {
+		if strings.Contains(body, value) {
+			t.Fatalf("public deployment response leaked private value %q: %s", value, body)
+		}
+	}
+
+	var payload ProjectDeploymentResponse
+	if err := json.Unmarshal(resp.Body.Bytes(), &payload); err != nil {
+		t.Fatal(err)
+	}
+	if payload.ProtocolVersion != "mergeos.deployment.v1" || payload.Kind != "deployment" {
+		t.Fatalf("unexpected public deployment protocol header: %#v", payload)
+	}
+	if payload.ProjectID != project.ID || payload.Progress == 0 {
+		t.Fatalf("unexpected public deployment summary: %#v", payload)
+	}
+	foundDeploySignal := false
+	for _, signal := range payload.Signals {
+		if signal.Type == "agent_action" && signal.URL == "https://vercel.example/deployments/public-readiness" {
+			foundDeploySignal = true
+			break
+		}
+	}
+	if !foundDeploySignal {
+		t.Fatalf("public deployment response missing deploy agent signal: %#v", payload.Signals)
 	}
 }
 

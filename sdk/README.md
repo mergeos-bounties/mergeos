@@ -89,6 +89,7 @@ await mergeos.publicProtocolTasks({ limit: 80 });
 await mergeos.publicProtocolAgents({ limit: 80 });
 await mergeos.publicProtocolLedger();
 await mergeos.publicProtocolEvents({ limit: 80 });
+await mergeos.publicProjectDeployment('prj_public_0001');
 const repoImport = await mergeos.importRepoIssues({ repo_url: 'https://github.com/acme/repo' });
 console.log(repoImport.protocol_version, repoImport.issue_count);
 await mergeos.publicTestSettingsStatus();

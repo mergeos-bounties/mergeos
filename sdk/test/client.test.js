@@ -48,6 +48,7 @@ test('creates public feed and ledger verification requests without auth', async 
     { status: 200, body: { agents: [] } },
     { status: 200, body: { protocol_version: 'mergeos.ledger.v1', entries: [] } },
     { status: 200, body: { events: [] } },
+    { status: 200, body: { protocol_version: 'mergeos.deployment.v1', status: 'validating' } },
     { status: 200, body: { valid: true } },
   ]);
   const client = new MergeOSClient({
@@ -62,6 +63,7 @@ test('creates public feed and ledger verification requests without auth', async 
   const agents = await client.publicProtocolAgents({ limit: 80 });
   const ledger = await client.publicProtocolLedger();
   const events = await client.publicProtocolEvents({ limit: 80 });
+  const deployment = await client.publicProjectDeployment('prj_public');
   const verification = await client.publicLedgerVerification();
 
   assert.deepEqual(payload, { items: [] });
@@ -70,6 +72,7 @@ test('creates public feed and ledger verification requests without auth', async 
   assert.deepEqual(agents, { agents: [] });
   assert.equal(ledger.protocol_version, 'mergeos.ledger.v1');
   assert.deepEqual(events, { events: [] });
+  assert.equal(deployment.protocol_version, 'mergeos.deployment.v1');
   assert.deepEqual(verification, { valid: true });
   assert.equal(fetchImpl.calls[0].url, 'https://mergeos.shop/api/public/live-feed?limit=80');
   assert.equal(fetchImpl.calls[0].options.headers.Authorization, undefined);
@@ -83,8 +86,10 @@ test('creates public feed and ledger verification requests without auth', async 
   assert.equal(fetchImpl.calls[4].options.headers.Authorization, undefined);
   assert.equal(fetchImpl.calls[5].url, 'https://mergeos.shop/api/public/protocol/events?limit=80');
   assert.equal(fetchImpl.calls[5].options.headers.Authorization, undefined);
-  assert.equal(fetchImpl.calls[6].url, 'https://mergeos.shop/api/public/ledger/verify');
+  assert.equal(fetchImpl.calls[6].url, 'https://mergeos.shop/api/public/projects/prj_public/deployment');
   assert.equal(fetchImpl.calls[6].options.headers.Authorization, undefined);
+  assert.equal(fetchImpl.calls[7].url, 'https://mergeos.shop/api/public/ledger/verify');
+  assert.equal(fetchImpl.calls[7].options.headers.Authorization, undefined);
 });
 
 test('derives Solana ledger references and legacy wallet hashes for operators', () => {
