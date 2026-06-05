@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mergeos.shop/protocol/ai-workflow.v1.schema.json",
+  "title": "MergeOS AI Workflow v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["protocol_version", "kind", "project_id", "project_title", "status", "progress", "task_count", "agent_task_count", "human_task_count", "hybrid_task_count", "ai_action_count", "updated_at", "stages", "signals"],
+  "properties": {
+    "protocol_version": { "const": "mergeos.ai-workflow.v1" },
+    "kind": { "const": "ai_workflow" },
+    "project_id": { "type": "string", "minLength": 1, "maxLength": 96 },
+    "project_title": { "type": "string", "maxLength": 240 },
+    "status": { "enum": ["queued", "orchestrating", "ready"] },
+    "progress": { "type": "integer", "minimum": 0, "maximum": 100 },
+    "current_step": {
+      "enum": [
+        "repo_import",
+        "issue_scan",
+        "task_generation",
+        "reward_estimation",
+        "contributor_routing",
+        "pr_review",
+        "deployment_validation"
+      ]
+    },
+    "task_count": { "type": "integer", "minimum": 0 },
+    "agent_task_count": { "type": "integer", "minimum": 0 },
+    "human_task_count": { "type": "integer", "minimum": 0 },
+    "hybrid_task_count": { "type": "integer", "minimum": 0 },
+    "ai_action_count": { "type": "integer", "minimum": 0 },
+    "updated_at": { "type": "string", "format": "date-time" },
+    "stages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "title", "body", "status", "tone", "updated_at"],
+        "properties": {
+          "id": {
+            "enum": [
+              "repo_import",
+              "issue_scan",
+              "task_generation",
+              "reward_estimation",
+              "contributor_routing",
+              "pr_review",
+              "deployment_validation"
+            ]
+          },
+          "title": { "type": "string", "minLength": 1, "maxLength": 160 },
+          "body": { "type": "string", "maxLength": 1000 },
+          "status": { "enum": ["pending", "in_progress", "complete"] },
+          "tone": { "enum": ["amber", "blue", "green"] },
+          "reference": { "type": "string", "maxLength": 512 },
+          "url": { "type": "string", "maxLength": 512 },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+    "signals": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "type", "title", "body", "status", "created_at"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1, "maxLength": 160 },
+          "type": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "title": { "type": "string", "minLength": 1, "maxLength": 160 },
+          "body": { "type": "string", "maxLength": 1000 },
+          "status": { "type": "string", "minLength": 1, "maxLength": 80 },
+          "reference": { "type": "string", "maxLength": 512 },
+          "url": { "type": "string", "maxLength": 512 },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      }
+    }
+  }
+}

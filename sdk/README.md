@@ -37,6 +37,7 @@ console.log(pulls.protocol_version, pulls.stats.ready_count);
 const deployment = await mergeos.projectDeployment(projects[0].id);
 console.log(deployment.protocol_version, deployment.progress);
 const workflow = await mergeos.projectAIWorkflow(projects[0].id);
+console.log(workflow.protocol_version, workflow.current_step);
 const agentAction = await mergeos.createProjectAgentAction(projects[0].id, {
   action: 'test',
   agent_type: 'qa-agent',
@@ -90,6 +91,7 @@ await mergeos.projectEscrow('prj_0001');
 await mergeos.projectDashboard('prj_0001');
 await mergeos.projectPullRequests('prj_0001');
 await mergeos.projectDeployment('prj_0001');
+await mergeos.projectAIWorkflow('prj_0001');
 await mergeos.createProjectAgentAction('prj_0001', {
   action: 'review',
   agent_type: 'review-agent',

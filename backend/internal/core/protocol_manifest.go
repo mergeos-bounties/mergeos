@@ -36,6 +36,12 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Description: "Project workflow graph with progress, current AI workflow step, task nodes, dependency edges, readiness, and release status.",
 			},
 			{
+				Version:     "mergeos.ai-workflow.v1",
+				Kind:        "ai_workflow",
+				SchemaURL:   "https://mergeos.shop/protocol/ai-workflow.v1.schema.json",
+				Description: "Authenticated AI orchestration workflow with repository import, issue scan, task generation, reward estimation, contributor routing, PR review, and deployment validation stages.",
+			},
+			{
 				Version:     "mergeos.event.v1",
 				Kind:        "event",
 				SchemaURL:   "https://mergeos.shop/protocol/event.v1.schema.json",
@@ -173,6 +179,13 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Protocol:    "mergeos.deployment.v1",
 				Auth:        "project",
 				Description: "Authenticated deployment validation state with rollout stages, release gates, and evidence signals.",
+			},
+			{
+				Method:      "GET",
+				Path:        "/api/projects/{id}/ai-workflow",
+				Protocol:    "mergeos.ai-workflow.v1",
+				Auth:        "project",
+				Description: "Authenticated AI orchestration timeline for repository import, issue scan, task generation, routing, PR review, and deployment validation.",
 			},
 			{
 				Method:      "GET",

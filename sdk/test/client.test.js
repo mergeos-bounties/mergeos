@@ -389,7 +389,7 @@ test('exposes project workflow and admin ops routes', async () => {
     { status: 200, body: { project: { project_id: 'prj_1' }, task_graph: { stats: { node_count: 2 } } } },
     { status: 200, body: { protocol_version: 'mergeos.pr-monitor.v1', stats: { pull_request_count: 2 }, tasks: [] } },
     { status: 200, body: { protocol_version: 'mergeos.deployment.v1', status: 'validating' } },
-    { status: 200, body: { status: 'orchestrating' } },
+    { status: 200, body: { protocol_version: 'mergeos.ai-workflow.v1', status: 'orchestrating' } },
     { status: 201, body: { log: { event_name: 'agent_action', action: 'test' } } },
     { status: 200, body: { stats: { node_count: 2 }, nodes: [], edges: [] } },
     { status: 200, body: { protocol_version: 'mergeos.workflow.v1', progress: 25, current_step: 'contributor_routing', nodes: [], edges: [] } },
@@ -405,7 +405,7 @@ test('exposes project workflow and admin ops routes', async () => {
   const dashboard = await client.projectDashboard('prj_1');
   const pulls = await client.projectPullRequests('prj_1');
   const deployment = await client.projectDeployment('prj_1');
-  await client.projectAIWorkflow('prj_1');
+  const aiWorkflow = await client.projectAIWorkflow('prj_1');
   const agentAction = await client.createProjectAgentAction('prj_1', { action: 'test', agent_type: 'qa-agent' });
   const graph = await client.projectTaskGraph('prj_1');
   const workflowProtocol = await client.projectWorkflowProtocol('prj_1');
@@ -420,6 +420,7 @@ test('exposes project workflow and admin ops routes', async () => {
   assert.equal(pulls.protocol_version, 'mergeos.pr-monitor.v1');
   assert.equal(pulls.stats.pull_request_count, 2);
   assert.equal(deployment.protocol_version, 'mergeos.deployment.v1');
+  assert.equal(aiWorkflow.protocol_version, 'mergeos.ai-workflow.v1');
   assert.equal(agentAction.log.action, 'test');
   assert.equal(graph.stats.node_count, 2);
   assert.equal(workflowProtocol.protocol_version, 'mergeos.workflow.v1');

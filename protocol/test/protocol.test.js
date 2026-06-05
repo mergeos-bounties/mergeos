@@ -15,6 +15,7 @@ test('loads stable task, workflow, ledger, and event schemas', () => {
   assert.deepEqual(Object.keys(protocolSchemas).sort(), [
     'mergeos.admin-ops.v1',
     'mergeos.agent.v1',
+    'mergeos.ai-workflow.v1',
     'mergeos.customer-dashboard.v1',
     'mergeos.deployment.v1',
     'mergeos.escrow.v1',
@@ -353,6 +354,94 @@ test('validates deployment protocol documents', () => {
   assert(invalid.errors.some((error) => error.path === 'kind'));
   assert(invalid.errors.some((error) => error.path === 'progress'));
   assert(invalid.errors.some((error) => error.path === 'stages[0].tone'));
+  assert(invalid.errors.some((error) => error.path === 'signals[0].created_at'));
+});
+
+test('validates AI workflow protocol documents', () => {
+  const now = '2026-06-05T00:00:00.000Z';
+  const workflow = {
+    protocol_version: 'mergeos.ai-workflow.v1',
+    kind: 'ai_workflow',
+    project_id: 'prj_0001',
+    project_title: 'Customer portal rebuild',
+    status: 'orchestrating',
+    progress: 71,
+    current_step: 'pr_review',
+    task_count: 3,
+    agent_task_count: 1,
+    human_task_count: 1,
+    hybrid_task_count: 1,
+    ai_action_count: 2,
+    updated_at: now,
+    stages: [
+      {
+        id: 'repo_import',
+        title: 'Repository context',
+        body: 'Repository context is attached to the delivery workflow.',
+        status: 'complete',
+        tone: 'green',
+        reference: 'https://github.com/mergeos-bounties/mergeos',
+        url: 'https://github.com/mergeos-bounties/mergeos',
+        updated_at: now,
+      },
+      {
+        id: 'pr_review',
+        title: 'AI review and agent actions',
+        body: '1 opened PRs are waiting for AI review or agent execution.',
+        status: 'in_progress',
+        tone: 'blue',
+        reference: 'mergeos-bounties/mergeos',
+        updated_at: now,
+      },
+      {
+        id: 'deployment_validation',
+        title: 'Deployment validation',
+        body: 'Deployment validation is 60% complete.',
+        status: 'in_progress',
+        tone: 'blue',
+        reference: 'project:prj_0001',
+        updated_at: now,
+      },
+    ],
+    signals: [
+      {
+        id: 'ai:log_0001',
+        type: 'agent_action',
+        title: 'AI agent reviewed PR #151',
+        body: 'Review Agent ran review for mergeos-bounties/mergeos PR #151.',
+        status: 'processed',
+        reference: 'mergeos-bounties/mergeos#151',
+        url: 'https://github.com/mergeos-bounties/mergeos/pull/151#issuecomment-1',
+        created_at: now,
+      },
+      {
+        id: 'deployment:prj_0001',
+        type: 'deployment_validation',
+        title: 'Deployment validation',
+        body: 'Deployment validation is 60% complete.',
+        status: 'validating',
+        reference: 'project:prj_0001',
+        created_at: now,
+      },
+    ],
+  };
+
+  assert.equal(validateProtocolDocument(workflow).valid, true);
+
+  const invalid = validateProtocolDocument({
+    ...workflow,
+    kind: 'workflow',
+    progress: 101,
+    current_step: 'manual_review',
+    stages: [{ ...workflow.stages[0], id: 'unknown_stage', status: 'running' }],
+    signals: [{ ...workflow.signals[0], created_at: 'not-a-date' }],
+  });
+  assert.equal(invalid.valid, false);
+  assert(invalid.errors.some((error) => error.path === 'kind'));
+  assert(invalid.errors.some((error) => error.path === 'progress'));
+  assert(invalid.errors.some((error) => error.path === 'current_step'));
+  assert(invalid.errors.some((error) => error.path === 'stages[0].id'));
+  assert(invalid.errors.some((error) => error.path === 'stages[0].status'));
   assert(invalid.errors.some((error) => error.path === 'signals[0].created_at'));
 });
 

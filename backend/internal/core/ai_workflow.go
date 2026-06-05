@@ -65,16 +65,18 @@ func (s *Store) projectAIWorkflowLocked(project *Project) ProjectAIWorkflowRespo
 	}
 
 	response := ProjectAIWorkflowResponse{
-		ProjectID:     project.ID,
-		ProjectTitle:  publicLiveFeedProjectTitle(project),
-		Status:        status,
-		Progress:      progress,
-		CurrentStep:   aiWorkflowCurrentStep(stages),
-		TaskCount:     len(tasks),
-		AIActionCount: len(logs),
-		UpdatedAt:     updatedAt,
-		Stages:        stages,
-		Signals:       signals,
+		ProtocolVersion: "mergeos.ai-workflow.v1",
+		Kind:            "ai_workflow",
+		ProjectID:       project.ID,
+		ProjectTitle:    publicLiveFeedProjectTitle(project),
+		Status:          status,
+		Progress:        progress,
+		CurrentStep:     aiWorkflowCurrentStep(stages),
+		TaskCount:       len(tasks),
+		AIActionCount:   len(logs),
+		UpdatedAt:       updatedAt,
+		Stages:          stages,
+		Signals:         signals,
 	}
 	for _, task := range tasks {
 		switch task.RequiredWorkerKind {
