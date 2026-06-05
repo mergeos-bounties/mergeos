@@ -488,7 +488,7 @@ type ProjectPullRequestStats struct {
 }
 
 type ProjectTaskPullRequests struct {
-	TaskID        string                      `json:"task_id"`
+	TaskID        string                      `json:"task_id,omitempty"`
 	IssueNumber   int                         `json:"issue_number"`
 	Title         string                      `json:"title"`
 	Status        string                      `json:"status"`

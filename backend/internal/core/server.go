@@ -1,6 +1,7 @@
 package core
 
 import (
+	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
@@ -41,6 +42,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/public/protocol/events", s.publicProtocolEvents)
 	mux.HandleFunc("GET /api/public/projects/{id}/deployment", s.publicProjectDeployment)
 	mux.HandleFunc("GET /api/public/projects/{id}/ai-workflow", s.publicProjectAIWorkflow)
+	mux.HandleFunc("GET /api/public/projects/{id}/pull-requests", s.publicProjectPullRequests)
 	mux.HandleFunc("POST /api/public/repo/issues", s.importRepoIssues)
 	mux.HandleFunc("POST /api/integrations/github/pr-review", s.geminiReviewWebhook)
 	mux.HandleFunc("POST /api/payments/crypto/webhook", s.cryptoWebhook)
@@ -267,6 +269,23 @@ func (s *Server) publicProjectAIWorkflow(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	writeJSON(w, http.StatusOK, workflow)
+}
+
+func (s *Server) publicProjectPullRequests(w http.ResponseWriter, r *http.Request) {
+	projectID := strings.TrimSpace(r.PathValue("id"))
+	project, ok := s.store.ProjectSnapshot(projectID)
+	if !ok {
+		writeError(w, http.StatusNotFound, "project not found")
+		return
+	}
+	client, err := newAdminGitHubClient(s.cfg, false)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), 8*time.Second)
+	defer cancel()
+	writeJSON(w, http.StatusOK, publicProjectPullRequestsMonitor(ctx, client, project))
 }
 
 func (s *Server) register(w http.ResponseWriter, r *http.Request) {

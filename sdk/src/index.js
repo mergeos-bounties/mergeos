@@ -142,6 +142,10 @@ export class MergeOSClient {
     return this.request(`/api/public/projects/${encodeURIComponent(projectID)}/ai-workflow`, { auth: false });
   }
 
+  publicProjectPullRequests(projectID) {
+    return this.request(`/api/public/projects/${encodeURIComponent(projectID)}/pull-requests`, { auth: false });
+  }
+
   importRepoIssues(payload) {
     return this.request('/api/public/repo/issues', { method: 'POST', body: payload, auth: false });
   }

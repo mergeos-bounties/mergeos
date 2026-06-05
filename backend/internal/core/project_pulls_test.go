@@ -2,7 +2,9 @@ package core
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 )
@@ -136,5 +138,59 @@ func TestProjectPullRequestsMonitorSurfacesGitHubErrorsPerTask(t *testing.T) {
 	}, project)
 	if payload.Stats.ErrorCount != 1 || payload.Tasks[0].MonitorStatus != "error" || payload.Tasks[0].MonitorError != "github unavailable" {
 		t.Fatalf("expected per-task github error: %#v", payload)
+	}
+}
+
+func TestPublicProjectPullRequestsMonitorOmitsInternalTaskIDs(t *testing.T) {
+	now := time.Now().UTC()
+	project := &Project{
+		ID:           "prj_public",
+		Title:        "Public PR lane",
+		RepoProvider: "local-git",
+		Tasks: []*Task{
+			{
+				ID:                 "tsk_public",
+				ProjectID:          "prj_public",
+				IssueNumber:        21,
+				Title:              "Expose public PR monitor",
+				RewardCents:        75,
+				RequiredWorkerKind: WorkerHuman,
+				Status:             TaskOpen,
+				IssueURL:           "https://github.com/mergeos-bounties/mergeos/issues/21",
+				CreatedAt:          now,
+			},
+		},
+		CreatedAt: now.Add(-time.Hour),
+	}
+	payload := publicProjectPullRequestsMonitor(context.Background(), fakeProjectPullLister{
+		pulls: map[int][]AdminTaskPullRequest{
+			21: {
+				{
+					Number:         42,
+					Title:          "Add public PR protocol",
+					State:          "open",
+					HTMLURL:        "https://github.com/mergeos-bounties/mergeos/pull/42",
+					Author:         "builder",
+					MergeableState: "clean",
+					Labels:         []string{"evidence: provided", "star: verified"},
+					CreatedAt:      now,
+					UpdatedAt:      now,
+				},
+			},
+		},
+	}, project)
+
+	if payload.ProtocolVersion != "mergeos.pr-monitor.v1" || payload.Stats.PullRequestCount != 1 {
+		t.Fatalf("unexpected public PR monitor payload: %#v", payload)
+	}
+	if len(payload.Tasks) != 1 || payload.Tasks[0].TaskID != "" {
+		t.Fatalf("expected public task id to be omitted before serialization: %#v", payload.Tasks)
+	}
+	body, err := json.Marshal(payload)
+	if err != nil {
+		t.Fatalf("marshal public PR monitor: %v", err)
+	}
+	if strings.Contains(string(body), "tsk_public") || strings.Contains(string(body), `"task_id"`) {
+		t.Fatalf("public PR monitor leaked internal task id: %s", string(body))
 	}
 }

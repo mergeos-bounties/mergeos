@@ -208,6 +208,13 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Description: "Public sanitized AI workflow timeline for marketplace projects across repository import, issue scan, task generation, routing, PR review, and deployment validation.",
 			},
 			{
+				Method:      "GET",
+				Path:        "/api/public/projects/{id}/pull-requests",
+				Protocol:    "mergeos.pr-monitor.v1",
+				Auth:        "none",
+				Description: "Public sanitized PR monitor for marketplace projects, linked issues, pull request readiness, and review state without exposing internal task identifiers.",
+			},
+			{
 				Method:      "POST",
 				Path:        "/api/public/repo/issues",
 				Protocol:    "mergeos.repo-import.v1",

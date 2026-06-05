@@ -80,6 +80,14 @@ func projectPullRequestsMonitor(ctx context.Context, lister projectPullRequestLi
 	return response
 }
 
+func publicProjectPullRequestsMonitor(ctx context.Context, lister projectPullRequestLister, project *Project) ProjectPullRequestsResponse {
+	response := projectPullRequestsMonitor(ctx, lister, project)
+	for i := range response.Tasks {
+		response.Tasks[i].TaskID = ""
+	}
+	return response
+}
+
 func projectPullRequestSummary(pull AdminTaskPullRequest) ProjectPullRequestSummary {
 	return ProjectPullRequestSummary{
 		Number:         pull.Number,
