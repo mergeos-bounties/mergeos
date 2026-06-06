@@ -811,15 +811,40 @@ func (s *Server) createRepositorySuggestedTaskPayPalOrder(w http.ResponseWriter,
 		return
 	}
 	order, err := s.payments.CreatePayPalOrder(r.Context(), CreatePayPalOrderRequest{
-		AmountCents: quote.BudgetCents,
-		Description: fmt.Sprintf("Fund %s for %s", quote.TaskTitle, quote.ProjectTitle),
-		ReturnURL:   req.ReturnURL,
-		CancelURL:   req.CancelURL,
+		AmountCents:     quote.BudgetCents,
+		Description:     fmt.Sprintf("Fund %s for %s", quote.TaskTitle, quote.ProjectTitle),
+		Flow:            PaymentOrderFlowRepositoryTaskFunding,
+		ProjectID:       quote.ProjectID,
+		SuggestedTaskID: quote.SuggestedTaskID,
+		ReturnURL:       req.ReturnURL,
+		CancelURL:       req.CancelURL,
 	})
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	order.Flow = PaymentOrderFlowRepositoryTaskFunding
+	intent, err := s.store.RecordPayPalOrderIntent(user.ID, CreatePayPalOrderRequest{
+		AmountCents:     quote.BudgetCents,
+		Description:     fmt.Sprintf("Fund %s for %s", quote.TaskTitle, quote.ProjectTitle),
+		Flow:            PaymentOrderFlowRepositoryTaskFunding,
+		ProjectID:       quote.ProjectID,
+		SuggestedTaskID: quote.SuggestedTaskID,
+		ReturnURL:       req.ReturnURL,
+		CancelURL:       req.CancelURL,
+	}, order)
+	if err != nil {
+		if isPaymentOrderIntentPersistenceError(err) {
+			writeError(w, http.StatusInternalServerError, err.Error())
+		} else {
+			writeError(w, http.StatusBadRequest, err.Error())
+		}
+		return
+	}
+	order.PaymentReference = intent.OrderID
+	order.Provider = intent.Provider
+	order.AmountCents = intent.AmountCents
+	order.Currency = intent.Currency
 	writeJSON(w, http.StatusCreated, order)
 }
 
@@ -839,7 +864,7 @@ func (s *Server) fundRepositorySuggestedTask(w http.ResponseWriter, r *http.Requ
 		writeError(w, http.StatusBadRequest, "invalid JSON body")
 		return
 	}
-	response, err := s.store.FundRepositorySuggestedTask(r.Context(), projectID, suggestedTaskID, req)
+	response, err := s.store.FundRepositorySuggestedTask(r.Context(), user.ID, projectID, suggestedTaskID, req)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
@@ -1547,7 +1572,8 @@ func (s *Server) createProject(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) createPayPalOrder(w http.ResponseWriter, r *http.Request) {
-	if _, ok := s.requireUser(w, r); !ok {
+	user, ok := s.requireUser(w, r)
+	if !ok {
 		return
 	}
 	var req CreatePayPalOrderRequest
@@ -1560,6 +1586,20 @@ func (s *Server) createPayPalOrder(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	intent, err := s.store.RecordPayPalOrderIntent(user.ID, req, order)
+	if err != nil {
+		if isPaymentOrderIntentPersistenceError(err) {
+			writeError(w, http.StatusInternalServerError, err.Error())
+		} else {
+			writeError(w, http.StatusBadRequest, err.Error())
+		}
+		return
+	}
+	order.PaymentReference = intent.OrderID
+	order.Provider = intent.Provider
+	order.Flow = intent.Flow
+	order.AmountCents = intent.AmountCents
+	order.Currency = intent.Currency
 	writeJSON(w, http.StatusCreated, order)
 }
 

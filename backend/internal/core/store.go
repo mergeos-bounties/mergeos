@@ -122,25 +122,27 @@ type Store struct {
 	testSettingsConfig  TestSettingsConfig
 	testSettingsEntries map[string]*TestSettingsEntry
 	adminSettings       AdminSettings
+	paymentOrders       map[string]*PaymentOrderIntent
 	ledger              []LedgerEntry
 }
 
 type persistedState struct {
-	NextID              int                  `json:"next_id"`
-	Projects            []*Project           `json:"projects"`
-	Tasks               []*Task              `json:"tasks"`
-	Users               []*User              `json:"users"`
-	Wallets             []*Wallet            `json:"wallets"`
-	Sessions            []*Session           `json:"sessions"`
-	Notifications       []*Notification      `json:"notifications"`
-	Attachments         []*Attachment        `json:"attachments"`
-	SSLReviews          []*SSLReviewStatus   `json:"ssl_reviews"`
-	GeminiAPIKeys       []*GeminiAPIKey      `json:"gemini_api_keys"`
-	GeminiWebhookLogs   []*GeminiWebhookLog  `json:"gemini_webhook_logs"`
-	AdminSettings       *AdminSettings       `json:"admin_settings,omitempty"`
-	TestSettingsConfig  *TestSettingsConfig  `json:"test_settings_config,omitempty"`
-	TestSettingsEntries []*TestSettingsEntry `json:"test_settings_entries,omitempty"`
-	Ledger              []LedgerEntry        `json:"ledger"`
+	NextID              int                   `json:"next_id"`
+	Projects            []*Project            `json:"projects"`
+	Tasks               []*Task               `json:"tasks"`
+	Users               []*User               `json:"users"`
+	Wallets             []*Wallet             `json:"wallets"`
+	Sessions            []*Session            `json:"sessions"`
+	Notifications       []*Notification       `json:"notifications"`
+	Attachments         []*Attachment         `json:"attachments"`
+	SSLReviews          []*SSLReviewStatus    `json:"ssl_reviews"`
+	GeminiAPIKeys       []*GeminiAPIKey       `json:"gemini_api_keys"`
+	GeminiWebhookLogs   []*GeminiWebhookLog   `json:"gemini_webhook_logs"`
+	AdminSettings       *AdminSettings        `json:"admin_settings,omitempty"`
+	TestSettingsConfig  *TestSettingsConfig   `json:"test_settings_config,omitempty"`
+	TestSettingsEntries []*TestSettingsEntry  `json:"test_settings_entries,omitempty"`
+	PaymentOrders       []*PaymentOrderIntent `json:"payment_orders,omitempty"`
+	Ledger              []LedgerEntry         `json:"ledger"`
 }
 
 type statePersistence interface {
@@ -169,6 +171,7 @@ func NewStore(cfg Config, payments *PaymentManager, repos RepoFactory, emailer *
 		testSettingsConfig:  TestSettingsConfig{},
 		testSettingsEntries: map[string]*TestSettingsEntry{},
 		adminSettings:       defaultAdminSettings(cfg),
+		paymentOrders:       map[string]*PaymentOrderIntent{},
 		ledger:              []LedgerEntry{},
 	}
 	if strings.TrimSpace(cfg.DatabaseURL) != "" {
@@ -653,6 +656,11 @@ func (s *Store) CreateProject(ctx context.Context, userID string, req CreateProj
 		importedIssues = imported.Issues
 		sourceRepoURL = imported.RepoURL
 	}
+	if req.PaymentMethod == PaymentPayPal {
+		if err := s.ValidatePendingPayPalOrderIntent(userID, req.PaymentReference, PaymentOrderFlowProjectFunding, "", "", req.BudgetCents); err != nil {
+			return nil, err
+		}
+	}
 
 	verification, err := s.payments.Verify(ctx, req)
 	if err != nil {
@@ -712,6 +720,11 @@ func (s *Store) CreateProject(ctx context.Context, userID string, req CreateProj
 		WorkPoolCents:    workPool,
 		Status:           ProjectFunded,
 		CreatedAt:        now,
+	}
+	if verification.Provider == "paypal" {
+		if err := s.attachPayPalOrderIntentLocked(user.ID, verification.Reference, PaymentOrderFlowProjectFunding, project.ID, "", req.BudgetCents); err != nil {
+			return nil, err
+		}
 	}
 	if sourceRepoURL != "" && !strings.Contains(project.Brief, sourceRepoURL) {
 		project.Brief = "Source repository: " + sourceRepoURL + "\n\n" + project.Brief
@@ -844,7 +857,7 @@ func (s *Store) RepositorySuggestedTaskFundingQuote(projectID, suggestedTaskID s
 	return s.repositorySuggestedTaskFundingQuoteLocked(projectID, suggestedTaskID, rewardCents, budgetCents)
 }
 
-func (s *Store) FundRepositorySuggestedTask(ctx context.Context, projectID, suggestedTaskID string, req FundRepositorySuggestedTaskRequest) (FundRepositorySuggestedTaskResponse, error) {
+func (s *Store) FundRepositorySuggestedTask(ctx context.Context, userID, projectID, suggestedTaskID string, req FundRepositorySuggestedTaskRequest) (FundRepositorySuggestedTaskResponse, error) {
 	if strings.TrimSpace(req.SuggestedTaskID) != "" && strings.TrimSpace(req.SuggestedTaskID) != strings.TrimSpace(suggestedTaskID) {
 		return FundRepositorySuggestedTaskResponse{}, errors.New("suggested task id does not match route")
 	}
@@ -855,6 +868,11 @@ func (s *Store) FundRepositorySuggestedTask(ctx context.Context, projectID, sugg
 	paymentMethod := normalizeFundingPaymentMethod(req.PaymentMethod)
 	if !supportedFundingPaymentMethod(paymentMethod) {
 		return FundRepositorySuggestedTaskResponse{}, errors.New("payment method must be paypal, crypto, solana spl, or stripe")
+	}
+	if paymentMethod == PaymentPayPal {
+		if err := s.ValidatePendingPayPalOrderIntent(userID, req.PaymentReference, PaymentOrderFlowRepositoryTaskFunding, quote.ProjectID, quote.SuggestedTaskID, quote.BudgetCents); err != nil {
+			return FundRepositorySuggestedTaskResponse{}, err
+		}
 	}
 	verification, err := s.payments.Verify(ctx, CreateProjectRequest{
 		BudgetCents:      quote.BudgetCents,
@@ -915,6 +933,11 @@ func (s *Store) FundRepositorySuggestedTask(ctx context.Context, projectID, sugg
 	project.WorkPoolCents += workPool
 	project.Status = ProjectFunded
 	project.PaymentStatus = "verified"
+	if verification.Provider == "paypal" {
+		if err := s.attachPayPalOrderIntentLocked(userID, verification.Reference, PaymentOrderFlowRepositoryTaskFunding, project.ID, quote.SuggestedTaskID, quote.BudgetCents); err != nil {
+			return FundRepositorySuggestedTaskResponse{}, err
+		}
+	}
 
 	s.tasks[task.ID] = task
 	s.syncProjectTaskSnapshotLocked(project, task)
@@ -2698,6 +2721,7 @@ func (s *Store) applyState(state persistedState) bool {
 	s.sslReviews = map[string]*SSLReviewStatus{}
 	s.geminiAPIKeys = map[string]*GeminiAPIKey{}
 	s.geminiWebhookLogs = map[string]*GeminiWebhookLog{}
+	s.paymentOrders = map[string]*PaymentOrderIntent{}
 	for _, project := range state.Projects {
 		if project == nil || project.ID == "" {
 			continue
@@ -2844,6 +2868,41 @@ func (s *Store) applyState(state persistedState) bool {
 		s.geminiWebhookLogs[logCopy.ID] = &logCopy
 	}
 	s.trimGeminiWebhookLogsLocked()
+	for _, intent := range state.PaymentOrders {
+		if intent == nil || strings.TrimSpace(intent.OrderID) == "" {
+			continue
+		}
+		intentCopy := *intent
+		intentCopy.OrderID = strings.TrimSpace(intentCopy.OrderID)
+		intentCopy.Provider = strings.ToLower(strings.TrimSpace(intentCopy.Provider))
+		if intentCopy.Provider == "" {
+			intentCopy.Provider = "paypal"
+			migrated = true
+		}
+		flow, err := validatePaymentOrderFlow(intentCopy.Flow)
+		if err != nil {
+			continue
+		}
+		if intentCopy.Flow != flow {
+			intentCopy.Flow = flow
+			migrated = true
+		}
+		if strings.TrimSpace(intentCopy.Currency) == "" {
+			intentCopy.Currency = "USD"
+			migrated = true
+		}
+		intentCopy.Status = normalizePaymentOrderStatus(intentCopy.Status)
+		if intentCopy.CreatedAt.IsZero() {
+			intentCopy.CreatedAt = time.Now().UTC()
+			migrated = true
+		}
+		if intentCopy.UpdatedAt.IsZero() {
+			intentCopy.UpdatedAt = intentCopy.CreatedAt
+			migrated = true
+		}
+		intentCopy.CapturedAt = cloneTimePtr(intent.CapturedAt)
+		s.paymentOrders[intentCopy.OrderID] = &intentCopy
+	}
 
 	// Test settings
 	s.testSettingsConfig = TestSettingsConfig{}
@@ -2887,6 +2946,7 @@ func (s *Store) snapshotLocked() persistedState {
 		AdminSettings:       cloneAdminSettings(s.adminSettings),
 		TestSettingsConfig:  &s.testSettingsConfig,
 		TestSettingsEntries: make([]*TestSettingsEntry, 0, len(s.testSettingsEntries)),
+		PaymentOrders:       make([]*PaymentOrderIntent, 0, len(s.paymentOrders)),
 		Ledger:              s.ledger,
 	}
 	for _, project := range s.projects {
@@ -2939,6 +2999,12 @@ func (s *Store) snapshotLocked() persistedState {
 		entryCopy := *entry
 		state.TestSettingsEntries = append(state.TestSettingsEntries, &entryCopy)
 	}
+	for _, intent := range s.paymentOrders {
+		state.PaymentOrders = append(state.PaymentOrders, clonePaymentOrderIntent(intent))
+	}
+	sort.Slice(state.PaymentOrders, func(i, j int) bool {
+		return state.PaymentOrders[i].CreatedAt.Before(state.PaymentOrders[j].CreatedAt)
+	})
 	return state
 }
 

@@ -632,7 +632,7 @@ test('supports wallet, payment, and raw upload helper routes', async () => {
     { status: 200, body: { address: 'mrg_1' } },
     { status: 200, body: { linked: true } },
     { status: 201, body: { protocol_version: 'mergeos.wallet-migration.v1', kind: 'wallet_migration' } },
-    { status: 201, body: { order_id: 'ord_1' } },
+    { status: 201, body: { order_id: 'ord_1', payment_reference: 'ord_1', provider: 'paypal', flow: 'project_funding' } },
     { status: 201, body: { payment_reference: 'pi_1', provider: 'stripe' } },
     { status: 201, body: { id: 'att_1' } },
   ]);
@@ -642,7 +642,7 @@ test('supports wallet, payment, and raw upload helper routes', async () => {
   await client.wallet('mrg_1');
   await client.linkWallet({ address: 'mrg_1' });
   await client.createWalletMigration({ legacy_chain: 'trc20', legacy_address: 'TXYZ987654321987654321987654321999' });
-  await client.createPayPalOrder({ project_id: 'prj_1' });
+  const paypalOrder = await client.createPayPalOrder({ amount_cents: 120000, description: 'MergeOS PayPal funding', flow: 'project_funding' });
   await client.createCardPaymentIntent({ amount_cents: 120000, description: 'MergeOS card funding' });
   await client.uploadAttachment(uploadBody, { headers: { 'X-Upload': '1' } });
 
@@ -657,6 +657,14 @@ test('supports wallet, payment, and raw upload helper routes', async () => {
     legacy_address: 'TXYZ987654321987654321987654321999',
   }));
   assert.equal(fetchImpl.calls[4].url, '/api/payments/paypal/orders');
+  assert.equal(fetchImpl.calls[4].options.method, 'POST');
+  assert.equal(fetchImpl.calls[4].options.headers.Authorization, 'Bearer abc');
+  assert.equal(fetchImpl.calls[4].options.body, JSON.stringify({
+    amount_cents: 120000,
+    description: 'MergeOS PayPal funding',
+    flow: 'project_funding',
+  }));
+  assert.equal(paypalOrder.payment_reference, 'ord_1');
   assert.equal(fetchImpl.calls[5].url, '/api/payments/card/intents');
   assert.equal(fetchImpl.calls[5].options.method, 'POST');
   assert.equal(fetchImpl.calls[5].options.headers.Authorization, 'Bearer abc');

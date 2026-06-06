@@ -433,10 +433,17 @@ func ProtocolManifest() ProtocolManifestResponse {
 			},
 			{
 				Method:      "POST",
+				Path:        "/api/payments/paypal/orders",
+				Protocol:    "mergeos.payment-order.v1",
+				Auth:        "user",
+				Description: "Authenticated PayPal checkout bootstrap that stores a server-side order intent and returns order_id plus payment_reference for project funding.",
+			},
+			{
+				Method:      "POST",
 				Path:        "/api/projects/{id}/repo-scan/suggested-tasks/{taskID}/paypal-order",
 				Protocol:    "mergeos.scan.v1",
 				Auth:        "project",
-				Description: "Authenticated checkout bootstrap for funding a repository scan suggested task.",
+				Description: "Authenticated checkout bootstrap for funding a repository scan suggested task with a server-side PayPal order intent.",
 			},
 			{
 				Method:      "POST",

@@ -143,6 +143,15 @@ await mergeos.publicRevealTestSettingsEntry('tse_0001', 'shared-password');
 ## Task and workflow APIs
 
 ```js
+const paypalOrder = await mergeos.createPayPalOrder({
+  amount_cents: 120000,
+  description: 'MergeOS project funding',
+  flow: 'project_funding',
+  return_url: 'https://mergeos.shop/paypal/return',
+  cancel_url: 'https://mergeos.shop/paypal/cancel',
+});
+console.log(paypalOrder.order_id, paypalOrder.payment_reference, paypalOrder.approval_url);
+
 await mergeos.createProject(projectPayload);
 await mergeos.projectEscrow('prj_0001');
 await mergeos.projectPayouts('prj_0001');

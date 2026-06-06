@@ -39,6 +39,13 @@ func (s *Store) RecordPayPalWebhookPayment(eventID string, payment paypalWebhook
 	defer s.mu.Unlock()
 
 	if existing, projectID := s.payPalWebhookDuplicateLedgerLocked(eventID, payment); existing != nil {
+		if _, changed, err := s.recordPayPalOrderIntentSettlementLocked(eventID, payment); err != nil {
+			return payPalWebhookSettlement{}, err
+		} else if changed {
+			if err := s.saveLocked(); err != nil {
+				return payPalWebhookSettlement{}, err
+			}
+		}
 		settlement.Status = "duplicate"
 		settlement.ProjectID = projectID
 		settlement.LedgerEntry = existing
@@ -49,6 +56,21 @@ func (s *Store) RecordPayPalWebhookPayment(eventID string, payment paypalWebhook
 
 	project := s.payPalWebhookProjectLocked(payment)
 	if project == nil {
+		intent, changed, err := s.recordPayPalOrderIntentSettlementLocked(eventID, payment)
+		if err != nil {
+			return payPalWebhookSettlement{}, err
+		}
+		if intent != nil {
+			if changed {
+				if err := s.saveLocked(); err != nil {
+					return payPalWebhookSettlement{}, err
+				}
+			}
+			settlement.Status = "intent_verified"
+			settlement.ProjectID = intent.ProjectID
+			settlement.Message = "paypal order intent verified; waiting for project funding attachment"
+			return settlement, nil
+		}
 		settlement.Message = "no project matched the paypal order or capture"
 		return settlement, nil
 	}
@@ -63,6 +85,9 @@ func (s *Store) RecordPayPalWebhookPayment(eventID string, payment paypalWebhook
 		if strings.TrimSpace(project.PaymentReference) == "" {
 			project.PaymentReference = payPalWebhookPreferredReference(payment)
 		}
+		if _, _, err := s.recordPayPalOrderIntentSettlementLocked(eventID, payment); err != nil {
+			return payPalWebhookSettlement{}, err
+		}
 		if err := s.saveLocked(); err != nil {
 			return payPalWebhookSettlement{}, err
 		}
@@ -76,6 +101,9 @@ func (s *Store) RecordPayPalWebhookPayment(eventID string, payment paypalWebhook
 	project.PaymentStatus = "verified"
 	project.PaymentProvider = "paypal"
 	project.PaymentReference = payPalWebhookPreferredReference(payment)
+	if _, _, err := s.recordPayPalOrderIntentSettlementLocked(eventID, payment); err != nil {
+		return payPalWebhookSettlement{}, err
+	}
 	entry := s.addLedger(
 		"payment_verified",
 		"payment:paypal",

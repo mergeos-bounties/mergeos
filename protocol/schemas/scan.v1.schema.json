@@ -113,7 +113,18 @@
               "fund_endpoint": { "type": "string", "maxLength": 512 },
               "paypal_order_endpoint": { "type": "string", "maxLength": 512 },
               "fund_payload": { "type": "object" },
-              "paypal_order_payload": { "type": "object" },
+              "paypal_order_payload": {
+                "type": "object",
+                "additionalProperties": true,
+                "required": ["suggested_task_id", "reward_cents", "budget_cents", "flow"],
+                "properties": {
+                  "suggested_task_id": { "type": "string", "minLength": 1, "maxLength": 160 },
+                  "source_finding_id": { "type": "string", "maxLength": 160 },
+                  "reward_cents": { "type": "integer", "minimum": 0 },
+                  "budget_cents": { "type": "integer", "minimum": 0 },
+                  "flow": { "const": "repo_task_funding" }
+                }
+              },
               "evidence_checklist": {
                 "type": "array",
                 "items": { "type": "string", "minLength": 1, "maxLength": 120 }

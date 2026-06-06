@@ -147,6 +147,9 @@ func (p *postgresPersistence) Load(ctx context.Context) (persistedState, bool, e
 	if err := p.loadLedger(ctx, &state); err != nil {
 		return persistedState{}, false, err
 	}
+	if err := p.loadPaymentOrderIntents(ctx, &state); err != nil {
+		return persistedState{}, false, err
+	}
 	if err := p.loadTestSettingsConfig(ctx, &state); err != nil {
 		return persistedState{}, false, err
 	}
@@ -166,6 +169,7 @@ SELECT EXISTS (SELECT 1 FROM store_meta WHERE key = 'next_id')
    OR EXISTS (SELECT 1 FROM gemini_api_keys)
    OR EXISTS (SELECT 1 FROM gemini_webhook_logs)
    OR EXISTS (SELECT 1 FROM ledger_entries)
+   OR EXISTS (SELECT 1 FROM payment_order_intents)
    OR EXISTS (SELECT 1 FROM test_settings_config)
    OR EXISTS (SELECT 1 FROM test_settings_entries)`).Scan(&found)
 	if err != nil {
@@ -490,6 +494,35 @@ ORDER BY sequence`)
 	return rows.Err()
 }
 
+func (p *postgresPersistence) loadPaymentOrderIntents(ctx context.Context, state *persistedState) error {
+	rows, err := p.db.QueryContext(ctx, `
+SELECT order_id, provider, flow, user_id, project_id, suggested_task_id, amount_cents, currency,
+       description, status, approval_url, return_url, cancel_url, capture_id, webhook_event_id,
+       created_at, updated_at, captured_at
+FROM payment_order_intents
+ORDER BY created_at, order_id`)
+	if err != nil {
+		return fmt.Errorf("load payment order intents: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var intent PaymentOrderIntent
+		var capturedAt sql.NullTime
+		if err := rows.Scan(
+			&intent.OrderID, &intent.Provider, &intent.Flow, &intent.UserID, &intent.ProjectID,
+			&intent.SuggestedTaskID, &intent.AmountCents, &intent.Currency, &intent.Description,
+			&intent.Status, &intent.ApprovalURL, &intent.ReturnURL, &intent.CancelURL, &intent.CaptureID,
+			&intent.WebhookEventID, &intent.CreatedAt, &intent.UpdatedAt, &capturedAt,
+		); err != nil {
+			return fmt.Errorf("scan payment order intent: %w", err)
+		}
+		intent.CapturedAt = timePtr(capturedAt)
+		state.PaymentOrders = append(state.PaymentOrders, &intent)
+	}
+	return rows.Err()
+}
+
 func (p *postgresPersistence) loadGeminiAPIKeys(ctx context.Context, state *persistedState) error {
 	rows, err := p.db.QueryContext(ctx, `
 SELECT id, key_value, key_hint, status, request_count, success_count, quota_error_count,
@@ -583,6 +616,7 @@ func (p *postgresPersistence) Save(ctx context.Context, state persistedState) er
 	for _, table := range []string{
 		"test_settings_entries",
 		"test_settings_config",
+		"payment_order_intents",
 		"ledger_entries",
 		"gemini_webhook_logs",
 		"gemini_api_keys",
@@ -653,6 +687,9 @@ VALUES ('llm_provider', $1, $2), ('llm_model', $3, $2)`, provider, settings.Upda
 		return err
 	}
 	if err := saveLedger(ctx, tx, state.Ledger); err != nil {
+		return err
+	}
+	if err := savePaymentOrderIntents(ctx, tx, state.PaymentOrders); err != nil {
 		return err
 	}
 	if err := saveTestSettingsConfig(ctx, tx, state.TestSettingsConfig); err != nil {
@@ -958,6 +995,54 @@ VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
 			entry.PreviousHash, entry.EntryHash, entry.CreatedAt,
 		); err != nil {
 			return fmt.Errorf("save ledger entry %d: %w", entry.Sequence, err)
+		}
+	}
+	return nil
+}
+
+func savePaymentOrderIntents(ctx context.Context, tx *sql.Tx, intents []*PaymentOrderIntent) error {
+	for _, intent := range intents {
+		if intent == nil || strings.TrimSpace(intent.OrderID) == "" {
+			continue
+		}
+		flow, err := validatePaymentOrderFlow(intent.Flow)
+		if err != nil {
+			return fmt.Errorf("save payment order intent %s: %w", intent.OrderID, err)
+		}
+		createdAt := intent.CreatedAt
+		if createdAt.IsZero() {
+			createdAt = time.Now().UTC()
+		}
+		updatedAt := intent.UpdatedAt
+		if updatedAt.IsZero() {
+			updatedAt = createdAt
+		}
+		provider := strings.ToLower(strings.TrimSpace(intent.Provider))
+		if provider == "" {
+			provider = "paypal"
+		}
+		currency := strings.ToUpper(strings.TrimSpace(intent.Currency))
+		if currency == "" {
+			currency = "USD"
+		}
+		if _, err := tx.ExecContext(ctx, `
+INSERT INTO payment_order_intents (
+  order_id, provider, flow, user_id, project_id, suggested_task_id, amount_cents, currency,
+  description, status, approval_url, return_url, cancel_url, capture_id, webhook_event_id,
+  created_at, updated_at, captured_at
+) VALUES (
+  $1, $2, $3, $4, $5, $6, $7, $8,
+  $9, $10, $11, $12, $13, $14, $15,
+  $16, $17, $18
+)`,
+			strings.TrimSpace(intent.OrderID), provider, flow, strings.TrimSpace(intent.UserID),
+			strings.TrimSpace(intent.ProjectID), strings.TrimSpace(intent.SuggestedTaskID), intent.AmountCents,
+			currency, strings.TrimSpace(intent.Description), normalizePaymentOrderStatus(intent.Status),
+			strings.TrimSpace(intent.ApprovalURL), strings.TrimSpace(intent.ReturnURL), strings.TrimSpace(intent.CancelURL),
+			strings.TrimSpace(intent.CaptureID), strings.TrimSpace(intent.WebhookEventID), createdAt, updatedAt,
+			intent.CapturedAt,
+		); err != nil {
+			return fmt.Errorf("save payment order intent %s: %w", intent.OrderID, err)
 		}
 	}
 	return nil

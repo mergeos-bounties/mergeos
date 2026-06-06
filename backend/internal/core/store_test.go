@@ -246,6 +246,74 @@ func TestCreateCardPaymentIntentRouteUsesDevVerifier(t *testing.T) {
 	}
 }
 
+func TestCreatePayPalOrderRouteRecordsPaymentOrderIntent(t *testing.T) {
+	tempDir := t.TempDir()
+	paypal := newPayPalCreateOrderServer(t, "ORDER-ROUTE-1", nil)
+	defer paypal.Close()
+	cfg := Config{
+		TokenSymbol:            defaultTokenSymbol,
+		StatePath:              filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:         1000,
+		PayPalEnvironment:      paypal.URL,
+		PayPalClientID:         "paypal-client",
+		PayPalClientSecret:     "paypal-secret",
+		GitHubOwner:            defaultGitHubOwner,
+		BountyRoot:             filepath.Join(tempDir, "bounties"),
+		SMTPFrom:               "noreply@mergeos.local",
+		DevPaymentEnabled:      true,
+		DevPaymentCode:         defaultDevPaymentCode,
+		CryptoTokenDecimals:    6,
+		CryptoMinConfirmations: 1,
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	auth, err := store.Register(RegisterRequest{
+		Name:        "PayPal Client",
+		CompanyName: "PayPal Co",
+		Email:       "paypal-client@example.com",
+		Password:    "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	server := NewServer(cfg, store, payments)
+	req := httptest.NewRequest(http.MethodPost, "/api/payments/paypal/orders", strings.NewReader(`{"amount_cents":120000,"description":"MergeOS PayPal funding","flow":"project_funding","return_url":"https://mergeos.shop/paypal/return","cancel_url":"https://mergeos.shop/paypal/cancel"}`))
+	req.Header.Set("Authorization", "Bearer "+auth.Token)
+	req.Header.Set("Content-Type", "application/json")
+	resp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(resp, req)
+	if resp.Code != http.StatusCreated {
+		t.Fatalf("paypal order status = %d, body = %s", resp.Code, resp.Body.String())
+	}
+	var payload CreatePayPalOrderResponse
+	if err := json.Unmarshal(resp.Body.Bytes(), &payload); err != nil {
+		t.Fatal(err)
+	}
+	if payload.OrderID != "ORDER-ROUTE-1" || payload.PaymentReference != "ORDER-ROUTE-1" || payload.Provider != "paypal" || payload.Flow != PaymentOrderFlowProjectFunding {
+		t.Fatalf("unexpected paypal order: %#v", payload)
+	}
+	intent, ok := store.PayPalOrderIntent("ORDER-ROUTE-1")
+	if !ok {
+		t.Fatal("paypal order intent was not recorded")
+	}
+	if intent.UserID != auth.User.ID || intent.AmountCents != 120000 || intent.Status != "created" || intent.Currency != "USD" {
+		t.Fatalf("intent = %#v", intent)
+	}
+
+	reloaded, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	reloadedIntent, ok := reloaded.PayPalOrderIntent("ORDER-ROUTE-1")
+	if !ok || reloadedIntent.UserID != auth.User.ID || reloadedIntent.Flow != PaymentOrderFlowProjectFunding {
+		t.Fatalf("reloaded intent = %#v ok=%v", reloadedIntent, ok)
+	}
+}
+
 func TestRuntimeConfigSeparatesCardCheckoutFromStripeVerifier(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := Config{

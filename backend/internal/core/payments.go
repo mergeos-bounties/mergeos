@@ -141,9 +141,14 @@ func (p *PaymentManager) CreatePayPalOrder(ctx context.Context, req CreatePayPal
 		}
 	}
 	return &CreatePayPalOrderResponse{
-		OrderID:     decoded.ID,
-		ApprovalURL: approvalURL,
-		Status:      decoded.Status,
+		OrderID:          decoded.ID,
+		PaymentReference: decoded.ID,
+		ApprovalURL:      approvalURL,
+		Status:           decoded.Status,
+		Provider:         "paypal",
+		Flow:             normalizePaymentOrderFlow(req.Flow),
+		AmountCents:      req.AmountCents,
+		Currency:         "USD",
 	}, nil
 }
 

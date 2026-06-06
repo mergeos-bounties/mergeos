@@ -25013,6 +25013,7 @@ async function startProjectPayPalFunding() {
     body: JSON.stringify({
       amount_cents: payload.budget_cents,
       description: projectPayPalDescription(payload),
+      flow: 'project_funding',
       return_url: returnURL,
       cancel_url: cancelURL,
     }),

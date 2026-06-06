@@ -92,6 +92,62 @@ func TestVerifyCryptoAcceptsSolanaSPLTransfer(t *testing.T) {
 	}
 }
 
+func TestCreatePayPalOrderPostsCheckoutOrder(t *testing.T) {
+	paypal := newPayPalCreateOrderServer(t, "ORDER-UNIT-1", func(req *http.Request, body map[string]any) {
+		if got := req.Header.Get("Authorization"); got != "Bearer test-paypal-token" {
+			t.Fatalf("authorization header = %q", got)
+		}
+		if got := req.Header.Get("PayPal-Request-Id"); !strings.HasPrefix(got, "mergeos-order-") {
+			t.Fatalf("paypal request id = %q", got)
+		}
+		if body["intent"] != "CAPTURE" {
+			t.Fatalf("intent = %#v", body["intent"])
+		}
+		units, ok := body["purchase_units"].([]any)
+		if !ok || len(units) != 1 {
+			t.Fatalf("purchase_units = %#v", body["purchase_units"])
+		}
+		unit, ok := units[0].(map[string]any)
+		if !ok {
+			t.Fatalf("purchase unit = %#v", units[0])
+		}
+		if unit["description"] != "MergeOS project" {
+			t.Fatalf("description = %#v", unit["description"])
+		}
+		amount, ok := unit["amount"].(map[string]any)
+		if !ok || amount["currency_code"] != "USD" || amount["value"] != "1200.00" {
+			t.Fatalf("amount = %#v", unit["amount"])
+		}
+		appContext, ok := body["application_context"].(map[string]any)
+		if !ok || appContext["return_url"] != "https://mergeos.shop/paypal/return" || appContext["cancel_url"] != "https://mergeos.shop/paypal/cancel" {
+			t.Fatalf("application_context = %#v", body["application_context"])
+		}
+	})
+	defer paypal.Close()
+
+	payments := NewPaymentManager(Config{
+		PayPalEnvironment:  paypal.URL,
+		PayPalClientID:     "paypal-client",
+		PayPalClientSecret: "paypal-secret",
+	})
+	order, err := payments.CreatePayPalOrder(context.Background(), CreatePayPalOrderRequest{
+		AmountCents: 120000,
+		Description: "MergeOS project",
+		Flow:        PaymentOrderFlowProjectFunding,
+		ReturnURL:   "https://mergeos.shop/paypal/return",
+		CancelURL:   "https://mergeos.shop/paypal/cancel",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if order.OrderID != "ORDER-UNIT-1" || order.PaymentReference != "ORDER-UNIT-1" || order.Provider != "paypal" || order.Flow != PaymentOrderFlowProjectFunding {
+		t.Fatalf("order = %#v", order)
+	}
+	if order.ApprovalURL != "https://paypal.test/checkout/ORDER-UNIT-1" || order.AmountCents != 120000 || order.Currency != "USD" {
+		t.Fatalf("order metadata = %#v", order)
+	}
+}
+
 func TestCreateCardPaymentIntentUsesDevStripeWhenVerifierIsLocal(t *testing.T) {
 	payments := NewPaymentManager(Config{
 		DevPaymentEnabled: true,
@@ -163,4 +219,42 @@ type roundTripFunc func(*http.Request) (*http.Response, error)
 
 func (fn roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
 	return fn(req)
+}
+
+func newPayPalCreateOrderServer(t *testing.T, orderID string, onCreate func(*http.Request, map[string]any)) *httptest.Server {
+	t.Helper()
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/v1/oauth2/token":
+			username, password, ok := r.BasicAuth()
+			if !ok || username != "paypal-client" || password != "paypal-secret" {
+				t.Fatalf("paypal basic auth = %q/%q ok=%v", username, password, ok)
+			}
+			_, _ = w.Write([]byte(`{"access_token":"test-paypal-token"}`))
+		case "/v2/checkout/orders":
+			if r.Method != http.MethodPost {
+				t.Fatalf("paypal order method = %s", r.Method)
+			}
+			var body map[string]any
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				t.Fatalf("decode paypal order body: %v", err)
+			}
+			if onCreate != nil {
+				onCreate(r, body)
+			}
+			response := map[string]any{
+				"id":     orderID,
+				"status": "CREATED",
+				"links": []map[string]string{
+					{"rel": "approve", "href": "https://paypal.test/checkout/" + orderID},
+				},
+			}
+			if err := json.NewEncoder(w).Encode(response); err != nil {
+				t.Fatalf("encode paypal order response: %v", err)
+			}
+		default:
+			t.Fatalf("unexpected PayPal path %s", r.URL.Path)
+		}
+	}))
 }

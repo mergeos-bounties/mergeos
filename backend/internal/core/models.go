@@ -808,22 +808,56 @@ type UpdateAdminSettingsRequest struct {
 }
 
 type CreatePayPalOrderRequest struct {
-	AmountCents int64  `json:"amount_cents"`
-	Description string `json:"description"`
-	ReturnURL   string `json:"return_url"`
-	CancelURL   string `json:"cancel_url"`
+	AmountCents     int64  `json:"amount_cents"`
+	Description     string `json:"description"`
+	Flow            string `json:"flow,omitempty"`
+	ProjectID       string `json:"project_id,omitempty"`
+	SuggestedTaskID string `json:"suggested_task_id,omitempty"`
+	ReturnURL       string `json:"return_url"`
+	CancelURL       string `json:"cancel_url"`
 }
 
 type CreatePayPalOrderResponse struct {
-	OrderID     string `json:"order_id"`
-	ApprovalURL string `json:"approval_url"`
-	Status      string `json:"status"`
+	OrderID          string `json:"order_id"`
+	PaymentReference string `json:"payment_reference"`
+	ApprovalURL      string `json:"approval_url"`
+	Status           string `json:"status"`
+	Provider         string `json:"provider"`
+	Flow             string `json:"flow,omitempty"`
+	AmountCents      int64  `json:"amount_cents,omitempty"`
+	Currency         string `json:"currency,omitempty"`
 }
 
 type CreateCardPaymentIntentRequest struct {
 	AmountCents int64  `json:"amount_cents"`
 	Description string `json:"description"`
 	Flow        string `json:"flow,omitempty"`
+}
+
+const (
+	PaymentOrderFlowProjectFunding        = "project_funding"
+	PaymentOrderFlowRepositoryTaskFunding = "repo_task_funding"
+)
+
+type PaymentOrderIntent struct {
+	OrderID         string     `json:"order_id"`
+	Provider        string     `json:"provider"`
+	Flow            string     `json:"flow"`
+	UserID          string     `json:"user_id"`
+	ProjectID       string     `json:"project_id,omitempty"`
+	SuggestedTaskID string     `json:"suggested_task_id,omitempty"`
+	AmountCents     int64      `json:"amount_cents"`
+	Currency        string     `json:"currency"`
+	Description     string     `json:"description,omitempty"`
+	Status          string     `json:"status"`
+	ApprovalURL     string     `json:"approval_url,omitempty"`
+	ReturnURL       string     `json:"return_url,omitempty"`
+	CancelURL       string     `json:"cancel_url,omitempty"`
+	CaptureID       string     `json:"capture_id,omitempty"`
+	WebhookEventID  string     `json:"webhook_event_id,omitempty"`
+	CreatedAt       time.Time  `json:"created_at"`
+	UpdatedAt       time.Time  `json:"updated_at"`
+	CapturedAt      *time.Time `json:"captured_at,omitempty"`
 }
 
 type CreateCardPaymentIntentResponse struct {

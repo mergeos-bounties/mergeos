@@ -275,6 +275,7 @@ func repositorySuggestedTaskFromFinding(project *Project, finding RepositoryScan
 				"source_finding_id": finding.ID,
 				"reward_cents":      rewardCents,
 				"budget_cents":      fundingCents,
+				"flow":              PaymentOrderFlowRepositoryTaskFunding,
 			},
 			EvidenceChecklist: evidence,
 		},

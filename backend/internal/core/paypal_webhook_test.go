@@ -130,6 +130,58 @@ func TestPayPalWebhookRecordsPaymentOnce(t *testing.T) {
 	}
 }
 
+func TestPayPalWebhookRecordsKnownIntentWithoutProjectLedger(t *testing.T) {
+	paypal, _ := newPayPalWebhookVerifier(t, "SUCCESS")
+	defer paypal.Close()
+	cfg := testPayPalWebhookConfig(t, paypal.URL)
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	auth, err := store.Register(RegisterRequest{
+		Name:     "Intent Client",
+		Email:    "paypal-intent@example.com",
+		Password: "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.RecordPayPalOrderIntent(auth.User.ID, CreatePayPalOrderRequest{
+		AmountCents: 10000,
+		Description: "PayPal order intent",
+		Flow:        PaymentOrderFlowProjectFunding,
+	}, &CreatePayPalOrderResponse{
+		OrderID: "ORDER-INTENT-1",
+		Status:  "CREATED",
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	server := NewServer(cfg, store, payments)
+	resp := postPayPalWebhook(t, server, completedPayPalCaptureWebhook("WH-INTENT-1", "ORDER-INTENT-1", "CAP-INTENT-1", "100.00"))
+	if resp.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", resp.Code, resp.Body.String())
+	}
+	var settlement payPalWebhookSettlement
+	if err := json.Unmarshal(resp.Body.Bytes(), &settlement); err != nil {
+		t.Fatal(err)
+	}
+	if settlement.Status != "intent_verified" || settlement.OrderID != "ORDER-INTENT-1" || settlement.CaptureID != "CAP-INTENT-1" || settlement.Duplicate {
+		t.Fatalf("settlement = %#v", settlement)
+	}
+	if got := countPayPalPaymentVerified(store); got != 0 {
+		t.Fatalf("paypal payment ledger entries = %d", got)
+	}
+	intent, ok := store.PayPalOrderIntent("ORDER-INTENT-1")
+	if !ok {
+		t.Fatal("intent missing after webhook")
+	}
+	if intent.Status != "verified" || intent.CaptureID != "CAP-INTENT-1" || intent.WebhookEventID != "WH-INTENT-1" || intent.CapturedAt == nil {
+		t.Fatalf("intent after webhook = %#v", intent)
+	}
+}
+
 func TestPayPalWebhookAllEventTypesParseEnvelope(t *testing.T) {
 	types := []string{
 		"PAYMENT.CAPTURE.COMPLETED",
