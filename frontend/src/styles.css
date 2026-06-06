@@ -28737,8 +28737,12 @@ canvas {
   .dashboard-shell .routing-proposal-list article,
   .dashboard-shell .routing-route-list article,
   .dashboard-shell .repo-dependency-list article,
+  .dashboard-shell .repo-finding-list article,
   .dashboard-shell .repo-task-graph-list article,
-  .dashboard-shell .notification-center-list button {
+  .dashboard-shell .notification-center-list article,
+  .dashboard-shell .dash-pr-row,
+  .dashboard-shell .auto-release-runbook li,
+  .dashboard-shell .agent-runbook-strip li {
     grid-template-columns: minmax(0, 1fr);
     align-items: stretch;
     gap: 10px;
@@ -28757,10 +28761,39 @@ canvas {
   .dashboard-shell .routing-proposal-list article > *,
   .dashboard-shell .routing-route-list article > *,
   .dashboard-shell .repo-dependency-list article > *,
+  .dashboard-shell .repo-finding-list article > *,
   .dashboard-shell .repo-task-graph-list article > * {
     min-width: 0;
     max-width: 100%;
     justify-self: stretch;
+  }
+
+  .dashboard-shell .dash-pr-row > *,
+  .dashboard-shell .auto-release-runbook li > *,
+  .dashboard-shell .agent-runbook-strip li > *,
+  .dashboard-shell .notification-center-list article > * {
+    min-width: 0;
+    max-width: 100%;
+    justify-self: stretch;
+  }
+
+  .dashboard-shell .dash-pr-stat {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid #edf2f4;
+    border-radius: 8px;
+    background: #fbfcfd;
+    padding: 8px 10px;
+  }
+
+  .dashboard-shell .dash-pr-row b,
+  .dashboard-shell .auto-release-runbook b,
+  .dashboard-shell .agent-runbook-strip b {
+    justify-self: start;
+    width: max-content;
+    max-width: 100%;
   }
 
   .dashboard-shell .dash-project-actions,
@@ -28768,6 +28801,8 @@ canvas {
   .dashboard-shell .payment-history-actions,
   .dashboard-shell .wallet-action-row,
   .dashboard-shell .agent-task-links,
+  .dashboard-shell .agent-task-actions,
+  .dashboard-shell .repo-import-publish-actions,
   .dashboard-shell .admin-ops-row-actions,
   .dashboard-shell .admin-ops-decision-actions,
   .dashboard-shell .admin-dispute-item-actions,
@@ -28791,6 +28826,8 @@ canvas {
   .dashboard-shell .payment-history-actions > *,
   .dashboard-shell .wallet-action-row > *,
   .dashboard-shell .agent-task-links > *,
+  .dashboard-shell .agent-task-actions > *,
+  .dashboard-shell .repo-import-publish-actions > *,
   .dashboard-shell .admin-ops-row-actions > *,
   .dashboard-shell .admin-ops-decision-actions > *,
   .dashboard-shell .admin-dispute-item-actions > *,
@@ -28812,6 +28849,24 @@ canvas {
   .dashboard-shell .wallet-migration-grid label {
     grid-column: auto;
     min-width: 0;
+  }
+
+  .dashboard-shell .dashboard-tool-form,
+  .dashboard-shell .dashboard-tool-form.estimator-form {
+    align-items: stretch;
+  }
+
+  .dashboard-shell .dashboard-tool-form button,
+  .dashboard-shell .payment-history-side button,
+  .dashboard-shell .dash-pr-actions a,
+  .dashboard-shell .dash-pr-actions button,
+  .dashboard-shell .agent-task-actions button,
+  .dashboard-shell .repo-import-publish-actions button {
+    width: 100%;
+    min-width: 0;
+    min-height: 42px;
+    justify-content: center;
+    white-space: normal;
   }
 
   .dashboard-shell input,
@@ -28967,7 +29022,7 @@ canvas {
   }
 
   .dashboard-shell .dash-topnav {
-    display: flex;
+    display: none;
     width: 100%;
     max-width: 100%;
     gap: 6px;
@@ -29031,6 +29086,13 @@ canvas {
     overflow: hidden;
     padding-inline: 10px;
     font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .dashboard-shell .dash-top-actions .primary-button.compact span {
+    min-width: 0;
+    overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
@@ -29110,12 +29172,28 @@ canvas {
     gap: 12px;
     padding-bottom: calc(18px + env(safe-area-inset-bottom));
   }
+
+  .dashboard-shell .dashboard-project-actions-panel {
+    position: fixed;
+    left: clamp(12px, 4vw, 18px);
+    right: clamp(12px, 4vw, 18px);
+    top: auto;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    z-index: 780;
+    width: auto;
+    max-height: min(72dvh, 420px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border-radius: 14px;
+    padding: 10px;
+    box-shadow: 0 28px 80px rgba(15, 23, 42, 0.24);
+  }
 }
 
 @media (max-width: 760px) {
   .notification-dropdown {
-    left: var(--dash-mobile-gutter, 12px) !important;
-    right: var(--dash-mobile-gutter, 12px) !important;
+    left: clamp(12px, 4vw, 18px) !important;
+    right: clamp(12px, 4vw, 18px) !important;
     top: auto !important;
     bottom: calc(12px + env(safe-area-inset-bottom)) !important;
     z-index: 760;

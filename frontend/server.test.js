@@ -235,6 +235,7 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
 
 test('signed-in mobile dashboard keeps nav, actions, and popovers phone-safe', async () => {
   const cssSource = await fs.readFile(new URL('./src/styles.css', import.meta.url), 'utf-8');
+  const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
 
   assert.match(cssSource, /Signed-in mobile system/);
   assert.match(cssSource, /\.dashboard-shell \.dash-side-nav\s*\{[\s\S]*display: flex;[\s\S]*overflow-x: auto;/);
@@ -245,11 +246,19 @@ test('signed-in mobile dashboard keeps nav, actions, and popovers phone-safe', a
   assert.match(cssSource, /Signed-in mobile overflow guard/);
   assert.match(cssSource, /\.dashboard-shell \.admin-console-grid,[\s\S]*\.dashboard-shell \.payment-summary-grid,[\s\S]*grid-template-columns: minmax\(0, 1fr\);/);
   assert.match(cssSource, /\.dashboard-shell \.admin-ops-row,[\s\S]*\.dashboard-shell \.payment-history-row,[\s\S]*grid-template-columns: minmax\(0, 1fr\);/);
+  assert.match(cssSource, /\.dashboard-shell \.notification-center-list article,[\s\S]*\.dashboard-shell \.dash-pr-row,[\s\S]*\.dashboard-shell \.auto-release-runbook li,[\s\S]*\.dashboard-shell \.agent-runbook-strip li\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\);/);
+  assert.match(cssSource, /\.dashboard-shell \.repo-finding-list article,[\s\S]*\.dashboard-shell \.repo-task-graph-list article,[\s\S]*grid-template-columns: minmax\(0, 1fr\);/);
   assert.match(cssSource, /\.dashboard-shell \.admin-ops-row-actions,[\s\S]*\.dashboard-shell \.worker-proposal-actions,[\s\S]*grid-template-columns: minmax\(0, 1fr\);/);
+  assert.match(cssSource, /\.dashboard-shell \.agent-task-actions,[\s\S]*\.dashboard-shell \.repo-import-publish-actions,[\s\S]*grid-template-columns: minmax\(0, 1fr\);/);
+  assert.match(cssSource, /\.dashboard-shell \.dashboard-tool-form button,[\s\S]*\.dashboard-shell \.payment-history-side button,[\s\S]*\.dashboard-shell \.dash-pr-actions a,[\s\S]*\.dashboard-shell \.repo-import-publish-actions button\s*\{[\s\S]*min-height: 42px;/);
+  assert.match(cssSource, /\.dashboard-shell \.dash-topnav\s*\{[\s\S]*display: none;/);
+  assert.match(cssSource, /\.dashboard-shell \.dashboard-project-actions-panel\s*\{[\s\S]*position: fixed;[\s\S]*bottom: calc\(12px \+ env\(safe-area-inset-bottom\)\);/);
+  assert.match(cssSource, /\.notification-dropdown\s*\{[\s\S]*left: clamp\(12px, 4vw, 18px\) !important;[\s\S]*right: clamp\(12px, 4vw, 18px\) !important;/);
   assert.match(cssSource, /\.account-menu\.open \.account-context-menu,[\s\S]*opacity: 1 !important;[\s\S]*visibility: visible !important;/);
   assert.match(cssSource, /@media \(max-width: 430px\)[\s\S]*\.dashboard-shell \.dashboard-role-map\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\);/);
   assert.match(cssSource, /\.mobile-nav-panel\s*\{[\s\S]*height: 100dvh;[\s\S]*max-height: 100dvh;/);
   assert.match(cssSource, /\.auth-modal\s*\{[\s\S]*max-height: calc\(100dvh - 64px\);/);
+  assert.match(appSource, /<span>New Project<\/span>/);
 });
 
 test('frontend Vite stays above the Windows launch-editor advisory floor', async () => {

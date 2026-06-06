@@ -1594,7 +1594,7 @@
           </Teleport>
           <button class="primary-button compact" type="button" @click="openProjectWizard">
             <Plus :size="16" />
-            New Project
+            <span>New Project</span>
           </button>
           <div class="account-menu dashboard-account-menu" :class="{ open: activeNavMenu === 'dashboard-account' }" @mouseleave="scheduleNavContextClose" @keydown.escape.stop="closeNavContextMenu">
             <button
