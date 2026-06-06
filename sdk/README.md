@@ -480,7 +480,9 @@ socket.onmessage = (event) => {
 };
 ```
 
-The stream sends `connection_ready` and `live_feed_snapshot` events immediately after connect, then broadcasts live project, PR, payout, token workflow, wallet migration, and ledger events. Pass `afterID`/`cursor` or `since` to `publicLiveFeed`, `publicProtocolEvents`, or `connectEvents` to replay only events newer than the last seen cursor. SDK helpers map live feed records such as `pr_opened`, `agent_action`, `ledger_task_payment`, `ledger_airdrop_claim`, `ledger_presale_reservation`, `ledger_wallet_migration`, and `ledger_manual_credit` to stable protocol events such as `pr.opened`, `agent.tested`, `task.paid`, `airdrop.claimed`, `presale.reserved`, `wallet.migrated`, and `ledger.recorded`.
+The stream sends `connection_ready` and `live_feed_snapshot` events immediately after connect, then broadcasts live project, PR, payout, token workflow, wallet migration, notification refresh, and ledger events. Pass `afterID`/`cursor` or `since` to `publicLiveFeed`, `publicProtocolEvents`, or `connectEvents` to replay only events newer than the last seen cursor. SDK helpers map live feed records such as `pr_opened`, `agent_action`, `ledger_task_payment`, `ledger_airdrop_claim`, `ledger_presale_reservation`, `ledger_wallet_migration`, `notifications_updated`, and `ledger_manual_credit` to stable protocol events such as `pr.opened`, `agent.tested`, `task.paid`, `airdrop.claimed`, `presale.reserved`, `wallet.migrated`, `notification.updated`, and `ledger.recorded`.
+
+`notifications_updated` is a public-safe signal only. It tells authenticated clients to refresh `/api/notifications` with their own token and does not contain private notification rows, email addresses, or message bodies.
 
 ## Solana Contract Helpers
 

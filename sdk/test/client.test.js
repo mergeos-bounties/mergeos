@@ -724,6 +724,7 @@ test('maps live feed records to workflow event protocol values', () => {
   assert.equal(liveFeedTypeToProtocolEventType('ledger_presale_reservation'), 'presale.reserved');
   assert.equal(liveFeedTypeToProtocolEventType('ledger_wallet_migration'), 'wallet.migrated');
   assert.equal(liveFeedTypeToProtocolEventType('ledger_manual_credit'), 'ledger.recorded');
+  assert.equal(liveFeedTypeToProtocolEventType('notifications_updated'), 'notification.updated');
   assert.equal(liveFeedTypeToProtocolEventType('agent_action', 'test'), 'agent.tested');
   assert.equal(liveFeedTypeToProtocolEventType('agent_lease', 'heartbeat'), 'agent.heartbeat');
   assert.equal(liveFeedTypeToProtocolEventType('unknown'), 'agent.action');
@@ -742,6 +743,7 @@ test('maps live feed records to workflow event protocol values', () => {
   assert.equal(protocolTypeFromMessage({ type: 'realtime_snapshot' }), '');
   assert.equal(protocolTypeFromMessage({ type: 'realtime_heartbeat' }), '');
   assert.equal(protocolTypeFromMessage({ type: 'admin_ops_updated' }), '');
+  assert.equal(protocolTypeFromMessage({ type: 'notifications_updated', kind: 'notification_signal', scope: 'authenticated' }), 'notification.updated');
   assert.equal(protocolEventGroup('pr.opened'), 'pull_request');
   assert.equal(protocolEventGroup('task.paid'), 'task');
   assert.equal(protocolEventGroup('proposal.accepted'), 'proposal');
@@ -751,10 +753,12 @@ test('maps live feed records to workflow event protocol values', () => {
   assert.equal(protocolEventGroup('airdrop.claimed'), 'token');
   assert.equal(protocolEventGroup('presale.reserved'), 'token');
   assert.equal(protocolEventGroup('wallet.migrated'), 'wallet');
+  assert.equal(protocolEventGroup('notification.updated'), 'notification');
   assert.equal(isWorkflowEventType('deployment.updated'), true);
   assert.equal(isWorkflowEventType('airdrop.claimed'), true);
   assert.equal(isWorkflowEventType('presale.reserved'), true);
   assert.equal(isWorkflowEventType('wallet.migrated'), true);
+  assert.equal(isWorkflowEventType('notification.updated'), true);
   assert.equal(isWorkflowEventType('agent.scanned'), true);
   assert.equal(isWorkflowEventType('agent.released'), true);
   assert.equal(isWorkflowEventType('unknown.event'), false);
