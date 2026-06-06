@@ -295,7 +295,7 @@ Important backend variables:
 - `DEV_PAYMENT_ENABLED` and `DEV_PAYMENT_CODE`: local verifier
 - `PAYPAL_ENV`, `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_WEBHOOK_ID`: PayPal Orders v2 plus webhook signature verification. PayPal checkout orders are stored as server-side funding intents and return `payment_reference` equal to the PayPal order id. Production rejects PayPal webhook events unless `PAYPAL_WEBHOOK_ID` is configured.
 - `STRIPE_PUBLISHABLE_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`: Stripe rail metadata and PaymentIntent verifier. When configured, the Stripe rail accepts a succeeded USD PaymentIntent ID as `payment_reference` and verifies currency and amount before project funding.
-- `CRYPTO_RPC_URL`, `CRYPTO_RECEIVER`, `CRYPTO_ASSET`, `CRYPTO_TOKEN_MINT`: Solana SPL verifier. `CRYPTO_ASSET=spl` exposes the crypto/USDT rail as a Solana transaction signature verifier for MRG-style SPL payments.
+- `CRYPTO_RPC_URL`, `CRYPTO_RECEIVER`, `CRYPTO_ASSET`, `CRYPTO_TOKEN_MINT`, `CRYPTO_WEBHOOK_SECRET`: Solana SPL verifier. `CRYPTO_ASSET=spl` exposes the crypto/USDT rail as a Solana transaction signature verifier for MRG-style SPL payments. `CRYPTO_WEBHOOK_SECRET` is used for USDT webhook signature verification.
 - `MRG_SOLANA_PROGRAM_ID`: deployed MergeOS Anchor program id used by wallet migration and MRG ledger instruction metadata. Leave empty until the program is deployed; the migration API will then return `program_ready: false`.
 - `GITHUB_TOKEN`, `GITHUB_OWNER`, `GITHUB_OWNER_TYPE`: backend runtime values for GitHub bounty repo creation and admin PR merge actions
 - `MERGEOS_GITHUB_TOKEN`: Docker Compose and GitHub Actions secret name that maps into backend `GITHUB_TOKEN`; use a personal access token with repo write access, not the automatic GitHub Actions token
@@ -311,6 +311,19 @@ Important backend variables:
 - `BOUNTY_ROOT`: local child bounty repo root
 - `UPLOAD_ROOT`: attachment storage root
 - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_FROM`: email notifications
+
+### Webhook & Payment Gateway Configurations
+
+#### PayPal Webhook
+- **Callback URL**: `POST /api/payments/paypal/webhook`
+- **Configuration**: Set `PAYPAL_WEBHOOK_ID` to the ID registered in the PayPal Developer Dashboard for your webhook listener.
+- **Verification**: The server automatically calls PayPal's `/v1/notifications/verify-webhook-signature` API endpoint with the transmission signature headers to verify the webhook origin before processing order captures.
+
+#### USDT Webhook Gateway
+- **Callback URL**: `POST /api/payments/usdt/webhook`
+- **Configuration**: Set `CRYPTO_WEBHOOK_SECRET` to the shared HMAC-SHA256 signature key.
+- **Default Network**: Base (EVM L2) or local test network setup.
+- **Verification**: The server verifies request payloads via HMAC-SHA256 signature in the `X-MergeOS-Signature` header using constant-time comparison. It enforces idempotency on `event_id` keys, preventing duplicate ledger entries.
 
 ## API Surface
 
@@ -334,6 +347,8 @@ Public:
 - `GET /downloads/mergeide-windows-latest.json`
 - `GET /downloads/mergeide-preview-kit.md`
 - `POST /api/integrations/github/pr-review` GitHub webhook receiver for automated LLM PR review. Configure GitHub Webhooks with Payload URL `https://uta.mergeos.shop/api/integrations/github/pr-review`, Content type `application/json`, the same secret as `GEMINI_REVIEW_WEBHOOK_SECRET`, and events `Pull requests` plus `Issue comments`.
+- `POST /api/payments/paypal/webhook` (PayPal Webhook Callback)
+- `POST /api/payments/usdt/webhook` (USDT Webhook Callback)
 
 Auth:
 
@@ -393,3 +408,16 @@ Admin:
 - `PATCH /api/admin/gemini/keys/{id}`
 - `POST /api/admin/gemini/keys/{id}/test`
 - `GET /api/admin/gemini/webhooks`
+- `GET /api/admin/usdt/webhooks` (List processed USDT gateway webhooks)
+
+## Maintainer Bounty Checklist
+
+For every token claim:
+
+1. Confirm the bug is reproducible and not a duplicate.
+2. Assign priority, bounty amount, and claimant in the Claim Token issue.
+3. Require the PR to link the exact claim comment.
+4. Verify screenshots, GIFs, logs, or test output.
+5. Run or review the relevant tests.
+6. Merge only after the fix and evidence match the accepted claim.
+7. Record token release in the ledger or payout process.
