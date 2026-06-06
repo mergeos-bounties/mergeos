@@ -11771,6 +11771,10 @@ watch([publicPage, activeLocale], () => {
   applySeoToDocument();
 });
 
+watch([publicPage, projectWizardVisible, projectWizardStage, projectWizardStep], () => {
+  closeNavContextMenu();
+});
+
 const ledgerTrustItems = [
   {
     icon: ShieldCheck,
