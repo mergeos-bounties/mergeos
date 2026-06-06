@@ -274,6 +274,10 @@ func publicTokenEconomyFlowLabel(entryType string) string {
 		return "Task payout"
 	case "manual_credit":
 		return "Manual credit"
+	case "airdrop_claim":
+		return "Airdrop claim"
+	case "presale_reservation":
+		return "Presale reservation"
 	default:
 		return strings.ReplaceAll(entryType, "_", " ")
 	}

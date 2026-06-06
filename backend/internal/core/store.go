@@ -3842,6 +3842,10 @@ func publicLedgerAccount(account, projectID, taskID string) string {
 		return "issuer:mergeos"
 	case strings.HasPrefix(account, "treasury:"):
 		return "treasury:mergeos"
+	case strings.HasPrefix(account, "airdrop:"):
+		return "airdrop:pool"
+	case strings.HasPrefix(account, "presale:"):
+		return "presale:reserve"
 	case strings.HasPrefix(account, "wallet:"):
 		return walletAccount(account)
 	case strings.HasPrefix(account, "worker:github:"):

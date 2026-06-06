@@ -785,6 +785,10 @@ func publicLiveFeedLedgerTitle(entryType string) string {
 		return "Task payout released"
 	case "manual_credit":
 		return "Manual MRG credit"
+	case "airdrop_claim":
+		return "Airdrop claim recorded"
+	case "presale_reservation":
+		return "Presale reservation recorded"
 	default:
 		return marketplaceTitle(entryType)
 	}
@@ -1032,6 +1036,10 @@ func publicEventType(item PublicLiveFeedItem) string {
 		return "proposal.declined"
 	case "agent_action":
 		return publicAgentActionEventType(item.Action)
+	case "ledger_airdrop_claim":
+		return "airdrop.claimed"
+	case "ledger_presale_reservation":
+		return "presale.reserved"
 	}
 	if strings.HasPrefix(feedType, "ledger_task_payment") {
 		return "task.paid"

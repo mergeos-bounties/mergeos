@@ -5074,6 +5074,170 @@
           </aside>
         </section>
 
+        <section v-if="publicPage === 'airdrop' || publicPage === 'presale'" id="token-workflow" class="token-workflow-panel" aria-label="MRG proof workflow">
+          <div class="token-workflow-head">
+            <div>
+              <span class="marketplace-eyebrow">{{ publicTokenWorkflowCopy.eyebrow }}</span>
+              <h2>{{ publicTokenWorkflowCopy.title }}</h2>
+              <p>{{ publicTokenWorkflowCopy.body }}</p>
+            </div>
+            <span :class="['ledger-public-badge', user ? 'green' : 'amber']">
+              <UserCheck :size="14" />
+              {{ user ? 'Session ready' : 'Login required' }}
+            </span>
+          </div>
+
+          <form v-if="publicPage === 'airdrop'" class="token-workflow-card" @submit.prevent="submitAirdropClaim">
+            <div v-if="airdropClaimAttempted && airdropClaimValidationRows.length" class="wizard-validation-banner token-workflow-validation" role="alert">
+              <strong>Fix airdrop claim</strong>
+              <ul>
+                <li v-for="item in airdropClaimValidationRows" :key="item.field">{{ item.message }}</li>
+              </ul>
+            </div>
+            <div class="token-form-grid">
+              <label class="wizard-field" :class="{ invalid: airdropClaimFieldError('mission_id') }">
+                <span>Mission <b>*</b></span>
+                <select v-model="airdropClaimForm.mission_id" :disabled="airdropClaimBusy">
+                  <option value="repo-import">Repo import</option>
+                  <option value="bounty-work">Bounty work</option>
+                  <option value="pr-review">PR review</option>
+                  <option value="qa-check">QA check</option>
+                  <option value="agent-review">Agent review</option>
+                  <option value="deployment-proof">Deployment proof</option>
+                </select>
+                <p v-if="airdropClaimFieldError('mission_id')" class="wizard-field-error">{{ airdropClaimFieldError('mission_id') }}</p>
+              </label>
+              <label class="wizard-field" :class="{ invalid: airdropClaimFieldError('allocation_mrg') }">
+                <span>Allocation MRG <b>*</b></span>
+                <input v-model.number="airdropClaimForm.allocation_mrg" :disabled="airdropClaimBusy" min="1" max="100000" type="number" />
+                <p v-if="airdropClaimFieldError('allocation_mrg')" class="wizard-field-error">{{ airdropClaimFieldError('allocation_mrg') }}</p>
+              </label>
+              <label class="wizard-field full" :class="{ invalid: airdropClaimFieldError('wallet_address') }">
+                <span>Solana wallet <b>*</b></span>
+                <input v-model.trim="airdropClaimForm.wallet_address" :disabled="airdropClaimBusy" autocomplete="off" :placeholder="user?.wallet_address || 'Paste Solana wallet address'" />
+                <p v-if="airdropClaimFieldError('wallet_address')" class="wizard-field-error">{{ airdropClaimFieldError('wallet_address') }}</p>
+              </label>
+              <label class="wizard-field" :class="{ invalid: airdropClaimFieldError('worker_id') }">
+                <span>Worker ID</span>
+                <input v-model.trim="airdropClaimForm.worker_id" :disabled="airdropClaimBusy" autocomplete="off" placeholder="github:builder or wallet" />
+                <p v-if="airdropClaimFieldError('worker_id')" class="wizard-field-error">{{ airdropClaimFieldError('worker_id') }}</p>
+              </label>
+              <label class="wizard-field" :class="{ invalid: airdropClaimFieldError('task_reference') }">
+                <span>Task reference</span>
+                <input v-model.trim="airdropClaimForm.task_reference" :disabled="airdropClaimBusy" autocomplete="off" placeholder="task:MRG-101 or bounty id" />
+                <p v-if="airdropClaimFieldError('task_reference')" class="wizard-field-error">{{ airdropClaimFieldError('task_reference') }}</p>
+              </label>
+              <label class="wizard-field full" :class="{ invalid: airdropClaimFieldError('proof_url') }">
+                <span>Proof URL</span>
+                <input v-model.trim="airdropClaimForm.proof_url" :disabled="airdropClaimBusy" autocomplete="off" placeholder="https://github.com/org/repo/pull/101" />
+                <p v-if="airdropClaimFieldError('proof_url')" class="wizard-field-error">{{ airdropClaimFieldError('proof_url') }}</p>
+              </label>
+              <label class="wizard-field full">
+                <span>Notes</span>
+                <textarea v-model.trim="airdropClaimForm.notes" :disabled="airdropClaimBusy" maxlength="220" rows="3" placeholder="Optional review note for the claim packet" />
+              </label>
+            </div>
+            <p v-if="airdropClaimError" class="modal-error token-workflow-error">{{ airdropClaimError }}</p>
+            <article v-if="airdropClaimResult" class="token-proof-result">
+              <span class="ledger-trust-icon green"><CheckCircle2 :size="16" /></span>
+              <div>
+                <strong>Airdrop claim recorded</strong>
+                <p>{{ formatTokenWorkflowResult(airdropClaimResult) }}</p>
+                <small>{{ airdropClaimResult.ledger_entry?.reference }}</small>
+              </div>
+              <div class="token-proof-result-actions">
+                <button type="button" @click="copyTokenWorkflowHash(airdropClaimResult)">Copy hash</button>
+                <button type="button" @click="openPublicPage('ledger')">Ledger</button>
+              </div>
+            </article>
+            <footer class="token-workflow-actions">
+              <button class="secondary-button large" type="button" @click="openPublicPage('marketplace')">
+                Open tasks
+                <ListTodo :size="16" />
+              </button>
+              <button class="primary-button large" type="submit" :disabled="airdropClaimBusy">
+                {{ airdropClaimSubmitLabel }}
+                <ArrowRight :size="16" />
+              </button>
+            </footer>
+          </form>
+
+          <form v-else class="token-workflow-card" @submit.prevent="submitPresaleReservation">
+            <div v-if="presaleReservationAttempted && presaleReservationValidationRows.length" class="wizard-validation-banner token-workflow-validation" role="alert">
+              <strong>Fix presale reservation</strong>
+              <ul>
+                <li v-for="item in presaleReservationValidationRows" :key="item.field">{{ item.message }}</li>
+              </ul>
+            </div>
+            <div class="token-form-grid">
+              <label class="wizard-field" :class="{ invalid: presaleReservationFieldError('tier') }">
+                <span>Reserve tier <b>*</b></span>
+                <select v-model="presaleReservationForm.tier" :disabled="presaleReservationBusy">
+                  <option value="builder">Builder</option>
+                  <option value="founder">Founder</option>
+                  <option value="protocol">Protocol</option>
+                  <option value="strategic">Strategic</option>
+                </select>
+                <p v-if="presaleReservationFieldError('tier')" class="wizard-field-error">{{ presaleReservationFieldError('tier') }}</p>
+              </label>
+              <label class="wizard-field" :class="{ invalid: presaleReservationFieldError('reserve_mrg') }">
+                <span>Reserve MRG <b>*</b></span>
+                <input v-model.number="presaleReservationForm.reserve_mrg" :disabled="presaleReservationBusy" min="100" max="1000000" type="number" />
+                <p v-if="presaleReservationFieldError('reserve_mrg')" class="wizard-field-error">{{ presaleReservationFieldError('reserve_mrg') }}</p>
+              </label>
+              <label class="wizard-field full" :class="{ invalid: presaleReservationFieldError('wallet_address') }">
+                <span>Solana wallet <b>*</b></span>
+                <input v-model.trim="presaleReservationForm.wallet_address" :disabled="presaleReservationBusy" autocomplete="off" :placeholder="user?.wallet_address || 'Paste Solana wallet address'" />
+                <p v-if="presaleReservationFieldError('wallet_address')" class="wizard-field-error">{{ presaleReservationFieldError('wallet_address') }}</p>
+              </label>
+              <label class="wizard-field" :class="{ invalid: presaleReservationFieldError('funding_rail') }">
+                <span>Funding rail <b>*</b></span>
+                <select v-model="presaleReservationForm.funding_rail" :disabled="presaleReservationBusy">
+                  <option value="solana">Solana</option>
+                  <option value="usdc">USDC</option>
+                  <option value="paypal">PayPal</option>
+                  <option value="card">Card</option>
+                  <option value="bank">Bank</option>
+                  <option value="manual_review">Manual review</option>
+                </select>
+                <p v-if="presaleReservationFieldError('funding_rail')" class="wizard-field-error">{{ presaleReservationFieldError('funding_rail') }}</p>
+              </label>
+              <label class="wizard-field" :class="{ invalid: presaleReservationFieldError('funding_reference') }">
+                <span>Funding reference</span>
+                <input v-model.trim="presaleReservationForm.funding_reference" :disabled="presaleReservationBusy" autocomplete="off" placeholder="Solana signature, invoice, or pending_review" />
+                <p v-if="presaleReservationFieldError('funding_reference')" class="wizard-field-error">{{ presaleReservationFieldError('funding_reference') }}</p>
+              </label>
+              <label class="wizard-field full">
+                <span>Notes</span>
+                <textarea v-model.trim="presaleReservationForm.notes" :disabled="presaleReservationBusy" maxlength="220" rows="3" placeholder="Optional reservation note for review" />
+              </label>
+            </div>
+            <p v-if="presaleReservationError" class="modal-error token-workflow-error">{{ presaleReservationError }}</p>
+            <article v-if="presaleReservationResult" class="token-proof-result">
+              <span class="ledger-trust-icon green"><CheckCircle2 :size="16" /></span>
+              <div>
+                <strong>Presale reservation recorded</strong>
+                <p>{{ formatTokenWorkflowResult(presaleReservationResult) }}</p>
+                <small>{{ presaleReservationResult.ledger_entry?.reference }}</small>
+              </div>
+              <div class="token-proof-result-actions">
+                <button type="button" @click="copyTokenWorkflowHash(presaleReservationResult)">Copy hash</button>
+                <button type="button" @click="openPublicPage('ledger')">Ledger</button>
+              </div>
+            </article>
+            <footer class="token-workflow-actions">
+              <button class="secondary-button large" type="button" @click="openPublicPage('contracts')">
+                Contracts
+                <Lock :size="16" />
+              </button>
+              <button class="primary-button large" type="submit" :disabled="presaleReservationBusy">
+                {{ presaleReservationSubmitLabel }}
+                <ArrowRight :size="16" />
+              </button>
+            </footer>
+          </form>
+        </section>
+
         <section v-if="publicTokenChapterRows.length" class="token-chapter-grid" :aria-label="publicTokenPage.chapterTitle">
           <article v-for="chapter in publicTokenChapterRows" :key="chapter.title">
             <span :class="['public-card-icon', chapter.tone]">
@@ -8225,6 +8389,8 @@ const hasWindow = typeof window !== 'undefined';
 const TOKEN_RATE_PER_USD = 100;
 const DASHBOARD_REFRESH_MS = 5000;
 const MAX_REFERENCE_UPLOAD_BYTES = 15 * 1024 * 1024;
+const AIRDROP_ALLOCATION_DEFAULT_MRG = 250;
+const PRESALE_RESERVE_DEFAULT_MRG = 25000;
 const publicPagePaths = {
   home: '/',
   system: '/system',
@@ -10770,6 +10936,31 @@ const walletMigrationForm = reactive({
 const walletMigrationBusy = ref(false);
 const walletMigrationError = ref('');
 const walletMigrationResult = ref(null);
+const airdropClaimForm = reactive({
+  mission_id: 'repo-import',
+  worker_id: '',
+  wallet_address: '',
+  task_reference: '',
+  proof_url: '',
+  allocation_mrg: AIRDROP_ALLOCATION_DEFAULT_MRG,
+  notes: '',
+});
+const airdropClaimBusy = ref(false);
+const airdropClaimAttempted = ref(false);
+const airdropClaimError = ref('');
+const airdropClaimResult = ref(null);
+const presaleReservationForm = reactive({
+  tier: 'builder',
+  wallet_address: '',
+  reserve_mrg: PRESALE_RESERVE_DEFAULT_MRG,
+  funding_rail: 'solana',
+  funding_reference: '',
+  notes: '',
+});
+const presaleReservationBusy = ref(false);
+const presaleReservationAttempted = ref(false);
+const presaleReservationError = ref('');
+const presaleReservationResult = ref(null);
 const authVisible = ref(false);
 const authDialog = ref(null);
 const authMode = ref('login');
@@ -11660,7 +11851,7 @@ const publicTokenPageDefinitions = {
     detailBody: 'Claiming should only open after wallet, account, work proof, and anti-abuse checks are all satisfied.',
     chapterTitle: 'Airdrop mission types',
     actions: [
-      { label: 'Start tasks', primary: true, icon: ArrowRight, command: 'project' },
+      { label: 'Record claim', primary: true, icon: ArrowRight, command: 'airdrop-claim' },
       { label: 'Open bounties', icon: ListTodo, command: 'bounties' },
       { label: 'Live proof', icon: Zap, page: 'live' },
     ],
@@ -11683,7 +11874,7 @@ const publicTokenPageDefinitions = {
     detailBody: 'The page is built around KYC-ready account state, wallet readiness, escrow reserve, and ledger-visible receipts.',
     chapterTitle: 'Presale checkpoints',
     actions: [
-      { label: 'Register interest', primary: true, icon: UserCheck, command: 'auth-register' },
+      { label: 'Reserve MRG', primary: true, icon: UserCheck, command: 'presale-reserve' },
       { label: 'Contracts', icon: Lock, page: 'contracts' },
       { label: 'Ledger proof', icon: ShieldCheck, page: 'ledger' },
     ],
@@ -11714,6 +11905,64 @@ const publicTokenPageDefinitions = {
   },
 };
 const publicTokenPage = computed(() => publicTokenPageDefinitions[publicPage.value] || null);
+const publicTokenWorkflowCopy = computed(() => {
+  if (publicPage.value === 'airdrop') {
+    return {
+      eyebrow: 'CLAIM WORKFLOW',
+      title: 'Record an earned airdrop claim',
+      body: 'Submit the mission, Solana wallet, work reference, and proof URL. MergeOS writes a pending-review ledger receipt immediately after validation.',
+    };
+  }
+  return {
+    eyebrow: 'RESERVE WORKFLOW',
+    title: 'Reserve MRG with a public receipt',
+    body: 'Lock in a presale reservation with wallet, tier, amount, and funding rail. Accepted distribution still requires review, but the reservation proof is visible.',
+  };
+});
+const airdropClaimValidationMap = computed(() => {
+  const errors = {};
+  const wallet = publicWorkflowWalletValue(airdropClaimForm.wallet_address || user.value?.wallet_address);
+  const proofURL = String(airdropClaimForm.proof_url || '').trim();
+  const taskReference = String(airdropClaimForm.task_reference || '').trim();
+  const allocationMRG = Number(airdropClaimForm.allocation_mrg) || 0;
+  if (!user.value) errors.session = 'Log in before writing an airdrop ledger receipt.';
+  if (!String(airdropClaimForm.mission_id || '').trim()) errors.mission_id = 'Choose an airdrop mission.';
+  if (!isLikelySolanaWallet(wallet)) errors.wallet_address = 'Enter a valid Solana wallet address.';
+  if (allocationMRG <= 0 || allocationMRG > 100000) errors.allocation_mrg = 'Allocation must be between 1 and 100,000 MRG.';
+  if (!proofURL && !taskReference) errors.proof_url = 'Add a proof URL or task reference.';
+  if (proofURL && !tokenWorkflowURLIsValid(proofURL)) errors.proof_url = 'Proof URL must start with http:// or https://.';
+  if (String(airdropClaimForm.worker_id || '').trim().length > 160) errors.worker_id = 'Worker ID is too long.';
+  if (taskReference.length > 220) errors.task_reference = 'Task reference is too long.';
+  return errors;
+});
+const airdropClaimValidationRows = computed(() =>
+  Object.entries(airdropClaimValidationMap.value).map(([field, message]) => ({ field, message })),
+);
+const airdropClaimSubmitLabel = computed(() => {
+  if (airdropClaimBusy.value) return 'Recording claim...';
+  return user.value ? 'Record claim' : 'Log in to claim';
+});
+const presaleReservationValidationMap = computed(() => {
+  const errors = {};
+  const wallet = publicWorkflowWalletValue(presaleReservationForm.wallet_address || user.value?.wallet_address);
+  const reserveMRG = Number(presaleReservationForm.reserve_mrg) || 0;
+  const rail = String(presaleReservationForm.funding_rail || '').trim();
+  const tier = String(presaleReservationForm.tier || '').trim();
+  if (!user.value) errors.session = 'Log in before writing a presale ledger receipt.';
+  if (!isLikelySolanaWallet(wallet)) errors.wallet_address = 'Enter a valid Solana wallet address.';
+  if (reserveMRG < 100 || reserveMRG > 1000000) errors.reserve_mrg = 'Reserve must be between 100 and 1,000,000 MRG.';
+  if (!['solana', 'usdc', 'paypal', 'card', 'bank', 'manual_review'].includes(rail)) errors.funding_rail = 'Choose a supported funding rail.';
+  if (!['builder', 'founder', 'protocol', 'strategic'].includes(tier)) errors.tier = 'Choose a supported reserve tier.';
+  if (String(presaleReservationForm.funding_reference || '').trim().length > 220) errors.funding_reference = 'Funding reference is too long.';
+  return errors;
+});
+const presaleReservationValidationRows = computed(() =>
+  Object.entries(presaleReservationValidationMap.value).map(([field, message]) => ({ field, message })),
+);
+const presaleReservationSubmitLabel = computed(() => {
+  if (presaleReservationBusy.value) return 'Recording reserve...';
+  return user.value ? 'Record reservation' : 'Log in to reserve';
+});
 const publicTokenMetricRows = computed(() => {
   const openTasks = Number(marketplaceStats.value.open_task_count) || (marketplaceData.value.bounties || []).length || 0;
   const agentTasks = Number(agentQueueData.value.stats?.total_count) || (agentQueueData.value.tasks || []).length || 0;
@@ -22399,6 +22648,10 @@ function handlePublicAction(action = {}) {
     downloadWhitepaper();
     return;
   }
+  if (action.command === 'airdrop-claim' || action.command === 'presale-reserve') {
+    scheduleScrollToSection('token-workflow');
+    return;
+  }
   if (action.command === 'auth-register') {
     openAuth('register');
     return;
@@ -22495,6 +22748,132 @@ function downloadWhitepaper() {
   } catch {
     openExternalURL(href);
   }
+}
+
+function publicWorkflowWalletValue(value = '') {
+  let wallet = String(value || '').trim();
+  for (const prefix of ['wallet:', 'solana:', 'sol:']) {
+    if (wallet.toLowerCase().startsWith(prefix)) {
+      wallet = wallet.slice(prefix.length).trim();
+    }
+  }
+  return wallet;
+}
+
+function isLikelySolanaWallet(value = '') {
+  return /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(publicWorkflowWalletValue(value));
+}
+
+function tokenWorkflowURLIsValid(value = '') {
+  const url = String(value || '').trim();
+  if (!url) return true;
+  return /^https?:\/\/[^\s/$.?#].[^\s]*$/i.test(url);
+}
+
+function airdropClaimFieldError(field) {
+  if (!airdropClaimAttempted.value) return '';
+  return airdropClaimValidationMap.value[field] || '';
+}
+
+function presaleReservationFieldError(field) {
+  if (!presaleReservationAttempted.value) return '';
+  return presaleReservationValidationMap.value[field] || '';
+}
+
+function tokenWorkflowIntegerAmount(value = 0) {
+  return Math.round(Math.max(0, Number(value) || 0));
+}
+
+async function submitAirdropClaim() {
+  airdropClaimAttempted.value = true;
+  airdropClaimError.value = '';
+  if (!user.value) {
+    openAuth('login');
+    showToast('Log in to record an airdrop claim.');
+    return;
+  }
+  if (airdropClaimValidationRows.value.length) {
+    airdropClaimError.value = airdropClaimValidationRows.value[0]?.message || 'Fix airdrop claim details.';
+    showToast(airdropClaimError.value);
+    return;
+  }
+  airdropClaimBusy.value = true;
+  try {
+    const response = await api('/api/airdrop/claims', {
+      method: 'POST',
+      body: JSON.stringify({
+        mission_id: airdropClaimForm.mission_id,
+        worker_id: airdropClaimForm.worker_id,
+        wallet_address: publicWorkflowWalletValue(airdropClaimForm.wallet_address || user.value?.wallet_address),
+        task_reference: airdropClaimForm.task_reference,
+        proof_url: airdropClaimForm.proof_url,
+        allocation_mrg: tokenWorkflowIntegerAmount(airdropClaimForm.allocation_mrg),
+        notes: airdropClaimForm.notes,
+      }),
+    });
+    airdropClaimResult.value = response;
+    showToast('Airdrop claim recorded on the public ledger.');
+    refreshTokenPageData();
+  } catch (error) {
+    airdropClaimError.value = error.message || 'Could not record airdrop claim.';
+    showToast(airdropClaimError.value);
+  } finally {
+    airdropClaimBusy.value = false;
+  }
+}
+
+async function submitPresaleReservation() {
+  presaleReservationAttempted.value = true;
+  presaleReservationError.value = '';
+  if (!user.value) {
+    openAuth('login');
+    showToast('Log in to record a presale reservation.');
+    return;
+  }
+  if (presaleReservationValidationRows.value.length) {
+    presaleReservationError.value = presaleReservationValidationRows.value[0]?.message || 'Fix presale reservation details.';
+    showToast(presaleReservationError.value);
+    return;
+  }
+  presaleReservationBusy.value = true;
+  try {
+    const response = await api('/api/presale/reservations', {
+      method: 'POST',
+      body: JSON.stringify({
+        wallet_address: publicWorkflowWalletValue(presaleReservationForm.wallet_address || user.value?.wallet_address),
+        reserve_mrg: tokenWorkflowIntegerAmount(presaleReservationForm.reserve_mrg),
+        funding_rail: presaleReservationForm.funding_rail,
+        funding_reference: presaleReservationForm.funding_reference,
+        tier: presaleReservationForm.tier,
+        notes: presaleReservationForm.notes,
+      }),
+    });
+    presaleReservationResult.value = response;
+    showToast('Presale reservation recorded on the public ledger.');
+    refreshTokenPageData();
+  } catch (error) {
+    presaleReservationError.value = error.message || 'Could not record presale reservation.';
+    showToast(presaleReservationError.value);
+  } finally {
+    presaleReservationBusy.value = false;
+  }
+}
+
+function formatTokenWorkflowResult(result = {}) {
+  const id = result.claim_id || result.reservation_id || 'workflow';
+  const amount = result.allocation_mrg || result.reserve_mrg || result.ledger_entry?.amount_cents || 0;
+  const sequence = result.ledger_entry?.sequence ? `ledger #${result.ledger_entry.sequence}` : 'ledger receipt';
+  return `${id} / ${formatMRG(amount)} / ${toTitleLabel(result.status || 'pending review')} / ${sequence}`;
+}
+
+async function copyTokenWorkflowHash(result = {}) {
+  const hash = result.ledger_entry?.entry_hash || '';
+  if (!hash) {
+    showToast('No ledger hash available yet.');
+    return;
+  }
+  const copied = await copyTextToClipboard(hash);
+  showToast(copied ? 'Ledger hash copied.' : `Ledger hash ${shortLedgerHash(hash)}`);
 }
 
 function navContextMenuInlineStyle(menu) {
@@ -27006,6 +27385,12 @@ function ledgerMetaFor(type = '') {
   if (normalized === 'task_payment') {
     return { type: 'Payout Released', icon: CircleDollarSign, tone: 'green', amountTone: 'negative' };
   }
+  if (normalized === 'airdrop_claim') {
+    return { type: 'Airdrop Claim', icon: Trophy, tone: 'purple', amountTone: 'positive' };
+  }
+  if (normalized === 'presale_reservation') {
+    return { type: 'Presale Reservation', icon: CircleDollarSign, tone: 'blue', amountTone: 'neutral' };
+  }
   return { type: normalized.replaceAll('_', ' '), icon: Compass, tone: 'slate', amountTone: 'neutral' };
 }
 
@@ -27500,6 +27885,8 @@ function ledgerTransparencySecondary(type = '') {
   if (normalized === 'project_funded' || normalized === 'ledger_payment_verified') return 'funding verified';
   if (normalized === 'ledger_token_mint') return 'mint log';
   if (normalized === 'ledger_task_payment') return 'release proof';
+  if (normalized === 'ledger_airdrop_claim') return 'airdrop proof';
+  if (normalized === 'ledger_presale_reservation') return 'reservation proof';
   if (normalized === 'repo_scan') return 'repository intelligence';
   if (normalized.startsWith('task_')) return 'workflow event';
   if (normalized === 'agent_action' || normalized === 'ai_review') return 'agent proof';

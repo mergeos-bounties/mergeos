@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mergeos.shop/protocol/presale-reservation.v1.schema.json",
+  "title": "MergeOS Presale Reservation v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "protocol_version",
+    "kind",
+    "reservation_id",
+    "status",
+    "wallet_address",
+    "reserve_mrg",
+    "funding_rail",
+    "tier",
+    "ledger_entry",
+    "ledger_proof_url",
+    "live_feed_url",
+    "created_at"
+  ],
+  "properties": {
+    "protocol_version": { "const": "mergeos.presale-reservation.v1" },
+    "kind": { "const": "presale_reservation" },
+    "reservation_id": { "type": "string", "minLength": 5, "maxLength": 80 },
+    "status": { "enum": ["reserved_pending_review", "accepted", "rejected", "cancelled"] },
+    "wallet_address": { "type": "string", "minLength": 32, "maxLength": 96 },
+    "reserve_mrg": { "type": "integer", "minimum": 100, "maximum": 1000000 },
+    "funding_rail": { "enum": ["solana", "usdc", "paypal", "card", "bank", "manual_review"] },
+    "funding_reference": { "type": "string", "maxLength": 220 },
+    "tier": { "enum": ["builder", "founder", "protocol", "strategic"] },
+    "notes": { "type": "string", "maxLength": 220 },
+    "ledger_entry": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["sequence", "type", "from_account", "to_account", "amount_cents", "reference", "previous_hash", "entry_hash", "created_at"],
+      "properties": {
+        "sequence": { "type": "integer", "minimum": 1 },
+        "type": { "const": "presale_reservation" },
+        "from_account": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "to_account": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "amount_cents": { "type": "integer", "minimum": 1 },
+        "reference": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "previous_hash": { "type": "string", "minLength": 64, "maxLength": 64, "pattern": "^[0-9a-fA-F]{64}$" },
+        "entry_hash": { "type": "string", "minLength": 64, "maxLength": 64, "pattern": "^[0-9a-fA-F]{64}$" },
+        "created_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "ledger_proof_url": { "type": "string", "minLength": 1, "maxLength": 240 },
+    "live_feed_url": { "type": "string", "minLength": 1, "maxLength": 240 },
+    "created_at": { "type": "string", "format": "date-time" }
+  }
+}

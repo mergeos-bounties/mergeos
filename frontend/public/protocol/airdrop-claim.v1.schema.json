@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mergeos.shop/protocol/airdrop-claim.v1.schema.json",
+  "title": "MergeOS Airdrop Claim v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "protocol_version",
+    "kind",
+    "claim_id",
+    "status",
+    "mission_id",
+    "worker_id",
+    "wallet_address",
+    "allocation_mrg",
+    "ledger_entry",
+    "ledger_proof_url",
+    "live_feed_url",
+    "created_at"
+  ],
+  "properties": {
+    "protocol_version": { "const": "mergeos.airdrop-claim.v1" },
+    "kind": { "const": "airdrop_claim" },
+    "claim_id": { "type": "string", "minLength": 5, "maxLength": 80 },
+    "status": { "enum": ["claimed_pending_review", "accepted", "rejected"] },
+    "mission_id": { "type": "string", "minLength": 2, "maxLength": 120 },
+    "worker_id": { "type": "string", "minLength": 1, "maxLength": 160 },
+    "wallet_address": { "type": "string", "minLength": 32, "maxLength": 96 },
+    "task_reference": { "type": "string", "maxLength": 220 },
+    "proof_url": { "type": "string", "format": "uri", "maxLength": 500 },
+    "notes": { "type": "string", "maxLength": 220 },
+    "allocation_mrg": { "type": "integer", "minimum": 1, "maximum": 100000 },
+    "ledger_entry": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["sequence", "type", "from_account", "to_account", "amount_cents", "reference", "previous_hash", "entry_hash", "created_at"],
+      "properties": {
+        "sequence": { "type": "integer", "minimum": 1 },
+        "type": { "const": "airdrop_claim" },
+        "from_account": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "to_account": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "amount_cents": { "type": "integer", "minimum": 1 },
+        "reference": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "previous_hash": { "type": "string", "minLength": 64, "maxLength": 64, "pattern": "^[0-9a-fA-F]{64}$" },
+        "entry_hash": { "type": "string", "minLength": 64, "maxLength": 64, "pattern": "^[0-9a-fA-F]{64}$" },
+        "created_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "ledger_proof_url": { "type": "string", "minLength": 1, "maxLength": 240 },
+    "live_feed_url": { "type": "string", "minLength": 1, "maxLength": 240 },
+    "created_at": { "type": "string", "format": "date-time" }
+  },
+  "anyOf": [
+    { "required": ["proof_url"] },
+    { "required": ["task_reference"] }
+  ]
+}

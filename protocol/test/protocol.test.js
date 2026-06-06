@@ -22,6 +22,7 @@ test('loads stable task, workflow, ledger, and event schemas', () => {
     'mergeos.agent-runbook.v1',
     'mergeos.agent.v1',
     'mergeos.ai-workflow.v1',
+    'mergeos.airdrop-claim.v1',
     'mergeos.contributor.v1',
     'mergeos.customer-dashboard.v1',
     'mergeos.deployment.v1',
@@ -36,6 +37,7 @@ test('loads stable task, workflow, ledger, and event schemas', () => {
     'mergeos.payout-release.v1',
     'mergeos.payouts.v1',
     'mergeos.pr-monitor.v1',
+    'mergeos.presale-reservation.v1',
     'mergeos.proposal.v1',
     'mergeos.release-artifact.v1',
     'mergeos.repo-import.v1',
@@ -52,6 +54,75 @@ test('loads stable task, workflow, ledger, and event schemas', () => {
     'mergeos.workflow.v1',
   ]);
   assert.equal(schemaForProtocol('mergeos.task.v1').title, 'MergeOS Task v1');
+});
+
+test('validates airdrop claim and presale reservation protocol documents', () => {
+  const now = '2026-06-06T00:00:00.000Z';
+  const hash = 'a'.repeat(64);
+  const previousHash = '0'.repeat(64);
+  const wallet = '4'.repeat(44);
+  const airdropClaim = {
+    protocol_version: 'mergeos.airdrop-claim.v1',
+    kind: 'airdrop_claim',
+    claim_id: 'adc_0001',
+    status: 'claimed_pending_review',
+    mission_id: 'repo-import',
+    worker_id: 'github:builder',
+    wallet_address: wallet,
+    task_reference: 'task:MRG-101',
+    proof_url: 'https://github.com/mergeos-bounties/mergeos/pull/101',
+    allocation_mrg: 250,
+    ledger_entry: {
+      sequence: 1,
+      type: 'airdrop_claim',
+      from_account: 'airdrop:pool',
+      to_account: wallet,
+      amount_cents: 250,
+      reference: 'airdrop:adc_0001;mission:repo-import',
+      previous_hash: previousHash,
+      entry_hash: hash,
+      created_at: now,
+    },
+    ledger_proof_url: '/api/public/ledger/proof',
+    live_feed_url: '/api/public/live-feed',
+    created_at: now,
+  };
+  const presaleReservation = {
+    protocol_version: 'mergeos.presale-reservation.v1',
+    kind: 'presale_reservation',
+    reservation_id: 'psr_0002',
+    status: 'reserved_pending_review',
+    wallet_address: wallet,
+    reserve_mrg: 25000,
+    funding_rail: 'solana',
+    funding_reference: 'pending_review',
+    tier: 'builder',
+    ledger_entry: {
+      sequence: 2,
+      type: 'presale_reservation',
+      from_account: wallet,
+      to_account: 'presale:reserve',
+      amount_cents: 25000,
+      reference: 'presale:psr_0002;tier:builder',
+      previous_hash: hash,
+      entry_hash: 'b'.repeat(64),
+      created_at: now,
+    },
+    ledger_proof_url: '/api/public/ledger/proof',
+    live_feed_url: '/api/public/live-feed',
+    created_at: now,
+  };
+
+  assert.equal(validateProtocolDocument(airdropClaim).valid, true);
+  assert.equal(validateProtocolDocument(presaleReservation).valid, true);
+
+  const invalidClaim = validateProtocolDocument({ ...airdropClaim, allocation_mrg: 100001 });
+  assert.equal(invalidClaim.valid, false);
+  assert(invalidClaim.errors.some((error) => error.path === 'allocation_mrg'));
+
+  const invalidReservation = validateProtocolDocument({ ...presaleReservation, funding_rail: 'tron' });
+  assert.equal(invalidReservation.valid, false);
+  assert(invalidReservation.errors.some((error) => error.path === 'funding_rail'));
 });
 
 test('validates agent runbook protocol documents', () => {

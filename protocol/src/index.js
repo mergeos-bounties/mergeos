@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 
 const schemaFiles = {
+  'mergeos.airdrop-claim.v1': '../schemas/airdrop-claim.v1.schema.json',
   'mergeos.agent-action.v1': '../schemas/agent-action.v1.schema.json',
   'mergeos.agent-queue.v1': '../schemas/agent-queue.v1.schema.json',
   'mergeos.agent-runbook.v1': '../schemas/agent-runbook.v1.schema.json',
@@ -22,6 +23,7 @@ const schemaFiles = {
   'mergeos.payout-release.v1': '../schemas/payout-release.v1.schema.json',
   'mergeos.payouts.v1': '../schemas/payouts.v1.schema.json',
   'mergeos.pr-monitor.v1': '../schemas/pr-monitor.v1.schema.json',
+  'mergeos.presale-reservation.v1': '../schemas/presale-reservation.v1.schema.json',
   'mergeos.proposal.v1': '../schemas/proposal.v1.schema.json',
   'mergeos.release-artifact.v1': '../schemas/release-artifact.v1.schema.json',
   'mergeos.repo-import.v1': '../schemas/repo-import.v1.schema.json',

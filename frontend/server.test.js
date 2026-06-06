@@ -172,6 +172,15 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /const whitepaperDownloadPath = '\/whitepaper\/mergeos-whitepaper\.md'/);
   assert.match(appSource, /command: 'download-whitepaper'/);
   assert.match(appSource, /function downloadWhitepaper\(\)/);
+  assert.match(appSource, /id="token-workflow"/);
+  assert.match(appSource, /@submit\.prevent="submitAirdropClaim"/);
+  assert.match(appSource, /@submit\.prevent="submitPresaleReservation"/);
+  assert.match(appSource, /api\('\/api\/airdrop\/claims'/);
+  assert.match(appSource, /api\('\/api\/presale\/reservations'/);
+  assert.match(appSource, /function submitAirdropClaim\(\)/);
+  assert.match(appSource, /function submitPresaleReservation\(\)/);
+  assert.match(appSource, /command: 'airdrop-claim'/);
+  assert.match(appSource, /command: 'presale-reserve'/);
   assert.match(appSource, /function refreshTokenPageData\(\)/);
   assert.match(appSource, /async function copyWhitepaperOutline\(\)/);
   assert.match(seoSource, /MergeOS Airdrop \| Task-based MRG rewards with public proof/);

@@ -1214,7 +1214,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 	if payload.ProtocolVersion != "mergeos.protocol.manifest.v1" || payload.Kind != "protocol_manifest" {
 		t.Fatalf("unexpected manifest header: %#v", payload)
 	}
-	if len(payload.Schemas) != 34 {
+	if len(payload.Schemas) != 36 {
 		t.Fatalf("manifest schemas = %d: %#v", len(payload.Schemas), payload.Schemas)
 	}
 	schemas := map[string]bool{}
@@ -1223,7 +1223,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 		schemas[schema.Version] = true
 		descriptions[schema.Version] = schema.Description
 	}
-	for _, required := range []string{"mergeos.task.v1", "mergeos.task-claim.v1", "mergeos.task-submission.v1", "mergeos.task-review.v1", "mergeos.agent.v1", "mergeos.contributor.v1", "mergeos.agent-action.v1", "mergeos.agent-queue.v1", "mergeos.agent-runbook.v1", "mergeos.marketplace.v1", "mergeos.live-feed.v1", "mergeos.workflow.v1", "mergeos.estimate.v1", "mergeos.wallet-migration.v1", "mergeos.release-artifact.v1", "mergeos.repo-import.v1", "mergeos.repo-sync.v1", "mergeos.dispute.v1", "mergeos.proposal.v1", "mergeos.ai-workflow.v1", "mergeos.event.v1", "mergeos.ledger.v1", "mergeos.ledger-proof.v1", "mergeos.token-economy.v1", "mergeos.escrow.v1", "mergeos.payouts.v1", "mergeos.payout-release.v1", "mergeos.deployment.v1", "mergeos.pr-monitor.v1", "mergeos.scan.v1", "mergeos.customer-dashboard.v1", "mergeos.worker-dashboard.v1", "mergeos.routing.v1", "mergeos.admin-ops.v1"} {
+	for _, required := range []string{"mergeos.task.v1", "mergeos.task-claim.v1", "mergeos.task-submission.v1", "mergeos.task-review.v1", "mergeos.agent.v1", "mergeos.contributor.v1", "mergeos.agent-action.v1", "mergeos.agent-queue.v1", "mergeos.agent-runbook.v1", "mergeos.marketplace.v1", "mergeos.live-feed.v1", "mergeos.workflow.v1", "mergeos.estimate.v1", "mergeos.wallet-migration.v1", "mergeos.release-artifact.v1", "mergeos.repo-import.v1", "mergeos.repo-sync.v1", "mergeos.dispute.v1", "mergeos.proposal.v1", "mergeos.ai-workflow.v1", "mergeos.event.v1", "mergeos.ledger.v1", "mergeos.ledger-proof.v1", "mergeos.token-economy.v1", "mergeos.airdrop-claim.v1", "mergeos.presale-reservation.v1", "mergeos.escrow.v1", "mergeos.payouts.v1", "mergeos.payout-release.v1", "mergeos.deployment.v1", "mergeos.pr-monitor.v1", "mergeos.scan.v1", "mergeos.customer-dashboard.v1", "mergeos.worker-dashboard.v1", "mergeos.routing.v1", "mergeos.admin-ops.v1"} {
 		if !schemas[required] {
 			t.Fatalf("manifest missing schema %s: %#v", required, payload.Schemas)
 		}
@@ -1249,6 +1249,8 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 		"GET /api/public/ledger/proof",
 		"GET /api/public/ledger/events",
 		"GET /api/public/token-economy",
+		"POST /api/airdrop/claims",
+		"POST /api/presale/reservations",
 		"GET /api/public/protocol/events",
 		"GET /api/public/projects/{id}/deployment",
 		"GET /api/public/projects/{id}/ai-workflow",
@@ -1283,6 +1285,128 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 	} {
 		if !endpoints[required] {
 			t.Fatalf("manifest missing endpoint %s: %#v", required, payload.Endpoints)
+		}
+	}
+}
+
+func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:       defaultTokenSymbol,
+		StatePath:         filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:    1000,
+		DevPaymentEnabled: true,
+		DevPaymentCode:    defaultDevPaymentCode,
+		GitHubOwner:       defaultGitHubOwner,
+		BountyRoot:        filepath.Join(tempDir, "bounties"),
+		SMTPFrom:          "noreply@mergeos.local",
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	auth, err := store.Register(RegisterRequest{
+		Name:     "Token Builder",
+		Email:    "token-builder@example.com",
+		Password: "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	wallet := base58Encode(bytes.Repeat([]byte{7}, walletAddressBytes))
+	server := NewServer(cfg, store, payments)
+
+	unauthReq := httptest.NewRequest(http.MethodPost, "/api/airdrop/claims", strings.NewReader(`{}`))
+	unauthResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(unauthResp, unauthReq)
+	if unauthResp.Code != http.StatusUnauthorized {
+		t.Fatalf("unauth airdrop status = %d, body = %s", unauthResp.Code, unauthResp.Body.String())
+	}
+
+	airdropReq := httptest.NewRequest(http.MethodPost, "/api/airdrop/claims", strings.NewReader(fmt.Sprintf(`{
+		"mission_id":"repo-import",
+		"worker_id":"github:token-builder",
+		"wallet_address":"%s",
+		"task_reference":"task:MRG-101",
+		"proof_url":"https://github.com/mergeos-bounties/mergeos/pull/101",
+		"allocation_mrg":750
+	}`, wallet)))
+	airdropReq.Header.Set("Authorization", "Bearer "+auth.Token)
+	airdropReq.Header.Set("Content-Type", "application/json")
+	airdropResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(airdropResp, airdropReq)
+	if airdropResp.Code != http.StatusCreated {
+		t.Fatalf("airdrop status = %d, body = %s", airdropResp.Code, airdropResp.Body.String())
+	}
+	var claim AirdropClaimResponse
+	if err := json.Unmarshal(airdropResp.Body.Bytes(), &claim); err != nil {
+		t.Fatal(err)
+	}
+	if claim.ProtocolVersion != airdropClaimProtocolVersion || claim.Kind != "airdrop_claim" || claim.Status != "claimed_pending_review" {
+		t.Fatalf("unexpected airdrop response: %#v", claim)
+	}
+	if claim.LedgerEntry.Type != "airdrop_claim" || claim.LedgerEntry.AmountCents != 750 || len(claim.LedgerEntry.EntryHash) != 64 {
+		t.Fatalf("airdrop ledger entry invalid: %#v", claim.LedgerEntry)
+	}
+
+	presaleReq := httptest.NewRequest(http.MethodPost, "/api/presale/reservations", strings.NewReader(fmt.Sprintf(`{
+		"wallet_address":"%s",
+		"reserve_mrg":25000,
+		"funding_rail":"solana",
+		"funding_reference":"signature-pending",
+		"tier":"founder"
+	}`, wallet)))
+	presaleReq.Header.Set("Authorization", "Bearer "+auth.Token)
+	presaleReq.Header.Set("Content-Type", "application/json")
+	presaleResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(presaleResp, presaleReq)
+	if presaleResp.Code != http.StatusCreated {
+		t.Fatalf("presale status = %d, body = %s", presaleResp.Code, presaleResp.Body.String())
+	}
+	var reservation PresaleReservationResponse
+	if err := json.Unmarshal(presaleResp.Body.Bytes(), &reservation); err != nil {
+		t.Fatal(err)
+	}
+	if reservation.ProtocolVersion != presaleReservationProtocolVersion || reservation.Kind != "presale_reservation" || reservation.Status != "reserved_pending_review" {
+		t.Fatalf("unexpected presale response: %#v", reservation)
+	}
+	if reservation.LedgerEntry.Type != "presale_reservation" || reservation.LedgerEntry.AmountCents != 25000 || len(reservation.LedgerEntry.EntryHash) != 64 {
+		t.Fatalf("presale ledger entry invalid: %#v", reservation.LedgerEntry)
+	}
+
+	feedTypes := map[string]bool{}
+	for _, item := range store.PublicLiveFeed(20).Items {
+		feedTypes[item.Type] = true
+	}
+	for _, required := range []string{"ledger_airdrop_claim", "ledger_presale_reservation"} {
+		if !feedTypes[required] {
+			t.Fatalf("live feed missing %s: %#v", required, store.PublicLiveFeed(20).Items)
+		}
+	}
+
+	proofTypes := map[string]bool{}
+	for _, row := range store.PublicLedgerProof().Entries {
+		proofTypes[row.Type] = true
+		if row.Type == "airdrop_claim" || row.Type == "presale_reservation" {
+			if len(row.EntryHash) != 64 || !row.Valid {
+				t.Fatalf("invalid proof row for %s: %#v", row.Type, row)
+			}
+		}
+	}
+	for _, required := range []string{"airdrop_claim", "presale_reservation"} {
+		if !proofTypes[required] {
+			t.Fatalf("ledger proof missing %s: %#v", required, store.PublicLedgerProof().Entries)
+		}
+	}
+
+	eventTypes := map[string]bool{}
+	for _, event := range store.PublicEventProtocol(20).Events {
+		eventTypes[event.Type] = true
+	}
+	for _, required := range []string{"airdrop.claimed", "presale.reserved"} {
+		if !eventTypes[required] {
+			t.Fatalf("event protocol missing %s: %#v", required, store.PublicEventProtocol(20).Events)
 		}
 	}
 }
