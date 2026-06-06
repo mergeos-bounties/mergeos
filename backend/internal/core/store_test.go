@@ -4782,6 +4782,21 @@ func TestProjectTaskGraphRouteReturnsAcyclicDependencyGraph(t *testing.T) {
 			if len(route.RoutingPacket.OutputContracts) == 0 || route.RoutingPacket.OutputContracts[0].OutputProtocol != "mergeos.agent-lease.v1" {
 				t.Fatalf("agent route did not advertise lease output contract: %#v", route.RoutingPacket)
 			}
+			contractActions := map[string]AgentOutputContract{}
+			for _, contract := range route.RoutingPacket.OutputContracts {
+				contractActions[contract.Action] = contract
+			}
+			for _, action := range []string{"review", "test", "submit"} {
+				contract, ok := contractActions[action]
+				if !ok || contract.OutputEndpoint == "" || contract.OutputProtocol == "" || contract.OutputProtocolURL == "" {
+					t.Fatalf("agent route missing %s output contract: %#v", action, route.RoutingPacket.OutputContracts)
+				}
+			}
+			if containsAny(strings.ToLower(route.Title+" "+route.SuggestedAgentType), []string{"build", "frontend", "backend", "fix", "code"}) {
+				if contractActions["generate"].OutputProtocol != "mergeos.agent-action.v1" {
+					t.Fatalf("agent implementation route missing generate contract: %#v", route.RoutingPacket.OutputContracts)
+				}
+			}
 		}
 	}
 	if err := store.AddGeminiWebhookLog(GeminiWebhookLog{

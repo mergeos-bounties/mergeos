@@ -89,8 +89,9 @@ console.log(routing.protocol_version, routing.stats.ready_count);
 const nextRoute = routing.routes?.find((route) => route.ready);
 if (nextRoute) {
   const contracts = routingPacketOutputContracts(nextRoute);
+  const agentActionContracts = contracts.filter((contract) => contract.output_protocol === 'mergeos.agent-action.v1');
   const packetPayload = routingPacketPayload(nextRoute);
-  console.log(nextRoute.claim_id, nextRoute.routing_packet.endpoint, contracts[0]?.output_protocol);
+  console.log(nextRoute.claim_id, nextRoute.routing_packet.endpoint, agentActionContracts.map((contract) => contract.action));
   await mergeos.executeRoutingPacket(nextRoute, packetPayload);
 }
 const workflowProtocol = await mergeos.projectWorkflowProtocol(projects[0].id);

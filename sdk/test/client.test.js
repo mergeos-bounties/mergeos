@@ -347,6 +347,27 @@ test('executes project routing packets for agent leases and contributor proposal
           output_protocol: 'mergeos.agent-lease.v1',
           output_protocol_url: '/protocol/agent-lease.v1.schema.json',
         },
+        {
+          action: 'review',
+          artifact_kind: 'pr_review',
+          output_endpoint: '/api/projects/prj_1/agent-actions',
+          output_protocol: 'mergeos.agent-action.v1',
+          output_protocol_url: '/protocol/agent-action.v1.schema.json',
+        },
+        {
+          action: 'test',
+          artifact_kind: 'test_evidence',
+          output_endpoint: '/api/projects/prj_1/agent-actions',
+          output_protocol: 'mergeos.agent-action.v1',
+          output_protocol_url: '/protocol/agent-action.v1.schema.json',
+        },
+        {
+          action: 'submit',
+          artifact_kind: 'task_submission',
+          output_endpoint: '/api/tasks/prj_1:12/submit',
+          output_protocol: 'mergeos.task-submission.v1',
+          output_protocol_url: '/protocol/task-submission.v1.schema.json',
+        },
       ],
     },
   };
@@ -384,6 +405,8 @@ test('executes project routing packets for agent leases and contributor proposal
   const agentPacket = routingPacketFromRoute(agentRoute);
   const agentPayload = routingPacketPayload(agentRoute, { status: 'heartbeat' });
   const agentContracts = routingPacketOutputContracts(agentRoute, 'lease');
+  const agentActionContracts = routingPacketOutputContracts(agentRoute)
+    .filter((contract) => contract.output_protocol === 'mergeos.agent-action.v1');
   const lease = await client.executeRoutingPacket(agentRoute, { status: 'heartbeat' });
   const proposal = await client.executeRoutingPacket(proposalRoute, { availability: 'Available Monday' });
 
@@ -395,6 +418,8 @@ test('executes project routing packets for agent leases and contributor proposal
     status: 'heartbeat',
   });
   assert.equal(agentContracts[0].output_protocol, 'mergeos.agent-lease.v1');
+  assert.deepEqual(agentActionContracts.map((contract) => contract.action), ['review', 'test']);
+  assert.equal(routingPacketOutputContracts(agentRoute, 'submit')[0].output_protocol, 'mergeos.task-submission.v1');
   assert.equal(lease.kind, 'agent_lease');
   assert.equal(proposal.proposal.status, 'submitted');
   assert.equal(fetchImpl.calls[0].url, '/api/agent-queue/leases');

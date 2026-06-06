@@ -258,6 +258,30 @@ func agentQueueActions(bounty *MarketplaceBounty) []string {
 	return stableStrings(actions)
 }
 
+func agentActionsForTask(task *Task) []string {
+	if task == nil {
+		return []string{"review", "test"}
+	}
+	haystack := strings.ToLower(strings.Join([]string{
+		task.Title,
+		task.Acceptance,
+		task.BountyType,
+		task.SuggestedAgentType,
+		task.AgentType,
+	}, " "))
+	actions := []string{"review", "test"}
+	if containsAny(haystack, []string{"build", "generate", "frontend", "backend", "fix", "implementation", "page", "code"}) {
+		actions = append(actions, "generate")
+	}
+	if containsAny(haystack, []string{"deploy", "pipeline", "release"}) {
+		actions = append(actions, "deploy")
+	}
+	if containsAny(haystack, []string{"scan", "dependency", "secret", "security"}) {
+		actions = append(actions, "scan")
+	}
+	return stableStrings(actions)
+}
+
 func agentQueueOutputContracts(bounty *MarketplaceBounty, actionEndpoint, submitEndpoint string, contextURLs map[string]string) []AgentOutputContract {
 	actions := agentQueueActions(bounty)
 	rows := make([]AgentOutputContract, 0, len(actions)+1)
@@ -542,9 +566,18 @@ func projectRoutingPacket(task *Task, action, claimID, protocolURL string) Proje
 		)
 		packet.OutputContracts = []AgentOutputContract{
 			{Action: "lease", ArtifactKind: "agent_lease", OutputEndpoint: lease.LeaseEndpoint, OutputProtocol: "mergeos.agent-lease.v1", OutputProtocolURL: "/protocol/agent-lease.v1.schema.json", PublicURL: "/api/public/live-feed"},
-			agentQueueOutputContract("review", projectID, actionEndpoint, contextURLs),
-			{Action: "submit", ArtifactKind: "task_submission", OutputEndpoint: submitEndpoint, OutputProtocol: "mergeos.task-submission.v1", OutputProtocolURL: "/protocol/task-submission.v1.schema.json", PublicURL: protocolURL},
 		}
+		for _, agentAction := range agentActionsForTask(task) {
+			packet.OutputContracts = append(packet.OutputContracts, agentQueueOutputContract(agentAction, projectID, actionEndpoint, contextURLs))
+		}
+		packet.OutputContracts = append(packet.OutputContracts, AgentOutputContract{
+			Action:            "submit",
+			ArtifactKind:      "task_submission",
+			OutputEndpoint:    submitEndpoint,
+			OutputProtocol:    "mergeos.task-submission.v1",
+			OutputProtocolURL: "/protocol/task-submission.v1.schema.json",
+			PublicURL:         protocolURL,
+		})
 	case "invite_contributor", "publish_bounty":
 		packet.Method = "POST"
 		packet.Endpoint = "/api/proposals"
