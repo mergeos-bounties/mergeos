@@ -310,6 +310,11 @@ test('signed-in mobile dashboard keeps nav, actions, and popovers phone-safe', a
   assert.match(cssSource, /\.dashboard-shell \.dash-project-title\s*\{[\s\S]*grid-template-columns: 44px minmax\(0, 1fr\);/);
   assert.match(cssSource, /\.dashboard-shell \.auto-release-command-head,[\s\S]*\.dashboard-shell \.payment-history-meta\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\);/);
   assert.match(cssSource, /@media \(max-width: 430px\)[\s\S]*\.dashboard-shell \.dash-top-actions\s*\{[\s\S]*grid-template-columns: 42px 42px minmax\(0, 1fr\) 42px;/);
+  assert.match(cssSource, /Signed-in mobile hardening pass/);
+  assert.match(cssSource, /\.dashboard-shell,[\s\S]*\.dashboard-shell \*\s*\{[\s\S]*box-sizing: border-box;/);
+  assert.match(cssSource, /\.dashboard-shell \.dash-mobile-menu\s*\{[\s\S]*position: fixed;[\s\S]*max-height: min\(58dvh, 420px\);/);
+  assert.match(cssSource, /\.dashboard-shell \.notification-dropdown,[\s\S]*\.dashboard-account-menu \.account-context-menu\s*\{[\s\S]*max-width: calc\(100vw - 24px\) !important;/);
+  assert.match(cssSource, /\.dashboard-shell \.dashboard-tool-form,[\s\S]*\.dashboard-shell \.worker-claim-warnings\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\);/);
   assert.match(appSource, /dashboardNotificationMenuPlacement\.value = 'mobile-sheet';/);
   assert.match(appSource, /window\.visualViewport\?\.addEventListener\('resize', updateDashboardNotificationMenuPosition\);/);
   assert.match(appSource, /<span>New Project<\/span>/);

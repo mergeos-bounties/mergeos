@@ -29766,3 +29766,128 @@ canvas {
   }
 }
 
+/* Signed-in mobile hardening pass: keep the authenticated workspace compact,
+   tappable, and impossible to widen after dashboard data loads. */
+@media (max-width: 760px) {
+  body:has(.dashboard-shell),
+  body:has(.dashboard-shell) #app {
+    max-width: 100vw;
+    overflow-x: clip;
+  }
+
+  .dashboard-shell,
+  .dashboard-shell * {
+    box-sizing: border-box;
+  }
+
+  .dashboard-shell :is(.dash-card, .rail-card, .dashboard-tool-card, .dashboard-project-panel, .dashboard-side-panel, .worker-dashboard-grid, .payment-history-list, .ledger-table-wrap, .dashboard-reference-list) {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .dashboard-shell :is(.dash-card, .rail-card, .dashboard-tool-card, .dashboard-project-panel, .dashboard-side-panel) {
+    border-radius: 10px;
+  }
+
+  .dashboard-shell .dash-sidebar {
+    max-width: 100vw;
+    box-shadow: 0 12px 26px rgba(11, 21, 17, 0.08);
+  }
+
+  .dashboard-shell .dash-mobile-menu {
+    position: fixed;
+    left: var(--dash-mobile-gutter);
+    right: var(--dash-mobile-gutter);
+    top: calc(78px + env(safe-area-inset-top));
+    z-index: 790;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-height: min(58dvh, 420px);
+    margin-top: 0;
+  }
+
+  .dashboard-shell .dash-topbar {
+    max-width: 100vw;
+  }
+
+  .dashboard-shell .dash-search.mobile-open {
+    min-height: 42px;
+    padding-inline: 11px;
+  }
+
+  .dashboard-shell .dash-top-actions {
+    max-width: 100%;
+  }
+
+  .dashboard-shell .dash-top-actions > * {
+    min-width: 0;
+  }
+
+  .dashboard-shell .dash-top-actions .primary-button.compact {
+    gap: 6px;
+  }
+
+  .dashboard-shell .dash-top-actions .primary-button.compact svg {
+    flex: 0 0 auto;
+  }
+
+  .dashboard-shell .notification-dropdown,
+  .dashboard-shell .account-context-menu,
+  .notification-dropdown,
+  .dashboard-account-menu .account-context-menu {
+    max-width: calc(100vw - 24px) !important;
+  }
+
+  .dashboard-shell .notification-dropdown-head,
+  .dashboard-shell .notification-dropdown-actions,
+  .dashboard-shell .account-context-head {
+    min-width: 0;
+  }
+
+  .dashboard-shell .notification-dropdown-item {
+    align-items: start;
+  }
+
+  .dashboard-shell .notification-dropdown-copy,
+  .dashboard-shell .notification-dropdown-copy *,
+  .dashboard-shell .account-context-head *,
+  .dashboard-shell .dashboard-reference-list *,
+  .dashboard-shell .worker-claim-context *,
+  .dashboard-shell .auto-release-payload-strip * {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .dashboard-shell .dashboard-tool-form,
+  .dashboard-shell .dashboard-tool-form.estimator-form,
+  .dashboard-shell .wallet-migration-grid,
+  .dashboard-shell .routing-proposal-list article,
+  .dashboard-shell .routing-route-list article,
+  .dashboard-shell .worker-claim-packet,
+  .dashboard-shell .worker-claim-warnings {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dashboard-shell .dashboard-tool-form :is(input, textarea, select, button),
+  .dashboard-shell .wallet-migration-grid :is(input, textarea, select, button) {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 430px) {
+  .dashboard-shell .dash-mobile-menu {
+    grid-template-columns: minmax(0, 1fr);
+    top: calc(74px + env(safe-area-inset-top));
+  }
+
+  .dashboard-shell .dash-mobile-menu button {
+    justify-content: flex-start;
+    min-height: 42px;
+    padding-inline: 12px;
+  }
+
+  .dashboard-shell .dash-top-actions .primary-button.compact span {
+    max-width: 12ch;
+  }
+}
+
