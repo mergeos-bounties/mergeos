@@ -3940,6 +3940,9 @@ func publicLedgerReference(projectID, taskID string, sequence int, reference str
 	if pullReference := publicPullLedgerReference(reference); pullReference != "" {
 		return pullReference
 	}
+	if walletMigrationReference := publicWalletMigrationLedgerReference(reference); walletMigrationReference != "" {
+		return walletMigrationReference
+	}
 	if projectID == "" {
 		return fmt.Sprintf("ledger:%d", sequence)
 	}
@@ -3947,6 +3950,30 @@ func publicLedgerReference(projectID, taskID string, sequence int, reference str
 		return fmt.Sprintf("project:%s;task:%s", projectID, taskID)
 	}
 	return "project:" + projectID
+}
+
+func publicWalletMigrationLedgerReference(reference string) string {
+	fields := splitLedgerReference(reference)
+	migrationID := sanitizeLedgerReferenceValue(fields["wallet_migration"])
+	legacyChain := sanitizeLedgerReferenceValue(fields["legacy_chain"])
+	legacyHash := sanitizeLedgerReferenceValue(fields["legacy_hash"])
+	target := sanitizeLedgerReferenceValue(fields["target"])
+	instruction := sanitizeLedgerReferenceValue(fields["instruction"])
+	if migrationID == "" || legacyHash == "" || target == "" {
+		return ""
+	}
+	parts := []string{
+		"wallet_migration:" + migrationID,
+		"legacy_hash:" + legacyHash,
+		"target:" + target,
+	}
+	if legacyChain != "" {
+		parts = append(parts, "legacy_chain:"+legacyChain)
+	}
+	if instruction != "" {
+		parts = append(parts, "instruction:"+instruction)
+	}
+	return strings.Join(parts, ";")
 }
 
 func (s *Store) IsPaymentReferenceUsed(reference string) bool {

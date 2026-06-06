@@ -538,6 +538,7 @@ func (s *Server) createWalletMigration(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	s.broadcastLiveFeedEvent("ledger_wallet_migration")
 	writeJSON(w, http.StatusCreated, migration)
 }
 

@@ -196,6 +196,16 @@ func (s *Store) CreateWalletMigration(userID string, req CreateWalletMigrationRe
 
 	summary := s.walletSummaryLocked(wallet)
 	response := walletMigrationResponse(legacyChain, legacyAddress, summary, cfg, now)
+	ledgerReference := walletMigrationLedgerReference(response)
+	s.addLedger("wallet_migration", "legacy:"+legacyChain+":"+response.LegacyAddressHash, walletAccount(response.TargetAddress), 0, ledgerReference)
+	s.addNotificationLocked(
+		user.ID,
+		"",
+		"wallet",
+		"Solana wallet migration staged",
+		"Your legacy "+strings.ToUpper(legacyChain)+" wallet is linked to a Solana MRG wallet. Complete the Anchor registration proof before distribution.",
+		"pending_contract_registration",
+	)
 	if err := s.saveLocked(); err != nil {
 		return WalletMigrationResponse{}, err
 	}
@@ -668,6 +678,20 @@ func walletMigrationResponse(chain, legacyAddress string, wallet WalletSummary, 
 		Wallet:    wallet,
 		CreatedAt: now,
 	}
+}
+
+func walletMigrationLedgerReference(response WalletMigrationResponse) string {
+	fields := []string{
+		"wallet_migration:" + sanitizeLedgerReferenceValue(response.MigrationID),
+		"legacy_chain:" + sanitizeLedgerReferenceValue(response.LegacyChain),
+		"legacy_hash:" + sanitizeLedgerReferenceValue(response.LegacyAddressHash),
+		"target:" + sanitizeLedgerReferenceValue(response.TargetAddress),
+		"instruction:" + sanitizeLedgerReferenceValue(response.Contract.Instruction),
+	}
+	if response.Contract.ProgramID != "" {
+		fields = append(fields, "program:"+sanitizeLedgerReferenceValue(response.Contract.ProgramID))
+	}
+	return strings.Join(fields, ";")
 }
 
 func solanaNetworkFromRPCURL(value string) string {

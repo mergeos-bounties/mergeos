@@ -846,12 +846,17 @@ func publicLiveFeedLedgerTitle(entryType string) string {
 		return "Airdrop claim recorded"
 	case "presale_reservation":
 		return "Presale reservation recorded"
+	case "wallet_migration":
+		return "Solana wallet migration staged"
 	default:
 		return marketplaceTitle(entryType)
 	}
 }
 
 func publicLiveFeedLedgerBody(entry LedgerEntry, projectTitle string) string {
+	if entry.Type == "wallet_migration" {
+		return "MergeOS linked a legacy wallet hash to a Solana MRG wallet and staged Anchor registration proof."
+	}
 	scope := projectTitle
 	if scope == "" {
 		scope = "MergeOS public ledger"

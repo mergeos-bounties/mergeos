@@ -821,6 +821,57 @@ func TestCreateWalletMigrationLinksLegacyTRC20ToSolanaMetadata(t *testing.T) {
 	if summary.Chain != walletChainSolana || summary.LegacyAddress != legacyAddress || !summary.OwnerLinked {
 		t.Fatalf("wallet summary = %#v", summary)
 	}
+
+	ledger := store.ListLedger()
+	if len(ledger) == 0 {
+		t.Fatal("wallet migration did not record a ledger entry")
+	}
+	entry := ledger[len(ledger)-1]
+	if entry.Type != "wallet_migration" || entry.AmountCents != 0 {
+		t.Fatalf("wallet migration ledger entry = %#v", entry)
+	}
+	if entry.ToAccount != migration.TargetAddress {
+		t.Fatalf("wallet migration target account = %q, want %q", entry.ToAccount, migration.TargetAddress)
+	}
+	if !strings.Contains(entry.Reference, "wallet_migration:"+migration.MigrationID) ||
+		!strings.Contains(entry.Reference, "legacy_hash:"+migration.LegacyAddressHash) ||
+		strings.Contains(entry.Reference, legacyAddress) {
+		t.Fatalf("wallet migration ledger reference is not safely scoped: %q", entry.Reference)
+	}
+
+	publicLedger := store.ListPublicLedger()
+	publicEntry := publicLedger[len(publicLedger)-1]
+	if publicEntry.Type != "wallet_migration" ||
+		!strings.Contains(publicEntry.Reference, "wallet_migration:"+migration.MigrationID) ||
+		!strings.Contains(publicEntry.Reference, "legacy_hash:"+migration.LegacyAddressHash) ||
+		strings.Contains(publicEntry.Reference, legacyAddress) {
+		t.Fatalf("public wallet migration ledger reference is not sanitized: %#v", publicEntry)
+	}
+	proof := store.PublicLedgerProof()
+	if len(proof.Entries) == 0 || proof.Entries[len(proof.Entries)-1].Type != "wallet_migration" {
+		t.Fatalf("wallet migration missing from public proof: %#v", proof.Entries)
+	}
+	if strings.Contains(proof.Entries[len(proof.Entries)-1].Reference, legacyAddress) {
+		t.Fatalf("public proof leaked legacy wallet address: %#v", proof.Entries[len(proof.Entries)-1])
+	}
+	feed := store.PublicLedgerEvents(5)
+	if len(feed.Items) == 0 || feed.Items[0].Type != "ledger_wallet_migration" {
+		t.Fatalf("wallet migration missing from public ledger feed: %#v", feed.Items)
+	}
+	if !strings.Contains(feed.Items[0].Body, "Solana MRG wallet") || strings.Contains(feed.Items[0].Reference, legacyAddress) {
+		t.Fatalf("wallet migration feed is not product-safe: %#v", feed.Items[0])
+	}
+	notifications := store.ListNotifications(auth.User.ID)
+	foundWalletNotification := false
+	for _, note := range notifications {
+		if note.Channel == "wallet" && note.Status == "pending_contract_registration" {
+			foundWalletNotification = true
+			break
+		}
+	}
+	if !foundWalletNotification {
+		t.Fatalf("wallet migration notification missing: %#v", notifications)
+	}
 }
 
 func TestNewWalletAddressUsesSolanaBase58(t *testing.T) {
