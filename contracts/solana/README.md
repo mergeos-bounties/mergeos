@@ -69,5 +69,5 @@ After deployment:
 
 1. Set `CRYPTO_TOKEN_CONTRACT` to the MRG SPL mint.
 2. Set `CRYPTO_RECEIVER` to the treasury receiver token account.
-3. Set `SOLANA_PROGRAM_ID` to the deployed `mergeos_mrg` program id.
+3. Set `MRG_SOLANA_PROGRAM_ID` to the deployed `mergeos_mrg` program id.
 4. Keep `wallet-migration.v1` responses on `program_ready=false` until the program id is a valid Solana public key.

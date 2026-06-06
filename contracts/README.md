@@ -4,11 +4,12 @@ This package now contains the MergeOS Solana/Anchor program for the MRG token ec
 
 ## Program
 
-- `programs/mergeos/src/lib.rs`: Anchor program for MRG SPL mint operations, project escrow, task payout/refund, project close proof events, and legacy wallet migration.
-- `Anchor.toml`: localnet Anchor workspace configuration.
-- `Cargo.toml`: Rust workspace configuration for the Solana program.
+- `solana/programs/mergeos-mrg/src/lib.rs`: active Anchor program for MRG SPL mint operations, project escrow, payout receipts, treasury config, and legacy wallet migration.
+- `solana/idl/mergeos_mrg.json`: source IDL mirrored to the frontend public contract artifact.
+- `solana/Anchor.toml`: active localnet Anchor workspace configuration.
+- `solana/Cargo.toml`: Rust workspace configuration for the active Solana program.
 
-The checked-in localnet program id is `TqfJCDMxPEuuaQreFrZkNTKCs81ByfwG9UYc1J1MAsm`. Production must deploy the program with its own keypair and set `MRG_SOLANA_PROGRAM_ID`; the backend leaves `program_ready` false when that value is missing.
+The checked-in localnet program id is `4gUBWum3fGKfm7BeGXryzXjPDBDLfhVJRcjN5MPnfDNW`. Production must deploy the program with its own keypair and set `MRG_SOLANA_PROGRAM_ID`; the backend leaves `program_ready` false when that value is missing.
 
 ## Migration From TRC20/EVM
 
@@ -19,16 +20,16 @@ The `WalletMigration` account stores:
 - `legacy_chain`: `Trc20` or `Evm`.
 - `legacy_address_hash`: a 32-byte hash of the old wallet address.
 - `solana_wallet`: the new Solana wallet public key.
-- `registered_by`: the operator that registered the migration.
+- `owner`: the MergeOS user/operator that registered the migration.
 
 ## Security Invariants
 
 - No Solidity or EVM primitives remain in this package.
 - MRG minting uses SPL Token CPI `mint_to`.
-- Token movement uses SPL Token CPI `transfer_checked`.
-- Token burning uses SPL Token CPI `burn`.
-- Every money-moving event carries a `[u8; 32] reference` for MergeOS ledger reconciliation.
-- Escrow and task reserve accounts are PDA-backed records, keyed by project/task proof ids.
+- Token movement uses SPL Token CPI `transfer`.
+- Every money-moving event carries a `[u8; 32] ledger_reference` for MergeOS ledger reconciliation.
+- Treasury, escrow vault, payout receipt, and wallet migration accounts are PDA-backed records keyed by public proof ids.
+- MRG token accounts are constrained to the configured treasury mint and expected signer/PDA authorities.
 - Legacy wallet migration stores hashes, not raw old wallet text.
 
 ## Ledger References
@@ -42,7 +43,7 @@ const reference = contractReferenceFromLedger(publicLedgerEntry, { format: 'byte
 const legacyAddressHash = legacyWalletAddressHash('trc20', legacyAddress, { format: 'bytes' });
 ```
 
-Use the resulting arrays directly for Anchor instruction args such as `reference: [u8; 32]` and `legacy_address_hash: [u8; 32]`.
+Use the resulting arrays directly for Anchor instruction args such as `ledger_reference: [u8; 32]` and `legacy_address_hash: [u8; 32]`.
 
 For `register_legacy_wallet`, derive the PDA with seeds `[b"wallet-migration", legacy_chain.seed(), legacy_address_hash.as_ref()]`. The hash seed is raw 32-byte data, not the 64-character hex string.
 
