@@ -28564,6 +28564,125 @@ canvas {
   }
 }
 
+/* Signed-in mobile content guard: long protocol URLs, wallet ids, pills, and
+   dashboard tables should behave like phone-native rows instead of forcing
+   the whole authenticated shell wider than the viewport. */
+@media (max-width: 760px) {
+  .dashboard-shell .dashboard-status-pill,
+  .dashboard-shell .dash-project-title .live-badge,
+  .dashboard-shell .repo-severity-badge,
+  .dashboard-shell .ledger-event-type,
+  .dashboard-shell .ledger-status,
+  .dashboard-shell .ledger-amount,
+  .dashboard-shell .worker-claim-packet b,
+  .dashboard-shell .worker-claim-packet small,
+  .dashboard-shell .auto-release-payload-strip span,
+  .dashboard-shell .auto-release-context-links a,
+  .dashboard-shell .worker-claim-context a,
+  .dashboard-shell .dashboard-reference-list a,
+  .dashboard-shell code {
+    max-width: 100%;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    text-overflow: clip;
+    white-space: normal;
+  }
+
+  .dashboard-shell .auto-release-context-links,
+  .dashboard-shell .auto-release-payload-strip,
+  .dashboard-shell .worker-claim-context,
+  .dashboard-shell .dashboard-reference-list,
+  .dashboard-shell .worker-claim-packet,
+  .dashboard-shell .worker-claim-warnings {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .dashboard-shell .worker-claim-runbook li,
+  .dashboard-shell .repo-language-list span,
+  .dashboard-shell .admin-governance-meta div,
+  .dashboard-shell .ledger-chain-row,
+  .dashboard-shell .ledger-economy-balance-list article,
+  .dashboard-shell .ledger-economy-flow-list article,
+  .dashboard-shell .ledger-economy-recent-list article {
+    grid-template-columns: minmax(0, 1fr);
+    min-width: 0;
+  }
+
+  .dashboard-shell .ledger-table-wrap {
+    overflow-x: visible;
+  }
+
+  .dashboard-shell .ledger-table {
+    display: block;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .dashboard-shell .ledger-table thead {
+    display: none;
+  }
+
+  .dashboard-shell .ledger-table tbody,
+  .dashboard-shell .ledger-table tr,
+  .dashboard-shell .ledger-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .dashboard-shell .ledger-table tr {
+    border: 1px solid #e5edf0;
+    border-radius: 10px;
+    background: #ffffff;
+    padding: 10px;
+  }
+
+  .dashboard-shell .ledger-table tr + tr {
+    margin-top: 10px;
+  }
+
+  .dashboard-shell .ledger-table td {
+    border: 0;
+    padding: 7px 0;
+  }
+
+  .dashboard-shell .ledger-table td::before {
+    display: block;
+    margin-bottom: 4px;
+    color: #64748b;
+    font-size: 10px;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .dashboard-shell .ledger-table td:nth-child(1)::before {
+    content: "Event";
+  }
+
+  .dashboard-shell .ledger-table td:nth-child(2)::before {
+    content: "Project";
+  }
+
+  .dashboard-shell .ledger-table td:nth-child(3)::before {
+    content: "Amount";
+  }
+
+  .dashboard-shell .ledger-table td:nth-child(4)::before {
+    content: "Status";
+  }
+
+  .dashboard-shell .ledger-table td:nth-child(5)::before {
+    content: "Reference";
+  }
+
+  .dashboard-shell .ledger-table td:nth-child(6)::before {
+    content: "Time";
+  }
+}
+
 /* Signed-in mobile last-mile overrides. This is intentionally the last
    authenticated-shell block so narrow phones do not inherit desktop remnants. */
 @media (max-width: 760px) {

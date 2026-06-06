@@ -272,6 +272,12 @@ test('signed-in mobile dashboard keeps nav, actions, and popovers phone-safe', a
   assert.match(cssSource, /@media \(max-width: 430px\)[\s\S]*\.dashboard-shell \.dashboard-role-map\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\);/);
   assert.match(cssSource, /\.mobile-nav-panel\s*\{[\s\S]*height: 100dvh;[\s\S]*max-height: 100dvh;/);
   assert.match(cssSource, /\.auth-modal\s*\{[\s\S]*max-height: calc\(100dvh - 64px\);/);
+  assert.match(cssSource, /Signed-in mobile content guard/);
+  assert.match(cssSource, /\.dashboard-shell \.auto-release-payload-strip span,[\s\S]*\.dashboard-shell \.worker-claim-context a,[\s\S]*\.dashboard-shell \.dashboard-reference-list a,[\s\S]*overflow-wrap: anywhere;/);
+  assert.match(cssSource, /\.dashboard-shell \.worker-claim-packet,[\s\S]*\.dashboard-shell \.worker-claim-warnings\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\);/);
+  assert.match(cssSource, /\.dashboard-shell \.ledger-table thead\s*\{[\s\S]*display: none;/);
+  assert.match(cssSource, /\.dashboard-shell \.ledger-table tr\s*\{[\s\S]*border: 1px solid #e5edf0;[\s\S]*border-radius: 10px;/);
+  assert.match(cssSource, /\.dashboard-shell \.ledger-table td:nth-child\(5\)::before\s*\{[\s\S]*content: "Reference";/);
   assert.match(appSource, /<span>New Project<\/span>/);
 });
 
