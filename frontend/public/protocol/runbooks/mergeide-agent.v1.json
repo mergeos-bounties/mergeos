@@ -40,6 +40,12 @@
       "auth": "none"
     },
     {
+      "label": "Project PR monitor",
+      "url": "/api/projects/{id}/pull-requests",
+      "protocol": "mergeos.pr-monitor.v1",
+      "auth": "project"
+    },
+    {
       "label": "Ledger proof",
       "url": "/api/public/ledger/proof",
       "protocol": "mergeos.ledger-proof.v1",
@@ -130,6 +136,18 @@
     },
     {
       "step": 5,
+      "method": "GET",
+      "endpoint": "/api/projects/{id}/pull-requests",
+      "description": "Read the PR monitor auto_release_packet for ready low-risk work after review and deployment validation."
+    },
+    {
+      "step": 6,
+      "method": "POST",
+      "endpoint": "/api/projects/{id}/auto-release",
+      "description": "Release eligible payouts by sending auto_release_packet.payload or an SDK-built payload from the PR monitor task."
+    },
+    {
+      "step": 7,
       "method": "GET",
       "endpoint": "/api/public/ledger/proof",
       "description": "Verify public proof after acceptance or payout release."
@@ -233,6 +251,7 @@
       "deployment preview URL",
       "security findings",
       "design review notes",
+      "PR monitor auto_release_packet payload",
       "Solana contract reference bytes"
     ]
   },

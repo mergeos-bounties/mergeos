@@ -120,6 +120,17 @@ test('MergeIDE public page exposes the Windows exe download contract', async () 
   assert.ok(appSource.includes("['Release manifest',"));
 });
 
+test('public agent runbook and SDK document PR monitor auto-release', async () => {
+  const runbook = JSON.parse(await fs.readFile(new URL('./public/protocol/runbooks/mergeide-agent.v1.json', import.meta.url), 'utf-8'));
+  const sdkReadme = await fs.readFile(new URL('../sdk/README.md', import.meta.url), 'utf-8');
+
+  assert.ok(runbook.context_urls.some((row) => row.protocol === 'mergeos.pr-monitor.v1' && row.auth === 'project'));
+  assert.ok(runbook.claim_flow.some((step) => step.endpoint === '/api/projects/{id}/auto-release' && step.method === 'POST'));
+  assert.ok(runbook.evidence_contract.optional.includes('PR monitor auto_release_packet payload'));
+  assert.match(sdkReadme, /autoReleasePayloadFromPRMonitorTask/);
+  assert.match(sdkReadme, /projectAutoReleaseFromPRMonitorTask\(projectID, task\)/);
+});
+
 test('admin dashboard consumes admin ops queue action contract', async () => {
   const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
 

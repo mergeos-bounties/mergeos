@@ -319,6 +319,23 @@ console.log(runbook.protocol_version, runbook.supervisor_agent_type, runbook.wor
 
 The default runbook is `/protocol/runbooks/mergeide-agent.v1.json`. It gives MergeIDE, Codex-style coding agents, review agents, QA agents, deployment agents, security agents, and design review subagents a shared public order of operations before claiming funded work.
 
+## PR Monitor Auto-Release
+
+```js
+import { autoReleasePayloadFromPRMonitorTask } from '@mergeos/sdk';
+
+const monitor = await mergeos.projectPullRequests('prj_0001');
+const task = monitor.tasks.find((row) => row.auto_release_packet?.can_auto_release);
+
+if (task) {
+  const payload = autoReleasePayloadFromPRMonitorTask(task);
+  const release = await mergeos.projectAutoRelease('prj_0001', payload);
+  console.log(release.kind, release.released_count, release.payouts.kind);
+}
+```
+
+`projectAutoReleaseFromPRMonitorTask(projectID, task)` performs the same payload build and POST in one call. The helper prefers the backend-provided `auto_release_packet.payload`, then falls back to a candidate derived from PR readiness, deployment validation signals, worker identity, and reward metadata.
+
 ## Admin APIs
 
 ```js

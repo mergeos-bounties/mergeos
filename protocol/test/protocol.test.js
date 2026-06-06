@@ -253,6 +253,10 @@ test('validates the public MergeIDE agent runbook', () => {
     'pr_review',
     'deployment_validation',
   ]);
+  assert(runbook.context_urls.some((row) => row.protocol === 'mergeos.pr-monitor.v1' && row.auth === 'project'));
+  assert(runbook.claim_flow.some((step) => step.endpoint === '/api/projects/{id}/pull-requests' && step.method === 'GET'));
+  assert(runbook.claim_flow.some((step) => step.endpoint === '/api/projects/{id}/auto-release' && step.method === 'POST'));
+  assert(runbook.evidence_contract.optional.includes('PR monitor auto_release_packet payload'));
 });
 
 test('validates release artifact protocol documents', () => {
