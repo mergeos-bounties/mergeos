@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -39,6 +40,7 @@ var configEnvKeys = []string{
 	"CRYPTO_TOKEN_CONTRACT",
 	"CRYPTO_TOKEN_DECIMALS",
 	"CRYPTO_MIN_CONFIRMATIONS",
+	"CRYPTO_WEBHOOK_SECRET",
 	"MRG_SOLANA_PROGRAM_ID",
 	"GITHUB_TOKEN",
 	"GITHUB_OWNER",
@@ -191,6 +193,36 @@ func TestLoadConfigDoesNotInventSolanaProgramID(t *testing.T) {
 
 	if cfg.SolanaProgramID != "" {
 		t.Fatalf("solana program id default = %q, want empty until deployment", cfg.SolanaProgramID)
+	}
+}
+
+func TestDeployWorkflowPassesSolanaRuntimeConfig(t *testing.T) {
+	workflowPath := filepath.Join("..", "..", "..", ".github", "workflows", "deploy.yml")
+	source, err := os.ReadFile(workflowPath)
+	if err != nil {
+		t.Fatalf("read deploy workflow: %v", err)
+	}
+	workflow := string(source)
+	for _, name := range []string{
+		"CRYPTO_RPC_URL",
+		"CRYPTO_RECEIVER",
+		"CRYPTO_ASSET",
+		"CRYPTO_TOKEN_MINT",
+		"CRYPTO_TOKEN_CONTRACT",
+		"CRYPTO_TOKEN_DECIMALS",
+		"CRYPTO_MIN_CONFIRMATIONS",
+		"CRYPTO_WEBHOOK_SECRET",
+		"MRG_SOLANA_PROGRAM_ID",
+	} {
+		if !strings.Contains(workflow, name+": ${{ secrets."+name+" }}") {
+			t.Fatalf("deploy workflow does not map %s from GitHub secrets", name)
+		}
+		if !strings.Contains(workflow, "Environment="+name+"=$"+name) {
+			t.Fatalf("systemd service does not export %s", name)
+		}
+	}
+	if !strings.Contains(workflow, `MRG_SOLANA_PROGRAM_ID="$MRG_SOLANA_PROGRAM_ID"`) {
+		t.Fatal("fallback nohup path does not export MRG_SOLANA_PROGRAM_ID")
 	}
 }
 
