@@ -582,14 +582,20 @@ test('sanitizes simple public limit query values', async () => {
     { status: 200, body: { items: [] } },
     { status: 200, body: { agents: [] } },
     { status: 200, body: { events: [] } },
+    { status: 200, body: { tasks: [] } },
+    { status: 200, body: { tasks: [] } },
   ]);
   const client = new MergeOSClient({ baseURL: 'https://mergeos.shop/', fetchImpl });
 
   await client.publicLiveFeed({ limit: Infinity });
   await client.publicProtocolAgents({ limit: 0 });
   await client.publicProtocolEvents({ limit: '2.9' });
+  await client.publicProtocolTasks({ limit: Infinity });
+  await client.publicProtocolTasks({ limit: '2.9' });
 
   assert.equal(fetchImpl.calls[0].url, 'https://mergeos.shop/api/public/live-feed');
   assert.equal(fetchImpl.calls[1].url, 'https://mergeos.shop/api/public/protocol/agents');
   assert.equal(fetchImpl.calls[2].url, 'https://mergeos.shop/api/public/protocol/events?limit=2');
+  assert.equal(fetchImpl.calls[3].url, 'https://mergeos.shop/api/public/protocol/tasks');
+  assert.equal(fetchImpl.calls[4].url, 'https://mergeos.shop/api/public/protocol/tasks?limit=2');
 });

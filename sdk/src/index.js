@@ -116,7 +116,7 @@ export class MergeOSClient {
   }
 
   publicProtocolTasks(options = {}) {
-    const limit = Number(options.limit) > 0 ? `?limit=${encodeURIComponent(Number(options.limit))}` : '';
+    const limit = publicLimitQuery(options.limit);
     return this.request(`/api/public/protocol/tasks${limit}`, { auth: false });
   }
 
