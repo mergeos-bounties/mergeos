@@ -397,6 +397,28 @@ export class MergeOSClient {
     return this.request(`/api/projects/${encodeURIComponent(projectID)}/protocol/scan`);
   }
 
+  createRepositorySuggestedTaskPayPalOrder(projectID, suggestedTaskID, payload = {}) {
+    return this.request(
+      `/api/projects/${encodeURIComponent(projectID)}/repo-scan/suggested-tasks/${encodeURIComponent(suggestedTaskID)}/paypal-order`,
+      { method: 'POST', body: repositorySuggestedTaskPayPalOrderPayload(suggestedTaskID, payload) },
+    );
+  }
+
+  repositorySuggestedTaskPayPalOrder(projectID, suggestedTaskID, payload = {}) {
+    return this.createRepositorySuggestedTaskPayPalOrder(projectID, suggestedTaskID, payload);
+  }
+
+  fundRepositorySuggestedTask(projectID, suggestedTaskID, payload = {}) {
+    return this.request(
+      `/api/projects/${encodeURIComponent(projectID)}/repo-scan/suggested-tasks/${encodeURIComponent(suggestedTaskID)}/fund`,
+      { method: 'POST', body: repositorySuggestedTaskFundingPayload(suggestedTaskID, payload) },
+    );
+  }
+
+  fundSuggestedRepositoryTask(projectID, suggestedTaskID, payload = {}) {
+    return this.fundRepositorySuggestedTask(projectID, suggestedTaskID, payload);
+  }
+
   syncProjectRepoIssues(projectID) {
     return this.request(`/api/projects/${encodeURIComponent(projectID)}/repo-sync`, { method: 'POST' });
   }
@@ -632,6 +654,26 @@ export function presaleReservationPayload(payload = {}) {
   });
 }
 
+export function repositorySuggestedTaskFundingPayload(suggestedTaskID, payload = {}) {
+  return compactPayload({
+    suggested_task_id: firstPayloadValue(payload, ['suggested_task_id', 'suggestedTaskID', 'task_id', 'taskID'], suggestedTaskID),
+    reward_cents: integerPayloadValue(firstPayloadValue(payload, ['reward_cents', 'rewardCents', 'reward']), 0),
+    budget_cents: integerPayloadValue(firstPayloadValue(payload, ['budget_cents', 'budgetCents', 'budget']), 0),
+    payment_method: firstPayloadValue(payload, ['payment_method', 'paymentMethod', 'method'], 'card'),
+    payment_reference: firstPayloadValue(payload, ['payment_reference', 'paymentReference', 'reference']),
+  });
+}
+
+export function repositorySuggestedTaskPayPalOrderPayload(suggestedTaskID, payload = {}) {
+  return compactPayload({
+    suggested_task_id: firstPayloadValue(payload, ['suggested_task_id', 'suggestedTaskID', 'task_id', 'taskID'], suggestedTaskID),
+    reward_cents: integerPayloadValue(firstPayloadValue(payload, ['reward_cents', 'rewardCents', 'reward']), 0),
+    budget_cents: integerPayloadValue(firstPayloadValue(payload, ['budget_cents', 'budgetCents', 'budget']), 0),
+    return_url: firstPayloadValue(payload, ['return_url', 'returnURL', 'returnUrl']),
+    cancel_url: firstPayloadValue(payload, ['cancel_url', 'cancelURL', 'cancelUrl']),
+  });
+}
+
 export function normalizeSolanaWalletAddress(value = '') {
   return String(value || '').trim();
 }
@@ -733,7 +775,7 @@ export function agentActionPayload(action, payload = {}) {
   const durationMillis = payload.duration_millis ?? payload.durationMillis;
   const pullNumber = payload.pull_number ?? payload.pullNumber;
   const contextURLs = payload.context_urls || payload.contextURLs || payload.contextUrls || [];
-  const evidence = payload.evidence || [];
+  const evidence = payload.evidence || payload.evidence_required || payload.evidenceRequired || [];
   const runbook = payload.runbook || [];
   const checks = payload.checks || [];
   const delegatedBy = payload.delegated_by || payload.delegatedBy || '';
@@ -748,9 +790,9 @@ export function agentActionPayload(action, payload = {}) {
     duration_millis: Number(durationMillis) > 0 ? Number(durationMillis) : 0,
     pull_number: Number(pullNumber) > 0 ? Number(pullNumber) : 0,
     labels: Array.isArray(payload.labels) ? payload.labels : [],
-    context_urls: Array.isArray(contextURLs) ? contextURLs : [],
-    evidence: Array.isArray(evidence) ? evidence : [],
-    runbook: Array.isArray(runbook) ? runbook : [],
+    context_urls: normalizeContextURLList(contextURLs),
+    evidence: normalizeStringList(evidence),
+    runbook: normalizeRunbookList(runbook),
     checks: Array.isArray(checks) ? checks : [],
   };
   if (delegatedBy) body.delegated_by = delegatedBy;
@@ -762,6 +804,24 @@ export function agentActionPayload(action, payload = {}) {
   if (claimID) body.claim_id = claimID;
   if (bountyID) body.bounty_id = bountyID;
   return body;
+}
+
+export function agentActionPayloadFromWorkPacket(workPacket = {}, action = 'review', overrides = {}) {
+  const normalizedAction = normalizeAgentAction(action);
+  const actionPayloads = Array.isArray(workPacket.action_payloads) ? workPacket.action_payloads : [];
+  const selected = actionPayloads.find((item) => normalizeAgentAction(item?.action || item?.body?.action) === normalizedAction) || actionPayloads[0] || {};
+  const body = selected.body && typeof selected.body === 'object' ? selected.body : {};
+  const contextURLs = overrides.context_urls || overrides.contextURLs || overrides.contextUrls || body.context_urls || workPacket.context_urls || {};
+  return agentActionPayload(body.action || selected.action || normalizedAction, {
+    ...body,
+    ...overrides,
+    context_urls: contextURLs,
+    runbook: overrides.runbook || body.runbook || workPacket.runbook || [],
+    delegated_by: overrides.delegated_by || overrides.delegatedBy || body.delegated_by || workPacket.supervisor_agent_type,
+    design_agent: overrides.design_agent || overrides.designAgent || body.design_agent || workPacket.design_review_agent,
+    subagent_type: overrides.subagent_type || overrides.subagentType || body.subagent_type || workPacket.subagent_type,
+    delegation_chain: overrides.delegation_chain || overrides.delegationChain || body.delegation_chain || workPacket.delegation_chain || [],
+  });
 }
 
 export function normalizeAgentAction(action = '') {
@@ -914,6 +974,26 @@ function passwordPayload(passwordOrPayload) {
   return { password: String(passwordOrPayload || '') };
 }
 
+function firstPayloadValue(source = {}, keys = [], fallback = '') {
+  for (const key of keys) {
+    if (source[key] !== undefined && source[key] !== null && String(source[key]).trim() !== '') {
+      return source[key];
+    }
+  }
+  return fallback;
+}
+
+function integerPayloadValue(value, fallback) {
+  if (value === undefined || value === null || String(value).trim() === '') {
+    return fallback;
+  }
+  const number = Number(value);
+  if (!Number.isFinite(number)) {
+    return value;
+  }
+  return Math.trunc(number);
+}
+
 function firstTokenWorkflowValue(source = {}, keys = [], fallback = '') {
   for (const key of keys) {
     if (source[key] !== undefined && source[key] !== null && String(source[key]).trim() !== '') {
@@ -940,6 +1020,32 @@ function tokenWorkflowList(value = []) {
     .map((item) => String(item || '').trim())
     .filter(Boolean);
   return normalized.length ? normalized : undefined;
+}
+
+function normalizeContextURLList(value = []) {
+  const items = Array.isArray(value)
+    ? value
+    : value && typeof value === 'object'
+      ? Object.values(value)
+      : String(value || '').split(',');
+  return items.map((item) => String(item || '').trim()).filter(Boolean);
+}
+
+function normalizeStringList(value = []) {
+  const items = Array.isArray(value) ? value : String(value || '').split(',');
+  return items.map((item) => String(item || '').trim()).filter(Boolean);
+}
+
+function normalizeRunbookList(value = []) {
+  const items = Array.isArray(value) ? value : String(value || '').split('\n');
+  return items.map((item) => {
+    if (!item || typeof item !== 'object') return String(item || '').trim();
+    const prefix = item.step ? `${item.step}. ` : '';
+    const label = item.label || item.action || 'agent step';
+    const method = item.method ? `${item.method} ` : '';
+    const endpoint = item.endpoint ? ` (${method}${item.endpoint})` : '';
+    return `${prefix}${label}${endpoint}`.trim();
+  }).filter(Boolean);
 }
 
 function compactPayload(payload = {}) {

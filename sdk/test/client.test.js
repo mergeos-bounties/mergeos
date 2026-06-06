@@ -3,6 +3,7 @@ import test from 'node:test';
 import {
   MergeOSClient,
   airdropClaimPayload,
+  agentActionPayloadFromWorkPacket,
   agentActionPayload,
   agentActionEventType,
   agentActionEventTypes,
@@ -24,6 +25,8 @@ import {
   protocolEventsFromMessage,
   protocolEventGroup,
   protocolTypeFromMessage,
+  repositorySuggestedTaskFundingPayload,
+  repositorySuggestedTaskPayPalOrderPayload,
   walletMigrationPDASeedMetadata,
   workflowEventTypes,
 } from '../src/index.js';
@@ -928,6 +931,120 @@ test('exposes project workflow and admin ops routes', async () => {
   assert.equal(fetchImpl.calls[13].options.method, 'POST');
   assert.equal(fetchImpl.calls[14].url, '/api/admin/ops-queue');
   assert.equal(fetchImpl.calls[15].url, '/api/admin/reputation');
+});
+
+test('funds repository scan suggested tasks and builds agent work packet actions', async () => {
+  const workPacket = {
+    claim_endpoint: '/api/tasks/prj_1:12/claim',
+    action_endpoint: '/api/projects/prj_1/agent-actions',
+    submit_endpoint: '/api/tasks/prj_1:12/submit',
+    supervisor_agent_type: 'ceo-orchestrator',
+    subagent_type: 'security-agent',
+    design_review_agent: 'design-review-agent',
+    delegation_chain: ['ceo-orchestrator', 'security-agent', 'design-review-agent'],
+    context_urls: {
+      task_protocol: '/api/public/protocol/tasks?task_id=prj_1:12',
+      workflow_protocol: '/api/public/projects/prj_1/workflow',
+      repository_scan: '/api/public/projects/prj_1/repo-scan',
+    },
+    runbook: [
+      { step: 1, action: 'fetch_scan', endpoint: '/api/public/projects/prj_1/repo-scan' },
+      { step: 2, action: 'claim_task', endpoint: '/api/tasks/prj_1:12/claim' },
+    ],
+    action_payloads: [{
+      action: 'scan',
+      label: 'Run repository scan check',
+      method: 'POST',
+      endpoint: '/api/projects/prj_1/agent-actions',
+      body: {
+        action: 'scan',
+        status: 'queued',
+        project_id: 'prj_1',
+        claim_id: 'prj_1:12',
+        bounty_id: 'prj_1:12',
+        agent_type: 'security-agent',
+        context_urls: {
+          task_protocol: '/api/public/protocol/tasks?task_id=prj_1:12',
+          repository_scan: '/api/public/projects/prj_1/repo-scan',
+        },
+        evidence_required: ['Attach scan output'],
+      },
+    }],
+  };
+  const fetchImpl = fakeFetch([
+    { status: 201, body: { order_id: 'ord_repo_1', payment_reference: 'ord_repo_1', flow: 'repository_task_funding' } },
+    {
+      status: 201,
+      body: {
+        protocol_version: 'mergeos.repo-task-funding.v1',
+        kind: 'repo_task_funding',
+        project_id: 'prj_1',
+        suggested_task_id: 'finding:auth:1',
+        task_protocol_url: '/api/public/protocol/tasks?task_id=prj_1:12',
+        work_packet: workPacket,
+      },
+    },
+  ]);
+  const client = new MergeOSClient({ token: 'client-token', fetchImpl });
+
+  const paypalPayload = repositorySuggestedTaskPayPalOrderPayload('finding:auth:1', {
+    rewardCents: 25000,
+    budgetCents: 30000,
+    returnURL: 'https://mergeos.shop/paypal/return',
+    cancelUrl: 'https://mergeos.shop/paypal/cancel',
+  });
+  const fundingPayload = repositorySuggestedTaskFundingPayload('finding:auth:1', {
+    rewardCents: 25000,
+    budgetCents: 30000,
+    paymentMethod: 'card',
+    paymentReference: 'LOCAL-PAID',
+  });
+  const order = await client.createRepositorySuggestedTaskPayPalOrder('prj_1', 'finding:auth:1', paypalPayload);
+  const funded = await client.fundRepositorySuggestedTask('prj_1', 'finding:auth:1', fundingPayload);
+  const agentPayload = agentActionPayloadFromWorkPacket(funded.work_packet, 'scan', {
+    status: 'processed',
+    referenceURL: 'https://scan.example/report',
+  });
+
+  assert.deepEqual(paypalPayload, {
+    suggested_task_id: 'finding:auth:1',
+    reward_cents: 25000,
+    budget_cents: 30000,
+    return_url: 'https://mergeos.shop/paypal/return',
+    cancel_url: 'https://mergeos.shop/paypal/cancel',
+  });
+  assert.deepEqual(fundingPayload, {
+    suggested_task_id: 'finding:auth:1',
+    reward_cents: 25000,
+    budget_cents: 30000,
+    payment_method: 'card',
+    payment_reference: 'LOCAL-PAID',
+  });
+  assert.equal(order.flow, 'repository_task_funding');
+  assert.equal(funded.protocol_version, 'mergeos.repo-task-funding.v1');
+  assert.equal(fetchImpl.calls[0].url, '/api/projects/prj_1/repo-scan/suggested-tasks/finding%3Aauth%3A1/paypal-order');
+  assert.equal(fetchImpl.calls[0].options.method, 'POST');
+  assert.equal(fetchImpl.calls[0].options.headers.Authorization, 'Bearer client-token');
+  assert.equal(fetchImpl.calls[0].options.body, JSON.stringify(paypalPayload));
+  assert.equal(fetchImpl.calls[1].url, '/api/projects/prj_1/repo-scan/suggested-tasks/finding%3Aauth%3A1/fund');
+  assert.equal(fetchImpl.calls[1].options.method, 'POST');
+  assert.equal(fetchImpl.calls[1].options.body, JSON.stringify(fundingPayload));
+  assert.deepEqual(agentPayload.context_urls, [
+    '/api/public/protocol/tasks?task_id=prj_1:12',
+    '/api/public/projects/prj_1/repo-scan',
+  ]);
+  assert.equal(agentPayload.action, 'scan');
+  assert.equal(agentPayload.agent_type, 'security-agent');
+  assert.equal(agentPayload.delegated_by, 'ceo-orchestrator');
+  assert.equal(agentPayload.design_agent, 'design-review-agent');
+  assert.equal(agentPayload.subagent_type, 'security-agent');
+  assert.deepEqual(agentPayload.delegation_chain, ['ceo-orchestrator', 'security-agent', 'design-review-agent']);
+  assert.equal(agentPayload.reference_url, 'https://scan.example/report');
+  assert.deepEqual(agentPayload.evidence, ['Attach scan output']);
+  assert.deepEqual(agentPayload.runbook, [
+    '1. fetch_scan (/api/public/projects/prj_1/repo-scan)',
+    '2. claim_task (/api/tasks/prj_1:12/claim)',
+  ]);
 });
 
 test('exposes admin operations, review, settings, and integration routes', async () => {

@@ -14,6 +14,7 @@ npm test
 ```js
 import {
   airdropClaimPayload,
+  agentActionPayloadFromWorkPacket,
   agentActionPayload,
   agentActionEventType,
   contractReferenceFromLedger,
@@ -22,6 +23,8 @@ import {
   isLikelySolanaWallet,
   legacyWalletAddressHash,
   presaleReservationPayload,
+  repositorySuggestedTaskFundingPayload,
+  repositorySuggestedTaskPayPalOrderPayload,
   protocolEventFromMessage,
   protocolEventsFromMessage,
   protocolEventGroup,
@@ -78,6 +81,21 @@ const scan = await mergeos.projectRepositoryScan(projects[0].id);
 const scanProtocol = await mergeos.projectRepositoryScanProtocol(projects[0].id);
 const syncReport = await mergeos.syncProjectRepoIssues(projects[0].id);
 console.log(syncReport.protocol_version, syncReport.added_task_count, syncReport.issue_mappings[0]?.claim_endpoint);
+const suggestedTask = scan.suggested_tasks?.find((task) => task.funding_packet?.can_fund);
+if (suggestedTask) {
+  const fundingPayload = repositorySuggestedTaskFundingPayload(suggestedTask.id, {
+    rewardCents: suggestedTask.funding_packet.recommended_reward_cents,
+    budgetCents: suggestedTask.funding_packet.recommended_funding_cents,
+    paymentMethod: 'card',
+    paymentReference: process.env.MERGEOS_PAYMENT_REFERENCE,
+  });
+  const fundedTask = await mergeos.fundRepositorySuggestedTask(projects[0].id, suggestedTask.id, fundingPayload);
+  const scanAction = agentActionPayloadFromWorkPacket(fundedTask.work_packet, 'scan', {
+    status: 'processed',
+    referenceURL: 'https://scan.example/report',
+  });
+  await mergeos.createProjectAgentAction(projects[0].id, scanAction);
+}
 const solanaReference = contractReferenceFromLedger({ entry_hash: 'a'.repeat(64) }, { format: 'bytes' });
 const legacyHash = legacyWalletAddressHash('trc20', 'TXYZ987654321', { format: 'bytes' });
 const pda = walletMigrationPDASeedMetadata('trc20', 'TXYZ987654321');
@@ -205,6 +223,26 @@ await mergeos.projectRepositoryScan('prj_0001');
 await mergeos.projectRepositoryScanProtocol('prj_0001');
 const repoSync = await mergeos.syncProjectRepoIssues('prj_0001');
 console.log(repoSync.issue_mappings[0]?.claim_id, repoSync.issue_mappings[0]?.routing?.recommended_next_action);
+const suggestedFundingPayload = repositorySuggestedTaskFundingPayload('finding_auth_001', {
+  rewardCents: 25000,
+  budgetCents: 30000,
+  paymentMethod: 'card',
+  paymentReference: process.env.MERGEOS_PAYMENT_REFERENCE,
+});
+const repoTaskOrderPayload = repositorySuggestedTaskPayPalOrderPayload('finding_auth_001', {
+  rewardCents: 25000,
+  budgetCents: 30000,
+  returnURL: 'https://mergeos.shop/paypal/return',
+  cancelURL: 'https://mergeos.shop/paypal/cancel',
+});
+await mergeos.createRepositorySuggestedTaskPayPalOrder('prj_0001', 'finding_auth_001', repoTaskOrderPayload);
+const fundedRepoTask = await mergeos.fundRepositorySuggestedTask('prj_0001', 'finding_auth_001', suggestedFundingPayload);
+console.log(fundedRepoTask.protocol_version, fundedRepoTask.task_protocol_url, fundedRepoTask.work_packet.claim_endpoint);
+const repoTaskAgentAction = agentActionPayloadFromWorkPacket(fundedRepoTask.work_packet, 'scan', {
+  status: 'processed',
+  referenceURL: 'https://scan.example/report',
+});
+await mergeos.createProjectAgentAction('prj_0001', repoTaskAgentAction);
 await mergeos.listTasks();
 const agentClaim = await mergeos.claimTask('prj_0001:12', {
   worker_kind: 'agent',
