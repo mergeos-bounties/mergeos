@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import test from 'node:test';
 import {
   assertProtocolDocument,
@@ -57,6 +57,20 @@ test('loads stable task, workflow, ledger, and event schemas', () => {
     'mergeos.workflow.v1',
   ]);
   assert.equal(schemaForProtocol('mergeos.task.v1').title, 'MergeOS Task v1');
+});
+
+test('publishes protocol schemas unchanged to frontend public artifacts', () => {
+  const schemaDir = new URL('../schemas/', import.meta.url);
+  const publicDir = new URL('../../frontend/public/protocol/', import.meta.url);
+  const schemaFiles = readdirSync(schemaDir).filter((file) => file.endsWith('.json')).sort();
+  const publicFiles = readdirSync(publicDir).filter((file) => file.endsWith('.json')).sort();
+
+  assert.deepEqual(publicFiles, schemaFiles);
+  for (const file of schemaFiles) {
+    const sourceSchema = readFileSync(new URL(file, schemaDir), 'utf8');
+    const publicSchema = readFileSync(new URL(file, publicDir), 'utf8');
+    assert.equal(publicSchema, sourceSchema, `${file} must be copied unchanged to frontend/public/protocol`);
+  }
 });
 
 test('validates airdrop claim and presale reservation protocol documents', () => {

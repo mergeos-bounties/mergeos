@@ -163,3 +163,22 @@ jobs:
 
       - name: Test Solana IDL
         run: node --test contracts/solana/test/idl.test.js
+
+  protocol:
+    name: Protocol schema package
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Test protocol schemas
+        working-directory: protocol
+        run: npm test
