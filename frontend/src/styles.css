@@ -218,11 +218,11 @@ svg {
 .nav-menu.open::after {
   content: "";
   position: absolute;
-  left: -48px;
-  right: -48px;
+  left: -72px;
+  right: -72px;
   top: 100%;
   z-index: 255;
-  height: 78px;
+  height: 108px;
   pointer-events: auto;
 }
 
@@ -265,10 +265,10 @@ svg {
 .nav-context-menu::before {
   content: "";
   position: absolute;
-  left: -24px;
-  right: -24px;
-  top: -68px;
-  height: 68px;
+  left: -36px;
+  right: -36px;
+  top: -108px;
+  height: 108px;
   pointer-events: auto;
 }
 
@@ -29525,7 +29525,7 @@ canvas {
     left: clamp(12px, 4vw, 18px) !important;
     right: clamp(12px, 4vw, 18px) !important;
     top: auto !important;
-    bottom: calc(12px + env(safe-area-inset-bottom)) !important;
+    bottom: calc(12px + var(--dashboard-mobile-bottom-inset, 0px) + env(safe-area-inset-bottom)) !important;
     z-index: 760;
     width: auto !important;
     max-height: min(72dvh, 460px) !important;
@@ -29582,6 +29582,181 @@ canvas {
   .account-menu:hover .account-context-menu,
   .account-context-menu.context-menu-visible {
     transform: translateY(0);
+  }
+}
+
+/* Signed-in mobile repair pass: reduce accumulated desktop spacing and keep
+   authenticated action surfaces usable on small phones after login. */
+@media (max-width: 760px) {
+  .dashboard-shell .dash-search.mobile-open {
+    display: grid;
+  }
+
+  .dashboard-shell .dash-mobile-menu {
+    max-height: min(42dvh, 320px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .dashboard-shell .dash-command-strip,
+  .dashboard-shell .dashboard-role-map,
+  .dashboard-shell .dash-content {
+    width: calc(100% - (var(--dash-mobile-gutter) * 2));
+    max-width: calc(100% - (var(--dash-mobile-gutter) * 2));
+  }
+
+  .dashboard-shell .dash-content {
+    margin-top: 12px;
+    padding: 0 0 calc(22px + env(safe-area-inset-bottom));
+  }
+
+  .dashboard-shell .dash-project-header,
+  .dashboard-shell .card-title-row,
+  .dashboard-shell .delivery-snapshot-main,
+  .dashboard-shell .repo-intel-head,
+  .dashboard-shell .routing-board-head,
+  .dashboard-shell .escrow-control-head,
+  .dashboard-shell .pr-monitor-heading-actions {
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .dashboard-shell .dash-project-title {
+    width: 100%;
+    grid-template-columns: 44px minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .dashboard-shell .dash-project-title .live-badge {
+    grid-column: 1 / -1;
+    justify-self: start;
+    max-width: 100%;
+  }
+
+  .dashboard-shell .project-photo,
+  .dashboard-shell .payment-photo {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+  }
+
+  .dashboard-shell .dash-project-actions,
+  .dashboard-shell .delivery-snapshot-actions,
+  .dashboard-shell .escrow-control-actions,
+  .dashboard-shell .routing-board-actions,
+  .dashboard-shell .repo-intel-actions,
+  .dashboard-shell .pr-monitor-heading-actions,
+  .dashboard-shell .notification-actions-row,
+  .dashboard-shell .wallet-action-row {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    justify-content: stretch;
+  }
+
+  .dashboard-shell .dash-project-actions > button,
+  .dashboard-shell .dashboard-project-action-menu,
+  .dashboard-shell .dashboard-project-action-menu > button,
+  .dashboard-shell .delivery-snapshot-actions button,
+  .dashboard-shell .delivery-snapshot-actions > span,
+  .dashboard-shell .escrow-control-actions button,
+  .dashboard-shell .escrow-control-actions > span,
+  .dashboard-shell .routing-board-actions button,
+  .dashboard-shell .routing-board-actions > span,
+  .dashboard-shell .repo-intel-actions button,
+  .dashboard-shell .repo-intel-actions > span,
+  .dashboard-shell .pr-monitor-heading-actions button,
+  .dashboard-shell .pr-monitor-heading-actions > span,
+  .dashboard-shell .notification-actions-row button,
+  .dashboard-shell .wallet-action-row .rail-link-button {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .dashboard-shell .auto-release-command-head,
+  .dashboard-shell .task-review-panel,
+  .dashboard-shell .agent-work-packet,
+  .dashboard-shell .dashboard-agent-grid,
+  .dashboard-shell .dashboard-analytics-grid,
+  .dashboard-shell .dashboard-estimate-result,
+  .dashboard-shell .pr-monitor-stats,
+  .dashboard-shell .payment-history-meta {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dashboard-shell .auto-release-command-head > span,
+  .dashboard-shell .auto-release-command-head > b {
+    justify-self: start;
+    width: max-content;
+    max-width: 100%;
+  }
+
+  .dashboard-shell .ai-workflow-list article,
+  .dashboard-shell .auto-release-runbook li,
+  .dashboard-shell .agent-runbook-strip li,
+  .dashboard-shell .dashboard-agent-grid article,
+  .dashboard-shell .rail-activity-list article,
+  .dashboard-shell .chat-list article {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dashboard-shell .ai-workflow-list b,
+  .dashboard-shell .auto-release-runbook b,
+  .dashboard-shell .agent-runbook-strip b,
+  .dashboard-shell .dashboard-agent-grid b {
+    justify-self: start;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 430px) {
+  .dashboard-shell {
+    --dash-mobile-gutter: 10px;
+  }
+
+  .dashboard-shell .dash-sidebar {
+    padding-top: 7px;
+  }
+
+  .dashboard-shell .dash-brand strong {
+    font-size: 16px;
+  }
+
+  .dashboard-shell .dash-mobile-nav {
+    gap: 5px;
+  }
+
+  .dashboard-shell .dash-mobile-nav button {
+    min-height: 38px;
+    padding: 0 4px;
+    font-size: 10px;
+  }
+
+  .dashboard-shell .dash-top-actions {
+    grid-template-columns: 42px 42px minmax(0, 1fr) 42px;
+    gap: 6px;
+  }
+
+  .dashboard-shell .dash-icon-button,
+  .dashboard-shell .dash-profile,
+  .dashboard-shell .dash-top-actions .primary-button.compact {
+    min-height: 42px;
+  }
+
+  .dashboard-shell .dash-top-actions .primary-button.compact {
+    padding-inline: 8px;
+    font-size: 11px;
+  }
+
+  .dashboard-shell .dash-project-actions,
+  .dashboard-shell .delivery-snapshot-actions,
+  .dashboard-shell .escrow-control-actions,
+  .dashboard-shell .routing-board-actions,
+  .dashboard-shell .repo-intel-actions,
+  .dashboard-shell .pr-monitor-heading-actions,
+  .dashboard-shell .notification-actions-row,
+  .dashboard-shell .wallet-action-row {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

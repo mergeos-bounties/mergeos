@@ -189,6 +189,13 @@ test('repo import exposes publish path to bounties, agents, and live proof', asy
   assert.match(appSource, /activeLiveFeedType\.value = 'Repository Scan';/);
 });
 
+test('public mega menu keeps a large hover bridge to its fixed panel', async () => {
+  const cssSource = await fs.readFile(new URL('./src/styles.css', import.meta.url), 'utf-8');
+
+  assert.match(cssSource, /\.nav-menu\.open::after\s*\{[\s\S]*left: -72px;[\s\S]*right: -72px;[\s\S]*height: 108px;/);
+  assert.match(cssSource, /\.nav-context-menu::before\s*\{[\s\S]*left: -36px;[\s\S]*right: -36px;[\s\S]*top: -108px;[\s\S]*height: 108px;/);
+});
+
 test('public agents page exposes CEO orchestrator and subagent delegation model', async () => {
   const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
   const seoSource = await fs.readFile(new URL('./src/seo.js', import.meta.url), 'utf-8');
@@ -269,7 +276,7 @@ test('signed-in mobile dashboard keeps nav, actions, and popovers phone-safe', a
   assert.match(cssSource, /\.dashboard-shell \.dash-mobile-nav\s*\{[\s\S]*grid-template-columns: repeat\(5, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /\.dashboard-shell \.dash-side-nav\s*\{[\s\S]*display: none;/);
   assert.match(cssSource, /\.dashboard-shell \.dash-top-actions\s*\{[\s\S]*grid-template-columns: 44px 44px minmax\(0, 1fr\) 44px;/);
-  assert.match(cssSource, /\.notification-dropdown\s*\{[\s\S]*bottom: calc\(12px \+ env\(safe-area-inset-bottom\)\) !important;/);
+  assert.match(cssSource, /\.notification-dropdown\s*\{[\s\S]*bottom: calc\(12px \+ var\(--dashboard-mobile-bottom-inset, 0px\) \+ env\(safe-area-inset-bottom\)\) !important;/);
   assert.match(cssSource, /\.account-context-menu,[\s\S]*\.dashboard-account-menu \.account-context-menu\s*\{[\s\S]*bottom: calc\(12px \+ env\(safe-area-inset-bottom\)\);/);
   assert.match(cssSource, /\.dashboard-shell \.dashboard-role-map\s*\{[\s\S]*display: flex;[\s\S]*overflow-x: auto;/);
   assert.match(cssSource, /Signed-in mobile overflow guard/);
@@ -297,6 +304,12 @@ test('signed-in mobile dashboard keeps nav, actions, and popovers phone-safe', a
   assert.match(cssSource, /body:has\(\.dashboard-shell\)[\s\S]*overflow-x: clip;/);
   assert.match(cssSource, /\.notification-dropdown\s*\{[\s\S]*bottom: calc\(12px \+ var\(--dashboard-mobile-bottom-inset, 0px\) \+ env\(safe-area-inset-bottom\)\) !important;/);
   assert.match(cssSource, /\.notification-dropdown-item\s*\{[\s\S]*grid-template-columns: 10px minmax\(0, 1fr\);/);
+  assert.match(cssSource, /Signed-in mobile repair pass/);
+  assert.match(cssSource, /\.dashboard-shell \.dash-search\.mobile-open\s*\{[\s\S]*display: grid;/);
+  assert.match(cssSource, /\.dashboard-shell \.dash-content\s*\{[\s\S]*padding: 0 0 calc\(22px \+ env\(safe-area-inset-bottom\)\);/);
+  assert.match(cssSource, /\.dashboard-shell \.dash-project-title\s*\{[\s\S]*grid-template-columns: 44px minmax\(0, 1fr\);/);
+  assert.match(cssSource, /\.dashboard-shell \.auto-release-command-head,[\s\S]*\.dashboard-shell \.payment-history-meta\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\);/);
+  assert.match(cssSource, /@media \(max-width: 430px\)[\s\S]*\.dashboard-shell \.dash-top-actions\s*\{[\s\S]*grid-template-columns: 42px 42px minmax\(0, 1fr\) 42px;/);
   assert.match(appSource, /dashboardNotificationMenuPlacement\.value = 'mobile-sheet';/);
   assert.match(appSource, /window\.visualViewport\?\.addEventListener\('resize', updateDashboardNotificationMenuPosition\);/);
   assert.match(appSource, /<span>New Project<\/span>/);
