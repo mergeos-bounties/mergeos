@@ -141,6 +141,10 @@
         "status": { "type": "string", "minLength": 1, "maxLength": 80 },
         "progress": { "type": "integer", "minimum": 0, "maximum": 100 },
         "updated_at": { "type": "string", "format": "date-time" },
+        "validation_packet": {
+          "type": "object",
+          "additionalProperties": true
+        },
         "stages": {
           "type": "array",
           "items": {

@@ -20,6 +20,7 @@ import {
   contractReferenceFromLedger,
   createMergeOSClient,
   deploymentAgentActionPayload,
+  deploymentValidationPayloadFromDeployment,
   isLikelySolanaWallet,
   legacyWalletAddressHash,
   presaleReservationPayload,
@@ -53,6 +54,10 @@ if (autoReleasePacket) {
 }
 const deployment = await mergeos.projectDeployment(projects[0].id);
 console.log(deployment.protocol_version, deployment.progress);
+if (deployment.validation_packet) {
+  const deploymentValidation = await mergeos.createDeploymentValidationFromDeployment(projects[0].id, deployment);
+  console.log(deploymentValidation.protocol_version, deploymentValidation.kind);
+}
 const workflow = await mergeos.projectAIWorkflow(projects[0].id);
 console.log(workflow.protocol_version, workflow.current_step);
 console.log(workflow.stages[0]?.artifact_kind, workflow.stages[0]?.output_protocol_url);
@@ -71,6 +76,7 @@ await mergeos.recordDeployment(projects[0].id, {
   status: 'processed',
 });
 const deployPayload = deploymentAgentActionPayload({ url: 'https://vercel.example/deployments/mergeos-preview' });
+const validationPayload = deploymentValidationPayloadFromDeployment(deployment);
 const testPayload = agentActionPayload('test', { status: 'processed' });
 const graph = await mergeos.projectTaskGraph(projects[0].id);
 const routing = await mergeos.projectRouting(projects[0].id);
@@ -393,6 +399,10 @@ if (task) {
 ```
 
 `projectAutoReleaseFromPRMonitorTask(projectID, task)` performs the same payload build and POST in one call. The helper prefers the backend-provided `auto_release_packet.payload`, then falls back to a candidate derived from PR readiness, deployment validation signals, worker identity, and reward metadata. Use `autoReleaseProofsFromResponse(response)` after release to read the public PR, deployment validation, policy, and ledger reference proof trail.
+
+## Deployment Validation Packet
+
+Authenticated deployment documents can include `validation_packet`, a CEO-orchestrated handoff for deployment agents. Use `deploymentValidationPayloadFromDeployment(deployment, overrides)` to build the deploy action payload, or `createDeploymentValidationFromDeployment(projectID, deployment, overrides)` to post it to the packet endpoint in one call. Public deployment documents omit this packet.
 
 `createProjectAgentReviewFromPRMonitorTask(projectID, task)` uses the authenticated `review_packet` from PR monitor rows to record review-agent evidence against `/api/projects/{id}/agent-actions`. The packet includes PR number, review checks, context URLs, runbook steps, and CEO-to-review-agent delegation metadata.
 

@@ -2723,6 +2723,28 @@ func TestProjectDeploymentRouteReturnsDerivedStatusAndSanitizesData(t *testing.T
 	if len(payload.Signals) == 0 {
 		t.Fatalf("deployment response missing ledger/AI signals: %#v", payload.Signals)
 	}
+	if payload.ValidationPacket == nil {
+		t.Fatalf("deployment response missing validation packet: %#v", payload)
+	}
+	if endpoint := payload.ValidationPacket["validation_endpoint"]; endpoint != "/api/projects/"+project.ID+"/agent-actions" {
+		t.Fatalf("unexpected validation endpoint: %#v", payload.ValidationPacket)
+	}
+	packetPayload, ok := payload.ValidationPacket["payload"].(map[string]any)
+	if !ok {
+		t.Fatalf("validation packet payload was not an object: %#v", payload.ValidationPacket["payload"])
+	}
+	if packetPayload["action"] != "deploy" || packetPayload["agent_type"] != "deployment-agent" {
+		t.Fatalf("unexpected validation packet agent payload: %#v", packetPayload)
+	}
+	if _, ok := packetPayload["claim_id"]; ok {
+		t.Fatalf("validation packet leaked internal claim id: %#v", packetPayload)
+	}
+	if packetPayload["bounty_id"] != marketplaceBountyID(project.ID, deployTask.IssueNumber) {
+		t.Fatalf("validation packet did not expose public bounty id: %#v", packetPayload)
+	}
+	if !protocolPayloadStringSliceContains(packetPayload["context_urls"], "/api/projects/"+project.ID+"/deployment") {
+		t.Fatalf("validation packet missing deployment context URL: %#v", packetPayload)
+	}
 
 	otherAuth, err := store.Register(RegisterRequest{
 		Name:     "Other Client",
@@ -2835,6 +2857,13 @@ func TestProjectDeploymentUsesDeploymentAgentAction(t *testing.T) {
 	if !foundDeployStage || !foundDeploySignal {
 		t.Fatalf("deployment response missing deploy agent evidence: stage=%t signal=%t payload=%#v", foundDeployStage, foundDeploySignal, payload)
 	}
+	if payload.ValidationPacket == nil {
+		t.Fatalf("deployment response missing deploy validation packet: %#v", payload)
+	}
+	packetPayload, ok := payload.ValidationPacket["payload"].(map[string]any)
+	if !ok || packetPayload["reference_url"] != "https://vercel.example/deployments/mergeos-preview" {
+		t.Fatalf("validation packet did not reuse deployment proof URL: %#v", payload.ValidationPacket)
+	}
 }
 
 func TestPublicProjectDeploymentRouteReturnsSanitizedReadiness(t *testing.T) {
@@ -2916,6 +2945,9 @@ func TestPublicProjectDeploymentRouteReturnsSanitizedReadiness(t *testing.T) {
 	}
 	if payload.ProjectID != project.ID || payload.Progress == 0 {
 		t.Fatalf("unexpected public deployment summary: %#v", payload)
+	}
+	if payload.ValidationPacket != nil || strings.Contains(body, "validation_packet") {
+		t.Fatalf("public deployment response leaked validation packet: %s", body)
 	}
 	foundDeploySignal := false
 	for _, signal := range payload.Signals {

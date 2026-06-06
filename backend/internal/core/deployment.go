@@ -49,7 +49,9 @@ func (s *Store) PublicProjectDeployment(projectID string) (ProjectDeploymentResp
 	if !ok {
 		return ProjectDeploymentResponse{}, errors.New("project not found")
 	}
-	return s.projectDeploymentLocked(project), nil
+	deployment := s.projectDeploymentLocked(project)
+	deployment.ValidationPacket = nil
+	return deployment, nil
 }
 
 func (s *Store) projectDeploymentLocked(project *Project) ProjectDeploymentResponse {
@@ -104,15 +106,110 @@ func (s *Store) projectDeploymentLocked(project *Project) ProjectDeploymentRespo
 	}
 
 	return ProjectDeploymentResponse{
-		ProtocolVersion: "mergeos.deployment.v1",
-		Kind:            "deployment",
-		ProjectID:       project.ID,
-		ProjectTitle:    publicLiveFeedProjectTitle(project),
-		Status:          status,
-		Progress:        progress,
-		UpdatedAt:       updatedAt,
-		Stages:          stages,
-		Signals:         signals,
+		ProtocolVersion:  "mergeos.deployment.v1",
+		Kind:             "deployment",
+		ProjectID:        project.ID,
+		ProjectTitle:     publicLiveFeedProjectTitle(project),
+		Status:           status,
+		Progress:         progress,
+		UpdatedAt:        updatedAt,
+		ValidationPacket: projectDeploymentValidationPacket(project, stages, signals),
+		Stages:           stages,
+		Signals:          signals,
+	}
+}
+
+func projectDeploymentValidationPacket(project *Project, stages []DeploymentStage, signals []DeploymentSignal) map[string]any {
+	if project == nil || strings.TrimSpace(project.ID) == "" {
+		return nil
+	}
+	status := "ready"
+	pending := []DeploymentStage{}
+	for _, stage := range stages {
+		if stage.Status != deploymentStageComplete {
+			pending = append(pending, stage)
+		}
+	}
+	if len(pending) > 0 {
+		status = "needs_validation"
+	}
+	targetStage := DeploymentStage{ID: "deployment_handoff", Title: "Deployment handoff", Status: deploymentStagePending}
+	for _, stage := range stages {
+		if stage.ID == "deployment_handoff" {
+			targetStage = stage
+			break
+		}
+	}
+	checks := make([]AgentActionCheck, 0, len(stages)+len(signals))
+	for _, stage := range stages {
+		checks = append(checks, AgentActionCheck{
+			Name:         stage.ID,
+			Status:       stage.Status,
+			Summary:      stage.Body,
+			ReferenceURL: stage.URL,
+		})
+	}
+	for _, signal := range signals {
+		if signal.Type == "agent_action" || strings.Contains(signal.Type, "deployment") {
+			checks = append(checks, AgentActionCheck{
+				Name:         signal.Type,
+				Status:       signal.Status,
+				Summary:      signal.Body,
+				ReferenceURL: signal.URL,
+			})
+		}
+	}
+	payload := AgentActionRequest{
+		Action:       "deploy",
+		AgentType:    "deployment-agent",
+		DelegatedBy:  "ceo-strategy-agent",
+		SubagentType: "deployment-agent",
+		Status:       "processed",
+		ReferenceURL: targetStage.URL,
+		ContextURLs: []string{
+			fmt.Sprintf("/api/projects/%s/deployment", project.ID),
+			fmt.Sprintf("/api/projects/%s/pull-requests", project.ID),
+			fmt.Sprintf("/api/projects/%s/protocol/workflow", project.ID),
+			fmt.Sprintf("/api/projects/%s/payouts", project.ID),
+		},
+		Evidence: []string{"deployment_handoff", "release_gate", "preview_health"},
+		Runbook: []string{
+			"Check deployment handoff stage and preview evidence.",
+			"Validate release gate readiness against accepted tasks and payout state.",
+			"Record deployment evidence through the MergeOS agent action endpoint.",
+		},
+		Checks:          checks,
+		DelegationChain: []string{"ceo-strategy-agent", "deployment-agent"},
+	}
+	if issue := targetStage.SourceTaskIssueNumber; issue > 0 {
+		payload.BountyID = marketplaceBountyID(project.ID, issue)
+	}
+	return map[string]any{
+		"status":              status,
+		"method":              "POST",
+		"validation_endpoint": fmt.Sprintf("/api/projects/%s/agent-actions", project.ID),
+		"target_stage": map[string]any{
+			"id":      targetStage.ID,
+			"title":   targetStage.Title,
+			"status":  targetStage.Status,
+			"tone":    targetStage.Tone,
+			"issue":   targetStage.SourceTaskIssueNumber,
+			"url":     targetStage.URL,
+			"updated": targetStage.UpdatedAt,
+		},
+		"context_urls": map[string]string{
+			"deployment":  fmt.Sprintf("/api/projects/%s/deployment", project.ID),
+			"pr_monitor":  fmt.Sprintf("/api/projects/%s/pull-requests", project.ID),
+			"workflow":    fmt.Sprintf("/api/projects/%s/protocol/workflow", project.ID),
+			"payouts":     fmt.Sprintf("/api/projects/%s/payouts", project.ID),
+			"public_feed": "/api/public/live-feed",
+		},
+		"runbook": []map[string]any{
+			{"step": 1, "action": "inspect_deployment", "label": "Inspect deployment validation stages", "endpoint": fmt.Sprintf("/api/projects/%s/deployment", project.ID)},
+			{"step": 2, "action": "verify_release_gate", "label": "Verify accepted tasks, deployment proof, and payout readiness", "endpoint": fmt.Sprintf("/api/projects/%s/payouts", project.ID)},
+			{"step": 3, "action": "record_deploy_evidence", "label": "Record deployment-agent evidence", "endpoint": fmt.Sprintf("/api/projects/%s/agent-actions", project.ID)},
+		},
+		"payload": payload,
 	}
 }
 

@@ -13,6 +13,10 @@
     "status": { "enum": ["queued", "validating", "ready"] },
     "progress": { "type": "integer", "minimum": 0, "maximum": 100 },
     "updated_at": { "type": "string", "format": "date-time" },
+    "validation_packet": {
+      "type": "object",
+      "additionalProperties": true
+    },
     "stages": {
       "type": "array",
       "items": {

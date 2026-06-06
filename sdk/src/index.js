@@ -367,6 +367,12 @@ export class MergeOSClient {
     return this.request(endpoint, { method: 'POST', body: agentReviewPayloadFromPRMonitorTask(task, overrides) });
   }
 
+  createDeploymentValidationFromDeployment(projectID, deployment = {}, overrides = {}) {
+    const packet = deployment.validation_packet && typeof deployment.validation_packet === 'object' ? deployment.validation_packet : {};
+    const endpoint = overrides.validation_endpoint || overrides.validationEndpoint || packet.validation_endpoint || `/api/projects/${encodeURIComponent(projectID)}/agent-actions`;
+    return this.request(endpoint, { method: 'POST', body: deploymentValidationPayloadFromDeployment(deployment, overrides) });
+  }
+
   recordAgentReview(projectID, payload = {}) {
     return this.createProjectAgentAction(projectID, agentActionPayload('review', payload));
   }
@@ -796,6 +802,31 @@ function stableStringify(value) {
 
 export function deploymentAgentActionPayload(payload = {}) {
   return agentActionPayload('deploy', payload);
+}
+
+export function deploymentValidationPayloadFromDeployment(deployment = {}, overrides = {}) {
+  const packet = deployment.validation_packet && typeof deployment.validation_packet === 'object' ? deployment.validation_packet : {};
+  const packetPayload = packet.payload && typeof packet.payload === 'object' ? packet.payload : {};
+  const targetStage = packet.target_stage && typeof packet.target_stage === 'object' ? packet.target_stage : {};
+  const contextURLs = overrides.context_urls || overrides.contextURLs || packetPayload.context_urls || packet.context_urls || [];
+  const evidence = overrides.evidence || packetPayload.evidence || ['deployment_handoff', 'release_gate', 'preview_health'];
+  const runbook = overrides.runbook || packetPayload.runbook || packet.runbook || [];
+  const checks = overrides.checks || packetPayload.checks || packet.stage_checks || [];
+  return agentActionPayload('deploy', {
+    ...packetPayload,
+    ...overrides,
+    bounty_id: overrides.bounty_id || overrides.bountyId || packetPayload.bounty_id || targetStage.bounty_id || '',
+    agent_type: overrides.agent_type || overrides.agentType || packetPayload.agent_type || 'deployment-agent',
+    delegated_by: overrides.delegated_by || overrides.delegatedBy || packetPayload.delegated_by || 'ceo-strategy-agent',
+    subagent_type: overrides.subagent_type || overrides.subagentType || packetPayload.subagent_type || 'deployment-agent',
+    status: overrides.status || packetPayload.status || packet.status || 'processed',
+    reference_url: overrides.reference_url || overrides.referenceURL || packetPayload.reference_url || targetStage.url || '',
+    context_urls: contextURLs,
+    evidence,
+    runbook,
+    checks,
+    delegation_chain: overrides.delegation_chain || overrides.delegationChain || packetPayload.delegation_chain || ['ceo-strategy-agent', 'deployment-agent'],
+  });
 }
 
 export function agentActionPayload(action, payload = {}) {

@@ -16,6 +16,7 @@ import {
   contractReferenceFromLedger,
   createMergeOSClient,
   deploymentAgentActionPayload,
+  deploymentValidationPayloadFromDeployment,
   isAgentActionEventType,
   isLikelySolanaWallet,
   isWorkflowEventType,
@@ -335,6 +336,60 @@ test('builds deployment agent action payloads for deployment evidence', async ()
     runbook: [],
     checks: [],
   }));
+});
+
+test('builds and sends deployment validation payloads from deployment packets', async () => {
+  const deployment = {
+    protocol_version: 'mergeos.deployment.v1',
+    validation_packet: {
+      status: 'needs_validation',
+      validation_endpoint: '/api/projects/prj_1/agent-actions',
+      target_stage: {
+        id: 'deployment_handoff',
+        issue: 13,
+        url: 'https://vercel.example/deployments/mergeos-preview',
+      },
+      context_urls: {
+        deployment: '/api/projects/prj_1/deployment',
+        payouts: '/api/projects/prj_1/payouts',
+      },
+      runbook: [
+        { step: 1, action: 'inspect_deployment', endpoint: '/api/projects/prj_1/deployment' },
+      ],
+      payload: {
+        action: 'deploy',
+        bounty_id: 'prj_1:13',
+        agent_type: 'deployment-agent',
+        delegated_by: 'ceo-strategy-agent',
+        subagent_type: 'deployment-agent',
+        status: 'processed',
+        reference_url: 'https://vercel.example/deployments/mergeos-preview',
+        context_urls: ['/api/projects/prj_1/deployment'],
+        evidence: ['deployment_handoff'],
+        checks: [{ name: 'deployment_handoff', status: 'complete', summary: 'Preview linked.' }],
+        delegation_chain: ['ceo-strategy-agent', 'deployment-agent'],
+      },
+    },
+  };
+  const payload = deploymentValidationPayloadFromDeployment(deployment);
+  assert.equal(payload.action, 'deploy');
+  assert.equal(payload.bounty_id, 'prj_1:13');
+  assert.equal(payload.claim_id, undefined);
+  assert.equal(payload.reference_url, 'https://vercel.example/deployments/mergeos-preview');
+  assert.deepEqual(payload.context_urls, ['/api/projects/prj_1/deployment']);
+  assert.deepEqual(payload.delegation_chain, ['ceo-strategy-agent', 'deployment-agent']);
+
+  const fetchImpl = fakeFetch([
+    { status: 201, body: { protocol_version: 'mergeos.agent-action.v1', kind: 'agent_action', log: { event_name: 'agent_action', action: 'deploy' } } },
+  ]);
+  const client = new MergeOSClient({ token: 'agent-token', fetchImpl });
+  const response = await client.createDeploymentValidationFromDeployment('prj_1', deployment);
+
+  assert.equal(response.kind, 'agent_action');
+  assert.equal(fetchImpl.calls[0].url, '/api/projects/prj_1/agent-actions');
+  assert.equal(fetchImpl.calls[0].options.method, 'POST');
+  assert.equal(fetchImpl.calls[0].options.headers.Authorization, 'Bearer agent-token');
+  assert.equal(fetchImpl.calls[0].options.body, JSON.stringify(payload));
 });
 
 test('builds and sends typed AI agent action helpers', async () => {
