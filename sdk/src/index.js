@@ -439,6 +439,15 @@ export class MergeOSClient {
     return this.request(`/api/tasks/${encodeURIComponent(taskID)}/claim`, { method: 'POST', body: payload });
   }
 
+  claimAgentQueueTask(task = {}, overrides = {}) {
+    const endpoint = overrides.claim_endpoint || overrides.claimEndpoint || task.claim_endpoint || task.work_packet?.claim_endpoint || '';
+    const taskID = agentQueueTaskClaimID(task, endpoint);
+    if (endpoint) {
+      return this.request(endpoint, { method: 'POST', body: agentQueueClaimPayload(task, overrides) });
+    }
+    return this.claimTask(taskID, agentQueueClaimPayload(task, overrides));
+  }
+
   submitTask(taskID, payload) {
     return this.request(`/api/tasks/${encodeURIComponent(taskID)}/submit`, { method: 'POST', body: payload });
   }
@@ -832,6 +841,30 @@ export function agentActionPayloadFromWorkPacket(workPacket = {}, action = 'revi
     subagent_type: overrides.subagent_type || overrides.subagentType || body.subagent_type || workPacket.subagent_type,
     delegation_chain: overrides.delegation_chain || overrides.delegationChain || body.delegation_chain || workPacket.delegation_chain || [],
   });
+}
+
+export function agentQueueClaimPayload(task = {}, overrides = {}) {
+  const workPacket = task.work_packet && typeof task.work_packet === 'object' ? task.work_packet : {};
+  const workerKind = overrides.worker_kind || overrides.workerKind || task.worker_kind || task.required_worker_kind || 'agent';
+  const agentType = overrides.agent_type || overrides.agentType || task.agent_type || workPacket.subagent_type || '';
+  const workerID = overrides.worker_id || overrides.workerID || '';
+  const payoutAccount = overrides.payout_account || overrides.payoutAccount || '';
+  const body = compactPayload({
+    worker_kind: workerKind,
+    worker_id: workerID,
+    agent_type: agentType,
+    payout_account: payoutAccount,
+  });
+  if (Array.isArray(overrides.labels) && overrides.labels.length) body.labels = overrides.labels;
+  return body;
+}
+
+export function agentQueueTaskClaimID(task = {}, endpoint = '') {
+  const explicit = task.bounty_id || task.claim_id || task.claimID || task.id || '';
+  if (explicit) return String(explicit);
+  const source = endpoint || task.claim_endpoint || task.work_packet?.claim_endpoint || '';
+  const match = String(source).match(/\/api\/tasks\/([^/]+)\/claim(?:\?|$)/);
+  return match ? decodeURIComponent(match[1]) : '';
 }
 
 export function autoReleasePayloadFromPRMonitorTask(task = {}, overrides = {}) {

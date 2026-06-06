@@ -127,6 +127,9 @@ test('public agent runbook and SDK document PR monitor auto-release', async () =
   assert.ok(runbook.context_urls.some((row) => row.protocol === 'mergeos.pr-monitor.v1' && row.auth === 'project'));
   assert.ok(runbook.claim_flow.some((step) => step.endpoint === '/api/projects/{id}/auto-release' && step.method === 'POST'));
   assert.ok(runbook.evidence_contract.optional.includes('PR monitor auto_release_packet payload'));
+  assert.match(sdkReadme, /Agent Queue Claim/);
+  assert.match(sdkReadme, /agentQueueClaimPayload/);
+  assert.match(sdkReadme, /claimAgentQueueTask\(task, overrides\)/);
   assert.match(sdkReadme, /autoReleasePayloadFromPRMonitorTask/);
   assert.match(sdkReadme, /projectAutoReleaseFromPRMonitorTask\(projectID, task\)/);
 });

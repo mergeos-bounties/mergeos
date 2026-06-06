@@ -7,6 +7,8 @@ import {
   agentActionPayload,
   agentActionEventType,
   agentActionEventTypes,
+  agentQueueClaimPayload,
+  agentQueueTaskClaimID,
   autoReleasePayloadFromPRMonitorTask,
   contractReferenceBytes,
   contractReferenceFromLedger,
@@ -212,6 +214,62 @@ test('loads public external agent runbook without auth', async () => {
   assert.equal(runbook.protocol_version, 'mergeos.agent-runbook.v1');
   assert.equal(fetchImpl.calls[0].url, 'https://mergeos.shop/protocol/runbooks/mergeide-agent.v1.json');
   assert.equal(fetchImpl.calls[0].options.headers.Authorization, undefined);
+});
+
+test('builds and sends claim-safe agent queue task payloads', async () => {
+  const queueTask = {
+    id: 'prj_1:12',
+    bounty_id: 'prj_1:12',
+    worker_kind: 'agent',
+    agent_type: 'qa-agent',
+    claim_endpoint: '/api/tasks/prj_1:12/claim',
+    work_packet: {
+      claim_endpoint: '/api/tasks/prj_1:12/claim',
+      subagent_type: 'qa-agent',
+    },
+  };
+  const payload = agentQueueClaimPayload(queueTask, {
+    workerID: 'github:mergeos-qa-agent',
+    payoutAccount: 'solana:11111111111111111111111111111111',
+  });
+
+  assert.deepEqual(payload, {
+    worker_kind: 'agent',
+    worker_id: 'github:mergeos-qa-agent',
+    agent_type: 'qa-agent',
+    payout_account: 'solana:11111111111111111111111111111111',
+  });
+  assert.equal(agentQueueTaskClaimID(queueTask), 'prj_1:12');
+  assert.equal(agentQueueTaskClaimID({}, '/api/tasks/prj_2%3A7/claim'), 'prj_2:7');
+
+  const fetchImpl = fakeFetch([
+    { status: 200, body: { protocol_version: 'mergeos.task-claim.v1', kind: 'task_claim', claim_id: 'prj_1:12', status: 'claimed' } },
+    { status: 200, body: { protocol_version: 'mergeos.task-claim.v1', kind: 'task_claim', claim_id: 'prj_2:7', status: 'claimed' } },
+  ]);
+  const client = new MergeOSClient({ token: 'agent-token', fetchImpl });
+  const claimed = await client.claimAgentQueueTask(queueTask, { workerID: 'github:mergeos-qa-agent' });
+  const fallbackClaim = await client.claimAgentQueueTask({
+    bounty_id: 'prj_2:7',
+    worker_kind: 'hybrid',
+    work_packet: { subagent_type: 'review-agent' },
+  }, { workerID: 'github:hybrid-reviewer' });
+
+  assert.equal(claimed.kind, 'task_claim');
+  assert.equal(fallbackClaim.claim_id, 'prj_2:7');
+  assert.equal(fetchImpl.calls[0].url, '/api/tasks/prj_1:12/claim');
+  assert.equal(fetchImpl.calls[0].options.method, 'POST');
+  assert.equal(fetchImpl.calls[0].options.headers.Authorization, 'Bearer agent-token');
+  assert.equal(fetchImpl.calls[0].options.body, JSON.stringify({
+    worker_kind: 'agent',
+    worker_id: 'github:mergeos-qa-agent',
+    agent_type: 'qa-agent',
+  }));
+  assert.equal(fetchImpl.calls[1].url, '/api/tasks/prj_2%3A7/claim');
+  assert.equal(fetchImpl.calls[1].options.body, JSON.stringify({
+    worker_kind: 'hybrid',
+    worker_id: 'github:hybrid-reviewer',
+    agent_type: 'review-agent',
+  }));
 });
 
 test('maps typed agent action event protocol values', () => {
