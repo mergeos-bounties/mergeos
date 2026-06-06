@@ -231,6 +231,12 @@ test('signed-in mobile dashboard keeps nav, actions, and popovers phone-safe', a
   assert.match(cssSource, /\.notification-dropdown\s*\{[\s\S]*bottom: calc\(12px \+ env\(safe-area-inset-bottom\)\) !important;/);
   assert.match(cssSource, /\.account-context-menu,[\s\S]*\.dashboard-account-menu \.account-context-menu\s*\{[\s\S]*bottom: calc\(12px \+ env\(safe-area-inset-bottom\)\);/);
   assert.match(cssSource, /\.dashboard-shell \.dashboard-role-map\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/);
+  assert.match(cssSource, /Signed-in mobile overflow guard/);
+  assert.match(cssSource, /\.dashboard-shell \.admin-console-grid,[\s\S]*\.dashboard-shell \.payment-summary-grid,[\s\S]*grid-template-columns: minmax\(0, 1fr\);/);
+  assert.match(cssSource, /\.dashboard-shell \.admin-ops-row,[\s\S]*\.dashboard-shell \.payment-history-row,[\s\S]*grid-template-columns: minmax\(0, 1fr\);/);
+  assert.match(cssSource, /\.dashboard-shell \.admin-ops-row-actions,[\s\S]*\.dashboard-shell \.worker-proposal-actions,[\s\S]*grid-template-columns: minmax\(0, 1fr\);/);
+  assert.match(cssSource, /\.account-menu\.open \.account-context-menu,[\s\S]*opacity: 1 !important;[\s\S]*visibility: visible !important;/);
+  assert.match(cssSource, /@media \(max-width: 430px\)[\s\S]*\.dashboard-shell \.dashboard-role-map\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\);/);
   assert.match(cssSource, /\.mobile-nav-panel\s*\{[\s\S]*height: 100dvh;[\s\S]*max-height: 100dvh;/);
   assert.match(cssSource, /\.auth-modal\s*\{[\s\S]*max-height: calc\(100dvh - 64px\);/);
 });

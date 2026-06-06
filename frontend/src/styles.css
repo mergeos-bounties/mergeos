@@ -28564,6 +28564,297 @@ canvas {
   }
 }
 
+/* Signed-in mobile last-mile overrides. This is intentionally the last
+   authenticated-shell block so narrow phones do not inherit desktop remnants. */
+@media (max-width: 760px) {
+  .dashboard-shell .dash-content,
+  .dashboard-shell .dash-main,
+  .dashboard-shell .dash-rail,
+  .dashboard-shell .dashboard-tool-form,
+  .dashboard-shell .dashboard-tool-form.estimator-form,
+  .dashboard-shell .admin-console-grid,
+  .dashboard-shell .admin-governance-grid,
+  .dashboard-shell .admin-dispute-grid,
+  .dashboard-shell .admin-triage-strip,
+  .dashboard-shell .worker-dashboard-grid,
+  .dashboard-shell .worker-audit-layout,
+  .dashboard-shell .dashboard-agent-grid,
+  .dashboard-shell .dashboard-analytics-grid,
+  .dashboard-shell .payment-summary-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .dashboard-shell .admin-ops-row,
+  .dashboard-shell .payment-history-row,
+  .dashboard-shell .dashboard-repository-list article,
+  .dashboard-shell .dashboard-bounty-list article,
+  .dashboard-shell .dashboard-agent-task-list article,
+  .dashboard-shell .worker-proposal-list article,
+  .dashboard-shell .worker-submitted-proposal-list article,
+  .dashboard-shell .routing-proposal-list article,
+  .dashboard-shell .routing-route-list article,
+  .dashboard-shell .escrow-task-list article,
+  .dashboard-shell .ai-log-list article {
+    grid-template-columns: minmax(0, 1fr) !important;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .dashboard-shell .dash-project-actions,
+  .dashboard-shell .dashboard-tool-empty-actions,
+  .dashboard-shell .payment-history-actions,
+  .dashboard-shell .wallet-action-row,
+  .dashboard-shell .agent-task-links,
+  .dashboard-shell .admin-ops-row-actions,
+  .dashboard-shell .admin-ops-decision-actions,
+  .dashboard-shell .admin-dispute-item-actions,
+  .dashboard-shell .worker-proposal-actions,
+  .dashboard-shell .routing-proposal-buttons {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    justify-items: stretch;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .account-menu.open .account-context-menu,
+  .account-context-menu.context-menu-visible,
+  .dashboard-account-menu.open .account-context-menu,
+  .dashboard-account-menu .account-context-menu.context-menu-visible {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    visibility: visible !important;
+    transform: translateY(0) !important;
+  }
+}
+
+@media (max-width: 430px) {
+  .dashboard-shell .dashboard-role-map {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .dashboard-shell .dash-top-actions {
+    grid-template-columns: 42px minmax(0, 1fr) 42px !important;
+    gap: 7px;
+  }
+}
+
+/* Signed-in mobile overflow guard: keep every authenticated dashboard lane
+   inside the phone viewport, including admin, worker, payment, and tool views. */
+@media (max-width: 760px) {
+  .dashboard-shell,
+  .dashboard-shell * {
+    box-sizing: border-box;
+  }
+
+  .dashboard-shell {
+    max-width: 100vw;
+  }
+
+  .dashboard-shell .dash-workspace,
+  .dashboard-shell .dash-content,
+  .dashboard-shell .dash-main,
+  .dashboard-shell .dash-rail,
+  .dashboard-shell .dash-card,
+  .dashboard-shell .rail-card,
+  .dashboard-shell .dash-empty-state,
+  .dashboard-shell .dashboard-tool-card,
+  .dashboard-shell .payment-summary-card,
+  .dashboard-shell .notification-center-card {
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  .dashboard-shell .dash-main,
+  .dashboard-shell .dash-rail,
+  .dashboard-shell .dashboard-tool-form,
+  .dashboard-shell .dashboard-tool-form.estimator-form,
+  .dashboard-shell .admin-console-grid,
+  .dashboard-shell .admin-governance-grid,
+  .dashboard-shell .admin-dispute-grid,
+  .dashboard-shell .admin-triage-strip,
+  .dashboard-shell .worker-dashboard-grid,
+  .dashboard-shell .worker-audit-layout,
+  .dashboard-shell .dashboard-agent-grid,
+  .dashboard-shell .dashboard-analytics-grid,
+  .dashboard-shell .payment-summary-grid,
+  .dashboard-shell .repo-intel-grid,
+  .dashboard-shell .repo-intel-stats,
+  .dashboard-shell .routing-stat-grid,
+  .dashboard-shell .routing-lane-strip,
+  .dashboard-shell .dashboard-estimate-result {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dashboard-shell .dash-card,
+  .dashboard-shell .rail-card,
+  .dashboard-shell .dashboard-tool-card,
+  .dashboard-shell .dash-empty-state,
+  .dashboard-shell .payment-summary-card {
+    border-radius: 10px;
+    padding: 13px;
+  }
+
+  .dashboard-shell .card-title-row,
+  .dashboard-shell .dash-project-header,
+  .dashboard-shell .repo-import-next-panel,
+  .dashboard-shell .auto-release-command-head,
+  .dashboard-shell .repo-import-publish-head,
+  .dashboard-shell .payment-history-header {
+    align-items: stretch;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dashboard-shell .dash-project-title,
+  .dashboard-shell .payment-history-header .dash-project-title {
+    grid-template-columns: 42px minmax(0, 1fr);
+  }
+
+  .dashboard-shell .dash-project-title h1,
+  .dashboard-shell .card-title-row h2,
+  .dashboard-shell .dashboard-tool-card h2,
+  .dashboard-shell .rail-card h2 {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .dashboard-shell .dashboard-repository-list article,
+  .dashboard-shell .dashboard-bounty-list article,
+  .dashboard-shell .dashboard-agent-task-list article,
+  .dashboard-shell .dashboard-agent-grid article,
+  .dashboard-shell .admin-ops-row,
+  .dashboard-shell .admin-payout-list article,
+  .dashboard-shell .admin-user-list article,
+  .dashboard-shell .admin-reputation-list article,
+  .dashboard-shell .payment-history-row,
+  .dashboard-shell .worker-proposal-list article,
+  .dashboard-shell .worker-submitted-proposal-list article,
+  .dashboard-shell .escrow-task-list article,
+  .dashboard-shell .ai-log-list article,
+  .dashboard-shell .routing-proposal-list article,
+  .dashboard-shell .routing-route-list article,
+  .dashboard-shell .repo-dependency-list article,
+  .dashboard-shell .repo-task-graph-list article,
+  .dashboard-shell .notification-center-list button {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .dashboard-shell .dashboard-repository-list article > *,
+  .dashboard-shell .dashboard-bounty-list article > *,
+  .dashboard-shell .dashboard-agent-task-list article > *,
+  .dashboard-shell .admin-ops-row > *,
+  .dashboard-shell .payment-history-row > *,
+  .dashboard-shell .worker-proposal-list article > *,
+  .dashboard-shell .worker-submitted-proposal-list article > *,
+  .dashboard-shell .escrow-task-list article > *,
+  .dashboard-shell .ai-log-list article > *,
+  .dashboard-shell .routing-proposal-list article > *,
+  .dashboard-shell .routing-route-list article > *,
+  .dashboard-shell .repo-dependency-list article > *,
+  .dashboard-shell .repo-task-graph-list article > * {
+    min-width: 0;
+    max-width: 100%;
+    justify-self: stretch;
+  }
+
+  .dashboard-shell .dash-project-actions,
+  .dashboard-shell .dashboard-tool-empty-actions,
+  .dashboard-shell .payment-history-actions,
+  .dashboard-shell .wallet-action-row,
+  .dashboard-shell .agent-task-links,
+  .dashboard-shell .admin-ops-row-actions,
+  .dashboard-shell .admin-ops-decision-actions,
+  .dashboard-shell .admin-dispute-item-actions,
+  .dashboard-shell .worker-proposal-actions,
+  .dashboard-shell .routing-proposal-buttons,
+  .dashboard-shell .repo-intel-actions,
+  .dashboard-shell .escrow-control-actions,
+  .dashboard-shell .routing-board-actions,
+  .dashboard-shell .ai-log-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    justify-content: stretch;
+    justify-items: stretch;
+    gap: 8px;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .dashboard-shell .dash-project-actions > *,
+  .dashboard-shell .dashboard-tool-empty-actions > *,
+  .dashboard-shell .payment-history-actions > *,
+  .dashboard-shell .wallet-action-row > *,
+  .dashboard-shell .agent-task-links > *,
+  .dashboard-shell .admin-ops-row-actions > *,
+  .dashboard-shell .admin-ops-decision-actions > *,
+  .dashboard-shell .admin-dispute-item-actions > *,
+  .dashboard-shell .worker-proposal-actions > *,
+  .dashboard-shell .routing-proposal-buttons > *,
+  .dashboard-shell .repo-intel-actions > *,
+  .dashboard-shell .escrow-control-actions > *,
+  .dashboard-shell .routing-board-actions > *,
+  .dashboard-shell .ai-log-actions > * {
+    width: 100%;
+    min-width: 0;
+    min-height: 42px;
+    justify-content: center;
+    white-space: normal;
+  }
+
+  .dashboard-shell .dashboard-tool-form label,
+  .dashboard-shell .dashboard-tool-form label.wide,
+  .dashboard-shell .wallet-migration-grid label {
+    grid-column: auto;
+    min-width: 0;
+  }
+
+  .dashboard-shell input,
+  .dashboard-shell select,
+  .dashboard-shell textarea {
+    max-width: 100%;
+  }
+
+  .dashboard-shell .ledger-table-wrap,
+  .dashboard-shell .payment-history-list,
+  .dashboard-shell .notification-center-list {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .account-menu.open .account-context-menu,
+  .account-context-menu.context-menu-visible,
+  .dashboard-account-menu.open .account-context-menu,
+  .dashboard-account-menu .account-context-menu.context-menu-visible {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    visibility: visible !important;
+    transform: translateY(0) !important;
+  }
+}
+
+@media (max-width: 430px) {
+  .dashboard-shell .dashboard-role-map {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dashboard-shell .dash-top-actions {
+    grid-template-columns: 42px minmax(0, 1fr) 42px;
+    gap: 7px;
+  }
+
+  .dashboard-shell .dash-top-actions .primary-button.compact span {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
 /* Signed-in mobile system: this final block owns the authenticated shell so
    older responsive rules cannot reopen desktop spacing, overflow, or popover
    placement on phones. */
