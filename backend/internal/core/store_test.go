@@ -1895,6 +1895,9 @@ func TestPublicMarketplaceRouteReturnsSanitizedLiveData(t *testing.T) {
 			if bounty.ProposalPacket.ContextURLs["task_protocol"] == "" || len(bounty.ProposalPacket.Runbook) < 3 || len(bounty.ProposalPacket.Warnings) == 0 {
 				t.Fatalf("bounty proposal packet missing context or runbook: %#v", bounty.ProposalPacket)
 			}
+			if len(bounty.ProposalPacket.OutputContracts) < 2 || !containsOutputProtocol(bounty.ProposalPacket.OutputContracts, "mergeos.proposal.v1") || !containsOutputProtocol(bounty.ProposalPacket.OutputContracts, "mergeos.event.v1") {
+				t.Fatalf("bounty proposal packet missing output contracts: %#v", bounty.ProposalPacket.OutputContracts)
+			}
 		}
 	}
 	if len(payload.Contributors) != 1 || payload.Contributors[0].EarnedCents == 0 {

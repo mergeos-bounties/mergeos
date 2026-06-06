@@ -2462,10 +2462,14 @@
                             <small>{{ step.meta }}</small>
                           </li>
                         </ol>
-                        <div v-if="proposal.evidenceRows.length || proposal.payloadRows.length" class="worker-claim-packet" aria-label="Worker claim packet">
+                        <div v-if="proposal.evidenceRows.length || proposal.payloadRows.length || proposal.contractRows.length" class="worker-claim-packet" aria-label="Worker claim packet">
                           <span v-for="payload in proposal.payloadRows" :key="payload.label">
                             <b>{{ payload.label }}</b>
                             <small>{{ payload.value }}</small>
+                          </span>
+                          <span v-for="contract in proposal.contractRows" :key="contract.key">
+                            <b>{{ contract.label }}</b>
+                            <small>{{ contract.protocol }}</small>
                           </span>
                           <span v-for="evidence in proposal.evidenceRows" :key="evidence">
                             <b>Evidence</b>
@@ -27749,6 +27753,14 @@ function workerProposalPayloadRows(payload = {}, bounty = {}) {
   ].filter(Boolean);
 }
 
+function workerProposalContractRows(contracts = []) {
+  return (Array.isArray(contracts) ? contracts : []).slice(0, 3).map((contract, index) => ({
+    key: `${contract.action || 'proposal'}-${contract.output_protocol || index}`,
+    label: toTitleLabel(contract.artifact_kind || contract.action || 'Output'),
+    protocol: shortLedgerReference(contract.output_protocol || contract.output_protocol_url || 'protocol'),
+  }));
+}
+
 function autoReleaseContextRows(context = {}) {
   const labels = {
     pr_monitor: 'PR monitor',
@@ -27835,6 +27847,7 @@ function mapWorkerProposal(proposal = {}) {
     contextRows: workerProposalContextRows(packet.context_urls || {}),
     runbookRows: workerProposalRunbookRows(packet.runbook),
     payloadRows: workerProposalPayloadRows(claimPayload, proposal),
+    contractRows: workerProposalContractRows(packet.output_contracts),
     evidenceRows: (Array.isArray(packet.evidence_checklist) ? packet.evidence_checklist : []).map(toTitleLabel),
     warningRows: Array.isArray(packet.warnings) ? packet.warnings : [],
   };

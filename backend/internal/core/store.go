@@ -3646,6 +3646,7 @@ func proposalPacketForTask(project *Project, task *Task) *ProposalPacket {
 			Availability:   "Available after customer approval",
 		},
 		EvidenceChecklist: publicTaskEvidenceRequiredForTask(task),
+		OutputContracts:   proposalPacketOutputContracts(claimID),
 		Warnings: []string{
 			"Login and link a GitHub or Solana wallet identity before submitting.",
 			"Do not include private customer data in proposal proof.",
@@ -3655,6 +3656,15 @@ func proposalPacketForTask(project *Project, task *Task) *ProposalPacket {
 		packet.Status = "unavailable"
 	}
 	return packet
+}
+
+func proposalPacketOutputContracts(claimID string) []AgentOutputContract {
+	taskProtocolURL := "/api/public/protocol/tasks?task_id=" + claimID
+	return []AgentOutputContract{
+		{Action: "submit_proposal", ArtifactKind: "worker_proposal", OutputEndpoint: "/api/proposals", OutputProtocol: "mergeos.proposal.v1", OutputProtocolURL: "/protocol/proposal.v1.schema.json", PublicURL: "/api/public/live-feed"},
+		{Action: "notify_customer", ArtifactKind: "proposal_notification", OutputEndpoint: "/api/proposals", OutputProtocol: "mergeos.event.v1", OutputProtocolURL: "/protocol/event.v1.schema.json", PublicURL: "/api/public/live-feed"},
+		{Action: "read_task", ArtifactKind: "task_protocol", OutputEndpoint: taskProtocolURL, OutputProtocol: "mergeos.task.v1", OutputProtocolURL: "/protocol/task.v1.schema.json", PublicURL: taskProtocolURL},
+	}
 }
 
 func proposalPacketCoverLetter(project *Project, task *Task) string {

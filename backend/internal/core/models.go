@@ -1050,6 +1050,7 @@ type ProposalPacket struct {
 	Runbook           []AgentRunbookStep    `json:"runbook,omitempty"`
 	Payload           CreateProposalRequest `json:"payload"`
 	EvidenceChecklist []string              `json:"evidence_checklist,omitempty"`
+	OutputContracts   []AgentOutputContract `json:"output_contracts,omitempty"`
 	Warnings          []string              `json:"warnings,omitempty"`
 }
 

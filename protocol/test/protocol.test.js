@@ -420,6 +420,23 @@ test('validates marketplace protocol documents', () => {
             availability: 'Available after customer approval',
           },
           evidence_checklist: ['tests', 'pull request'],
+          output_contracts: [
+            {
+              action: 'submit_proposal',
+              artifact_kind: 'worker_proposal',
+              output_endpoint: '/api/proposals',
+              output_protocol: 'mergeos.proposal.v1',
+              output_protocol_url: '/protocol/proposal.v1.schema.json',
+              public_url: '/api/public/live-feed',
+            },
+            {
+              action: 'read_task',
+              artifact_kind: 'task_protocol',
+              output_endpoint: '/api/public/protocol/tasks?task_id=claim_12',
+              output_protocol: 'mergeos.task.v1',
+              output_protocol_url: '/protocol/task.v1.schema.json',
+            },
+          ],
           warnings: ['Login before submitting.'],
         },
         source_repository: 'https://github.com/mergeos-bounties/mergeos',
@@ -483,6 +500,21 @@ test('validates marketplace protocol documents', () => {
   });
   assert.equal(invalidPacket.valid, false);
   assert(invalidPacket.errors.some((error) => error.path === 'bounties[0].proposal_packet.payload.bid_cents'));
+
+  const invalidPacketContract = validateProtocolDocument({
+    ...marketplace,
+    bounties: [
+      {
+        ...marketplace.bounties[0],
+        proposal_packet: {
+          ...marketplace.bounties[0].proposal_packet,
+          output_contracts: [{ ...marketplace.bounties[0].proposal_packet.output_contracts[0], output_protocol_url: '' }],
+        },
+      },
+    ],
+  });
+  assert.equal(invalidPacketContract.valid, false);
+  assert(invalidPacketContract.errors.some((error) => error.path === 'bounties[0].proposal_packet.output_contracts[0].output_protocol_url'));
 });
 
 test('validates live feed protocol documents', () => {

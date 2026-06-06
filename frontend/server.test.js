@@ -202,6 +202,18 @@ test('repo scan suggested tasks expose routing packets for funded work', async (
   assert.match(appSource, /routingContract: Array\.isArray\(routingPacket\.output_contracts\)/);
 });
 
+test('marketplace proposal packets expose output contracts for contributors', async () => {
+  const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
+  const marketplaceSchema = JSON.parse(await fs.readFile(new URL('./public/protocol/marketplace.v1.schema.json', import.meta.url), 'utf-8'));
+  const proposalPacket = marketplaceSchema.properties.bounties.items.properties.proposal_packet;
+
+  assert.equal(proposalPacket.properties.output_contracts.items.$ref, '#/$defs/outputContract');
+  assert.ok(marketplaceSchema.$defs.outputContract.required.includes('output_protocol_url'));
+  assert.match(appSource, /function workerProposalContractRows\(contracts = \[\]\)/);
+  assert.match(appSource, /contractRows: workerProposalContractRows\(packet\.output_contracts\)/);
+  assert.match(appSource, /proposal\.evidenceRows\.length \|\| proposal\.payloadRows\.length \|\| proposal\.contractRows\.length/);
+});
+
 test('auto-release exposes payout output contracts in schema and dashboard', async () => {
   const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
   const releaseSchema = JSON.parse(await fs.readFile(new URL('./public/protocol/payout-release.v1.schema.json', import.meta.url), 'utf-8'));
