@@ -30064,3 +30064,180 @@ canvas {
   }
 }
 
+/* Project wizard mobile final owner: the authenticated project flow is not
+   inside .dashboard-shell, so keep it independently phone-safe after login. */
+@media (max-width: 760px) {
+  html:has(.project-flow-shell),
+  body:has(.project-flow-shell),
+  body:has(.project-flow-shell) #app {
+    max-width: 100vw;
+    overflow-x: clip;
+  }
+
+  .project-flow-shell,
+  .project-flow-shell * {
+    box-sizing: border-box;
+  }
+
+  .project-flow-shell {
+    --project-mobile-gutter: clamp(12px, 4vw, 18px);
+    width: 100%;
+    min-height: 100dvh;
+    overflow-x: clip;
+  }
+
+  .project-flow-navbar {
+    width: 100%;
+    max-width: 100vw;
+    padding-inline: var(--project-mobile-gutter);
+  }
+
+  .project-flow-main {
+    width: 100%;
+    max-width: 100vw;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 12px;
+    padding: 12px var(--project-mobile-gutter) calc(126px + env(safe-area-inset-bottom));
+  }
+
+  .project-flow-sidebar,
+  .project-flow-board,
+  .project-flow-rail,
+  .wizard-card,
+  .rail-card,
+  .wizard-section,
+  .wizard-field,
+  .review-card,
+  .payment-details-box,
+  .tokens-box {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .project-flow-board,
+  .project-flow-rail {
+    overflow: visible;
+  }
+
+  .project-flow-title h1 {
+    font-size: clamp(25px, 8vw, 32px);
+    letter-spacing: 0;
+  }
+
+  .project-step-list {
+    width: 100%;
+    max-width: calc(100vw - (var(--project-mobile-gutter) * 2));
+    overflow: hidden;
+  }
+
+  .project-step-list button {
+    min-width: 0;
+  }
+
+  .project-step-list strong,
+  .project-step-list small,
+  .wizard-card-heading *,
+  .funding-heading *,
+  .review-card *,
+  .rail-card *,
+  .project-preview-dialog *,
+  .payment-details-box *,
+  .tokens-box * {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .wizard-validation-banner {
+    max-height: min(34dvh, 220px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .wizard-card-heading .secondary-button,
+  .attach-repo-head .secondary-button,
+  .project-preview-actions button,
+  .funding-actions button,
+  .tokens-box button {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .project-step-actions,
+  .funding-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 80;
+    max-width: calc(100vw - (var(--project-mobile-gutter) * 2));
+    overflow: hidden;
+  }
+
+  .project-step-actions {
+    grid-template-columns: 52px minmax(0, 1fr);
+  }
+
+  .project-step-actions > .secondary-button {
+    min-width: 0;
+  }
+
+  .project-step-actions > div,
+  .funding-actions > div {
+    min-width: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .project-step-actions button,
+  .funding-actions button {
+    min-width: 0;
+    white-space: normal;
+  }
+
+  .project-account-menu .account-context-menu,
+  .project-flow-actions .locale-context-menu {
+    position: fixed;
+    left: var(--project-mobile-gutter) !important;
+    right: var(--project-mobile-gutter) !important;
+    top: calc(62px + env(safe-area-inset-top)) !important;
+    bottom: auto !important;
+    width: auto !important;
+    max-width: calc(100vw - (var(--project-mobile-gutter) * 2)) !important;
+    max-height: min(62dvh, 420px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .project-preview-backdrop {
+    padding: 10px var(--project-mobile-gutter);
+  }
+
+  .project-preview-dialog {
+    width: 100%;
+    max-width: calc(100vw - (var(--project-mobile-gutter) * 2));
+    max-height: calc(100dvh - 20px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@media (max-width: 430px) {
+  .project-flow-shell {
+    --project-mobile-gutter: 10px;
+  }
+
+  .project-step-list {
+    max-width: calc(100vw - 20px);
+  }
+
+  .project-step-actions {
+    grid-template-columns: 46px minmax(0, 1fr);
+  }
+
+  .project-step-actions > div,
+  .funding-actions > div {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+

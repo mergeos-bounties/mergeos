@@ -331,6 +331,12 @@ test('signed-in mobile dashboard keeps nav, actions, and popovers phone-safe', a
   assert.match(cssSource, /@media \(max-width: 430px\)[\s\S]*\.project-step-actions > div\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\);/);
   assert.match(cssSource, /\.project-preview-dialog\s*\{[\s\S]*max-height: calc\(100dvh - 20px\);[\s\S]*overscroll-behavior: contain;/);
   assert.match(cssSource, /\.project-step-list strong\s*\{[\s\S]*font-size: 10\.5px;[\s\S]*-webkit-line-clamp: 2;/);
+  assert.match(cssSource, /Project wizard mobile final owner/);
+  assert.match(cssSource, /body:has\(\.project-flow-shell\)[\s\S]*overflow-x: clip;/);
+  assert.match(cssSource, /\.project-flow-main\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) !important;/);
+  assert.match(cssSource, /\.project-step-actions,[\s\S]*\.funding-actions\s*\{[\s\S]*max-width: calc\(100vw - \(var\(--project-mobile-gutter\) \* 2\)\);/);
+  assert.match(cssSource, /\.project-account-menu \.account-context-menu,[\s\S]*\.project-flow-actions \.locale-context-menu\s*\{[\s\S]*position: fixed;[\s\S]*top: calc\(62px \+ env\(safe-area-inset-top\)\) !important;[\s\S]*max-height: min\(62dvh, 420px\);/);
+  assert.match(cssSource, /\.project-preview-dialog\s*\{[\s\S]*max-width: calc\(100vw - \(var\(--project-mobile-gutter\) \* 2\)\);[\s\S]*-webkit-overflow-scrolling: touch;/);
   assert.match(appSource, /dashboardNotificationMenuPlacement\.value = 'mobile-sheet';/);
   assert.match(appSource, /window\.visualViewport\?\.addEventListener\('resize', updateDashboardNotificationMenuPosition\);/);
   assert.match(appSource, /<span>New Project<\/span>/);
