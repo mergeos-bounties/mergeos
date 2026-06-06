@@ -17,6 +17,9 @@ describe("contract package", () => {
   it("uses the active Solana MRG Anchor workspace instead of Solidity sources", () => {
     assert.equal(existsSync(join(root, "solana", "Anchor.toml")), true);
     assert.equal(existsSync(join(root, "solana", "Cargo.toml")), true);
+    assert.equal(existsSync(join(root, "Anchor.toml")), false);
+    assert.equal(existsSync(join(root, "Cargo.toml")), false);
+    assert.equal(existsSync(join(root, "programs", "mergeos", "src", "lib.rs")), false);
     const srcFiles = existsSync(join(root, "src")) ? readdirSync(join(root, "src")) : [];
     assert.deepEqual(srcFiles.filter((file) => file.endsWith(".sol")), []);
     assert.match(programSource, /use anchor_lang::prelude::\*/);
