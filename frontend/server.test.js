@@ -261,11 +261,15 @@ test('signed-in mobile dashboard keeps nav, actions, and popovers phone-safe', a
   const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
 
   assert.match(cssSource, /Signed-in mobile system/);
-  assert.match(cssSource, /\.dashboard-shell \.dash-side-nav\s*\{[\s\S]*display: flex;[\s\S]*overflow-x: auto;/);
-  assert.match(cssSource, /\.dashboard-shell \.dash-top-actions\s*\{[\s\S]*grid-template-columns: 44px minmax\(0, 1fr\) 44px;/);
+  assert.match(appSource, /class="dash-mobile-nav"/);
+  assert.match(appSource, /dashboardMobilePrimaryNav/);
+  assert.match(appSource, /toggleDashboardMobileSearch/);
+  assert.match(cssSource, /\.dashboard-shell \.dash-mobile-nav\s*\{[\s\S]*grid-template-columns: repeat\(5, minmax\(0, 1fr\)\);/);
+  assert.match(cssSource, /\.dashboard-shell \.dash-side-nav\s*\{[\s\S]*display: none;/);
+  assert.match(cssSource, /\.dashboard-shell \.dash-top-actions\s*\{[\s\S]*grid-template-columns: 44px 44px minmax\(0, 1fr\) 44px;/);
   assert.match(cssSource, /\.notification-dropdown\s*\{[\s\S]*bottom: calc\(12px \+ env\(safe-area-inset-bottom\)\) !important;/);
   assert.match(cssSource, /\.account-context-menu,[\s\S]*\.dashboard-account-menu \.account-context-menu\s*\{[\s\S]*bottom: calc\(12px \+ env\(safe-area-inset-bottom\)\);/);
-  assert.match(cssSource, /\.dashboard-shell \.dashboard-role-map\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/);
+  assert.match(cssSource, /\.dashboard-shell \.dashboard-role-map\s*\{[\s\S]*display: flex;[\s\S]*overflow-x: auto;/);
   assert.match(cssSource, /Signed-in mobile overflow guard/);
   assert.match(cssSource, /\.dashboard-shell \.admin-console-grid,[\s\S]*\.dashboard-shell \.payment-summary-grid,[\s\S]*grid-template-columns: minmax\(0, 1fr\);/);
   assert.match(cssSource, /\.dashboard-shell \.admin-ops-row,[\s\S]*\.dashboard-shell \.payment-history-row,[\s\S]*grid-template-columns: minmax\(0, 1fr\);/);

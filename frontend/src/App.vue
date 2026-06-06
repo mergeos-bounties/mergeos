@@ -1468,6 +1468,43 @@
         <strong>MergeOS</strong>
       </button>
 
+      <nav class="dash-mobile-nav" aria-label="Mobile dashboard navigation">
+        <button
+          v-for="item in dashboardMobilePrimaryNav"
+          :key="item.mobileKey"
+          :class="{ active: isDashboardNavActive(item) }"
+          type="button"
+          @click="handleDashboardNav(item)"
+        >
+          <component :is="item.icon" :size="15" />
+          <span>{{ item.mobileLabel || item.label }}</span>
+        </button>
+        <button
+          class="dash-mobile-more-button"
+          :class="{ active: dashboardMobileNavOpen }"
+          type="button"
+          aria-haspopup="true"
+          :aria-expanded="dashboardMobileNavOpen ? 'true' : 'false'"
+          @click.stop="toggleDashboardMobileNav"
+        >
+          <MoreHorizontal :size="16" />
+          <span>More</span>
+        </button>
+      </nav>
+
+      <section v-if="dashboardMobileNavOpen" class="dash-mobile-menu" aria-label="More dashboard sections">
+        <button
+          v-for="item in dashboardMobileMoreNav"
+          :key="item.mobileKey"
+          :class="{ active: isDashboardNavActive(item) }"
+          type="button"
+          @click="handleDashboardNav(item)"
+        >
+          <component :is="item.icon" :size="15" />
+          <span>{{ item.label }}</span>
+        </button>
+      </section>
+
       <nav class="dash-side-nav">
         <section v-for="section in sidebarSections" :key="section.label">
           <p>{{ section.label }}</p>
@@ -1499,7 +1536,7 @@
 
     <section class="dash-workspace">
       <header class="dash-topbar">
-        <label class="dash-search">
+        <label :class="['dash-search', { 'mobile-open': dashboardMobileSearchOpen }]">
           <Search :size="16" />
           <input v-model.trim="dashboardSearch" :placeholder="dashboardSearchPlaceholder" />
           <kbd>Ctrl K</kbd>
@@ -1518,6 +1555,15 @@
         </nav>
 
         <div class="dash-top-actions">
+          <button
+            class="dash-icon-button dash-search-toggle"
+            type="button"
+            :aria-label="dashboardMobileSearchOpen ? 'Close dashboard search' : 'Open dashboard search'"
+            :aria-expanded="dashboardMobileSearchOpen ? 'true' : 'false'"
+            @click="toggleDashboardMobileSearch"
+          >
+            <Search :size="17" />
+          </button>
           <div ref="dashboardNotificationMenu" class="notification-menu-wrap" @click.stop @keydown.escape.stop="closeDashboardNotificationMenu">
             <button
               ref="dashboardNotificationTrigger"
@@ -11329,6 +11375,8 @@ const workerDashboardError = ref('');
 const dashboardLoading = ref(false);
 const dashboardError = ref('');
 const dashboardSearch = ref('');
+const dashboardMobileSearchOpen = ref(false);
+const dashboardMobileNavOpen = ref(false);
 const dashboardSection = ref('projects');
 const dashboardProjectFocus = ref('overview');
 const selectedDashboardProjectID = ref('');
@@ -21778,6 +21826,36 @@ const topNavItems = computed(() => {
   return items;
 });
 
+const dashboardMobileNavItems = computed(() =>
+  sidebarSections.value.flatMap((section) =>
+    section.items.map((item) => ({
+      ...item,
+      mobileKey: `${section.label}:${item.label}:${item.section || item.page || item.focus || ''}`,
+    })),
+  ),
+);
+
+const dashboardMobilePrimaryNav = computed(() => {
+  const preferred = ['Overview', 'My Projects', 'Tasks', 'Worker Dashboard'];
+  const items = dashboardMobileNavItems.value;
+  const rows = preferred
+    .map((label) => items.find((item) => item.label === label))
+    .filter(Boolean);
+  const active = items.find((item) => isDashboardNavActive(item));
+  if (active && !rows.some((item) => item.mobileKey === active.mobileKey)) {
+    rows.splice(Math.max(0, rows.length - 1), 1, active);
+  }
+  return rows.slice(0, 4).map((item) => ({
+    ...item,
+    mobileLabel: item.label === 'Worker Dashboard' ? 'Worker' : item.label === 'My Projects' ? 'Projects' : item.label,
+  }));
+});
+
+const dashboardMobileMoreNav = computed(() => {
+  const primaryKeys = new Set(dashboardMobilePrimaryNav.value.map((item) => item.mobileKey));
+  return dashboardMobileNavItems.value.filter((item) => !primaryKeys.has(item.mobileKey));
+});
+
 const dashboardTabs = ['Overview', 'Tasks', 'AI Logs', 'Activity', 'Ledger', 'Files', 'Settings'];
 
 function initialsFor(value = '') {
@@ -23464,6 +23542,7 @@ async function selectDashboardProject(projectID) {
 }
 
 function handleDashboardNav(item) {
+  dashboardMobileNavOpen.value = false;
   if (item.page) {
     openPublicPage(item.page);
     return;
@@ -23473,6 +23552,25 @@ function handleDashboardNav(item) {
     return;
   }
   showToast(item.toast || `${item.label} opened.`);
+}
+
+function toggleDashboardMobileNav() {
+  dashboardMobileNavOpen.value = !dashboardMobileNavOpen.value;
+  if (dashboardMobileNavOpen.value) {
+    dashboardMobileSearchOpen.value = false;
+  }
+}
+
+function toggleDashboardMobileSearch() {
+  dashboardMobileSearchOpen.value = !dashboardMobileSearchOpen.value;
+  if (dashboardMobileSearchOpen.value) {
+    dashboardMobileNavOpen.value = false;
+    void nextTick().then(() => {
+      if (!hasWindow) return;
+      const input = document.querySelector('.dashboard-shell .dash-search input');
+      input?.focus?.();
+    });
+  }
 }
 
 function runDashboardToolPrimaryAction() {
