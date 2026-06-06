@@ -347,9 +347,63 @@ func aiWorkflowStageWithContract(project *Project, stage AIWorkflowStage, produc
 	stage.ProducedCount = producedCount
 	stage.OutputIDs = stableStrings(outputIDs)
 	stage.ContextURLs = aiWorkflowStageContextURLs(project, stage.ID)
+	stage.Checklist = aiWorkflowStageChecklist(stage.ID)
 	stage.InputEndpoint, stage.OutputEndpoint, stage.OutputProtocol, stage.ActionEndpoint, stage.ArtifactKind = aiWorkflowStageContract(projectID, stage.ID)
 	stage.OutputProtocolURL = aiWorkflowProtocolSchemaURL(stage.OutputProtocol)
 	return stage
+}
+
+func aiWorkflowStageChecklist(stageID string) []string {
+	switch stageID {
+	case "repo_import":
+		return []string{
+			"Attach source repository or funded bounty workspace.",
+			"Resolve public repository context without private customer data.",
+			"Expose repository context through the workflow protocol.",
+		}
+	case "issue_scan":
+		return []string{
+			"Scan issues, bugs, technical debt, dependencies, secrets, and security risk.",
+			"Group findings into routeable delivery signals.",
+			"Publish sanitized scan output for agents and contributors.",
+		}
+	case "task_generation":
+		return []string{
+			"Convert scanned findings or project scope into task protocol rows.",
+			"Attach acceptance criteria, evidence requirements, and dependencies.",
+			"Assign each task to human, agent, or hybrid worker lanes.",
+		}
+	case "reward_estimation":
+		return []string{
+			"Estimate complexity, delivery time, and reward allocation.",
+			"Keep total task rewards inside the funded escrow budget.",
+			"Expose estimate output through the public estimate protocol.",
+		}
+	case "contributor_routing":
+		return []string{
+			"Route tasks to contributors, AI agents, or hybrid review lanes.",
+			"Attach claim, lease, proposal, and agent action endpoints.",
+			"Publish routing reasons, readiness blockers, and output contracts.",
+		}
+	case "pr_review":
+		return []string{
+			"Validate pull requests, tests, security notes, and agent evidence.",
+			"Record review, test, generate, deploy, or scan agent actions.",
+			"Keep evidence linked to PR monitor, live feed, and ledger proof.",
+		}
+	case "deployment_validation":
+		return []string{
+			"Check deployment preview, environment health, release evidence, and rollback notes.",
+			"Require deployment agent evidence for release-sensitive work.",
+			"Publish deployment state before payout release.",
+		}
+	default:
+		return []string{
+			"Fetch context URLs.",
+			"Run the required workflow checks.",
+			"Attach sanitized evidence.",
+		}
+	}
 }
 
 func aiWorkflowStageContextURLs(project *Project, stageID string) map[string]string {

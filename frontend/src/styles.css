@@ -14813,6 +14813,20 @@ svg {
   font-weight: 740;
 }
 
+.ai-workflow-list em {
+  display: -webkit-box;
+  min-width: 0;
+  overflow: hidden;
+  margin-top: 4px;
+  color: #0f766e;
+  font-size: 9.5px;
+  font-style: normal;
+  line-height: 1.35;
+  font-weight: 820;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
 .ai-workflow-list b {
   border-radius: 999px;
   background: #f5f7f7;

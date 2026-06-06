@@ -1747,6 +1747,10 @@ test('validates AI workflow protocol documents', () => {
           protocol_manifest: '/api/public/protocol',
           workflow: '/api/public/projects/prj_0001/workflow',
         },
+        checklist: [
+          'Attach source repository or funded bounty workspace.',
+          'Resolve public repository context without private customer data.',
+        ],
         output_ids: ['prj_0001'],
         produced_count: 1,
         reference: 'https://github.com/mergeos-bounties/mergeos',
@@ -1770,6 +1774,10 @@ test('validates AI workflow protocol documents', () => {
           pull_requests: '/api/public/projects/prj_0001/pull-requests',
           agent_action_template: '/api/projects/prj_0001/agent-actions',
         },
+        checklist: [
+          'Validate pull requests, tests, security notes, and agent evidence.',
+          'Record review, test, generate, deploy, or scan agent actions.',
+        ],
         output_ids: ['pr:151'],
         produced_count: 2,
         reference: 'mergeos-bounties/mergeos',
@@ -1792,6 +1800,10 @@ test('validates AI workflow protocol documents', () => {
           deployment_evidence: '/api/public/projects/prj_0001/deployment',
           protocol_manifest: '/api/public/protocol',
         },
+        checklist: [
+          'Check deployment preview, environment health, release evidence, and rollback notes.',
+          'Publish deployment state before payout release.',
+        ],
         output_ids: ['deployment:prj_0001'],
         produced_count: 1,
         reference: 'project:prj_0001',
@@ -1835,7 +1847,7 @@ test('validates AI workflow protocol documents', () => {
     kind: 'workflow',
     progress: 101,
     current_step: 'manual_review',
-    stages: [{ ...workflow.stages[0], id: 'unknown_stage', status: 'running', artifact_kind: 'raw_note', output_protocol: 'mergeos.future.v1', context_urls: {}, produced_count: -1 }],
+    stages: [{ ...workflow.stages[0], id: 'unknown_stage', status: 'running', artifact_kind: 'raw_note', output_protocol: 'mergeos.future.v1', context_urls: {}, checklist: [], produced_count: -1 }],
     signals: [{ ...workflow.signals[0], created_at: 'not-a-date' }],
   });
   assert.equal(invalid.valid, false);
@@ -1847,6 +1859,7 @@ test('validates AI workflow protocol documents', () => {
   assert(invalid.errors.some((error) => error.path === 'stages[0].artifact_kind'));
   assert(invalid.errors.some((error) => error.path === 'stages[0].output_protocol'));
   assert(invalid.errors.some((error) => error.path === 'stages[0].context_urls'));
+  assert(invalid.errors.some((error) => error.path === 'stages[0].checklist'));
   assert(invalid.errors.some((error) => error.path === 'stages[0].produced_count'));
   assert(invalid.errors.some((error) => error.path === 'signals[0].created_at'));
 });

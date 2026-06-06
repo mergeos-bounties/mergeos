@@ -1789,6 +1789,7 @@ type WorkflowProtocolStage struct {
 	OutputProtocolURL string            `json:"output_protocol_url"`
 	ActionEndpoint    string            `json:"action_endpoint,omitempty"`
 	ContextURLs       map[string]string `json:"context_urls"`
+	Checklist         []string          `json:"checklist"`
 	OutputIDs         []string          `json:"output_ids,omitempty"`
 	ProducedCount     int               `json:"produced_count"`
 	Reference         string            `json:"reference,omitempty"`
@@ -1999,6 +2000,7 @@ type AIWorkflowStage struct {
 	OutputProtocolURL string            `json:"output_protocol_url"`
 	ActionEndpoint    string            `json:"action_endpoint,omitempty"`
 	ContextURLs       map[string]string `json:"context_urls"`
+	Checklist         []string          `json:"checklist,omitempty"`
 	OutputIDs         []string          `json:"output_ids,omitempty"`
 	ProducedCount     int               `json:"produced_count"`
 	Reference         string            `json:"reference,omitempty"`

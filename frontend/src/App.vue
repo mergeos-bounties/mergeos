@@ -4126,6 +4126,7 @@
                 <div>
                   <strong>{{ stage.title }}</strong>
                   <small>{{ stage.body }}</small>
+                  <em v-if="stage.checklistLabel">{{ stage.checklistLabel }}</em>
                 </div>
                 <b>{{ stage.status }}</b>
               </article>
@@ -27634,12 +27635,15 @@ function mapDashboardDeploymentSignal(signal = {}) {
 }
 
 function mapDashboardAIWorkflowStage(stage = {}) {
+  const checklist = Array.isArray(stage.checklist) ? stage.checklist.filter(Boolean) : [];
   return {
     id: stage.id || stage.title || stage.reference,
     title: stage.title || 'AI workflow stage',
     body: trimMarketplaceText(stage.body, 'AI orchestration stage.'),
     status: toTitleLabel(stage.status || 'pending'),
     tone: stage.tone || (stage.status === 'complete' ? 'green' : stage.status === 'in_progress' ? 'blue' : 'amber'),
+    checklist,
+    checklistLabel: checklist.length ? `Checks: ${checklist.slice(0, 2).map((item) => trimMarketplaceText(item, 'Workflow check')).join(' / ')}` : '',
   };
 }
 

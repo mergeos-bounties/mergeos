@@ -387,6 +387,7 @@ func workflowProtocolStages(aiWorkflow ProjectAIWorkflowResponse) []WorkflowProt
 			OutputProtocolURL: stage.OutputProtocolURL,
 			ActionEndpoint:    stage.ActionEndpoint,
 			ContextURLs:       stage.ContextURLs,
+			Checklist:         append([]string(nil), stage.Checklist...),
 			OutputIDs:         stage.OutputIDs,
 			ProducedCount:     stage.ProducedCount,
 			Reference:         stage.Reference,

@@ -118,6 +118,12 @@
             "propertyNames": { "type": "string", "minLength": 1, "maxLength": 80 },
             "additionalProperties": { "type": "string", "minLength": 1, "maxLength": 512 }
           },
+          "checklist": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 8,
+            "items": { "type": "string", "minLength": 1, "maxLength": 240 }
+          },
           "output_ids": {
             "type": "array",
             "items": { "type": "string", "minLength": 1, "maxLength": 160 }

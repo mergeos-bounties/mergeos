@@ -3867,7 +3867,8 @@ func TestProjectAIWorkflowRouteReturnsWorkflowAndSanitizesData(t *testing.T) {
 			strings.TrimSpace(stage.OutputEndpoint) == "" ||
 			strings.TrimSpace(stage.OutputProtocol) == "" ||
 			strings.TrimSpace(stage.OutputProtocolURL) == "" ||
-			len(stage.ContextURLs) == 0 {
+			len(stage.ContextURLs) == 0 ||
+			len(stage.Checklist) == 0 {
 			t.Fatalf("ai workflow stage missing executable contract: %#v", stage)
 		}
 		if stage.ProducedCount < 0 {
@@ -3884,6 +3885,22 @@ func TestProjectAIWorkflowRouteReturnsWorkflowAndSanitizesData(t *testing.T) {
 	}
 	if prReviewStatus != deploymentStageInProgress {
 		t.Fatalf("PR opened should leave review stage in progress, got %q", prReviewStatus)
+	}
+	if !containsStringLike(stageByID["issue_scan"].Checklist, "technical debt") ||
+		!containsStringLike(stageByID["issue_scan"].Checklist, "dependencies") {
+		t.Fatalf("issue scan checklist missing repo analysis gates: %#v", stageByID["issue_scan"].Checklist)
+	}
+	if !containsStringLike(stageByID["task_generation"].Checklist, "acceptance criteria") ||
+		!containsStringLike(stageByID["task_generation"].Checklist, "evidence requirements") {
+		t.Fatalf("task generation checklist missing task packet gates: %#v", stageByID["task_generation"].Checklist)
+	}
+	if !containsStringLike(stageByID["reward_estimation"].Checklist, "complexity") ||
+		!containsStringLike(stageByID["reward_estimation"].Checklist, "delivery time") ||
+		!containsStringLike(stageByID["reward_estimation"].Checklist, "reward allocation") {
+		t.Fatalf("reward estimation checklist missing estimate gates: %#v", stageByID["reward_estimation"].Checklist)
+	}
+	if !containsStringLike(stageByID["contributor_routing"].Checklist, "output contracts") {
+		t.Fatalf("routing checklist missing output contract gate: %#v", stageByID["contributor_routing"].Checklist)
 	}
 	prReviewStage := stageByID["pr_review"]
 	if prReviewStage.ArtifactKind != "agent_action" ||
@@ -4018,7 +4035,8 @@ func TestPublicProjectAIWorkflowRouteReturnsSanitizedWorkflow(t *testing.T) {
 			strings.TrimSpace(stage.OutputEndpoint) == "" ||
 			strings.TrimSpace(stage.OutputProtocol) == "" ||
 			strings.TrimSpace(stage.OutputProtocolURL) == "" ||
-			len(stage.ContextURLs) == 0 {
+			len(stage.ContextURLs) == 0 ||
+			len(stage.Checklist) == 0 {
 			t.Fatalf("public ai workflow stage missing executable contract: %#v", stage)
 		}
 	}
@@ -4030,7 +4048,8 @@ func TestPublicProjectAIWorkflowRouteReturnsSanitizedWorkflow(t *testing.T) {
 	reviewStage := stageByID["pr_review"]
 	if reviewStage.OutputProtocol != "mergeos.agent-action.v1" ||
 		reviewStage.ActionEndpoint != "/api/projects/"+project.ID+"/agent-actions" ||
-		!containsString(reviewStage.OutputIDs, "pr:444") {
+		!containsString(reviewStage.OutputIDs, "pr:444") ||
+		!containsStringLike(reviewStage.Checklist, "agent actions") {
 		t.Fatalf("public ai workflow review stage missing public-safe action output: %#v", reviewStage)
 	}
 	deploymentStage := stageByID["deployment_validation"]
@@ -4143,7 +4162,8 @@ func TestPublicProjectWorkflowRouteReturnsSanitizedGraph(t *testing.T) {
 			strings.TrimSpace(stage.OutputEndpoint) == "" ||
 			strings.TrimSpace(stage.OutputProtocol) == "" ||
 			strings.TrimSpace(stage.OutputProtocolURL) == "" ||
-			len(stage.ContextURLs) == 0 {
+			len(stage.ContextURLs) == 0 ||
+			len(stage.Checklist) == 0 {
 			t.Fatalf("public workflow stage missing executable contract: %#v", stage)
 		}
 		for _, outputID := range stage.OutputIDs {
@@ -4702,7 +4722,8 @@ func TestProjectTaskGraphRouteReturnsAcyclicDependencyGraph(t *testing.T) {
 			strings.TrimSpace(stage.OutputEndpoint) == "" ||
 			strings.TrimSpace(stage.OutputProtocol) == "" ||
 			strings.TrimSpace(stage.OutputProtocolURL) == "" ||
-			len(stage.ContextURLs) == 0 {
+			len(stage.ContextURLs) == 0 ||
+			len(stage.Checklist) == 0 {
 			t.Fatalf("workflow protocol stage missing executable contract: %#v", stage)
 		}
 	}
@@ -6712,6 +6733,19 @@ func protocolPayloadStringSliceContains(value any, expected string) bool {
 			if fmt.Sprint(item) == expected {
 				return true
 			}
+		}
+	}
+	return false
+}
+
+func containsStringLike(values []string, expected string) bool {
+	expected = strings.ToLower(strings.TrimSpace(expected))
+	if expected == "" {
+		return false
+	}
+	for _, value := range values {
+		if strings.Contains(strings.ToLower(value), expected) {
+			return true
 		}
 	}
 	return false

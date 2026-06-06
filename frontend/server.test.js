@@ -368,6 +368,24 @@ test('signed-in mobile dashboard keeps nav, actions, and popovers phone-safe', a
   assert.match(appSource, /async function loadDashboardNotifications\(options = \{\}\)/);
 });
 
+test('AI workflow dashboard exposes stage checklists from the protocol contract', async () => {
+  const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
+  const cssSource = await fs.readFile(new URL('./src/styles.css', import.meta.url), 'utf-8');
+  const aiWorkflowSchema = JSON.parse(await fs.readFile(new URL('./public/protocol/ai-workflow.v1.schema.json', import.meta.url), 'utf-8'));
+  const workflowSchema = JSON.parse(await fs.readFile(new URL('./public/protocol/workflow.v1.schema.json', import.meta.url), 'utf-8'));
+
+  const aiStageSchema = aiWorkflowSchema.properties.stages.items;
+  const workflowStageSchema = workflowSchema.properties.stages.items;
+
+  assert.ok(aiStageSchema.required.includes('checklist'));
+  assert.equal(aiStageSchema.properties.checklist.minItems, 1);
+  assert.equal(workflowStageSchema.properties.checklist.maxItems, 8);
+  assert.match(appSource, /<em v-if="stage\.checklistLabel">\{\{ stage\.checklistLabel \}\}<\/em>/);
+  assert.match(appSource, /const checklist = Array\.isArray\(stage\.checklist\) \? stage\.checklist\.filter\(Boolean\) : \[\];/);
+  assert.match(appSource, /checklistLabel: checklist\.length \? `Checks: \$\{checklist\.slice\(0, 2\)/);
+  assert.match(cssSource, /\.ai-workflow-list em\s*\{[\s\S]*-webkit-line-clamp: 2;/);
+});
+
 test('frontend Vite stays above the Windows launch-editor advisory floor', async () => {
   const packageSource = JSON.parse(await fs.readFile(new URL('./package.json', import.meta.url), 'utf-8'));
   const lockSource = JSON.parse(await fs.readFile(new URL('./package-lock.json', import.meta.url), 'utf-8'));
