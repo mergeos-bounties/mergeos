@@ -7,6 +7,7 @@ import {
   agentActionPayload,
   agentActionEventType,
   agentActionEventTypes,
+  autoReleasePayloadFromPRMonitorTask,
   contractReferenceBytes,
   contractReferenceFromLedger,
   createMergeOSClient,
@@ -931,6 +932,87 @@ test('exposes project workflow and admin ops routes', async () => {
   assert.equal(fetchImpl.calls[13].options.method, 'POST');
   assert.equal(fetchImpl.calls[14].url, '/api/admin/ops-queue');
   assert.equal(fetchImpl.calls[15].url, '/api/admin/reputation');
+});
+
+test('builds auto-release payloads from PR monitor task packets', () => {
+  const task = {
+    task_id: 'tsk_1',
+    title: 'Ship accepted work',
+    reward_cents: 5000,
+    worker_kind: 'agent',
+    worker_id: 'github:merge-agent',
+    agent_type: 'deployment-agent',
+    repository: 'mergeos-bounties/mergeos',
+    auto_release_packet: {
+      can_auto_release: true,
+      policy: 'mergeos.auto_release.low_risk_pr.v1',
+      payload: {
+        task_ids: ['tsk_1'],
+        policy: 'mergeos.auto_release.low_risk_pr.v1',
+        candidates: [{
+          task_id: 'tsk_1',
+          worker_kind: 'agent',
+          worker_id: 'github:merge-agent',
+          agent_type: 'deployment-agent',
+          reward_cents: 5000,
+          repository: 'mergeos-bounties/mergeos',
+          pull_request_number: 151,
+          pull_request_url: 'https://github.com/mergeos-bounties/mergeos/pull/151',
+          pull_request_title: 'Ship accepted work',
+          readiness_status: 'ready',
+          can_merge: true,
+          risk_level: 'low',
+          deployment_status: 'validated',
+          validation_signals: ['evidence: provided', 'deployment: verified'],
+          draft: false,
+          can_release: true,
+        }],
+      },
+    },
+    pull_requests: [{
+      number: 151,
+      title: 'Ship accepted work',
+      html_url: 'https://github.com/mergeos-bounties/mergeos/pull/151',
+      draft: false,
+      readiness: {
+        status: 'ready',
+        can_merge: true,
+        risk_level: 'low',
+        signals: ['evidence: provided', 'deployment: verified'],
+      },
+    }],
+  };
+
+  const fromPacket = autoReleasePayloadFromPRMonitorTask(task);
+  assert.deepEqual(fromPacket, task.auto_release_packet.payload);
+
+  const fallback = autoReleasePayloadFromPRMonitorTask({
+    ...task,
+    auto_release_packet: undefined,
+  }, {
+    policy: 'mergeos.auto_release.agent_verified_pr.v1',
+  });
+  assert.deepEqual(fallback.task_ids, ['tsk_1']);
+  assert.equal(fallback.policy, 'mergeos.auto_release.agent_verified_pr.v1');
+  assert.equal(fallback.candidates[0].task_id, 'tsk_1');
+  assert.equal(fallback.candidates[0].worker_kind, 'agent');
+  assert.equal(fallback.candidates[0].agent_type, 'deployment-agent');
+  assert.equal(fallback.candidates[0].pull_request_number, 151);
+  assert.equal(fallback.candidates[0].deployment_status, 'validated');
+  assert.deepEqual(fallback.candidates[0].validation_signals, ['evidence: provided', 'deployment: verified']);
+  assert.equal(fallback.candidates[0].can_release, false);
+
+  const fetchImpl = fakeFetch([
+    { status: 200, body: { protocol_version: 'mergeos.payout-release.v1', kind: 'auto_release', released_count: 1, skipped_count: 0 } },
+  ]);
+  const client = new MergeOSClient({ token: 'agent-token', fetchImpl });
+  return client.projectAutoReleaseFromPRMonitorTask('prj_1', task).then((response) => {
+    assert.equal(response.kind, 'auto_release');
+    assert.equal(fetchImpl.calls[0].url, '/api/projects/prj_1/auto-release');
+    assert.equal(fetchImpl.calls[0].options.method, 'POST');
+    assert.equal(fetchImpl.calls[0].options.headers.Authorization, 'Bearer agent-token');
+    assert.equal(fetchImpl.calls[0].options.body, JSON.stringify(task.auto_release_packet.payload));
+  });
 });
 
 test('funds repository scan suggested tasks and builds agent work packet actions', async () => {

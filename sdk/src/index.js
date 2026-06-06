@@ -338,6 +338,10 @@ export class MergeOSClient {
     return this.request(`/api/projects/${encodeURIComponent(projectID)}/auto-release`, { method: 'POST', body: payload });
   }
 
+  projectAutoReleaseFromPRMonitorTask(projectID, task = {}, overrides = {}) {
+    return this.projectAutoRelease(projectID, autoReleasePayloadFromPRMonitorTask(task, overrides));
+  }
+
   projectDashboard(projectID) {
     return this.request(`/api/projects/${encodeURIComponent(projectID)}/dashboard`);
   }
@@ -827,6 +831,52 @@ export function agentActionPayloadFromWorkPacket(workPacket = {}, action = 'revi
     design_agent: overrides.design_agent || overrides.designAgent || body.design_agent || workPacket.design_review_agent,
     subagent_type: overrides.subagent_type || overrides.subagentType || body.subagent_type || workPacket.subagent_type,
     delegation_chain: overrides.delegation_chain || overrides.delegationChain || body.delegation_chain || workPacket.delegation_chain || [],
+  });
+}
+
+export function autoReleasePayloadFromPRMonitorTask(task = {}, overrides = {}) {
+  const packet = task.auto_release_packet && typeof task.auto_release_packet === 'object' ? task.auto_release_packet : {};
+  const packetPayload = packet.payload && typeof packet.payload === 'object' ? packet.payload : {};
+  const overrideCandidates = Array.isArray(overrides.candidates) ? overrides.candidates : null;
+  const packetCandidates = Array.isArray(packetPayload.candidates) ? packetPayload.candidates : [];
+  const candidates = overrideCandidates || (packetCandidates.length ? packetCandidates : [autoReleaseCandidateFromPRMonitorTask(task, overrides)]);
+  const taskIDs = Array.isArray(overrides.task_ids)
+    ? overrides.task_ids
+    : Array.isArray(overrides.taskIDs)
+      ? overrides.taskIDs
+      : Array.isArray(packetPayload.task_ids)
+        ? packetPayload.task_ids
+        : candidates.map((candidate) => candidate.task_id).filter(Boolean);
+  return {
+    task_ids: taskIDs,
+    policy: overrides.policy || packetPayload.policy || packet.policy || 'mergeos.auto_release.low_risk_pr.v1',
+    candidates,
+  };
+}
+
+export function autoReleaseCandidateFromPRMonitorTask(task = {}, overrides = {}) {
+  const pullRequests = Array.isArray(task.pull_requests) ? task.pull_requests : [];
+  const selectedPull = overrides.pull_request || overrides.pullRequest || pullRequests.find((pull) => pull?.readiness?.status === 'ready') || pullRequests[0] || {};
+  const readiness = selectedPull.readiness && typeof selectedPull.readiness === 'object' ? selectedPull.readiness : {};
+  const validationSignals = overrides.validation_signals || overrides.validationSignals || readiness.signals || [];
+  const deploymentStatus = overrides.deployment_status || overrides.deploymentStatus || task.deployment_status || (validationSignals.includes('deployment: verified') ? 'validated' : 'not_required');
+  return compactPayload({
+    task_id: overrides.task_id || overrides.taskID || task.task_id || '',
+    worker_kind: overrides.worker_kind || overrides.workerKind || task.worker_kind || 'human',
+    worker_id: overrides.worker_id || overrides.workerID || task.worker_id || '',
+    agent_type: overrides.agent_type || overrides.agentType || task.agent_type || '',
+    reward_cents: Number(overrides.reward_cents ?? overrides.rewardCents ?? task.reward_cents) || 0,
+    repository: overrides.repository || task.repository || '',
+    pull_request_number: Number(overrides.pull_request_number ?? overrides.pullRequestNumber ?? selectedPull.number) || 0,
+    pull_request_url: overrides.pull_request_url || overrides.pullRequestURL || selectedPull.html_url || selectedPull.url || '',
+    pull_request_title: overrides.pull_request_title || overrides.pullRequestTitle || selectedPull.title || task.title || '',
+    readiness_status: overrides.readiness_status || overrides.readinessStatus || readiness.status || 'needs_review',
+    can_merge: Boolean(overrides.can_merge ?? overrides.canMerge ?? readiness.can_merge),
+    risk_level: overrides.risk_level || overrides.riskLevel || readiness.risk_level || 'medium',
+    deployment_status: deploymentStatus,
+    validation_signals: normalizeStringList(validationSignals),
+    draft: Boolean(overrides.draft ?? selectedPull.draft),
+    can_release: Boolean(overrides.can_release ?? overrides.canRelease ?? task.auto_release_packet?.can_auto_release ?? false),
   });
 }
 
