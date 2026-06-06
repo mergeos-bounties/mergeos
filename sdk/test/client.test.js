@@ -32,6 +32,7 @@ import {
   normalizeLegacyWalletAddress,
   normalizeSolanaWalletAddress,
   presaleReservationPayload,
+  proposalPacketOutputContracts,
   proposalPayloadFromBounty,
   protocolEventFromMessage,
   protocolEventsFromMessage,
@@ -938,8 +939,28 @@ test('creates proposal payloads from public bounty packets', async () => {
         estimated_hours: 6,
         availability: 'Available after customer approval',
       },
+      output_contracts: [
+        {
+          action: 'submit_proposal',
+          artifact_kind: 'worker_proposal',
+          output_endpoint: '/api/proposals',
+          output_protocol: 'mergeos.proposal.v1',
+          output_protocol_url: '/protocol/proposal.v1.schema.json',
+        },
+        {
+          action: 'notify_customer',
+          artifact_kind: 'proposal_notification',
+          output_endpoint: '/api/proposals',
+          output_protocol: 'mergeos.event.v1',
+          output_protocol_url: '/protocol/event.v1.schema.json',
+        },
+      ],
     },
   };
+
+  assert.equal(proposalPacketOutputContracts(bounty).length, 2);
+  assert.equal(proposalPacketOutputContracts(bounty, 'submit_proposal')[0].output_protocol, 'mergeos.proposal.v1');
+  assert.deepEqual(proposalPacketOutputContracts({ claim_packet: bounty.proposal_packet }, 'notify_customer').map((row) => row.output_protocol), ['mergeos.event.v1']);
 
   assert.deepEqual(proposalPayloadFromBounty(bounty, { coverLetter: 'Ready this week.' }), {
     task_id: 'claim_12',

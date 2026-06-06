@@ -25,6 +25,7 @@ import {
   isLikelySolanaWallet,
   legacyWalletAddressHash,
   presaleReservationPayload,
+  proposalPacketOutputContracts,
   repositorySuggestedTaskFundingPayload,
   repositorySuggestedTaskPayPalOrderPayload,
   protocolEventFromMessage,
@@ -380,7 +381,7 @@ if (task) {
 ## Marketplace Proposal Packet
 
 ```js
-import { proposalPayloadFromBounty } from '@mergeos/sdk';
+import { proposalPacketOutputContracts, proposalPayloadFromBounty } from '@mergeos/sdk';
 
 const marketplace = await mergeos.publicMarketplace();
 const bounty = marketplace.bounties.find((row) => row.proposal_packet?.can_claim);
@@ -389,12 +390,13 @@ if (bounty) {
   const payload = proposalPayloadFromBounty(bounty, {
     coverLetter: 'I can ship this bounty with tests, PR evidence, and release notes.',
   });
+  const contracts = proposalPacketOutputContracts(bounty);
   const proposal = await mergeos.createProposalFromBounty(bounty, payload);
-  console.log(proposal.kind, proposal.proposal.status);
+  console.log(proposal.kind, proposal.proposal.status, contracts.map((row) => row.output_protocol));
 }
 ```
 
-Public bounty rows expose `proposal_endpoint` and `proposal_packet.payload` so contributors, CLIs, and agents can submit proposals without reverse engineering dashboard forms. `createProposalFromBounty(bounty, overrides)` prefers the packet endpoint, then falls back to `/api/proposals`.
+Public bounty rows expose `proposal_endpoint`, `proposal_packet.payload`, and `proposal_packet.output_contracts` so contributors, CLIs, and agents can submit proposals without reverse engineering dashboard forms. `proposalPacketOutputContracts(bounty, action?)` returns the proposal, notification, and task protocol artifacts the submit flow will create. `createProposalFromBounty(bounty, overrides)` prefers the packet endpoint, then falls back to `/api/proposals`.
 
 ## Agent Work Packet Output Contracts
 

@@ -1091,6 +1091,18 @@ export function proposalPayloadFromBounty(bounty = {}, overrides = {}) {
   });
 }
 
+export function proposalPacketOutputContracts(bounty = {}, action = '') {
+  const packet = bounty.proposal_packet && typeof bounty.proposal_packet === 'object'
+    ? bounty.proposal_packet
+    : bounty.claim_packet && typeof bounty.claim_packet === 'object'
+      ? bounty.claim_packet
+      : {};
+  const contracts = Array.isArray(packet.output_contracts) ? packet.output_contracts : [];
+  const normalized = String(action || '').trim().toLowerCase();
+  if (!normalized) return contracts;
+  return contracts.filter((item) => String(item?.action || '').trim().toLowerCase() === normalized);
+}
+
 export function autoReleasePayloadFromPRMonitorTask(task = {}, overrides = {}) {
   const packet = task.auto_release_packet && typeof task.auto_release_packet === 'object' ? task.auto_release_packet : {};
   const packetPayload = packet.payload && typeof packet.payload === 'object' ? packet.payload : {};
