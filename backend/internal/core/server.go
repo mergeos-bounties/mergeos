@@ -1109,6 +1109,7 @@ func (s *Server) markNotificationRead(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "notification not found", http.StatusNotFound)
 		return
 	}
+	s.broadcastNotificationsUpdated("read")
 	writeJSON(w, http.StatusOK, note)
 }
 
@@ -1119,6 +1120,7 @@ func (s *Server) markAllNotificationsRead(w http.ResponseWriter, r *http.Request
 	}
 
 	s.store.MarkAllNotificationsRead(user.ID)
+	s.broadcastNotificationsUpdated("read_all")
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
@@ -1220,6 +1222,21 @@ func (s *Server) broadcastAdminOpsUpdated() {
 		"protocol_version": "mergeos.event.v1",
 		"kind":             "admin_ops_signal",
 		"type":             "admin_ops_updated",
+		"created_at":       time.Now().UTC(),
+	})
+}
+
+func (s *Server) broadcastNotificationsUpdated(reason string) {
+	reason = strings.TrimSpace(reason)
+	if reason == "" {
+		reason = "updated"
+	}
+	s.eventHub.broadcastAll(map[string]interface{}{
+		"protocol_version": "mergeos.event.v1",
+		"kind":             "notification_signal",
+		"type":             "notifications_updated",
+		"scope":            "authenticated",
+		"reason":           reason,
 		"created_at":       time.Now().UTC(),
 	})
 }

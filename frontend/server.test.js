@@ -340,6 +340,10 @@ test('signed-in mobile dashboard keeps nav, actions, and popovers phone-safe', a
   assert.match(appSource, /dashboardNotificationMenuPlacement\.value = 'mobile-sheet';/);
   assert.match(appSource, /window\.visualViewport\?\.addEventListener\('resize', updateDashboardNotificationMenuPosition\);/);
   assert.match(appSource, /<span>New Project<\/span>/);
+  assert.match(appSource, /payload\.type === 'notifications_updated'/);
+  assert.match(appSource, /function handleWSNotificationsUpdated\(payload = \{\}\)/);
+  assert.match(appSource, /loadDashboardNotifications\(\{ silent: true \}\)/);
+  assert.match(appSource, /async function loadDashboardNotifications\(options = \{\}\)/);
 });
 
 test('frontend Vite stays above the Windows launch-editor advisory floor', async () => {

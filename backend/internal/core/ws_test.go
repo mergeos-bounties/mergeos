@@ -912,6 +912,107 @@ func TestWebSocketBroadcastsTokenWorkflowAdminOpsUpdate(t *testing.T) {
 	}
 }
 
+func TestWebSocketBroadcastsSanitizedNotificationSignal(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:       defaultTokenSymbol,
+		StatePath:         filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:    1000,
+		DevPaymentEnabled: true,
+		DevPaymentCode:    defaultDevPaymentCode,
+		GitHubOwner:       defaultGitHubOwner,
+		BountyRoot:        filepath.Join(tempDir, "bounties"),
+		SMTPFrom:          "noreply@mergeos.local",
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	auth, err := store.Register(RegisterRequest{
+		Name:     "Realtime Notification Client",
+		Email:    "realtime-notification@example.com",
+		Password: "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	notifications := store.ListNotifications(auth.User.ID)
+	if len(notifications) == 0 {
+		t.Fatal("expected registration notification")
+	}
+
+	httpServer := httptest.NewServer(NewServer(cfg, store, payments).Routes())
+	defer httpServer.Close()
+	parsed, err := url.Parse(httpServer.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	conn, err := net.Dial("tcp", parsed.Host)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer conn.Close()
+	if _, err := conn.Write([]byte(websocketHandshake(parsed.Host))); err != nil {
+		t.Fatal(err)
+	}
+	reader := bufio.NewReader(conn)
+	if status, err := reader.ReadString('\n'); err != nil || !strings.Contains(status, "101 Switching Protocols") {
+		t.Fatalf("websocket status = %q, err = %v", status, err)
+	}
+	for {
+		line, err := reader.ReadString('\n')
+		if err != nil {
+			t.Fatal(err)
+		}
+		if line == "\r\n" {
+			break
+		}
+	}
+	_ = readWebSocketTextFrame(t, reader)
+	_ = readWebSocketTextFrame(t, reader)
+
+	body := strings.NewReader(`{"notification_id":"` + notifications[0].ID + `"}`)
+	req, err := http.NewRequest(http.MethodPost, httpServer.URL+"/api/notifications/read", body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Authorization", "Bearer "+auth.Token)
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		responseBody, _ := io.ReadAll(resp.Body)
+		t.Fatalf("mark notification read status = %d, body = %s", resp.StatusCode, string(responseBody))
+	}
+
+	if err := conn.SetReadDeadline(time.Now().Add(5 * time.Second)); err != nil {
+		t.Fatal(err)
+	}
+	eventBytes := readWebSocketTextFrame(t, reader)
+	for _, value := range []string{"realtime-notification@example.com", "Your client workspace is ready", notifications[0].ID, auth.User.ID, defaultDevPaymentCode, tempDir} {
+		if strings.Contains(string(eventBytes), value) {
+			t.Fatalf("notification websocket leaked private value %q: %s", value, string(eventBytes))
+		}
+	}
+	var event map[string]interface{}
+	if err := json.Unmarshal(eventBytes, &event); err != nil {
+		t.Fatal(err)
+	}
+	if event["type"] != "notifications_updated" || event["kind"] != "notification_signal" || event["protocol_version"] != "mergeos.event.v1" {
+		t.Fatalf("unexpected notification websocket event: %#v", event)
+	}
+	if event["scope"] != "authenticated" || event["reason"] != "read" {
+		t.Fatalf("notification websocket event missing refresh contract: %#v", event)
+	}
+	if event["feed"] != nil || event["event"] != nil || event["notifications"] != nil {
+		t.Fatalf("notification websocket event should not include private notification rows: %#v", event)
+	}
+}
+
 func websocketHandshake(host string) string {
 	return websocketHandshakePath(host, "/api/ws")
 }

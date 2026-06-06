@@ -29425,13 +29425,14 @@ async function loadWorkerDashboardData(options = {}) {
   }
 }
 
-async function loadDashboardNotifications() {
+async function loadDashboardNotifications(options = {}) {
   if (!token.value) {
     dashboardNotifications.value = [];
     dashboardNotificationsError.value = '';
     return;
   }
-  dashboardNotificationsLoading.value = true;
+  const silent = Boolean(options.silent);
+  if (!silent) dashboardNotificationsLoading.value = true;
   dashboardNotificationsError.value = '';
   try {
     const rows = await api('/api/notifications');
@@ -29439,7 +29440,7 @@ async function loadDashboardNotifications() {
   } catch (error) {
     dashboardNotificationsError.value = error.message || 'Could not load notifications';
   } finally {
-    dashboardNotificationsLoading.value = false;
+    if (!silent) dashboardNotificationsLoading.value = false;
   }
 }
 
@@ -29762,6 +29763,10 @@ function handleWSEvent(payload = {}) {
     handleWSProjectCreated(payload);
     return;
   }
+  if (payload.type === 'notifications_updated') {
+    handleWSNotificationsUpdated(payload);
+    return;
+  }
   if (payload.type === 'repo_scan') {
     handleWSRepositoryScan(payload);
     return;
@@ -29975,6 +29980,11 @@ function pushDashboardRealtimeNotification(note = {}) {
   if (!note.id) return;
   if (dashboardNotifications.value.some((notification) => notification.id === note.id)) return;
   dashboardNotifications.value = [note, ...dashboardNotifications.value].slice(0, 40);
+}
+
+function handleWSNotificationsUpdated(payload = {}) {
+  if (payload.kind !== 'notification_signal' || !token.value) return;
+  void loadDashboardNotifications({ silent: true });
 }
 
 function handleWSProjectCreated(payload = {}) {
