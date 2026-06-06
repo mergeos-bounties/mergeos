@@ -2122,7 +2122,18 @@ test('validates admin operations protocol documents', () => {
         user_id: 'usr_1',
         reference: 'dispute',
         status: 'dispute:critical',
-        actions: [{ id: 'refresh-queue', label: 'Refresh Queue', type: 'refresh_admin_ops' }],
+        actions: [{
+          id: 'refresh-queue',
+          label: 'Refresh Queue',
+          type: 'refresh_admin_ops',
+          output_contracts: [{
+            action: 'refresh_admin_ops',
+            artifact_kind: 'admin_ops_queue',
+            output_endpoint: '/api/admin/ops-queue',
+            output_protocol: 'mergeos.admin-ops.v1',
+            output_protocol_url: '/protocol/admin-ops.v1.schema.json',
+          }],
+        }],
         created_at: now,
       },
       {
@@ -2145,6 +2156,13 @@ test('validates admin operations protocol documents', () => {
             method: 'GET',
             endpoint: '/api/admin/tasks/tsk_1/pulls',
             payload: { task_id: 'tsk_1' },
+            output_contracts: [{
+              action: 'review_task_pulls',
+              artifact_kind: 'admin_pr_review_context',
+              output_endpoint: '/api/admin/tasks/tsk_1/pulls',
+              output_protocol: 'mergeos.pr-monitor.v1',
+              output_protocol_url: '/protocol/pr-monitor.v1.schema.json',
+            }],
           },
           {
             id: 'open-issue',
@@ -2153,6 +2171,14 @@ test('validates admin operations protocol documents', () => {
             url: 'https://github.com/mergeos-bounties/mergeos/issues/12',
             method: 'GET',
             endpoint: 'https://github.com/mergeos-bounties/mergeos/issues/12',
+            output_contracts: [{
+              action: 'open_url',
+              artifact_kind: 'external_reference',
+              output_endpoint: 'https://github.com/mergeos-bounties/mergeos/issues/12',
+              output_protocol: 'mergeos.event.v1',
+              output_protocol_url: '/protocol/event.v1.schema.json',
+              public_url: 'https://github.com/mergeos-bounties/mergeos/issues/12',
+            }],
           },
         ],
         created_at: now,

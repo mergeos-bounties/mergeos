@@ -13,6 +13,7 @@ npm test
 
 ```js
 import {
+  adminOpsActionOutputContracts,
   airdropClaimPayload,
   agentActionPayloadFromWorkPacket,
   agentActionPayload,
@@ -104,6 +105,9 @@ console.log(syncReport.protocol_version, syncReport.added_task_count, syncReport
 const readyPlanningSteps = repoPlanningSteps(syncReport, 'ready');
 const syncContracts = repoPlanningOutputContracts(syncReport, 'mergeos.repo-sync.v1');
 console.log(readyPlanningSteps[0]?.id, syncContracts[0]?.output_protocol_url);
+const ops = await mergeos.adminOpsQueue();
+const opsActionContracts = adminOpsActionOutputContracts(ops.items[0] || {}, 'refresh_admin_ops');
+console.log(ops.protocol_version, ops.stats.total_count, opsActionContracts[0]?.output_protocol);
 const suggestedTask = scan.suggested_tasks?.find((task) => task.funding_packet?.can_fund);
 if (suggestedTask) {
   const fundingPayload = repositorySuggestedTaskFundingPayload(suggestedTask.id, {
@@ -463,6 +467,15 @@ await mergeos.updateAdminTestSettings({
   test_password: 'shared-password',
 });
 await mergeos.adminTestSettingsEntries();
+```
+
+Admin ops queue actions expose `output_contracts` so treasury operators, moderation tooling, and admin subagents can see which protocol artifact each action refreshes or opens. Use `adminOpsActionOutputContracts(actionOrItem, action?)` to inspect a single action or every action attached to a queue item.
+
+```js
+const queue = await mergeos.adminOpsQueue();
+const item = queue.items.find((row) => row.actions?.length);
+const contracts = adminOpsActionOutputContracts(item, 'run_ssl_review');
+console.log(contracts.map((row) => row.output_protocol));
 ```
 
 ## Event API

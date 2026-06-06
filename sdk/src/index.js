@@ -1103,6 +1103,19 @@ export function proposalPacketOutputContracts(bounty = {}, action = '') {
   return contracts.filter((item) => String(item?.action || '').trim().toLowerCase() === normalized);
 }
 
+export function adminOpsActionOutputContracts(actionOrItem = {}, action = '') {
+  const source = actionOrItem && typeof actionOrItem === 'object' ? actionOrItem : {};
+  const actions = Array.isArray(source.actions) ? source.actions : [source];
+  const normalized = String(action || (Array.isArray(source.actions) ? '' : source.type || '')).trim().toLowerCase();
+  const contracts = actions.flatMap((row) => {
+    if (!row || typeof row !== 'object') return [];
+    const rows = Array.isArray(row.output_contracts) ? row.output_contracts : [];
+    if (!normalized) return rows;
+    return rows.filter((contract) => String(contract?.action || '').trim().toLowerCase() === normalized);
+  });
+  return contracts.filter((contract) => contract && typeof contract === 'object');
+}
+
 export function autoReleasePayloadFromPRMonitorTask(task = {}, overrides = {}) {
   const packet = task.auto_release_packet && typeof task.auto_release_packet === 'object' ? task.auto_release_packet : {};
   const packetPayload = packet.payload && typeof packet.payload === 'object' ? packet.payload : {};

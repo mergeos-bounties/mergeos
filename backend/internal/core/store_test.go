@@ -6156,15 +6156,23 @@ func TestAdminOpsQueueReturnsDisputeModerationAndPayoutItems(t *testing.T) {
 	}
 	if action := actionByType["payout_review:review_task_pulls"]; action.Method != http.MethodGet || !strings.HasPrefix(action.Endpoint, "/api/admin/tasks/") || action.Payload["task_id"] == "" {
 		t.Fatalf("payout review action missing executable contract: %#v", action)
+	} else if len(action.OutputContracts) != 1 || action.OutputContracts[0].OutputProtocol != "mergeos.pr-monitor.v1" || action.OutputContracts[0].OutputProtocolURL == "" {
+		t.Fatalf("payout review action missing output contract: %#v", action.OutputContracts)
 	}
 	if action := actionByType["security_moderation:run_ssl_review"]; action.Method != http.MethodPost || action.Endpoint != "/api/admin/ssl/review" || action.Payload["domain"] != "expired.mergeos.local" {
 		t.Fatalf("ssl review action missing executable contract: %#v", action)
+	} else if len(action.OutputContracts) != 1 || action.OutputContracts[0].OutputProtocol != "mergeos.admin-ops.v1" || action.OutputContracts[0].Action != "run_ssl_review" {
+		t.Fatalf("ssl review action missing output contract: %#v", action.OutputContracts)
 	}
 	if action := actionByType["dispute:refresh_admin_ops"]; action.Method != http.MethodGet || action.Endpoint != "/api/admin/ops-queue" {
 		t.Fatalf("refresh action missing executable contract: %#v", action)
+	} else if len(action.OutputContracts) != 1 || action.OutputContracts[0].ArtifactKind != "admin_ops_queue" {
+		t.Fatalf("refresh action missing output contract: %#v", action.OutputContracts)
 	}
 	if action := actionByType["payout_audit:open_url"]; action.Method != http.MethodGet || action.Endpoint == "" || !strings.HasPrefix(action.Endpoint, "https://github.com/mergeos-bounties/mergeos/pull/") {
 		t.Fatalf("open proof action missing executable contract: %#v", action)
+	} else if len(action.OutputContracts) != 1 || action.OutputContracts[0].OutputProtocol != "mergeos.event.v1" {
+		t.Fatalf("open proof action missing output contract: %#v", action.OutputContracts)
 	}
 }
 

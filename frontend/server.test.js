@@ -143,17 +143,23 @@ test('public agent runbook and SDK document PR monitor auto-release plus proposa
   assert.match(sdkReadme, /Marketplace Proposal Packet/);
   assert.match(sdkReadme, /proposalPayloadFromBounty/);
   assert.match(sdkReadme, /proposalPacketOutputContracts/);
+  assert.match(sdkReadme, /adminOpsActionOutputContracts/);
   assert.match(sdkReadme, /createProposalFromBounty\(bounty, overrides\)/);
 });
 
 test('admin dashboard consumes admin ops queue action contract', async () => {
   const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
+  const adminOpsSchema = JSON.parse(await fs.readFile(new URL('./public/protocol/admin-ops.v1.schema.json', import.meta.url), 'utf-8'));
 
+  const actionSchema = adminOpsSchema.properties.items.items.properties.actions.items.properties;
+  assert.equal(actionSchema.output_contracts.items.$ref, '#/$defs/outputContract');
+  assert.ok(adminOpsSchema.$defs.outputContract.required.includes('output_protocol_url'));
   assert.match(appSource, /queueActions: adminOpsQueueActions\(item\)/);
   assert.match(appSource, /class="admin-triage-strip"/);
   assert.match(appSource, /const adminTriageRows = computed\(\(\) => \{/);
   assert.match(appSource, /function applyAdminTriageFilter\(item = \{\}\)/);
   assert.match(appSource, /function adminOpsQueueActions\(item = \{\}\)/);
+  assert.match(appSource, /outputContracts: Array\.isArray\(action\.output_contracts\)/);
   assert.match(appSource, /v-for="action in item\.queueActions"/);
   assert.match(appSource, /@click="handleAdminOpsQueueAction\(item, action\)"/);
   assert.match(appSource, /case 'review_task_pulls':/);

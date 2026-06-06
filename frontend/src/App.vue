@@ -27163,6 +27163,7 @@ function adminOpsQueueActions(item = {}) {
       method: action.method || '',
       endpoint: action.endpoint || '',
       payload: action.payload && typeof action.payload === 'object' ? action.payload : {},
+      outputContracts: Array.isArray(action.output_contracts) ? action.output_contracts : [],
     }))
     .filter((action) => action.type || action.url);
   if (!actions.length && item.url) {

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   MergeOSClient,
+  adminOpsActionOutputContracts,
   airdropClaimPayload,
   agentActionPayloadFromWorkPacket,
   agentReviewPayloadFromPRMonitorTask,
@@ -983,6 +984,40 @@ test('creates proposal payloads from public bounty packets', async () => {
     estimated_hours: 6,
     availability: 'Available Monday',
   }));
+});
+
+test('reads admin ops action output contracts for operator agents', () => {
+  const item = {
+    id: 'payout:task_1',
+    actions: [
+      {
+        id: 'review-prs',
+        type: 'review_task_pulls',
+        output_contracts: [{
+          action: 'review_task_pulls',
+          artifact_kind: 'admin_pr_review_context',
+          output_endpoint: '/api/admin/tasks/task_1/pulls',
+          output_protocol: 'mergeos.pr-monitor.v1',
+          output_protocol_url: '/protocol/pr-monitor.v1.schema.json',
+        }],
+      },
+      {
+        id: 'refresh-queue',
+        type: 'refresh_admin_ops',
+        output_contracts: [{
+          action: 'refresh_admin_ops',
+          artifact_kind: 'admin_ops_queue',
+          output_endpoint: '/api/admin/ops-queue',
+          output_protocol: 'mergeos.admin-ops.v1',
+          output_protocol_url: '/protocol/admin-ops.v1.schema.json',
+        }],
+      },
+    ],
+  };
+
+  assert.equal(adminOpsActionOutputContracts(item).length, 2);
+  assert.equal(adminOpsActionOutputContracts(item, 'refresh_admin_ops')[0].output_protocol, 'mergeos.admin-ops.v1');
+  assert.equal(adminOpsActionOutputContracts(item.actions[0])[0].artifact_kind, 'admin_pr_review_context');
 });
 
 test('supports wallet, payment, and raw upload helper routes', async () => {

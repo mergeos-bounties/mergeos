@@ -314,7 +314,64 @@ func adminOpsExecutableAction(item AdminOpsQueueItem, action AdminOpsQueueAction
 			action.Endpoint = target
 		}
 	}
+	action.OutputContracts = adminOpsActionOutputContracts(item, action)
 	return action
+}
+
+func adminOpsActionOutputContracts(item AdminOpsQueueItem, action AdminOpsQueueAction) []AgentOutputContract {
+	endpoint := strings.TrimSpace(action.Endpoint)
+	if endpoint == "" {
+		endpoint = strings.TrimSpace(action.URL)
+	}
+	actionType := strings.TrimSpace(action.Type)
+	switch actionType {
+	case "review_task_pulls":
+		return []AgentOutputContract{{
+			Action:            actionType,
+			ArtifactKind:      "admin_pr_review_context",
+			OutputEndpoint:    endpoint,
+			OutputProtocol:    "mergeos.pr-monitor.v1",
+			OutputProtocolURL: "/protocol/pr-monitor.v1.schema.json",
+			PublicURL:         publicLiveFeedURL(item.URL),
+		}}
+	case "run_ssl_review":
+		return []AgentOutputContract{{
+			Action:            actionType,
+			ArtifactKind:      "security_review",
+			OutputEndpoint:    endpoint,
+			OutputProtocol:    "mergeos.admin-ops.v1",
+			OutputProtocolURL: "/protocol/admin-ops.v1.schema.json",
+			PublicURL:         "/protocol/admin-ops.v1.schema.json",
+		}}
+	case "refresh_admin_ops":
+		return []AgentOutputContract{{
+			Action:            actionType,
+			ArtifactKind:      "admin_ops_queue",
+			OutputEndpoint:    endpoint,
+			OutputProtocol:    "mergeos.admin-ops.v1",
+			OutputProtocolURL: "/protocol/admin-ops.v1.schema.json",
+			PublicURL:         "/protocol/admin-ops.v1.schema.json",
+		}}
+	case "open_url":
+		protocol := "mergeos.ledger-proof.v1"
+		protocolURL := "/protocol/ledger-proof.v1.schema.json"
+		artifact := "public_proof"
+		if strings.Contains(strings.ToLower(endpoint), "github.com/") {
+			protocol = "mergeos.event.v1"
+			protocolURL = "/protocol/event.v1.schema.json"
+			artifact = "external_reference"
+		}
+		return []AgentOutputContract{{
+			Action:            actionType,
+			ArtifactKind:      artifact,
+			OutputEndpoint:    endpoint,
+			OutputProtocol:    protocol,
+			OutputProtocolURL: protocolURL,
+			PublicURL:         publicLiveFeedURL(endpoint),
+		}}
+	default:
+		return nil
+	}
 }
 
 func adminOpsTokenWorkflowItem(entry LedgerEntry) AdminOpsQueueItem {
