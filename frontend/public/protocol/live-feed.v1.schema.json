@@ -77,6 +77,8 @@
               "ledger_task_reserve",
               "ledger_task_payment",
               "ledger_manual_credit",
+              "ledger_airdrop_claim",
+              "ledger_presale_reservation",
               "proposal_submitted",
               "proposal_accepted",
               "proposal_declined",

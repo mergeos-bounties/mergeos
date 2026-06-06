@@ -180,6 +180,14 @@ func (s *Store) PublicTokenEconomy() PublicTokenEconomyResponse {
 			response.Totals.ReleasedCents += entry.AmountCents
 			response.Totals.ManualCreditCents += entry.AmountCents
 			response.Stats.PayoutCount++
+		case "airdrop_claim":
+			response.Totals.AirdropClaimCents += entry.AmountCents
+			response.Stats.AirdropCount++
+			response.Stats.TokenEventCount++
+		case "presale_reservation":
+			response.Totals.PresaleReserveCents += entry.AmountCents
+			response.Stats.PresaleCount++
+			response.Stats.TokenEventCount++
 		}
 	}
 	if response.Totals.MintedCents == 0 {
@@ -324,6 +332,22 @@ func publicTokenEconomyBalances(totals PublicTokenEconomyTotals, stats PublicTok
 			Role:        "payouts",
 			AmountCents: totals.ReleasedCents,
 			EntryCount:  stats.PayoutCount,
+			UpdatedAt:   now,
+		},
+		{
+			ID:          "airdrop_claims",
+			Label:       "Airdrop claims",
+			Role:        "airdrop_claims",
+			AmountCents: totals.AirdropClaimCents,
+			EntryCount:  stats.AirdropCount,
+			UpdatedAt:   now,
+		},
+		{
+			ID:          "presale_reserve",
+			Label:       "Presale reserve",
+			Role:        "presale_reserve",
+			AmountCents: totals.PresaleReserveCents,
+			EntryCount:  stats.PresaleCount,
 			UpdatedAt:   now,
 		},
 	}

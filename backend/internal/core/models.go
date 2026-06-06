@@ -289,6 +289,8 @@ type PublicTokenEconomyStats struct {
 	TokenEventCount  int        `json:"token_event_count"`
 	EscrowEventCount int        `json:"escrow_event_count"`
 	PayoutCount      int        `json:"payout_count"`
+	AirdropCount     int        `json:"airdrop_count"`
+	PresaleCount     int        `json:"presale_count"`
 	BalanceCount     int        `json:"balance_count"`
 	FlowCount        int        `json:"flow_count"`
 	UpdatedAt        *time.Time `json:"updated_at,omitempty"`
@@ -303,6 +305,8 @@ type PublicTokenEconomyTotals struct {
 	TaskReserveCents      int64 `json:"task_reserve_cents"`
 	ReleasedCents         int64 `json:"released_cents"`
 	ManualCreditCents     int64 `json:"manual_credit_cents"`
+	AirdropClaimCents     int64 `json:"airdrop_claim_cents"`
+	PresaleReserveCents   int64 `json:"presale_reserve_cents"`
 	RemainingReserveCents int64 `json:"remaining_reserve_cents"`
 	TokenSupplyCents      int64 `json:"token_supply_cents"`
 }

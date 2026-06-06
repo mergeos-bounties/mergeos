@@ -23,6 +23,8 @@
         "proposal.submitted",
         "proposal.accepted",
         "proposal.declined",
+        "airdrop.claimed",
+        "presale.reserved",
         "task.paid",
         "deployment.updated",
         "ledger.recorded",

@@ -1623,6 +1623,27 @@ func TestPublicLedgerEconomyProofAndEventsRoutesReturnLiveProof(t *testing.T) {
 		}
 		break
 	}
+	wallet := base58Encode(bytes.Repeat([]byte{9}, walletAddressBytes))
+	if _, err := store.RecordAirdropClaim(AirdropClaimRequest{
+		MissionID:      "repo-import",
+		WorkerID:       "github:ledger-builder",
+		WalletAddress:  wallet,
+		TaskReference:  "task:MRG-ECONOMY",
+		ProofURL:       "https://github.com/mergeos-bounties/mergeos/pull/202",
+		ProofSignals:   []string{"repo_import", "issue_scan"},
+		AllocationMRG:  900,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.RecordPresaleReservation(PresaleReservationRequest{
+		WalletAddress:    wallet,
+		ReserveMRG:       12000,
+		FundingRail:      "solana",
+		FundingReference: "signature-pending",
+		Tier:             "builder",
+	}); err != nil {
+		t.Fatal(err)
+	}
 
 	server := NewServer(cfg, store, payments)
 
@@ -1644,8 +1665,20 @@ func TestPublicLedgerEconomyProofAndEventsRoutesReturnLiveProof(t *testing.T) {
 	if economy.Totals.PlatformFeeCents <= 0 || economy.Totals.ReleasedCents <= 0 || economy.Totals.RemainingReserveCents <= 0 {
 		t.Fatalf("economy missing fee/release/reserve totals: %#v", economy.Totals)
 	}
-	if len(economy.Balances) < 5 || len(economy.Flows) == 0 || len(economy.RecentEntries) == 0 {
+	if economy.Totals.AirdropClaimCents != 900 || economy.Totals.PresaleReserveCents != 12000 || economy.Stats.AirdropCount != 1 || economy.Stats.PresaleCount != 1 {
+		t.Fatalf("economy missing token workflow totals: stats=%#v totals=%#v", economy.Stats, economy.Totals)
+	}
+	if len(economy.Balances) < 7 || len(economy.Flows) == 0 || len(economy.RecentEntries) == 0 {
 		t.Fatalf("economy rows incomplete: balances=%d flows=%d recent=%d", len(economy.Balances), len(economy.Flows), len(economy.RecentEntries))
+	}
+	balanceRoles := map[string]bool{}
+	for _, balance := range economy.Balances {
+		balanceRoles[balance.Role] = true
+	}
+	for _, required := range []string{"airdrop_claims", "presale_reserve"} {
+		if !balanceRoles[required] {
+			t.Fatalf("economy balance missing %s: %#v", required, economy.Balances)
+		}
 	}
 
 	proofResp := httptest.NewRecorder()

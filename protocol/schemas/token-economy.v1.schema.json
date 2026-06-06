@@ -26,6 +26,8 @@
         "token_event_count",
         "escrow_event_count",
         "payout_count",
+        "airdrop_count",
+        "presale_count",
         "balance_count",
         "flow_count"
       ],
@@ -34,6 +36,8 @@
         "token_event_count": { "type": "integer", "minimum": 0 },
         "escrow_event_count": { "type": "integer", "minimum": 0 },
         "payout_count": { "type": "integer", "minimum": 0 },
+        "airdrop_count": { "type": "integer", "minimum": 0 },
+        "presale_count": { "type": "integer", "minimum": 0 },
         "balance_count": { "type": "integer", "minimum": 0 },
         "flow_count": { "type": "integer", "minimum": 0 },
         "updated_at": { "type": "string", "format": "date-time" }
@@ -51,6 +55,8 @@
         "task_reserve_cents",
         "released_cents",
         "manual_credit_cents",
+        "airdrop_claim_cents",
+        "presale_reserve_cents",
         "remaining_reserve_cents",
         "token_supply_cents"
       ],
@@ -63,6 +69,8 @@
         "task_reserve_cents": { "type": "integer", "minimum": 0 },
         "released_cents": { "type": "integer", "minimum": 0 },
         "manual_credit_cents": { "type": "integer", "minimum": 0 },
+        "airdrop_claim_cents": { "type": "integer", "minimum": 0 },
+        "presale_reserve_cents": { "type": "integer", "minimum": 0 },
         "remaining_reserve_cents": { "type": "integer", "minimum": 0 },
         "token_supply_cents": { "type": "integer", "minimum": 0 }
       }
@@ -90,7 +98,7 @@
         "label": { "type": "string", "minLength": 1, "maxLength": 160 },
         "role": {
           "type": "string",
-          "enum": ["token_supply", "treasury", "escrow_reserve", "task_reserve", "payouts"]
+          "enum": ["token_supply", "treasury", "escrow_reserve", "task_reserve", "payouts", "airdrop_claims", "presale_reserve"]
         },
         "amount_cents": { "type": "integer", "minimum": 0 },
         "entry_count": { "type": "integer", "minimum": 0 },

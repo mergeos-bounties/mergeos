@@ -27807,6 +27807,8 @@ function ledgerEconomyRoleMeta(role = '') {
   if (normalized === 'escrow_reserve') return { label: 'Escrow reserve', icon: ShieldCheck, tone: 'blue' };
   if (normalized === 'task_reserve') return { label: 'Task reserve', icon: LockKeyhole, tone: 'blue' };
   if (normalized === 'payouts') return { label: 'Payouts', icon: Trophy, tone: 'amber' };
+  if (normalized === 'airdrop_claims') return { label: 'Airdrop claims', icon: Trophy, tone: 'purple' };
+  if (normalized === 'presale_reserve') return { label: 'Presale reserve', icon: CircleDollarSign, tone: 'blue' };
   return { label: toTitleLabel(normalized || 'balance'), icon: Compass, tone: 'slate' };
 }
 

@@ -495,6 +495,32 @@ test('validates live feed protocol documents', () => {
         created_at: now,
       },
       {
+        id: 'ledger:7',
+        type: 'ledger_airdrop_claim',
+        title: 'Airdrop claim recorded',
+        body: 'MergeOS public ledger recorded Airdrop claim recorded.',
+        actor: 'wallet:solana',
+        amount_cents: 750,
+        ledger_sequence: 7,
+        entry_hash: 'b'.repeat(64),
+        reference: 'airdrop:adc_0001;mission:repo-import;score:72',
+        status: 'recorded',
+        created_at: now,
+      },
+      {
+        id: 'ledger:8',
+        type: 'ledger_presale_reservation',
+        title: 'Presale reservation recorded',
+        body: 'MergeOS public ledger recorded Presale reservation recorded.',
+        actor: 'wallet:solana',
+        amount_cents: 25000,
+        ledger_sequence: 8,
+        entry_hash: 'c'.repeat(64),
+        reference: 'presale:psr_0001;tier:founder;rail:solana',
+        status: 'recorded',
+        created_at: now,
+      },
+      {
         id: 'ai:log_0001',
         type: 'agent_action',
         title: 'AI agent tested PR #151',
@@ -2490,6 +2516,35 @@ test('validates event protocol documents and assertion helper', () => {
   assert.equal(proposalEvent.valid, true);
   assert.deepEqual(agentEvent.errors, []);
 
+  const tokenEvents = [
+    validateProtocolDocument({
+      protocol_version: 'mergeos.event.v1',
+      kind: 'event',
+      id: 'evt_airdrop_claimed',
+      type: 'airdrop.claimed',
+      occurred_at: '2026-06-02T00:00:00.000Z',
+      actor: 'wallet:solana',
+      reference: 'airdrop:adc_0001',
+      amount_mrg: 750,
+      payload: { feed_type: 'ledger_airdrop_claim', mission_id: 'repo-import' },
+    }),
+    validateProtocolDocument({
+      protocol_version: 'mergeos.event.v1',
+      kind: 'event',
+      id: 'evt_presale_reserved',
+      type: 'presale.reserved',
+      occurred_at: '2026-06-02T00:00:00.000Z',
+      actor: 'wallet:solana',
+      reference: 'presale:psr_0001',
+      amount_mrg: 25000,
+      payload: { feed_type: 'ledger_presale_reservation', tier: 'founder' },
+    }),
+  ];
+  for (const tokenEvent of tokenEvents) {
+    assert.equal(tokenEvent.valid, true);
+    assert.deepEqual(tokenEvent.errors, []);
+  }
+
   const pullOpenedEvent = validateProtocolDocument({
     protocol_version: 'mergeos.event.v1',
     kind: 'event',
@@ -2597,6 +2652,8 @@ test('validates public ledger proof and token economy protocol documents', () =>
       token_event_count: 1,
       escrow_event_count: 0,
       payout_count: 0,
+      airdrop_count: 1,
+      presale_count: 1,
       balance_count: 2,
       flow_count: 1,
       updated_at: now,
@@ -2610,6 +2667,8 @@ test('validates public ledger proof and token economy protocol documents', () =>
       task_reserve_cents: 50000,
       released_cents: 0,
       manual_credit_cents: 0,
+      airdrop_claim_cents: 750,
+      presale_reserve_cents: 25000,
       remaining_reserve_cents: 225000,
       token_supply_cents: 250000,
     },
