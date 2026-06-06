@@ -15,6 +15,17 @@ import {
   shouldRunProduction,
 } from './server.js';
 
+function compareSemver(left = '', right = '') {
+  const leftParts = String(left).split('.').map((part) => Number.parseInt(part, 10) || 0);
+  const rightParts = String(right).split('.').map((part) => Number.parseInt(part, 10) || 0);
+  const length = Math.max(leftParts.length, rightParts.length);
+  for (let index = 0; index < length; index += 1) {
+    if ((leftParts[index] || 0) > (rightParts[index] || 0)) return 1;
+    if ((leftParts[index] || 0) < (rightParts[index] || 0)) return -1;
+  }
+  return 0;
+}
+
 test('normalizes run modes', () => {
   assert.equal(normalizeMode('prod'), 'production');
   assert.equal(normalizeMode('production'), 'production');
@@ -239,6 +250,17 @@ test('signed-in mobile dashboard keeps nav, actions, and popovers phone-safe', a
   assert.match(cssSource, /@media \(max-width: 430px\)[\s\S]*\.dashboard-shell \.dashboard-role-map\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\);/);
   assert.match(cssSource, /\.mobile-nav-panel\s*\{[\s\S]*height: 100dvh;[\s\S]*max-height: 100dvh;/);
   assert.match(cssSource, /\.auth-modal\s*\{[\s\S]*max-height: calc\(100dvh - 64px\);/);
+});
+
+test('frontend Vite stays above the Windows launch-editor advisory floor', async () => {
+  const packageSource = JSON.parse(await fs.readFile(new URL('./package.json', import.meta.url), 'utf-8'));
+  const lockSource = JSON.parse(await fs.readFile(new URL('./package-lock.json', import.meta.url), 'utf-8'));
+  const requestedVite = packageSource.devDependencies?.vite || '';
+  const lockedVite = lockSource.packages?.['node_modules/vite']?.version || '';
+
+  assert.equal(requestedVite, '8.0.16');
+  assert.equal(lockedVite, '8.0.16');
+  assert.equal(compareSemver(lockedVite, '5.4.9') >= 0, true);
 });
 
 test('creates runtime config for production defaults', () => {
