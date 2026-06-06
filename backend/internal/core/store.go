@@ -124,6 +124,7 @@ type Store struct {
 	adminSettings       AdminSettings
 	paymentOrders       map[string]*PaymentOrderIntent
 	agentLeases         map[string]*AgentLeaseResponse
+	usdtWebhookEvents   map[string]*USDTWebhookEvent
 	ledger              []LedgerEntry
 }
 
@@ -143,6 +144,7 @@ type persistedState struct {
 	TestSettingsConfig  *TestSettingsConfig   `json:"test_settings_config,omitempty"`
 	TestSettingsEntries []*TestSettingsEntry  `json:"test_settings_entries,omitempty"`
 	PaymentOrders       []*PaymentOrderIntent `json:"payment_orders,omitempty"`
+	USDTWebhookEvents   []*USDTWebhookEvent   `json:"usdt_webhook_events,omitempty"`
 	Ledger              []LedgerEntry         `json:"ledger"`
 }
 
@@ -174,6 +176,7 @@ func NewStore(cfg Config, payments *PaymentManager, repos RepoFactory, emailer *
 		adminSettings:       defaultAdminSettings(cfg),
 		paymentOrders:       map[string]*PaymentOrderIntent{},
 		agentLeases:         map[string]*AgentLeaseResponse{},
+		usdtWebhookEvents:   map[string]*USDTWebhookEvent{},
 		ledger:              []LedgerEntry{},
 	}
 	if strings.TrimSpace(cfg.DatabaseURL) != "" {
@@ -2917,6 +2920,7 @@ func (s *Store) applyState(state persistedState) bool {
 	s.geminiAPIKeys = map[string]*GeminiAPIKey{}
 	s.geminiWebhookLogs = map[string]*GeminiWebhookLog{}
 	s.paymentOrders = map[string]*PaymentOrderIntent{}
+	s.usdtWebhookEvents = map[string]*USDTWebhookEvent{}
 	for _, project := range state.Projects {
 		if project == nil || project.ID == "" {
 			continue
@@ -3111,6 +3115,13 @@ func (s *Store) applyState(state persistedState) bool {
 		}
 		s.testSettingsEntries[entry.ID] = entry
 	}
+	for _, event := range state.USDTWebhookEvents {
+		if event == nil || event.ID == "" {
+			continue
+		}
+		eventCopy := *event
+		s.usdtWebhookEvents[eventCopy.ID] = &eventCopy
+	}
 
 	return migrated
 }
@@ -3142,6 +3153,7 @@ func (s *Store) snapshotLocked() persistedState {
 		TestSettingsConfig:  &s.testSettingsConfig,
 		TestSettingsEntries: make([]*TestSettingsEntry, 0, len(s.testSettingsEntries)),
 		PaymentOrders:       make([]*PaymentOrderIntent, 0, len(s.paymentOrders)),
+		USDTWebhookEvents:   make([]*USDTWebhookEvent, 0, len(s.usdtWebhookEvents)),
 		Ledger:              s.ledger,
 	}
 	for _, project := range s.projects {
@@ -3199,6 +3211,13 @@ func (s *Store) snapshotLocked() persistedState {
 	}
 	sort.Slice(state.PaymentOrders, func(i, j int) bool {
 		return state.PaymentOrders[i].CreatedAt.Before(state.PaymentOrders[j].CreatedAt)
+	})
+	for _, event := range s.usdtWebhookEvents {
+		eventCopy := *event
+		state.USDTWebhookEvents = append(state.USDTWebhookEvents, &eventCopy)
+	}
+	sort.Slice(state.USDTWebhookEvents, func(i, j int) bool {
+		return state.USDTWebhookEvents[i].ReceivedAt.After(state.USDTWebhookEvents[j].ReceivedAt)
 	})
 	return state
 }
@@ -4274,4 +4293,119 @@ func (s *Store) IsPaymentReferenceUsed(reference string) bool {
 		}
 	}
 	return false
+}
+
+func (s *Store) UpdateProjectPaymentStatus(reference string, status string, provider string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	ref := strings.TrimSpace(strings.ToLower(reference))
+	if ref == "" {
+		return errors.New("reference is empty")
+	}
+
+	for _, project := range s.projects {
+		if strings.ToLower(project.PaymentReference) == ref {
+			// Only update and mint if transition is to verified and it wasn't already verified
+			if status == "verified" && project.PaymentStatus != "verified" {
+				project.PaymentStatus = "verified"
+				project.PaymentProvider = provider
+
+				clientProjectAccount := "client:" + project.ClientUserID + ":project:" + project.ID
+				fee := project.FeeCents
+				workPool := project.WorkPoolCents
+
+				s.addLedger("payment_verified", "payment:"+provider, clientProjectAccount, project.BudgetCents, project.PaymentReference)
+				s.addLedger("token_mint", "issuer:mergeos", clientProjectAccount, project.BudgetCents, "mint:"+project.ID)
+				s.addLedger("platform_fee", "client:"+project.ID, "treasury:mergeos", fee, "fee:"+project.ID)
+				s.addLedger("project_reserve", "client:"+project.ID, "reserve:project:"+project.ID, workPool, "repo:"+project.BountyRepoName)
+			} else {
+				project.PaymentStatus = status
+				project.PaymentProvider = provider
+			}
+			return s.saveLocked()
+		}
+	}
+	return fmt.Errorf("project with payment reference %s not found", reference)
+}
+
+func (s *Store) SaveUSDTWebhookEvent(event *USDTWebhookEvent) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.usdtWebhookEvents == nil {
+		s.usdtWebhookEvents = make(map[string]*USDTWebhookEvent)
+	}
+	s.usdtWebhookEvents[event.ID] = event
+	return s.saveLocked()
+}
+
+func (s *Store) FindUSDTWebhookByIdempotencyKey(key string) *USDTWebhookEvent {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	if s.usdtWebhookEvents == nil {
+		return nil
+	}
+	for _, event := range s.usdtWebhookEvents {
+		if event.IdempotencyKey == key {
+			return event
+		}
+	}
+	return nil
+}
+
+func (s *Store) ListUSDTWebhookEvents() []*USDTWebhookEvent {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	events := make([]*USDTWebhookEvent, 0, len(s.usdtWebhookEvents))
+	for _, event := range s.usdtWebhookEvents {
+		events = append(events, event)
+	}
+	sort.Slice(events, func(i, j int) bool {
+		return events[i].ReceivedAt.After(events[j].ReceivedAt)
+	})
+	return events
+}
+
+func (s *Store) ApplyUSDTWebhookPayment(event *USDTWebhookEvent) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	project, ok := s.projects[event.ProjectID]
+	if !ok {
+		return fmt.Errorf("project %s not found", event.ProjectID)
+	}
+
+	// Verify the webhook amount matches the project budget
+	if event.AmountCents != project.BudgetCents {
+		return fmt.Errorf("webhook amount %d cents does not match project budget %d cents",
+			event.AmountCents, project.BudgetCents)
+	}
+
+	if project.PaymentStatus == "verified" {
+		return nil // Already verified, don't duplicate ledger entries
+	}
+
+	// Update project payment state
+	project.PaymentStatus = "verified"
+	project.PaymentProvider = "usdt-webhook:" + event.Provider
+	project.PaymentReference = event.TxHash
+
+	// Add ledger entries
+	clientProjectAccount := "client:" + project.ClientUserID + ":project:" + project.ID
+	fee := project.FeeCents
+	workPool := project.WorkPoolCents
+
+	s.addLedger("payment_verified", "payment:usdt-webhook:"+event.Provider, clientProjectAccount, project.BudgetCents, event.TxHash)
+	s.addLedger("token_mint", "issuer:mergeos", clientProjectAccount, project.BudgetCents, "mint:"+project.ID)
+	s.addLedger("platform_fee", "client:"+project.ID, "treasury:mergeos", fee, "fee:"+project.ID)
+	s.addLedger("project_reserve", "client:"+project.ID, "reserve:project:"+project.ID, workPool, "repo:"+project.BountyRepoName)
+
+	return s.saveLocked()
+}
+
+func (s *Store) SaveProject(p *Project) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.projects[p.ID] = p
+	return s.saveLocked()
 }
