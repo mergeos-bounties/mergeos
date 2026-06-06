@@ -4,7 +4,7 @@
   "title": "MergeOS Repository Import v1",
   "type": "object",
   "additionalProperties": false,
-  "required": ["protocol_version", "kind", "owner", "name", "repo_url", "issue_count", "total_estimated_cents", "total_estimated_hours", "issues"],
+  "required": ["protocol_version", "kind", "owner", "name", "repo_url", "issue_count", "total_estimated_cents", "total_estimated_hours", "planning_packet", "issues"],
   "properties": {
     "protocol_version": { "const": "mergeos.repo-import.v1" },
     "kind": { "const": "repo_import" },
@@ -14,6 +14,7 @@
     "issue_count": { "type": "integer", "minimum": 0 },
     "total_estimated_cents": { "type": "integer", "minimum": 0 },
     "total_estimated_hours": { "type": "number", "minimum": 0 },
+    "planning_packet": { "$ref": "#/$defs/planningPacket" },
     "issues": {
       "type": "array",
       "items": {
@@ -37,6 +38,78 @@
           "created_at": { "type": "string", "format": "date-time" },
           "updated_at": { "type": "string", "format": "date-time" }
         }
+      }
+    }
+  },
+  "$defs": {
+    "planningPacket": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "supervisor_agent_type", "context_urls", "runbook", "steps", "output_contracts", "summary"],
+      "properties": {
+        "status": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "supervisor_agent_type": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "context_urls": {
+          "type": "object",
+          "additionalProperties": { "type": "string", "minLength": 1, "maxLength": 512 }
+        },
+        "runbook": { "type": "array", "items": { "$ref": "#/$defs/runbookStep" } },
+        "steps": { "type": "array", "items": { "$ref": "#/$defs/planningStep" } },
+        "output_contracts": { "type": "array", "items": { "$ref": "#/$defs/outputContract" } },
+        "summary": { "$ref": "#/$defs/planningSummary" }
+      }
+    },
+    "runbookStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["step", "action", "label", "method", "endpoint"],
+      "properties": {
+        "step": { "type": "integer", "minimum": 1 },
+        "action": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "label": { "type": "string", "minLength": 1, "maxLength": 240 },
+        "method": { "enum": ["GET", "POST", "PATCH", "DELETE"] },
+        "endpoint": { "type": "string", "minLength": 1, "maxLength": 240 }
+      }
+    },
+    "planningStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "status", "artifact_kind", "output_endpoint", "output_protocol", "output_protocol_url"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "title": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "status": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "artifact_kind": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "output_endpoint": { "type": "string", "minLength": 1, "maxLength": 240 },
+        "output_protocol": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "output_protocol_url": { "type": "string", "minLength": 1, "maxLength": 512 }
+      }
+    },
+    "outputContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["action", "artifact_kind", "output_endpoint", "output_protocol", "output_protocol_url"],
+      "properties": {
+        "action": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "artifact_kind": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "output_endpoint": { "type": "string", "minLength": 1, "maxLength": 240 },
+        "output_protocol": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "output_protocol_url": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "public_url": { "type": "string", "minLength": 1, "maxLength": 512 }
+      }
+    },
+    "planningSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["issue_count", "task_count", "agent_task_count", "human_task_count", "hybrid_task_count", "total_reward_cents", "total_estimated_hours"],
+      "properties": {
+        "issue_count": { "type": "integer", "minimum": 0 },
+        "task_count": { "type": "integer", "minimum": 0 },
+        "agent_task_count": { "type": "integer", "minimum": 0 },
+        "human_task_count": { "type": "integer", "minimum": 0 },
+        "hybrid_task_count": { "type": "integer", "minimum": 0 },
+        "total_reward_cents": { "type": "integer", "minimum": 0 },
+        "total_estimated_hours": { "type": "number", "minimum": 0 }
       }
     }
   }

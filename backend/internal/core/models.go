@@ -890,6 +890,7 @@ type ImportRepoIssuesResponse struct {
 	IssueCount          int                  `json:"issue_count"`
 	TotalEstimatedCents int64                `json:"total_estimated_cents"`
 	TotalEstimatedHours float64              `json:"total_estimated_hours"`
+	PlanningPacket      AIPlanningPacket     `json:"planning_packet"`
 	Issues              []*ImportedRepoIssue `json:"issues"`
 }
 
@@ -904,8 +905,39 @@ type ProjectIssueSyncResponse struct {
 	UpdatedTaskCount   int                       `json:"updated_task_count"`
 	OpenIssueCount     int                       `json:"open_issue_count"`
 	ClosedIssueCount   int                       `json:"closed_issue_count"`
+	PlanningPacket     AIPlanningPacket          `json:"planning_packet"`
 	IssueMappings      []ProjectIssueSyncMapping `json:"issue_mappings"`
 	SyncedAt           time.Time                 `json:"synced_at"`
+}
+
+type AIPlanningPacket struct {
+	Status              string                `json:"status"`
+	SupervisorAgentType string                `json:"supervisor_agent_type"`
+	ContextURLs         map[string]string     `json:"context_urls"`
+	Runbook             []AgentRunbookStep    `json:"runbook"`
+	Steps               []AIPlanningStep      `json:"steps"`
+	OutputContracts     []AgentOutputContract `json:"output_contracts"`
+	Summary             AIPlanningSummary     `json:"summary"`
+}
+
+type AIPlanningStep struct {
+	ID                string `json:"id"`
+	Title             string `json:"title"`
+	Status            string `json:"status"`
+	ArtifactKind      string `json:"artifact_kind"`
+	OutputEndpoint    string `json:"output_endpoint"`
+	OutputProtocol    string `json:"output_protocol"`
+	OutputProtocolURL string `json:"output_protocol_url"`
+}
+
+type AIPlanningSummary struct {
+	IssueCount          int     `json:"issue_count"`
+	TaskCount           int     `json:"task_count"`
+	AgentTaskCount      int     `json:"agent_task_count"`
+	HumanTaskCount      int     `json:"human_task_count"`
+	HybridTaskCount     int     `json:"hybrid_task_count"`
+	TotalRewardCents    int64   `json:"total_reward_cents"`
+	TotalEstimatedHours float64 `json:"total_estimated_hours"`
 }
 
 type ProjectIssueSyncMapping struct {

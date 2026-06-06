@@ -66,8 +66,133 @@ func ImportRepoIssues(ctx context.Context, cfg Config, req ImportRepoIssuesReque
 		IssueCount:          len(issues),
 		TotalEstimatedCents: total,
 		TotalEstimatedHours: roundHalfHour(totalHours),
+		PlanningPacket:      repoImportPlanningPacket("https://github.com/"+owner+"/"+name, issues),
 		Issues:              issues,
 	}, nil
+}
+
+func repoImportPlanningPacket(repoURL string, issues []*ImportedRepoIssue) AIPlanningPacket {
+	summary := AIPlanningSummary{
+		IssueCount:          len(issues),
+		TaskCount:           len(issues),
+		TotalEstimatedHours: 0,
+	}
+	for _, issue := range issues {
+		if issue == nil {
+			continue
+		}
+		summary.TotalRewardCents += issue.EstimatedCents
+		summary.TotalEstimatedHours += issue.EstimatedHours
+		switch issue.RequiredWorkerKind {
+		case WorkerAgent:
+			summary.AgentTaskCount++
+		case WorkerHybrid:
+			summary.HybridTaskCount++
+		default:
+			summary.HumanTaskCount++
+		}
+	}
+	summary.TotalEstimatedHours = roundHalfHour(summary.TotalEstimatedHours)
+	contextURLs := map[string]string{
+		"repo_import": "/api/public/repo/issues",
+		"repository":  strings.TrimSpace(repoURL),
+		"agent_queue": agentQueueEndpoint,
+		"agents":      "/api/public/protocol/agents",
+	}
+	steps := []AIPlanningStep{
+		aiPlanningStep("issue_scan", "Issue scan", "complete", "repo_issue_scan", "/api/public/repo/issues", "mergeos.repo-import.v1", "/protocol/repo-import.v1.schema.json"),
+		aiPlanningStep("task_generation", "Task generation", "ready", "task_plan", "/api/projects/{id}/repo-sync", "mergeos.repo-sync.v1", "/protocol/repo-sync.v1.schema.json"),
+		aiPlanningStep("reward_estimation", "Reward estimation", "ready", "reward_plan", "/api/projects/{id}/repo-sync", "mergeos.repo-sync.v1", "/protocol/repo-sync.v1.schema.json"),
+		aiPlanningStep("contributor_routing", "Contributor routing", "queued", "routing_plan", "/api/projects/{id}/routing", "mergeos.routing.v1", "/protocol/routing.v1.schema.json"),
+	}
+	return AIPlanningPacket{
+		Status:              planningStatus(summary.TaskCount, 0),
+		SupervisorAgentType: ceoAgentType,
+		ContextURLs:         contextURLs,
+		Runbook: []AgentRunbookStep{
+			{Step: 1, Action: "scan_issues", Label: "Score GitHub issues by risk, complexity, and work type", Method: "GET", Endpoint: "/api/public/repo/issues"},
+			{Step: 2, Action: "generate_tasks", Label: "Convert issues into funded task candidates", Method: "POST", Endpoint: "/api/projects/{id}/repo-sync"},
+			{Step: 3, Action: "estimate_rewards", Label: "Calibrate task rewards and estimated hours", Method: "POST", Endpoint: "/api/projects/{id}/repo-sync"},
+			{Step: 4, Action: "route_contributors", Label: "Route each generated task to human, agent, or hybrid lanes", Method: "GET", Endpoint: "/api/projects/{id}/routing"},
+		},
+		Steps: steps,
+		OutputContracts: []AgentOutputContract{
+			{Action: "scan_issues", ArtifactKind: "repo_issue_scan", OutputEndpoint: "/api/public/repo/issues", OutputProtocol: "mergeos.repo-import.v1", OutputProtocolURL: "/protocol/repo-import.v1.schema.json", PublicURL: "/api/public/repo/issues"},
+			{Action: "generate_tasks", ArtifactKind: "repo_sync", OutputEndpoint: "/api/projects/{id}/repo-sync", OutputProtocol: "mergeos.repo-sync.v1", OutputProtocolURL: "/protocol/repo-sync.v1.schema.json"},
+			{Action: "route_contributors", ArtifactKind: "routing_plan", OutputEndpoint: "/api/projects/{id}/routing", OutputProtocol: "mergeos.routing.v1", OutputProtocolURL: "/protocol/routing.v1.schema.json"},
+		},
+		Summary: summary,
+	}
+}
+
+func repoSyncPlanningPacket(projectID, repoURL string, mappings []ProjectIssueSyncMapping) AIPlanningPacket {
+	summary := AIPlanningSummary{
+		IssueCount: len(mappings),
+		TaskCount:  len(mappings),
+	}
+	for _, mapping := range mappings {
+		summary.TotalRewardCents += mapping.RewardCents
+		summary.TotalEstimatedHours += mapping.EstimatedHours
+		switch mapping.RequiredWorkerKind {
+		case WorkerAgent:
+			summary.AgentTaskCount++
+		case WorkerHybrid:
+			summary.HybridTaskCount++
+		default:
+			summary.HumanTaskCount++
+		}
+	}
+	summary.TotalEstimatedHours = roundHalfHour(summary.TotalEstimatedHours)
+	projectPath := "/api/projects/" + strings.TrimSpace(projectID)
+	contextURLs := map[string]string{
+		"repo_sync":       projectPath + "/repo-sync",
+		"routing":         projectPath + "/routing",
+		"workflow":        projectPath + "/protocol/workflow",
+		"ai_workflow":     projectPath + "/ai-workflow",
+		"agent_queue":     agentQueueEndpoint,
+		"public_workflow": "/api/public/projects/" + strings.TrimSpace(projectID) + "/workflow",
+	}
+	if strings.TrimSpace(repoURL) != "" {
+		contextURLs["repository"] = strings.TrimSpace(repoURL)
+	}
+	steps := []AIPlanningStep{
+		aiPlanningStep("issue_scan", "Issue scan", "complete", "repo_issue_scan", "/api/public/repo/issues", "mergeos.repo-import.v1", "/protocol/repo-import.v1.schema.json"),
+		aiPlanningStep("task_generation", "Task generation", "complete", "repo_sync", projectPath+"/repo-sync", "mergeos.repo-sync.v1", "/protocol/repo-sync.v1.schema.json"),
+		aiPlanningStep("reward_estimation", "Reward estimation", "complete", "reward_plan", projectPath+"/repo-sync", "mergeos.repo-sync.v1", "/protocol/repo-sync.v1.schema.json"),
+		aiPlanningStep("contributor_routing", "Contributor routing", "ready", "routing_plan", projectPath+"/routing", "mergeos.routing.v1", "/protocol/routing.v1.schema.json"),
+	}
+	return AIPlanningPacket{
+		Status:              planningStatus(summary.TaskCount, summary.TaskCount),
+		SupervisorAgentType: ceoAgentType,
+		ContextURLs:         contextURLs,
+		Runbook: []AgentRunbookStep{
+			{Step: 1, Action: "review_generated_tasks", Label: "Review imported issues mapped to MergeOS tasks", Method: "POST", Endpoint: projectPath + "/repo-sync"},
+			{Step: 2, Action: "inspect_rewards", Label: "Inspect reward estimates, hours, and worker lane mix", Method: "POST", Endpoint: projectPath + "/repo-sync"},
+			{Step: 3, Action: "route_contributors", Label: "Open routing plan for contributors and agents", Method: "GET", Endpoint: projectPath + "/routing"},
+			{Step: 4, Action: "publish_bounties", Label: "Publish ready task claims to marketplace and agent queue", Method: "GET", Endpoint: agentQueueEndpoint},
+		},
+		Steps: steps,
+		OutputContracts: []AgentOutputContract{
+			{Action: "generate_tasks", ArtifactKind: "repo_sync", OutputEndpoint: projectPath + "/repo-sync", OutputProtocol: "mergeos.repo-sync.v1", OutputProtocolURL: "/protocol/repo-sync.v1.schema.json"},
+			{Action: "route_contributors", ArtifactKind: "routing_plan", OutputEndpoint: projectPath + "/routing", OutputProtocol: "mergeos.routing.v1", OutputProtocolURL: "/protocol/routing.v1.schema.json"},
+			{Action: "publish_bounties", ArtifactKind: "marketplace_bounties", OutputEndpoint: "/api/marketplace", OutputProtocol: "mergeos.marketplace.v1", OutputProtocolURL: "/protocol/marketplace.v1.schema.json", PublicURL: "/marketplace"},
+		},
+		Summary: summary,
+	}
+}
+
+func aiPlanningStep(id, title, status, artifactKind, endpoint, protocol, protocolURL string) AIPlanningStep {
+	return AIPlanningStep{ID: id, Title: title, Status: status, ArtifactKind: artifactKind, OutputEndpoint: endpoint, OutputProtocol: protocol, OutputProtocolURL: protocolURL}
+}
+
+func planningStatus(taskCount, completedCount int) string {
+	if taskCount <= 0 {
+		return "waiting"
+	}
+	if completedCount >= taskCount {
+		return "ready"
+	}
+	return "planning"
 }
 
 func fetchRepoIssueRows(ctx context.Context, cfg Config, owner, name string) ([]githubIssueRow, error) {

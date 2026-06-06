@@ -31,6 +31,8 @@ import {
   protocolEventsFromMessage,
   protocolEventGroup,
   protocolTypeFromMessage,
+  repoPlanningOutputContracts,
+  repoPlanningSteps,
   walletMigrationPDASeedMetadata,
 } from '@mergeos/sdk';
 
@@ -88,6 +90,9 @@ const scan = await mergeos.projectRepositoryScan(projects[0].id);
 const scanProtocol = await mergeos.projectRepositoryScanProtocol(projects[0].id);
 const syncReport = await mergeos.syncProjectRepoIssues(projects[0].id);
 console.log(syncReport.protocol_version, syncReport.added_task_count, syncReport.issue_mappings[0]?.claim_endpoint);
+const readyPlanningSteps = repoPlanningSteps(syncReport, 'ready');
+const syncContracts = repoPlanningOutputContracts(syncReport, 'mergeos.repo-sync.v1');
+console.log(readyPlanningSteps[0]?.id, syncContracts[0]?.output_protocol_url);
 const suggestedTask = scan.suggested_tasks?.find((task) => task.funding_packet?.can_fund);
 if (suggestedTask) {
   const fundingPayload = repositorySuggestedTaskFundingPayload(suggestedTask.id, {

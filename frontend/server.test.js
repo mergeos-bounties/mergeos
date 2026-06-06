@@ -130,6 +130,8 @@ test('public agent runbook and SDK document PR monitor auto-release plus proposa
   assert.match(sdkReadme, /Agent Queue Claim/);
   assert.match(sdkReadme, /agentQueueClaimPayload/);
   assert.match(sdkReadme, /agentWorkPacketOutputContracts/);
+  assert.match(sdkReadme, /repoPlanningSteps/);
+  assert.match(sdkReadme, /repoPlanningOutputContracts/);
   assert.match(sdkReadme, /claimAgentQueueTask\(task, overrides\)/);
   assert.match(sdkReadme, /autoReleasePayloadFromPRMonitorTask/);
   assert.match(sdkReadme, /autoReleaseProofsFromResponse/);

@@ -898,6 +898,34 @@ export function agentWorkPacketOutputContracts(workPacket = {}, action = '') {
   return rows.filter((contract) => String(contract.action || '').trim().toLowerCase() === normalizedAction);
 }
 
+export function repoPlanningPacket(document = {}) {
+  if (!document || typeof document !== 'object') return {};
+  const packet = document.planning_packet && typeof document.planning_packet === 'object'
+    ? document.planning_packet
+    : document;
+  return packet && typeof packet === 'object' && !Array.isArray(packet) ? packet : {};
+}
+
+export function repoPlanningSteps(document = {}, status = '') {
+  const packet = repoPlanningPacket(document);
+  const steps = Array.isArray(packet.steps) ? packet.steps.filter((step) => step && typeof step === 'object') : [];
+  const normalizedStatus = String(status || '').trim().toLowerCase();
+  if (!normalizedStatus) return steps;
+  return steps.filter((step) => String(step.status || '').trim().toLowerCase() === normalizedStatus);
+}
+
+export function repoPlanningOutputContracts(document = {}, selector = '') {
+  const packet = repoPlanningPacket(document);
+  const contracts = Array.isArray(packet.output_contracts) ? packet.output_contracts.filter((contract) => contract && typeof contract === 'object') : [];
+  const normalizedSelector = String(selector || '').trim().toLowerCase();
+  if (!normalizedSelector) return contracts;
+  return contracts.filter((contract) => {
+    const action = String(contract.action || '').trim().toLowerCase();
+    const protocol = String(contract.output_protocol || '').trim().toLowerCase();
+    return action === normalizedSelector || protocol === normalizedSelector;
+  });
+}
+
 export function agentReviewPayloadFromPRMonitorTask(task = {}, overrides = {}) {
   const packet = task.review_packet && typeof task.review_packet === 'object' ? task.review_packet : {};
   const packetPayload = packet.payload && typeof packet.payload === 'object' ? packet.payload : {};

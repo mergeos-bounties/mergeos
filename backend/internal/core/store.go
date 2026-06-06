@@ -1306,6 +1306,7 @@ func (s *Store) SyncProjectImportedIssuesReport(projectID, sourceRepoURL string,
 		}
 		return report.IssueMappings[i].IssueNumber < report.IssueMappings[j].IssueNumber
 	})
+	report.PlanningPacket = repoSyncPlanningPacket(project.ID, report.SourceRepoURL, report.IssueMappings)
 
 	if !changed {
 		return report, nil

@@ -625,6 +625,36 @@ test('validates live feed protocol documents', () => {
 
 test('validates repository import protocol documents', () => {
   const now = '2026-06-05T00:00:00.000Z';
+  const planningPacket = {
+    status: 'planning',
+    supervisor_agent_type: 'ceo-agent',
+    context_urls: {
+      repo_import: '/api/public/repo/issues',
+      repository: 'https://github.com/mergeos-bounties/mergeos',
+      agent_queue: '/api/public/protocol/agent-queue',
+    },
+    runbook: [
+      { step: 1, action: 'scan_issues', label: 'Score GitHub issues by risk, complexity, and work type', method: 'GET', endpoint: '/api/public/repo/issues' },
+      { step: 2, action: 'generate_tasks', label: 'Convert issues into funded task candidates', method: 'POST', endpoint: '/api/projects/{id}/repo-sync' },
+    ],
+    steps: [
+      { id: 'issue_scan', title: 'Issue scan', status: 'complete', artifact_kind: 'repo_issue_scan', output_endpoint: '/api/public/repo/issues', output_protocol: 'mergeos.repo-import.v1', output_protocol_url: '/protocol/repo-import.v1.schema.json' },
+      { id: 'task_generation', title: 'Task generation', status: 'ready', artifact_kind: 'task_plan', output_endpoint: '/api/projects/{id}/repo-sync', output_protocol: 'mergeos.repo-sync.v1', output_protocol_url: '/protocol/repo-sync.v1.schema.json' },
+    ],
+    output_contracts: [
+      { action: 'scan_issues', artifact_kind: 'repo_issue_scan', output_endpoint: '/api/public/repo/issues', output_protocol: 'mergeos.repo-import.v1', output_protocol_url: '/protocol/repo-import.v1.schema.json', public_url: '/api/public/repo/issues' },
+      { action: 'generate_tasks', artifact_kind: 'repo_sync', output_endpoint: '/api/projects/{id}/repo-sync', output_protocol: 'mergeos.repo-sync.v1', output_protocol_url: '/protocol/repo-sync.v1.schema.json' },
+    ],
+    summary: {
+      issue_count: 2,
+      task_count: 2,
+      agent_task_count: 1,
+      human_task_count: 0,
+      hybrid_task_count: 1,
+      total_reward_cents: 21000,
+      total_estimated_hours: 10.5,
+    },
+  };
   const report = {
     protocol_version: 'mergeos.repo-import.v1',
     kind: 'repo_import',
@@ -634,6 +664,7 @@ test('validates repository import protocol documents', () => {
     issue_count: 2,
     total_estimated_cents: 21000,
     total_estimated_hours: 10.5,
+    planning_packet: planningPacket,
     issues: [
       {
         number: 42,
@@ -678,17 +709,49 @@ test('validates repository import protocol documents', () => {
     ...report,
     kind: 'repo_scan',
     issue_count: -1,
+    planning_packet: { ...planningPacket, summary: { ...planningPacket.summary, issue_count: -1 } },
     issues: [{ ...report.issues[0], score: 101, required_worker_kind: 'bot', updated_at: 'not-a-date' }],
   });
   assert.equal(invalid.valid, false);
   assert(invalid.errors.some((error) => error.path === 'kind'));
   assert(invalid.errors.some((error) => error.path === 'issue_count'));
+  assert(invalid.errors.some((error) => error.path === 'planning_packet.summary.issue_count'));
   assert(invalid.errors.some((error) => error.path === 'issues[0].score'));
   assert(invalid.errors.some((error) => error.path === 'issues[0].required_worker_kind'));
   assert(invalid.errors.some((error) => error.path === 'issues[0].updated_at'));
 });
 
 test('validates repository sync protocol documents', () => {
+  const planningPacket = {
+    status: 'ready',
+    supervisor_agent_type: 'ceo-agent',
+    context_urls: {
+      repo_sync: '/api/projects/prj_0001/repo-sync',
+      routing: '/api/projects/prj_0001/routing',
+      agent_queue: '/api/public/protocol/agent-queue',
+    },
+    runbook: [
+      { step: 1, action: 'review_generated_tasks', label: 'Review imported issues mapped to MergeOS tasks', method: 'POST', endpoint: '/api/projects/prj_0001/repo-sync' },
+      { step: 2, action: 'route_contributors', label: 'Open routing plan for contributors and agents', method: 'GET', endpoint: '/api/projects/prj_0001/routing' },
+    ],
+    steps: [
+      { id: 'task_generation', title: 'Task generation', status: 'complete', artifact_kind: 'repo_sync', output_endpoint: '/api/projects/prj_0001/repo-sync', output_protocol: 'mergeos.repo-sync.v1', output_protocol_url: '/protocol/repo-sync.v1.schema.json' },
+      { id: 'contributor_routing', title: 'Contributor routing', status: 'ready', artifact_kind: 'routing_plan', output_endpoint: '/api/projects/prj_0001/routing', output_protocol: 'mergeos.routing.v1', output_protocol_url: '/protocol/routing.v1.schema.json' },
+    ],
+    output_contracts: [
+      { action: 'generate_tasks', artifact_kind: 'repo_sync', output_endpoint: '/api/projects/prj_0001/repo-sync', output_protocol: 'mergeos.repo-sync.v1', output_protocol_url: '/protocol/repo-sync.v1.schema.json' },
+      { action: 'route_contributors', artifact_kind: 'routing_plan', output_endpoint: '/api/projects/prj_0001/routing', output_protocol: 'mergeos.routing.v1', output_protocol_url: '/protocol/routing.v1.schema.json' },
+    ],
+    summary: {
+      issue_count: 1,
+      task_count: 1,
+      agent_task_count: 1,
+      human_task_count: 0,
+      hybrid_task_count: 0,
+      total_reward_cents: 25000,
+      total_estimated_hours: 2.5,
+    },
+  };
   const sync = {
     protocol_version: 'mergeos.repo-sync.v1',
     kind: 'repo_sync',
@@ -700,6 +763,7 @@ test('validates repository sync protocol documents', () => {
     updated_task_count: 2,
     open_issue_count: 6,
     closed_issue_count: 2,
+    planning_packet: planningPacket,
     issue_mappings: [
       {
         issue_number: 12,

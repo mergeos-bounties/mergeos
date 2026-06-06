@@ -1176,6 +1176,15 @@ func TestSyncProjectImportedIssuesAddsMissingAndTracksState(t *testing.T) {
 	if len(report.IssueMappings) != 2 {
 		t.Fatalf("sync mappings = %d, want 2: %#v", len(report.IssueMappings), report.IssueMappings)
 	}
+	if report.PlanningPacket.Status != "ready" || report.PlanningPacket.SupervisorAgentType != ceoAgentType {
+		t.Fatalf("sync planning packet header = %#v", report.PlanningPacket)
+	}
+	if report.PlanningPacket.ContextURLs["routing"] != "/api/projects/"+project.ID+"/routing" {
+		t.Fatalf("sync planning routing context = %#v", report.PlanningPacket.ContextURLs)
+	}
+	if report.PlanningPacket.Summary.TaskCount != len(report.IssueMappings) || report.PlanningPacket.Summary.AgentTaskCount != 1 || len(report.PlanningPacket.OutputContracts) == 0 {
+		t.Fatalf("sync planning summary/contracts = %#v", report.PlanningPacket)
+	}
 	mappings := map[int]ProjectIssueSyncMapping{}
 	for _, mapping := range report.IssueMappings {
 		mappings[mapping.IssueNumber] = mapping

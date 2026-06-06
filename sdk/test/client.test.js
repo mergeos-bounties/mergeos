@@ -33,6 +33,9 @@ import {
   protocolEventsFromMessage,
   protocolEventGroup,
   protocolTypeFromMessage,
+  repoPlanningOutputContracts,
+  repoPlanningPacket,
+  repoPlanningSteps,
   repositorySuggestedTaskFundingPayload,
   repositorySuggestedTaskPayPalOrderPayload,
   walletMigrationPDASeedMetadata,
@@ -973,6 +976,33 @@ test('exposes project workflow and admin ops routes', async () => {
         protocol_version: 'mergeos.repo-sync.v1',
         added_task_count: 1,
         updated_task_count: 2,
+        planning_packet: {
+          status: 'ready',
+          supervisor_agent_type: 'ceo-agent',
+          context_urls: {
+            repo_sync: '/api/projects/prj_1/repo-sync',
+            routing: '/api/projects/prj_1/routing',
+          },
+          runbook: [
+            { step: 1, action: 'review_generated_tasks', label: 'Review generated tasks', method: 'POST', endpoint: '/api/projects/prj_1/repo-sync' },
+          ],
+          steps: [
+            { id: 'task_generation', title: 'Task generation', status: 'complete', artifact_kind: 'repo_sync', output_endpoint: '/api/projects/prj_1/repo-sync', output_protocol: 'mergeos.repo-sync.v1', output_protocol_url: '/protocol/repo-sync.v1.schema.json' },
+            { id: 'contributor_routing', title: 'Contributor routing', status: 'ready', artifact_kind: 'routing_plan', output_endpoint: '/api/projects/prj_1/routing', output_protocol: 'mergeos.routing.v1', output_protocol_url: '/protocol/routing.v1.schema.json' },
+          ],
+          output_contracts: [
+            { action: 'generate_tasks', artifact_kind: 'repo_sync', output_endpoint: '/api/projects/prj_1/repo-sync', output_protocol: 'mergeos.repo-sync.v1', output_protocol_url: '/protocol/repo-sync.v1.schema.json' },
+          ],
+          summary: {
+            issue_count: 1,
+            task_count: 1,
+            agent_task_count: 1,
+            human_task_count: 0,
+            hybrid_task_count: 0,
+            total_reward_cents: 25000,
+            total_estimated_hours: 2.5,
+          },
+        },
         issue_mappings: [{
           issue_number: 12,
           task_id: 'tsk_12',
@@ -1048,6 +1078,9 @@ test('exposes project workflow and admin ops routes', async () => {
   assert.equal(scanProtocol.protocol_version, 'mergeos.scan.v1');
   assert.equal(sync.protocol_version, 'mergeos.repo-sync.v1');
   assert.equal(sync.added_task_count, 1);
+  assert.equal(repoPlanningPacket(sync).summary.task_count, 1);
+  assert.equal(repoPlanningSteps(sync, 'ready')[0].id, 'contributor_routing');
+  assert.equal(repoPlanningOutputContracts(sync, 'mergeos.repo-sync.v1')[0].action, 'generate_tasks');
   assert.equal(sync.issue_mappings[0].claim_id, 'prj_1:12');
   assert.equal(sync.issue_mappings[0].claim_endpoint, '/api/tasks/prj_1:12/claim');
   assert.equal(sync.issue_mappings[0].routing.recommended_next_action, 'route_to_agent');
