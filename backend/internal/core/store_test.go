@@ -3233,6 +3233,130 @@ func TestProjectAutoReleaseRouteReleasesReadyCandidateAndRecordsPolicy(t *testin
 	}
 }
 
+func TestProjectAutoReleaseRouteRequiresDeploymentValidation(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:       defaultTokenSymbol,
+		StatePath:         filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:    1000,
+		DevPaymentEnabled: true,
+		DevPaymentCode:    defaultDevPaymentCode,
+		GitHubOwner:       defaultGitHubOwner,
+		BountyRoot:        filepath.Join(tempDir, "bounties"),
+		SMTPFrom:          "noreply@mergeos.local",
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	auth, err := store.Register(RegisterRequest{
+		Name:        "Deployment Auto Client",
+		CompanyName: "Deploy Auto Co",
+		Email:       "deploy-auto-client@example.com",
+		Password:    "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	project, err := store.CreateProject(context.Background(), auth.User.ID, CreateProjectRequest{
+		Title:            "Deployment release proof",
+		ClientName:       "Private Deploy Client",
+		CompanyName:      "Deploy Auto Co",
+		ClientEmail:      "deploy-auto-client@example.com",
+		Brief:            "Fund a deployment handoff with preview validation before release.",
+		BudgetCents:      160000,
+		PaymentMethod:    PaymentPayPal,
+		PaymentReference: defaultDevPaymentCode,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var task *Task
+	for _, row := range project.Tasks {
+		if strings.Contains(strings.ToLower(row.Title), "deployment") {
+			task = row
+			break
+		}
+	}
+	if task == nil {
+		t.Fatalf("expected generated deployment task: %#v", project.Tasks)
+	}
+	publicTaskID := marketplaceBountyID(project.ID, task.IssueNumber)
+	baseCandidate := ProjectAutoReleaseCandidate{
+		TaskID:            publicTaskID,
+		WorkerKind:        task.RequiredWorkerKind,
+		WorkerID:          "github:deploy-builder",
+		RewardCents:       task.RewardCents,
+		Repository:        "mergeos-bounties/mergeos",
+		PullRequestNumber: 333,
+		PullRequestURL:    "https://github.com/mergeos-bounties/mergeos/pull/333",
+		PullRequestTitle:  "Deploy preview handoff",
+		ReadinessStatus:   "ready",
+		CanMerge:          true,
+		RiskLevel:         "low",
+		CanRelease:        true,
+	}
+	request := ProjectAutoReleaseRequest{
+		TaskIDs:    []string{publicTaskID},
+		Policy:     defaultAutoReleasePolicy,
+		Candidates: []ProjectAutoReleaseCandidate{baseCandidate},
+	}
+
+	server := NewServer(cfg, store, payments)
+	bodyBytes, err := json.Marshal(request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	reqHTTP := httptest.NewRequest(http.MethodPost, "/api/projects/"+project.ID+"/auto-release", bytes.NewReader(bodyBytes))
+	reqHTTP.Header.Set("Authorization", "Bearer "+auth.Token)
+	resp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(resp, reqHTTP)
+	if resp.Code != http.StatusOK {
+		t.Fatalf("deployment auto-release status = %d, body = %s", resp.Code, resp.Body.String())
+	}
+	var blocked ProjectAutoReleaseResponse
+	if err := json.Unmarshal(resp.Body.Bytes(), &blocked); err != nil {
+		t.Fatal(err)
+	}
+	if blocked.ReleasedCount != 0 || blocked.SkippedCount != 1 || !strings.Contains(blocked.Skipped[0].Reason, "deployment validation") {
+		t.Fatalf("deployment candidate without validation should be skipped: %#v", blocked)
+	}
+
+	verifiedCandidate := baseCandidate
+	verifiedCandidate.DeploymentStatus = "validated"
+	verifiedCandidate.ValidationSignals = []string{"evidence: provided", "star: verified", "deployment-sensitive", "deployment: verified"}
+	request.Candidates = []ProjectAutoReleaseCandidate{verifiedCandidate}
+	bodyBytes, err = json.Marshal(request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	reqHTTP = httptest.NewRequest(http.MethodPost, "/api/projects/"+project.ID+"/auto-release", bytes.NewReader(bodyBytes))
+	reqHTTP.Header.Set("Authorization", "Bearer "+auth.Token)
+	resp = httptest.NewRecorder()
+	server.Routes().ServeHTTP(resp, reqHTTP)
+	if resp.Code != http.StatusOK {
+		t.Fatalf("verified deployment auto-release status = %d, body = %s", resp.Code, resp.Body.String())
+	}
+	var released ProjectAutoReleaseResponse
+	if err := json.Unmarshal(resp.Body.Bytes(), &released); err != nil {
+		t.Fatal(err)
+	}
+	if released.ReleasedCount != 1 || released.SkippedCount != 0 {
+		t.Fatalf("validated deployment candidate should release: %#v", released)
+	}
+	var paidRow *ProjectPayoutRow
+	for index := range released.Payouts.Payouts {
+		if released.Payouts.Payouts[index].TaskID == task.ID {
+			paidRow = &released.Payouts.Payouts[index]
+			break
+		}
+	}
+	if paidRow == nil || !strings.Contains(paidRow.Reference, "deployment_validation:validated") {
+		t.Fatalf("released payout missing deployment proof reference: %#v", paidRow)
+	}
+}
+
 func TestProjectDashboardRouteAggregatesCustomerWorkflowAndSanitizesData(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := Config{

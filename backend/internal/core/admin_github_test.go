@@ -252,6 +252,47 @@ func TestAdminPullRequestReadinessBlocksSpamLabel(t *testing.T) {
 	}
 }
 
+func TestAdminPullRequestReadinessRequiresDeploymentValidationForAutoRelease(t *testing.T) {
+	readiness := adminPullRequestReadiness(
+		&Task{Title: "Deployment handoff", Acceptance: "Preview rollout must be validated before release."},
+		AdminTaskPullRequest{
+			State:          "open",
+			MergeableState: "clean",
+			Labels:         []string{"star: verified", "evidence: provided"},
+			ChangedFiles: []AdminPullRequestFile{
+				{Path: "frontend/src/App.vue", Status: "modified", Additions: 12, Deletions: 2},
+			},
+		},
+	)
+	if !readiness.CanMerge || readiness.Status != "needs_review" || readiness.RiskLevel != "medium" {
+		t.Fatalf("deployment PR should need review before auto-release: %#v", readiness)
+	}
+	if !containsString(readiness.Signals, "deployment-sensitive") {
+		t.Fatalf("missing deployment-sensitive signal: %#v", readiness.Signals)
+	}
+	if !containsString(readiness.Warnings, "deployment validation is required before auto-release") {
+		t.Fatalf("missing deployment validation warning: %#v", readiness.Warnings)
+	}
+
+	verified := adminPullRequestReadiness(
+		&Task{Title: "Deployment handoff", Acceptance: "Preview rollout must be validated before release."},
+		AdminTaskPullRequest{
+			State:          "open",
+			MergeableState: "clean",
+			Labels:         []string{"star: verified", "evidence: provided", "deployment: verified"},
+			ChangedFiles: []AdminPullRequestFile{
+				{Path: "frontend/src/App.vue", Status: "modified", Additions: 12, Deletions: 2},
+			},
+		},
+	)
+	if !verified.CanMerge || verified.Status != "ready" || verified.RiskLevel != "low" {
+		t.Fatalf("verified deployment PR should be ready: %#v", verified)
+	}
+	if !containsString(verified.Signals, "deployment: verified") {
+		t.Fatalf("missing deployment proof signal: %#v", verified.Signals)
+	}
+}
+
 func TestAdminPullRequestReadinessAllowsVerifiedLowRiskPR(t *testing.T) {
 	readiness := adminPullRequestReadiness(
 		&Task{Title: "Dashboard copy fix"},

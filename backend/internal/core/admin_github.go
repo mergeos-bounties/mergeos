@@ -470,6 +470,14 @@ func adminPullRequestReadiness(task *Task, pull AdminTaskPullRequest) AdminPullR
 			addWarning("payment-sensitive PR still requires maintainer review of provider, ledger, and replay evidence")
 		}
 	}
+	if adminTaskRequiresDeploymentValidation(task, pull) {
+		addSignal("deployment-sensitive")
+		if adminPullRequestHasDeploymentValidation(labels) {
+			addSignal("deployment: verified")
+		} else {
+			addWarning("deployment validation is required before auto-release")
+		}
+	}
 
 	totalAdditions := 0
 	totalDeletions := 0
@@ -566,6 +574,47 @@ func adminTaskIsPaymentSensitive(task *Task, pull AdminTaskPullRequest) bool {
 	}, " "))
 	for _, keyword := range []string{"payment", "paypal", "usdt", "crypto", "webhook", "ledger", "payout", "escrow"} {
 		if strings.Contains(haystack, keyword) {
+			return true
+		}
+	}
+	return false
+}
+
+func adminTaskRequiresDeploymentValidation(task *Task, pull AdminTaskPullRequest) bool {
+	parts := []string{
+		taskTitle(task),
+		taskAcceptance(task),
+		taskBountyType(task),
+		pull.Title,
+		pull.Body,
+		pull.HeadRef,
+		pull.BaseRef,
+		strings.Join(pull.Labels, " "),
+	}
+	for _, file := range pull.ChangedFiles {
+		parts = append(parts, file.Path)
+	}
+	haystack := strings.ToLower(strings.Join(parts, " "))
+	for _, keyword := range []string{
+		"deploy", "deployment", "devops", "preview", "rollout", "release gate",
+		"environment", "pipeline", "handoff", "vercel", "netlify", "cloudflare",
+		"docker", "kubernetes", "k8s",
+	} {
+		if strings.Contains(haystack, keyword) {
+			return true
+		}
+	}
+	return false
+}
+
+func adminPullRequestHasDeploymentValidation(labels map[string]bool) bool {
+	for _, label := range []string{
+		"deployment: verified", "deployment: validated", "deployment: passed",
+		"deploy: verified", "deploy: validated", "deploy: passed",
+		"preview: verified", "preview: validated", "preview: passed",
+		"rollout: verified", "rollout: validated", "release: verified",
+	} {
+		if labels[label] {
 			return true
 		}
 	}

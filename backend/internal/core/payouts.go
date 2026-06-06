@@ -221,10 +221,15 @@ func projectPayoutReleaseCount(counts map[string]int) int {
 
 func projectPayoutLedgerReference(reference string) string {
 	if pullReference := publicPullLedgerReference(reference); pullReference != "" {
-		if policy := sanitizeLedgerReferenceValue(splitLedgerReference(reference)["auto_release"]); policy != "" {
-			return pullReference + ";auto_release:" + policy
+		fields := splitLedgerReference(reference)
+		parts := []string{pullReference}
+		if deployment := sanitizeLedgerReferenceValue(fields["deployment_validation"]); deployment != "" {
+			parts = append(parts, "deployment_validation:"+deployment)
 		}
-		return pullReference
+		if policy := sanitizeLedgerReferenceValue(fields["auto_release"]); policy != "" {
+			parts = append(parts, "auto_release:"+policy)
+		}
+		return strings.Join(parts, ";")
 	}
 	return sanitizeLedgerReferenceValue(reference)
 }
@@ -325,6 +330,10 @@ func autoReleaseAcceptRequest(task *Task, candidate ProjectAutoReleaseCandidate,
 	if candidate.RewardCents != task.RewardCents {
 		return AcceptTaskRequest{}, "", errors.New("candidate reward does not match task reward")
 	}
+	candidateRequiresDeploymentValidation := projectAutoReleaseSignalPresent(candidate.ValidationSignals, "deployment-sensitive")
+	if (autoReleaseTaskRequiresDeploymentValidation(task) || candidateRequiresDeploymentValidation) && !strings.EqualFold(strings.TrimSpace(candidate.DeploymentStatus), "validated") {
+		return AcceptTaskRequest{}, "", errors.New("deployment validation must be verified before auto-release")
+	}
 	workerID := normalizeWorkerID(candidate.WorkerID)
 	if workerID == "" {
 		return AcceptTaskRequest{}, "", errors.New("worker id is required")
@@ -356,6 +365,9 @@ func autoReleaseAcceptRequest(task *Task, candidate ProjectAutoReleaseCandidate,
 		AgentType:  agentType,
 	}
 	reference := buildPullLedgerReference(task.ID, pullURL, candidate.PullRequestTitle)
+	if strings.EqualFold(strings.TrimSpace(candidate.DeploymentStatus), "validated") {
+		reference = strings.TrimSpace(reference + ";deployment_validation:validated")
+	}
 	reference = strings.TrimSpace(reference + ";auto_release:" + sanitizeLedgerReferenceValue(policy))
 	return req, ensureTaskLedgerReference(task.ID, reference), nil
 }
@@ -378,4 +390,11 @@ func normalizeAutoReleasePolicy(value string) string {
 		return defaultAutoReleasePolicy
 	}
 	return value
+}
+
+func autoReleaseTaskRequiresDeploymentValidation(task *Task) bool {
+	if task == nil {
+		return false
+	}
+	return adminTaskRequiresDeploymentValidation(task, AdminTaskPullRequest{})
 }

@@ -189,6 +189,12 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /const whitepaperDownloadPath = '\/whitepaper\/mergeos-whitepaper\.md'/);
   assert.match(appSource, /command: 'download-whitepaper'/);
   assert.match(appSource, /function downloadWhitepaper\(\)/);
+  assert.match(appSource, /class="token-whitepaper-thesis"/);
+  assert.match(appSource, /class="token-whitepaper-brief"/);
+  assert.match(appSource, /class="token-whitepaper-section-list"/);
+  assert.match(appSource, /const publicWhitepaperThesisRows = computed\(\(\) => \[/);
+  assert.match(appSource, /const publicWhitepaperChapterSections = computed\(\(\) => \[/);
+  assert.match(appSource, /The paper is structured around executable product proof/);
   assert.match(appSource, /id="token-workflow"/);
   assert.match(appSource, /@submit\.prevent="submitAirdropClaim"/);
   assert.match(appSource, /@submit\.prevent="submitPresaleReservation"/);
@@ -209,6 +215,10 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(whitepaperSource, /## 7\. AI Layer/);
   assert.match(whitepaperSource, /## 10\. MRG Economy/);
   assert.match(whitepaperSource, /## 12\. Protocol and SDK/);
+  assert.match(whitepaperSource, /## 13\. Airdrop Missions/);
+  assert.match(whitepaperSource, /## 14\. Presale Workflow/);
+  assert.match(whitepaperSource, /## 15\. Security, Privacy, and Compliance/);
+  assert.match(whitepaperSource, /## 16\. Roadmap/);
 });
 
 test('creates runtime config for production defaults', () => {

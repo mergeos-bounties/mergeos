@@ -161,6 +161,161 @@ func TestProjectPullRequestsMonitorSummarizesReadinessWithoutAdminFields(t *test
 	}
 }
 
+func TestProjectPullRequestsMonitorRequiresDeploymentValidationForAutoReleasePacket(t *testing.T) {
+	now := time.Now().UTC()
+	project := &Project{
+		ID:           "prj_deploy",
+		Title:        "Deployment proof",
+		RepoProvider: "local-git",
+		Tasks: []*Task{
+			{
+				ID:                 "tsk_deploy",
+				ProjectID:          "prj_deploy",
+				IssueNumber:        31,
+				Title:              "Deployment handoff",
+				Acceptance:         "Preview rollout must be validated before completion.",
+				RewardCents:        80,
+				RequiredWorkerKind: WorkerHuman,
+				Status:             TaskOpen,
+				IssueURL:           "https://github.com/mergeos-bounties/mergeos/issues/31",
+				CreatedAt:          now.Add(-2 * time.Hour),
+			},
+		},
+		CreatedAt: now.Add(-3 * time.Hour),
+	}
+
+	unverified := projectPullRequestsMonitor(context.Background(), fakeProjectPullLister{
+		pulls: map[int][]AdminTaskPullRequest{
+			31: {
+				{
+					Number:         310,
+					Title:          "Deploy preview",
+					State:          "open",
+					HTMLURL:        "https://github.com/mergeos-bounties/mergeos/pull/310",
+					Author:         "builder",
+					MergeableState: "clean",
+					Labels:         []string{"evidence: provided", "star: verified"},
+					CreatedAt:      now.Add(-30 * time.Minute),
+					UpdatedAt:      now.Add(-20 * time.Minute),
+				},
+			},
+		},
+	}, project)
+	if unverified.Stats.AutoReleaseReadyCount != 0 || unverified.Tasks[0].AutoReleasePacket != nil {
+		t.Fatalf("unverified deployment PR should not expose auto-release: %#v", unverified.Tasks[0])
+	}
+	if unverified.Tasks[0].PullRequests[0].Readiness.Status != "needs_review" {
+		t.Fatalf("deployment PR should need review without validation: %#v", unverified.Tasks[0].PullRequests[0].Readiness)
+	}
+
+	verified := projectPullRequestsMonitor(context.Background(), fakeProjectPullLister{
+		pulls: map[int][]AdminTaskPullRequest{
+			31: {
+				{
+					Number:         311,
+					Title:          "Deploy preview",
+					State:          "open",
+					HTMLURL:        "https://github.com/mergeos-bounties/mergeos/pull/311",
+					Author:         "builder",
+					MergeableState: "clean",
+					Labels:         []string{"evidence: provided", "star: verified", "deployment: verified"},
+					CreatedAt:      now.Add(-10 * time.Minute),
+					UpdatedAt:      now.Add(-5 * time.Minute),
+				},
+			},
+		},
+	}, project)
+	if verified.Stats.AutoReleaseReadyCount != 1 || verified.Tasks[0].AutoReleasePacket == nil {
+		t.Fatalf("verified deployment PR should expose auto-release: %#v", verified.Tasks[0])
+	}
+	payloadMap, ok := verified.Tasks[0].AutoReleasePacket["payload"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected verified auto-release payload map: %#v", verified.Tasks[0].AutoReleasePacket)
+	}
+	candidates, ok := payloadMap["candidates"].([]ProjectAutoReleaseCandidate)
+	if !ok || len(candidates) != 1 {
+		t.Fatalf("unexpected verified auto-release candidates: %#v", payloadMap["candidates"])
+	}
+	if candidates[0].DeploymentStatus != "validated" || !containsString(candidates[0].ValidationSignals, "deployment: verified") {
+		t.Fatalf("candidate missing deployment validation proof: %#v", candidates[0])
+	}
+}
+
+func TestAutoReleaseAcceptRequestRequiresDeploymentValidationForDeployTask(t *testing.T) {
+	task := &Task{
+		ID:                 "tsk_deploy_gate",
+		Title:              "Deployment handoff",
+		Acceptance:         "Preview rollout must be validated before completion.",
+		RewardCents:        120,
+		RequiredWorkerKind: WorkerHuman,
+	}
+	candidate := ProjectAutoReleaseCandidate{
+		TaskID:            task.ID,
+		WorkerKind:        WorkerHuman,
+		WorkerID:          "github:builder",
+		RewardCents:       task.RewardCents,
+		PullRequestNumber: 411,
+		PullRequestURL:    "https://github.com/mergeos-bounties/mergeos/pull/411",
+		PullRequestTitle:  "Deploy handoff",
+		ReadinessStatus:   "ready",
+		CanMerge:          true,
+		RiskLevel:         "low",
+		CanRelease:        true,
+	}
+
+	if _, _, err := autoReleaseAcceptRequest(task, candidate, defaultAutoReleasePolicy); err == nil || !strings.Contains(err.Error(), "deployment validation") {
+		t.Fatalf("expected missing deployment validation to block auto-release, got %v", err)
+	}
+
+	candidate.DeploymentStatus = "validated"
+	req, reference, err := autoReleaseAcceptRequest(task, candidate, defaultAutoReleasePolicy)
+	if err != nil {
+		t.Fatalf("validated deployment candidate should pass: %v", err)
+	}
+	if req.WorkerID != "github:builder" || req.WorkerKind != WorkerHuman {
+		t.Fatalf("unexpected accept request: %#v", req)
+	}
+	if !strings.Contains(reference, "deployment_validation:validated") || !strings.Contains(reference, "auto_release:"+defaultAutoReleasePolicy) {
+		t.Fatalf("reference missing deployment proof: %s", reference)
+	}
+}
+
+func TestAutoReleaseAcceptRequestRequiresDeploymentValidationForCandidateSignal(t *testing.T) {
+	task := &Task{
+		ID:                 "tsk_signal_gate",
+		Title:              "Runtime handoff",
+		Acceptance:         "Attach acceptance evidence.",
+		RewardCents:        90,
+		RequiredWorkerKind: WorkerHuman,
+	}
+	candidate := ProjectAutoReleaseCandidate{
+		TaskID:            task.ID,
+		WorkerKind:        WorkerHuman,
+		WorkerID:          "github:builder",
+		RewardCents:       task.RewardCents,
+		PullRequestNumber: 412,
+		PullRequestURL:    "https://github.com/mergeos-bounties/mergeos/pull/412",
+		PullRequestTitle:  "Update preview workflow",
+		ReadinessStatus:   "ready",
+		CanMerge:          true,
+		RiskLevel:         "low",
+		ValidationSignals: []string{"evidence: provided", "star: verified", "deployment-sensitive"},
+		CanRelease:        true,
+	}
+
+	if _, _, err := autoReleaseAcceptRequest(task, candidate, defaultAutoReleasePolicy); err == nil || !strings.Contains(err.Error(), "deployment validation") {
+		t.Fatalf("expected deployment-sensitive candidate signal to block auto-release, got %v", err)
+	}
+
+	candidate.DeploymentStatus = "validated"
+	candidate.ValidationSignals = append(candidate.ValidationSignals, "deployment: verified")
+	if _, reference, err := autoReleaseAcceptRequest(task, candidate, defaultAutoReleasePolicy); err != nil {
+		t.Fatalf("validated deployment signal should pass: %v", err)
+	} else if !strings.Contains(reference, "deployment_validation:validated") {
+		t.Fatalf("reference missing deployment validation marker: %s", reference)
+	}
+}
+
 func TestPublicProjectPullRequestsMonitorUsesRecentRepoSnapshot(t *testing.T) {
 	now := time.Now().UTC()
 	project := &Project{

@@ -30,7 +30,7 @@ The live app exposes protocol discovery at `GET /api/public/protocol`, and serve
 - `mergeos.presale-reservation.v1`: an authenticated presale reservation with Solana wallet, funding rail reference, ledger receipt, and public proof URL.
 - `mergeos.escrow.v1`: an authenticated project escrow document with reserves, releases, balances, and per-task settlement state.
 - `mergeos.payouts.v1`: an authenticated payout settlement document with release status, payout accounts, ledger proof references, and per-task payment state.
-- `mergeos.payout-release.v1`: an authenticated auto-release result with released/skipped counts, task claim receipts, and the updated payout settlement.
+- `mergeos.payout-release.v1`: an authenticated auto-release result with released/skipped counts, deployment validation gates, task claim receipts, and the updated payout settlement.
 - `mergeos.deployment.v1`: an authenticated deployment validation document with rollout stages, release gate progress, and ledger/AI evidence signals.
 - `mergeos.wallet-migration.v1`: an authenticated legacy TRC20/EVM wallet migration document with Solana target wallet, legacy address hash, and Anchor `register_legacy_wallet` arguments.
 - `mergeos.release-artifact.v1`: a public downloadable artifact manifest for MergeIDE executables, preview kits, release provenance, and agent install links.

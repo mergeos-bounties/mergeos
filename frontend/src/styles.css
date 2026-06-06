@@ -8034,6 +8034,34 @@ svg {
   font-weight: 690;
 }
 
+.token-status-panel .ledger-card-head button {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid rgba(15, 159, 120, 0.18);
+  border-radius: 8px;
+  background: #f0fdf4;
+  color: var(--green-dark);
+  padding: 0 12px;
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+  transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+}
+
+.token-status-panel .ledger-card-head button:hover:not(:disabled) {
+  border-color: rgba(15, 159, 120, 0.32);
+  background: #dcfce7;
+  transform: translateY(-1px);
+}
+
+.token-status-panel .ledger-card-head button:disabled {
+  opacity: 0.62;
+  transform: none;
+}
+
 .token-metric-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -8393,6 +8421,47 @@ svg {
   text-decoration: none;
 }
 
+.token-whitepaper-thesis {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.token-whitepaper-thesis article {
+  min-width: 0;
+  border: 1px solid rgba(36, 86, 214, 0.13);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.84);
+  padding: 12px;
+}
+
+.token-whitepaper-thesis small {
+  display: block;
+  color: #1d4ed8;
+  font-size: 10px;
+  font-weight: 920;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.token-whitepaper-thesis strong {
+  display: block;
+  margin-top: 7px;
+  color: #111827;
+  font-size: 13px;
+  line-height: 1.26;
+  font-weight: 930;
+}
+
+.token-whitepaper-thesis p {
+  margin-top: 7px;
+  color: #536273;
+  font-size: 11px;
+  line-height: 1.45;
+  font-weight: 660;
+}
+
 .token-whitepaper-index {
   min-width: 0;
   display: grid;
@@ -8446,6 +8515,119 @@ svg {
   font-weight: 900;
 }
 
+.token-whitepaper-brief {
+  min-width: 0;
+  display: grid;
+  gap: 16px;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.055);
+  padding: clamp(18px, 2.8vw, 28px);
+}
+
+.token-whitepaper-brief .contracts-section-head {
+  align-items: end;
+}
+
+.token-whitepaper-brief .contracts-section-head h2 {
+  max-width: 760px;
+  font-size: clamp(24px, 3vw, 34px);
+  line-height: 1.08;
+}
+
+.token-whitepaper-brief .contracts-section-head p {
+  max-width: 760px;
+}
+
+.token-whitepaper-brief .contracts-section-head a {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid rgba(36, 86, 214, 0.16);
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  padding: 0 12px;
+  font-size: 12px;
+  font-weight: 900;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.token-whitepaper-section-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.token-whitepaper-section-list article {
+  min-width: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(248, 250, 252, 0.74), rgba(255, 255, 255, 0.98)),
+    #ffffff;
+  padding: 16px;
+}
+
+.token-whitepaper-section-list article > span {
+  display: inline-flex;
+  color: var(--green-dark);
+  font-size: 10px;
+  font-weight: 930;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.token-whitepaper-section-list h3 {
+  margin: 9px 0 0;
+  color: #111827;
+  font-size: 16px;
+  line-height: 1.24;
+  font-weight: 940;
+  letter-spacing: 0;
+}
+
+.token-whitepaper-section-list p {
+  margin: 8px 0 0;
+  color: #536273;
+  font-size: 12px;
+  line-height: 1.5;
+  font-weight: 680;
+}
+
+.token-whitepaper-section-list ul {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.token-whitepaper-section-list li {
+  position: relative;
+  min-width: 0;
+  padding-left: 16px;
+  color: #475569;
+  font-size: 11px;
+  line-height: 1.45;
+  font-weight: 720;
+}
+
+.token-whitepaper-section-list li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.58em;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--green);
+}
+
 .token-chapter-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -8484,6 +8666,10 @@ svg {
     grid-template-columns: 1fr;
   }
 
+  .token-whitepaper-section-list {
+    grid-template-columns: 1fr;
+  }
+
   .token-chapter-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -8495,13 +8681,27 @@ svg {
   }
 
   .token-hero-copy h1 {
-    font-size: clamp(34px, 13vw, 48px);
+    max-width: calc(100vw - (var(--page-gutter) * 2));
+    font-size: clamp(32px, 10.8vw, 42px);
+    line-height: 1.04;
+    text-wrap: wrap;
   }
 
   .token-metric-grid,
   .token-form-grid,
+  .token-whitepaper-thesis,
   .token-chapter-grid {
     grid-template-columns: 1fr;
+  }
+
+  .token-whitepaper-brief .contracts-section-head {
+    display: grid;
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .token-whitepaper-brief .contracts-section-head a {
+    width: 100%;
   }
 
   .token-workflow-head,
@@ -27113,6 +27313,12 @@ canvas {
 .home-command-panel,
 .token-status-panel {
   overflow-wrap: anywhere;
+}
+
+.token-hero-copy h1,
+.token-hero-copy p {
+  overflow-wrap: normal;
+  word-break: normal;
 }
 
 .public-home-copy h1,

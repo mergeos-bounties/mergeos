@@ -5274,6 +5274,13 @@
               The public paper is a product architecture document. It links the system vision to repository boundaries,
               AI orchestration, marketplace work, Solana MRG contracts, SDK routes, and ledger proof.
             </p>
+            <div class="token-whitepaper-thesis">
+              <article v-for="row in publicWhitepaperThesisRows" :key="row.label">
+                <small>{{ row.label }}</small>
+                <strong>{{ row.value }}</strong>
+                <p>{{ row.body }}</p>
+              </article>
+            </div>
             <div class="token-whitepaper-actions">
               <a class="primary-button large" :href="whitepaperDownloadPath" download="mergeos-whitepaper.md">
                 Download markdown
@@ -5298,6 +5305,33 @@
                 Open
                 <ArrowRight :size="12" />
               </button>
+            </article>
+          </div>
+        </section>
+
+        <section v-if="publicPage === 'whitepaper'" class="token-whitepaper-brief" aria-labelledby="whitepaper-brief-title">
+          <div class="contracts-section-head">
+            <div>
+              <span class="marketplace-eyebrow">WHITEPAPER READER</span>
+              <h2 id="whitepaper-brief-title">The paper is structured around executable product proof</h2>
+              <p>
+                MergeOS treats a whitepaper as a living operating document: each thesis maps to a route,
+                protocol schema, ledger event, contract reference, or MergeIDE delivery surface.
+              </p>
+            </div>
+            <a :href="whitepaperDownloadPath" download="mergeos-whitepaper.md">
+              Markdown
+              <Download :size="13" />
+            </a>
+          </div>
+          <div class="token-whitepaper-section-list">
+            <article v-for="section in publicWhitepaperChapterSections" :key="section.title">
+              <span>{{ section.kicker }}</span>
+              <h3>{{ section.title }}</h3>
+              <p>{{ section.body }}</p>
+              <ul>
+                <li v-for="point in section.points" :key="point">{{ point }}</li>
+              </ul>
             </article>
           </div>
         </section>
@@ -12208,6 +12242,65 @@ const homeTokenSignalRows = computed(() => [
   { title: 'Airdrop', icon: Trophy, action: { page: 'airdrop' } },
   { title: 'Presale', icon: CircleDollarSign, action: { page: 'presale' } },
   { title: 'Whitepaper', icon: FileCheck2, action: { page: 'whitepaper' } },
+]);
+const publicWhitepaperThesisRows = computed(() => [
+  {
+    label: 'Thesis',
+    value: 'Funded work needs proof, not more status meetings.',
+    body: 'Repository context, task scope, escrow, PR evidence, deployment gates, and payout release should live in the same operating graph.',
+  },
+  {
+    label: 'Architecture',
+    value: 'One workflow layer for builders and AI agents.',
+    body: 'MergeOS connects product pages, backend APIs, protocol manifests, SDK clients, MergeIDE, Solana MRG contracts, and public ledger events.',
+  },
+  {
+    label: 'Economy',
+    value: `${tokenSymbol.value} is explained through delivery utility.`,
+    body: 'The token model is tied to escrow reserve, task rewards, presale receipts, airdrop missions, payout proof, and treasury accounting.',
+  },
+]);
+const publicWhitepaperChapterSections = computed(() => [
+  {
+    kicker: '01 / Problem',
+    title: 'Software delivery is becoming mixed human and agent work.',
+    body: 'Teams now coordinate founders, maintainers, freelance contributors, AI coding agents, reviewers, QA lanes, security checks, and deployment operators.',
+    points: [
+      'The bottleneck moves from writing code to proving state.',
+      'A task must show funding, scope, ownership, evidence, review, deployment, and payout readiness.',
+      'Private repository data should stay private while public proof stays inspectable.',
+    ],
+  },
+  {
+    kicker: '02 / Workflow',
+    title: 'MergeOS converts repository context into funded delivery packets.',
+    body: 'The core loop is import, scan, estimate, fund, route, review, validate, release, and prove.',
+    points: [
+      'AI generates task graphs and acceptance criteria from repo signals.',
+      'Marketplace rows expose scoped work with reward and proof requirements.',
+      'Auto-release only opens after PR readiness and required deployment validation.',
+    ],
+  },
+  {
+    kicker: '03 / Product',
+    title: 'Every public page maps back to a runtime surface.',
+    body: 'Airdrop, presale, MergeIDE, contracts, protocol, live feed, ledger, and dashboards are connected through the same product state.',
+    points: [
+      'Airdrop missions depend on work proof instead of empty signups.',
+      'Presale reservations are pending-review receipts with wallet and funding gates.',
+      'MergeIDE downloads are pinned to GitHub Actions build provenance.',
+    ],
+  },
+  {
+    kicker: '04 / Protocol',
+    title: 'The protocol is the agent-readable contract for delivery.',
+    body: 'Public schemas, endpoints, realtime events, task manifests, and runbooks give external clients and AI agents reliable context.',
+    points: [
+      'SDK clients discover schemas and context URLs from the protocol index.',
+      'Ledger rows provide sanitized public proof without leaking private data.',
+      'Solana MRG contract references connect token events to product workflow state.',
+    ],
+  },
 ]);
 const publicWhitepaperArtifactRows = computed(() => [
   {
@@ -30416,7 +30509,7 @@ onMounted(async () => {
       }
     }
   }
-  const runtimePromise = loadRuntimeConfig().catch((error) => showToast(error.message));
+  const runtimePromise = loadRuntimeConfig().catch(() => null);
   await Promise.all([
     runtimePromise,
     restoreSession(),

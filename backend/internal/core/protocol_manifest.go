@@ -183,7 +183,7 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Version:     "mergeos.payout-release.v1",
 				Kind:        "auto_release",
 				SchemaURL:   "https://mergeos.shop/protocol/payout-release.v1.schema.json",
-				Description: "Authenticated auto-release command result with released/skipped counts, task claim receipts, and the updated payout settlement document.",
+				Description: "Authenticated auto-release command result with released/skipped counts, deployment validation gates, task claim receipts, and the updated payout settlement document.",
 			},
 			{
 				Version:     "mergeos.deployment.v1",
@@ -485,7 +485,7 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Path:        "/api/projects/{id}/auto-release",
 				Protocol:    "mergeos.payout-release.v1",
 				Auth:        "project",
-				Description: "Authenticated auto-release command for low-risk PR monitor candidates that accepts tasks and writes ledger-backed payout proof.",
+				Description: "Authenticated auto-release command for low-risk PR monitor candidates that validates deployment-sensitive work, accepts tasks, and writes ledger-backed payout proof.",
 			},
 			{
 				Method:      "GET",

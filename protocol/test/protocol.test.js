@@ -1463,6 +1463,8 @@ test('validates PR monitor protocol documents', () => {
               readiness_status: 'ready',
               can_merge: true,
               risk_level: 'low',
+              deployment_status: 'not_required',
+              validation_signals: ['evidence: provided', 'star: verified'],
               draft: false,
               can_release: true,
             }],
@@ -2736,6 +2738,7 @@ test('validates repository scan protocol documents', () => {
             budget_cents: 38889,
           },
           paypal_order_payload: {
+            flow: 'repo_task_funding',
             suggested_task_id: 'repo-task-001',
             reward_cents: 35000,
             budget_cents: 38889,

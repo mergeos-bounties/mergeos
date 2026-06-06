@@ -1412,6 +1412,8 @@ type ProjectAutoReleaseCandidate struct {
 	ReadinessStatus   string     `json:"readiness_status"`
 	CanMerge          bool       `json:"can_merge"`
 	RiskLevel         string     `json:"risk_level"`
+	DeploymentStatus  string     `json:"deployment_status,omitempty"`
+	ValidationSignals []string   `json:"validation_signals,omitempty"`
 	Draft             bool       `json:"draft"`
 	CanRelease        bool       `json:"can_release"`
 }

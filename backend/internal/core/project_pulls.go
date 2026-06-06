@@ -341,6 +341,8 @@ func projectAutoReleaseCandidateForTask(task *Task, row ProjectTaskPullRequests)
 		ReadinessStatus:   selected.Readiness.Status,
 		CanMerge:          selected.Readiness.CanMerge,
 		RiskLevel:         selected.Readiness.RiskLevel,
+		DeploymentStatus:  projectAutoReleaseDeploymentStatus(task, *selected),
+		ValidationSignals: projectAutoReleaseValidationSignals(selected.Readiness.Signals),
 		Draft:             selected.Draft,
 		CanRelease:        true,
 	}
@@ -351,6 +353,43 @@ func projectAutoReleaseCandidateForTask(task *Task, row ProjectTaskPullRequests)
 		}
 	}
 	return candidate, true
+}
+
+func projectAutoReleaseDeploymentStatus(task *Task, pull ProjectPullRequestSummary) string {
+	requiresValidation := projectAutoReleaseSignalPresent(pull.Readiness.Signals, "deployment-sensitive") || adminTaskRequiresDeploymentValidation(task, AdminTaskPullRequest{
+		Title:   pull.Title,
+		HTMLURL: pull.HTMLURL,
+		Labels:  append([]string{}, pull.Labels...),
+		BaseRef: pull.BaseRef,
+		HeadRef: pull.HeadRef,
+	})
+	if !requiresValidation {
+		return "not_required"
+	}
+	if projectAutoReleaseSignalPresent(pull.Readiness.Signals, "deployment: verified") {
+		return "validated"
+	}
+	return "missing"
+}
+
+func projectAutoReleaseSignalPresent(signals []string, expected string) bool {
+	for _, signal := range signals {
+		if signal == expected {
+			return true
+		}
+	}
+	return false
+}
+
+func projectAutoReleaseValidationSignals(signals []string) []string {
+	rows := []string{}
+	for _, signal := range signals {
+		signal = sanitizeLedgerReferenceValue(signal)
+		if signal != "" {
+			rows = append(rows, signal)
+		}
+	}
+	return rows
 }
 
 func attachProjectAutoReleasePackets(response *ProjectPullRequestsResponse, projectID string, rows []projectAutoReleaseMonitorRow) {
@@ -389,14 +428,16 @@ func projectAutoReleasePacket(projectID string, candidates []ProjectAutoReleaseC
 			"candidates": candidates,
 		},
 		"context_urls": map[string]string{
-			"workflow": fmt.Sprintf("/api/projects/%s/protocol/workflow", projectID),
-			"payouts":  fmt.Sprintf("/api/projects/%s/payouts", projectID),
-			"ledger":   "/api/public/ledger",
+			"workflow":   fmt.Sprintf("/api/projects/%s/protocol/workflow", projectID),
+			"deployment": fmt.Sprintf("/api/projects/%s/deployment", projectID),
+			"payouts":    fmt.Sprintf("/api/projects/%s/payouts", projectID),
+			"ledger":     "/api/public/ledger",
 		},
 		"runbook": []map[string]any{
 			{"step": 1, "action": "verify_pr", "label": "Verify PR readiness", "purpose": "Evidence, repository star, and low-risk labels are present."},
-			{"step": 2, "action": "release_payout", "label": "Release escrow payout", "purpose": "Accept the task and write a task_payment ledger row."},
-			{"step": 3, "action": "prove_release", "label": "Record ledger proof", "purpose": "Expose payout, PR reference, and auto-release policy in payouts."},
+			{"step": 2, "action": "validate_deployment", "label": "Verify deployment validation", "purpose": "Deployment-sensitive work must carry preview, rollout, or deployment validation proof."},
+			{"step": 3, "action": "release_payout", "label": "Release escrow payout", "purpose": "Accept the task and write a task_payment ledger row."},
+			{"step": 4, "action": "prove_release", "label": "Record ledger proof", "purpose": "Expose payout, PR reference, deployment validation, and auto-release policy in payouts."},
 		},
 	}
 	if strings.TrimSpace(repository) != "" {

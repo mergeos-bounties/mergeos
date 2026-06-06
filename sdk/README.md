@@ -44,6 +44,7 @@ const pulls = await mergeos.projectPullRequests(projects[0].id);
 console.log(pulls.protocol_version, pulls.stats.ready_count);
 const autoReleasePacket = pulls.tasks.find((row) => row.auto_release_packet)?.auto_release_packet;
 if (autoReleasePacket) {
+  // Deployment-sensitive tasks only become auto-release candidates after preview/deployment validation proof.
   const release = await mergeos.projectAutoRelease(projects[0].id, autoReleasePacket.payload);
   console.log(release.kind, release.released_count);
 }
@@ -170,6 +171,8 @@ await mergeos.projectAutoRelease('prj_0001', {
     readiness_status: 'ready',
     can_merge: true,
     risk_level: 'low',
+    deployment_status: 'not_required',
+    validation_signals: ['evidence: provided', 'star: verified'],
     draft: false,
     can_release: true,
   }],
