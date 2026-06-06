@@ -50,6 +50,14 @@ const publicSeoAliases = {
   mergeide: ['/ide', '/merge-ide', '/download'],
 };
 
+const publicSeoLabels = {
+  home: 'Home',
+  product: 'Product',
+  airdrop: 'Airdrop',
+  presale: 'Presale',
+  whitepaper: 'Whitepaper',
+};
+
 const pageSeo = {
   home: {
     title: 'MergeOS | AI software delivery OS with escrow, agents, and ledger proof',
@@ -235,6 +243,23 @@ export function getSeoDataForPath(path = '/', options = {}) {
     },
   ];
 
+  if (['airdrop', 'presale', 'whitepaper'].includes(page)) {
+    graph.push({
+      '@type': 'BreadcrumbList',
+      '@id': `${canonical}#breadcrumb`,
+      itemListElement: [
+        ['home', publicSeoPaths.home],
+        ['product', publicSeoPaths.product],
+        [page, routePath],
+      ].map(([key, pathValue], index) => ({
+        '@type': 'ListItem',
+        position: index + 1,
+        name: publicSeoLabels[key] || key,
+        item: absoluteUrl(pathValue, origin),
+      })),
+    });
+  }
+
   if (page === 'mergeide') {
     graph.push({
       '@type': 'SoftwareApplication',
@@ -313,6 +338,11 @@ export function getSeoDataForPath(path = '/', options = {}) {
       sameAs: [absoluteUrl('/whitepaper/mergeos-whitepaper.md', origin)],
       encodingFormat: 'text/markdown',
       isAccessibleForFree: true,
+      dateModified: '2026-06-06',
+      author: {
+        '@type': 'Organization',
+        name: siteName,
+      },
       about: [
         'AI software delivery OS',
         'Repository import',

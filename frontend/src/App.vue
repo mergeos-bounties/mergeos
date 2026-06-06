@@ -4316,8 +4316,8 @@
         <div v-if="mobileMenuOpen" class="mobile-nav-overlay" aria-hidden="true" @click="mobileMenuOpen = false"></div>
         <nav v-if="mobileMenuOpen" id="mobile-nav-panel" class="mobile-nav-panel" aria-label="Mobile navigation">
           <section class="mobile-nav-group">
-            <button type="button" :class="{ 'nav-active': productNavIsActive }">{{ publicNavCopy.product }} <ChevronDown :size="13" /></button>
-            <button v-for="item in localizedProductNavItems" :key="item.title" class="mobile-nav-child" type="button" @click="mobileMenuOpen = false; handlePublicAction(item.action)">
+            <button type="button" :class="{ 'nav-active': productNavIsActive && !tokenNavIsActive }">{{ publicNavCopy.product }} <ChevronDown :size="13" /></button>
+            <button v-for="item in mobileProductNavItems" :key="item.title" class="mobile-nav-child" type="button" @click="mobileMenuOpen = false; handlePublicAction(item.action)">
               <component :is="item.icon" :size="15" />
               {{ item.title }}
             </button>
@@ -4325,6 +4325,16 @@
           <section class="mobile-nav-group">
             <button type="button" :class="{ 'nav-active': solutionNavIsActive }">{{ publicNavCopy.solutions }} <ChevronDown :size="13" /></button>
             <button v-for="item in localizedSolutionNavItems" :key="item.title" class="mobile-nav-child" type="button" @click="mobileMenuOpen = false; handlePublicAction(item.action)">
+              <component :is="item.icon" :size="15" />
+              {{ item.title }}
+            </button>
+          </section>
+          <section class="mobile-nav-group mobile-nav-token-group">
+            <button type="button" :class="{ 'nav-active': tokenNavIsActive }">
+              MRG
+              <ChevronDown :size="13" />
+            </button>
+            <button v-for="item in mobileTokenNavItems" :key="item.title" class="mobile-nav-child" type="button" @click="mobileMenuOpen = false; handlePublicAction(item.action)">
               <component :is="item.icon" :size="15" />
               {{ item.title }}
             </button>
@@ -4472,6 +4482,20 @@
               <span>{{ publicSystemBlueprintCopy.eyebrow }}</span>
               <strong>{{ publicSystemBlueprintCopy.title }}</strong>
               <small>{{ publicSystemBlueprintPipelineRows.join(' / ') }}</small>
+            </div>
+
+            <div class="home-token-signal" aria-label="MRG public token routes">
+              <span>
+                <CircleDollarSign :size="15" />
+                MRG PUBLIC ROUTES
+              </span>
+              <strong>Airdrop, Presale, and Whitepaper now share the same proof layer.</strong>
+              <div>
+                <button v-for="item in homeTokenSignalRows" :key="item.title" type="button" @click="handlePublicAction(item.action)">
+                  <component :is="item.icon" :size="14" />
+                  {{ item.title }}
+                </button>
+              </div>
             </div>
           </div>
 
@@ -5074,6 +5098,11 @@
           </aside>
         </section>
 
+        <p v-if="publicPage === 'presale'" class="token-compliance-note">
+          Presale reservations are pending review. This page does not promise returns, trading value, or automatic allocation.
+          Participation depends on identity, wallet, funding, contract, and ledger checks.
+        </p>
+
         <section v-if="publicPage === 'airdrop' || publicPage === 'presale'" id="token-workflow" class="token-workflow-panel" aria-label="MRG proof workflow">
           <div class="token-workflow-head">
             <div>
@@ -5235,6 +5264,42 @@
               </button>
             </footer>
           </form>
+        </section>
+
+        <section v-if="publicPage === 'whitepaper'" class="token-whitepaper-reader" aria-labelledby="whitepaper-reader-title">
+          <div class="token-whitepaper-copy">
+            <span class="marketplace-eyebrow">READ THE PAPER</span>
+            <h2 id="whitepaper-reader-title">Whitepaper backed by live MergeOS artifacts</h2>
+            <p>
+              The public paper is a product architecture document. It links the system vision to repository boundaries,
+              AI orchestration, marketplace work, Solana MRG contracts, SDK routes, and ledger proof.
+            </p>
+            <div class="token-whitepaper-actions">
+              <a class="primary-button large" :href="whitepaperDownloadPath" download="mergeos-whitepaper.md">
+                Download markdown
+                <Download :size="16" />
+              </a>
+              <button class="secondary-button large" type="button" @click="copyWhitepaperOutline">
+                Copy outline
+                <FileCheck2 :size="16" />
+              </button>
+            </div>
+          </div>
+          <div class="token-whitepaper-index" aria-label="Whitepaper live artifact map">
+            <article v-for="row in publicWhitepaperArtifactRows" :key="row.title">
+              <span :class="['ledger-trust-icon', row.tone]">
+                <component :is="row.icon" :size="15" />
+              </span>
+              <div>
+                <strong>{{ row.title }}</strong>
+                <small>{{ row.body }}</small>
+              </div>
+              <button type="button" @click="handlePublicAction(row.action)">
+                Open
+                <ArrowRight :size="12" />
+              </button>
+            </article>
+          </div>
         </section>
 
         <section v-if="publicTokenChapterRows.length" class="token-chapter-grid" :aria-label="publicTokenPage.chapterTitle">
@@ -12091,6 +12156,42 @@ const publicTokenChapterRows = computed(() => {
     { title: '6. Economy and ledger', body: 'MRG, escrow reserves, payout release, Solana contracts, treasury state, and public proof.', icon: CircleDollarSign, tone: 'blue' },
   ];
 });
+const homeTokenSignalRows = computed(() => [
+  { title: 'Airdrop', icon: Trophy, action: { page: 'airdrop' } },
+  { title: 'Presale', icon: CircleDollarSign, action: { page: 'presale' } },
+  { title: 'Whitepaper', icon: FileCheck2, action: { page: 'whitepaper' } },
+]);
+const publicWhitepaperArtifactRows = computed(() => [
+  {
+    title: 'Protocol index',
+    body: `${protocolStatsView.value.endpoints || protocolEndpointRows.value.length || publicBackendEndpointRows.value.length} endpoint and schema references for integrations.`,
+    icon: Code2,
+    tone: 'blue',
+    action: { page: 'protocol' },
+  },
+  {
+    title: 'Contracts and MRG',
+    body: 'Solana token path, escrow reserve, treasury accounting, payout contracts, and proof roots.',
+    icon: Lock,
+    tone: 'green',
+    action: { page: 'contracts' },
+  },
+  {
+    title: 'Live ledger proof',
+    body: `${ledgerRawEntries.value.length || ledgerEventItems.value.length || 0} public proof rows available from funding, payout, token, and release events.`,
+    icon: ShieldCheck,
+    tone: 'amber',
+    action: { page: 'ledger' },
+  },
+  {
+    title: 'MergeIDE runtime',
+    body: 'Downloadable agent workspace for task packets, SDK context, PR proof, and local delivery flow.',
+    icon: Code2,
+    tone: 'purple',
+    action: { page: 'mergeide' },
+  },
+]);
+const tokenNavIsActive = computed(() => ['airdrop', 'presale', 'whitepaper'].includes(publicPage.value));
 const productNavIsActive = computed(() => ['product', 'system', 'mergeide', 'contracts', 'airdrop', 'presale', 'whitepaper', 'sdk', 'backend'].includes(publicPage.value));
 const solutionNavIsActive = computed(() => ['solutions', 'customers', 'agents', 'contributors', 'admins'].includes(publicPage.value));
 const clientHydrationKey = computed(() => (clientHydrated.value ? 'client' : 'ssr'));
@@ -14367,6 +14468,12 @@ const localizedProductNavItems = computed(() =>
 );
 const localizedSolutionNavItems = computed(() =>
   localizedMenuItems(solutionNavItems, publicHomeCopy.value.solutionNav),
+);
+const mobileTokenNavItems = computed(() =>
+  localizedProductNavItems.value.filter((item) => ['airdrop', 'presale', 'whitepaper'].includes(item.action?.page)),
+);
+const mobileProductNavItems = computed(() =>
+  localizedProductNavItems.value.filter((item) => !['airdrop', 'presale', 'whitepaper'].includes(item.action?.page)),
 );
 const productNavFeaturedItems = computed(() => localizedProductNavItems.value.slice(0, 3));
 const productNavMenuItems = computed(() => localizedProductNavItems.value.slice(3));
