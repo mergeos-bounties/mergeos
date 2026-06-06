@@ -63,6 +63,10 @@ jobs:
         working-directory: frontend
         run: npm audit --audit-level=high
 
+      - name: Test frontend
+        working-directory: frontend
+        run: npm test
+
       - name: Build frontend
         working-directory: frontend
         run: npm run build
@@ -75,6 +79,10 @@ jobs:
         working-directory: admin
         run: npm audit --audit-level=high
 
+      - name: Test admin
+        working-directory: admin
+        run: npm test --if-present
+
       - name: Build admin
         working-directory: admin
         run: npm run build
@@ -86,6 +94,10 @@ jobs:
       - name: Audit scan dependencies
         working-directory: scan
         run: npm audit --audit-level=high
+
+      - name: Test scan
+        working-directory: scan
+        run: npm test
 
       - name: Build scan
         working-directory: scan
