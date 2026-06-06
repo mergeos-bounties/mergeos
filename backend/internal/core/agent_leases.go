@@ -98,6 +98,40 @@ func (s *Store) CreateOrRefreshAgentLease(user *User, req AgentLeaseRequest) (Ag
 	}
 	copyResponse := response
 	s.agentLeases[leaseID] = &copyResponse
+	if s.geminiWebhookLogs == nil {
+		s.geminiWebhookLogs = map[string]*GeminiWebhookLog{}
+	}
+	completedAt := now
+	log := GeminiWebhookLog{
+		ID:              geminiWebhookLogID(),
+		EventName:       "agent_lease",
+		Action:          status,
+		Repository:      projectAgentActionRepository(project),
+		Sender:          "agent:" + agentType,
+		Status:          status,
+		StatusCode:      200,
+		CommentURL:      contextURLs["task_protocol"],
+		KeyID:           leaseID,
+		Labels:          []string{"claim:" + publicClaimID, "lease:" + status},
+		ContextURLs:     []string{contextURLs["task_protocol"], contextURLs["workflow_protocol"], contextURLs["workflow_pulse"], contextURLs["pr_monitor"], agentQueueEndpoint},
+		Evidence:        []string{"lease_id:" + leaseID, "claim_id:" + publicClaimID, "worker_id:" + response.WorkerID},
+		Runbook:         []string{"Lease public agent work packet", "Heartbeat before due time", "Record evidence before submission"},
+		Checks:          []AgentActionCheck{{Name: "agent_lease", Status: "passed", Summary: "Lease accepted for public claim " + publicClaimID, ReferenceURL: contextURLs["task_protocol"]}},
+		SourceFindingID: publicClaimID,
+		Signal:          "agent_lease_" + status,
+		Path:            agentLeaseEndpoint,
+		DelegatedBy:     ceoAgentType,
+		DesignAgent:     designReviewAgentType,
+		SubagentType:    agentType,
+		DelegationChain: agentDelegationChain(agentType),
+		ReceivedAt:      now,
+		CompletedAt:     &completedAt,
+	}
+	s.geminiWebhookLogs[log.ID] = &log
+	s.trimGeminiWebhookLogsLocked()
+	if err := s.saveLocked(); err != nil {
+		return AgentLeaseResponse{}, err
+	}
 	return response, nil
 }
 

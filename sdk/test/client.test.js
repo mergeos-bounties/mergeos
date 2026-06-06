@@ -9,6 +9,7 @@ import {
   agentActionEventType,
   agentActionEventTypes,
   agentLeaseEndpointFromWorkPacket,
+  agentLeaseEventType,
   agentLeasePayload,
   agentLeasePacketFromWorkPacket,
   agentQueueClaimPayload,
@@ -329,7 +330,11 @@ test('maps typed agent action event protocol values', () => {
   assert.equal(agentActionEventType('deploy'), 'agent.deployed');
   assert.equal(agentActionEventType('scan'), 'agent.scanned');
   assert.equal(agentActionEventType('unknown'), 'agent.action');
+  assert.equal(agentLeaseEventType('leased'), 'agent.leased');
+  assert.equal(agentLeaseEventType('heartbeat'), 'agent.heartbeat');
+  assert.equal(agentLeaseEventType('released'), 'agent.released');
   assert.equal(isAgentActionEventType('agent.generated'), true);
+  assert.equal(isAgentActionEventType('agent.heartbeat'), true);
   assert.equal(isAgentActionEventType('agent.action'), true);
   assert.equal(isAgentActionEventType('task.paid'), false);
 });
@@ -632,6 +637,7 @@ test('maps live feed records to workflow event protocol values', () => {
   assert.equal(liveFeedTypeToProtocolEventType('ledger_wallet_migration'), 'wallet.migrated');
   assert.equal(liveFeedTypeToProtocolEventType('ledger_manual_credit'), 'ledger.recorded');
   assert.equal(liveFeedTypeToProtocolEventType('agent_action', 'test'), 'agent.tested');
+  assert.equal(liveFeedTypeToProtocolEventType('agent_lease', 'heartbeat'), 'agent.heartbeat');
   assert.equal(liveFeedTypeToProtocolEventType('unknown'), 'agent.action');
   assert.equal(protocolEventFromMessage({ event: protocolEvent }), protocolEvent);
   assert.equal(protocolEventFromMessage({ type: 'ledger_manual_credit' }), null);
@@ -652,6 +658,7 @@ test('maps live feed records to workflow event protocol values', () => {
   assert.equal(protocolEventGroup('task.paid'), 'task');
   assert.equal(protocolEventGroup('proposal.accepted'), 'proposal');
   assert.equal(protocolEventGroup('agent.tested'), 'agent');
+  assert.equal(protocolEventGroup('agent.leased'), 'agent');
   assert.equal(protocolEventGroup('repo.issues.synced'), 'repository');
   assert.equal(protocolEventGroup('airdrop.claimed'), 'token');
   assert.equal(protocolEventGroup('presale.reserved'), 'token');
@@ -661,6 +668,7 @@ test('maps live feed records to workflow event protocol values', () => {
   assert.equal(isWorkflowEventType('presale.reserved'), true);
   assert.equal(isWorkflowEventType('wallet.migrated'), true);
   assert.equal(isWorkflowEventType('agent.scanned'), true);
+  assert.equal(isWorkflowEventType('agent.released'), true);
   assert.equal(isWorkflowEventType('unknown.event'), false);
 });
 

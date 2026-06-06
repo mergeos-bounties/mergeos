@@ -247,7 +247,7 @@ func publicLiveFeedTrackAgentLog(activeAgents map[string]bool, log *GeminiWebhoo
 	if log == nil {
 		return
 	}
-	if strings.EqualFold(log.EventName, "agent_action") {
+	if strings.EqualFold(log.EventName, "agent_action") || strings.EqualFold(log.EventName, "agent_lease") {
 		agent := strings.ToLower(strings.TrimSpace(strings.TrimPrefix(log.Sender, "agent:")))
 		if agent == "" {
 			agent = defaultAgentActionActor
@@ -800,6 +800,9 @@ func publicLiveFeedAIType(log *GeminiWebhookLog) string {
 	if log != nil && strings.EqualFold(log.EventName, "agent_action") {
 		return "agent_action"
 	}
+	if log != nil && strings.EqualFold(log.EventName, "agent_lease") {
+		return "agent_lease"
+	}
 	if publicLiveFeedIsPullRequestOpened(log) {
 		return "pr_opened"
 	}
@@ -830,7 +833,7 @@ func publicLiveFeedAIActor(log *GeminiWebhookLog) string {
 	if strings.EqualFold(log.EventName, "repo_issues_synced") {
 		return "mergeos-repo-sync"
 	}
-	if log != nil && strings.EqualFold(log.EventName, "agent_action") {
+	if log != nil && (strings.EqualFold(log.EventName, "agent_action") || strings.EqualFold(log.EventName, "agent_lease")) {
 		actor := sanitizeLedgerReferenceValue(strings.TrimPrefix(log.Sender, "agent:"))
 		if actor == "" {
 			actor = defaultAgentActionActor
@@ -892,6 +895,16 @@ func publicLiveFeedAITitle(log *GeminiWebhookLog) string {
 		}
 		return fmt.Sprintf("AI agent %s", agentActionTitleVerb(action))
 	}
+	if strings.EqualFold(log.EventName, "agent_lease") {
+		switch strings.ToLower(strings.TrimSpace(log.Action)) {
+		case "heartbeat":
+			return "AI agent heartbeat"
+		case "released":
+			return "AI agent lease released"
+		default:
+			return "AI agent leased work"
+		}
+	}
 	if publicLiveFeedIsPullRequestOpened(log) {
 		if log.PullNumber > 0 {
 			return fmt.Sprintf("PR #%d opened", log.PullNumber)
@@ -928,6 +941,21 @@ func publicLiveFeedAIBody(log *GeminiWebhookLog) string {
 			return fmt.Sprintf("%s ran %s for %s PR #%d.", marketplaceTitle(agent), action, repo, log.PullNumber)
 		}
 		return fmt.Sprintf("%s ran %s for %s.", marketplaceTitle(agent), action, repo)
+	}
+	if strings.EqualFold(log.EventName, "agent_lease") {
+		agent := sanitizeLedgerReferenceValue(strings.TrimPrefix(log.Sender, "agent:"))
+		if agent == "" {
+			agent = defaultAgentActionActor
+		}
+		status := sanitizeLedgerReferenceValue(log.Action)
+		if status == "" {
+			status = "leased"
+		}
+		claimID := strings.TrimSpace(log.SourceFindingID)
+		if claimID != "" {
+			return fmt.Sprintf("%s %s public work packet %s for %s.", marketplaceTitle(agent), agentLeaseBodyVerb(status), claimID, repo)
+		}
+		return fmt.Sprintf("%s %s a public work packet for %s.", marketplaceTitle(agent), agentLeaseBodyVerb(status), repo)
 	}
 	if publicLiveFeedIsPullRequestOpened(log) {
 		actor := publicLiveFeedGitHubActor(log.Sender)
@@ -1121,6 +1149,8 @@ func publicEventType(item PublicLiveFeedItem) string {
 		return "proposal.declined"
 	case "agent_action":
 		return publicAgentActionEventType(item.Action)
+	case "agent_lease":
+		return publicAgentLeaseEventType(item.Action)
 	case "ledger_airdrop_claim":
 		return "airdrop.claimed"
 	case "ledger_presale_reservation":
@@ -1133,6 +1163,28 @@ func publicEventType(item PublicLiveFeedItem) string {
 		return "ledger.recorded"
 	}
 	return "agent.action"
+}
+
+func publicAgentLeaseEventType(action string) string {
+	switch strings.ToLower(strings.TrimSpace(action)) {
+	case "heartbeat":
+		return "agent.heartbeat"
+	case "released":
+		return "agent.released"
+	default:
+		return "agent.leased"
+	}
+}
+
+func agentLeaseBodyVerb(status string) string {
+	switch strings.ToLower(strings.TrimSpace(status)) {
+	case "heartbeat":
+		return "refreshed lease heartbeat for"
+	case "released":
+		return "released"
+	default:
+		return "leased"
+	}
 }
 
 func publicAgentActionEventType(action string) string {

@@ -57,7 +57,7 @@ Event types include project funding, task creation/claim/payment, PR lifecycle, 
 | Deployment | `deployment.updated` |
 | Ledger | `ledger.recorded` |
 | Token | `airdrop.claimed`, `presale.reserved` |
-| Agent | `agent.reviewed`, `agent.tested`, `agent.generated`, `agent.deployed`, `agent.scanned`, `agent.action` |
+| Agent | `agent.reviewed`, `agent.tested`, `agent.generated`, `agent.deployed`, `agent.scanned`, `agent.leased`, `agent.heartbeat`, `agent.released`, `agent.action` |
 
 ## Usage
 

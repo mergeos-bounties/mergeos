@@ -30,6 +30,9 @@ export const workflowEventTypes = Object.freeze({
   presaleReserved: 'presale.reserved',
   walletMigrated: 'wallet.migrated',
   agentAction: 'agent.action',
+  agentLeased: 'agent.leased',
+  agentHeartbeat: 'agent.heartbeat',
+  agentReleased: 'agent.released',
 });
 
 export class MergeOSClient {
@@ -1115,7 +1118,11 @@ function defaultAgentTypeForAction(action = '') {
 
 export function isAgentActionEventType(type = '') {
   const normalized = String(type || '').trim().toLowerCase();
-  return normalized === 'agent.action' || Object.values(agentActionEventTypes).includes(normalized);
+  return normalized === 'agent.action'
+    || normalized === workflowEventTypes.agentLeased
+    || normalized === workflowEventTypes.agentHeartbeat
+    || normalized === workflowEventTypes.agentReleased
+    || Object.values(agentActionEventTypes).includes(normalized);
 }
 
 export function liveFeedTypeToProtocolEventType(type = '', action = '') {
@@ -1126,6 +1133,7 @@ export function liveFeedTypeToProtocolEventType(type = '', action = '') {
   if (normalized === 'ledger_wallet_migration') return workflowEventTypes.walletMigrated;
   if (normalized.startsWith('ledger_')) return workflowEventTypes.ledgerRecorded;
   if (normalized === 'agent_action') return agentActionEventType(action);
+  if (normalized === 'agent_lease') return agentLeaseEventType(action);
   return {
     project_funded: workflowEventTypes.projectFunded,
     task_opened: workflowEventTypes.taskCreated,
@@ -1194,6 +1202,17 @@ export function protocolEventGroup(type = '') {
   if (normalized.startsWith('wallet.')) return 'wallet';
   if (normalized.startsWith('ledger.')) return 'ledger';
   return 'unknown';
+}
+
+export function agentLeaseEventType(action = '') {
+  switch (String(action || '').trim().toLowerCase()) {
+    case 'heartbeat':
+      return workflowEventTypes.agentHeartbeat;
+    case 'released':
+      return workflowEventTypes.agentReleased;
+    default:
+      return workflowEventTypes.agentLeased;
+  }
 }
 
 export function isWorkflowEventType(type = '') {

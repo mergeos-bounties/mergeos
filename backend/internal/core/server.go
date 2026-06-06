@@ -338,6 +338,7 @@ func (s *Server) createAgentQueueLease(w http.ResponseWriter, r *http.Request) {
 	if strings.TrimSpace(req.LeaseID) != "" {
 		status = http.StatusOK
 	}
+	s.broadcastLiveFeedEvent("agent_lease")
 	writeJSON(w, status, response)
 }
 

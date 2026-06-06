@@ -28013,6 +28013,9 @@ function liveFeedMetaFor(type = '') {
   if (normalized === 'agent_action') {
     return { type: 'Agent Action', icon: Bot, tone: 'purple', amountTone: 'muted' };
   }
+  if (normalized === 'agent_lease') {
+    return { type: 'Agent Lease', icon: Bot, tone: 'green', amountTone: 'muted' };
+  }
   return { type: toTitleLabel(normalized || 'Activity'), icon: Compass, tone: 'slate', amountTone: 'neutral' };
 }
 
@@ -29661,7 +29664,7 @@ const _wsSeenEventIDs = new Set();
 const realtimeTaskEventTypes = new Set(['task_opened', 'task_claimed', 'task_submitted', 'task_changes_requested', 'task_accepted']);
 const realtimeProposalEventTypes = new Set(['proposal_created', 'proposal_decided', 'proposal_submitted', 'proposal_accepted', 'proposal_declined']);
 const realtimeDeploymentEventTypes = new Set(['deployment_status']);
-const realtimeAgentEventTypes = new Set(['agent_action']);
+const realtimeAgentEventTypes = new Set(['agent_action', 'agent_lease']);
 const realtimeLedgerEventTypes = new Set(['ledger_task_payment']);
 const realtimeLifecycleEventTypes = new Set(['realtime_ready', 'connection_ready', 'realtime_snapshot', 'live_feed_snapshot', 'realtime_heartbeat']);
 

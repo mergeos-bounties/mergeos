@@ -2137,6 +2137,37 @@ func TestPublicMarketplaceRouteReturnsSanitizedLiveData(t *testing.T) {
 	if heartbeat.LeaseID != lease.LeaseID || heartbeat.Status != "heartbeat" || heartbeat.ClaimID != lease.ClaimID {
 		t.Fatalf("agent lease heartbeat did not refresh same claim-safe lease: %#v", heartbeat)
 	}
+	leaseFeed := store.PublicLiveFeed(20)
+	foundLeaseFeed := false
+	for _, item := range leaseFeed.Items {
+		if item.Type != "agent_lease" {
+			continue
+		}
+		foundLeaseFeed = item.Action == "heartbeat" &&
+			item.Actor == marketplaceTitle(queueProtocol.Tasks[0].AgentType) &&
+			item.TaskID == "" &&
+			item.SourceFindingID == lease.ClaimID &&
+			item.Path == agentLeaseEndpoint &&
+			containsString(item.Evidence, "claim_id:"+lease.ClaimID)
+		if strings.Contains(item.Body, project.Tasks[0].ID) || strings.Contains(item.Reference, project.Tasks[0].ID) {
+			t.Fatalf("agent lease live feed leaked internal task id %q: %#v", project.Tasks[0].ID, item)
+		}
+		break
+	}
+	if !foundLeaseFeed {
+		t.Fatalf("live feed missing public agent lease event: %#v", leaseFeed.Items)
+	}
+	leaseEvents := store.PublicEventProtocolQuery(PublicLiveFeedQuery{Limit: 20})
+	foundLeaseEvent := false
+	for _, event := range leaseEvents.Events {
+		if event.Type == "agent.heartbeat" && event.TaskID == "" && event.Payload["feed_type"] == "agent_lease" && event.Payload["source_finding_id"] == lease.ClaimID {
+			foundLeaseEvent = true
+			break
+		}
+	}
+	if !foundLeaseEvent {
+		t.Fatalf("protocol events missing agent heartbeat event: %#v", leaseEvents.Events)
+	}
 
 	contributorReq := httptest.NewRequest(http.MethodGet, "/api/public/protocol/contributors?limit=20", nil)
 	contributorResp := httptest.NewRecorder()

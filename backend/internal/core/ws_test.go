@@ -286,6 +286,133 @@ func TestWebSocketBroadcastsSanitizedTaskAcceptedFeed(t *testing.T) {
 	}
 }
 
+func TestWebSocketBroadcastsAgentLeaseProtocolEvents(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:       defaultTokenSymbol,
+		StatePath:         filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:    1000,
+		DevPaymentEnabled: true,
+		DevPaymentCode:    defaultDevPaymentCode,
+		GitHubOwner:       defaultGitHubOwner,
+		BountyRoot:        filepath.Join(tempDir, "bounties"),
+		SMTPFrom:          "noreply@mergeos.local",
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	clientAuth, err := store.Register(RegisterRequest{
+		Name:        "Realtime Agent Client",
+		CompanyName: "Realtime Agent Co",
+		Email:       "realtime-agent-client@example.com",
+		Password:    "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	workerAuth, err := store.AuthenticateGitHub(GitHubAuthProfile{
+		ID:       "agent-lease-ws-1",
+		Username: "lease-agent",
+		Name:     "Lease Agent",
+		Email:    "lease-agent@example.com",
+	}, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	project, err := store.CreateProject(context.Background(), clientAuth.User.ID, CreateProjectRequest{
+		Title:            "Realtime agent lease",
+		ClientName:       "Realtime Agent Client",
+		CompanyName:      "Realtime Agent Co",
+		ClientEmail:      "realtime-agent-client@example.com",
+		Brief:            "Create a public agent lease event without leaking private customer data.",
+		BudgetCents:      180000,
+		PaymentMethod:    PaymentPayPal,
+		PaymentReference: defaultDevPaymentCode,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	queue := store.PublicAgentQueue(10)
+	if len(queue.Tasks) == 0 {
+		t.Fatalf("agent queue missing task for websocket lease test: %#v", queue)
+	}
+	task := queue.Tasks[0]
+	server := NewServer(cfg, store, payments)
+	httpServer := httptest.NewServer(server.Routes())
+	defer httpServer.Close()
+	parsed, err := url.Parse(httpServer.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	conn, err := net.Dial("tcp", parsed.Host)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer conn.Close()
+	if _, err := conn.Write([]byte(websocketHandshake(parsed.Host))); err != nil {
+		t.Fatal(err)
+	}
+	reader := bufio.NewReader(conn)
+	if status, err := reader.ReadString('\n'); err != nil || !strings.Contains(status, "101 Switching Protocols") {
+		t.Fatalf("websocket status = %q, err = %v", status, err)
+	}
+	for {
+		line, err := reader.ReadString('\n')
+		if err != nil {
+			t.Fatal(err)
+		}
+		if line == "\r\n" {
+			break
+		}
+	}
+	_ = readWebSocketTextFrame(t, reader)
+	_ = readWebSocketTextFrame(t, reader)
+
+	body := fmt.Sprintf(`{"claim_id":%q,"agent_type":%q}`, task.BountyID, task.AgentType)
+	req, err := http.NewRequest(http.MethodPost, httpServer.URL+agentLeaseEndpoint, strings.NewReader(body))
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Authorization", "Bearer "+workerAuth.Token)
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusCreated {
+		payload, _ := io.ReadAll(resp.Body)
+		t.Fatalf("agent lease status = %d, body = %s", resp.StatusCode, string(payload))
+	}
+	if err := conn.SetReadDeadline(time.Now().Add(5 * time.Second)); err != nil {
+		t.Fatal(err)
+	}
+	eventBytes, event := readWebSocketEventOfType(t, reader, "agent_lease", 4)
+	for _, value := range []string{"realtime-agent-client@example.com", defaultDevPaymentCode, tempDir} {
+		if strings.Contains(string(eventBytes), value) {
+			t.Fatalf("agent lease websocket leaked private value %q: %s", value, string(eventBytes))
+		}
+	}
+	for _, projectTask := range project.Tasks {
+		if strings.Contains(string(eventBytes), projectTask.ID) {
+			t.Fatalf("agent lease websocket leaked internal task id %q: %s", projectTask.ID, string(eventBytes))
+		}
+	}
+	if event["protocol_version"] != "mergeos.event.v1" || event["kind"] != "live_feed_delta" || event["protocol_type"] != "agent.leased" {
+		t.Fatalf("agent lease websocket missing protocol envelope: %#v", event)
+	}
+	protocolEvent, ok := event["event"].(map[string]interface{})
+	if !ok || protocolEvent["type"] != "agent.leased" || protocolEvent["task_id"] != nil {
+		t.Fatalf("agent lease websocket missing public protocol event: %#v", event)
+	}
+	payload, ok := protocolEvent["payload"].(map[string]interface{})
+	if !ok || payload["feed_type"] != "agent_lease" || payload["source_finding_id"] != task.BountyID {
+		t.Fatalf("agent lease websocket missing claim-safe payload: %#v", event)
+	}
+}
+
 func TestWebSocketBroadcastsProposalProtocolEvents(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := Config{

@@ -2908,6 +2908,22 @@ test('validates event protocol documents and assertion helper', () => {
     payload: { action: 'test' },
   });
   assert.equal(agentEvent.valid, true);
+  const agentLeaseEvents = ['agent.leased', 'agent.heartbeat', 'agent.released'].map((type) => validateProtocolDocument({
+    protocol_version: 'mergeos.event.v1',
+    kind: 'event',
+    id: `evt_${type.replace('.', '_')}`,
+    type,
+    occurred_at: '2026-06-02T00:00:00.000Z',
+    actor: 'QA Agent',
+    project_id: 'prj_0001',
+    task_id: 'prj_0001:12',
+    reference: '/api/public/protocol/tasks?task_id=prj_0001:12',
+    payload: { feed_type: 'agent_lease', action: type.split('.')[1], claim_id: 'prj_0001:12' },
+  }));
+  for (const leaseEvent of agentLeaseEvents) {
+    assert.equal(leaseEvent.valid, true);
+    assert.deepEqual(leaseEvent.errors, []);
+  }
 
   const proposalEvent = validateProtocolDocument({
     protocol_version: 'mergeos.event.v1',
