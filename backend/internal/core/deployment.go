@@ -395,6 +395,12 @@ func (s *Store) deploymentSignalsLocked(project *Project, tasks []*Task) []Deplo
 
 	sort.Slice(signals, func(i, j int) bool {
 		if signals[i].CreatedAt.Equal(signals[j].CreatedAt) {
+			if signals[i].Type == "agent_action" && signals[j].Type != "agent_action" {
+				return true
+			}
+			if signals[j].Type == "agent_action" && signals[i].Type != "agent_action" {
+				return false
+			}
 			return signals[i].ID > signals[j].ID
 		}
 		return signals[i].CreatedAt.After(signals[j].CreatedAt)

@@ -156,6 +156,12 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Description: "Authenticated task-based MRG airdrop claim with mission, Solana wallet, work proof, ledger receipt, and live-feed proof URLs.",
 			},
 			{
+				Version:     "mergeos.airdrop-missions.v1",
+				Kind:        "airdrop_missions",
+				SchemaURL:   "https://mergeos.shop/protocol/airdrop-missions.v1.schema.json",
+				Description: "Public task-based MRG airdrop mission catalog with proof requirements, allocation caps, proof signals, and score weights.",
+			},
+			{
 				Version:     "mergeos.presale-reservation.v1",
 				Kind:        "presale_reservation",
 				SchemaURL:   "https://mergeos.shop/protocol/presale-reservation.v1.schema.json",
@@ -319,6 +325,13 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Protocol:    "mergeos.token-economy.v1",
 				Auth:        "none",
 				Description: "Public MRG economy totals for verified funding, token minting, escrow reserves, treasury fees, and released rewards.",
+			},
+			{
+				Method:      "GET",
+				Path:        "/api/public/airdrop/missions",
+				Protocol:    "mergeos.airdrop-missions.v1",
+				Auth:        "none",
+				Description: "Public airdrop mission board with proof requirements, mission scores, default allocations, and per-mission caps.",
 			},
 			{
 				Method:      "POST",

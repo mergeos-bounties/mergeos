@@ -1077,7 +1077,7 @@ const routeByView = {
   ssl: '/ssl',
   setting: '/setting',
   logs: '/logs',
-  testSettings: '/test-settings',
+  'test-settings': '/test-settings',
 };
 const viewByRoute = Object.entries(routeByView).reduce((routes, [view, route]) => {
   routes[route] = view;

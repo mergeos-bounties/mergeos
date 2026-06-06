@@ -5,12 +5,14 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 )
 
 const (
 	airdropClaimProtocolVersion             = "mergeos.airdrop-claim.v1"
+	airdropMissionsProtocolVersion          = "mergeos.airdrop-missions.v1"
 	presaleReservationProtocolVersion       = "mergeos.presale-reservation.v1"
 	defaultAirdropAllocationMRG       int64 = 250
 	maxAirdropAllocationMRG           int64 = 100000
@@ -18,33 +20,57 @@ const (
 	maxPresaleReserveMRG              int64 = 1000000
 )
 
+type AirdropMission struct {
+	ID                   string   `json:"id"`
+	Title                string   `json:"title"`
+	Description          string   `json:"description"`
+	ProofRequirement     string   `json:"proof_requirement"`
+	RequiredReference    string   `json:"required_reference"`
+	DefaultAllocationMRG int64    `json:"default_allocation_mrg"`
+	MaxAllocationMRG     int64    `json:"max_allocation_mrg"`
+	MissionScore         int64    `json:"mission_score"`
+	ProofSignals         []string `json:"proof_signals"`
+}
+
+type AirdropMissionsResponse struct {
+	ProtocolVersion string           `json:"protocol_version"`
+	Kind            string           `json:"kind"`
+	Missions        []AirdropMission `json:"missions"`
+	Stats           map[string]int64 `json:"stats"`
+}
+
 type AirdropClaimRequest struct {
-	MissionID          string `json:"mission_id"`
-	WorkerID           string `json:"worker_id,omitempty"`
-	WalletAddress      string `json:"wallet_address"`
-	TaskReference      string `json:"task_reference,omitempty"`
-	ProofURL           string `json:"proof_url,omitempty"`
-	Notes              string `json:"notes,omitempty"`
-	AllocationMRG      int64  `json:"allocation_mrg,omitempty"`
-	AllocationMRGCents int64  `json:"allocation_mrg_cents,omitempty"`
+	MissionID          string   `json:"mission_id"`
+	WorkerID           string   `json:"worker_id,omitempty"`
+	WalletAddress      string   `json:"wallet_address"`
+	TaskReference      string   `json:"task_reference,omitempty"`
+	ProofURL           string   `json:"proof_url,omitempty"`
+	ProofSignals       []string `json:"proof_signals,omitempty"`
+	Notes              string   `json:"notes,omitempty"`
+	AllocationMRG      int64    `json:"allocation_mrg,omitempty"`
+	AllocationMRGCents int64    `json:"allocation_mrg_cents,omitempty"`
 }
 
 type AirdropClaimResponse struct {
-	ProtocolVersion string      `json:"protocol_version"`
-	Kind            string      `json:"kind"`
-	ClaimID         string      `json:"claim_id"`
-	Status          string      `json:"status"`
-	MissionID       string      `json:"mission_id"`
-	WorkerID        string      `json:"worker_id"`
-	WalletAddress   string      `json:"wallet_address"`
-	TaskReference   string      `json:"task_reference,omitempty"`
-	ProofURL        string      `json:"proof_url,omitempty"`
-	Notes           string      `json:"notes,omitempty"`
-	AllocationMRG   int64       `json:"allocation_mrg"`
-	LedgerEntry     LedgerEntry `json:"ledger_entry"`
-	LedgerProofURL  string      `json:"ledger_proof_url"`
-	LiveFeedURL     string      `json:"live_feed_url"`
-	CreatedAt       time.Time   `json:"created_at"`
+	ProtocolVersion  string      `json:"protocol_version"`
+	Kind             string      `json:"kind"`
+	ClaimID          string      `json:"claim_id"`
+	Status           string      `json:"status"`
+	MissionID        string      `json:"mission_id"`
+	WorkerID         string      `json:"worker_id"`
+	WalletAddress    string      `json:"wallet_address"`
+	TaskReference    string      `json:"task_reference,omitempty"`
+	ProofURL         string      `json:"proof_url,omitempty"`
+	ProofRequirement string      `json:"proof_requirement"`
+	MissionScore     int64       `json:"mission_score"`
+	MaxAllocationMRG int64       `json:"max_allocation_mrg"`
+	ProofSignals     []string    `json:"proof_signals"`
+	Notes            string      `json:"notes,omitempty"`
+	AllocationMRG    int64       `json:"allocation_mrg"`
+	LedgerEntry      LedgerEntry `json:"ledger_entry"`
+	LedgerProofURL   string      `json:"ledger_proof_url"`
+	LiveFeedURL      string      `json:"live_feed_url"`
+	CreatedAt        time.Time   `json:"created_at"`
 }
 
 type PresaleReservationRequest struct {
@@ -72,6 +98,102 @@ type PresaleReservationResponse struct {
 	LedgerProofURL   string      `json:"ledger_proof_url"`
 	LiveFeedURL      string      `json:"live_feed_url"`
 	CreatedAt        time.Time   `json:"created_at"`
+}
+
+var airdropMissionCatalog = []AirdropMission{
+	{
+		ID:                   "repo-import",
+		Title:                "Repository import",
+		Description:          "Import a GitHub repository or issue set so MergeOS can score real software work.",
+		ProofRequirement:     "Attach an imported repository report, issue scan, or public task reference.",
+		RequiredReference:    "task_or_url",
+		DefaultAllocationMRG: 250,
+		MaxAllocationMRG:     1000,
+		MissionScore:         45,
+		ProofSignals:         []string{"repo_import", "issue_scan"},
+	},
+	{
+		ID:                   "bounty-work",
+		Title:                "Bounty delivery",
+		Description:          "Claim or complete an escrow-backed bounty with acceptance criteria.",
+		ProofRequirement:     "Attach a bounty or task reference and public delivery evidence.",
+		RequiredReference:    "task_reference",
+		DefaultAllocationMRG: 500,
+		MaxAllocationMRG:     2500,
+		MissionScore:         65,
+		ProofSignals:         []string{"bounty_claim", "task_submission"},
+	},
+	{
+		ID:                   "pr-review",
+		Title:                "Pull request review",
+		Description:          "Review a pull request with public feedback or accepted review evidence.",
+		ProofRequirement:     "Attach a GitHub pull request or review URL.",
+		RequiredReference:    "proof_url",
+		DefaultAllocationMRG: 350,
+		MaxAllocationMRG:     1500,
+		MissionScore:         55,
+		ProofSignals:         []string{"pull_request", "review"},
+	},
+	{
+		ID:                   "qa-check",
+		Title:                "QA evidence",
+		Description:          "Provide test, accessibility, regression, or smoke evidence for a funded work packet.",
+		ProofRequirement:     "Attach a QA evidence URL, test run, or issue/task reference.",
+		RequiredReference:    "task_or_url",
+		DefaultAllocationMRG: 300,
+		MaxAllocationMRG:     1200,
+		MissionScore:         50,
+		ProofSignals:         []string{"qa", "test_evidence"},
+	},
+	{
+		ID:                   "agent-review",
+		Title:                "AI agent review",
+		Description:          "Record AI review, test, scan, or generation evidence linked to MergeOS agent workflow.",
+		ProofRequirement:     "Attach an agent action, live feed, or workflow proof URL.",
+		RequiredReference:    "proof_url",
+		DefaultAllocationMRG: 400,
+		MaxAllocationMRG:     1800,
+		MissionScore:         60,
+		ProofSignals:         []string{"agent_action", "ai_review"},
+	},
+	{
+		ID:                   "deployment-proof",
+		Title:                "Deployment proof",
+		Description:          "Attach deployment, release, or rollout evidence for a delivered task.",
+		ProofRequirement:     "Attach a deployment or release proof URL.",
+		RequiredReference:    "proof_url",
+		DefaultAllocationMRG: 450,
+		MaxAllocationMRG:     2000,
+		MissionScore:         62,
+		ProofSignals:         []string{"deployment", "release"},
+	},
+}
+
+func (s *Server) publicAirdropMissions(w http.ResponseWriter, _ *http.Request) {
+	writeJSON(w, http.StatusOK, PublicAirdropMissions())
+}
+
+func PublicAirdropMissions() AirdropMissionsResponse {
+	missions := make([]AirdropMission, 0, len(airdropMissionCatalog))
+	var totalDefault int64
+	var totalMax int64
+	for _, mission := range airdropMissionCatalog {
+		mission.ProofSignals = append([]string{}, mission.ProofSignals...)
+		missions = append(missions, mission)
+		totalDefault += mission.DefaultAllocationMRG
+		totalMax += mission.MaxAllocationMRG
+	}
+	return AirdropMissionsResponse{
+		ProtocolVersion: airdropMissionsProtocolVersion,
+		Kind:            "airdrop_missions",
+		Missions:        missions,
+		Stats: map[string]int64{
+			"mission_count":          int64(len(missions)),
+			"default_allocation_mrg": totalDefault,
+			"max_allocation_mrg":     totalMax,
+			"average_mission_score":  averageAirdropMissionScore(missions),
+		},
+	}
 }
 
 func (s *Server) createAirdropClaim(w http.ResponseWriter, r *http.Request) {
@@ -118,6 +240,10 @@ func (s *Store) RecordAirdropClaim(req AirdropClaimRequest) (AirdropClaimRespons
 	if missionID == "" {
 		return AirdropClaimResponse{}, errors.New("mission_id is required")
 	}
+	mission, ok := airdropMissionByID(missionID)
+	if !ok {
+		return AirdropClaimResponse{}, errors.New("mission_id must be one of: " + strings.Join(airdropMissionIDs(), ", "))
+	}
 	walletAddress := normalizeWalletAddress(req.WalletAddress)
 	if !validWalletAddress(walletAddress) {
 		return AirdropClaimResponse{}, errors.New("valid Solana wallet_address is required")
@@ -131,21 +257,29 @@ func (s *Store) RecordAirdropClaim(req AirdropClaimRequest) (AirdropClaimRespons
 	if proofURL == "" && strings.TrimSpace(req.ProofURL) != "" {
 		return AirdropClaimResponse{}, errors.New("proof_url must be an http(s) URL")
 	}
-	if proofURL == "" && taskReference == "" {
-		return AirdropClaimResponse{}, errors.New("proof_url or task_reference is required")
+	if err := validateAirdropMissionProof(mission, taskReference, proofURL); err != nil {
+		return AirdropClaimResponse{}, err
 	}
 	allocationMRG := selectedAirdropAllocationMRG(req)
 	if allocationMRG <= 0 {
-		allocationMRG = defaultAirdropAllocationMRG
+		allocationMRG = mission.DefaultAllocationMRG
 	}
 	if allocationMRG > maxAirdropAllocationMRG {
 		return AirdropClaimResponse{}, errors.New("allocation_mrg is too large for an airdrop claim")
 	}
+	if allocationMRG > mission.MaxAllocationMRG {
+		return AirdropClaimResponse{}, errors.New("allocation_mrg exceeds max allocation for mission " + mission.ID)
+	}
+	proofSignals := normalizeAirdropProofSignals(req.ProofSignals, mission, taskReference, proofURL)
+	missionScore := airdropMissionScore(mission, taskReference, proofURL, proofSignals)
 	notes := sanitizeLedgerReferenceValue(req.Notes)
 	claimID := s.newID("adc")
 	reference := tokenWorkflowReference([]string{
 		"airdrop:" + claimID,
 		"mission:" + missionID,
+		"score:" + int64String(missionScore),
+		"cap:" + int64String(mission.MaxAllocationMRG),
+		"signals:" + strings.Join(proofSignals, ","),
 		"task:" + taskReference,
 		"proof:" + proofURL,
 		"note:" + notes,
@@ -155,21 +289,25 @@ func (s *Store) RecordAirdropClaim(req AirdropClaimRequest) (AirdropClaimRespons
 		return AirdropClaimResponse{}, err
 	}
 	return AirdropClaimResponse{
-		ProtocolVersion: airdropClaimProtocolVersion,
-		Kind:            "airdrop_claim",
-		ClaimID:         claimID,
-		Status:          "claimed_pending_review",
-		MissionID:       missionID,
-		WorkerID:        workerID,
-		WalletAddress:   walletAddress,
-		TaskReference:   taskReference,
-		ProofURL:        proofURL,
-		Notes:           notes,
-		AllocationMRG:   allocationMRG,
-		LedgerEntry:     entry,
-		LedgerProofURL:  "/api/public/ledger/proof",
-		LiveFeedURL:     "/api/public/live-feed",
-		CreatedAt:       entry.CreatedAt,
+		ProtocolVersion:  airdropClaimProtocolVersion,
+		Kind:             "airdrop_claim",
+		ClaimID:          claimID,
+		Status:           "claimed_pending_review",
+		MissionID:        missionID,
+		WorkerID:         workerID,
+		WalletAddress:    walletAddress,
+		TaskReference:    taskReference,
+		ProofURL:         proofURL,
+		ProofRequirement: mission.ProofRequirement,
+		MissionScore:     missionScore,
+		MaxAllocationMRG: mission.MaxAllocationMRG,
+		ProofSignals:     proofSignals,
+		Notes:            notes,
+		AllocationMRG:    allocationMRG,
+		LedgerEntry:      entry,
+		LedgerProofURL:   "/api/public/ledger/proof",
+		LiveFeedURL:      "/api/public/live-feed",
+		CreatedAt:        entry.CreatedAt,
 	}, nil
 }
 
@@ -233,6 +371,104 @@ func selectedAirdropAllocationMRG(req AirdropClaimRequest) int64 {
 		return req.AllocationMRG
 	}
 	return req.AllocationMRGCents
+}
+
+func averageAirdropMissionScore(missions []AirdropMission) int64 {
+	if len(missions) == 0 {
+		return 0
+	}
+	var total int64
+	for _, mission := range missions {
+		total += mission.MissionScore
+	}
+	return total / int64(len(missions))
+}
+
+func airdropMissionByID(id string) (AirdropMission, bool) {
+	id = normalizeTokenWorkflowID(id)
+	for _, mission := range airdropMissionCatalog {
+		if mission.ID == id {
+			mission.ProofSignals = append([]string{}, mission.ProofSignals...)
+			return mission, true
+		}
+	}
+	return AirdropMission{}, false
+}
+
+func airdropMissionIDs() []string {
+	ids := make([]string, 0, len(airdropMissionCatalog))
+	for _, mission := range airdropMissionCatalog {
+		ids = append(ids, mission.ID)
+	}
+	return ids
+}
+
+func validateAirdropMissionProof(mission AirdropMission, taskReference, proofURL string) error {
+	switch mission.RequiredReference {
+	case "proof_url":
+		if proofURL == "" {
+			return errors.New("proof_url is required for mission " + mission.ID)
+		}
+	case "task_reference":
+		if taskReference == "" {
+			return errors.New("task_reference is required for mission " + mission.ID)
+		}
+	default:
+		if proofURL == "" && taskReference == "" {
+			return errors.New("proof_url or task_reference is required for mission " + mission.ID)
+		}
+	}
+	return nil
+}
+
+func normalizeAirdropProofSignals(values []string, mission AirdropMission, taskReference, proofURL string) []string {
+	seen := map[string]bool{}
+	signals := []string{}
+	add := func(value string) {
+		value = normalizeTokenWorkflowID(value)
+		if value == "" || seen[value] {
+			return
+		}
+		seen[value] = true
+		signals = append(signals, value)
+	}
+	for _, value := range mission.ProofSignals {
+		add(value)
+	}
+	for _, value := range values {
+		add(value)
+	}
+	if taskReference != "" {
+		add("task_reference")
+	}
+	if proofURL != "" {
+		add("proof_url")
+	}
+	return signals
+}
+
+func airdropMissionScore(mission AirdropMission, taskReference, proofURL string, proofSignals []string) int64 {
+	score := mission.MissionScore
+	if taskReference != "" {
+		score += 5
+	}
+	if proofURL != "" {
+		score += 5
+	}
+	if extra := int64(len(proofSignals) - len(mission.ProofSignals)); extra > 0 {
+		score += extra * 2
+	}
+	if score > 100 {
+		return 100
+	}
+	if score < 1 {
+		return 1
+	}
+	return score
+}
+
+func int64String(value int64) string {
+	return strconv.FormatInt(value, 10)
 }
 
 func selectedPresaleReserveMRG(req PresaleReservationRequest) int64 {

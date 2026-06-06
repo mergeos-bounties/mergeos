@@ -5097,19 +5097,18 @@
             <div class="token-form-grid">
               <label class="wizard-field" :class="{ invalid: airdropClaimFieldError('mission_id') }">
                 <span>Mission <b>*</b></span>
-                <select v-model="airdropClaimForm.mission_id" :disabled="airdropClaimBusy">
-                  <option value="repo-import">Repo import</option>
-                  <option value="bounty-work">Bounty work</option>
-                  <option value="pr-review">PR review</option>
-                  <option value="qa-check">QA check</option>
-                  <option value="agent-review">Agent review</option>
-                  <option value="deployment-proof">Deployment proof</option>
+                <select v-model="airdropClaimForm.mission_id" :disabled="airdropClaimBusy" @change="applySelectedAirdropMissionDefaults">
+                  <option v-for="mission in airdropMissionRows" :key="mission.id" :value="mission.id">
+                    {{ mission.title }}
+                  </option>
                 </select>
+                <small v-if="selectedAirdropMission">{{ selectedAirdropMission.proof_requirement }}</small>
                 <p v-if="airdropClaimFieldError('mission_id')" class="wizard-field-error">{{ airdropClaimFieldError('mission_id') }}</p>
               </label>
               <label class="wizard-field" :class="{ invalid: airdropClaimFieldError('allocation_mrg') }">
                 <span>Allocation MRG <b>*</b></span>
-                <input v-model.number="airdropClaimForm.allocation_mrg" :disabled="airdropClaimBusy" min="1" max="100000" type="number" />
+                <input v-model.number="airdropClaimForm.allocation_mrg" :disabled="airdropClaimBusy" min="1" :max="selectedAirdropMission?.max_allocation_mrg || 100000" type="number" />
+                <small v-if="selectedAirdropMission">Default {{ formatMRG(selectedAirdropMission.default_allocation_mrg) }} / cap {{ formatMRG(selectedAirdropMission.max_allocation_mrg) }} / score {{ selectedAirdropMission.mission_score }}</small>
                 <p v-if="airdropClaimFieldError('allocation_mrg')" class="wizard-field-error">{{ airdropClaimFieldError('allocation_mrg') }}</p>
               </label>
               <label class="wizard-field full" :class="{ invalid: airdropClaimFieldError('wallet_address') }">
@@ -11013,6 +11012,10 @@ const ledgerEconomy = ref({
   flows: [],
   recent_entries: [],
 });
+const airdropMissionsData = ref({
+  stats: {},
+  missions: [],
+});
 const ledgerEventData = ref({
   stats: {},
   items: [],
@@ -11909,6 +11912,21 @@ const publicTokenPageDefinitions = {
   },
 };
 const publicTokenPage = computed(() => publicTokenPageDefinitions[publicPage.value] || null);
+const fallbackAirdropMissionRows = [
+  { id: 'repo-import', title: 'Repository import', proof_requirement: 'Attach an imported repository report, issue scan, or public task reference.', default_allocation_mrg: 250, max_allocation_mrg: 1000, mission_score: 45, proof_signals: ['repo_import', 'issue_scan'] },
+  { id: 'bounty-work', title: 'Bounty delivery', proof_requirement: 'Attach a bounty or task reference and public delivery evidence.', default_allocation_mrg: 500, max_allocation_mrg: 2500, mission_score: 65, proof_signals: ['bounty_claim', 'task_submission'] },
+  { id: 'pr-review', title: 'Pull request review', proof_requirement: 'Attach a GitHub pull request or review URL.', default_allocation_mrg: 350, max_allocation_mrg: 1500, mission_score: 55, proof_signals: ['pull_request', 'review'] },
+  { id: 'qa-check', title: 'QA evidence', proof_requirement: 'Attach a QA evidence URL, test run, or issue/task reference.', default_allocation_mrg: 300, max_allocation_mrg: 1200, mission_score: 50, proof_signals: ['qa', 'test_evidence'] },
+  { id: 'agent-review', title: 'AI agent review', proof_requirement: 'Attach an agent action, live feed, or workflow proof URL.', default_allocation_mrg: 400, max_allocation_mrg: 1800, mission_score: 60, proof_signals: ['agent_action', 'ai_review'] },
+  { id: 'deployment-proof', title: 'Deployment proof', proof_requirement: 'Attach a deployment or release proof URL.', default_allocation_mrg: 450, max_allocation_mrg: 2000, mission_score: 62, proof_signals: ['deployment', 'release'] },
+];
+const airdropMissionRows = computed(() => {
+  const rows = Array.isArray(airdropMissionsData.value?.missions) ? airdropMissionsData.value.missions : [];
+  return rows.length ? rows : fallbackAirdropMissionRows;
+});
+const selectedAirdropMission = computed(() =>
+  airdropMissionRows.value.find((mission) => mission.id === airdropClaimForm.mission_id) || airdropMissionRows.value[0] || null,
+);
 const publicTokenWorkflowCopy = computed(() => {
   if (publicPage.value === 'airdrop') {
     return {
@@ -11929,10 +11947,12 @@ const airdropClaimValidationMap = computed(() => {
   const proofURL = String(airdropClaimForm.proof_url || '').trim();
   const taskReference = String(airdropClaimForm.task_reference || '').trim();
   const allocationMRG = Number(airdropClaimForm.allocation_mrg) || 0;
+  const mission = selectedAirdropMission.value;
+  const missionCap = Number(mission?.max_allocation_mrg) || 100000;
   if (!user.value) errors.session = 'Log in before writing an airdrop ledger receipt.';
   if (!String(airdropClaimForm.mission_id || '').trim()) errors.mission_id = 'Choose an airdrop mission.';
   if (!isLikelySolanaWallet(wallet)) errors.wallet_address = 'Enter a valid Solana wallet address.';
-  if (allocationMRG <= 0 || allocationMRG > 100000) errors.allocation_mrg = 'Allocation must be between 1 and 100,000 MRG.';
+  if (allocationMRG <= 0 || allocationMRG > missionCap) errors.allocation_mrg = `Allocation must be between 1 and ${formatMRG(missionCap)}.`;
   if (!proofURL && !taskReference) errors.proof_url = 'Add a proof URL or task reference.';
   if (proofURL && !tokenWorkflowURLIsValid(proofURL)) errors.proof_url = 'Proof URL must start with http:// or https://.';
   if (String(airdropClaimForm.worker_id || '').trim().length > 160) errors.worker_id = 'Worker ID is too long.';
@@ -11976,7 +11996,7 @@ const publicTokenMetricRows = computed(() => {
   const endpointCount = protocolStatsView.value.endpoints || protocolEndpointRows.value.length || publicBackendEndpointRows.value.length;
   if (publicPage.value === 'airdrop') {
     return [
-      { label: 'Eligible missions', value: '6', icon: ListTodo, tone: 'blue' },
+      { label: 'Eligible missions', value: String(Number(airdropMissionsData.value?.stats?.mission_count) || airdropMissionRows.value.length || 0), icon: ListTodo, tone: 'blue' },
       { label: 'Open tasks', value: String(openTasks), icon: Trophy, tone: 'green' },
       { label: 'Agent proofs', value: String(agentTasks), icon: Bot, tone: 'purple' },
       { label: 'Ledger rows', value: String(proofRows), icon: ShieldCheck, tone: 'amber' },
@@ -22512,6 +22532,7 @@ function loadPublicPageData(page) {
     void loadLedgerData({ silent: true });
     void loadLiveFeedData({ silent: true });
     void loadProtocolManifest({ silent: true });
+    if (page === 'airdrop') void loadAirdropMissions();
     if (page === 'presale') void loadRuntimeConfig().catch(() => {});
     return;
   }
@@ -22577,6 +22598,7 @@ function refreshTokenPageData() {
   void loadLedgerData();
   void loadLiveFeedData({ silent: true });
   void loadProtocolManifest({ silent: true });
+  if (publicPage.value === 'airdrop') void loadAirdropMissions();
   if (publicPage.value === 'presale') void loadRuntimeConfig().catch(() => {});
 }
 
@@ -22788,6 +22810,17 @@ function tokenWorkflowIntegerAmount(value = 0) {
   return Math.round(Math.max(0, Number(value) || 0));
 }
 
+function applySelectedAirdropMissionDefaults(options = {}) {
+  const mission = selectedAirdropMission.value;
+  if (!mission) return;
+  const current = Number(airdropClaimForm.allocation_mrg) || 0;
+  const fallback = Number(mission.default_allocation_mrg) || AIRDROP_ALLOCATION_DEFAULT_MRG;
+  const cap = Number(mission.max_allocation_mrg) || 100000;
+  if (!options.preserveUserValue || current <= 0 || current > cap) {
+    airdropClaimForm.allocation_mrg = Math.min(fallback, cap);
+  }
+}
+
 async function submitAirdropClaim() {
   airdropClaimAttempted.value = true;
   airdropClaimError.value = '';
@@ -22811,6 +22844,7 @@ async function submitAirdropClaim() {
         wallet_address: publicWorkflowWalletValue(airdropClaimForm.wallet_address || user.value?.wallet_address),
         task_reference: airdropClaimForm.task_reference,
         proof_url: airdropClaimForm.proof_url,
+        proof_signals: selectedAirdropMission.value?.proof_signals || [],
         allocation_mrg: tokenWorkflowIntegerAmount(airdropClaimForm.allocation_mrg),
         notes: airdropClaimForm.notes,
       }),
@@ -28199,6 +28233,19 @@ async function loadLiveFeedData(options = {}) {
     liveFeedError.value = error.message || 'Could not load live feed';
   } finally {
     liveFeedLoading.value = false;
+  }
+}
+
+async function loadAirdropMissions() {
+  try {
+    const payload = await publicApi('/api/public/airdrop/missions');
+    airdropMissionsData.value = {
+      stats: payload.stats || {},
+      missions: Array.isArray(payload.missions) ? payload.missions : [],
+    };
+    applySelectedAirdropMissionDefaults({ preserveUserValue: true });
+  } catch {
+    airdropMissionsData.value = { stats: {}, missions: [] };
   }
 }
 

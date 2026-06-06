@@ -1214,7 +1214,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 	if payload.ProtocolVersion != "mergeos.protocol.manifest.v1" || payload.Kind != "protocol_manifest" {
 		t.Fatalf("unexpected manifest header: %#v", payload)
 	}
-	if len(payload.Schemas) != 36 {
+	if len(payload.Schemas) != 37 {
 		t.Fatalf("manifest schemas = %d: %#v", len(payload.Schemas), payload.Schemas)
 	}
 	schemas := map[string]bool{}
@@ -1223,7 +1223,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 		schemas[schema.Version] = true
 		descriptions[schema.Version] = schema.Description
 	}
-	for _, required := range []string{"mergeos.task.v1", "mergeos.task-claim.v1", "mergeos.task-submission.v1", "mergeos.task-review.v1", "mergeos.agent.v1", "mergeos.contributor.v1", "mergeos.agent-action.v1", "mergeos.agent-queue.v1", "mergeos.agent-runbook.v1", "mergeos.marketplace.v1", "mergeos.live-feed.v1", "mergeos.workflow.v1", "mergeos.estimate.v1", "mergeos.wallet-migration.v1", "mergeos.release-artifact.v1", "mergeos.repo-import.v1", "mergeos.repo-sync.v1", "mergeos.dispute.v1", "mergeos.proposal.v1", "mergeos.ai-workflow.v1", "mergeos.event.v1", "mergeos.ledger.v1", "mergeos.ledger-proof.v1", "mergeos.token-economy.v1", "mergeos.airdrop-claim.v1", "mergeos.presale-reservation.v1", "mergeos.escrow.v1", "mergeos.payouts.v1", "mergeos.payout-release.v1", "mergeos.deployment.v1", "mergeos.pr-monitor.v1", "mergeos.scan.v1", "mergeos.customer-dashboard.v1", "mergeos.worker-dashboard.v1", "mergeos.routing.v1", "mergeos.admin-ops.v1"} {
+	for _, required := range []string{"mergeos.task.v1", "mergeos.task-claim.v1", "mergeos.task-submission.v1", "mergeos.task-review.v1", "mergeos.agent.v1", "mergeos.contributor.v1", "mergeos.agent-action.v1", "mergeos.agent-queue.v1", "mergeos.agent-runbook.v1", "mergeos.marketplace.v1", "mergeos.live-feed.v1", "mergeos.workflow.v1", "mergeos.estimate.v1", "mergeos.wallet-migration.v1", "mergeos.release-artifact.v1", "mergeos.repo-import.v1", "mergeos.repo-sync.v1", "mergeos.dispute.v1", "mergeos.proposal.v1", "mergeos.ai-workflow.v1", "mergeos.event.v1", "mergeos.ledger.v1", "mergeos.ledger-proof.v1", "mergeos.token-economy.v1", "mergeos.airdrop-claim.v1", "mergeos.airdrop-missions.v1", "mergeos.presale-reservation.v1", "mergeos.escrow.v1", "mergeos.payouts.v1", "mergeos.payout-release.v1", "mergeos.deployment.v1", "mergeos.pr-monitor.v1", "mergeos.scan.v1", "mergeos.customer-dashboard.v1", "mergeos.worker-dashboard.v1", "mergeos.routing.v1", "mergeos.admin-ops.v1"} {
 		if !schemas[required] {
 			t.Fatalf("manifest missing schema %s: %#v", required, payload.Schemas)
 		}
@@ -1249,6 +1249,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 		"GET /api/public/ledger/proof",
 		"GET /api/public/ledger/events",
 		"GET /api/public/token-economy",
+		"GET /api/public/airdrop/missions",
 		"POST /api/airdrop/claims",
 		"POST /api/presale/reservations",
 		"GET /api/public/protocol/events",
@@ -1317,11 +1318,50 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 	wallet := base58Encode(bytes.Repeat([]byte{7}, walletAddressBytes))
 	server := NewServer(cfg, store, payments)
 
+	missionReq := httptest.NewRequest(http.MethodGet, "/api/public/airdrop/missions", nil)
+	missionResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(missionResp, missionReq)
+	if missionResp.Code != http.StatusOK {
+		t.Fatalf("airdrop missions status = %d, body = %s", missionResp.Code, missionResp.Body.String())
+	}
+	var missions AirdropMissionsResponse
+	if err := json.Unmarshal(missionResp.Body.Bytes(), &missions); err != nil {
+		t.Fatal(err)
+	}
+	if missions.ProtocolVersion != airdropMissionsProtocolVersion || missions.Kind != "airdrop_missions" || len(missions.Missions) < 6 {
+		t.Fatalf("unexpected airdrop missions response: %#v", missions)
+	}
+
 	unauthReq := httptest.NewRequest(http.MethodPost, "/api/airdrop/claims", strings.NewReader(`{}`))
 	unauthResp := httptest.NewRecorder()
 	server.Routes().ServeHTTP(unauthResp, unauthReq)
 	if unauthResp.Code != http.StatusUnauthorized {
 		t.Fatalf("unauth airdrop status = %d, body = %s", unauthResp.Code, unauthResp.Body.String())
+	}
+
+	invalidMissionReq := httptest.NewRequest(http.MethodPost, "/api/airdrop/claims", strings.NewReader(fmt.Sprintf(`{
+		"mission_id":"profile-only",
+		"wallet_address":"%s",
+		"proof_url":"https://github.com/mergeos-bounties/mergeos/pull/101"
+	}`, wallet)))
+	invalidMissionReq.Header.Set("Authorization", "Bearer "+auth.Token)
+	invalidMissionResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(invalidMissionResp, invalidMissionReq)
+	if invalidMissionResp.Code != http.StatusBadRequest || !strings.Contains(invalidMissionResp.Body.String(), "mission_id must be one of") {
+		t.Fatalf("invalid mission status = %d, body = %s", invalidMissionResp.Code, invalidMissionResp.Body.String())
+	}
+
+	overCapReq := httptest.NewRequest(http.MethodPost, "/api/airdrop/claims", strings.NewReader(fmt.Sprintf(`{
+		"mission_id":"repo-import",
+		"wallet_address":"%s",
+		"task_reference":"task:MRG-101",
+		"allocation_mrg":2000
+	}`, wallet)))
+	overCapReq.Header.Set("Authorization", "Bearer "+auth.Token)
+	overCapResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(overCapResp, overCapReq)
+	if overCapResp.Code != http.StatusBadRequest || !strings.Contains(overCapResp.Body.String(), "exceeds max allocation") {
+		t.Fatalf("over-cap airdrop status = %d, body = %s", overCapResp.Code, overCapResp.Body.String())
 	}
 
 	airdropReq := httptest.NewRequest(http.MethodPost, "/api/airdrop/claims", strings.NewReader(fmt.Sprintf(`{
@@ -1330,6 +1370,7 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 		"wallet_address":"%s",
 		"task_reference":"task:MRG-101",
 		"proof_url":"https://github.com/mergeos-bounties/mergeos/pull/101",
+		"proof_signals":["repo-import","issue-scan"],
 		"allocation_mrg":750
 	}`, wallet)))
 	airdropReq.Header.Set("Authorization", "Bearer "+auth.Token)
@@ -1348,6 +1389,9 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 	}
 	if claim.LedgerEntry.Type != "airdrop_claim" || claim.LedgerEntry.AmountCents != 750 || len(claim.LedgerEntry.EntryHash) != 64 {
 		t.Fatalf("airdrop ledger entry invalid: %#v", claim.LedgerEntry)
+	}
+	if claim.MissionScore < 50 || claim.MaxAllocationMRG != 1000 || len(claim.ProofSignals) < 3 || !strings.Contains(claim.LedgerEntry.Reference, "score:") {
+		t.Fatalf("airdrop mission proof fields invalid: %#v", claim)
 	}
 
 	presaleReq := httptest.NewRequest(http.MethodPost, "/api/presale/reservations", strings.NewReader(fmt.Sprintf(`{

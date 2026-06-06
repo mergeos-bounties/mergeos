@@ -127,6 +127,10 @@ export class MergeOSClient {
     return this.request('/api/public/token-economy', { auth: false });
   }
 
+  publicAirdropMissions() {
+    return this.request('/api/public/airdrop/missions', { auth: false });
+  }
+
   publicLiveFeed(options = {}) {
     const limit = Number(options.limit) > 0 ? `?limit=${encodeURIComponent(Number(options.limit))}` : '';
     return this.request(`/api/public/live-feed${limit}`, { auth: false });
@@ -612,6 +616,7 @@ export function airdropClaimPayload(payload = {}) {
     worker_id: firstTokenWorkflowValue(payload, ['worker_id', 'workerID', 'worker']),
     task_reference: firstTokenWorkflowValue(payload, ['task_reference', 'taskReference', 'task']),
     proof_url: firstTokenWorkflowValue(payload, ['proof_url', 'proofURL', 'proofUrl', 'proof']),
+    proof_signals: tokenWorkflowList(firstTokenWorkflowValue(payload, ['proof_signals', 'proofSignals', 'signals'], [])),
     notes: firstTokenWorkflowValue(payload, ['notes', 'note']),
   });
 }
@@ -911,6 +916,14 @@ function tokenWorkflowInteger(value, fallback) {
     return value;
   }
   return Math.trunc(number);
+}
+
+function tokenWorkflowList(value = []) {
+  const items = Array.isArray(value) ? value : String(value || '').split(',');
+  const normalized = items
+    .map((item) => String(item || '').trim())
+    .filter(Boolean);
+  return normalized.length ? normalized : undefined;
 }
 
 function compactPayload(payload = {}) {

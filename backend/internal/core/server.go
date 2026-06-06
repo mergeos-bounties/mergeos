@@ -37,6 +37,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/public/ledger/proof", s.publicLedgerProof)
 	mux.HandleFunc("GET /api/public/ledger/events", s.publicLedgerEvents)
 	mux.HandleFunc("GET /api/public/token-economy", s.publicTokenEconomy)
+	mux.HandleFunc("GET /api/public/airdrop/missions", s.publicAirdropMissions)
 	mux.HandleFunc("GET /api/public/live-feed", s.publicLiveFeed)
 	mux.HandleFunc("GET /api/public/protocol", s.publicProtocolManifest)
 	mux.HandleFunc("GET /api/public/protocol/ledger", s.publicProtocolLedger)

@@ -23,6 +23,7 @@ test('loads stable task, workflow, ledger, and event schemas', () => {
     'mergeos.agent.v1',
     'mergeos.ai-workflow.v1',
     'mergeos.airdrop-claim.v1',
+    'mergeos.airdrop-missions.v1',
     'mergeos.contributor.v1',
     'mergeos.customer-dashboard.v1',
     'mergeos.deployment.v1',
@@ -71,6 +72,10 @@ test('validates airdrop claim and presale reservation protocol documents', () =>
     wallet_address: wallet,
     task_reference: 'task:MRG-101',
     proof_url: 'https://github.com/mergeos-bounties/mergeos/pull/101',
+    proof_requirement: 'Attach an imported repository report, issue scan, or public task reference.',
+    mission_score: 55,
+    max_allocation_mrg: 1000,
+    proof_signals: ['repo_import', 'issue_scan', 'task_reference', 'proof_url'],
     allocation_mrg: 250,
     ledger_entry: {
       sequence: 1,
@@ -123,6 +128,52 @@ test('validates airdrop claim and presale reservation protocol documents', () =>
   const invalidReservation = validateProtocolDocument({ ...presaleReservation, funding_rail: 'tron' });
   assert.equal(invalidReservation.valid, false);
   assert(invalidReservation.errors.some((error) => error.path === 'funding_rail'));
+});
+
+test('validates task-based airdrop mission catalog protocol documents', () => {
+  const missions = {
+    protocol_version: 'mergeos.airdrop-missions.v1',
+    kind: 'airdrop_missions',
+    missions: [
+      {
+        id: 'repo-import',
+        title: 'Repository import',
+        description: 'Import a GitHub repository or issue set so MergeOS can score real software work.',
+        proof_requirement: 'Attach an imported repository report, issue scan, or public task reference.',
+        required_reference: 'task_or_url',
+        default_allocation_mrg: 250,
+        max_allocation_mrg: 1000,
+        mission_score: 45,
+        proof_signals: ['repo_import', 'issue_scan'],
+      },
+      {
+        id: 'agent-review',
+        title: 'AI agent review',
+        description: 'Record AI review, test, scan, or generation evidence linked to MergeOS agent workflow.',
+        proof_requirement: 'Attach an agent action, live feed, or workflow proof URL.',
+        required_reference: 'proof_url',
+        default_allocation_mrg: 400,
+        max_allocation_mrg: 1800,
+        mission_score: 60,
+        proof_signals: ['agent_action', 'ai_review'],
+      },
+    ],
+    stats: {
+      mission_count: 2,
+      default_allocation_mrg: 650,
+      max_allocation_mrg: 2800,
+      average_mission_score: 52,
+    },
+  };
+
+  assert.equal(validateProtocolDocument(missions).valid, true);
+  const invalid = validateProtocolDocument({
+    ...missions,
+    missions: [{ ...missions.missions[0], required_reference: 'profile_only', proof_signals: [] }],
+  });
+  assert.equal(invalid.valid, false);
+  assert(invalid.errors.some((error) => error.path === 'missions[0].required_reference'));
+  assert(invalid.errors.some((error) => error.path === 'missions[0].proof_signals'));
 });
 
 test('validates agent runbook protocol documents', () => {
