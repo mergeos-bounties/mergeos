@@ -115,6 +115,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("POST /api/projects/{id}/repo-scan/suggested-tasks/{taskID}/fund", s.fundRepositorySuggestedTask)
 	mux.HandleFunc("POST /api/projects/{id}/repo-sync", s.syncProjectRepoIssues)
 	mux.HandleFunc("POST /api/projects/{id}/agent-actions", s.createProjectAgentAction)
+	mux.HandleFunc("POST /api/agent-queue/leases", s.createAgentQueueLease)
 	mux.HandleFunc("POST /api/projects", s.createProject)
 	mux.HandleFunc("POST /api/projects/evaluate", s.evaluateProject)
 	mux.HandleFunc("POST /api/projects/evaluate-price", s.evaluateProjectPrice)
@@ -316,6 +317,28 @@ func (s *Server) publicProtocolAgentQueue(w http.ResponseWriter, r *http.Request
 		}
 	}
 	writeJSON(w, http.StatusOK, s.store.PublicAgentQueue(limit))
+}
+
+func (s *Server) createAgentQueueLease(w http.ResponseWriter, r *http.Request) {
+	user, ok := s.requireUser(w, r)
+	if !ok {
+		return
+	}
+	var req AgentLeaseRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	response, err := s.store.CreateOrRefreshAgentLease(user, req)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	status := http.StatusCreated
+	if strings.TrimSpace(req.LeaseID) != "" {
+		status = http.StatusOK
+	}
+	writeJSON(w, status, response)
 }
 
 func (s *Server) publicProtocolContributors(w http.ResponseWriter, r *http.Request) {

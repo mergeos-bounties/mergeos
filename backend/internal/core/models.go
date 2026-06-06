@@ -1219,6 +1219,7 @@ type AgentWorkPacket struct {
 	ClaimEndpoint       string                `json:"claim_endpoint"`
 	ActionEndpoint      string                `json:"action_endpoint"`
 	SubmitEndpoint      string                `json:"submit_endpoint"`
+	LeasePacket         AgentLeasePacket      `json:"lease_packet"`
 	SupervisorAgentType string                `json:"supervisor_agent_type,omitempty"`
 	SubagentType        string                `json:"subagent_type,omitempty"`
 	DesignReviewAgent   string                `json:"design_review_agent,omitempty"`
@@ -1227,6 +1228,49 @@ type AgentWorkPacket struct {
 	Runbook             []AgentRunbookStep    `json:"runbook"`
 	ActionPayloads      []AgentActionPayload  `json:"action_payloads"`
 	OutputContracts     []AgentOutputContract `json:"output_contracts,omitempty"`
+}
+
+type AgentLeasePacket struct {
+	LeaseEndpoint     string         `json:"lease_endpoint"`
+	HeartbeatEndpoint string         `json:"heartbeat_endpoint"`
+	Method            string         `json:"method"`
+	TTLSeconds        int            `json:"ttl_seconds"`
+	HeartbeatSeconds  int            `json:"heartbeat_seconds"`
+	Payload           map[string]any `json:"payload"`
+}
+
+type AgentLeaseRequest struct {
+	LeaseID   string `json:"lease_id,omitempty"`
+	ClaimID   string `json:"claim_id,omitempty"`
+	BountyID  string `json:"bounty_id,omitempty"`
+	AgentType string `json:"agent_type,omitempty"`
+	Status    string `json:"status,omitempty"`
+}
+
+type AgentLeaseResponse struct {
+	ProtocolVersion   string                `json:"protocol_version"`
+	Kind              string                `json:"kind"`
+	LeaseID           string                `json:"lease_id"`
+	Status            string                `json:"status"`
+	ClaimID           string                `json:"claim_id"`
+	BountyID          string                `json:"bounty_id"`
+	ProjectID         string                `json:"project_id"`
+	ProjectTitle      string                `json:"project_title"`
+	TaskTitle         string                `json:"task_title"`
+	IssueNumber       int                   `json:"issue_number"`
+	AgentType         string                `json:"agent_type"`
+	WorkerID          string                `json:"worker_id"`
+	LeaseEndpoint     string                `json:"lease_endpoint"`
+	HeartbeatEndpoint string                `json:"heartbeat_endpoint"`
+	ActionEndpoint    string                `json:"action_endpoint"`
+	SubmitEndpoint    string                `json:"submit_endpoint"`
+	HeartbeatSeconds  int                   `json:"heartbeat_seconds"`
+	LeaseTTLSeconds   int                   `json:"lease_ttl_seconds"`
+	LeasedAt          time.Time             `json:"leased_at"`
+	HeartbeatDueAt    time.Time             `json:"heartbeat_due_at"`
+	ExpiresAt         time.Time             `json:"expires_at"`
+	OutputContracts   []AgentOutputContract `json:"output_contracts"`
+	NextActions       []AgentRunbookStep    `json:"next_actions"`
 }
 
 type AgentRunbookStep struct {

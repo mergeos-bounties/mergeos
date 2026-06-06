@@ -10,6 +10,9 @@ const (
 	ceoAgentType          = "ceo-strategy-agent"
 	designReviewAgentType = "design-review-agent"
 	agentQueueEndpoint    = "/api/public/protocol/agent-queue"
+	agentLeaseEndpoint    = "/api/agent-queue/leases"
+	agentLeaseTTLSeconds  = 900
+	agentHeartbeatSeconds = 120
 )
 
 func (s *Store) PublicAgentQueue(limit int) AgentQueueResponse {
@@ -124,6 +127,7 @@ func agentQueueTaskRow(bounty *MarketplaceBounty) AgentQueueTask {
 		ClaimEndpoint:       claimEndpoint,
 		ActionEndpoint:      actionEndpoint,
 		SubmitEndpoint:      submitEndpoint,
+		LeasePacket:         agentLeasePacket(bountyID, agentType),
 		SupervisorAgentType: ceoAgentType,
 		SubagentType:        agentType,
 		DesignReviewAgent:   designReviewAgentType,
@@ -158,6 +162,27 @@ func agentQueueTaskRow(bounty *MarketplaceBounty) AgentQueueTask {
 		ActionEndpoint:   actionEndpoint,
 		ProtocolURL:      protocolURL,
 		WorkPacket:       workPacket,
+	}
+}
+
+func agentLeasePacket(claimID, agentType string) AgentLeasePacket {
+	claimID = strings.TrimSpace(claimID)
+	agentType = strings.TrimSpace(agentType)
+	if agentType == "" {
+		agentType = "general-ai-agent"
+	}
+	return AgentLeasePacket{
+		LeaseEndpoint:     agentLeaseEndpoint,
+		HeartbeatEndpoint: agentLeaseEndpoint,
+		Method:            "POST",
+		TTLSeconds:        agentLeaseTTLSeconds,
+		HeartbeatSeconds:  agentHeartbeatSeconds,
+		Payload: map[string]any{
+			"claim_id":   claimID,
+			"bounty_id":  claimID,
+			"agent_type": agentType,
+			"status":     "leased",
+		},
 	}
 }
 

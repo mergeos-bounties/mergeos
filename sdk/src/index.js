@@ -460,6 +460,17 @@ export class MergeOSClient {
     return this.claimTask(taskID, agentQueueClaimPayload(task, overrides));
   }
 
+  createAgentQueueLease(taskOrPacket = {}, overrides = {}) {
+    return this.request(agentLeaseEndpointFromWorkPacket(taskOrPacket, overrides), {
+      method: 'POST',
+      body: agentLeasePayload(taskOrPacket, overrides),
+    });
+  }
+
+  heartbeatAgentQueueLease(leaseOrPacket = {}, overrides = {}) {
+    return this.createAgentQueueLease(leaseOrPacket, { ...overrides, status: overrides.status || 'heartbeat' });
+  }
+
   submitTask(taskID, payload) {
     return this.request(`/api/tasks/${encodeURIComponent(taskID)}/submit`, { method: 'POST', body: payload });
   }
@@ -976,6 +987,45 @@ export function agentQueueTaskClaimID(task = {}, endpoint = '') {
   const source = endpoint || task.claim_endpoint || task.work_packet?.claim_endpoint || '';
   const match = String(source).match(/\/api\/tasks\/([^/]+)\/claim(?:\?|$)/);
   return match ? decodeURIComponent(match[1]) : '';
+}
+
+export function agentLeasePacketFromWorkPacket(taskOrPacket = {}) {
+  if (!taskOrPacket || typeof taskOrPacket !== 'object') return {};
+  if (taskOrPacket.lease_packet && typeof taskOrPacket.lease_packet === 'object') return taskOrPacket.lease_packet;
+  if (taskOrPacket.work_packet?.lease_packet && typeof taskOrPacket.work_packet.lease_packet === 'object') return taskOrPacket.work_packet.lease_packet;
+  return taskOrPacket;
+}
+
+export function agentLeaseEndpointFromWorkPacket(taskOrPacket = {}, overrides = {}) {
+  const packet = agentLeasePacketFromWorkPacket(taskOrPacket);
+  return overrides.lease_endpoint
+    || overrides.leaseEndpoint
+    || overrides.heartbeat_endpoint
+    || overrides.heartbeatEndpoint
+    || packet.lease_endpoint
+    || packet.heartbeat_endpoint
+    || '/api/agent-queue/leases';
+}
+
+export function agentLeasePayload(taskOrPacket = {}, overrides = {}) {
+  const packet = agentLeasePacketFromWorkPacket(taskOrPacket);
+  const packetPayload = packet.payload && typeof packet.payload === 'object' ? packet.payload : {};
+  const claimID = overrides.claim_id
+    || overrides.claimId
+    || packetPayload.claim_id
+    || taskOrPacket.claim_id
+    || taskOrPacket.claimID
+    || taskOrPacket.bounty_id
+    || taskOrPacket.id
+    || '';
+  const bountyID = overrides.bounty_id || overrides.bountyId || packetPayload.bounty_id || claimID;
+  return compactPayload({
+    lease_id: overrides.lease_id || overrides.leaseId || taskOrPacket.lease_id || taskOrPacket.leaseID || '',
+    claim_id: claimID,
+    bounty_id: bountyID,
+    agent_type: overrides.agent_type || overrides.agentType || packetPayload.agent_type || taskOrPacket.agent_type || taskOrPacket.work_packet?.subagent_type || '',
+    status: overrides.status || packetPayload.status || taskOrPacket.status || 'leased',
+  });
 }
 
 export function proposalPayloadFromBounty(bounty = {}, overrides = {}) {

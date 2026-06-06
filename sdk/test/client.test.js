@@ -8,6 +8,9 @@ import {
   agentActionPayload,
   agentActionEventType,
   agentActionEventTypes,
+  agentLeaseEndpointFromWorkPacket,
+  agentLeasePayload,
+  agentLeasePacketFromWorkPacket,
   agentQueueClaimPayload,
   agentQueueTaskClaimID,
   agentWorkPacketOutputContracts,
@@ -234,6 +237,19 @@ test('builds and sends claim-safe agent queue task payloads', async () => {
     work_packet: {
       claim_endpoint: '/api/tasks/prj_1:12/claim',
       subagent_type: 'qa-agent',
+      lease_packet: {
+        lease_endpoint: '/api/agent-queue/leases',
+        heartbeat_endpoint: '/api/agent-queue/leases',
+        method: 'POST',
+        ttl_seconds: 900,
+        heartbeat_seconds: 120,
+        payload: {
+          claim_id: 'prj_1:12',
+          bounty_id: 'prj_1:12',
+          agent_type: 'qa-agent',
+          status: 'leased',
+        },
+      },
     },
   };
   const payload = agentQueueClaimPayload(queueTask, {
@@ -253,6 +269,8 @@ test('builds and sends claim-safe agent queue task payloads', async () => {
   const fetchImpl = fakeFetch([
     { status: 200, body: { protocol_version: 'mergeos.task-claim.v1', kind: 'task_claim', claim_id: 'prj_1:12', status: 'claimed' } },
     { status: 200, body: { protocol_version: 'mergeos.task-claim.v1', kind: 'task_claim', claim_id: 'prj_2:7', status: 'claimed' } },
+    { status: 201, body: { protocol_version: 'mergeos.agent-lease.v1', kind: 'agent_lease', lease_id: 'agl_1', claim_id: 'prj_1:12', status: 'leased' } },
+    { status: 200, body: { protocol_version: 'mergeos.agent-lease.v1', kind: 'agent_lease', lease_id: 'agl_1', claim_id: 'prj_1:12', status: 'heartbeat' } },
   ]);
   const client = new MergeOSClient({ token: 'agent-token', fetchImpl });
   const claimed = await client.claimAgentQueueTask(queueTask, { workerID: 'github:mergeos-qa-agent' });
@@ -261,9 +279,22 @@ test('builds and sends claim-safe agent queue task payloads', async () => {
     worker_kind: 'hybrid',
     work_packet: { subagent_type: 'review-agent' },
   }, { workerID: 'github:hybrid-reviewer' });
+  const leasePayload = agentLeasePayload(queueTask);
+  const lease = await client.createAgentQueueLease(queueTask);
+  const heartbeat = await client.heartbeatAgentQueueLease(lease, { agentType: 'qa-agent' });
 
   assert.equal(claimed.kind, 'task_claim');
   assert.equal(fallbackClaim.claim_id, 'prj_2:7');
+  assert.equal(lease.kind, 'agent_lease');
+  assert.equal(heartbeat.status, 'heartbeat');
+  assert.equal(agentLeaseEndpointFromWorkPacket(queueTask), '/api/agent-queue/leases');
+  assert.equal(agentLeasePacketFromWorkPacket(queueTask).ttl_seconds, 900);
+  assert.deepEqual(leasePayload, {
+    claim_id: 'prj_1:12',
+    bounty_id: 'prj_1:12',
+    agent_type: 'qa-agent',
+    status: 'leased',
+  });
   assert.equal(fetchImpl.calls[0].url, '/api/tasks/prj_1:12/claim');
   assert.equal(fetchImpl.calls[0].options.method, 'POST');
   assert.equal(fetchImpl.calls[0].options.headers.Authorization, 'Bearer agent-token');
@@ -277,6 +308,16 @@ test('builds and sends claim-safe agent queue task payloads', async () => {
     worker_kind: 'hybrid',
     worker_id: 'github:hybrid-reviewer',
     agent_type: 'review-agent',
+  }));
+  assert.equal(fetchImpl.calls[2].url, '/api/agent-queue/leases');
+  assert.equal(fetchImpl.calls[2].options.body, JSON.stringify(leasePayload));
+  assert.equal(fetchImpl.calls[3].url, '/api/agent-queue/leases');
+  assert.equal(fetchImpl.calls[3].options.body, JSON.stringify({
+    lease_id: 'agl_1',
+    claim_id: 'prj_1:12',
+    bounty_id: 'prj_1:12',
+    agent_type: 'qa-agent',
+    status: 'heartbeat',
   }));
 });
 

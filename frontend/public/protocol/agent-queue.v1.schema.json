@@ -105,11 +105,12 @@
     "workPacket": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["claim_endpoint", "action_endpoint", "submit_endpoint", "context_urls", "runbook", "action_payloads"],
+      "required": ["claim_endpoint", "action_endpoint", "submit_endpoint", "lease_packet", "context_urls", "runbook", "action_payloads"],
       "properties": {
         "claim_endpoint": { "type": "string", "minLength": 1, "maxLength": 240 },
         "action_endpoint": { "type": "string", "minLength": 1, "maxLength": 240 },
         "submit_endpoint": { "type": "string", "minLength": 1, "maxLength": 240 },
+        "lease_packet": { "$ref": "#/$defs/leasePacket" },
         "supervisor_agent_type": { "type": "string", "maxLength": 120 },
         "subagent_type": { "type": "string", "maxLength": 120 },
         "design_review_agent": { "type": "string", "maxLength": 120 },
@@ -134,6 +135,29 @@
         "output_contracts": {
           "type": "array",
           "items": { "$ref": "#/$defs/outputContract" }
+        }
+      }
+    },
+    "leasePacket": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["lease_endpoint", "heartbeat_endpoint", "method", "ttl_seconds", "heartbeat_seconds", "payload"],
+      "properties": {
+        "lease_endpoint": { "type": "string", "minLength": 1, "maxLength": 240 },
+        "heartbeat_endpoint": { "type": "string", "minLength": 1, "maxLength": 240 },
+        "method": { "enum": ["POST"] },
+        "ttl_seconds": { "type": "integer", "minimum": 60, "maximum": 86400 },
+        "heartbeat_seconds": { "type": "integer", "minimum": 10, "maximum": 3600 },
+        "payload": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": ["claim_id", "bounty_id", "agent_type", "status"],
+          "properties": {
+            "claim_id": { "type": "string", "minLength": 1, "maxLength": 120 },
+            "bounty_id": { "type": "string", "minLength": 1, "maxLength": 120 },
+            "agent_type": { "type": "string", "minLength": 1, "maxLength": 120 },
+            "status": { "enum": ["leased", "heartbeat", "released"] }
+          }
         }
       }
     },

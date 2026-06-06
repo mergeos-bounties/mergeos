@@ -1342,7 +1342,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 	if payload.ProtocolVersion != "mergeos.protocol.manifest.v1" || payload.Kind != "protocol_manifest" {
 		t.Fatalf("unexpected manifest header: %#v", payload)
 	}
-	if len(payload.Schemas) != 38 {
+	if len(payload.Schemas) != 39 {
 		t.Fatalf("manifest schemas = %d: %#v", len(payload.Schemas), payload.Schemas)
 	}
 	schemas := map[string]bool{}
@@ -1351,7 +1351,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 		schemas[schema.Version] = true
 		descriptions[schema.Version] = schema.Description
 	}
-	for _, required := range []string{"mergeos.task.v1", "mergeos.task-claim.v1", "mergeos.task-submission.v1", "mergeos.task-review.v1", "mergeos.agent.v1", "mergeos.contributor.v1", "mergeos.agent-action.v1", "mergeos.agent-queue.v1", "mergeos.agent-runbook.v1", "mergeos.marketplace.v1", "mergeos.live-feed.v1", "mergeos.workflow.v1", "mergeos.estimate.v1", "mergeos.wallet-migration.v1", "mergeos.release-artifact.v1", "mergeos.repo-import.v1", "mergeos.repo-sync.v1", "mergeos.repo-task-funding.v1", "mergeos.dispute.v1", "mergeos.proposal.v1", "mergeos.ai-workflow.v1", "mergeos.event.v1", "mergeos.ledger.v1", "mergeos.ledger-proof.v1", "mergeos.token-economy.v1", "mergeos.airdrop-claim.v1", "mergeos.airdrop-missions.v1", "mergeos.presale-reservation.v1", "mergeos.escrow.v1", "mergeos.payouts.v1", "mergeos.payout-release.v1", "mergeos.deployment.v1", "mergeos.pr-monitor.v1", "mergeos.scan.v1", "mergeos.customer-dashboard.v1", "mergeos.worker-dashboard.v1", "mergeos.routing.v1", "mergeos.admin-ops.v1"} {
+	for _, required := range []string{"mergeos.task.v1", "mergeos.task-claim.v1", "mergeos.task-submission.v1", "mergeos.task-review.v1", "mergeos.agent.v1", "mergeos.contributor.v1", "mergeos.agent-action.v1", "mergeos.agent-lease.v1", "mergeos.agent-queue.v1", "mergeos.agent-runbook.v1", "mergeos.marketplace.v1", "mergeos.live-feed.v1", "mergeos.workflow.v1", "mergeos.estimate.v1", "mergeos.wallet-migration.v1", "mergeos.release-artifact.v1", "mergeos.repo-import.v1", "mergeos.repo-sync.v1", "mergeos.repo-task-funding.v1", "mergeos.dispute.v1", "mergeos.proposal.v1", "mergeos.ai-workflow.v1", "mergeos.event.v1", "mergeos.ledger.v1", "mergeos.ledger-proof.v1", "mergeos.token-economy.v1", "mergeos.airdrop-claim.v1", "mergeos.airdrop-missions.v1", "mergeos.presale-reservation.v1", "mergeos.escrow.v1", "mergeos.payouts.v1", "mergeos.payout-release.v1", "mergeos.deployment.v1", "mergeos.pr-monitor.v1", "mergeos.scan.v1", "mergeos.customer-dashboard.v1", "mergeos.worker-dashboard.v1", "mergeos.routing.v1", "mergeos.admin-ops.v1"} {
 		if !schemas[required] {
 			t.Fatalf("manifest missing schema %s: %#v", required, payload.Schemas)
 		}
@@ -1370,6 +1370,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 		"GET /api/public/protocol/agents",
 		"GET /api/public/protocol/agent-queue",
 		"GET /api/public/agents/queue",
+		"POST /api/agent-queue/leases",
 		"GET /protocol/runbooks/mergeide-agent.v1.json",
 		"GET /api/public/protocol/contributors",
 		"GET /downloads/mergeide-windows-latest.json",
@@ -2061,6 +2062,18 @@ func TestPublicMarketplaceRouteReturnsSanitizedLiveData(t *testing.T) {
 	if !strings.HasSuffix(firstPacket.SubmitEndpoint, "/submit") {
 		t.Fatalf("agent work packet submit endpoint should use task evidence route: %#v", firstPacket)
 	}
+	if firstPacket.LeasePacket.LeaseEndpoint != agentLeaseEndpoint ||
+		firstPacket.LeasePacket.HeartbeatEndpoint != agentLeaseEndpoint ||
+		firstPacket.LeasePacket.Method != "POST" ||
+		firstPacket.LeasePacket.TTLSeconds != agentLeaseTTLSeconds ||
+		firstPacket.LeasePacket.HeartbeatSeconds != agentHeartbeatSeconds {
+		t.Fatalf("agent work packet missing lease metadata: %#v", firstPacket.LeasePacket)
+	}
+	if firstPacket.LeasePacket.Payload["claim_id"] != queueProtocol.Tasks[0].BountyID ||
+		firstPacket.LeasePacket.Payload["bounty_id"] != queueProtocol.Tasks[0].BountyID ||
+		firstPacket.LeasePacket.Payload["status"] != "leased" {
+		t.Fatalf("agent work packet lease payload is not claim-safe: %#v", firstPacket.LeasePacket.Payload)
+	}
 	if firstPacket.ClaimEndpoint == "" || firstPacket.ActionEndpoint == "" || len(firstPacket.Runbook) < 4 || len(firstPacket.ActionPayloads) == 0 {
 		t.Fatalf("agent work packet missing executable details: %#v", firstPacket)
 	}
@@ -2089,6 +2102,40 @@ func TestPublicMarketplaceRouteReturnsSanitizedLiveData(t *testing.T) {
 	payloadChain, ok := firstPayload["delegation_chain"].([]any)
 	if !ok || len(payloadChain) < 2 || payloadChain[0] != ceoAgentType || payloadChain[1] != designReviewAgentType {
 		t.Fatalf("agent work packet action payload missing delegation chain: %#v", firstPayload)
+	}
+	leaseReq := httptest.NewRequest(http.MethodPost, agentLeaseEndpoint, strings.NewReader(fmt.Sprintf(`{"claim_id":%q,"agent_type":%q}`, queueProtocol.Tasks[0].BountyID, queueProtocol.Tasks[0].AgentType)))
+	leaseReq.Header.Set("Authorization", "Bearer "+auth.Token)
+	leaseResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(leaseResp, leaseReq)
+	if leaseResp.Code != http.StatusCreated {
+		t.Fatalf("agent lease status = %d, body = %s", leaseResp.Code, leaseResp.Body.String())
+	}
+	if strings.Contains(leaseResp.Body.String(), project.Tasks[0].ID) {
+		t.Fatalf("agent lease leaked internal task id %q: %s", project.Tasks[0].ID, leaseResp.Body.String())
+	}
+	var lease AgentLeaseResponse
+	if err := json.Unmarshal(leaseResp.Body.Bytes(), &lease); err != nil {
+		t.Fatal(err)
+	}
+	if lease.ProtocolVersion != "mergeos.agent-lease.v1" || lease.Kind != "agent_lease" || lease.ClaimID != queueProtocol.Tasks[0].BountyID || lease.BountyID != lease.ClaimID {
+		t.Fatalf("unexpected agent lease response: %#v", lease)
+	}
+	if lease.LeaseEndpoint != agentLeaseEndpoint || lease.HeartbeatEndpoint != agentLeaseEndpoint || lease.HeartbeatSeconds != agentHeartbeatSeconds || lease.LeaseTTLSeconds != agentLeaseTTLSeconds || !lease.HeartbeatDueAt.After(lease.LeasedAt) || !lease.ExpiresAt.After(lease.HeartbeatDueAt) {
+		t.Fatalf("agent lease missing heartbeat window: %#v", lease)
+	}
+	heartbeatReq := httptest.NewRequest(http.MethodPost, agentLeaseEndpoint, strings.NewReader(fmt.Sprintf(`{"lease_id":%q,"claim_id":%q,"status":"heartbeat"}`, lease.LeaseID, lease.ClaimID)))
+	heartbeatReq.Header.Set("Authorization", "Bearer "+auth.Token)
+	heartbeatResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(heartbeatResp, heartbeatReq)
+	if heartbeatResp.Code != http.StatusOK {
+		t.Fatalf("agent lease heartbeat status = %d, body = %s", heartbeatResp.Code, heartbeatResp.Body.String())
+	}
+	var heartbeat AgentLeaseResponse
+	if err := json.Unmarshal(heartbeatResp.Body.Bytes(), &heartbeat); err != nil {
+		t.Fatal(err)
+	}
+	if heartbeat.LeaseID != lease.LeaseID || heartbeat.Status != "heartbeat" || heartbeat.ClaimID != lease.ClaimID {
+		t.Fatalf("agent lease heartbeat did not refresh same claim-safe lease: %#v", heartbeat)
 	}
 
 	contributorReq := httptest.NewRequest(http.MethodGet, "/api/public/protocol/contributors?limit=20", nil)
@@ -4889,6 +4936,10 @@ func TestProjectRepositoryScanRouteReturnsStaticFindings(t *testing.T) {
 	}
 	if fundedPayload.WorkPacket.ClaimEndpoint != "/api/tasks/"+marketplaceBountyID(project.ID, fundedPayload.Task.IssueNumber)+"/claim" || fundedPayload.WorkPacket.SubmitEndpoint == "" || len(fundedPayload.WorkPacket.Runbook) < 5 || len(fundedPayload.WorkPacket.ActionPayloads) < 3 {
 		t.Fatalf("funded suggested task missing agent work packet: %#v", fundedPayload.WorkPacket)
+	}
+	if fundedPayload.WorkPacket.LeasePacket.LeaseEndpoint != agentLeaseEndpoint ||
+		fundedPayload.WorkPacket.LeasePacket.Payload["claim_id"] != marketplaceBountyID(project.ID, fundedPayload.Task.IssueNumber) {
+		t.Fatalf("funded suggested task missing agent lease packet: %#v", fundedPayload.WorkPacket.LeasePacket)
 	}
 	if len(fundedPayload.WorkPacket.OutputContracts) < 3 {
 		t.Fatalf("funded suggested task missing output contracts: %#v", fundedPayload.WorkPacket)

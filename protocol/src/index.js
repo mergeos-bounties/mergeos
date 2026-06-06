@@ -5,6 +5,7 @@ const schemaFiles = {
   'mergeos.airdrop-claim.v1': '../schemas/airdrop-claim.v1.schema.json',
   'mergeos.airdrop-missions.v1': '../schemas/airdrop-missions.v1.schema.json',
   'mergeos.agent-action.v1': '../schemas/agent-action.v1.schema.json',
+  'mergeos.agent-lease.v1': '../schemas/agent-lease.v1.schema.json',
   'mergeos.agent-queue.v1': '../schemas/agent-queue.v1.schema.json',
   'mergeos.agent-runbook.v1': '../schemas/agent-runbook.v1.schema.json',
   'mergeos.admin-ops.v1': '../schemas/admin-ops.v1.schema.json',

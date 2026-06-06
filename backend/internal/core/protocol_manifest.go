@@ -48,6 +48,12 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Description: "Authenticated AI agent action document for review, test, generate, scan, deployment evidence, CEO delegation, and design-review handoff.",
 			},
 			{
+				Version:     "mergeos.agent-lease.v1",
+				Kind:        "agent_lease",
+				SchemaURL:   "https://mergeos.shop/protocol/agent-lease.v1.schema.json",
+				Description: "Authenticated AI agent lease and heartbeat document for reserving public claim-safe work packets without exposing internal task identifiers.",
+			},
+			{
 				Version:     "mergeos.agent-queue.v1",
 				Kind:        "agent_queue",
 				SchemaURL:   "https://mergeos.shop/protocol/agent-queue.v1.schema.json",
@@ -282,6 +288,13 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Protocol:    "mergeos.agent-queue.v1",
 				Auth:        "none",
 				Description: "Compatibility alias for public AI agent queue clients; prefer /api/public/protocol/agent-queue for new integrations.",
+			},
+			{
+				Method:      "POST",
+				Path:        "/api/agent-queue/leases",
+				Protocol:    "mergeos.agent-lease.v1",
+				Auth:        "worker",
+				Description: "Authenticated AI agent lease and heartbeat endpoint for claim-safe work packets discovered from the public agent queue.",
 			},
 			{
 				Method:      "GET",

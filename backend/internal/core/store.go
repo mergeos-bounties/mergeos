@@ -123,6 +123,7 @@ type Store struct {
 	testSettingsEntries map[string]*TestSettingsEntry
 	adminSettings       AdminSettings
 	paymentOrders       map[string]*PaymentOrderIntent
+	agentLeases         map[string]*AgentLeaseResponse
 	ledger              []LedgerEntry
 }
 
@@ -172,6 +173,7 @@ func NewStore(cfg Config, payments *PaymentManager, repos RepoFactory, emailer *
 		testSettingsEntries: map[string]*TestSettingsEntry{},
 		adminSettings:       defaultAdminSettings(cfg),
 		paymentOrders:       map[string]*PaymentOrderIntent{},
+		agentLeases:         map[string]*AgentLeaseResponse{},
 		ledger:              []LedgerEntry{},
 	}
 	if strings.TrimSpace(cfg.DatabaseURL) != "" {
@@ -1115,6 +1117,7 @@ func repositorySuggestedTaskWorkPacket(project *Project, task *Task, suggestion 
 		ClaimEndpoint:       claimEndpoint,
 		ActionEndpoint:      actionEndpoint,
 		SubmitEndpoint:      submitEndpoint,
+		LeasePacket:         agentLeasePacket(bountyID, agentType),
 		SupervisorAgentType: ceoAgentType,
 		SubagentType:        agentType,
 		DesignReviewAgent:   designReviewAgentType,

@@ -18,6 +18,7 @@ test('loads stable task, workflow, ledger, and event schemas', () => {
   assert.deepEqual(Object.keys(protocolSchemas).sort(), [
     'mergeos.admin-ops.v1',
     'mergeos.agent-action.v1',
+    'mergeos.agent-lease.v1',
     'mergeos.agent-queue.v1',
     'mergeos.agent-runbook.v1',
     'mergeos.agent.v1',
@@ -1052,6 +1053,19 @@ test('validates public agent queue protocol documents', () => {
           claim_endpoint: '/api/tasks/prj_0001:12/claim',
           action_endpoint: '/api/projects/prj_0001/agent-actions',
           submit_endpoint: '/api/tasks/prj_0001:12/submit',
+          lease_packet: {
+            lease_endpoint: '/api/agent-queue/leases',
+            heartbeat_endpoint: '/api/agent-queue/leases',
+            method: 'POST',
+            ttl_seconds: 900,
+            heartbeat_seconds: 120,
+            payload: {
+              claim_id: 'prj_0001:12',
+              bounty_id: 'prj_0001:12',
+              agent_type: 'qa-agent',
+              status: 'leased',
+            },
+          },
           supervisor_agent_type: 'ceo-strategy-agent',
           subagent_type: 'qa-agent',
           design_review_agent: 'design-review-agent',
@@ -1131,6 +1145,73 @@ test('validates public agent queue protocol documents', () => {
   assert(invalid.errors.some((error) => error.path === 'agents[0].role'));
   assert(invalid.errors.some((error) => error.path === 'agents[0].supported_actions[0]'));
   assert(invalid.errors.some((error) => error.path === 'tasks[0].readiness'));
+});
+
+test('validates agent lease protocol documents', () => {
+  const lease = {
+    protocol_version: 'mergeos.agent-lease.v1',
+    kind: 'agent_lease',
+    lease_id: 'agl_0001',
+    status: 'leased',
+    claim_id: 'prj_0001:12',
+    bounty_id: 'prj_0001:12',
+    project_id: 'prj_0001',
+    project_title: 'Customer portal rebuild',
+    task_title: 'Validate checkout PR',
+    issue_number: 12,
+    agent_type: 'qa-agent',
+    worker_id: 'github:mergeos-qa-agent',
+    lease_endpoint: '/api/agent-queue/leases',
+    heartbeat_endpoint: '/api/agent-queue/leases',
+    action_endpoint: '/api/projects/prj_0001/agent-actions',
+    submit_endpoint: '/api/tasks/prj_0001:12/submit',
+    heartbeat_seconds: 120,
+    lease_ttl_seconds: 900,
+    leased_at: '2026-06-05T00:00:00.000Z',
+    heartbeat_due_at: '2026-06-05T00:02:00.000Z',
+    expires_at: '2026-06-05T00:15:00.000Z',
+    output_contracts: [
+      {
+        action: 'heartbeat',
+        artifact_kind: 'agent_lease',
+        output_endpoint: '/api/agent-queue/leases',
+        output_protocol: 'mergeos.agent-lease.v1',
+        output_protocol_url: '/protocol/agent-lease.v1.schema.json',
+      },
+      {
+        action: 'submit',
+        artifact_kind: 'task_submission',
+        output_endpoint: '/api/tasks/prj_0001:12/submit',
+        output_protocol: 'mergeos.task-submission.v1',
+        output_protocol_url: '/protocol/task-submission.v1.schema.json',
+        public_url: '/api/public/protocol/tasks?task_id=prj_0001:12',
+      },
+    ],
+    next_actions: [
+      {
+        step: 1,
+        action: 'heartbeat',
+        label: 'Refresh the lease before heartbeat_due_at',
+        method: 'POST',
+        endpoint: '/api/agent-queue/leases',
+      },
+    ],
+  };
+
+  assert.equal(validateProtocolDocument(lease).valid, true);
+
+  const invalid = validateProtocolDocument({
+    ...lease,
+    status: 'sleeping',
+    heartbeat_seconds: 1,
+    leased_at: 'not-a-date',
+    output_contracts: [{ ...lease.output_contracts[0], output_protocol_url: '' }],
+  });
+  assert.equal(invalid.valid, false);
+  assert(invalid.errors.some((error) => error.path === 'status'));
+  assert(invalid.errors.some((error) => error.path === 'heartbeat_seconds'));
+  assert(invalid.errors.some((error) => error.path === 'leased_at'));
+  assert(invalid.errors.some((error) => error.path === 'output_contracts[0].output_protocol_url'));
 });
 
 test('validates project routing protocol documents', () => {
