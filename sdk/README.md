@@ -13,12 +13,15 @@ npm test
 
 ```js
 import {
+  airdropClaimPayload,
   agentActionPayload,
   agentActionEventType,
   contractReferenceFromLedger,
   createMergeOSClient,
   deploymentAgentActionPayload,
+  isLikelySolanaWallet,
   legacyWalletAddressHash,
+  presaleReservationPayload,
   protocolEventFromMessage,
   protocolEventsFromMessage,
   protocolEventGroup,
@@ -82,6 +85,25 @@ const migration = await mergeos.createWalletMigration({
   legacy_address: 'TXYZ987654321',
 });
 console.log(migration.protocol_version, migration.contract.instruction);
+
+const wallet = '11111111111111111111111111111111';
+if (isLikelySolanaWallet(wallet)) {
+  const claim = await mergeos.claimAirdrop(airdropClaimPayload({
+    missionID: 'mission_delivery_proof',
+    walletAddress: wallet,
+    taskReference: 'prj_public_0001:12',
+    proofURL: 'https://github.com/acme/repo/pull/12',
+  }));
+  console.log(claim.protocol_version, claim.ledger_entry.entry_hash);
+
+  const reservation = await mergeos.reservePresale(presaleReservationPayload({
+    walletAddress: wallet,
+    reserveMRG: 25000,
+    fundingRail: 'usdc',
+    fundingReference: 'usdc:tx_123',
+  }));
+  console.log(reservation.protocol_version, reservation.ledger_entry.entry_hash);
+}
 ```
 
 ## Public APIs
@@ -209,6 +231,34 @@ console.log(dispute.protocol_version, dispute.severity);
 await mergeos.workerDashboard();
 ```
 
+## Token Workflow APIs
+
+```js
+const claimPayload = airdropClaimPayload({
+  missionID: 'mission_delivery_proof',
+  walletAddress: '11111111111111111111111111111111',
+  allocationMRG: 250,
+  workerID: 'github:builder',
+  taskReference: 'prj_public_0001:12',
+  proofURL: 'https://github.com/acme/repo/pull/12',
+  notes: 'Accepted task evidence.',
+});
+const claim = await mergeos.claimAirdrop(claimPayload);
+console.log(claim.kind, claim.claim_id, claim.ledger_entry.entry_hash);
+
+const reservationPayload = presaleReservationPayload({
+  tier: 'builder',
+  walletAddress: '11111111111111111111111111111111',
+  reserveMRG: 25000,
+  fundingRail: 'usdc',
+  fundingReference: 'usdc:tx_123',
+});
+const reservation = await mergeos.reservePresale(reservationPayload);
+console.log(reservation.kind, reservation.reservation_id, reservation.ledger_proof_url);
+```
+
+Both methods require an authenticated user token. They return `mergeos.airdrop-claim.v1` or `mergeos.presale-reservation.v1` documents with a ledger row and public proof URL.
+
 ## External Agent Runbook
 
 ```js
@@ -268,7 +318,7 @@ socket.onmessage = (event) => {
 };
 ```
 
-The stream sends `connection_ready` and `live_feed_snapshot` events immediately after connect, then broadcasts live project, PR, payout, and ledger events. SDK helpers map live feed records such as `pr_opened`, `agent_action`, `ledger_task_payment`, and `ledger_manual_credit` to stable protocol events such as `pr.opened`, `agent.tested`, `task.paid`, and `ledger.recorded`.
+The stream sends `connection_ready` and `live_feed_snapshot` events immediately after connect, then broadcasts live project, PR, payout, token workflow, and ledger events. SDK helpers map live feed records such as `pr_opened`, `agent_action`, `ledger_task_payment`, `ledger_airdrop_claim`, `ledger_presale_reservation`, and `ledger_manual_credit` to stable protocol events such as `pr.opened`, `agent.tested`, `task.paid`, `airdrop.claimed`, `presale.reserved`, and `ledger.recorded`.
 
 ## Solana Contract Helpers
 

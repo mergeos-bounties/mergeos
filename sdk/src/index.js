@@ -26,6 +26,8 @@ export const workflowEventTypes = Object.freeze({
   proposalAccepted: 'proposal.accepted',
   proposalDeclined: 'proposal.declined',
   ledgerRecorded: 'ledger.recorded',
+  airdropClaimed: 'airdrop.claimed',
+  presaleReserved: 'presale.reserved',
   agentAction: 'agent.action',
 });
 
@@ -275,6 +277,22 @@ export class MergeOSClient {
 
   createCardPaymentIntent(payload) {
     return this.request('/api/payments/card/intents', { method: 'POST', body: payload });
+  }
+
+  createAirdropClaim(payload) {
+    return this.request('/api/airdrop/claims', { method: 'POST', body: airdropClaimPayload(payload) });
+  }
+
+  claimAirdrop(payload) {
+    return this.createAirdropClaim(payload);
+  }
+
+  createPresaleReservation(payload) {
+    return this.request('/api/presale/reservations', { method: 'POST', body: presaleReservationPayload(payload) });
+  }
+
+  reservePresale(payload) {
+    return this.createPresaleReservation(payload);
   }
 
   uploadAttachment(body, options = {}) {
@@ -586,6 +604,37 @@ export function walletMigrationPDASeedMetadata(chain, address) {
   };
 }
 
+export function airdropClaimPayload(payload = {}) {
+  return compactPayload({
+    mission_id: firstTokenWorkflowValue(payload, ['mission_id', 'missionID', 'mission']),
+    wallet_address: normalizeSolanaWalletAddress(firstTokenWorkflowValue(payload, ['wallet_address', 'walletAddress', 'wallet'])),
+    allocation_mrg: tokenWorkflowInteger(firstTokenWorkflowValue(payload, ['allocation_mrg', 'allocationMRG', 'allocation']), 250),
+    worker_id: firstTokenWorkflowValue(payload, ['worker_id', 'workerID', 'worker']),
+    task_reference: firstTokenWorkflowValue(payload, ['task_reference', 'taskReference', 'task']),
+    proof_url: firstTokenWorkflowValue(payload, ['proof_url', 'proofURL', 'proofUrl', 'proof']),
+    notes: firstTokenWorkflowValue(payload, ['notes', 'note']),
+  });
+}
+
+export function presaleReservationPayload(payload = {}) {
+  return compactPayload({
+    tier: firstTokenWorkflowValue(payload, ['tier'], 'builder'),
+    wallet_address: normalizeSolanaWalletAddress(firstTokenWorkflowValue(payload, ['wallet_address', 'walletAddress', 'wallet'])),
+    reserve_mrg: tokenWorkflowInteger(firstTokenWorkflowValue(payload, ['reserve_mrg', 'reserveMRG', 'reserve', 'amountMRG']), 25000),
+    funding_rail: firstTokenWorkflowValue(payload, ['funding_rail', 'fundingRail', 'rail'], 'solana'),
+    funding_reference: firstTokenWorkflowValue(payload, ['funding_reference', 'fundingReference', 'reference']),
+    notes: firstTokenWorkflowValue(payload, ['notes', 'note']),
+  });
+}
+
+export function normalizeSolanaWalletAddress(value = '') {
+  return String(value || '').trim();
+}
+
+export function isLikelySolanaWallet(value = '') {
+  return /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(normalizeSolanaWalletAddress(value));
+}
+
 export function normalizeLegacyChain(value = '') {
 	const normalized = String(value || '').trim().toLowerCase();
 	if (normalized === 'trc20' || normalized === 'tron') return 'trc20';
@@ -735,6 +784,8 @@ export function isAgentActionEventType(type = '') {
 export function liveFeedTypeToProtocolEventType(type = '', action = '') {
   const normalized = String(type || '').trim().toLowerCase();
   if (normalized.startsWith('ledger_task_payment')) return workflowEventTypes.taskPaid;
+  if (normalized === 'ledger_airdrop_claim') return workflowEventTypes.airdropClaimed;
+  if (normalized === 'ledger_presale_reservation') return workflowEventTypes.presaleReserved;
   if (normalized.startsWith('ledger_')) return workflowEventTypes.ledgerRecorded;
   if (normalized === 'agent_action') return agentActionEventType(action);
   return {
@@ -801,6 +852,7 @@ export function protocolEventGroup(type = '') {
   if (normalized.startsWith('project.')) return 'project';
   if (normalized.startsWith('deployment.')) return 'deployment';
   if (normalized.startsWith('repo.')) return 'repository';
+  if (normalized.startsWith('airdrop.') || normalized.startsWith('presale.')) return 'token';
   if (normalized.startsWith('ledger.')) return 'ledger';
   return 'unknown';
 }
@@ -839,4 +891,34 @@ function passwordPayload(passwordOrPayload) {
     return passwordOrPayload;
   }
   return { password: String(passwordOrPayload || '') };
+}
+
+function firstTokenWorkflowValue(source = {}, keys = [], fallback = '') {
+  for (const key of keys) {
+    if (source[key] !== undefined && source[key] !== null && String(source[key]).trim() !== '') {
+      return source[key];
+    }
+  }
+  return fallback;
+}
+
+function tokenWorkflowInteger(value, fallback) {
+  if (value === undefined || value === null || String(value).trim() === '') {
+    return fallback;
+  }
+  const number = Number(value);
+  if (!Number.isFinite(number)) {
+    return value;
+  }
+  return Math.trunc(number);
+}
+
+function compactPayload(payload = {}) {
+  const compacted = {};
+  for (const [key, value] of Object.entries(payload)) {
+    if (value !== undefined && value !== null && String(value).trim() !== '') {
+      compacted[key] = value;
+    }
+  }
+  return compacted;
 }

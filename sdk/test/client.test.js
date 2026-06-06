@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   MergeOSClient,
+  airdropClaimPayload,
   agentActionPayload,
   agentActionEventType,
   agentActionEventTypes,
@@ -10,12 +11,15 @@ import {
   createMergeOSClient,
   deploymentAgentActionPayload,
   isAgentActionEventType,
+  isLikelySolanaWallet,
   isWorkflowEventType,
   legacyWalletAddressHash,
   liveFeedTypeToProtocolEventType,
   normalizeAgentAction,
   normalizeLegacyChain,
   normalizeLegacyWalletAddress,
+  normalizeSolanaWalletAddress,
+  presaleReservationPayload,
   protocolEventFromMessage,
   protocolEventsFromMessage,
   protocolEventGroup,
@@ -453,6 +457,8 @@ test('maps live feed records to workflow event protocol values', () => {
   assert.equal(liveFeedTypeToProtocolEventType('proposal_accepted'), 'proposal.accepted');
   assert.equal(liveFeedTypeToProtocolEventType('proposal_declined'), 'proposal.declined');
   assert.equal(liveFeedTypeToProtocolEventType('ledger_task_payment'), 'task.paid');
+  assert.equal(liveFeedTypeToProtocolEventType('ledger_airdrop_claim'), 'airdrop.claimed');
+  assert.equal(liveFeedTypeToProtocolEventType('ledger_presale_reservation'), 'presale.reserved');
   assert.equal(liveFeedTypeToProtocolEventType('ledger_manual_credit'), 'ledger.recorded');
   assert.equal(liveFeedTypeToProtocolEventType('agent_action', 'test'), 'agent.tested');
   assert.equal(liveFeedTypeToProtocolEventType('unknown'), 'agent.action');
@@ -475,7 +481,11 @@ test('maps live feed records to workflow event protocol values', () => {
   assert.equal(protocolEventGroup('proposal.accepted'), 'proposal');
   assert.equal(protocolEventGroup('agent.tested'), 'agent');
   assert.equal(protocolEventGroup('repo.issues.synced'), 'repository');
+  assert.equal(protocolEventGroup('airdrop.claimed'), 'token');
+  assert.equal(protocolEventGroup('presale.reserved'), 'token');
   assert.equal(isWorkflowEventType('deployment.updated'), true);
+  assert.equal(isWorkflowEventType('airdrop.claimed'), true);
+  assert.equal(isWorkflowEventType('presale.reserved'), true);
   assert.equal(isWorkflowEventType('agent.scanned'), true);
   assert.equal(isWorkflowEventType('unknown.event'), false);
 });
@@ -650,6 +660,83 @@ test('supports wallet, payment, and raw upload helper routes', async () => {
   assert.equal(fetchImpl.calls[6].options.body, uploadBody);
   assert.equal(fetchImpl.calls[6].options.headers['Content-Type'], undefined);
   assert.equal(fetchImpl.calls[6].options.headers['X-Upload'], '1');
+});
+
+test('supports token workflow helpers for airdrop claims and presale reservations', async () => {
+  const wallet = '11111111111111111111111111111111';
+  const fetchImpl = fakeFetch([
+    {
+      status: 201,
+      body: {
+        protocol_version: 'mergeos.airdrop-claim.v1',
+        kind: 'airdrop_claim',
+        claim_id: 'airdrop_1',
+        ledger_entry: { entry_hash: 'a'.repeat(64) },
+      },
+    },
+    {
+      status: 201,
+      body: {
+        protocol_version: 'mergeos.presale-reservation.v1',
+        kind: 'presale_reservation',
+        reservation_id: 'presale_1',
+        ledger_entry: { entry_hash: 'b'.repeat(64) },
+      },
+    },
+  ]);
+  const client = createMergeOSClient({ token: 'abc', fetchImpl });
+
+  assert.equal(normalizeSolanaWalletAddress(` ${wallet} `), wallet);
+  assert.equal(isLikelySolanaWallet(wallet), true);
+  assert.equal(isLikelySolanaWallet('0xabc'), false);
+
+  const claimPayload = airdropClaimPayload({
+    missionID: 'mission_delivery_proof',
+    walletAddress: ` ${wallet} `,
+    allocationMRG: '350',
+    workerID: 'github:builder',
+    taskReference: 'prj_public_0001:12',
+    proofURL: 'https://github.com/acme/repo/pull/12',
+    notes: 'Verified task evidence.',
+  });
+  const reservePayload = presaleReservationPayload({
+    walletAddress: wallet,
+    reserveMRG: '25000',
+    fundingRail: 'usdc',
+    fundingReference: 'usdc:tx_123',
+    notes: 'Founder tier reservation.',
+  });
+
+  const claim = await client.createAirdropClaim(claimPayload);
+  const reservation = await client.reservePresale(reservePayload);
+
+  assert.equal(claim.protocol_version, 'mergeos.airdrop-claim.v1');
+  assert.equal(reservation.protocol_version, 'mergeos.presale-reservation.v1');
+  assert.deepEqual(claimPayload, {
+    mission_id: 'mission_delivery_proof',
+    wallet_address: wallet,
+    allocation_mrg: 350,
+    worker_id: 'github:builder',
+    task_reference: 'prj_public_0001:12',
+    proof_url: 'https://github.com/acme/repo/pull/12',
+    notes: 'Verified task evidence.',
+  });
+  assert.deepEqual(reservePayload, {
+    tier: 'builder',
+    wallet_address: wallet,
+    reserve_mrg: 25000,
+    funding_rail: 'usdc',
+    funding_reference: 'usdc:tx_123',
+    notes: 'Founder tier reservation.',
+  });
+  assert.equal(fetchImpl.calls[0].url, '/api/airdrop/claims');
+  assert.equal(fetchImpl.calls[0].options.method, 'POST');
+  assert.equal(fetchImpl.calls[0].options.headers.Authorization, 'Bearer abc');
+  assert.equal(fetchImpl.calls[0].options.body, JSON.stringify(claimPayload));
+  assert.equal(fetchImpl.calls[1].url, '/api/presale/reservations');
+  assert.equal(fetchImpl.calls[1].options.method, 'POST');
+  assert.equal(fetchImpl.calls[1].options.headers.Authorization, 'Bearer abc');
+  assert.equal(fetchImpl.calls[1].options.body, JSON.stringify(reservePayload));
 });
 
 test('exposes project estimate protocol route', async () => {

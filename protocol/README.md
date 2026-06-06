@@ -26,6 +26,8 @@ The live app exposes protocol discovery at `GET /api/public/protocol`, and serve
 - `mergeos.ledger.v1`: a public ledger proof document with sanitized ledger rows and hash-chain verification metadata.
 - `mergeos.ledger-proof.v1`: a public proof manifest with original root hash, public redacted root hash, row verification, and contract reference anchor.
 - `mergeos.token-economy.v1`: a public MRG economy document with verified funding, minting, escrow reserve, treasury, payout totals, flow groups, and recent ledger rows.
+- `mergeos.airdrop-claim.v1`: an authenticated task-based airdrop claim with Solana wallet, mission proof, ledger receipt, and public proof URL.
+- `mergeos.presale-reservation.v1`: an authenticated presale reservation with Solana wallet, funding rail reference, ledger receipt, and public proof URL.
 - `mergeos.escrow.v1`: an authenticated project escrow document with reserves, releases, balances, and per-task settlement state.
 - `mergeos.payouts.v1`: an authenticated payout settlement document with release status, payout accounts, ledger proof references, and per-task payment state.
 - `mergeos.payout-release.v1`: an authenticated auto-release result with released/skipped counts, task claim receipts, and the updated payout settlement.
@@ -52,6 +54,7 @@ Event types include project funding, task creation/claim/payment, PR lifecycle, 
 | Repository | `repo.issues.synced` |
 | Deployment | `deployment.updated` |
 | Ledger | `ledger.recorded` |
+| Token | `airdrop.claimed`, `presale.reserved` |
 | Agent | `agent.reviewed`, `agent.tested`, `agent.generated`, `agent.deployed`, `agent.scanned`, `agent.action` |
 
 ## Usage
@@ -79,6 +82,8 @@ The validator is intentionally dependency-free. It covers the fields MergeOS age
 Agent work packets use `POST /api/tasks/{id}/claim` to reserve work without releasing payout. Customers and admins use `POST /api/tasks/{id}/accept` to release payout after review, or `POST /api/tasks/{id}/request-changes` to return submitted evidence to the claimed lane. Agent action records can include `delegated_by`, `design_agent`, `subagent_type`, and `delegation_chain` so public proof shows the CEO planner, design-review subagent, and execution lane behind each AI action.
 
 `GET /api/public/projects/{id}/repo-scan` returns a public `mergeos.scan.v1` document for external agents. It exposes sanitized dependency files, language counts, security/debt findings, suggested work packets, reward estimates, and funding payload templates without private customer contact data or local repository paths.
+
+Token workflow integrations use `POST /api/airdrop/claims` for task-based MRG airdrop proof and `POST /api/presale/reservations` for presale reservations. Both routes require an authenticated user, validate Solana wallet input, write public ledger rows, and return a proof URL for `/api/public/ledger/proof`.
 
 ## External Agent Runbooks
 
