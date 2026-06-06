@@ -890,6 +890,14 @@ export function agentActionPayloadFromWorkPacket(workPacket = {}, action = 'revi
   });
 }
 
+export function agentWorkPacketOutputContracts(workPacket = {}, action = '') {
+  const contracts = Array.isArray(workPacket.output_contracts) ? workPacket.output_contracts : [];
+  const normalizedAction = String(action || '').trim().toLowerCase();
+  const rows = contracts.filter((contract) => contract && typeof contract === 'object');
+  if (!normalizedAction) return rows;
+  return rows.filter((contract) => String(contract.action || '').trim().toLowerCase() === normalizedAction);
+}
+
 export function agentReviewPayloadFromPRMonitorTask(task = {}, overrides = {}) {
   const packet = task.review_packet && typeof task.review_packet === 'object' ? task.review_packet : {};
   const packetPayload = packet.payload && typeof packet.payload === 'object' ? packet.payload : {};

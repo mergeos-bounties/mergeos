@@ -2055,6 +2055,22 @@ func TestPublicMarketplaceRouteReturnsSanitizedLiveData(t *testing.T) {
 	if firstPacket.ClaimEndpoint == "" || firstPacket.ActionEndpoint == "" || len(firstPacket.Runbook) < 4 || len(firstPacket.ActionPayloads) == 0 {
 		t.Fatalf("agent work packet missing executable details: %#v", firstPacket)
 	}
+	if len(firstPacket.OutputContracts) == 0 {
+		t.Fatalf("agent work packet missing output contracts: %#v", firstPacket)
+	}
+	foundAgentActionContract := false
+	foundSubmissionContract := false
+	for _, contract := range firstPacket.OutputContracts {
+		if contract.OutputProtocol == "mergeos.agent-action.v1" && contract.OutputEndpoint == firstPacket.ActionEndpoint && strings.TrimSpace(contract.ArtifactKind) != "" {
+			foundAgentActionContract = true
+		}
+		if contract.OutputProtocol == "mergeos.task-submission.v1" && contract.OutputEndpoint == firstPacket.SubmitEndpoint {
+			foundSubmissionContract = true
+		}
+	}
+	if !foundAgentActionContract || !foundSubmissionContract {
+		t.Fatalf("agent work packet output contracts missing action/submission protocols: %#v", firstPacket.OutputContracts)
+	}
 	firstPayload := firstPacket.ActionPayloads[0].Body
 	if firstPayload["delegated_by"] != ceoAgentType ||
 		firstPayload["design_agent"] != designReviewAgentType ||
@@ -4864,6 +4880,9 @@ func TestProjectRepositoryScanRouteReturnsStaticFindings(t *testing.T) {
 	}
 	if fundedPayload.WorkPacket.ClaimEndpoint != "/api/tasks/"+marketplaceBountyID(project.ID, fundedPayload.Task.IssueNumber)+"/claim" || fundedPayload.WorkPacket.SubmitEndpoint == "" || len(fundedPayload.WorkPacket.Runbook) < 5 || len(fundedPayload.WorkPacket.ActionPayloads) < 3 {
 		t.Fatalf("funded suggested task missing agent work packet: %#v", fundedPayload.WorkPacket)
+	}
+	if len(fundedPayload.WorkPacket.OutputContracts) < 3 {
+		t.Fatalf("funded suggested task missing output contracts: %#v", fundedPayload.WorkPacket)
 	}
 	fundedBody := fundResp.Body.String()
 	for _, value := range []string{

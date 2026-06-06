@@ -129,6 +129,7 @@ test('public agent runbook and SDK document PR monitor auto-release plus proposa
   assert.ok(runbook.evidence_contract.optional.includes('PR monitor auto_release_packet payload'));
   assert.match(sdkReadme, /Agent Queue Claim/);
   assert.match(sdkReadme, /agentQueueClaimPayload/);
+  assert.match(sdkReadme, /agentWorkPacketOutputContracts/);
   assert.match(sdkReadme, /claimAgentQueueTask\(task, overrides\)/);
   assert.match(sdkReadme, /autoReleasePayloadFromPRMonitorTask/);
   assert.match(sdkReadme, /autoReleaseProofsFromResponse/);

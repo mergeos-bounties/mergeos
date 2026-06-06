@@ -17,6 +17,7 @@ import {
   agentActionPayloadFromWorkPacket,
   agentActionPayload,
   agentActionEventType,
+  agentWorkPacketOutputContracts,
   contractReferenceFromLedger,
   createMergeOSClient,
   deploymentAgentActionPayload,
@@ -96,6 +97,7 @@ if (suggestedTask) {
     paymentReference: process.env.MERGEOS_PAYMENT_REFERENCE,
   });
   const fundedTask = await mergeos.fundRepositorySuggestedTask(projects[0].id, suggestedTask.id, fundingPayload);
+  const outputContracts = agentWorkPacketOutputContracts(fundedTask.work_packet, 'scan');
   const scanAction = agentActionPayloadFromWorkPacket(fundedTask.work_packet, 'scan', {
     status: 'processed',
     referenceURL: 'https://scan.example/report',
@@ -374,6 +376,10 @@ if (bounty) {
 ```
 
 Public bounty rows expose `proposal_endpoint` and `proposal_packet.payload` so contributors, CLIs, and agents can submit proposals without reverse engineering dashboard forms. `createProposalFromBounty(bounty, overrides)` prefers the packet endpoint, then falls back to `/api/proposals`.
+
+## Agent Work Packet Output Contracts
+
+Agent queue and repository task funding packets expose `work_packet.output_contracts`. Each row tells an external agent which action it is recording, the required output endpoint, the protocol document it produces, and the public URL where evidence should appear. Use `agentWorkPacketOutputContracts(workPacket, action)` to filter contracts for a specific action such as `scan`, `review`, `test`, or `deploy`.
 
 ## PR Monitor Auto-Release
 

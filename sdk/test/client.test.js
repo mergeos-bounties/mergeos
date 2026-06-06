@@ -10,6 +10,7 @@ import {
   agentActionEventTypes,
   agentQueueClaimPayload,
   agentQueueTaskClaimID,
+  agentWorkPacketOutputContracts,
   autoReleasePayloadFromPRMonitorTask,
   autoReleaseProofsFromResponse,
   contractReferenceBytes,
@@ -1285,6 +1286,14 @@ test('funds repository scan suggested tasks and builds agent work packet actions
         evidence_required: ['Attach scan output'],
       },
     }],
+    output_contracts: [{
+      action: 'scan',
+      artifact_kind: 'repository_scan',
+      output_endpoint: '/api/projects/prj_1/agent-actions',
+      output_protocol: 'mergeos.agent-action.v1',
+      output_protocol_url: '/protocol/agent-action.v1.schema.json',
+      public_url: '/api/public/projects/prj_1/repo-scan',
+    }],
   };
   const fetchImpl = fakeFetch([
     { status: 201, body: { order_id: 'ord_repo_1', payment_reference: 'ord_repo_1', flow: 'repository_task_funding' } },
@@ -1359,6 +1368,8 @@ test('funds repository scan suggested tasks and builds agent work packet actions
   assert.equal(agentPayload.path, 'backend/internal/core/auth.go');
   assert.equal(agentPayload.reference_url, 'https://scan.example/report');
   assert.deepEqual(agentPayload.evidence, ['Attach scan output']);
+  assert.equal(agentWorkPacketOutputContracts(funded.work_packet, 'scan')[0].public_url, '/api/public/projects/prj_1/repo-scan');
+  assert.equal(agentWorkPacketOutputContracts(funded.work_packet).length, 1);
   assert.deepEqual(agentPayload.runbook, [
     '1. fetch_scan (/api/public/projects/prj_1/repo-scan)',
     '2. claim_task (/api/tasks/prj_1:12/claim)',

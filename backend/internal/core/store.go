@@ -1132,6 +1132,19 @@ func repositorySuggestedTaskWorkPacket(project *Project, task *Task, suggestion 
 			repositorySuggestedTaskActionPayload("review", "Review acceptance criteria", actionEndpoint, task, suggestion, contextURLs),
 			repositorySuggestedTaskActionPayload("test", "Attach test evidence", actionEndpoint, task, suggestion, contextURLs),
 		},
+		OutputContracts: []AgentOutputContract{
+			agentQueueOutputContract("scan", task.ProjectID, actionEndpoint, contextURLs),
+			agentQueueOutputContract("review", task.ProjectID, actionEndpoint, contextURLs),
+			agentQueueOutputContract("test", task.ProjectID, actionEndpoint, contextURLs),
+			{
+				Action:            "submit",
+				ArtifactKind:      "task_submission",
+				OutputEndpoint:    submitEndpoint,
+				OutputProtocol:    "mergeos.task-submission.v1",
+				OutputProtocolURL: "/protocol/task-submission.v1.schema.json",
+				PublicURL:         taskProtocolURL,
+			},
+		},
 	}
 }
 

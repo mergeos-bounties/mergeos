@@ -138,7 +138,8 @@ func agentQueueTaskRow(bounty *MarketplaceBounty) AgentQueueTask {
 			{Step: 6, Action: "attach_evidence", Label: "Attach agent check evidence to the live log", Method: "POST", Endpoint: actionEndpoint},
 			{Step: 7, Action: "submit_review", Label: "Submit final PR and review evidence", Method: "POST", Endpoint: submitEndpoint},
 		},
-		ActionPayloads: agentQueueActionPayloads(bounty, actionEndpoint, contextURLs),
+		ActionPayloads:  agentQueueActionPayloads(bounty, actionEndpoint, contextURLs),
+		OutputContracts: agentQueueOutputContracts(bounty, actionEndpoint, submitEndpoint, contextURLs),
 	}
 	return AgentQueueTask{
 		ID:               bountyID,
@@ -230,6 +231,54 @@ func agentQueueActions(bounty *MarketplaceBounty) []string {
 		actions = append(actions, "scan")
 	}
 	return stableStrings(actions)
+}
+
+func agentQueueOutputContracts(bounty *MarketplaceBounty, actionEndpoint, submitEndpoint string, contextURLs map[string]string) []AgentOutputContract {
+	actions := agentQueueActions(bounty)
+	rows := make([]AgentOutputContract, 0, len(actions)+1)
+	for _, action := range actions {
+		rows = append(rows, agentQueueOutputContract(action, bounty.ProjectID, actionEndpoint, contextURLs))
+	}
+	rows = append(rows, AgentOutputContract{
+		Action:            "submit",
+		ArtifactKind:      "task_submission",
+		OutputEndpoint:    submitEndpoint,
+		OutputProtocol:    "mergeos.task-submission.v1",
+		OutputProtocolURL: "/protocol/task-submission.v1.schema.json",
+		PublicURL:         contextURLs["task_protocol"],
+	})
+	return rows
+}
+
+func agentQueueOutputContract(action, projectID, actionEndpoint string, contextURLs map[string]string) AgentOutputContract {
+	contract := AgentOutputContract{
+		Action:            action,
+		ArtifactKind:      "agent_evidence",
+		OutputEndpoint:    actionEndpoint,
+		OutputProtocol:    "mergeos.agent-action.v1",
+		OutputProtocolURL: "/protocol/agent-action.v1.schema.json",
+		PublicURL:         "/api/public/live-feed",
+	}
+	switch action {
+	case "review":
+		contract.ArtifactKind = "pr_review"
+		contract.PublicURL = contextURLs["pr_monitor"]
+	case "test":
+		contract.ArtifactKind = "test_evidence"
+		contract.PublicURL = contextURLs["workflow_pulse"]
+	case "generate":
+		contract.ArtifactKind = "generated_work"
+		contract.PublicURL = contextURLs["workflow_protocol"]
+	case "deploy":
+		contract.ArtifactKind = "deployment_evidence"
+		contract.PublicURL = "/api/public/projects/" + strings.TrimSpace(projectID) + "/deployment"
+	case "scan":
+		contract.ArtifactKind = "repository_scan"
+		if contextURLs["repository_scan"] != "" {
+			contract.PublicURL = contextURLs["repository_scan"]
+		}
+	}
+	return contract
 }
 
 func (s *Store) ProjectRouting(projectID string) (ProjectRoutingResponse, error) {

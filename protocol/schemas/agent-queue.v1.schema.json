@@ -130,6 +130,10 @@
           "type": "array",
           "minItems": 1,
           "items": { "$ref": "#/$defs/actionPayload" }
+        },
+        "output_contracts": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/outputContract" }
         }
       }
     },
@@ -158,6 +162,19 @@
           "type": "object",
           "additionalProperties": true
         }
+      }
+    },
+    "outputContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["action", "artifact_kind", "output_endpoint", "output_protocol", "output_protocol_url"],
+      "properties": {
+        "action": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "artifact_kind": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "output_endpoint": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "output_protocol": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "output_protocol_url": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "public_url": { "type": "string", "maxLength": 512 }
       }
     }
   }

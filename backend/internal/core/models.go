@@ -1184,16 +1184,17 @@ type AgentQueueTask struct {
 }
 
 type AgentWorkPacket struct {
-	ClaimEndpoint       string               `json:"claim_endpoint"`
-	ActionEndpoint      string               `json:"action_endpoint"`
-	SubmitEndpoint      string               `json:"submit_endpoint"`
-	SupervisorAgentType string               `json:"supervisor_agent_type,omitempty"`
-	SubagentType        string               `json:"subagent_type,omitempty"`
-	DesignReviewAgent   string               `json:"design_review_agent,omitempty"`
-	DelegationChain     []string             `json:"delegation_chain,omitempty"`
-	ContextURLs         map[string]string    `json:"context_urls"`
-	Runbook             []AgentRunbookStep   `json:"runbook"`
-	ActionPayloads      []AgentActionPayload `json:"action_payloads"`
+	ClaimEndpoint       string                `json:"claim_endpoint"`
+	ActionEndpoint      string                `json:"action_endpoint"`
+	SubmitEndpoint      string                `json:"submit_endpoint"`
+	SupervisorAgentType string                `json:"supervisor_agent_type,omitempty"`
+	SubagentType        string                `json:"subagent_type,omitempty"`
+	DesignReviewAgent   string                `json:"design_review_agent,omitempty"`
+	DelegationChain     []string              `json:"delegation_chain,omitempty"`
+	ContextURLs         map[string]string     `json:"context_urls"`
+	Runbook             []AgentRunbookStep    `json:"runbook"`
+	ActionPayloads      []AgentActionPayload  `json:"action_payloads"`
+	OutputContracts     []AgentOutputContract `json:"output_contracts,omitempty"`
 }
 
 type AgentRunbookStep struct {
@@ -1210,6 +1211,15 @@ type AgentActionPayload struct {
 	Method   string         `json:"method"`
 	Endpoint string         `json:"endpoint"`
 	Body     map[string]any `json:"body"`
+}
+
+type AgentOutputContract struct {
+	Action            string `json:"action"`
+	ArtifactKind      string `json:"artifact_kind"`
+	OutputEndpoint    string `json:"output_endpoint"`
+	OutputProtocol    string `json:"output_protocol"`
+	OutputProtocolURL string `json:"output_protocol_url"`
+	PublicURL         string `json:"public_url,omitempty"`
 }
 
 type PublicContributorProtocolResponse struct {
