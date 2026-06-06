@@ -3362,6 +3362,38 @@ test('validates repository scan protocol documents', () => {
           },
           evidence_checklist: ['pull_request', 'security_review', 'regression_test'],
         },
+        routing_packet: {
+          action: 'fund_and_pair_hybrid',
+          method: 'POST',
+          endpoint: '/api/projects/prj_0001/repo-scan/suggested-tasks/repo-task-001/fund',
+          payload: {
+            suggested_task_id: 'repo-task-001',
+            source_finding_id: 'repo-finding-001',
+            signal: 'dangerous_js_execution',
+            lane: 'security',
+            worker_kind: 'hybrid',
+            agent_type: 'security-review-agent',
+          },
+          context_urls: {
+            scan_protocol: '/api/public/projects/prj_0001/repo-scan',
+            workflow_protocol: '/api/public/projects/prj_0001/workflow',
+            agent_queue: '/api/agent-queue',
+          },
+          runbook: [
+            { step: 1, action: 'fetch_scan', label: 'Read the repository scan signal', method: 'GET', endpoint: '/api/public/projects/prj_0001/repo-scan' },
+            { step: 2, action: 'fund_bounty', label: 'Fund the suggested task', method: 'POST', endpoint: '/api/projects/prj_0001/repo-scan/suggested-tasks/repo-task-001/fund' },
+          ],
+          output_contracts: [
+            {
+              action: 'fund_bounty',
+              artifact_kind: 'repo_task_funding',
+              output_endpoint: '/api/projects/prj_0001/repo-scan/suggested-tasks/repo-task-001/fund',
+              output_protocol: 'mergeos.repo-task-funding.v1',
+              output_protocol_url: '/protocol/repo-task-funding.v1.schema.json',
+              public_url: '/api/public/projects/prj_0001/repo-scan',
+            },
+          ],
+        },
       },
     ],
   });
@@ -3380,6 +3412,52 @@ test('validates repository scan protocol documents', () => {
   });
   assert.equal(invalid.valid, false);
   assert(invalid.errors.some((error) => error.path === 'findings[0].severity'));
+
+  const invalidRouting = validateProtocolDocument({
+    protocol_version: 'mergeos.scan.v1',
+    kind: 'repository_scan',
+    id: 'scan_2',
+    project_id: 'prj_1',
+    status: 'ready',
+    stats: { file_count: 1, scanned_files: 1, finding_count: 1 },
+    findings: [{ id: 'finding', severity: 'high', category: 'security', title: 'Bad', signal: 'bad' }],
+    suggested_tasks: [
+      {
+        id: 'repo-task-001',
+        source_finding_id: 'finding',
+        signal: 'bad',
+        title: 'Fix bad',
+        severity: 'high',
+        lane: 'security',
+        estimated_reward_cents: 10000,
+        worker_kind: 'hybrid',
+        ready_for_bounty: true,
+        funding_packet: {
+          status: 'ready',
+          can_fund: true,
+          recommended_reward_cents: 10000,
+          recommended_funding_cents: 10000,
+          fund_payload: {},
+          paypal_order_payload: {
+            suggested_task_id: 'repo-task-001',
+            reward_cents: 10000,
+            budget_cents: 10000,
+            flow: 'repo_task_funding',
+          },
+          evidence_checklist: ['review'],
+        },
+        routing_packet: {
+          action: 'fund_and_pair_hybrid',
+          method: 'FLY',
+          endpoint: '/api/projects/prj_1/repo-scan/suggested-tasks/repo-task-001/fund',
+          context_urls: { scan_protocol: '/api/public/projects/prj_1/repo-scan' },
+          runbook: [{ step: 1, action: 'fetch_scan', label: 'Read scan', method: 'GET', endpoint: '/api/public/projects/prj_1/repo-scan' }],
+        },
+      },
+    ],
+  });
+  assert.equal(invalidRouting.valid, false);
+  assert(invalidRouting.errors.some((error) => error.path === 'suggested_tasks[0].routing_packet.method'));
 });
 
 test('validates repository issue sync events', () => {

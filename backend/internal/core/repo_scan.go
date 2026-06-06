@@ -279,6 +279,86 @@ func repositorySuggestedTaskFromFinding(project *Project, finding RepositoryScan
 			},
 			EvidenceChecklist: evidence,
 		},
+		RoutingPacket: repositorySuggestedTaskRoutingPacket(project, finding, taskID, lane, workerKind, agentType, fundEndpoint, criteria, evidence),
+	}
+}
+
+func repositorySuggestedTaskRoutingPacket(project *Project, finding RepositoryScanFinding, taskID, lane string, workerKind WorkerKind, agentType, fundEndpoint string, criteria, evidence []string) ProjectRoutingPacket {
+	projectID := ""
+	if project != nil {
+		projectID = strings.TrimSpace(project.ID)
+	}
+	contextURLs := map[string]string{
+		"scan_protocol":     "/api/public/projects/" + projectID + "/repo-scan",
+		"workflow_protocol": "/api/public/projects/" + projectID + "/workflow",
+		"workflow_pulse":    "/api/public/projects/" + projectID + "/ai-workflow",
+		"marketplace":       "/api/public/marketplace",
+		"agent_queue":       agentQueueEndpoint,
+	}
+	if repo := projectSourceRepoURL(project); strings.TrimSpace(repo) != "" {
+		contextURLs["source_repository"] = repo
+	}
+	payload := map[string]any{
+		"suggested_task_id": taskID,
+		"source_finding_id": finding.ID,
+		"signal":            finding.Signal,
+		"lane":              lane,
+		"worker_kind":       workerKind,
+		"acceptance":        append([]string(nil), criteria...),
+		"evidence_required": append([]string(nil), evidence...),
+	}
+	if agentType != "" {
+		payload["agent_type"] = agentType
+	}
+	packet := ProjectRoutingPacket{
+		Action:      repositorySuggestedTaskRoutingAction(workerKind),
+		Method:      "POST",
+		Endpoint:    fundEndpoint,
+		Payload:     payload,
+		ContextURLs: contextURLs,
+		Runbook: []AgentRunbookStep{
+			{Step: 1, Action: "fetch_scan", Label: "Read the repository scan signal, suggested task, and evidence requirements", Method: "GET", Endpoint: contextURLs["scan_protocol"]},
+			{Step: 2, Action: "fund_bounty", Label: "Fund the suggested task to create a public bounty and escrow record", Method: "POST", Endpoint: fundEndpoint},
+			{Step: 3, Action: "route_work", Label: "Route the funded bounty through marketplace, agent queue, or hybrid delivery", Method: "GET", Endpoint: contextURLs["workflow_protocol"]},
+		},
+		OutputContracts: []AgentOutputContract{
+			{Action: "fund_bounty", ArtifactKind: "repo_task_funding", OutputEndpoint: fundEndpoint, OutputProtocol: "mergeos.repo-task-funding.v1", OutputProtocolURL: "/protocol/repo-task-funding.v1.schema.json", PublicURL: contextURLs["scan_protocol"]},
+			{Action: "publish_workflow", ArtifactKind: "workflow", OutputEndpoint: contextURLs["workflow_protocol"], OutputProtocol: "mergeos.workflow.v1", OutputProtocolURL: "/protocol/workflow.v1.schema.json", PublicURL: contextURLs["workflow_protocol"]},
+		},
+	}
+	if workerKind != WorkerHuman {
+		actionEndpoint := "/api/projects/" + projectID + "/agent-actions"
+		for _, action := range repositorySuggestedTaskAgentActions(finding.Signal, lane) {
+			packet.OutputContracts = append(packet.OutputContracts, agentQueueOutputContract(action, projectID, actionEndpoint, contextURLs))
+		}
+	}
+	return packet
+}
+
+func repositorySuggestedTaskRoutingAction(workerKind WorkerKind) string {
+	switch workerKind {
+	case WorkerAgent:
+		return "fund_and_route_agent"
+	case WorkerHybrid:
+		return "fund_and_pair_hybrid"
+	default:
+		return "fund_and_publish_bounty"
+	}
+}
+
+func repositorySuggestedTaskAgentActions(signal, lane string) []string {
+	switch strings.TrimSpace(signal) {
+	case "lockfile_missing", "dependency_unpinned":
+		return []string{"scan", "test"}
+	case "secret_pattern", "env_file", "dangerous_js_execution", "direct_inner_html":
+		return []string{"scan", "review", "test"}
+	case "production_panic":
+		return []string{"review", "test"}
+	default:
+		if lane == "security" {
+			return []string{"scan", "review", "test"}
+		}
+		return []string{"review", "test"}
 	}
 }
 

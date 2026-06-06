@@ -189,6 +189,19 @@ test('repo import exposes publish path to bounties, agents, and live proof', asy
   assert.match(appSource, /activeLiveFeedType\.value = 'Repository Scan';/);
 });
 
+test('repo scan suggested tasks expose routing packets for funded work', async () => {
+  const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
+  const scanSchema = JSON.parse(await fs.readFile(new URL('./public/protocol/scan.v1.schema.json', import.meta.url), 'utf-8'));
+  const suggestedTask = scanSchema.properties.suggested_tasks.items;
+
+  assert.ok(suggestedTask.required.includes('routing_packet'));
+  assert.equal(suggestedTask.properties.routing_packet.$ref, '#/$defs/routingPacket');
+  assert.deepEqual(scanSchema.$defs.routingPacket.required, ['action', 'method', 'endpoint', 'context_urls', 'runbook']);
+  assert.match(appSource, /const routingPacket = row\.routing_packet && typeof row\.routing_packet === 'object' \? row\.routing_packet : \{\};/);
+  assert.match(appSource, /routingAction: routingActionLabel\(routingPacket\.action \|\| ''\)/);
+  assert.match(appSource, /routingContract: Array\.isArray\(routingPacket\.output_contracts\)/);
+});
+
 test('public mega menu keeps a large hover bridge to its fixed panel', async () => {
   const cssSource = await fs.readFile(new URL('./src/styles.css', import.meta.url), 'utf-8');
 

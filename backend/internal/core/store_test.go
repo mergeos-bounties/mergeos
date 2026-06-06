@@ -5009,6 +5009,25 @@ func TestProjectRepositoryScanRouteReturnsStaticFindings(t *testing.T) {
 	if !taskToFund.ReadyForBounty || !taskToFund.FundingPacket.CanFund || taskToFund.FundingPacket.RecommendedFundingCents < taskToFund.FundingPacket.RecommendedRewardCents || len(taskToFund.FundingPacket.EvidenceChecklist) == 0 {
 		t.Fatalf("unexpected funding packet: %#v", taskToFund)
 	}
+	if taskToFund.RoutingPacket.Action != "fund_and_pair_hybrid" || taskToFund.RoutingPacket.Endpoint != taskToFund.FundingPacket.FundEndpoint || taskToFund.RoutingPacket.Payload["suggested_task_id"] != taskToFund.ID {
+		t.Fatalf("suggested task missing executable routing packet: %#v", taskToFund.RoutingPacket)
+	}
+	if taskToFund.RoutingPacket.ContextURLs["scan_protocol"] != "/api/public/projects/"+project.ID+"/repo-scan" || taskToFund.RoutingPacket.ContextURLs["workflow_protocol"] != "/api/public/projects/"+project.ID+"/workflow" {
+		t.Fatalf("suggested task routing packet missing public context: %#v", taskToFund.RoutingPacket.ContextURLs)
+	}
+	if len(taskToFund.RoutingPacket.Runbook) < 3 || len(taskToFund.RoutingPacket.OutputContracts) < 3 {
+		t.Fatalf("suggested task routing packet missing runbook or output contracts: %#v", taskToFund.RoutingPacket)
+	}
+	hasRepoTaskFundingContract := false
+	for _, contract := range taskToFund.RoutingPacket.OutputContracts {
+		if contract.OutputProtocol == "mergeos.repo-task-funding.v1" {
+			hasRepoTaskFundingContract = true
+			break
+		}
+	}
+	if !hasRepoTaskFundingContract {
+		t.Fatalf("suggested task routing packet missing repo task funding contract: %#v", taskToFund.RoutingPacket.OutputContracts)
+	}
 	fundReq := httptest.NewRequest(http.MethodPost, "/api/projects/"+project.ID+"/repo-scan/suggested-tasks/"+taskToFund.ID+"/fund", strings.NewReader(fmt.Sprintf(`{"reward_cents":%d,"budget_cents":%d,"payment_method":"card","payment_reference":%q}`, taskToFund.FundingPacket.RecommendedRewardCents, taskToFund.FundingPacket.RecommendedFundingCents, defaultDevPaymentCode)))
 	fundReq.Header.Set("Authorization", "Bearer "+auth.Token)
 	fundReq.Header.Set("Content-Type", "application/json")

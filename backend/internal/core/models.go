@@ -1909,6 +1909,7 @@ type RepositorySuggestedTask struct {
 	AcceptanceCriteria   []string                `json:"acceptance_criteria,omitempty"`
 	EvidenceRequired     []string                `json:"evidence_required,omitempty"`
 	FundingPacket        RepositoryFundingPacket `json:"funding_packet"`
+	RoutingPacket        ProjectRoutingPacket    `json:"routing_packet"`
 }
 
 type RepositoryFundingPacket struct {

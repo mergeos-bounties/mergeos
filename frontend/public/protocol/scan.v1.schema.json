@@ -78,7 +78,7 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["id", "source_finding_id", "signal", "title", "severity", "lane", "estimated_reward_cents", "worker_kind", "ready_for_bounty", "funding_packet"],
+        "required": ["id", "source_finding_id", "signal", "title", "severity", "lane", "estimated_reward_cents", "worker_kind", "ready_for_bounty", "funding_packet", "routing_packet"],
         "properties": {
           "id": { "type": "string", "minLength": 1, "maxLength": 120 },
           "source_finding_id": { "type": "string", "minLength": 1, "maxLength": 120 },
@@ -130,10 +130,62 @@
                 "items": { "type": "string", "minLength": 1, "maxLength": 120 }
               }
             }
-          }
+          },
+          "routing_packet": { "$ref": "#/$defs/routingPacket" }
         }
       }
     },
     "metadata": { "type": "object" }
+  },
+  "$defs": {
+    "routingPacket": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["action", "method", "endpoint", "context_urls", "runbook"],
+      "properties": {
+        "action": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "method": { "enum": ["GET", "POST", "PATCH", "DELETE"] },
+        "endpoint": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "payload": { "type": "object", "additionalProperties": true },
+        "context_urls": {
+          "type": "object",
+          "additionalProperties": { "type": "string", "maxLength": 512 }
+        },
+        "runbook": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/runbookStep" }
+        },
+        "output_contracts": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/outputContract" }
+        }
+      }
+    },
+    "runbookStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["step", "action", "label", "method", "endpoint"],
+      "properties": {
+        "step": { "type": "integer", "minimum": 1 },
+        "action": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "label": { "type": "string", "minLength": 1, "maxLength": 180 },
+        "method": { "enum": ["GET", "POST", "PATCH", "DELETE"] },
+        "endpoint": { "type": "string", "minLength": 1, "maxLength": 512 }
+      }
+    },
+    "outputContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["action", "artifact_kind", "output_endpoint", "output_protocol", "output_protocol_url"],
+      "properties": {
+        "action": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "artifact_kind": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "output_endpoint": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "output_protocol": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "output_protocol_url": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "public_url": { "type": "string", "maxLength": 512 }
+      }
+    }
   }
 }

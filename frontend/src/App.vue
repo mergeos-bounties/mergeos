@@ -27565,6 +27565,7 @@ function mapDashboardRepositorySuggestedTask(row = {}) {
   const severity = row.severity || 'low';
   const worker = row.suggested_agent_type || row.worker_kind || 'worker';
   const packet = row.funding_packet || {};
+  const routingPacket = row.routing_packet && typeof row.routing_packet === 'object' ? row.routing_packet : {};
   const fundingPayload = packet.fund_payload || {};
   const paypalPayload = packet.paypal_order_payload || {};
   const rewardCents = Number(packet.recommended_reward_cents || fundingPayload.reward_cents || row.estimated_reward_cents) || 0;
@@ -27593,6 +27594,12 @@ function mapDashboardRepositorySuggestedTask(row = {}) {
     fundingPayload,
     paypalPayload,
     evidenceChecklist: Array.isArray(packet.evidence_checklist) ? packet.evidence_checklist : [],
+    routingPacket,
+    routingAction: routingActionLabel(routingPacket.action || ''),
+    routingEndpoint: routingPacket.endpoint || packet.fund_endpoint || '',
+    routingContract: Array.isArray(routingPacket.output_contracts) && routingPacket.output_contracts.length
+      ? routingPacket.output_contracts[0].output_protocol
+      : '',
   };
 }
 
