@@ -221,6 +221,19 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(whitepaperSource, /## 16\. Roadmap/);
 });
 
+test('signed-in mobile dashboard keeps nav, actions, and popovers phone-safe', async () => {
+  const cssSource = await fs.readFile(new URL('./src/styles.css', import.meta.url), 'utf-8');
+
+  assert.match(cssSource, /Signed-in mobile system/);
+  assert.match(cssSource, /\.dashboard-shell \.dash-side-nav\s*\{[\s\S]*display: flex;[\s\S]*overflow-x: auto;/);
+  assert.match(cssSource, /\.dashboard-shell \.dash-top-actions\s*\{[\s\S]*grid-template-columns: 44px minmax\(0, 1fr\) 44px;/);
+  assert.match(cssSource, /\.notification-dropdown\s*\{[\s\S]*bottom: calc\(12px \+ env\(safe-area-inset-bottom\)\) !important;/);
+  assert.match(cssSource, /\.account-context-menu,[\s\S]*\.dashboard-account-menu \.account-context-menu\s*\{[\s\S]*bottom: calc\(12px \+ env\(safe-area-inset-bottom\)\);/);
+  assert.match(cssSource, /\.dashboard-shell \.dashboard-role-map\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/);
+  assert.match(cssSource, /\.mobile-nav-panel\s*\{[\s\S]*height: 100dvh;[\s\S]*max-height: 100dvh;/);
+  assert.match(cssSource, /\.auth-modal\s*\{[\s\S]*max-height: calc\(100dvh - 64px\);/);
+});
+
 test('creates runtime config for production defaults', () => {
   const env = {
     NODE_ENV: 'production',

@@ -899,7 +899,8 @@ svg {
   right: 0;
   z-index: 50;
   width: min(300px, 80vw);
-  height: 100vh;
+  height: 100dvh;
+  max-height: 100dvh;
   flex-direction: column;
   gap: 4px;
   border-left: 1px solid var(--line);
@@ -11135,7 +11136,7 @@ svg {
 .auth-modal {
   position: relative;
   width: min(1030px, 100%);
-  max-height: calc(100vh - 64px);
+  max-height: calc(100dvh - 64px);
   overflow: auto;
   border: 1px solid rgba(226, 232, 240, 0.86);
   border-radius: 18px;
@@ -18753,7 +18754,7 @@ svg {
   }
 
   .auth-modal {
-    max-height: calc(100vh - 32px);
+    max-height: calc(100dvh - 32px);
     border-radius: 14px;
   }
 
@@ -25428,7 +25429,7 @@ svg {
 
 @media (max-width: 430px) {
   .auth-modal {
-    max-height: calc(100vh - 24px);
+    max-height: calc(100dvh - 24px);
   }
   .auth-modal-main {
     padding: 20px 14px 18px;
@@ -28554,6 +28555,334 @@ canvas {
 @media (max-width: 430px) {
   .dashboard-shell .dash-command-copy p {
     display: block;
+  }
+}
+
+@media (max-width: 380px) {
+  .dashboard-shell .dashboard-role-map {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Signed-in mobile system: this final block owns the authenticated shell so
+   older responsive rules cannot reopen desktop spacing, overflow, or popover
+   placement on phones. */
+@media (max-width: 760px) {
+  .dashboard-shell {
+    --dash-mobile-gutter: clamp(12px, 4vw, 18px);
+    display: block;
+    width: 100%;
+    min-height: 100dvh;
+    overflow-x: clip;
+    background:
+      linear-gradient(90deg, rgba(15, 159, 120, 0.045) 1px, transparent 1px),
+      #f7faf8;
+    background-size: 56px 56px, auto;
+  }
+
+  .dashboard-shell .dash-sidebar {
+    position: sticky;
+    top: 0;
+    z-index: 82;
+    border-right: 0;
+    border-bottom: 1px solid rgba(11, 21, 17, 0.1);
+    background: rgba(255, 255, 255, 0.97);
+    padding: 8px var(--dash-mobile-gutter) 7px;
+  }
+
+  .dashboard-shell .dash-brand {
+    min-height: 32px;
+    padding: 0 0 6px;
+  }
+
+  .dashboard-shell .dash-side-nav {
+    display: flex;
+    grid-template-columns: none;
+    gap: 8px;
+    margin-inline: calc(var(--dash-mobile-gutter) * -1);
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 0 var(--dash-mobile-gutter) 4px;
+    scroll-padding-inline: var(--dash-mobile-gutter);
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .dashboard-shell .dash-side-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .dashboard-shell .dash-side-nav section {
+    display: contents;
+  }
+
+  .dashboard-shell .dash-side-nav p {
+    display: none;
+  }
+
+  .dashboard-shell .dash-side-nav button {
+    width: auto;
+    min-width: max-content;
+    min-height: 42px;
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+    border: 1px solid #dce7e1;
+    border-radius: 999px;
+    background: #ffffff;
+    color: #29362f;
+    padding: 0 13px;
+    font-size: 12px;
+    line-height: 1;
+    white-space: nowrap;
+    box-shadow: 0 8px 18px rgba(11, 21, 17, 0.04);
+  }
+
+  .dashboard-shell .dash-workspace {
+    display: block;
+    min-width: 0;
+    overflow: visible;
+    padding: 0;
+  }
+
+  .dashboard-shell .dash-topbar {
+    position: static;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+    min-height: 0;
+    margin: 0;
+    border: 0;
+    background: transparent;
+    padding: 10px var(--dash-mobile-gutter) 0;
+  }
+
+  .dashboard-shell .dash-search {
+    width: 100%;
+    min-width: 0;
+    height: 38px;
+    border-color: #dce7e1;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.97);
+    box-shadow: 0 8px 20px rgba(11, 21, 17, 0.04);
+  }
+
+  .dashboard-shell .dash-search input {
+    min-width: 0;
+  }
+
+  .dashboard-shell .dash-search kbd {
+    display: none;
+  }
+
+  .dashboard-shell .dash-topnav {
+    display: flex;
+    width: 100%;
+    max-width: 100%;
+    gap: 6px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 4px;
+    scrollbar-width: none;
+  }
+
+  .dashboard-shell .dash-topnav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .dashboard-shell .dash-topnav button {
+    flex: 0 0 auto;
+    min-height: 34px;
+    white-space: nowrap;
+  }
+
+  .dashboard-shell .dash-top-actions {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr) 44px;
+    width: 100%;
+    min-width: 0;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .dashboard-shell .notification-menu-wrap,
+  .dashboard-shell .dashboard-account-menu {
+    min-width: 0;
+  }
+
+  .dashboard-shell .dash-icon-button,
+  .dashboard-shell .dash-profile {
+    width: 44px;
+    min-width: 44px;
+    max-width: 44px;
+    min-height: 44px;
+  }
+
+  .dashboard-shell .dash-profile {
+    display: grid;
+    grid-template-columns: 32px;
+    justify-content: center;
+    border: 1px solid #dce7e1;
+    border-radius: 10px;
+    background: #ffffff;
+  }
+
+  .dashboard-shell .dash-profile > span:not(.profile-avatar),
+  .dashboard-shell .dash-profile > svg {
+    display: none;
+  }
+
+  .dashboard-shell .dash-top-actions .primary-button.compact {
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    justify-content: center;
+    overflow: hidden;
+    padding-inline: 10px;
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .dashboard-shell .dash-command-strip,
+  .dashboard-shell .dashboard-role-map,
+  .dashboard-shell .dash-content {
+    margin-left: var(--dash-mobile-gutter);
+    margin-right: var(--dash-mobile-gutter);
+  }
+
+  .dashboard-shell .dash-command-strip {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-top: 12px;
+    margin-bottom: 12px;
+    border-radius: 10px;
+    padding: 14px;
+  }
+
+  .dashboard-shell .dash-command-copy h1 {
+    max-width: 100%;
+    display: -webkit-box;
+    overflow: hidden;
+    font-size: clamp(24px, 7vw, 32px);
+    line-height: 1.06;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
+
+  .dashboard-shell .dash-command-metrics {
+    display: flex;
+    grid-template-columns: none;
+    gap: 8px;
+    margin-inline: -2px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 2px 2px 6px;
+    scrollbar-width: none;
+  }
+
+  .dashboard-shell .dash-command-metrics::-webkit-scrollbar {
+    display: none;
+  }
+
+  .dashboard-shell .dash-command-metrics article {
+    min-height: 70px;
+    flex: 0 0 min(160px, 72vw);
+    padding: 10px;
+  }
+
+  .dashboard-shell .dashboard-role-map {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    overflow: visible;
+    padding: 0;
+  }
+
+  .dashboard-shell .dashboard-role-map article {
+    width: auto;
+    min-width: 0;
+    flex: none;
+    padding: 11px;
+  }
+
+  .dashboard-shell .dashboard-role-map header {
+    grid-template-columns: 32px minmax(0, 1fr);
+  }
+
+  .dashboard-shell .dashboard-role-map header b {
+    display: none;
+  }
+
+  .dashboard-shell .dash-content {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding-bottom: calc(18px + env(safe-area-inset-bottom));
+  }
+}
+
+@media (max-width: 760px) {
+  .notification-dropdown {
+    left: var(--dash-mobile-gutter, 12px) !important;
+    right: var(--dash-mobile-gutter, 12px) !important;
+    top: auto !important;
+    bottom: calc(12px + env(safe-area-inset-bottom)) !important;
+    z-index: 760;
+    width: auto !important;
+    max-height: min(72dvh, 460px) !important;
+    border-radius: 14px;
+    overflow: hidden;
+    padding: 12px;
+    transform-origin: bottom center;
+  }
+
+  .notification-dropdown::before {
+    display: none;
+  }
+
+  .notification-dropdown-list {
+    max-height: min(var(--notification-list-max-height, 280px), calc(72dvh - 154px));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .notification-dropdown-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .notification-dropdown-actions button {
+    width: 100%;
+  }
+
+  .account-context-menu,
+  .project-account-menu .account-context-menu,
+  .dashboard-account-menu .account-context-menu {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    top: auto;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    z-index: 770;
+    width: auto;
+    max-height: min(72dvh, 420px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border-radius: 14px;
+    background: #ffffff;
+    box-shadow: 0 28px 80px rgba(15, 23, 42, 0.24);
+    transform: translateY(18px);
+  }
+
+  .account-context-menu::before {
+    display: none;
+  }
+
+  .account-menu.open .account-context-menu,
+  .account-menu:focus-within .account-context-menu,
+  .account-menu:hover .account-context-menu,
+  .account-context-menu.context-menu-visible {
+    transform: translateY(0);
   }
 }
 
