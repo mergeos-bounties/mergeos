@@ -47,6 +47,10 @@ jobs:
       - name: Test Solana contract metadata
         run: node --test contracts/solana/test/idl.test.js
 
+      - name: Test SDK helpers
+        working-directory: sdk
+        run: npm test
+
       - name: Test protocol schemas
         working-directory: protocol
         run: npm test
