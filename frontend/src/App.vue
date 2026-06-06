@@ -29375,6 +29375,17 @@ function updateDashboardNotificationMenuPosition() {
   const triggerRect = dashboardNotificationTrigger.value.getBoundingClientRect();
   const viewportWidth = window.innerWidth || document.documentElement.clientWidth || 0;
   const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+  if (viewportWidth <= 760) {
+    const bottomInset = window.visualViewport
+      ? Math.max(0, viewportHeight - window.visualViewport.height - window.visualViewport.offsetTop)
+      : 0;
+    dashboardNotificationMenuPlacement.value = 'mobile-sheet';
+    dashboardNotificationDropdownStyle.value = {
+      '--notification-list-max-height': `${Math.round(Math.max(120, Math.min(360, viewportHeight * 0.72 - 154)))}px`,
+      '--dashboard-mobile-bottom-inset': `${Math.round(bottomInset)}px`,
+    };
+    return;
+  }
   const margin = viewportWidth <= 700 ? 12 : 10;
   const width = Math.max(260, Math.min(368, viewportWidth - margin * 2));
   const maxLeft = Math.max(margin, viewportWidth - width - margin);
@@ -30535,6 +30546,8 @@ onMounted(async () => {
     window.addEventListener('popstate', syncPublicPageFromBrowserPath);
     window.addEventListener('resize', updateDashboardNotificationMenuPosition);
     window.addEventListener('scroll', updateDashboardNotificationMenuPosition, true);
+    window.visualViewport?.addEventListener('resize', updateDashboardNotificationMenuPosition);
+    window.visualViewport?.addEventListener('scroll', updateDashboardNotificationMenuPosition);
     document.addEventListener('click', handleNavContextOutsideClick);
     document.addEventListener('click', handleDashboardNotificationOutsideClick);
     if (!handledGitHubCallback && !handledPasswordResetToken && !paypalCheckoutPath) {
@@ -30568,6 +30581,8 @@ onUnmounted(() => {
     window.removeEventListener('popstate', syncPublicPageFromBrowserPath);
     window.removeEventListener('resize', updateDashboardNotificationMenuPosition);
     window.removeEventListener('scroll', updateDashboardNotificationMenuPosition, true);
+    window.visualViewport?.removeEventListener('resize', updateDashboardNotificationMenuPosition);
+    window.visualViewport?.removeEventListener('scroll', updateDashboardNotificationMenuPosition);
     document.removeEventListener('click', handleNavContextOutsideClick);
     document.removeEventListener('click', handleDashboardNotificationOutsideClick);
   }

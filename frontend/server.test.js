@@ -282,6 +282,12 @@ test('signed-in mobile dashboard keeps nav, actions, and popovers phone-safe', a
   assert.match(cssSource, /\.dashboard-shell \.ledger-table thead\s*\{[\s\S]*display: none;/);
   assert.match(cssSource, /\.dashboard-shell \.ledger-table tr\s*\{[\s\S]*border: 1px solid #e5edf0;[\s\S]*border-radius: 10px;/);
   assert.match(cssSource, /\.dashboard-shell \.ledger-table td:nth-child\(5\)::before\s*\{[\s\S]*content: "Reference";/);
+  assert.match(cssSource, /Signed-in mobile polish pass/);
+  assert.match(cssSource, /body:has\(\.dashboard-shell\)[\s\S]*overflow-x: clip;/);
+  assert.match(cssSource, /\.notification-dropdown\s*\{[\s\S]*bottom: calc\(12px \+ var\(--dashboard-mobile-bottom-inset, 0px\) \+ env\(safe-area-inset-bottom\)\) !important;/);
+  assert.match(cssSource, /\.notification-dropdown-item\s*\{[\s\S]*grid-template-columns: 10px minmax\(0, 1fr\);/);
+  assert.match(appSource, /dashboardNotificationMenuPlacement\.value = 'mobile-sheet';/);
+  assert.match(appSource, /window\.visualViewport\?\.addEventListener\('resize', updateDashboardNotificationMenuPosition\);/);
   assert.match(appSource, /<span>New Project<\/span>/);
 });
 

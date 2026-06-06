@@ -28564,6 +28564,123 @@ canvas {
   }
 }
 
+/* Signed-in mobile polish pass: keep the authenticated app feeling like a
+   native phone workspace after login, not a squeezed desktop dashboard. */
+@media (max-width: 760px) {
+  html:has(.dashboard-shell),
+  body:has(.dashboard-shell) {
+    max-width: 100%;
+    overflow-x: clip;
+  }
+
+  .dashboard-shell {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .dashboard-shell .dash-topbar,
+  .dashboard-shell .dash-command-strip,
+  .dashboard-shell .dashboard-role-map,
+  .dashboard-shell .dash-content,
+  .dashboard-shell .dash-main,
+  .dashboard-shell .dash-rail {
+    width: auto;
+    max-width: calc(100vw - (var(--dash-mobile-gutter, 14px) * 2));
+  }
+
+  .dashboard-shell .dash-topbar {
+    max-width: 100vw;
+  }
+
+  .dashboard-shell .dash-content,
+  .dashboard-shell .dash-main,
+  .dashboard-shell .dash-rail {
+    overflow: visible;
+  }
+
+  .dashboard-shell .dash-card,
+  .dashboard-shell .rail-card,
+  .dashboard-shell .dashboard-tool-card,
+  .dashboard-shell .dash-empty-state,
+  .dashboard-shell .payment-summary-card,
+  .dashboard-shell .notification-center-card {
+    box-shadow: 0 14px 38px rgba(15, 23, 42, 0.07);
+  }
+
+  .dashboard-shell .dash-command-copy p,
+  .dashboard-shell .dashboard-role-map p,
+  .dashboard-shell .dash-card p,
+  .dashboard-shell .rail-card p,
+  .dashboard-shell .dashboard-tool-card p,
+  .dashboard-shell .dash-card small,
+  .dashboard-shell .rail-card small,
+  .dashboard-shell .dashboard-tool-card small {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  .dashboard-shell .dash-command-metrics,
+  .dashboard-shell .dashboard-role-stats,
+  .dashboard-shell .dashboard-role-lanes,
+  .dashboard-shell .repo-intel-actions,
+  .dashboard-shell .routing-board-actions,
+  .dashboard-shell .ai-log-actions {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .dashboard-shell .dashboard-role-stats,
+  .dashboard-shell .dashboard-role-lanes {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dashboard-shell .dash-top-actions {
+    position: relative;
+    z-index: 86;
+  }
+
+  .dashboard-shell .notification-badge {
+    top: -5px;
+    right: -5px;
+  }
+
+  .notification-dropdown {
+    left: var(--dash-mobile-gutter, 14px) !important;
+    right: var(--dash-mobile-gutter, 14px) !important;
+    top: auto !important;
+    bottom: calc(12px + var(--dashboard-mobile-bottom-inset, 0px) + env(safe-area-inset-bottom)) !important;
+    width: auto !important;
+    max-width: none !important;
+  }
+
+  .notification-dropdown-item {
+    grid-template-columns: 10px minmax(0, 1fr);
+    gap: 10px;
+    align-items: start;
+  }
+
+  .notification-dropdown-item b {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .notification-dropdown-copy,
+  .notification-dropdown-copy strong,
+  .notification-dropdown-copy small,
+  .notification-dropdown-copy em {
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  .dashboard-shell .account-context-menu,
+  .dashboard-shell .dashboard-account-menu .account-context-menu {
+    left: var(--dash-mobile-gutter, 14px);
+    right: var(--dash-mobile-gutter, 14px);
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    max-width: none;
+  }
+}
+
 /* Signed-in mobile content guard: long protocol URLs, wallet ids, pills, and
    dashboard tables should behave like phone-native rows instead of forcing
    the whole authenticated shell wider than the viewport. */
