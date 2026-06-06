@@ -4971,6 +4971,121 @@
       </div>
     </main>
 
+    <main v-else-if="publicTokenPage" id="top" class="token-page" :class="`token-page-${publicPage}`">
+      <div class="home-container token-shell">
+        <section class="token-hero">
+          <div class="token-hero-copy">
+            <span class="marketplace-eyebrow">{{ publicTokenPage.eyebrow }}</span>
+            <div class="ledger-title-row">
+              <h1>{{ publicTokenPage.title }}</h1>
+              <span :class="['ledger-public-badge', publicTokenPage.badgeTone]">
+                <component :is="publicTokenPage.badgeIcon" :size="14" />
+                {{ publicTokenPage.badge }}
+              </span>
+            </div>
+            <p>{{ publicTokenPage.body }}</p>
+            <div class="marketplace-actions">
+              <button
+                v-for="action in publicTokenPage.actions"
+                :key="action.label"
+                :class="[action.primary ? 'primary-button' : 'secondary-button', 'large']"
+                type="button"
+                @click="handlePublicAction(action)"
+              >
+                {{ action.label }}
+                <component :is="action.icon" :size="16" />
+              </button>
+            </div>
+          </div>
+
+          <aside class="token-status-panel" :aria-label="publicTokenPage.panelTitle">
+            <div class="ledger-card-head">
+              <div>
+                <span>{{ publicTokenPage.panelEyebrow }}</span>
+                <h2>{{ publicTokenPage.panelTitle }}</h2>
+              </div>
+              <button type="button" :disabled="ledgerLoading" @click="refreshTokenPageData">
+                <RefreshCw :class="{ 'loading-spin': ledgerLoading }" :size="14" />
+                Refresh
+              </button>
+            </div>
+            <p>{{ publicTokenPage.panelBody }}</p>
+            <div class="token-metric-grid">
+              <article v-for="metric in publicTokenMetricRows" :key="metric.label">
+                <span :class="['ledger-economy-mini-icon', metric.tone]">
+                  <component :is="metric.icon" :size="14" />
+                </span>
+                <div>
+                  <strong>{{ metric.value }}</strong>
+                  <small>{{ metric.label }}</small>
+                </div>
+              </article>
+            </div>
+          </aside>
+        </section>
+
+        <section class="token-content-grid">
+          <div class="token-main-panel">
+            <div class="contracts-section-head">
+              <div>
+                <span class="marketplace-eyebrow">{{ publicTokenPage.timelineEyebrow }}</span>
+                <h2>{{ publicTokenPage.timelineTitle }}</h2>
+                <p>{{ publicTokenPage.timelineBody }}</p>
+              </div>
+              <span>{{ publicTokenTimelineRows.length }} steps</span>
+            </div>
+            <ol class="token-timeline-list">
+              <li v-for="(row, index) in publicTokenTimelineRows" :key="row.title">
+                <span>{{ index + 1 }}</span>
+                <div>
+                  <strong>{{ row.title }}</strong>
+                  <p>{{ row.body }}</p>
+                  <small>{{ row.meta }}</small>
+                </div>
+                <b>{{ row.status }}</b>
+              </li>
+            </ol>
+          </div>
+
+          <aside class="token-proof-panel">
+            <div class="contracts-section-head compact">
+              <div>
+                <span class="marketplace-eyebrow">{{ publicTokenPage.detailEyebrow }}</span>
+                <h2>{{ publicTokenPage.detailTitle }}</h2>
+              </div>
+              <button v-if="publicPage === 'whitepaper'" type="button" @click="copyWhitepaperOutline">
+                Copy
+                <Link2 :size="12" />
+              </button>
+            </div>
+            <p>{{ publicTokenPage.detailBody }}</p>
+            <div class="token-proof-list">
+              <article v-for="row in publicTokenDetailRows" :key="row.title">
+                <span :class="['ledger-trust-icon', row.tone]">
+                  <component :is="row.icon" :size="15" />
+                </span>
+                <div>
+                  <strong>{{ row.title }}</strong>
+                  <small>{{ row.body }}</small>
+                </div>
+                <b>{{ row.meta }}</b>
+              </article>
+            </div>
+          </aside>
+        </section>
+
+        <section v-if="publicTokenChapterRows.length" class="token-chapter-grid" :aria-label="publicTokenPage.chapterTitle">
+          <article v-for="chapter in publicTokenChapterRows" :key="chapter.title">
+            <span :class="['public-card-icon', chapter.tone]">
+              <component :is="chapter.icon" :size="18" />
+            </span>
+            <strong>{{ chapter.title }}</strong>
+            <p>{{ chapter.body }}</p>
+          </article>
+        </section>
+      </div>
+    </main>
+
     <main v-else-if="publicPage === 'protocol'" id="top" class="protocol-page">
       <div class="home-container protocol-shell">
         <section class="protocol-hero">
@@ -8127,6 +8242,9 @@ const publicPagePaths = {
   ledger: '/ledger',
   protocol: '/protocol',
   contracts: '/contracts',
+  airdrop: '/airdrop',
+  presale: '/presale',
+  whitepaper: '/whitepaper',
   mergeide: '/mergeide',
   terms: '/terms',
   privacy: '/privacy',
@@ -8144,6 +8262,9 @@ const publicPagePathAliases = {
   ledger: ['/ledger-logs', '/public-ledger', '/proof-ledger', '/escrow-events', '/payout-logs', '/token-mint-logs', '/release-logs', '/ai-action-logs', '/pr-proof-logs'],
   protocol: ['/protocol-index', '/open-protocol', '/mergeos-protocol', '/protocol-roadmap'],
   contracts: ['/mrg', '/token-economy', '/contracts-and-escrow', '/mergeos-contracts', '/escrow-contracts', '/payout-contracts'],
+  airdrop: ['/mrg-airdrop', '/task-airdrop', '/airdrop-tasks', '/claim-mrg'],
+  presale: ['/mrg-presale', '/token-presale', '/presale-register', '/reserve-mrg'],
+  whitepaper: ['/mergeos-whitepaper', '/white-paper', '/paper', '/architecture-paper'],
   mergeide: ['/ide', '/merge-ide', '/download'],
 };
 const publicPageNames = new Set(Object.keys(publicPagePaths));
@@ -11519,7 +11640,183 @@ const publicMergeIdePlatformRows = computed(() => [
   ...(publicMergeIdeCopy.value.platformRows || []),
   mergeIdeBuildWorkflowRow,
 ]);
-const productNavIsActive = computed(() => ['product', 'system', 'mergeide', 'contracts', 'sdk', 'backend'].includes(publicPage.value));
+const publicTokenPageDefinitions = {
+  airdrop: {
+    eyebrow: 'MRG AIRDROP',
+    title: 'A task-based airdrop for verified software delivery.',
+    body: 'The MergeOS airdrop is earned through useful work: repo imports, scoped bounty tasks, PR evidence, QA notes, agent reviews, and public ledger proof. It is not a random claim page.',
+    badge: 'Proof gated',
+    badgeTone: 'green',
+    badgeIcon: Trophy,
+    panelEyebrow: 'AIRDROP STATUS',
+    panelTitle: 'Eligibility comes from work proof',
+    panelBody: 'Every airdrop task maps to a public signal, so allocations can be reviewed through marketplace, live feed, and ledger references.',
+    timelineEyebrow: 'TASK MISSION BOARD',
+    timelineTitle: 'Complete missions before claiming allocation',
+    timelineBody: 'Each mission has a proof source and a delivery value. Higher signal work earns stronger eligibility.',
+    detailEyebrow: 'CLAIM CONTROLS',
+    detailTitle: 'Proof required before claim',
+    detailBody: 'Claiming should only open after wallet, account, work proof, and anti-abuse checks are all satisfied.',
+    chapterTitle: 'Airdrop mission types',
+    actions: [
+      { label: 'Start tasks', primary: true, icon: ArrowRight, command: 'project' },
+      { label: 'Open bounties', icon: ListTodo, command: 'bounties' },
+      { label: 'Live proof', icon: Zap, page: 'live' },
+    ],
+  },
+  presale: {
+    eyebrow: 'MRG PRESALE',
+    title: 'Reserve MRG through a transparent presale workflow.',
+    body: 'The presale page explains allocation stages, wallet readiness, payment review, Solana contract checkpoints, and public ledger receipts before token distribution.',
+    badge: 'Solana ready',
+    badgeTone: 'blue',
+    badgeIcon: CircleDollarSign,
+    panelEyebrow: 'PRESALE STATUS',
+    panelTitle: 'Reserve flow tied to proof',
+    panelBody: 'Presale interest, verified funding, contract references, and token mint receipts should stay traceable through the same MergeOS ledger surface.',
+    timelineEyebrow: 'RESERVE WORKFLOW',
+    timelineTitle: 'From account check to public receipt',
+    timelineBody: 'The presale is modeled as gated steps so users understand what must be verified before allocation is accepted.',
+    detailEyebrow: 'TOKEN CONTROLS',
+    detailTitle: 'Presale safeguards',
+    detailBody: 'The page is built around KYC-ready account state, wallet readiness, escrow reserve, and ledger-visible receipts.',
+    chapterTitle: 'Presale checkpoints',
+    actions: [
+      { label: 'Register interest', primary: true, icon: UserCheck, command: 'auth-register' },
+      { label: 'Contracts', icon: Lock, page: 'contracts' },
+      { label: 'Ledger proof', icon: ShieldCheck, page: 'ledger' },
+    ],
+  },
+  whitepaper: {
+    eyebrow: 'MERGEOS WHITEPAPER',
+    title: 'The operating system for AI software delivery.',
+    body: 'Read the MergeOS product thesis, system architecture, AI orchestration layer, contributor marketplace, escrow economy, MRG token model, ledger proof, SDK, and open protocol roadmap.',
+    badge: 'Architecture paper',
+    badgeTone: 'purple',
+    badgeIcon: FileCheck2,
+    panelEyebrow: 'DOCUMENT STATUS',
+    panelTitle: 'Living product architecture',
+    panelBody: 'The whitepaper is structured as a public operating map, not a marketing one-pager: every chapter maps back to product surfaces and protocol evidence.',
+    timelineEyebrow: 'WHITEPAPER OUTLINE',
+    timelineTitle: 'Architecture chapters',
+    timelineBody: 'The document follows the same workflow as MergeOS: import, scan, generate, fund, route, review, release, and prove.',
+    detailEyebrow: 'REFERENCE MAP',
+    detailTitle: 'Read with live artifacts',
+    detailBody: 'The whitepaper links product vision to routes, contracts, SDK surfaces, live feed events, and ledger proof rows.',
+    chapterTitle: 'Whitepaper chapters',
+    actions: [
+      { label: 'Copy outline', primary: true, icon: FileCheck2, command: 'copy-whitepaper' },
+      { label: 'Protocol', icon: Code2, page: 'protocol' },
+      { label: 'Contracts', icon: Lock, page: 'contracts' },
+    ],
+  },
+};
+const publicTokenPage = computed(() => publicTokenPageDefinitions[publicPage.value] || null);
+const publicTokenMetricRows = computed(() => {
+  const openTasks = Number(marketplaceStats.value.open_task_count) || (marketplaceData.value.bounties || []).length || 0;
+  const agentTasks = Number(agentQueueData.value.stats?.total_count) || (agentQueueData.value.tasks || []).length || 0;
+  const proofRows = Number(ledgerEconomyStats.value.ledger_entry_count) || ledgerRawEntries.value.length || ledgerEventItems.value.length || 0;
+  const verifiedFunding = Number(ledgerEconomyTotals.value.verified_funding_cents) || publicVerifiedFundingCents.value;
+  const minted = Number(ledgerEconomyTotals.value.minted_cents) || publicMintedTokenTotal.value;
+  const endpointCount = protocolStatsView.value.endpoints || protocolEndpointRows.value.length || publicBackendEndpointRows.value.length;
+  if (publicPage.value === 'airdrop') {
+    return [
+      { label: 'Eligible missions', value: '6', icon: ListTodo, tone: 'blue' },
+      { label: 'Open tasks', value: String(openTasks), icon: Trophy, tone: 'green' },
+      { label: 'Agent proofs', value: String(agentTasks), icon: Bot, tone: 'purple' },
+      { label: 'Ledger rows', value: String(proofRows), icon: ShieldCheck, tone: 'amber' },
+    ];
+  }
+  if (publicPage.value === 'presale') {
+    return [
+      { label: 'Rate model', value: `${TOKEN_RATE_PER_USD} MRG/USD`, icon: CircleDollarSign, tone: 'green' },
+      { label: 'Verified funding', value: formatPublicMRGFromCents(verifiedFunding), icon: CreditCard, tone: 'blue' },
+      { label: 'Minted supply', value: formatPublicMRGFromCents(minted), icon: ShieldCheck, tone: 'purple' },
+      { label: 'Proof rows', value: String(proofRows), icon: Link2, tone: 'amber' },
+    ];
+  }
+  if (publicPage.value === 'whitepaper') {
+    return [
+      { label: 'Chapters', value: '10', icon: FileCheck2, tone: 'blue' },
+      { label: 'Repositories', value: '4', icon: GitBranch, tone: 'green' },
+      { label: 'Protocol routes', value: String(endpointCount), icon: Code2, tone: 'purple' },
+      { label: 'Proof rows', value: String(proofRows), icon: ShieldCheck, tone: 'amber' },
+    ];
+  }
+  return [];
+});
+const publicTokenTimelineRows = computed(() => {
+  if (publicPage.value === 'airdrop') {
+    return [
+      { title: 'Connect account and wallet', body: 'Use the same identity that will claim marketplace work, task rewards, and MRG allocation.', meta: 'Account + wallet proof', status: user.value ? 'Ready' : 'Login' },
+      { title: 'Import a repository or start a project', body: 'Attach real software context so the airdrop rewards useful delivery work instead of empty signups.', meta: '/project/new or repo import', status: 'Mission' },
+      { title: 'Complete bounty or agent work', body: 'Claim funded work, submit PR evidence, run QA or review tasks, and keep acceptance criteria visible.', meta: `${Number(marketplaceStats.value.open_task_count) || 0} open tasks`, status: 'Work' },
+      { title: 'Publish proof', body: 'Attach PR, deployment, review, payout, or ledger references so the claim can be audited.', meta: `${ledgerEventItems.value.length} public events`, status: 'Proof' },
+      { title: 'Claim allocation window', body: 'When a claim window opens, eligible work packets can be counted into the allocation queue.', meta: 'No random claim', status: 'Queued' },
+    ];
+  }
+  if (publicPage.value === 'presale') {
+    return [
+      { title: 'Create account', body: 'Presale reservations start from an authenticated MergeOS identity to prevent duplicate allocations.', meta: 'Account checkpoint', status: user.value ? 'Ready' : 'Login' },
+      { title: 'Prepare Solana wallet', body: 'Wallet details are collected before distribution so MRG can move through the Solana token workflow.', meta: 'Wallet readiness', status: 'Required' },
+      { title: 'Reserve allocation', body: 'Users review amount, reserve tier, funding rail, and acceptance terms before a reservation is recorded.', meta: `${TOKEN_RATE_PER_USD} MRG/USD model`, status: 'Reserve' },
+      { title: 'Verify funding', body: 'Payment or crypto reference must pass review before allocation is marked accepted.', meta: formatPublicMRGFromCents(publicVerifiedFundingCents.value), status: 'Verify' },
+      { title: 'Publish receipt', body: 'Accepted reservations should produce ledger-visible receipt, token mint, and contract references.', meta: `${ledgerRawEntries.value.length} ledger rows`, status: 'Proof' },
+    ];
+  }
+  if (publicPage.value === 'whitepaper') {
+    return [
+      { title: 'System overview', body: 'MergeOS turns repositories, issues, PRs, deployments, payments, agents, and ledger proof into one operating system.', meta: 'Chapter 1', status: 'Vision' },
+      { title: 'Delivery workflow', body: 'Repository import, AI scan, task graph, reward estimate, contributor routing, PR review, deployment validation, payout release.', meta: 'Chapter 2', status: 'Workflow' },
+      { title: 'Product surfaces', body: 'Homepage, marketplace, live feed, ledger logs, dashboards, MergeIDE, SDK, contracts, and protocol routes.', meta: 'Chapter 3', status: 'Product' },
+      { title: 'Economy and proof', body: 'MRG supply, escrow reserve, treasury accounting, payout contracts, Solana migration, and public proof roots.', meta: 'Chapter 4', status: 'MRG' },
+      { title: 'Open protocol roadmap', body: 'Schemas, endpoints, realtime events, task manifests, workflow graphs, external agents, and integrations.', meta: 'Chapter 5', status: 'Protocol' },
+    ];
+  }
+  return [];
+});
+const publicTokenDetailRows = computed(() => {
+  if (publicPage.value === 'airdrop') {
+    return [
+      { title: 'Work proof', body: 'Accepted tasks, imported repos, PR evidence, QA checks, and review logs carry more weight than profile-only claims.', meta: 'Weighted', icon: CheckCircle2, tone: 'green' },
+      { title: 'Anti-abuse gate', body: 'Duplicate accounts, missing wallet state, empty referrals, or unverifiable tasks should not unlock allocation.', meta: 'Guarded', icon: ShieldCheck, tone: 'amber' },
+      { title: 'Public receipt', body: 'Claim status should be visible through a sanitized ledger or live-feed reference.', meta: 'Auditable', icon: Link2, tone: 'blue' },
+    ];
+  }
+  if (publicPage.value === 'presale') {
+    return [
+      { title: 'Solana migration', body: 'MRG distribution and contract references are modeled for the Solana token path.', meta: 'SPL path', icon: Code2, tone: 'blue' },
+      { title: 'Reserve accounting', body: 'Funding, token mint, platform fee, and treasury movements should remain visible through proof rows.', meta: 'Ledger', icon: ShieldCheck, tone: 'green' },
+      { title: 'No silent allocation', body: 'A reservation should not become accepted until identity, wallet, payment, and contract checks pass.', meta: 'Review', icon: Lock, tone: 'amber' },
+    ];
+  }
+  if (publicPage.value === 'whitepaper') {
+    return [
+      { title: 'Repository architecture', body: 'mergeos-app, mergeos-contracts, mergeos-sdk, and future mergeos-protocol are separated by responsibility.', meta: '4 repos', icon: GitBranch, tone: 'green' },
+      { title: 'AI orchestration', body: 'Agents scan repos, analyze issues, generate task graphs, review PRs, validate deployments, and attach evidence.', meta: 'AI layer', icon: Bot, tone: 'purple' },
+      { title: 'Public proof', body: 'Ledger logs, protocol manifests, live feed events, and contract references form the trust layer.', meta: 'Proof', icon: Link2, tone: 'blue' },
+    ];
+  }
+  return [];
+});
+const publicTokenChapterRows = computed(() => {
+  if (publicPage.value !== 'whitepaper') {
+    return [
+      { title: 'Proof-first economy', body: 'Token-facing pages use marketplace, ledger, live feed, and contract state instead of vague claims.', icon: ShieldCheck, tone: 'green' },
+      { title: 'Builder utility', body: 'MRG is explained through software delivery actions: funding, escrow, tasks, reviews, and payouts.', icon: ListTodo, tone: 'blue' },
+      { title: 'Transparent state', body: 'Users can inspect public proof before participating in claims, work, or reservations.', icon: Link2, tone: 'purple' },
+    ];
+  }
+  return [
+    { title: '1. System overview', body: 'MergeOS as the AI software delivery operating system for repositories, issues, PRs, deployments, and proofs.', icon: LayoutDashboard, tone: 'green' },
+    { title: '2. Product vision', body: 'A workflow layer combining GitHub, Stripe, Linear, Upwork, Vercel, and AI agents.', icon: Rocket, tone: 'blue' },
+    { title: '3. User roles', body: 'Customers, contributors, AI agents, and admins each get dedicated operating surfaces.', icon: UsersRound, tone: 'purple' },
+    { title: '4. Repository architecture', body: 'mergeos-app, mergeos-contracts, mergeos-sdk, and mergeos-protocol roadmap.', icon: GitBranch, tone: 'amber' },
+    { title: '5. AI and marketplace', body: 'Repository scan, issue analysis, task generation, reward estimation, routing, and bounty claiming.', icon: Bot, tone: 'green' },
+    { title: '6. Economy and ledger', body: 'MRG, escrow reserves, payout release, Solana contracts, treasury state, and public proof.', icon: CircleDollarSign, tone: 'blue' },
+  ];
+});
+const productNavIsActive = computed(() => ['product', 'system', 'mergeide', 'contracts', 'airdrop', 'presale', 'whitepaper', 'sdk', 'backend'].includes(publicPage.value));
 const solutionNavIsActive = computed(() => ['solutions', 'customers', 'agents', 'contributors', 'admins'].includes(publicPage.value));
 const clientHydrationKey = computed(() => (clientHydrated.value ? 'client' : 'ssr'));
 const publicNavActionsRenderKey = computed(() => `public-nav-actions-${activeLocale.value}-${clientHydrationKey.value}`);
@@ -13471,6 +13768,27 @@ const productNavItems = [
     icon: Lock,
     tone: 'green',
     action: { page: 'contracts' },
+  },
+  {
+    title: 'Airdrop',
+    body: 'Task-based MRG rewards gated by public proof, repo work, and contributor signals.',
+    icon: Trophy,
+    tone: 'amber',
+    action: { page: 'airdrop' },
+  },
+  {
+    title: 'Presale',
+    body: 'MRG presale reserve flow with wallet, escrow, contract, and ledger checkpoints.',
+    icon: CircleDollarSign,
+    tone: 'green',
+    action: { page: 'presale' },
+  },
+  {
+    title: 'Whitepaper',
+    body: 'Product vision, system architecture, AI layer, marketplace, contracts, and protocol roadmap.',
+    icon: FileCheck2,
+    tone: 'blue',
+    action: { page: 'whitepaper' },
   },
   {
     title: 'Protocol index',
@@ -21934,6 +22252,14 @@ function loadPublicPageData(page) {
     void loadLedgerData();
     return;
   }
+  if (page === 'airdrop' || page === 'presale' || page === 'whitepaper') {
+    void loadMarketplaceData({ silent: true });
+    void loadLedgerData({ silent: true });
+    void loadLiveFeedData({ silent: true });
+    void loadProtocolManifest({ silent: true });
+    if (page === 'presale') void loadRuntimeConfig().catch(() => {});
+    return;
+  }
   if (page === 'backend') {
     void loadProtocolManifest();
     void loadRuntimeConfig().catch(() => {});
@@ -21989,6 +22315,14 @@ function refreshPublicAdminOps() {
   void loadLedgerData();
   void loadLiveFeedData({ silent: true });
   if (isAdminUser.value) void loadAdminConsoleData({ silent: true });
+}
+
+function refreshTokenPageData() {
+  void loadMarketplaceData({ silent: true });
+  void loadLedgerData();
+  void loadLiveFeedData({ silent: true });
+  void loadProtocolManifest({ silent: true });
+  if (publicPage.value === 'presale') void loadRuntimeConfig().catch(() => {});
 }
 
 function updatePublicBrowserPath(page, replace = false) {
@@ -22055,6 +22389,10 @@ function handlePublicAction(action = {}) {
     openProjectWizard();
     return;
   }
+  if (action.command === 'copy-whitepaper') {
+    void copyWhitepaperOutline();
+    return;
+  }
   if (action.command === 'auth-register') {
     openAuth('register');
     return;
@@ -22108,6 +22446,31 @@ function handlePublicAction(action = {}) {
     return;
   }
   showToast(action.label ? `${action.label} opened.` : 'Opening page...');
+}
+
+async function copyWhitepaperOutline() {
+  const sections = publicTokenTimelineRows.value
+    .map((row, index) => `${index + 1}. ${row.title}\n${row.body}`)
+    .join('\n\n');
+  const chapters = publicTokenChapterRows.value
+    .map((row) => `- ${row.title}: ${row.body}`)
+    .join('\n');
+  const text = [
+    'MergeOS Whitepaper',
+    publicTokenPageDefinitions.whitepaper.body,
+    '',
+    'Outline',
+    sections,
+    '',
+    'Chapters',
+    chapters,
+    '',
+    `Protocol: ${absolutePublicPath(publicPathForPage('protocol'))}`,
+    `Contracts: ${absolutePublicPath(publicPathForPage('contracts'))}`,
+    `Ledger: ${absolutePublicPath(publicPathForPage('ledger'))}`,
+  ].join('\n');
+  const copied = await copyTextToClipboard(text);
+  showToast(copied ? 'Whitepaper outline copied.' : 'Whitepaper outline is visible on the page.');
 }
 
 function navContextMenuInlineStyle(menu) {

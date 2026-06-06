@@ -7790,6 +7790,305 @@ svg {
   cursor: not-allowed;
 }
 
+.token-shell {
+  min-width: 0;
+  display: grid;
+  gap: 24px;
+}
+
+.token-hero {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(330px, 420px);
+  gap: 24px;
+  align-items: center;
+}
+
+.token-hero-copy {
+  min-width: 0;
+  padding: 34px 0 14px;
+}
+
+.token-hero-copy h1 {
+  max-width: 820px;
+  margin: 14px 0 0;
+  color: var(--ink);
+  font-size: clamp(42px, 6vw, 74px);
+  line-height: 0.98;
+  font-weight: 950;
+  letter-spacing: 0;
+}
+
+.token-hero-copy p {
+  max-width: 720px;
+  margin: 16px 0 0;
+  color: #40534b;
+  font-size: 16px;
+  line-height: 1.58;
+  font-weight: 650;
+}
+
+.token-status-panel,
+.token-main-panel,
+.token-proof-panel {
+  min-width: 0;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(241, 249, 247, 0.94)),
+    #ffffff;
+  box-shadow: 0 18px 44px rgba(11, 21, 17, 0.07);
+}
+
+.token-status-panel {
+  display: grid;
+  gap: 14px;
+  padding: clamp(16px, 2.4vw, 22px);
+}
+
+.token-status-panel > p,
+.token-proof-panel > p {
+  margin: 0;
+  color: #536273;
+  font-size: 12px;
+  line-height: 1.55;
+  font-weight: 690;
+}
+
+.token-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.token-metric-grid article {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  gap: 9px;
+  align-items: center;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 10px;
+}
+
+.token-metric-grid strong,
+.token-metric-grid small,
+.token-proof-list strong,
+.token-proof-list small {
+  display: block;
+  min-width: 0;
+}
+
+.token-metric-grid strong {
+  overflow: hidden;
+  color: #0f172a;
+  font-size: 16px;
+  font-weight: 950;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.token-metric-grid small {
+  margin-top: 2px;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 820;
+  text-transform: uppercase;
+}
+
+.token-content-grid {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
+  gap: 18px;
+  align-items: start;
+}
+
+.token-main-panel,
+.token-proof-panel {
+  padding: clamp(16px, 2.4vw, 22px);
+}
+
+.token-timeline-list {
+  display: grid;
+  gap: 10px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.token-timeline-list li {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 13px;
+}
+
+.token-timeline-list li > span {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: #ecfdf5;
+  color: var(--green-dark);
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.token-timeline-list strong {
+  display: block;
+  color: #111827;
+  font-size: 14px;
+  font-weight: 940;
+}
+
+.token-timeline-list p {
+  margin: 5px 0 0;
+  color: #536273;
+  font-size: 12px;
+  line-height: 1.48;
+  font-weight: 650;
+}
+
+.token-timeline-list small {
+  display: block;
+  margin-top: 6px;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.token-timeline-list b,
+.token-proof-list b {
+  width: max-content;
+  max-width: 120px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  padding: 5px 8px;
+  font-size: 10px;
+  font-weight: 920;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.token-proof-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.token-proof-list {
+  display: grid;
+  gap: 10px;
+}
+
+.token-proof-list article {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 11px;
+}
+
+.token-proof-list strong {
+  color: #111827;
+  font-size: 12px;
+  font-weight: 930;
+}
+
+.token-proof-list small {
+  margin-top: 3px;
+  color: #64748b;
+  font-size: 10px;
+  line-height: 1.4;
+  font-weight: 680;
+}
+
+.token-chapter-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.token-chapter-grid article {
+  min-width: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 17px;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.04);
+}
+
+.token-chapter-grid strong {
+  display: block;
+  color: #111827;
+  font-size: 14px;
+  line-height: 1.25;
+  font-weight: 930;
+}
+
+.token-chapter-grid p {
+  margin: 8px 0 0;
+  color: #536273;
+  font-size: 12px;
+  line-height: 1.48;
+  font-weight: 650;
+}
+
+@media (max-width: 980px) {
+  .token-hero,
+  .token-content-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .token-chapter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .token-hero-copy {
+    padding-top: 22px;
+  }
+
+  .token-hero-copy h1 {
+    font-size: clamp(34px, 13vw, 48px);
+  }
+
+  .token-metric-grid,
+  .token-chapter-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .token-timeline-list li,
+  .token-proof-list article {
+    grid-template-columns: 32px minmax(0, 1fr);
+  }
+
+  .token-timeline-list b,
+  .token-proof-list b {
+    grid-column: 2;
+  }
+
+  .token-page .marketplace-actions .primary-button,
+  .token-page .marketplace-actions .secondary-button {
+    flex: 1 1 180px;
+  }
+}
+
 .public-info-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
@@ -25746,7 +26045,8 @@ canvas {
 .ledger-page,
 .protocol-page,
 .mergeide-page,
-.contracts-page {
+.contracts-page,
+.token-page {
   min-width: 0;
 }
 
@@ -25757,6 +26057,7 @@ canvas {
 .protocol-shell,
 .mergeide-shell,
 .contracts-shell,
+.token-shell,
 .dash-content {
   min-width: 0;
 }
@@ -25768,6 +26069,7 @@ canvas {
 .protocol-shell > *,
 .mergeide-shell > *,
 .contracts-shell > *,
+.token-shell > *,
 .dash-content > * {
   min-width: 0;
   max-width: 100%;
@@ -25784,7 +26086,8 @@ canvas {
 .ledger-hero-copy,
 .protocol-hero-copy,
 .mergeide-hero-copy,
-.contracts-hero-copy {
+.contracts-hero-copy,
+.token-hero-copy {
   min-width: 0;
   max-width: 100%;
 }
@@ -25796,13 +26099,15 @@ canvas {
 .protocol-hero-copy h1,
 .mergeide-hero-copy h1,
 .contracts-hero-copy h1,
+.token-hero-copy h1,
 .public-home-copy p,
 .public-info-hero p,
 .marketplace-copy p,
 .ledger-hero-copy p,
 .protocol-hero-copy p,
 .mergeide-hero-copy p,
-.contracts-hero-copy p {
+.contracts-hero-copy p,
+.token-hero-copy p {
   overflow-wrap: anywhere;
 }
 
@@ -25945,7 +26250,8 @@ canvas {
   .ledger-page,
   .protocol-page,
   .mergeide-page,
-  .contracts-page {
+  .contracts-page,
+  .token-page {
     padding-top: 14px;
   }
 
@@ -25953,7 +26259,8 @@ canvas {
   .marketplace-copy h1,
   .ledger-title-row h1,
   .protocol-hero-copy h1,
-  .contracts-hero-copy h1 {
+  .contracts-hero-copy h1,
+  .token-hero-copy h1 {
     font-size: clamp(32px, 8.8vw, 40px);
     line-height: 1.06;
   }
@@ -25962,7 +26269,8 @@ canvas {
   .marketplace-copy p,
   .ledger-hero-copy p,
   .protocol-hero-copy p,
-  .contracts-hero-copy p {
+  .contracts-hero-copy p,
+  .token-hero-copy p {
     max-width: 100%;
     font-size: 15px;
     line-height: 1.54;

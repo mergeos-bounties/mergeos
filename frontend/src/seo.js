@@ -23,6 +23,9 @@ const publicSeoPaths = {
   ledger: '/ledger',
   protocol: '/protocol',
   contracts: '/contracts',
+  airdrop: '/airdrop',
+  presale: '/presale',
+  whitepaper: '/whitepaper',
   mergeide: '/mergeide',
   terms: '/terms',
   privacy: '/privacy',
@@ -41,6 +44,9 @@ const publicSeoAliases = {
   ledger: ['/ledger-logs', '/public-ledger', '/proof-ledger', '/escrow-events', '/payout-logs', '/token-mint-logs', '/release-logs', '/ai-action-logs', '/pr-proof-logs'],
   protocol: ['/protocol-index', '/open-protocol', '/mergeos-protocol', '/protocol-roadmap'],
   contracts: ['/mrg', '/token-economy', '/contracts-and-escrow', '/mergeos-contracts', '/escrow-contracts', '/payout-contracts'],
+  airdrop: ['/mrg-airdrop', '/task-airdrop', '/airdrop-tasks', '/claim-mrg'],
+  presale: ['/mrg-presale', '/token-presale', '/presale-register', '/reserve-mrg'],
+  whitepaper: ['/mergeos-whitepaper', '/white-paper', '/paper', '/architecture-paper'],
   mergeide: ['/ide', '/merge-ide', '/download'],
 };
 
@@ -124,6 +130,21 @@ const pageSeo = {
     title: 'MergeOS Contracts and MRG | Token economy, escrow reserve, treasury, and payouts',
     description: 'Track the MergeOS contract-facing economy for MRG token supply, escrow reserves, treasury balances, payout contracts, hash roots, and ledger proof.',
     keywords: ['MRG token', 'escrow contracts', 'token economy', 'treasury proof', 'payout contracts'],
+  },
+  airdrop: {
+    title: 'MergeOS Airdrop | Task-based MRG rewards with public proof',
+    description: 'Complete MergeOS airdrop missions through repository imports, bounty work, PR evidence, QA checks, AI agent reviews, and ledger-backed proof before claiming MRG allocation.',
+    keywords: ['MergeOS airdrop', 'MRG airdrop', 'task airdrop', 'developer rewards', 'bounty proof', 'ledger proof'],
+  },
+  presale: {
+    title: 'MergeOS Presale | MRG reserve workflow, Solana token path, and ledger receipts',
+    description: 'Register interest in the MergeOS MRG presale with wallet readiness, allocation reserve steps, payment verification, Solana contract checkpoints, and public ledger receipts.',
+    keywords: ['MRG presale', 'MergeOS presale', 'Solana token presale', 'token reserve', 'presale ledger receipt', 'MRG token'],
+  },
+  whitepaper: {
+    title: 'MergeOS Whitepaper | AI software delivery OS architecture and MRG economy',
+    description: 'Read the MergeOS whitepaper for system vision, repository architecture, AI orchestration, marketplace workflow, escrow economy, MRG token model, ledger proof, SDK, and protocol roadmap.',
+    keywords: ['MergeOS whitepaper', 'AI software delivery OS', 'MRG token whitepaper', 'software delivery architecture', 'AI agent marketplace', 'open protocol'],
   },
   mergeide: {
     title: 'MergeIDE | Windows exe for MergeOS agents, task packets, and proof',
@@ -231,6 +252,75 @@ export function getSeoDataForPath(path = '/', options = {}) {
         priceCurrency: 'USD',
         availability: 'https://schema.org/InStock',
       },
+    });
+  }
+
+  if (page === 'airdrop') {
+    graph.push({
+      '@type': 'ItemList',
+      '@id': `${canonical}#airdrop-missions`,
+      name: 'MergeOS task-based airdrop missions',
+      description: entry.description,
+      itemListElement: [
+        ['Connect account and wallet', 'Use a verified MergeOS account and wallet before claiming allocation.'],
+        ['Import repository or start project', 'Attach real software context through project intake or repository import.'],
+        ['Complete bounty or agent work', 'Submit accepted task, PR, QA, review, or agent evidence.'],
+        ['Publish proof', 'Expose sanitized live feed, ledger, or protocol references before claim.'],
+        ['Claim allocation window', 'Eligible proof packets can enter the MRG allocation queue.'],
+      ].map(([name, description], index) => ({
+        '@type': 'ListItem',
+        position: index + 1,
+        item: {
+          '@type': 'Action',
+          name,
+          description,
+        },
+      })),
+    });
+  }
+
+  if (page === 'presale') {
+    graph.push({
+      '@type': 'ItemList',
+      '@id': `${canonical}#presale-workflow`,
+      name: 'MergeOS MRG presale reserve workflow',
+      description: entry.description,
+      itemListElement: [
+        ['Create account', 'Start from an authenticated MergeOS identity.'],
+        ['Prepare Solana wallet', 'Attach wallet readiness before distribution.'],
+        ['Reserve allocation', 'Review amount, allocation tier, and funding rail.'],
+        ['Verify funding', 'Payment or crypto reference must pass review.'],
+        ['Publish receipt', 'Accepted reservations should produce ledger-visible receipt and contract references.'],
+      ].map(([name, description], index) => ({
+        '@type': 'ListItem',
+        position: index + 1,
+        item: {
+          '@type': 'Action',
+          name,
+          description,
+        },
+      })),
+    });
+  }
+
+  if (page === 'whitepaper') {
+    graph.push({
+      '@type': 'TechArticle',
+      '@id': `${canonical}#whitepaper`,
+      headline: 'MergeOS whitepaper for AI software delivery architecture and MRG economy',
+      description: entry.description,
+      url: canonical,
+      about: [
+        'AI software delivery OS',
+        'Repository import',
+        'Task graph generation',
+        'Contributor marketplace',
+        'MRG token economy',
+        'Solana contracts',
+        'Public ledger proof',
+        'Open protocol roadmap',
+      ],
+      publisher: { '@id': absoluteUrl('/#organization', origin) },
     });
   }
 

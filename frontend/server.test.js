@@ -152,6 +152,29 @@ test('repo import exposes publish path to bounties, agents, and live proof', asy
   assert.match(appSource, /activeLiveFeedType\.value = 'Repository Scan';/);
 });
 
+test('public token pages expose airdrop, presale, and whitepaper routes', async () => {
+  const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
+  const seoSource = await fs.readFile(new URL('./src/seo.js', import.meta.url), 'utf-8');
+
+  for (const page of ['airdrop', 'presale', 'whitepaper']) {
+    assert.match(appSource, new RegExp(`${page}: '/${page}'`));
+    assert.match(seoSource, new RegExp(`${page}: '/${page}'`));
+  }
+  assert.match(appSource, /v-else-if="publicTokenPage"/);
+  assert.match(appSource, /const publicTokenPageDefinitions = \{/);
+  assert.match(appSource, /title: 'A task-based airdrop for verified software delivery\.'/);
+  assert.match(appSource, /title: 'Reserve MRG through a transparent presale workflow\.'/);
+  assert.match(appSource, /title: 'The operating system for AI software delivery\.'/);
+  assert.match(appSource, /action: \{ page: 'airdrop' \}/);
+  assert.match(appSource, /action: \{ page: 'presale' \}/);
+  assert.match(appSource, /action: \{ page: 'whitepaper' \}/);
+  assert.match(appSource, /function refreshTokenPageData\(\)/);
+  assert.match(appSource, /async function copyWhitepaperOutline\(\)/);
+  assert.match(seoSource, /MergeOS Airdrop \| Task-based MRG rewards with public proof/);
+  assert.match(seoSource, /MergeOS Presale \| MRG reserve workflow, Solana token path, and ledger receipts/);
+  assert.match(seoSource, /MergeOS Whitepaper \| AI software delivery OS architecture and MRG economy/);
+});
+
 test('creates runtime config for production defaults', () => {
   const env = {
     NODE_ENV: 'production',
