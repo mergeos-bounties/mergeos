@@ -464,6 +464,7 @@ test('maps live feed records to workflow event protocol values', () => {
   assert.equal(liveFeedTypeToProtocolEventType('ledger_task_payment'), 'task.paid');
   assert.equal(liveFeedTypeToProtocolEventType('ledger_airdrop_claim'), 'airdrop.claimed');
   assert.equal(liveFeedTypeToProtocolEventType('ledger_presale_reservation'), 'presale.reserved');
+  assert.equal(liveFeedTypeToProtocolEventType('ledger_wallet_migration'), 'wallet.migrated');
   assert.equal(liveFeedTypeToProtocolEventType('ledger_manual_credit'), 'ledger.recorded');
   assert.equal(liveFeedTypeToProtocolEventType('agent_action', 'test'), 'agent.tested');
   assert.equal(liveFeedTypeToProtocolEventType('unknown'), 'agent.action');
@@ -475,6 +476,7 @@ test('maps live feed records to workflow event protocol values', () => {
   assert.equal(protocolTypeFromMessage({ event: protocolEvent, protocol_type: 'ledger.recorded' }), 'task.paid');
   assert.equal(protocolTypeFromMessage({ protocol_type: 'ledger.recorded', type: 'ledger_task_payment' }), 'ledger.recorded');
   assert.equal(protocolTypeFromMessage({ type: 'ledger_manual_credit' }), 'ledger.recorded');
+  assert.equal(protocolTypeFromMessage({ type: 'ledger_wallet_migration' }), 'wallet.migrated');
   assert.equal(protocolTypeFromMessage({ type: 'connection_ready' }), '');
   assert.equal(protocolTypeFromMessage({ type: 'realtime_ready' }), '');
   assert.equal(protocolTypeFromMessage({ type: 'live_feed_snapshot', events: { events: [protocolEvent] } }), '');
@@ -488,9 +490,11 @@ test('maps live feed records to workflow event protocol values', () => {
   assert.equal(protocolEventGroup('repo.issues.synced'), 'repository');
   assert.equal(protocolEventGroup('airdrop.claimed'), 'token');
   assert.equal(protocolEventGroup('presale.reserved'), 'token');
+  assert.equal(protocolEventGroup('wallet.migrated'), 'wallet');
   assert.equal(isWorkflowEventType('deployment.updated'), true);
   assert.equal(isWorkflowEventType('airdrop.claimed'), true);
   assert.equal(isWorkflowEventType('presale.reserved'), true);
+  assert.equal(isWorkflowEventType('wallet.migrated'), true);
   assert.equal(isWorkflowEventType('agent.scanned'), true);
   assert.equal(isWorkflowEventType('unknown.event'), false);
 });

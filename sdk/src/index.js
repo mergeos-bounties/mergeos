@@ -28,6 +28,7 @@ export const workflowEventTypes = Object.freeze({
   ledgerRecorded: 'ledger.recorded',
   airdropClaimed: 'airdrop.claimed',
   presaleReserved: 'presale.reserved',
+  walletMigrated: 'wallet.migrated',
   agentAction: 'agent.action',
 });
 
@@ -790,6 +791,7 @@ export function liveFeedTypeToProtocolEventType(type = '', action = '') {
   if (normalized.startsWith('ledger_task_payment')) return workflowEventTypes.taskPaid;
   if (normalized === 'ledger_airdrop_claim') return workflowEventTypes.airdropClaimed;
   if (normalized === 'ledger_presale_reservation') return workflowEventTypes.presaleReserved;
+  if (normalized === 'ledger_wallet_migration') return workflowEventTypes.walletMigrated;
   if (normalized.startsWith('ledger_')) return workflowEventTypes.ledgerRecorded;
   if (normalized === 'agent_action') return agentActionEventType(action);
   return {
@@ -857,6 +859,7 @@ export function protocolEventGroup(type = '') {
   if (normalized.startsWith('deployment.')) return 'deployment';
   if (normalized.startsWith('repo.')) return 'repository';
   if (normalized.startsWith('airdrop.') || normalized.startsWith('presale.')) return 'token';
+  if (normalized.startsWith('wallet.')) return 'wallet';
   if (normalized.startsWith('ledger.')) return 'ledger';
   return 'unknown';
 }
