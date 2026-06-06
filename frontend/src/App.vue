@@ -2741,21 +2741,56 @@
                 </div>
                 <section v-if="repoImportedIssues.length" class="repo-import-next-panel">
                   <div>
-                    <strong>Scored task graph ready</strong>
-                    <p>{{ repoImportResult.owner }}/{{ repoImportResult.name }} has {{ repoImportedIssues.length }} issue{{ repoImportedIssues.length === 1 ? '' : 's' }} ready for scope, budget, and escrow funding.</p>
+                    <strong>Imported issues ready for task planning</strong>
+                    <p>{{ repoImportResult.owner }}/{{ repoImportResult.name }} has {{ repoImportedIssues.length }} issue{{ repoImportedIssues.length === 1 ? '' : 's' }} staged for scope, reward estimation, bounty lanes, and escrow funding.</p>
                   </div>
-                  <div class="dashboard-tool-empty-actions compact">
-                    <button type="button" @click="continueImportedRepoProject('scope')">
+                  <div class="dashboard-tool-empty-actions compact repo-import-next-actions">
+                    <button class="repo-import-primary-action" type="button" @click="continueImportedRepoProject('scope')">
                       <GitBranch :size="13" />
-                      Continue to Scope
+                      Create Scoped Tasks
                     </button>
                     <button type="button" @click="continueImportedRepoProject('estimate')">
                       <Calculator :size="13" />
-                      Estimate Budget
+                      Estimate Reward
                     </button>
                     <button type="button" @click="continueImportedRepoProject('funding')">
                       <CircleDollarSign :size="13" />
-                      Open Funding
+                      Fund Escrow
+                    </button>
+                  </div>
+                </section>
+                <section v-if="repoImportedIssues.length" class="repo-import-publish-plan" aria-label="Repository publish path">
+                  <header class="repo-import-publish-head">
+                    <span>Publish path</span>
+                    <div>
+                      <strong>{{ repoImportPublishPlanSummary.title }}</strong>
+                      <p>{{ repoImportPublishPlanSummary.body }}</p>
+                    </div>
+                  </header>
+                  <ol class="repo-import-publish-steps">
+                    <li v-for="row in repoImportPublishPlanRows" :key="row.key" :class="row.tone">
+                      <span>
+                        <component :is="row.icon" :size="14" />
+                      </span>
+                      <div>
+                        <strong>{{ row.title }}</strong>
+                        <small>{{ row.body }}</small>
+                      </div>
+                      <b>{{ row.meta }}</b>
+                    </li>
+                  </ol>
+                  <div class="repo-import-publish-actions">
+                    <button type="button" @click="openImportedRepoPublishPreview('bounties')">
+                      <Trophy :size="13" />
+                      Preview Bounties
+                    </button>
+                    <button type="button" @click="openImportedRepoPublishPreview('agents')">
+                      <Bot :size="13" />
+                      Agent Packets
+                    </button>
+                    <button type="button" @click="openImportedRepoLiveProof">
+                      <GitPullRequest :size="13" />
+                      Live Proof
                     </button>
                   </div>
                 </section>
@@ -11059,6 +11094,71 @@ const repoImportedIssues = computed(() => Array.isArray(repoImportResult.value?.
 const repoImportedEstimateCents = computed(() =>
   repoImportedIssues.value.reduce((total, issue) => total + (Number(issue.estimated_cents) || 0), 0),
 );
+const repoImportProjectLabel = computed(() => {
+  const parsed = parseRepoDescriptor(repoImportResult.value?.repo_url || projectSetupForm.repoUrl);
+  const owner = repoImportResult.value?.owner || parsed?.owner || 'owner';
+  const name = repoImportResult.value?.name || parsed?.name || 'repo';
+  return `${owner}/${name}`;
+});
+const repoImportMarketplaceSearchTerm = computed(() =>
+  repoImportProjectLabel.value !== 'owner/repo' ? repoImportProjectLabel.value : (projectSetupForm.title.trim() || projectSetupForm.repoUrl.trim() || 'repo import'),
+);
+const repoImportPublishPlanSummary = computed(() => {
+  const issueCount = repoImportedIssues.value.length;
+  const estimate = formatMRGFromCents(repoImportedEstimateCents.value);
+  return {
+    title: `${issueCount} issue${issueCount === 1 ? '' : 's'} to funded work packets`,
+    body: `${repoImportProjectLabel.value} is staged for ${estimate} of estimated work, escrow funding, bounty or agent routing, and live proof.`,
+  };
+});
+const repoImportPublishPlanRows = computed(() => {
+  const issueCount = repoImportedIssues.value.length;
+  const deliverableCount = visibleDeliverables.value.length || issueCount;
+  return [
+    {
+      key: 'issues',
+      icon: Search,
+      tone: 'blue',
+      title: 'Issue signals',
+      body: `${issueCount} scored GitHub issue${issueCount === 1 ? '' : 's'} imported from ${repoImportProjectLabel.value}.`,
+      meta: 'Imported',
+    },
+    {
+      key: 'scope',
+      icon: ListTodo,
+      tone: 'purple',
+      title: 'Task packets',
+      body: 'Scope, deliverables, acceptance evidence, and review requirements are prefilled in the project draft.',
+      meta: `${deliverableCount} packet${deliverableCount === 1 ? '' : 's'}`,
+    },
+    {
+      key: 'lanes',
+      icon: Bot,
+      tone: 'green',
+      title: 'Bounty and agent lanes',
+      body: projectSetupForm.allowAgents
+        ? 'Human bounties and agent-ready packets are selected for the funded project.'
+        : 'Claimable bounty lanes are selected; agent packets can be enabled before funding.',
+      meta: projectSetupForm.allowAgents ? 'Hybrid' : 'Human first',
+    },
+    {
+      key: 'funding',
+      icon: CircleDollarSign,
+      tone: 'amber',
+      title: 'Escrow funding',
+      body: 'Funding locks the reserve, token mint, payout policy, and public contract references before work starts.',
+      meta: `${projectFundingAmount.value || minimumProjectFundingUSD} USD`,
+    },
+    {
+      key: 'proof',
+      icon: GitPullRequest,
+      tone: 'blue',
+      title: 'Marketplace proof',
+      body: 'PR review, deployment status, payout release, and ledger references stay visible as work moves.',
+      meta: 'Live feed',
+    },
+  ];
+});
 const minimumProjectBudgetMRG = TOKEN_RATE_PER_USD * 100;
 const maximumProjectBudgetMRG = TOKEN_RATE_PER_USD * 250000;
 const minimumProjectFundingUSD = 100;
@@ -22723,6 +22823,35 @@ function continueImportedRepoProject(destination = 'scope') {
 
   openImportedRepoWizardStep(2);
   showToast('Scored repository issues added to the project scope.');
+}
+
+function openImportedRepoPublishPreview(target = 'bounties') {
+  if (!ensureImportedRepoProjectDraft()) return;
+
+  const isAgentPreview = target === 'agents';
+  const searchTerm = repoImportMarketplaceSearchTerm.value;
+  if (isAgentPreview) {
+    projectSetupForm.allowAgents = true;
+  }
+
+  if (user.value) {
+    dashboardSearch.value = searchTerm;
+    openDashboardSection(isAgentPreview ? 'agents' : 'bounties');
+  } else {
+    marketplaceSearch.value = searchTerm;
+    openMarketplaceSection(isAgentPreview ? 'marketplace-agent-packets' : 'marketplace-bounties');
+  }
+
+  showToast(isAgentPreview
+    ? 'Agent packet lanes are filtered for the imported repository.'
+    : 'Bounty board is filtered for the imported repository.');
+}
+
+function openImportedRepoLiveProof() {
+  if (!ensureImportedRepoProjectDraft()) return;
+  activeLiveFeedType.value = 'Repository Scan';
+  openPublicPage('live');
+  showToast('Live proof view opened for repository scan and task events.');
 }
 
 function parseRepoDescriptor(value = '') {

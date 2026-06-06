@@ -136,6 +136,22 @@ test('live feed agent packets expose action handoff links', async () => {
   assert.match(appSource, /bountyID: liveFeedAgentBountyID\(item, contextUrls\)/);
 });
 
+test('repo import exposes publish path to bounties, agents, and live proof', async () => {
+  const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
+
+  assert.match(appSource, /class="repo-import-publish-plan"/);
+  assert.match(appSource, /const repoImportPublishPlanRows = computed\(\(\) => \{/);
+  assert.match(appSource, /const repoImportPublishPlanSummary = computed\(\(\) => \{/);
+  assert.match(appSource, /@click="openImportedRepoPublishPreview\('bounties'\)"/);
+  assert.match(appSource, /@click="openImportedRepoPublishPreview\('agents'\)"/);
+  assert.match(appSource, /@click="openImportedRepoLiveProof"/);
+  assert.match(appSource, /function openImportedRepoPublishPreview\(target = 'bounties'\)/);
+  assert.match(appSource, /projectSetupForm\.allowAgents = true;/);
+  assert.match(appSource, /openDashboardSection\(isAgentPreview \? 'agents' : 'bounties'\)/);
+  assert.match(appSource, /openMarketplaceSection\(isAgentPreview \? 'marketplace-agent-packets' : 'marketplace-bounties'\)/);
+  assert.match(appSource, /activeLiveFeedType\.value = 'Repository Scan';/);
+});
+
 test('creates runtime config for production defaults', () => {
   const env = {
     NODE_ENV: 'production',

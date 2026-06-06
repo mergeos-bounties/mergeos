@@ -15715,6 +15715,173 @@ svg {
   font-weight: 720;
 }
 
+.repo-import-publish-plan {
+  margin-top: 12px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(240, 253, 250, 0.72)),
+    #ffffff;
+  padding: 14px;
+}
+
+.repo-import-next-actions .repo-import-primary-action {
+  border-color: rgba(15, 159, 120, 0.34);
+  background: #0fa078;
+  color: #ffffff;
+  box-shadow: 0 10px 22px rgba(15, 159, 120, 0.16);
+}
+
+.repo-import-publish-head {
+  display: grid;
+  grid-template-columns: 118px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.repo-import-publish-head > span {
+  width: max-content;
+  border-radius: 999px;
+  background: #eefdf8;
+  color: #047857;
+  padding: 5px 8px;
+  font-size: 10px;
+  font-weight: 950;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.repo-import-publish-head strong {
+  display: block;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 940;
+}
+
+.repo-import-publish-head p {
+  max-width: 720px;
+  margin: 4px 0 0;
+  color: #536273;
+  font-size: 11px;
+  line-height: 1.45;
+  font-weight: 720;
+}
+
+.repo-import-publish-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 8px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.repo-import-publish-steps li {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.88);
+  padding: 10px;
+}
+
+.repo-import-publish-steps li > span {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+}
+
+.repo-import-publish-steps li.blue > span {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.repo-import-publish-steps li.purple > span {
+  background: #f5f3ff;
+  color: #7c3aed;
+}
+
+.repo-import-publish-steps li.green > span {
+  background: #ecfdf5;
+  color: #059669;
+}
+
+.repo-import-publish-steps li.amber > span {
+  background: #fff7ed;
+  color: #ea580c;
+}
+
+.repo-import-publish-steps li div {
+  min-width: 0;
+}
+
+.repo-import-publish-steps strong {
+  display: block;
+  overflow: hidden;
+  color: #111827;
+  font-size: 11px;
+  font-weight: 930;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.repo-import-publish-steps small {
+  display: -webkit-box;
+  margin-top: 4px;
+  overflow: hidden;
+  color: #64748b;
+  font-size: 10px;
+  line-height: 1.35;
+  font-weight: 720;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.repo-import-publish-steps b {
+  grid-column: 1 / -1;
+  width: max-content;
+  max-width: 100%;
+  border-radius: 999px;
+  background: #f8fafc;
+  color: #334155;
+  padding: 4px 7px;
+  font-size: 9px;
+  font-weight: 950;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.repo-import-publish-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.repo-import-publish-actions button {
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  color: #273244;
+  padding: 0 10px;
+  font-size: 10px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
 .dashboard-repository-list button,
 .dashboard-repository-list a,
 .dashboard-bounty-list button,
@@ -17319,6 +17486,15 @@ svg {
   .repo-import-next-panel {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .repo-import-publish-head,
+  .repo-import-publish-steps {
+    grid-template-columns: 1fr;
+  }
+
+  .repo-import-publish-actions button {
+    flex: 1 1 150px;
   }
 
   .escrow-control-actions {
