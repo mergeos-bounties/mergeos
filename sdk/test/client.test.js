@@ -4,6 +4,7 @@ import {
   MergeOSClient,
   airdropClaimPayload,
   agentActionPayloadFromWorkPacket,
+  agentReviewPayloadFromPRMonitorTask,
   agentActionPayload,
   agentActionEventType,
   agentActionEventTypes,
@@ -1136,6 +1137,57 @@ test('builds auto-release payloads from PR monitor task packets', () => {
     assert.equal(fetchImpl.calls[0].options.headers.Authorization, 'Bearer agent-token');
     assert.equal(fetchImpl.calls[0].options.body, JSON.stringify(task.auto_release_packet.payload));
   });
+});
+
+test('builds and sends review agent payloads from PR monitor review packets', async () => {
+  const task = {
+    task_id: 'tsk_1',
+    review_packet: {
+      status: 'blocked',
+      review_endpoint: '/api/projects/prj_1/agent-actions',
+      pull_request: {
+        number: 152,
+        url: 'https://github.com/mergeos-bounties/mergeos/pull/152',
+        labels: ['evidence: missing'],
+      },
+      payload: {
+        action: 'review',
+        claim_id: 'tsk_1',
+        bounty_id: 'prj_1:12',
+        agent_type: 'review-agent',
+        delegated_by: 'ceo-strategy-agent',
+        subagent_type: 'review-agent',
+        status: 'processed',
+        pull_number: 152,
+        reference_url: 'https://github.com/mergeos-bounties/mergeos/pull/152',
+        labels: ['evidence: missing'],
+        context_urls: ['/api/projects/prj_1/pull-requests'],
+        evidence: ['evidence: missing'],
+        runbook: ['Verify PR links to the funded bounty issue.'],
+        checks: [{ name: 'blocker', status: 'blocked', summary: 'workflow file changed' }],
+        delegation_chain: ['ceo-strategy-agent', 'review-agent'],
+      },
+    },
+  };
+  const payload = agentReviewPayloadFromPRMonitorTask(task);
+  assert.equal(payload.action, 'review');
+  assert.equal(payload.claim_id, 'tsk_1');
+  assert.equal(payload.pull_number, 152);
+  assert.equal(payload.reference_url, 'https://github.com/mergeos-bounties/mergeos/pull/152');
+  assert.deepEqual(payload.delegation_chain, ['ceo-strategy-agent', 'review-agent']);
+  assert.equal(payload.checks[0].status, 'blocked');
+
+  const fetchImpl = fakeFetch([
+    { status: 201, body: { protocol_version: 'mergeos.agent-action.v1', kind: 'agent_action', action: 'review', status: 'processed' } },
+  ]);
+  const client = new MergeOSClient({ token: 'agent-token', fetchImpl });
+  const response = await client.createProjectAgentReviewFromPRMonitorTask('prj_1', task);
+
+  assert.equal(response.kind, 'agent_action');
+  assert.equal(fetchImpl.calls[0].url, '/api/projects/prj_1/agent-actions');
+  assert.equal(fetchImpl.calls[0].options.method, 'POST');
+  assert.equal(fetchImpl.calls[0].options.headers.Authorization, 'Bearer agent-token');
+  assert.equal(fetchImpl.calls[0].options.body, JSON.stringify(payload));
 });
 
 test('funds repository scan suggested tasks and builds agent work packet actions', async () => {

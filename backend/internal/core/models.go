@@ -664,6 +664,7 @@ type ProjectTaskPullRequests struct {
 	Repository        string                      `json:"repository,omitempty"`
 	MonitorStatus     string                      `json:"monitor_status"`
 	MonitorError      string                      `json:"monitor_error,omitempty"`
+	ReviewPacket      map[string]any              `json:"review_packet,omitempty"`
 	ReleasePacket     map[string]any              `json:"release_packet,omitempty"`
 	AutoReleasePacket map[string]any              `json:"auto_release_packet,omitempty"`
 	PullRequests      []ProjectPullRequestSummary `json:"pull_requests"`

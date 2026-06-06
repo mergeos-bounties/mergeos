@@ -97,6 +97,7 @@ func projectPullRequestsMonitor(ctx context.Context, lister projectPullRequestLi
 				Repository: row.Repository,
 			})
 		}
+		row.ReviewPacket = projectPullRequestReviewPacket(project.ID, task, row)
 		if row.UpdatedAt.After(response.UpdatedAt) {
 			response.UpdatedAt = row.UpdatedAt
 		}
@@ -114,6 +115,7 @@ func publicProjectPullRequestsMonitor(ctx context.Context, lister projectPullReq
 	for i := range response.Tasks {
 		response.Tasks[i].TaskID = ""
 		response.Tasks[i].WorkerID = ""
+		response.Tasks[i].ReviewPacket = nil
 		response.Tasks[i].ReleasePacket = nil
 		response.Tasks[i].AutoReleasePacket = nil
 	}
@@ -390,6 +392,100 @@ func projectAutoReleaseValidationSignals(signals []string) []string {
 		}
 	}
 	return rows
+}
+
+func projectPullRequestReviewPacket(projectID string, task *Task, row ProjectTaskPullRequests) map[string]any {
+	if task == nil || len(row.PullRequests) == 0 || strings.TrimSpace(projectID) == "" {
+		return nil
+	}
+	selected := row.PullRequests[0]
+	for _, pull := range row.PullRequests[1:] {
+		if pull.UpdatedAt.After(selected.UpdatedAt) {
+			selected = pull
+		}
+	}
+	reviewChecks := []AgentActionCheck{}
+	readiness := selected.Readiness
+	if readiness.Status != "" {
+		reviewChecks = append(reviewChecks, AgentActionCheck{Name: "readiness", Status: readiness.Status, Summary: "PR readiness gate"})
+	}
+	if readiness.RiskLevel != "" {
+		reviewChecks = append(reviewChecks, AgentActionCheck{Name: "risk", Status: readiness.RiskLevel, Summary: "MergeOS risk gate"})
+	}
+	for _, blocker := range readiness.Blockers {
+		reviewChecks = append(reviewChecks, AgentActionCheck{Name: "blocker", Status: "blocked", Summary: sanitizeLedgerReferenceValue(blocker), ReferenceURL: selected.HTMLURL})
+	}
+	for _, warning := range readiness.Warnings {
+		reviewChecks = append(reviewChecks, AgentActionCheck{Name: "warning", Status: "needs_review", Summary: sanitizeLedgerReferenceValue(warning), ReferenceURL: selected.HTMLURL})
+	}
+	evidence := append([]string{}, readiness.Signals...)
+	if len(evidence) == 0 {
+		evidence = []string{"pull_request"}
+	}
+	contextURLs := []string{
+		fmt.Sprintf("/api/projects/%s/pull-requests", projectID),
+		fmt.Sprintf("/api/projects/%s/deployment", projectID),
+		fmt.Sprintf("/api/projects/%s/protocol/workflow", projectID),
+	}
+	if row.IssueURL != "" {
+		contextURLs = append(contextURLs, row.IssueURL)
+	}
+	payload := AgentActionRequest{
+		Action:       "review",
+		ClaimID:      task.ID,
+		BountyID:     marketplaceBountyID(task.ProjectID, task.IssueNumber),
+		AgentType:    "review-agent",
+		DelegatedBy:  "ceo-strategy-agent",
+		SubagentType: "review-agent",
+		Status:       "processed",
+		PullNumber:   selected.Number,
+		ReferenceURL: selected.HTMLURL,
+		Labels:       append([]string{}, selected.Labels...),
+		ContextURLs:  contextURLs,
+		Evidence:     projectAutoReleaseValidationSignals(evidence),
+		Runbook: []string{
+			"Verify PR links to the funded bounty issue.",
+			"Check readiness blockers, warnings, labels, tests, and deployment validation.",
+			"Post review evidence through the MergeOS agent action endpoint.",
+		},
+		Checks:          reviewChecks,
+		DelegationChain: []string{"ceo-strategy-agent", "review-agent"},
+	}
+	return map[string]any{
+		"status":          reviewPacketStatus(readiness),
+		"method":          "POST",
+		"review_endpoint": fmt.Sprintf("/api/projects/%s/agent-actions", projectID),
+		"pull_request": map[string]any{
+			"number": selected.Number,
+			"title":  selected.Title,
+			"url":    selected.HTMLURL,
+			"author": selected.Author,
+			"state":  selected.State,
+		},
+		"context_urls": map[string]string{
+			"pr_monitor":  fmt.Sprintf("/api/projects/%s/pull-requests", projectID),
+			"deployment":  fmt.Sprintf("/api/projects/%s/deployment", projectID),
+			"workflow":    fmt.Sprintf("/api/projects/%s/protocol/workflow", projectID),
+			"public_feed": "/api/public/live-feed",
+		},
+		"runbook": []map[string]any{
+			{"step": 1, "action": "inspect_pr", "label": "Inspect pull request readiness", "endpoint": fmt.Sprintf("/api/projects/%s/pull-requests", projectID)},
+			{"step": 2, "action": "verify_deployment", "label": "Check deployment validation gates", "endpoint": fmt.Sprintf("/api/projects/%s/deployment", projectID)},
+			{"step": 3, "action": "record_review", "label": "Record review evidence", "endpoint": fmt.Sprintf("/api/projects/%s/agent-actions", projectID)},
+		},
+		"payload": payload,
+	}
+}
+
+func reviewPacketStatus(readiness AdminPullRequestReadiness) string {
+	switch strings.ToLower(strings.TrimSpace(readiness.Status)) {
+	case "ready":
+		return "ready"
+	case "blocked":
+		return "blocked"
+	default:
+		return "needs_review"
+	}
 }
 
 func attachProjectAutoReleasePackets(response *ProjectPullRequestsResponse, projectID string, rows []projectAutoReleaseMonitorRow) {

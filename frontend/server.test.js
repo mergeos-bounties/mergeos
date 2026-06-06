@@ -133,6 +133,8 @@ test('public agent runbook and SDK document PR monitor auto-release plus proposa
   assert.match(sdkReadme, /autoReleasePayloadFromPRMonitorTask/);
   assert.match(sdkReadme, /autoReleaseProofsFromResponse/);
   assert.match(sdkReadme, /projectAutoReleaseFromPRMonitorTask\(projectID, task\)/);
+  assert.match(sdkReadme, /agentReviewPayloadFromPRMonitorTask/);
+  assert.match(sdkReadme, /createProjectAgentReviewFromPRMonitorTask\(projectID, task\)/);
   assert.match(sdkReadme, /Marketplace Proposal Packet/);
   assert.match(sdkReadme, /proposalPayloadFromBounty/);
   assert.match(sdkReadme, /createProposalFromBounty\(bounty, overrides\)/);

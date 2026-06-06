@@ -136,6 +136,22 @@ func TestProjectPullRequestsMonitorSummarizesReadinessWithoutAdminFields(t *test
 	if payload.Tasks[0].RewardCents != 50 || payload.Tasks[0].WorkerKind != WorkerHuman {
 		t.Fatalf("expected task release metadata: %#v", payload.Tasks[0])
 	}
+	if payload.Tasks[0].ReviewPacket == nil || payload.Tasks[0].ReviewPacket["review_endpoint"] != "/api/projects/prj_1/agent-actions" {
+		t.Fatalf("expected PR review packet: %#v", payload.Tasks[0].ReviewPacket)
+	}
+	reviewPayload, ok := payload.Tasks[0].ReviewPacket["payload"].(AgentActionRequest)
+	if !ok {
+		t.Fatalf("expected review packet agent action payload: %#v", payload.Tasks[0].ReviewPacket)
+	}
+	if reviewPayload.Action != "review" || reviewPayload.ClaimID != "tsk_1" || reviewPayload.BountyID != "prj_1:7" || reviewPayload.PullNumber != 13 || reviewPayload.ReferenceURL != "https://github.com/mergeos-bounties/mergeos/pull/13" {
+		t.Fatalf("unexpected review packet payload: %#v", reviewPayload)
+	}
+	if reviewPayload.AgentType != "review-agent" || len(reviewPayload.Runbook) < 3 || !containsString(reviewPayload.ContextURLs, "/api/projects/prj_1/pull-requests") {
+		t.Fatalf("review packet missing agent context: %#v", reviewPayload)
+	}
+	if payload.Tasks[0].ReviewPacket["status"] != "blocked" || len(reviewPayload.Checks) == 0 {
+		t.Fatalf("expected latest review packet status to carry blocker checks: %#v", payload.Tasks[0].ReviewPacket)
+	}
 	if payload.Tasks[0].ReleasePacket == nil || payload.Tasks[0].ReleasePacket["can_release"] != true {
 		t.Fatalf("expected single release packet: %#v", payload.Tasks[0].ReleasePacket)
 	}
@@ -482,7 +498,7 @@ func TestPublicProjectPullRequestsMonitorOmitsInternalTaskIDs(t *testing.T) {
 	if err != nil {
 		t.Fatalf("marshal public PR monitor: %v", err)
 	}
-	for _, value := range []string{"tsk_public", `"task_id"`, `"release_packet"`, `"auto_release_packet"`, "github:builder"} {
+	for _, value := range []string{"tsk_public", `"task_id"`, `"review_packet"`, `"release_packet"`, `"auto_release_packet"`, "github:builder"} {
 		if strings.Contains(string(body), value) {
 			t.Fatalf("public PR monitor leaked private release value %q: %s", value, string(body))
 		}

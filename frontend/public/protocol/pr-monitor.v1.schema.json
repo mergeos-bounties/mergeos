@@ -47,6 +47,10 @@
           "repository": { "type": "string", "maxLength": 240 },
           "monitor_status": { "enum": ["unlinked", "linked", "synced", "error"] },
           "monitor_error": { "type": "string", "maxLength": 500 },
+          "review_packet": {
+            "type": "object",
+            "additionalProperties": true
+          },
           "release_packet": {
             "type": "object",
             "additionalProperties": true

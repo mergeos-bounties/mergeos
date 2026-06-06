@@ -372,9 +372,16 @@ Public bounty rows expose `proposal_endpoint` and `proposal_packet.payload` so c
 ## PR Monitor Auto-Release
 
 ```js
-import { autoReleasePayloadFromPRMonitorTask, autoReleaseProofsFromResponse } from '@mergeos/sdk';
+import { agentReviewPayloadFromPRMonitorTask, autoReleasePayloadFromPRMonitorTask, autoReleaseProofsFromResponse } from '@mergeos/sdk';
 
 const monitor = await mergeos.projectPullRequests('prj_0001');
+const reviewTask = monitor.tasks.find((row) => row.review_packet);
+if (reviewTask) {
+  const reviewPayload = agentReviewPayloadFromPRMonitorTask(reviewTask);
+  const review = await mergeos.createProjectAgentReviewFromPRMonitorTask('prj_0001', reviewTask, reviewPayload);
+  console.log(review.kind, review.action, review.status);
+}
+
 const task = monitor.tasks.find((row) => row.auto_release_packet?.can_auto_release);
 
 if (task) {
@@ -386,6 +393,8 @@ if (task) {
 ```
 
 `projectAutoReleaseFromPRMonitorTask(projectID, task)` performs the same payload build and POST in one call. The helper prefers the backend-provided `auto_release_packet.payload`, then falls back to a candidate derived from PR readiness, deployment validation signals, worker identity, and reward metadata. Use `autoReleaseProofsFromResponse(response)` after release to read the public PR, deployment validation, policy, and ledger reference proof trail.
+
+`createProjectAgentReviewFromPRMonitorTask(projectID, task)` uses the authenticated `review_packet` from PR monitor rows to record review-agent evidence against `/api/projects/{id}/agent-actions`. The packet includes PR number, review checks, context URLs, runbook steps, and CEO-to-review-agent delegation metadata.
 
 ## Admin APIs
 

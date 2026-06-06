@@ -361,6 +361,12 @@ export class MergeOSClient {
     });
   }
 
+  createProjectAgentReviewFromPRMonitorTask(projectID, task = {}, overrides = {}) {
+    const packet = task.review_packet && typeof task.review_packet === 'object' ? task.review_packet : {};
+    const endpoint = overrides.review_endpoint || overrides.reviewEndpoint || packet.review_endpoint || `/api/projects/${encodeURIComponent(projectID)}/agent-actions`;
+    return this.request(endpoint, { method: 'POST', body: agentReviewPayloadFromPRMonitorTask(task, overrides) });
+  }
+
   recordAgentReview(projectID, payload = {}) {
     return this.createProjectAgentAction(projectID, agentActionPayload('review', payload));
   }
@@ -850,6 +856,34 @@ export function agentActionPayloadFromWorkPacket(workPacket = {}, action = 'revi
     design_agent: overrides.design_agent || overrides.designAgent || body.design_agent || workPacket.design_review_agent,
     subagent_type: overrides.subagent_type || overrides.subagentType || body.subagent_type || workPacket.subagent_type,
     delegation_chain: overrides.delegation_chain || overrides.delegationChain || body.delegation_chain || workPacket.delegation_chain || [],
+  });
+}
+
+export function agentReviewPayloadFromPRMonitorTask(task = {}, overrides = {}) {
+  const packet = task.review_packet && typeof task.review_packet === 'object' ? task.review_packet : {};
+  const packetPayload = packet.payload && typeof packet.payload === 'object' ? packet.payload : {};
+  const pullRequest = packet.pull_request && typeof packet.pull_request === 'object'
+    ? packet.pull_request
+    : Array.isArray(task.pull_requests)
+      ? task.pull_requests[0] || {}
+      : {};
+  return agentActionPayload('review', {
+    ...packetPayload,
+    ...overrides,
+    claim_id: overrides.claim_id || overrides.claimId || packetPayload.claim_id || task.task_id || '',
+    bounty_id: overrides.bounty_id || overrides.bountyId || packetPayload.bounty_id || '',
+    agent_type: overrides.agent_type || overrides.agentType || packetPayload.agent_type || 'review-agent',
+    delegated_by: overrides.delegated_by || overrides.delegatedBy || packetPayload.delegated_by || 'ceo-strategy-agent',
+    subagent_type: overrides.subagent_type || overrides.subagentType || packetPayload.subagent_type || 'review-agent',
+    status: overrides.status || packetPayload.status || packet.status || 'processed',
+    pull_number: overrides.pull_number ?? overrides.pullNumber ?? packetPayload.pull_number ?? pullRequest.number,
+    reference_url: overrides.reference_url || overrides.referenceURL || packetPayload.reference_url || pullRequest.url || pullRequest.html_url || '',
+    labels: Array.isArray(overrides.labels) ? overrides.labels : Array.isArray(packetPayload.labels) ? packetPayload.labels : Array.isArray(pullRequest.labels) ? pullRequest.labels : [],
+    context_urls: overrides.context_urls || overrides.contextURLs || packetPayload.context_urls || packet.context_urls || [],
+    evidence: overrides.evidence || packetPayload.evidence || pullRequest.readiness?.signals || [],
+    runbook: overrides.runbook || packetPayload.runbook || packet.runbook || [],
+    checks: overrides.checks || packetPayload.checks || [],
+    delegation_chain: overrides.delegation_chain || overrides.delegationChain || packetPayload.delegation_chain || ['ceo-strategy-agent', 'review-agent'],
   });
 }
 
