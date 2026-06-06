@@ -28104,3 +28104,314 @@ canvas {
   }
 }
 
+/* Logged-in mobile dashboard polish: this late block intentionally wins over
+   older dashboard breakpoints so the signed-in shell behaves consistently. */
+@media (max-width: 760px) {
+  .dashboard-shell {
+    --dash-mobile-gutter: clamp(12px, 4vw, 18px);
+  }
+
+  .dashboard-shell .dash-sidebar {
+    padding: 8px var(--dash-mobile-gutter) 7px;
+  }
+
+  .dashboard-shell .dash-brand {
+    min-height: 30px;
+    padding-bottom: 5px;
+  }
+
+  .dashboard-shell .dash-brand .brand-mark {
+    width: 28px;
+    height: 28px;
+  }
+
+  .dashboard-shell .dash-side-nav {
+    margin-left: calc(var(--dash-mobile-gutter) * -1);
+    margin-right: calc(var(--dash-mobile-gutter) * -1);
+    padding: 0 var(--dash-mobile-gutter) 3px;
+  }
+
+  .dashboard-shell .dash-side-nav button {
+    min-height: 40px;
+    padding-inline: 12px;
+  }
+
+  .dashboard-shell .dash-topbar {
+    gap: 7px;
+    padding: 8px var(--dash-mobile-gutter) 0;
+  }
+
+  .dashboard-shell .dash-top-actions {
+    grid-template-columns: 42px minmax(0, 1fr) 42px;
+  }
+
+  .dashboard-shell .dash-icon-button,
+  .dashboard-shell .dash-profile {
+    width: 42px;
+    min-height: 42px;
+    max-width: 42px;
+  }
+
+  .dashboard-shell .dash-top-actions .primary-button.compact {
+    min-width: 0;
+    min-height: 42px;
+    overflow: hidden;
+    padding-inline: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .dashboard-shell .dash-command-strip,
+  .dashboard-shell .dash-content {
+    margin-left: var(--dash-mobile-gutter);
+    margin-right: var(--dash-mobile-gutter);
+  }
+
+  .dashboard-shell .dash-command-strip {
+    gap: 12px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    padding: 13px;
+  }
+
+  .dashboard-shell .dash-command-copy h1 {
+    max-width: 12ch;
+    font-size: clamp(22px, 7vw, 29px);
+    line-height: 1.02;
+  }
+
+  .dashboard-shell .dash-command-copy p {
+    margin-top: 6px;
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  .dashboard-shell .dash-command-metrics {
+    display: flex;
+    grid-template-columns: none;
+    gap: 8px;
+    margin-inline: -2px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 2px 2px 6px;
+    scroll-padding-inline: 2px;
+    scrollbar-width: none;
+  }
+
+  .dashboard-shell .dash-command-metrics::-webkit-scrollbar {
+    display: none;
+  }
+
+  .dashboard-shell .dash-command-metrics article {
+    min-height: 70px;
+    flex: 0 0 min(160px, 72vw);
+    align-items: center;
+    padding: 10px;
+  }
+
+  .dashboard-shell .dash-command-metrics strong {
+    font-size: clamp(20px, 6.5vw, 27px);
+    line-height: 1;
+    overflow-wrap: anywhere;
+  }
+
+  .dashboard-shell .dash-command-metrics small {
+    font-size: 10px;
+    line-height: 1.2;
+  }
+
+  .dashboard-shell .dashboard-role-map {
+    gap: 8px;
+    padding-bottom: 2px;
+    scroll-snap-type: x proximity;
+  }
+
+  .dashboard-shell .dashboard-role-map article {
+    min-height: 0;
+    flex-basis: min(218px, calc(100vw - (var(--dash-mobile-gutter) * 2)));
+    padding: 11px;
+    scroll-snap-align: start;
+  }
+
+  .dashboard-shell .dashboard-role-map header {
+    gap: 9px;
+  }
+
+  .dashboard-shell .dashboard-role-map header b {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .dashboard-shell .dashboard-role-primary {
+    min-height: 36px;
+  }
+
+  .dashboard-shell .dash-content {
+    gap: 12px;
+    padding-bottom: 16px;
+  }
+
+  .dashboard-shell .dash-main {
+    display: grid;
+    gap: 12px;
+  }
+
+  .dashboard-shell .dash-breadcrumb {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  .dashboard-shell .dash-project-header {
+    margin-top: 0;
+    padding: 13px;
+  }
+
+  .dashboard-shell .dash-project-title {
+    grid-template-columns: 42px minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .dashboard-shell .project-photo {
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+  }
+
+  .dashboard-shell .dash-project-title h1 {
+    font-size: clamp(21px, 6.8vw, 27px);
+  }
+
+  .dashboard-shell .dash-project-title p {
+    margin-top: 4px;
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  .dashboard-shell .dash-project-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    width: 100%;
+    gap: 7px;
+  }
+
+  .dashboard-shell .dash-project-actions > button,
+  .dashboard-shell .dashboard-project-action-menu,
+  .dashboard-shell .dashboard-project-action-menu > button {
+    width: 100%;
+  }
+
+  .dashboard-shell .dash-card,
+  .dashboard-shell .dash-empty-state,
+  .dashboard-shell .dash-metrics article,
+  .dashboard-shell .payment-summary-card,
+  .dashboard-shell .rail-card {
+    border-radius: 9px;
+    padding: 13px;
+  }
+
+  .dashboard-shell .card-title-row {
+    gap: 8px;
+  }
+
+  .dashboard-shell .card-title-row h2 {
+    font-size: 17px;
+    line-height: 1.18;
+  }
+
+  .dashboard-shell .card-title-row p,
+  .dashboard-shell .dash-card p {
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  .dashboard-shell .dash-tabs {
+    display: flex;
+    gap: 6px;
+    margin-inline: calc(var(--dash-mobile-gutter) * -1);
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-inline: var(--dash-mobile-gutter);
+    scroll-padding-inline: var(--dash-mobile-gutter);
+    scrollbar-width: none;
+  }
+
+  .dashboard-shell .dash-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .dashboard-shell .dash-tabs button {
+    min-height: 38px;
+    flex: 0 0 auto;
+    padding-inline: 12px;
+    white-space: nowrap;
+  }
+
+  .dashboard-shell .dashboard-repository-list strong,
+  .dashboard-shell .dashboard-bounty-list strong,
+  .dashboard-shell .dashboard-agent-task-list strong {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .dashboard-shell .dashboard-tool-empty-actions,
+  .dashboard-shell .payment-history-actions,
+  .dashboard-shell .wallet-action-row,
+  .dashboard-shell .agent-task-links,
+  .dashboard-shell .admin-ops-row-actions,
+  .dashboard-shell .admin-dispute-item-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    width: 100%;
+    gap: 7px;
+  }
+
+  .dashboard-shell .dashboard-tool-empty-actions button,
+  .dashboard-shell .payment-history-actions button,
+  .dashboard-shell .wallet-action-row button,
+  .dashboard-shell .wallet-action-row a,
+  .dashboard-shell .agent-task-links button,
+  .dashboard-shell .agent-task-links a,
+  .dashboard-shell .admin-ops-row-actions button,
+  .dashboard-shell .admin-ops-row-actions a,
+  .dashboard-shell .admin-dispute-item-actions button,
+  .dashboard-shell .admin-dispute-item-actions a {
+    width: 100%;
+    min-width: 0;
+    justify-content: center;
+  }
+
+  .notification-dropdown {
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
+
+  .dashboard-account-menu .account-context-menu {
+    position: fixed;
+    top: 112px;
+    right: 12px;
+    z-index: 430;
+    width: min(274px, calc(100vw - 24px));
+  }
+}
+
+@media (max-width: 430px) {
+  .dashboard-shell .dash-search {
+    height: 36px;
+  }
+
+  .dashboard-shell .dash-command-copy p {
+    display: none;
+  }
+
+  .dashboard-shell .dash-command-metrics article {
+    flex-basis: 142px;
+  }
+
+  .dashboard-shell .dashboard-role-map article {
+    flex-basis: 202px;
+  }
+}
+
