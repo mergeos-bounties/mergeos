@@ -29945,3 +29945,122 @@ canvas {
   }
 }
 
+/* Signed-in mobile login-safe pass: the authenticated workspace keeps four
+   header actions, scrollable menus, and card-like content after user data loads. */
+@media (max-width: 760px) {
+  .dashboard-shell {
+    isolation: isolate;
+  }
+
+  .dashboard-shell .dash-sidebar,
+  .dashboard-shell .dash-topbar {
+    width: 100%;
+  }
+
+  .dashboard-shell .dash-mobile-nav {
+    min-width: 0;
+    align-items: stretch;
+  }
+
+  .dashboard-shell .dash-mobile-menu {
+    max-width: calc(100vw - (var(--dash-mobile-gutter, 14px) * 2));
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .dashboard-shell .dash-top-actions {
+    grid-template-columns: 44px 44px minmax(0, 1fr) 44px;
+  }
+
+  .dashboard-shell .dash-topnav {
+    display: none !important;
+  }
+
+  .dashboard-shell .notification-menu-wrap {
+    display: grid;
+    justify-items: stretch;
+  }
+
+  .dashboard-shell .notification-menu-wrap .dash-icon-button,
+  .dashboard-shell .dashboard-account-menu .dash-profile {
+    justify-self: stretch;
+  }
+
+  .dashboard-shell .dash-content {
+    min-height: 0;
+    padding-bottom: calc(28px + env(safe-area-inset-bottom));
+  }
+
+  .dashboard-shell .dash-main,
+  .dashboard-shell .dash-rail {
+    gap: 12px;
+  }
+
+  .dashboard-shell .dash-card,
+  .dashboard-shell .rail-card,
+  .dashboard-shell .dashboard-tool-card,
+  .dashboard-shell .dashboard-project-panel,
+  .dashboard-shell .dashboard-side-panel,
+  .dashboard-shell .dash-empty-state {
+    overflow: hidden;
+  }
+
+  .dashboard-shell :is(.dash-card, .rail-card, .dashboard-tool-card, .dashboard-project-panel, .dashboard-side-panel, .dash-empty-state) > * {
+    min-width: 0;
+  }
+
+  .dashboard-shell :is(.dashboard-repository-list, .dashboard-bounty-list, .dashboard-agent-task-list, .worker-proposal-list, .worker-submitted-proposal-list, .payment-history-list, .notification-center-list, .repo-finding-list, .repo-task-graph-list, .ledger-economy-recent-list) {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .dashboard-shell :is(.dashboard-repository-list, .dashboard-bounty-list, .dashboard-agent-task-list, .worker-proposal-list, .worker-submitted-proposal-list, .payment-history-list, .notification-center-list, .repo-finding-list, .repo-task-graph-list, .ledger-economy-recent-list) article {
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+  }
+
+  .dashboard-shell .dashboard-tool-form :is(label, input, textarea, select),
+  .dashboard-shell .wallet-migration-grid :is(label, input, textarea, select),
+  .dashboard-shell .payment-history-side,
+  .dashboard-shell .admin-ops-row div,
+  .dashboard-shell .dashboard-agent-task-list div,
+  .dashboard-shell .worker-proposal-main {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .dashboard-shell .notification-dropdown,
+  .dashboard-shell .account-context-menu,
+  .dashboard-shell .dashboard-project-actions-panel {
+    left: clamp(12px, 4vw, 18px) !important;
+    right: clamp(12px, 4vw, 18px) !important;
+    max-width: calc(100vw - (var(--dash-mobile-gutter, 14px) * 2)) !important;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .dashboard-shell .dashboard-project-actions-panel {
+    width: auto !important;
+  }
+}
+
+@media (max-width: 430px) {
+  .dashboard-shell .dash-top-actions {
+    grid-template-columns: 42px 42px minmax(0, 1fr) 42px !important;
+  }
+
+  .dashboard-shell .notification-menu-wrap .dash-icon-button,
+  .dashboard-shell .dash-search-toggle,
+  .dashboard-shell .dashboard-account-menu .dash-profile {
+    min-width: 42px;
+    width: 42px;
+    max-width: 42px;
+  }
+
+  .project-step-actions > div {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+

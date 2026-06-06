@@ -321,6 +321,14 @@ test('signed-in mobile dashboard keeps nav, actions, and popovers phone-safe', a
   assert.match(cssSource, /\.dashboard-shell \.notification-dropdown,[\s\S]*\.dashboard-account-menu \.account-context-menu\s*\{[\s\S]*max-width: calc\(100vw - 24px\) !important;/);
   assert.match(cssSource, /\.dashboard-shell \.dashboard-tool-form,[\s\S]*\.dashboard-shell \.worker-claim-warnings\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\);/);
   assert.match(cssSource, /@media \(max-width: 430px\)[\s\S]*\.dashboard-shell \.dash-mobile-nav button\s*\{[\s\S]*min-height: 44px;/);
+  assert.match(cssSource, /Signed-in mobile login-safe pass/);
+  assert.match(cssSource, /\.dashboard-shell \.dash-top-actions\s*\{[\s\S]*grid-template-columns: 44px 44px minmax\(0, 1fr\) 44px;/);
+  assert.match(cssSource, /\.dashboard-shell \.dash-topnav\s*\{[\s\S]*display: none !important;/);
+  assert.match(cssSource, /\.dashboard-shell \.dash-mobile-menu\s*\{[\s\S]*max-width: calc\(100vw - \(var\(--dash-mobile-gutter, 14px\) \* 2\)\);[\s\S]*overflow-y: auto;[\s\S]*-webkit-overflow-scrolling: touch;/);
+  assert.match(cssSource, /@media \(max-width: 430px\)[\s\S]*\.dashboard-shell \.dash-top-actions\s*\{[\s\S]*grid-template-columns: 42px 42px minmax\(0, 1fr\) 42px !important;/);
+  assert.match(cssSource, /\.dashboard-shell \.notification-dropdown,[\s\S]*\.dashboard-shell \.dashboard-project-actions-panel\s*\{[\s\S]*left: clamp\(12px, 4vw, 18px\) !important;[\s\S]*right: clamp\(12px, 4vw, 18px\) !important;[\s\S]*max-width: calc\(100vw - \(var\(--dash-mobile-gutter, 14px\) \* 2\)\) !important;[\s\S]*overscroll-behavior: contain;/);
+  assert.match(cssSource, /\.dashboard-shell \.dashboard-project-actions-panel\s*\{[\s\S]*width: auto !important;/);
+  assert.match(cssSource, /@media \(max-width: 430px\)[\s\S]*\.project-step-actions > div\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\);/);
   assert.match(cssSource, /\.project-preview-dialog\s*\{[\s\S]*max-height: calc\(100dvh - 20px\);[\s\S]*overscroll-behavior: contain;/);
   assert.match(cssSource, /\.project-step-list strong\s*\{[\s\S]*font-size: 10\.5px;[\s\S]*-webkit-line-clamp: 2;/);
   assert.match(appSource, /dashboardNotificationMenuPlacement\.value = 'mobile-sheet';/);
