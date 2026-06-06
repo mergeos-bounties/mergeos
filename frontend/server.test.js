@@ -351,6 +351,14 @@ test('signed-in mobile dashboard keeps nav, actions, and popovers phone-safe', a
   assert.match(cssSource, /@media \(max-width: 380px\)[\s\S]*\.dashboard-shell \.dash-mobile-nav button span\s*\{[\s\S]*display: none;/);
   assert.match(cssSource, /@media \(max-width: 380px\)[\s\S]*\.dashboard-shell \.dash-top-actions \.primary-button\.compact span\s*\{[\s\S]*display: none;/);
   assert.match(cssSource, /@media \(max-width: 380px\)[\s\S]*\.notification-dropdown-actions\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) !important;/);
+  assert.match(cssSource, /Signed-in mobile continuity owner/);
+  assert.match(cssSource, /\.dashboard-shell \.dash-sidebar\s*\{[\s\S]*position: sticky;[\s\S]*z-index: 720;/);
+  assert.match(cssSource, /\.dashboard-shell \.dash-topbar\s*\{[\s\S]*position: sticky;[\s\S]*backdrop-filter: blur\(14px\);/);
+  assert.match(cssSource, /\.dashboard-shell \.dash-search\.mobile-open\s*\{[\s\S]*display: grid !important;/);
+  assert.match(cssSource, /\.dashboard-shell :is\(\.wallet-summary-card, \.project-picker-card, \.customer-protocol-card, \.workflow-pulse-card, \.ai-workflow-card, \.notification-center-card\)\s*\{[\s\S]*overflow: hidden;/);
+  assert.match(cssSource, /\.dashboard-shell \.wallet-address-box strong,[\s\S]*\.dashboard-shell \.repo-import-publish-steps :is\(strong, small, b\)\s*\{[\s\S]*overflow-wrap: anywhere;/);
+  assert.match(cssSource, /\.dashboard-shell \.dashboard-project-list button,[\s\S]*\.dashboard-shell \.repo-import-publish-steps li\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) !important;/);
+  assert.match(cssSource, /@media \(max-width: 430px\)[\s\S]*\.dashboard-shell \.dash-top-actions\s*\{[\s\S]*grid-template-columns: 42px 42px minmax\(58px, 1fr\) 42px !important;/);
   assert.match(appSource, /dashboardNotificationMenuPlacement\.value = 'mobile-sheet';/);
   assert.match(appSource, /window\.visualViewport\?\.addEventListener\('resize', updateDashboardNotificationMenuPosition\);/);
   assert.match(appSource, /<span>New Project<\/span>/);
