@@ -58,7 +58,13 @@
                 "type": {
                   "enum": ["review_task_pulls", "open_url", "run_ssl_review", "refresh_admin_ops"]
                 },
-                "url": { "type": "string", "maxLength": 512 }
+                "url": { "type": "string", "maxLength": 512 },
+                "method": { "enum": ["GET", "POST", "PATCH", "DELETE"] },
+                "endpoint": { "type": "string", "minLength": 1, "maxLength": 512 },
+                "payload": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
               }
             }
           },

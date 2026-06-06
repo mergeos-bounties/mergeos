@@ -2095,10 +2095,13 @@ type AdminOpsQueueItem struct {
 }
 
 type AdminOpsQueueAction struct {
-	ID    string `json:"id"`
-	Label string `json:"label"`
-	Type  string `json:"type"`
-	URL   string `json:"url,omitempty"`
+	ID       string         `json:"id"`
+	Label    string         `json:"label"`
+	Type     string         `json:"type"`
+	URL      string         `json:"url,omitempty"`
+	Method   string         `json:"method,omitempty"`
+	Endpoint string         `json:"endpoint,omitempty"`
+	Payload  map[string]any `json:"payload,omitempty"`
 }
 
 type AdminUser struct {

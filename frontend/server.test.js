@@ -121,7 +121,8 @@ test('admin dashboard consumes admin ops queue action contract', async () => {
   assert.match(appSource, /@click="handleAdminOpsQueueAction\(item, action\)"/);
   assert.match(appSource, /case 'review_task_pulls':/);
   assert.match(appSource, /case 'run_ssl_review':/);
-  assert.match(appSource, /api\('\/api\/admin\/ssl\/review', \{ method: 'POST' \}\)/);
+  assert.match(appSource, /method: action\.method \|\| 'POST'/);
+  assert.match(appSource, /api\(action\.endpoint \|\| '\/api\/admin\/ssl\/review', options\)/);
 });
 
 test('live feed agent packets expose action handoff links', async () => {

@@ -5831,10 +5831,12 @@ func TestAdminOpsQueueReturnsDisputeModerationAndPayoutItems(t *testing.T) {
 	}
 	seen := map[string]bool{}
 	actionSeen := map[string]bool{}
+	actionByType := map[string]AdminOpsQueueAction{}
 	for _, item := range payload.Items {
 		seen[item.Type] = true
 		for _, action := range item.Actions {
 			actionSeen[item.Type+":"+action.Type] = true
+			actionByType[item.Type+":"+action.Type] = action
 		}
 	}
 	for _, required := range []string{"payout_review", "payout_audit", "dispute", "moderation", "security_moderation", "fraud_review"} {
@@ -5853,6 +5855,18 @@ func TestAdminOpsQueueReturnsDisputeModerationAndPayoutItems(t *testing.T) {
 		if !actionSeen[required] {
 			t.Fatalf("ops queue missing action %s: %#v", required, payload.Items)
 		}
+	}
+	if action := actionByType["payout_review:review_task_pulls"]; action.Method != http.MethodGet || !strings.HasPrefix(action.Endpoint, "/api/admin/tasks/") || action.Payload["task_id"] == "" {
+		t.Fatalf("payout review action missing executable contract: %#v", action)
+	}
+	if action := actionByType["security_moderation:run_ssl_review"]; action.Method != http.MethodPost || action.Endpoint != "/api/admin/ssl/review" || action.Payload["domain"] != "expired.mergeos.local" {
+		t.Fatalf("ssl review action missing executable contract: %#v", action)
+	}
+	if action := actionByType["dispute:refresh_admin_ops"]; action.Method != http.MethodGet || action.Endpoint != "/api/admin/ops-queue" {
+		t.Fatalf("refresh action missing executable contract: %#v", action)
+	}
+	if action := actionByType["payout_audit:open_url"]; action.Method != http.MethodGet || action.Endpoint == "" || !strings.HasPrefix(action.Endpoint, "https://github.com/mergeos-bounties/mergeos/pull/") {
+		t.Fatalf("open proof action missing executable contract: %#v", action)
 	}
 }
 

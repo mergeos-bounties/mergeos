@@ -2,6 +2,8 @@ package core
 
 import (
 	"fmt"
+	"net/http"
+	"net/url"
 	"sort"
 	"strings"
 	"time"
@@ -189,6 +191,9 @@ func (s *Store) AdminOpsQueue() AdminOpsQueueResponse {
 	if len(response.Items) > maxAdminOpsQueueItems {
 		response.Items = response.Items[:maxAdminOpsQueueItems]
 	}
+	for i := range response.Items {
+		response.Items[i].Actions = adminOpsExecutableActions(response.Items[i])
+	}
 	response.Stats = adminOpsQueueStats(response.Items)
 	return response
 }
@@ -275,6 +280,41 @@ func adminOpsActions(itemType, taskID, url string) []AdminOpsQueueAction {
 		add("refresh-queue", "Refresh Queue", "refresh_admin_ops", "")
 	}
 	return actions
+}
+
+func adminOpsExecutableActions(item AdminOpsQueueItem) []AdminOpsQueueAction {
+	actions := append([]AdminOpsQueueAction(nil), item.Actions...)
+	for i := range actions {
+		actions[i] = adminOpsExecutableAction(item, actions[i])
+	}
+	return actions
+}
+
+func adminOpsExecutableAction(item AdminOpsQueueItem, action AdminOpsQueueAction) AdminOpsQueueAction {
+	switch action.Type {
+	case "review_task_pulls":
+		taskID := strings.TrimSpace(item.TaskID)
+		if taskID != "" {
+			action.Method = http.MethodGet
+			action.Endpoint = "/api/admin/tasks/" + url.PathEscape(taskID) + "/pulls"
+			action.Payload = map[string]any{"task_id": taskID}
+		}
+	case "run_ssl_review":
+		action.Method = http.MethodPost
+		action.Endpoint = "/api/admin/ssl/review"
+		if reference := strings.TrimSpace(item.Reference); reference != "" {
+			action.Payload = map[string]any{"domain": reference}
+		}
+	case "refresh_admin_ops":
+		action.Method = http.MethodGet
+		action.Endpoint = "/api/admin/ops-queue"
+	case "open_url":
+		if target := publicLiveFeedURL(action.URL); target != "" {
+			action.Method = http.MethodGet
+			action.Endpoint = target
+		}
+	}
+	return action
 }
 
 func adminOpsTokenWorkflowItem(entry LedgerEntry) AdminOpsQueueItem {

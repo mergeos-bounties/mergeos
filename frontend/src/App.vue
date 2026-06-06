@@ -26540,7 +26540,11 @@ async function handleAdminOpsQueueAction(item = {}, action = {}) {
       break;
     }
     case 'run_ssl_review': {
-      const rows = await api('/api/admin/ssl/review', { method: 'POST' });
+      const options = { method: action.method || 'POST' };
+      if (action.payload && Object.keys(action.payload).length) {
+        options.body = JSON.stringify(action.payload);
+      }
+      const rows = await api(action.endpoint || '/api/admin/ssl/review', options);
       await loadAdminConsoleData({ silent: true });
       showToast(`Reviewed ${Array.isArray(rows) ? rows.length : 0} SSL domain${Array.isArray(rows) && rows.length === 1 ? '' : 's'}.`);
       break;
@@ -27045,6 +27049,9 @@ function adminOpsQueueActions(item = {}) {
       type: action.type || 'open_url',
       label: action.label || adminOpsQueueActionLabel(action.type),
       url: action.url || '',
+      method: action.method || '',
+      endpoint: action.endpoint || '',
+      payload: action.payload && typeof action.payload === 'object' ? action.payload : {},
     }))
     .filter((action) => action.type || action.url);
   if (!actions.length && item.url) {
@@ -27054,6 +27061,9 @@ function adminOpsQueueActions(item = {}) {
       type: 'open_url',
       label: 'Open',
       url: item.url,
+      method: 'GET',
+      endpoint: item.url,
+      payload: {},
     });
   }
   return actions;
