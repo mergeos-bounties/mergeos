@@ -491,7 +491,7 @@ func publicLedgerLiveFeedItem(entry LedgerEntry, projectIDs map[string]bool, tas
 		ProjectID:      projectID,
 		ProjectTitle:   projectTitle,
 		TaskID:         publicTaskID,
-		Actor:          publicLedgerAccount(entry.ToAccount, projectID, publicTaskID),
+		Actor:          publicLedgerLiveFeedActor(entry, projectID, publicTaskID),
 		AmountCents:    entry.AmountCents,
 		LedgerSequence: entry.Sequence,
 		EntryHash:      entry.EntryHash,
@@ -499,6 +499,17 @@ func publicLedgerLiveFeedItem(entry LedgerEntry, projectIDs map[string]bool, tas
 		URL:            publicLiveFeedReferenceURL(reference),
 		Status:         "verified",
 		CreatedAt:      entry.CreatedAt,
+	}
+}
+
+func publicLedgerLiveFeedActor(entry LedgerEntry, projectID, publicTaskID string) string {
+	switch entry.Type {
+	case "airdrop_claim":
+		return publicLedgerAccount(entry.FromAccount, projectID, publicTaskID)
+	case "presale_reservation":
+		return publicLedgerAccount(entry.ToAccount, projectID, publicTaskID)
+	default:
+		return publicLedgerAccount(entry.ToAccount, projectID, publicTaskID)
 	}
 }
 

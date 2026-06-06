@@ -33,7 +33,7 @@
         "properties": {
           "id": { "type": "string", "minLength": 1, "maxLength": 200 },
           "type": {
-            "enum": ["payout_review", "payout_audit", "proposal_review", "dispute", "moderation", "security_moderation", "fraud_review"]
+            "enum": ["payout_review", "payout_audit", "proposal_review", "dispute", "moderation", "security_moderation", "fraud_review", "token_workflow_review"]
           },
           "severity": { "enum": ["low", "medium", "high", "critical"] },
           "title": { "type": "string", "minLength": 1, "maxLength": 240 },

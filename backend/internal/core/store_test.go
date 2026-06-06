@@ -1537,6 +1537,18 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 	if reservation.LedgerEntry.Type != "presale_reservation" || reservation.LedgerEntry.AmountCents != 25000 || len(reservation.LedgerEntry.EntryHash) != 64 {
 		t.Fatalf("presale ledger entry invalid: %#v", reservation.LedgerEntry)
 	}
+	tokenWorkflowNotifications := 0
+	for _, note := range store.ListNotifications(auth.User.ID) {
+		if note.Channel == "token_workflow" {
+			tokenWorkflowNotifications++
+			if !strings.Contains(note.Status, "pending_review") || strings.Contains(note.Body, wallet) || strings.Contains(note.Status, wallet) {
+				t.Fatalf("token workflow notification unsafe or incomplete: %#v", note)
+			}
+		}
+	}
+	if tokenWorkflowNotifications != 2 {
+		t.Fatalf("token workflow notifications = %d, want 2: %#v", tokenWorkflowNotifications, store.ListNotifications(auth.User.ID))
+	}
 
 	feedTypes := map[string]bool{}
 	for _, item := range store.PublicLiveFeed(20).Items {
@@ -1571,6 +1583,27 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 		if !eventTypes[required] {
 			t.Fatalf("event protocol missing %s: %#v", required, store.PublicEventProtocol(20).Events)
 		}
+	}
+
+	tokenReviewCount := 0
+	adminOps := store.AdminOpsQueue()
+	for _, item := range adminOps.Items {
+		if item.Type == "token_workflow_review" {
+			tokenReviewCount++
+			if item.Status != "pending_review" || strings.Contains(item.Body, wallet) || strings.Contains(item.Reference, wallet) {
+				t.Fatalf("unsafe token workflow admin ops item: %#v", item)
+			}
+		}
+	}
+	if tokenReviewCount != 2 {
+		t.Fatalf("admin ops token workflow review items = %d, want 2: %#v", tokenReviewCount, adminOps.Items)
+	}
+	adminOpsBytes, err := json.Marshal(adminOps)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(adminOpsBytes), wallet) {
+		t.Fatalf("admin ops leaked raw wallet: %s", string(adminOpsBytes))
 	}
 }
 
@@ -1625,13 +1658,13 @@ func TestPublicLedgerEconomyProofAndEventsRoutesReturnLiveProof(t *testing.T) {
 	}
 	wallet := base58Encode(bytes.Repeat([]byte{9}, walletAddressBytes))
 	if _, err := store.RecordAirdropClaim(AirdropClaimRequest{
-		MissionID:      "repo-import",
-		WorkerID:       "github:ledger-builder",
-		WalletAddress:  wallet,
-		TaskReference:  "task:MRG-ECONOMY",
-		ProofURL:       "https://github.com/mergeos-bounties/mergeos/pull/202",
-		ProofSignals:   []string{"repo_import", "issue_scan"},
-		AllocationMRG:  900,
+		MissionID:     "repo-import",
+		WorkerID:      "github:ledger-builder",
+		WalletAddress: wallet,
+		TaskReference: "task:MRG-ECONOMY",
+		ProofURL:      "https://github.com/mergeos-bounties/mergeos/pull/202",
+		ProofSignals:  []string{"repo_import", "issue_scan"},
+		AllocationMRG: 900,
 	}); err != nil {
 		t.Fatal(err)
 	}

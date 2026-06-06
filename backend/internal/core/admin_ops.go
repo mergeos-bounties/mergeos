@@ -165,6 +165,13 @@ func (s *Store) AdminOpsQueue() AdminOpsQueueResponse {
 		})
 	}
 
+	for _, entry := range s.ledger {
+		if entry.Type != "airdrop_claim" && entry.Type != "presale_reservation" {
+			continue
+		}
+		add(adminOpsTokenWorkflowItem(entry))
+	}
+
 	for _, item := range s.adminOpsFraudItemsLocked() {
 		add(item)
 	}
@@ -205,6 +212,8 @@ func adminOpsQueueStats(items []AdminOpsQueueItem) AdminOpsQueueStats {
 			stats.SecurityCount++
 		case "payout_review", "payout_audit":
 			stats.PayoutReviewCount++
+		case "token_workflow_review":
+			stats.ModerationCount++
 		case "fraud_review":
 			stats.FraudCount++
 		}
@@ -254,6 +263,11 @@ func adminOpsActions(itemType, taskID, url string) []AdminOpsQueueAction {
 			add("open-task", "Open Task", "open_url", url)
 		}
 		add("refresh-queue", "Refresh Queue", "refresh_admin_ops", "")
+	case "token_workflow_review":
+		if publicLiveFeedURL(url) != "" {
+			add("open-proof", "Open Proof", "open_url", url)
+		}
+		add("refresh-queue", "Refresh Queue", "refresh_admin_ops", "")
 	case "fraud_review":
 		if publicLiveFeedURL(url) != "" {
 			add("open-proof", "Open Proof", "open_url", url)
@@ -261,6 +275,78 @@ func adminOpsActions(itemType, taskID, url string) []AdminOpsQueueAction {
 		add("refresh-queue", "Refresh Queue", "refresh_admin_ops", "")
 	}
 	return actions
+}
+
+func adminOpsTokenWorkflowItem(entry LedgerEntry) AdminOpsQueueItem {
+	fields := splitLedgerReference(entry.Reference)
+	kind := "token workflow"
+	title := "Token workflow needs review"
+	status := "pending_review"
+	severity := "medium"
+	reference := publicTokenWorkflowReviewReference(entry)
+	body := fmt.Sprintf("%s for %s needs operator review before allocation moves forward.", formatTokenAmount(entry.AmountCents), publicLedgerAccount(entry.FromAccount, "", ""))
+	if entry.Type == "airdrop_claim" {
+		kind = "airdrop"
+		mission := sanitizeLedgerReferenceValue(fields["mission"])
+		if mission == "" {
+			mission = "mission"
+		}
+		title = "Airdrop claim needs review"
+		body = fmt.Sprintf("%s claim for %s needs mission proof review.", formatTokenAmount(entry.AmountCents), mission)
+		if sanitizeLedgerReferenceValue(fields["proof"]) != "" {
+			severity = "low"
+		}
+	}
+	if entry.Type == "presale_reservation" {
+		kind = "presale"
+		tier := sanitizeLedgerReferenceValue(fields["tier"])
+		rail := sanitizeLedgerReferenceValue(fields["rail"])
+		if tier == "" {
+			tier = "standard"
+		}
+		if rail == "" {
+			rail = "manual_review"
+		}
+		title = "Presale reservation needs review"
+		body = fmt.Sprintf("%s %s reservation via %s needs funding review.", formatTokenAmount(entry.AmountCents), tier, rail)
+	}
+	return AdminOpsQueueItem{
+		ID:        fmt.Sprintf("%s:%d", kind, entry.Sequence),
+		Type:      "token_workflow_review",
+		Severity:  severity,
+		Title:     title,
+		Body:      compactText(body),
+		Reference: reference,
+		Status:    status,
+		Actions:   adminOpsActions("token_workflow_review", "", publicLiveFeedReferenceURL(entry.Reference)),
+		CreatedAt: entry.CreatedAt,
+	}
+}
+
+func publicTokenWorkflowReviewReference(entry LedgerEntry) string {
+	fields := splitLedgerReference(entry.Reference)
+	parts := []string{}
+	if entry.Type == "airdrop_claim" {
+		if claimID := sanitizeLedgerReferenceValue(fields["airdrop"]); claimID != "" {
+			parts = append(parts, "airdrop:"+claimID)
+		}
+		if mission := sanitizeLedgerReferenceValue(fields["mission"]); mission != "" {
+			parts = append(parts, "mission:"+mission)
+		}
+	}
+	if entry.Type == "presale_reservation" {
+		if reservationID := sanitizeLedgerReferenceValue(fields["presale"]); reservationID != "" {
+			parts = append(parts, "presale:"+reservationID)
+		}
+		if tier := sanitizeLedgerReferenceValue(fields["tier"]); tier != "" {
+			parts = append(parts, "tier:"+tier)
+		}
+		if rail := sanitizeLedgerReferenceValue(fields["rail"]); rail != "" {
+			parts = append(parts, "rail:"+rail)
+		}
+	}
+	parts = append(parts, fmt.Sprintf("ledger:%d", entry.Sequence))
+	return strings.Join(parts, ";")
 }
 
 func adminOpsTaskReference(task *Task) string {

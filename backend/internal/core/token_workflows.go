@@ -3,6 +3,7 @@ package core
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -197,7 +198,8 @@ func PublicAirdropMissions() AirdropMissionsResponse {
 }
 
 func (s *Server) createAirdropClaim(w http.ResponseWriter, r *http.Request) {
-	if _, ok := s.requireUser(w, r); !ok {
+	user, ok := s.requireUser(w, r)
+	if !ok {
 		return
 	}
 	var req AirdropClaimRequest
@@ -205,17 +207,19 @@ func (s *Server) createAirdropClaim(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid JSON body")
 		return
 	}
-	response, err := s.store.RecordAirdropClaim(req)
+	response, err := s.store.RecordAirdropClaimForUser(user.ID, req)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 	s.broadcastLiveFeedEvent("ledger_airdrop_claim")
+	s.broadcastAdminOpsUpdated()
 	writeJSON(w, http.StatusCreated, response)
 }
 
 func (s *Server) createPresaleReservation(w http.ResponseWriter, r *http.Request) {
-	if _, ok := s.requireUser(w, r); !ok {
+	user, ok := s.requireUser(w, r)
+	if !ok {
 		return
 	}
 	var req PresaleReservationRequest
@@ -223,16 +227,21 @@ func (s *Server) createPresaleReservation(w http.ResponseWriter, r *http.Request
 		writeError(w, http.StatusBadRequest, "invalid JSON body")
 		return
 	}
-	response, err := s.store.RecordPresaleReservation(req)
+	response, err := s.store.RecordPresaleReservationForUser(user.ID, req)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 	s.broadcastLiveFeedEvent("ledger_presale_reservation")
+	s.broadcastAdminOpsUpdated()
 	writeJSON(w, http.StatusCreated, response)
 }
 
 func (s *Store) RecordAirdropClaim(req AirdropClaimRequest) (AirdropClaimResponse, error) {
+	return s.RecordAirdropClaimForUser("", req)
+}
+
+func (s *Store) RecordAirdropClaimForUser(userID string, req AirdropClaimRequest) (AirdropClaimResponse, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -285,6 +294,16 @@ func (s *Store) RecordAirdropClaim(req AirdropClaimRequest) (AirdropClaimRespons
 		"note:" + notes,
 	})
 	entry := s.addLedger("airdrop_claim", "airdrop:pool", walletAccount(walletAddress), allocationMRG, reference)
+	if strings.TrimSpace(userID) != "" {
+		s.addNotificationLocked(
+			userID,
+			"",
+			"token_workflow",
+			"Airdrop claim pending review",
+			fmt.Sprintf("%s claim for %s is recorded on the public ledger and waiting for operator review.", mission.Title, formatTokenAmount(allocationMRG)),
+			tokenWorkflowReviewStatus("airdrop", claimID, entry.Sequence),
+		)
+	}
 	if err := s.saveLocked(); err != nil {
 		return AirdropClaimResponse{}, err
 	}
@@ -312,6 +331,10 @@ func (s *Store) RecordAirdropClaim(req AirdropClaimRequest) (AirdropClaimRespons
 }
 
 func (s *Store) RecordPresaleReservation(req PresaleReservationRequest) (PresaleReservationResponse, error) {
+	return s.RecordPresaleReservationForUser("", req)
+}
+
+func (s *Store) RecordPresaleReservationForUser(userID string, req PresaleReservationRequest) (PresaleReservationResponse, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -345,6 +368,16 @@ func (s *Store) RecordPresaleReservation(req PresaleReservationRequest) (Presale
 		"note:" + notes,
 	})
 	entry := s.addLedger("presale_reservation", walletAccount(walletAddress), "presale:reserve", reserveMRG, reference)
+	if strings.TrimSpace(userID) != "" {
+		s.addNotificationLocked(
+			userID,
+			"",
+			"token_workflow",
+			"Presale reservation pending review",
+			fmt.Sprintf("%s reservation for %s is recorded on the public ledger and waiting for operator review.", marketplaceTitle(tier), formatTokenAmount(reserveMRG)),
+			tokenWorkflowReviewStatus("presale", reservationID, entry.Sequence),
+		)
+	}
 	if err := s.saveLocked(); err != nil {
 		return PresaleReservationResponse{}, err
 	}
@@ -364,6 +397,18 @@ func (s *Store) RecordPresaleReservation(req PresaleReservationRequest) (Presale
 		LiveFeedURL:      "/api/public/live-feed",
 		CreatedAt:        entry.CreatedAt,
 	}, nil
+}
+
+func tokenWorkflowReviewStatus(kind, id string, sequence int) string {
+	parts := []string{
+		"token_workflow:" + sanitizeLedgerReferenceValue(kind),
+		"id:" + sanitizeLedgerReferenceValue(id),
+	}
+	if sequence > 0 {
+		parts = append(parts, "ledger:"+strconv.Itoa(sequence))
+	}
+	parts = append(parts, "status:pending_review")
+	return strings.Join(parts, ";")
 }
 
 func selectedAirdropAllocationMRG(req AirdropClaimRequest) int64 {

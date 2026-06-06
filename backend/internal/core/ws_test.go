@@ -2,6 +2,7 @@ package core
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -671,6 +672,116 @@ func TestWebSocketBroadcastsSanitizedAdminOpsUpdateOnDispute(t *testing.T) {
 	}
 	if event["feed"] != nil || event["event"] != nil {
 		t.Fatalf("admin ops websocket event should not include public feed or protocol event details: %#v", event)
+	}
+}
+
+func TestWebSocketBroadcastsTokenWorkflowAdminOpsUpdate(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:       defaultTokenSymbol,
+		StatePath:         filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:    1000,
+		DevPaymentEnabled: true,
+		DevPaymentCode:    defaultDevPaymentCode,
+		GitHubOwner:       defaultGitHubOwner,
+		BountyRoot:        filepath.Join(tempDir, "bounties"),
+		SMTPFrom:          "noreply@mergeos.local",
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	auth, err := store.Register(RegisterRequest{
+		Name:     "Realtime Token Builder",
+		Email:    "realtime-token@example.com",
+		Password: "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	wallet := base58Encode(bytes.Repeat([]byte{8}, walletAddressBytes))
+	httpServer := httptest.NewServer(NewServer(cfg, store, payments).Routes())
+	defer httpServer.Close()
+	parsed, err := url.Parse(httpServer.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	conn, err := net.Dial("tcp", parsed.Host)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer conn.Close()
+	if _, err := conn.Write([]byte(websocketHandshake(parsed.Host))); err != nil {
+		t.Fatal(err)
+	}
+	reader := bufio.NewReader(conn)
+	if status, err := reader.ReadString('\n'); err != nil || !strings.Contains(status, "101 Switching Protocols") {
+		t.Fatalf("websocket status = %q, err = %v", status, err)
+	}
+	for {
+		line, err := reader.ReadString('\n')
+		if err != nil {
+			t.Fatal(err)
+		}
+		if line == "\r\n" {
+			break
+		}
+	}
+	_ = readWebSocketTextFrame(t, reader)
+	_ = readWebSocketTextFrame(t, reader)
+
+	body := strings.NewReader(fmt.Sprintf(`{
+		"mission_id":"repo-import",
+		"wallet_address":"%s",
+		"task_reference":"task:REALTIME-TOKEN",
+		"proof_url":"https://github.com/mergeos-bounties/mergeos/pull/818",
+		"allocation_mrg":500
+	}`, wallet))
+	req, err := http.NewRequest(http.MethodPost, httpServer.URL+"/api/airdrop/claims", body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Authorization", "Bearer "+auth.Token)
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusCreated {
+		responseBody, _ := io.ReadAll(resp.Body)
+		t.Fatalf("airdrop status = %d, body = %s", resp.StatusCode, string(responseBody))
+	}
+
+	if err := conn.SetReadDeadline(time.Now().Add(5 * time.Second)); err != nil {
+		t.Fatal(err)
+	}
+	seenLiveFeed := false
+	seenAdminOps := false
+	for i := 0; i < 4 && (!seenLiveFeed || !seenAdminOps); i++ {
+		eventBytes := readWebSocketTextFrame(t, reader)
+		for _, value := range []string{wallet, "realtime-token@example.com", tempDir} {
+			if strings.Contains(string(eventBytes), value) {
+				t.Fatalf("token workflow websocket leaked private value %q: %s", value, string(eventBytes))
+			}
+		}
+		var event map[string]interface{}
+		if err := json.Unmarshal(eventBytes, &event); err != nil {
+			t.Fatal(err)
+		}
+		if event["type"] == "ledger_airdrop_claim" && event["kind"] == "live_feed_delta" && event["protocol_type"] == "airdrop.claimed" {
+			seenLiveFeed = true
+		}
+		if event["type"] == "admin_ops_updated" && event["kind"] == "admin_ops_signal" && event["protocol_version"] == "mergeos.event.v1" {
+			if event["feed"] != nil || event["event"] != nil {
+				t.Fatalf("admin ops token event should not include feed details: %#v", event)
+			}
+			seenAdminOps = true
+		}
+	}
+	if !seenLiveFeed || !seenAdminOps {
+		t.Fatalf("missing token workflow websocket events: live=%v admin=%v", seenLiveFeed, seenAdminOps)
 	}
 }
 
