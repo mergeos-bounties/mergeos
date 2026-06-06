@@ -261,12 +261,34 @@ func projectSourceRepoURL(project *Project) string {
 		return repoURL
 	}
 	for _, candidate := range []string{project.RepoURL, project.BountyRepoName} {
-		owner, repo, err := parseGitHubRepo(candidate)
-		if err == nil {
-			return "https://github.com/" + owner + "/" + repo
+		if repoURL := publicGitHubRepoURLFromCandidate(candidate); repoURL != "" {
+			return repoURL
 		}
 	}
 	return ""
+}
+
+func publicGitHubRepoURLFromCandidate(candidate string) string {
+	raw := strings.TrimSpace(candidate)
+	if raw == "" || strings.HasPrefix(raw, "/") || strings.Contains(raw, "\\") {
+		return ""
+	}
+	if strings.Contains(raw, "://") || strings.HasPrefix(raw, "git@github.com:") {
+		owner, repo, err := parseGitHubRepo(raw)
+		if err != nil {
+			return ""
+		}
+		return "https://github.com/" + owner + "/" + repo
+	}
+	parts := strings.Split(strings.Trim(raw, "/"), "/")
+	if len(parts) != 2 || strings.Contains(raw, ":") {
+		return ""
+	}
+	owner, repo, err := cleanRepoParts(parts)
+	if err != nil {
+		return ""
+	}
+	return "https://github.com/" + owner + "/" + repo
 }
 
 func sourceRepoURLFromBrief(brief string) string {
@@ -276,11 +298,7 @@ func sourceRepoURLFromBrief(brief string) string {
 			continue
 		}
 		value := strings.TrimSpace(line[len("source repository:"):])
-		owner, repo, err := parseGitHubRepo(value)
-		if err != nil {
-			return ""
-		}
-		return "https://github.com/" + owner + "/" + repo
+		return publicGitHubRepoURLFromCandidate(value)
 	}
 	return ""
 }

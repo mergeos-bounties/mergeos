@@ -957,6 +957,7 @@ func (s *Store) FundRepositorySuggestedTask(ctx context.Context, userID, project
 		return FundRepositorySuggestedTaskResponse{}, err
 	}
 	taskCopy := *task
+	taskCopy.IssueURL = marketplacePublicRepoURL(taskCopy.IssueURL)
 	workPacket := repositorySuggestedTaskWorkPacket(project, task, quote.Suggestion)
 	return FundRepositorySuggestedTaskResponse{
 		ProtocolVersion:     "mergeos.repo-task-funding.v1",
@@ -1107,7 +1108,7 @@ func repositorySuggestedTaskWorkPacket(project *Project, task *Task, suggestion 
 	if issueURL := marketplacePublicRepoURL(task.IssueURL); issueURL != "" {
 		contextURLs["issue"] = issueURL
 	}
-	if repoURL := projectSourceRepoURL(project); repoURL != "" {
+	if repoURL := marketplacePublicRepoURL(projectSourceRepoURL(project)); repoURL != "" {
 		contextURLs["repository"] = repoURL
 	}
 	return AgentWorkPacket{
@@ -1176,9 +1177,11 @@ func nextProjectIssueNumber(project *Project) int {
 }
 
 func repositorySuggestedTaskLedgerReference(project *Project, task *Task, suggestion RepositorySuggestedTask) string {
-	reference := strings.TrimSpace(task.IssueURL)
-	if reference == "" && project != nil && strings.TrimSpace(project.BountyRepoName) != "" && task.IssueNumber > 0 {
-		reference = fmt.Sprintf("%s/issues/%d", project.BountyRepoName, task.IssueNumber)
+	reference := marketplacePublicRepoURL(task.IssueURL)
+	if reference == "" && project != nil && task.IssueNumber > 0 {
+		if repoURL := marketplacePublicRepoURL(projectSourceRepoURL(project)); repoURL != "" {
+			reference = fmt.Sprintf("%s/issues/%d", strings.TrimRight(repoURL, "/"), task.IssueNumber)
+		}
 	}
 	if reference == "" {
 		reference = "repo-scan:" + suggestion.SourceFindingID

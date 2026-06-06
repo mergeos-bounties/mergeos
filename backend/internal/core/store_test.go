@@ -4785,7 +4785,17 @@ func TestProjectRepositoryScanRouteReturnsStaticFindings(t *testing.T) {
 		t.Fatalf("funded suggested task missing agent work packet: %#v", fundedPayload.WorkPacket)
 	}
 	fundedBody := fundResp.Body.String()
-	for _, value := range []string{"scan-client@example.com", "+1 555 0155", auth.User.ID, defaultDevPaymentCode, tempDir, "super-secret-token"} {
+	for _, value := range []string{
+		"scan-client@example.com",
+		"+1 555 0155",
+		auth.User.ID,
+		defaultDevPaymentCode,
+		tempDir,
+		filepath.ToSlash(tempDir),
+		project.RepoLocalPath,
+		filepath.ToSlash(project.RepoLocalPath),
+		"super-secret-token",
+	} {
 		if strings.Contains(fundedBody, value) {
 			t.Fatalf("funded repo task response leaked private value %q: %s", value, fundedBody)
 		}
