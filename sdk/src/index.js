@@ -404,6 +404,17 @@ export class MergeOSClient {
     return this.request(`/api/projects/${encodeURIComponent(projectID)}/routing`);
   }
 
+  executeRoutingPacket(routeOrPacket = {}, overrides = {}) {
+    const packet = routingPacketFromRoute(routeOrPacket);
+    const method = String(overrides.method || packet.method || 'POST').toUpperCase();
+    const endpoint = overrides.endpoint || overrides.routing_endpoint || overrides.routingEndpoint || packet.endpoint || '';
+    const options = { method };
+    if (method !== 'GET') {
+      options.body = routingPacketPayload(routeOrPacket, overrides);
+    }
+    return this.request(endpoint, options);
+  }
+
   projectWorkflowProtocol(projectID) {
     return this.request(`/api/projects/${encodeURIComponent(projectID)}/protocol/workflow`);
   }
@@ -1029,6 +1040,36 @@ export function agentLeasePayload(taskOrPacket = {}, overrides = {}) {
     agent_type: overrides.agent_type || overrides.agentType || packetPayload.agent_type || taskOrPacket.agent_type || taskOrPacket.work_packet?.subagent_type || '',
     status: overrides.status || packetPayload.status || taskOrPacket.status || 'leased',
   });
+}
+
+export function routingPacketFromRoute(routeOrPacket = {}) {
+  if (!routeOrPacket || typeof routeOrPacket !== 'object') return {};
+  if (routeOrPacket.routing_packet && typeof routeOrPacket.routing_packet === 'object') return routeOrPacket.routing_packet;
+  if (routeOrPacket.work_packet && typeof routeOrPacket.work_packet === 'object') return routeOrPacket.work_packet;
+  if (routeOrPacket.proposal_packet && typeof routeOrPacket.proposal_packet === 'object') return routeOrPacket.proposal_packet;
+  if (routeOrPacket.lease_packet && typeof routeOrPacket.lease_packet === 'object') return routeOrPacket.lease_packet;
+  return routeOrPacket;
+}
+
+export function routingPacketPayload(routeOrPacket = {}, overrides = {}) {
+  const packet = routingPacketFromRoute(routeOrPacket);
+  const packetPayload = packet.payload && typeof packet.payload === 'object' ? packet.payload : {};
+  const action = String(overrides.action || packet.action || routeOrPacket.recommended_next_action || '').trim().toLowerCase();
+  if (action === 'route_to_agent' || action === 'route_hybrid_pair' || packet.output_contracts?.some((item) => item?.output_protocol === 'mergeos.agent-lease.v1')) {
+    return agentLeasePayload({ ...routeOrPacket, lease_packet: packet }, overrides);
+  }
+  if (action === 'invite_contributor' || action === 'publish_bounty' || packet.output_contracts?.some((item) => item?.output_protocol === 'mergeos.proposal.v1')) {
+    return proposalPayloadFromBounty({ ...routeOrPacket, proposal_packet: packet }, overrides);
+  }
+  return compactPayload({ ...packetPayload, ...overrides.payload });
+}
+
+export function routingPacketOutputContracts(routeOrPacket = {}, action = '') {
+  const packet = routingPacketFromRoute(routeOrPacket);
+  const contracts = Array.isArray(packet.output_contracts) ? packet.output_contracts : [];
+  const normalized = String(action || '').trim().toLowerCase();
+  if (!normalized) return contracts;
+  return contracts.filter((item) => String(item?.action || '').trim().toLowerCase() === normalized);
 }
 
 export function proposalPayloadFromBounty(bounty = {}, overrides = {}) {

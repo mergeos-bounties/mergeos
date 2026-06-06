@@ -427,6 +427,8 @@ func projectRoutingRoute(task *Task, ready bool, blockedBy []string, agentDepth 
 	if task.SuggestedAgentType != "" {
 		lane = task.SuggestedAgentType
 	}
+	claimID := marketplaceBountyID(task.ProjectID, task.IssueNumber)
+	protocolURL := "/api/public/protocol/tasks?task_id=" + claimID
 	action := "publish_bounty"
 	reasons := []string{"Escrow-backed task is visible in the marketplace."}
 	score := 70
@@ -474,6 +476,7 @@ func projectRoutingRoute(task *Task, ready bool, blockedBy []string, agentDepth 
 	return ProjectRoutingRoute{
 		ID:                    "route:" + task.ID,
 		TaskID:                task.ID,
+		ClaimID:               claimID,
 		IssueNumber:           task.IssueNumber,
 		Title:                 task.Title,
 		Lane:                  lane,
@@ -483,12 +486,110 @@ func projectRoutingRoute(task *Task, ready bool, blockedBy []string, agentDepth 
 		RewardCents:           task.RewardCents,
 		RequiredWorkerKind:    task.RequiredWorkerKind,
 		SuggestedAgentType:    task.SuggestedAgentType,
+		ProtocolURL:           protocolURL,
 		RecommendedNextAction: action,
 		MatchScore:            score,
 		RoutingReason:         stableStrings(reasons),
 		RecommendedAgent:      agent,
 		RecommendedWorker:     worker,
+		RoutingPacket:         projectRoutingPacket(task, action, claimID, protocolURL),
 	}
+}
+
+func projectRoutingPacket(task *Task, action, claimID, protocolURL string) ProjectRoutingPacket {
+	projectID := strings.TrimSpace(task.ProjectID)
+	agentType := strings.TrimSpace(task.SuggestedAgentType)
+	if agentType == "" && task.WorkerKind != WorkerHuman {
+		agentType = strings.TrimSpace(task.AgentType)
+	}
+	if agentType == "" && task.RequiredWorkerKind != WorkerHuman {
+		agentType = "general-ai-agent"
+	}
+	submitEndpoint := "/api/tasks/" + claimID + "/submit"
+	actionEndpoint := "/api/projects/" + projectID + "/agent-actions"
+	contextURLs := map[string]string{
+		"task_protocol":     protocolURL,
+		"marketplace":       "/api/public/marketplace",
+		"agent_queue":       agentQueueEndpoint,
+		"contributors":      "/api/public/protocol/contributors",
+		"workflow_protocol": "/api/public/projects/" + projectID + "/workflow",
+		"workflow_pulse":    "/api/public/projects/" + projectID + "/ai-workflow",
+		"pr_monitor":        "/api/public/projects/" + projectID + "/pull-requests",
+	}
+	if task.IssueURL != "" {
+		contextURLs["issue"] = marketplacePublicRepoURL(task.IssueURL)
+	}
+	packet := ProjectRoutingPacket{
+		Action:      action,
+		Method:      "GET",
+		Endpoint:    protocolURL,
+		ContextURLs: contextURLs,
+		Runbook: []AgentRunbookStep{
+			{Step: 1, Action: "fetch_context", Label: "Read the public task protocol and acceptance criteria", Method: "GET", Endpoint: protocolURL},
+			{Step: 2, Action: "inspect_routing", Label: "Compare route lane, worker kind, score, and readiness blockers", Method: "GET", Endpoint: "/api/projects/" + projectID + "/routing"},
+		},
+	}
+	switch action {
+	case "route_to_agent", "route_hybrid_pair":
+		lease := agentLeasePacket(claimID, agentType)
+		packet.Method = "POST"
+		packet.Endpoint = lease.LeaseEndpoint
+		packet.Payload = lease.Payload
+		packet.Runbook = append(packet.Runbook,
+			AgentRunbookStep{Step: 3, Action: "lease_work", Label: "Lease the agent work packet before running checks", Method: "POST", Endpoint: lease.LeaseEndpoint},
+			AgentRunbookStep{Step: 4, Action: "record_evidence", Label: "Record scoped agent evidence", Method: "POST", Endpoint: actionEndpoint},
+			AgentRunbookStep{Step: 5, Action: "submit_review", Label: "Submit pull request and review evidence", Method: "POST", Endpoint: submitEndpoint},
+		)
+		packet.OutputContracts = []AgentOutputContract{
+			{Action: "lease", ArtifactKind: "agent_lease", OutputEndpoint: lease.LeaseEndpoint, OutputProtocol: "mergeos.agent-lease.v1", OutputProtocolURL: "/protocol/agent-lease.v1.schema.json", PublicURL: "/api/public/live-feed"},
+			agentQueueOutputContract("review", projectID, actionEndpoint, contextURLs),
+			{Action: "submit", ArtifactKind: "task_submission", OutputEndpoint: submitEndpoint, OutputProtocol: "mergeos.task-submission.v1", OutputProtocolURL: "/protocol/task-submission.v1.schema.json", PublicURL: protocolURL},
+		}
+	case "invite_contributor", "publish_bounty":
+		packet.Method = "POST"
+		packet.Endpoint = "/api/proposals"
+		packet.Payload = map[string]any{
+			"task_id":         claimID,
+			"cover_letter":    proposalPacketCoverLetter(nil, task),
+			"bid_cents":       task.RewardCents,
+			"estimated_hours": marketplaceEstimatedHours(task),
+			"availability":    "Available after customer approval",
+		}
+		packet.Runbook = append(packet.Runbook,
+			AgentRunbookStep{Step: 3, Action: "prepare_proposal", Label: "Attach bid, availability, and identity proof", Method: "POST", Endpoint: "/api/proposals"},
+			AgentRunbookStep{Step: 4, Action: "wait_customer_review", Label: "Customer reviews the proposal before claim", Method: "GET", Endpoint: "/api/workers/me"},
+		)
+		packet.OutputContracts = []AgentOutputContract{
+			{Action: "propose", ArtifactKind: "worker_proposal", OutputEndpoint: "/api/proposals", OutputProtocol: "mergeos.proposal.v1", OutputProtocolURL: "/protocol/proposal.v1.schema.json", PublicURL: "/api/public/live-feed"},
+		}
+	case "review_evidence":
+		packet.Method = "POST"
+		packet.Endpoint = submitEndpoint
+		packet.Payload = map[string]any{
+			"pull_request_url":    "",
+			"review_evidence_url": "",
+			"review_notes":        "Attach PR, tests, deployment preview, or agent evidence for review.",
+		}
+		packet.Runbook = append(packet.Runbook,
+			AgentRunbookStep{Step: 3, Action: "submit_review", Label: "Submit PR and review evidence for the claimed task", Method: "POST", Endpoint: submitEndpoint},
+		)
+		packet.OutputContracts = []AgentOutputContract{
+			{Action: "submit", ArtifactKind: "task_submission", OutputEndpoint: submitEndpoint, OutputProtocol: "mergeos.task-submission.v1", OutputProtocolURL: "/protocol/task-submission.v1.schema.json", PublicURL: protocolURL},
+		}
+	case "paid":
+		packet.Endpoint = "/api/public/ledger/proof"
+		packet.Runbook = append(packet.Runbook,
+			AgentRunbookStep{Step: 3, Action: "verify_payout", Label: "Verify payout proof through the public ledger", Method: "GET", Endpoint: "/api/public/ledger/proof"},
+		)
+		packet.OutputContracts = []AgentOutputContract{
+			{Action: "verify_payout", ArtifactKind: "ledger_proof", OutputEndpoint: "/api/public/ledger/proof", OutputProtocol: "mergeos.ledger-proof.v1", OutputProtocolURL: "/protocol/ledger-proof.v1.schema.json", PublicURL: "/api/public/ledger/proof"},
+		}
+	default:
+		packet.Runbook = append(packet.Runbook,
+			AgentRunbookStep{Step: 3, Action: "resolve_blockers", Label: "Resolve readiness blockers before claim or proposal", Method: "GET", Endpoint: protocolURL},
+		)
+	}
+	return packet
 }
 
 func projectRoutingLaneForTask(lanes map[string]*ProjectRoutingLane, task *Task) *ProjectRoutingLane {

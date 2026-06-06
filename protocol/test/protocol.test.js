@@ -1258,6 +1258,8 @@ test('validates project routing protocol documents', () => {
         reward_cents: 12000,
         required_worker_kind: 'agent',
         suggested_agent_type: 'qa-agent',
+        claim_id: 'prj_0001:12',
+        protocol_url: '/api/public/protocol/tasks?task_id=prj_0001:12',
         recommended_next_action: 'route_to_agent',
         match_score: 88,
         routing_reason: ['Escrow-backed task is visible in the marketplace.'],
@@ -1266,6 +1268,45 @@ test('validates project routing protocol documents', () => {
           title: 'QA Agent',
           status: 'active',
           queue_depth: 1,
+        },
+        routing_packet: {
+          action: 'route_to_agent',
+          method: 'POST',
+          endpoint: '/api/agent-queue/leases',
+          payload: {
+            claim_id: 'prj_0001:12',
+            bounty_id: 'prj_0001:12',
+            agent_type: 'qa-agent',
+            status: 'leased',
+          },
+          context_urls: {
+            task_protocol: '/api/public/protocol/tasks?task_id=prj_0001:12',
+            marketplace: '/api/public/marketplace',
+            agent_queue: '/api/public/protocol/agent-queue',
+            contributors: '/api/public/protocol/contributors',
+            workflow_protocol: '/api/public/projects/prj_0001/workflow',
+            workflow_pulse: '/api/public/projects/prj_0001/ai-workflow',
+            pr_monitor: '/api/public/projects/prj_0001/pull-requests',
+          },
+          runbook: [
+            {
+              step: 1,
+              action: 'fetch_context',
+              label: 'Read task',
+              method: 'GET',
+              endpoint: '/api/public/protocol/tasks?task_id=prj_0001:12',
+            },
+          ],
+          output_contracts: [
+            {
+              action: 'lease',
+              artifact_kind: 'agent_lease',
+              output_endpoint: '/api/agent-queue/leases',
+              output_protocol: 'mergeos.agent-lease.v1',
+              output_protocol_url: '/protocol/agent-lease.v1.schema.json',
+              public_url: '/api/public/live-feed',
+            },
+          ],
         },
       },
     ],
@@ -1279,7 +1320,12 @@ test('validates project routing protocol documents', () => {
     kind: 'routing',
     stats: { ...routing.stats, task_count: -1 },
     lanes: [{ ...routing.lanes[0], worker_kind: 'bot' }],
-    routes: [{ ...routing.routes[0], recommended_next_action: 'teleport', match_score: 101 }],
+    routes: [{
+      ...routing.routes[0],
+      recommended_next_action: 'teleport',
+      match_score: 101,
+      routing_packet: { ...routing.routes[0].routing_packet, method: 'FLY' },
+    }],
   });
   assert.equal(invalid.valid, false);
   assert(invalid.errors.some((error) => error.path === 'kind'));
@@ -1287,6 +1333,7 @@ test('validates project routing protocol documents', () => {
   assert(invalid.errors.some((error) => error.path === 'lanes[0].worker_kind'));
   assert(invalid.errors.some((error) => error.path === 'routes[0].recommended_next_action'));
   assert(invalid.errors.some((error) => error.path === 'routes[0].match_score'));
+  assert(invalid.errors.some((error) => error.path === 'routes[0].routing_packet.method'));
 });
 
 test('validates escrow protocol documents', () => {

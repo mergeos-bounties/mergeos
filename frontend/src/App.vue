@@ -27466,10 +27466,13 @@ function mapDashboardRoutingRoute(row = {}) {
   const worker = row.recommended_worker || null;
   const agent = row.recommended_agent || null;
   const nextAction = row.recommended_next_action || '';
+  const packet = row.routing_packet && typeof row.routing_packet === 'object' ? row.routing_packet : {};
   const status = row.status || 'open';
   const candidate = worker?.name || agent?.title || (row.suggested_agent_type ? toTitleLabel(row.suggested_agent_type) : 'Open bounty');
   return {
     id: row.id || row.task_id || `${row.issue_number}-${row.title}`,
+    claimID: row.claim_id || '',
+    protocolURL: row.protocol_url || '',
     issueNumber: row.issue_number || '-',
     title: row.title || 'Routed task',
     lane: toTitleLabel(row.lane || row.required_worker_kind || 'delivery'),
@@ -27488,6 +27491,12 @@ function mapDashboardRoutingRoute(row = {}) {
     reason: Array.isArray(row.routing_reason) && row.routing_reason.length
       ? row.routing_reason.slice(0, 2).join(' - ')
       : 'Routing reason pending.',
+    packetAction: packet.action || nextAction,
+    packetEndpoint: packet.endpoint || row.protocol_url || '',
+    packetMethod: packet.method || 'GET',
+    packetContract: Array.isArray(packet.output_contracts) && packet.output_contracts.length
+      ? packet.output_contracts[0].output_protocol
+      : '',
   };
 }
 

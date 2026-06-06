@@ -33,6 +33,8 @@ import {
   protocolTypeFromMessage,
   repoPlanningOutputContracts,
   repoPlanningSteps,
+  routingPacketOutputContracts,
+  routingPacketPayload,
   walletMigrationPDASeedMetadata,
 } from '@mergeos/sdk';
 
@@ -84,6 +86,13 @@ const testPayload = agentActionPayload('test', { status: 'processed' });
 const graph = await mergeos.projectTaskGraph(projects[0].id);
 const routing = await mergeos.projectRouting(projects[0].id);
 console.log(routing.protocol_version, routing.stats.ready_count);
+const nextRoute = routing.routes?.find((route) => route.ready);
+if (nextRoute) {
+  const contracts = routingPacketOutputContracts(nextRoute);
+  const packetPayload = routingPacketPayload(nextRoute);
+  console.log(nextRoute.claim_id, nextRoute.routing_packet.endpoint, contracts[0]?.output_protocol);
+  await mergeos.executeRoutingPacket(nextRoute, packetPayload);
+}
 const workflowProtocol = await mergeos.projectWorkflowProtocol(projects[0].id);
 console.log(workflowProtocol.current_step, workflowProtocol.progress);
 const scan = await mergeos.projectRepositoryScan(projects[0].id);

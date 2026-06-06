@@ -4749,9 +4749,29 @@ func TestProjectTaskGraphRouteReturnsAcyclicDependencyGraph(t *testing.T) {
 		if route.TaskID == "" || route.RewardCents <= 0 || route.RequiredWorkerKind == "" || route.MatchScore <= 0 || route.RecommendedNextAction == "" {
 			t.Fatalf("project routing route missing decision fields: %#v", route)
 		}
+		if route.ClaimID == "" || route.ClaimID == route.TaskID || route.ProtocolURL != "/api/public/protocol/tasks?task_id="+route.ClaimID {
+			t.Fatalf("project routing route missing claim-safe protocol link: %#v", route)
+		}
+		if route.RoutingPacket.Action != route.RecommendedNextAction || route.RoutingPacket.Endpoint == "" || len(route.RoutingPacket.ContextURLs) == 0 || len(route.RoutingPacket.Runbook) == 0 {
+			t.Fatalf("project routing route missing executable packet: %#v", route)
+		}
+		if route.RoutingPacket.ContextURLs["task_protocol"] != route.ProtocolURL {
+			t.Fatalf("project routing packet did not link task protocol: %#v", route.RoutingPacket)
+		}
+		if route.RoutingPacket.Payload != nil {
+			if value, ok := route.RoutingPacket.Payload["task_id"].(string); ok && value == route.TaskID {
+				t.Fatalf("project routing packet leaked internal task id: %#v", route.RoutingPacket)
+			}
+		}
 		if route.RequiredWorkerKind == WorkerAgent || route.RequiredWorkerKind == WorkerHybrid {
 			if route.RecommendedAgent == nil || route.RecommendedAgent.Type == "" {
 				t.Fatalf("project routing did not attach agent recommendation: %#v", route)
+			}
+			if route.RoutingPacket.Endpoint != "/api/agent-queue/leases" {
+				t.Fatalf("agent route did not point at lease endpoint: %#v", route.RoutingPacket)
+			}
+			if len(route.RoutingPacket.OutputContracts) == 0 || route.RoutingPacket.OutputContracts[0].OutputProtocol != "mergeos.agent-lease.v1" {
+				t.Fatalf("agent route did not advertise lease output contract: %#v", route.RoutingPacket)
 			}
 		}
 	}

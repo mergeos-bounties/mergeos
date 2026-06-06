@@ -42,6 +42,9 @@ import {
   repoPlanningSteps,
   repositorySuggestedTaskFundingPayload,
   repositorySuggestedTaskPayPalOrderPayload,
+  routingPacketFromRoute,
+  routingPacketOutputContracts,
+  routingPacketPayload,
   walletMigrationPDASeedMetadata,
   workflowEventTypes,
 } from '../src/index.js';
@@ -319,6 +322,91 @@ test('builds and sends claim-safe agent queue task payloads', async () => {
     bounty_id: 'prj_1:12',
     agent_type: 'qa-agent',
     status: 'heartbeat',
+  }));
+});
+
+test('executes project routing packets for agent leases and contributor proposals', async () => {
+  const agentRoute = {
+    claim_id: 'prj_1:12',
+    recommended_next_action: 'route_to_agent',
+    routing_packet: {
+      action: 'route_to_agent',
+      method: 'POST',
+      endpoint: '/api/agent-queue/leases',
+      payload: {
+        claim_id: 'prj_1:12',
+        bounty_id: 'prj_1:12',
+        agent_type: 'qa-agent',
+        status: 'leased',
+      },
+      output_contracts: [
+        {
+          action: 'lease',
+          artifact_kind: 'agent_lease',
+          output_endpoint: '/api/agent-queue/leases',
+          output_protocol: 'mergeos.agent-lease.v1',
+          output_protocol_url: '/protocol/agent-lease.v1.schema.json',
+        },
+      ],
+    },
+  };
+  const proposalRoute = {
+    claim_id: 'prj_1:13',
+    recommended_next_action: 'invite_contributor',
+    reward_cents: 7000,
+    routing_packet: {
+      action: 'invite_contributor',
+      method: 'POST',
+      endpoint: '/api/proposals',
+      payload: {
+        task_id: 'prj_1:13',
+        cover_letter: 'I can deliver this route with tests.',
+        bid_cents: 7000,
+        estimated_hours: 5,
+      },
+      output_contracts: [
+        {
+          action: 'propose',
+          artifact_kind: 'worker_proposal',
+          output_endpoint: '/api/proposals',
+          output_protocol: 'mergeos.proposal.v1',
+          output_protocol_url: '/protocol/proposal.v1.schema.json',
+        },
+      ],
+    },
+  };
+  const fetchImpl = fakeFetch([
+    { status: 201, body: { protocol_version: 'mergeos.agent-lease.v1', kind: 'agent_lease', claim_id: 'prj_1:12' } },
+    { status: 201, body: { protocol_version: 'mergeos.proposal.v1', kind: 'proposal', proposal: { status: 'submitted' } } },
+  ]);
+  const client = new MergeOSClient({ token: 'routing-token', fetchImpl });
+
+  const agentPacket = routingPacketFromRoute(agentRoute);
+  const agentPayload = routingPacketPayload(agentRoute, { status: 'heartbeat' });
+  const agentContracts = routingPacketOutputContracts(agentRoute, 'lease');
+  const lease = await client.executeRoutingPacket(agentRoute, { status: 'heartbeat' });
+  const proposal = await client.executeRoutingPacket(proposalRoute, { availability: 'Available Monday' });
+
+  assert.equal(agentPacket.endpoint, '/api/agent-queue/leases');
+  assert.deepEqual(agentPayload, {
+    claim_id: 'prj_1:12',
+    bounty_id: 'prj_1:12',
+    agent_type: 'qa-agent',
+    status: 'heartbeat',
+  });
+  assert.equal(agentContracts[0].output_protocol, 'mergeos.agent-lease.v1');
+  assert.equal(lease.kind, 'agent_lease');
+  assert.equal(proposal.proposal.status, 'submitted');
+  assert.equal(fetchImpl.calls[0].url, '/api/agent-queue/leases');
+  assert.equal(fetchImpl.calls[0].options.headers.Authorization, 'Bearer routing-token');
+  assert.equal(fetchImpl.calls[0].options.body, JSON.stringify(agentPayload));
+  assert.equal(fetchImpl.calls[1].url, '/api/proposals');
+  assert.equal(fetchImpl.calls[1].options.body, JSON.stringify({
+    task_id: 'prj_1:13',
+    cover_letter: 'I can deliver this route with tests.',
+    bid_cents: 7000,
+    estimated_hours: 5,
+    availability: 'Available Monday',
   }));
 });
 

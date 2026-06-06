@@ -1694,6 +1694,7 @@ type ProjectRoutingLane struct {
 type ProjectRoutingRoute struct {
 	ID                    string                     `json:"id"`
 	TaskID                string                     `json:"task_id"`
+	ClaimID               string                     `json:"claim_id"`
 	IssueNumber           int                        `json:"issue_number"`
 	Title                 string                     `json:"title"`
 	Lane                  string                     `json:"lane"`
@@ -1703,11 +1704,23 @@ type ProjectRoutingRoute struct {
 	RewardCents           int64                      `json:"reward_cents"`
 	RequiredWorkerKind    WorkerKind                 `json:"required_worker_kind"`
 	SuggestedAgentType    string                     `json:"suggested_agent_type,omitempty"`
+	ProtocolURL           string                     `json:"protocol_url"`
 	RecommendedNextAction string                     `json:"recommended_next_action"`
 	MatchScore            int                        `json:"match_score"`
 	RoutingReason         []string                   `json:"routing_reason,omitempty"`
 	RecommendedAgent      *ProjectRoutingAgent       `json:"recommended_agent,omitempty"`
 	RecommendedWorker     *ProjectRoutingContributor `json:"recommended_worker,omitempty"`
+	RoutingPacket         ProjectRoutingPacket       `json:"routing_packet"`
+}
+
+type ProjectRoutingPacket struct {
+	Action          string                `json:"action"`
+	Method          string                `json:"method"`
+	Endpoint        string                `json:"endpoint"`
+	Payload         map[string]any        `json:"payload,omitempty"`
+	ContextURLs     map[string]string     `json:"context_urls"`
+	Runbook         []AgentRunbookStep    `json:"runbook"`
+	OutputContracts []AgentOutputContract `json:"output_contracts,omitempty"`
 }
 
 type ProjectRoutingAgent struct {
