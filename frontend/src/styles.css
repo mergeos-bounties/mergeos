@@ -27874,3 +27874,229 @@ canvas {
   }
 }
 
+/* Mobile public-page compression: Marketplace and Live Feed should surface
+   actual work lists quickly instead of spending the full first viewport on art. */
+@media (max-width: 760px) {
+  .marketplace-page,
+  .live-feed-page {
+    padding-top: 0;
+  }
+
+  .home-container.marketplace-layout,
+  .live-feed-shell {
+    gap: 14px;
+  }
+
+  .marketplace-hero,
+  .live-feed-page .ledger-hero {
+    gap: 14px;
+  }
+
+  .marketplace-copy,
+  .live-feed-page .ledger-hero-copy {
+    padding-top: 8px;
+  }
+
+  .marketplace-copy h1,
+  .live-feed-page .ledger-title-row h1 {
+    font-size: clamp(31px, 8.6vw, 36px);
+    line-height: 1.06;
+  }
+
+  .marketplace-copy h1 {
+    margin-top: 14px;
+  }
+
+  .marketplace-copy p,
+  .live-feed-page .ledger-hero-copy > p {
+    margin-top: 12px;
+    font-size: 14.5px;
+    line-height: 1.5;
+  }
+
+  .marketplace-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-top: 16px;
+  }
+
+  .marketplace-actions .primary-button,
+  .marketplace-actions .secondary-button {
+    width: 100%;
+    min-height: 44px;
+    justify-content: center;
+  }
+
+  .marketplace-trust {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .marketplace-trust article {
+    min-height: 74px;
+    grid-template-columns: 1fr;
+    justify-items: center;
+    align-content: center;
+    gap: 6px;
+    border: 1px solid rgba(11, 21, 17, 0.08);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.78);
+    padding: 8px 6px;
+    text-align: center;
+  }
+
+  .marketplace-trust-icon {
+    width: 30px;
+    height: 30px;
+  }
+
+  .marketplace-trust small {
+    display: none;
+  }
+
+  .marketplace-trust strong {
+    font-size: 10.5px;
+    line-height: 1.2;
+  }
+
+  .marketplace-visual {
+    min-height: 172px;
+    max-height: 172px;
+  }
+
+  .talent-preview-card {
+    left: 14px;
+    top: 14px;
+    width: min(190px, 54%);
+    padding: 9px;
+    transform: rotate(2deg);
+  }
+
+  .talent-card-top {
+    grid-template-columns: 34px minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .market-avatar {
+    width: 34px;
+    height: 34px;
+  }
+
+  .talent-preview-card > strong {
+    margin-top: 8px;
+    font-size: 12px;
+    line-height: 1.25;
+  }
+
+  .mini-tags,
+  .talent-card-bottom {
+    margin-top: 8px;
+  }
+
+  .market-code-card {
+    display: none;
+  }
+
+  .market-code-card code {
+    font-size: 10px;
+    line-height: 1.5;
+  }
+
+  .agent-preview-card {
+    right: 14px;
+    bottom: 12px;
+    width: min(190px, 54%);
+    padding: 9px;
+  }
+
+  .agent-preview-card p {
+    display: none;
+  }
+
+  .route-node-orange,
+  .market-route.route-two {
+    display: none;
+  }
+
+  .live-feed-page .ledger-title-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .live-feed-page .ledger-public-badge {
+    width: max-content;
+    max-width: 100%;
+  }
+
+  .live-feed-page .ledger-trust-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .live-feed-page .ledger-trust-row article {
+    min-height: 74px;
+    grid-template-columns: 1fr;
+    justify-items: center;
+    align-content: center;
+    gap: 6px;
+    padding: 8px 6px;
+    text-align: center;
+  }
+
+  .live-feed-page .ledger-trust-row .ledger-trust-icon {
+    width: 30px;
+    height: 30px;
+  }
+
+  .live-feed-page .ledger-trust-row small {
+    display: none;
+  }
+
+  .live-feed-page .ledger-trust-row strong {
+    font-size: 10.5px;
+    line-height: 1.2;
+  }
+
+  .live-feed-page .ledger-live-card {
+    padding: 11px;
+  }
+
+  .live-feed-page .ledger-card-head {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .live-feed-page .ledger-live-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .live-feed-page .ledger-live-grid article {
+    min-height: 58px;
+    padding: 8px;
+  }
+
+  .live-feed-page .ledger-live-grid strong {
+    font-size: 19px;
+  }
+
+  .live-feed-page .ledger-live-card > button {
+    min-height: 44px;
+  }
+
+  .live-feed-proof-lanes,
+  .live-feed-signal-strip {
+    gap: 10px;
+  }
+
+  .live-feed-proof-lanes article,
+  .live-feed-signal-strip article {
+    padding: 12px;
+  }
+}
+
