@@ -158,6 +158,10 @@ func TestProjectPullRequestsMonitorSummarizesReadinessWithoutAdminFields(t *test
 	if payload.Tasks[0].AutoReleasePacket == nil || payload.Tasks[0].AutoReleasePacket["can_auto_release"] != true {
 		t.Fatalf("expected auto-release packet: %#v", payload.Tasks[0].AutoReleasePacket)
 	}
+	outputContracts, ok := payload.Tasks[0].AutoReleasePacket["output_contracts"].([]AgentOutputContract)
+	if !ok || len(outputContracts) < 3 || outputContracts[0].OutputProtocol != "mergeos.payout-release.v1" {
+		t.Fatalf("expected auto-release output contracts: %#v", payload.Tasks[0].AutoReleasePacket)
+	}
 	payloadMap, ok := payload.Tasks[0].AutoReleasePacket["payload"].(map[string]any)
 	if !ok {
 		t.Fatalf("expected auto-release payload map: %#v", payload.Tasks[0].AutoReleasePacket)
@@ -243,6 +247,10 @@ func TestProjectPullRequestsMonitorRequiresDeploymentValidationForAutoReleasePac
 	}, project)
 	if verified.Stats.AutoReleaseReadyCount != 1 || verified.Tasks[0].AutoReleasePacket == nil {
 		t.Fatalf("verified deployment PR should expose auto-release: %#v", verified.Tasks[0])
+	}
+	outputContracts, ok := verified.Tasks[0].AutoReleasePacket["output_contracts"].([]AgentOutputContract)
+	if !ok || !containsOutputProtocol(outputContracts, "mergeos.ledger-proof.v1") {
+		t.Fatalf("verified auto-release packet missing ledger proof contract: %#v", verified.Tasks[0].AutoReleasePacket)
 	}
 	payloadMap, ok := verified.Tasks[0].AutoReleasePacket["payload"].(map[string]any)
 	if !ok {
@@ -503,4 +511,13 @@ func TestPublicProjectPullRequestsMonitorOmitsInternalTaskIDs(t *testing.T) {
 			t.Fatalf("public PR monitor leaked private release value %q: %s", value, string(body))
 		}
 	}
+}
+
+func containsOutputProtocol(contracts []AgentOutputContract, protocol string) bool {
+	for _, contract := range contracts {
+		if contract.OutputProtocol == protocol {
+			return true
+		}
+	}
+	return false
 }

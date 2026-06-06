@@ -4,7 +4,7 @@
   "title": "MergeOS Payout Release v1",
   "type": "object",
   "additionalProperties": false,
-  "required": ["protocol_version", "kind", "project_id", "policy", "released_count", "skipped_count", "released", "skipped", "release_proofs", "payouts"],
+  "required": ["protocol_version", "kind", "project_id", "policy", "released_count", "skipped_count", "released", "skipped", "release_proofs", "output_contracts", "payouts"],
   "properties": {
     "protocol_version": { "const": "mergeos.payout-release.v1" },
     "kind": { "const": "auto_release" },
@@ -59,6 +59,11 @@
         }
       }
     },
+    "output_contracts": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/outputContract" }
+    },
     "payouts": {
       "type": "object",
       "additionalProperties": true,
@@ -68,6 +73,21 @@
         "kind": { "const": "payouts" },
         "project_id": { "type": "string", "minLength": 1, "maxLength": 96 },
         "payouts": { "type": "array" }
+      }
+    }
+  },
+  "$defs": {
+    "outputContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["action", "artifact_kind", "output_endpoint", "output_protocol", "output_protocol_url"],
+      "properties": {
+        "action": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "artifact_kind": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "output_endpoint": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "output_protocol": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "output_protocol_url": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "public_url": { "type": "string", "maxLength": 512 }
       }
     }
   }

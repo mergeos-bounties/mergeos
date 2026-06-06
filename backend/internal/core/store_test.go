@@ -3460,6 +3460,9 @@ func TestProjectAutoReleaseRouteReleasesReadyCandidateAndRecordsPolicy(t *testin
 	if len(payload.ReleaseProofs) != 1 {
 		t.Fatalf("auto-release response missing release proof: %#v", payload)
 	}
+	if len(payload.OutputContracts) < 3 || !containsOutputProtocol(payload.OutputContracts, "mergeos.payout-release.v1") || !containsOutputProtocol(payload.OutputContracts, "mergeos.ledger-proof.v1") {
+		t.Fatalf("auto-release response missing output contracts: %#v", payload.OutputContracts)
+	}
 	proof := payload.ReleaseProofs[0]
 	if proof.TaskID != task.ID || proof.ClaimID != publicTaskID || proof.WorkerID != "github:auto-builder" || proof.PullRequestNumber != 222 {
 		t.Fatalf("unexpected auto-release proof identity: %#v", proof)

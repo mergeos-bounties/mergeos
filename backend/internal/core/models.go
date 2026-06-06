@@ -1536,6 +1536,7 @@ type ProjectAutoReleaseResponse struct {
 	Released        []TaskClaimResponse       `json:"released"`
 	Skipped         []ProjectAutoReleaseSkip  `json:"skipped"`
 	ReleaseProofs   []ProjectAutoReleaseProof `json:"release_proofs"`
+	OutputContracts []AgentOutputContract     `json:"output_contracts"`
 	Payouts         ProjectPayoutsResponse    `json:"payouts"`
 }
 

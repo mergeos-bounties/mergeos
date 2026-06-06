@@ -535,6 +535,7 @@ func projectAutoReleasePacket(projectID string, candidates []ProjectAutoReleaseC
 			{"step": 3, "action": "release_payout", "label": "Release escrow payout", "purpose": "Accept the task and write a task_payment ledger row."},
 			{"step": 4, "action": "prove_release", "label": "Record ledger proof", "purpose": "Expose payout, PR reference, deployment validation, and auto-release policy in payouts."},
 		},
+		"output_contracts": projectAutoReleaseOutputContracts(projectID),
 	}
 	if strings.TrimSpace(repository) != "" {
 		packet["repository"] = repository
@@ -547,4 +548,15 @@ func projectAutoReleasePacket(projectID string, candidates []ProjectAutoReleaseC
 		packet["mode"] = "single"
 	}
 	return packet
+}
+
+func projectAutoReleaseOutputContracts(projectID string) []AgentOutputContract {
+	releaseEndpoint := fmt.Sprintf("/api/projects/%s/auto-release", projectID)
+	payoutsEndpoint := fmt.Sprintf("/api/projects/%s/payouts", projectID)
+	return []AgentOutputContract{
+		{Action: "release_payout", ArtifactKind: "auto_release", OutputEndpoint: releaseEndpoint, OutputProtocol: "mergeos.payout-release.v1", OutputProtocolURL: "/protocol/payout-release.v1.schema.json", PublicURL: "/api/public/ledger"},
+		{Action: "accept_task", ArtifactKind: "task_claim", OutputEndpoint: releaseEndpoint, OutputProtocol: "mergeos.task-claim.v1", OutputProtocolURL: "/protocol/task-claim.v1.schema.json", PublicURL: "/api/public/marketplace"},
+		{Action: "refresh_payouts", ArtifactKind: "payouts", OutputEndpoint: payoutsEndpoint, OutputProtocol: "mergeos.payouts.v1", OutputProtocolURL: "/protocol/payouts.v1.schema.json", PublicURL: payoutsEndpoint},
+		{Action: "prove_ledger", ArtifactKind: "ledger_proof", OutputEndpoint: "/api/public/ledger/proof", OutputProtocol: "mergeos.ledger-proof.v1", OutputProtocolURL: "/protocol/ledger-proof.v1.schema.json", PublicURL: "/api/public/ledger/proof"},
+	}
 }

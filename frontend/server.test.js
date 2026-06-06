@@ -202,6 +202,18 @@ test('repo scan suggested tasks expose routing packets for funded work', async (
   assert.match(appSource, /routingContract: Array\.isArray\(routingPacket\.output_contracts\)/);
 });
 
+test('auto-release exposes payout output contracts in schema and dashboard', async () => {
+  const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
+  const releaseSchema = JSON.parse(await fs.readFile(new URL('./public/protocol/payout-release.v1.schema.json', import.meta.url), 'utf-8'));
+
+  assert.ok(releaseSchema.required.includes('output_contracts'));
+  assert.equal(releaseSchema.properties.output_contracts.items.$ref, '#/$defs/outputContract');
+  assert.ok(releaseSchema.$defs.outputContract.required.includes('output_protocol_url'));
+  assert.match(appSource, /contractRows: autoReleaseContractRows\(packet\.output_contracts \|\| \[\]\)/);
+  assert.match(appSource, /function autoReleaseContractRows\(contracts = \[\]\)/);
+  assert.match(appSource, /v-if="dashboardAutoReleaseControl\.contractRows\.length"/);
+});
+
 test('public mega menu keeps a large hover bridge to its fixed panel', async () => {
   const cssSource = await fs.readFile(new URL('./src/styles.css', import.meta.url), 'utf-8');
 

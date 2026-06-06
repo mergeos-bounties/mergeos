@@ -3776,6 +3776,12 @@
                       <strong>{{ item.value }}</strong>
                     </span>
                   </div>
+                  <div v-if="dashboardAutoReleaseControl.contractRows.length" class="auto-release-payload-strip">
+                    <span v-for="contract in dashboardAutoReleaseControl.contractRows" :key="contract.key">
+                      {{ contract.label }}
+                      <strong>{{ contract.protocol }}</strong>
+                    </span>
+                  </div>
                 </div>
 
                 <div v-if="dashboardPullRequestRows.length" class="dash-pr-list">
@@ -20511,6 +20517,7 @@ const dashboardAutoReleaseControl = computed(() => {
       contextRows: [],
       runbookRows: [],
       payloadRows: [],
+      contractRows: [],
     };
   }
   const packet = rows[0].autoReleasePacket || {};
@@ -20528,6 +20535,7 @@ const dashboardAutoReleaseControl = computed(() => {
     contextRows: autoReleaseContextRows(packet.context_urls || {}),
     runbookRows: autoReleaseRunbookRows(packet.runbook || []),
     payloadRows: autoReleasePayloadRows(packet, taskIDs),
+    contractRows: autoReleaseContractRows(packet.output_contracts || []),
   };
 });
 const dashboardPullRequestStats = computed(() => dashboardPullRequests.value?.stats || {});
@@ -27781,6 +27789,15 @@ function autoReleasePayloadRows(packet = {}, taskIDs = []) {
     policy ? { label: 'Policy', value: shortLedgerReference(policy) } : null,
     packet.release_endpoint ? { label: 'Endpoint', value: `${packet.method || 'POST'} ${shortLedgerReference(packet.release_endpoint)}` } : null,
   ].filter(Boolean);
+}
+
+function autoReleaseContractRows(contracts = []) {
+  return (Array.isArray(contracts) ? contracts : []).slice(0, 4).map((contract, index) => ({
+    key: `${contract.action || 'contract'}-${contract.output_protocol || index}`,
+    label: toTitleLabel(contract.artifact_kind || contract.action || 'Output'),
+    protocol: shortLedgerReference(contract.output_protocol || contract.output_protocol_url || 'protocol'),
+    endpoint: contract.output_endpoint || contract.public_url || '',
+  }));
 }
 
 function mapWorkerProposal(proposal = {}) {

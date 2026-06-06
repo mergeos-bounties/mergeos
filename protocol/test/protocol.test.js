@@ -1579,6 +1579,23 @@ test('validates payout settlement protocol documents', () => {
       ledger_reference: 'task:tsk_0001;pr:https://github.com/mergeos-bounties/mergeos/pull/151;deployment_validation:validated;auto_release:mergeos.auto_release.low_risk_pr.v1',
       released_at: now,
     }],
+    output_contracts: [
+      {
+        action: 'release_payout',
+        artifact_kind: 'auto_release',
+        output_endpoint: '/api/projects/prj_0001/auto-release',
+        output_protocol: 'mergeos.payout-release.v1',
+        output_protocol_url: '/protocol/payout-release.v1.schema.json',
+        public_url: '/api/public/ledger',
+      },
+      {
+        action: 'prove_ledger',
+        artifact_kind: 'ledger_proof',
+        output_endpoint: '/api/public/ledger/proof',
+        output_protocol: 'mergeos.ledger-proof.v1',
+        output_protocol_url: '/protocol/ledger-proof.v1.schema.json',
+      },
+    ],
     payouts,
   };
   assert.equal(validateProtocolDocument(release).valid, true);
@@ -1596,6 +1613,13 @@ test('validates payout settlement protocol documents', () => {
   });
   assert.equal(invalidRelease.valid, false);
   assert(invalidRelease.errors.some((error) => error.path === 'skipped[0].reason'));
+
+  const invalidReleaseContract = validateProtocolDocument({
+    ...release,
+    output_contracts: [{ ...release.output_contracts[0], output_protocol_url: '' }],
+  });
+  assert.equal(invalidReleaseContract.valid, false);
+  assert(invalidReleaseContract.errors.some((error) => error.path === 'output_contracts[0].output_protocol_url'));
 
   const invalidReleaseProof = validateProtocolDocument({
     ...release,

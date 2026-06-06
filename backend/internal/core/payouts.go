@@ -42,6 +42,7 @@ func (s *Store) AutoReleaseProjectPayouts(projectID string, req ProjectAutoRelea
 		Released:        []TaskClaimResponse{},
 		Skipped:         []ProjectAutoReleaseSkip{},
 		ReleaseProofs:   []ProjectAutoReleaseProof{},
+		OutputContracts: projectAutoReleaseOutputContracts(project.ID),
 	}
 
 	for _, requestedTaskID := range taskIDs {
