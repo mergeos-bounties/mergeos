@@ -20,7 +20,7 @@ const mimeTypes = {
   '.woff2': 'font/woff2',
 };
 
-function normalizeMode(value) {
+export function normalizeMode(value) {
   switch (String(value || '').trim().toLowerCase()) {
     case 'prod':
     case 'production':
@@ -43,18 +43,18 @@ function readArgValue(argv, name) {
   return '';
 }
 
-function resolveMode(argv = process.argv, env = process.env) {
+export function resolveMode(argv = process.argv, env = process.env) {
   const modeArg = readArgValue(argv, '--mode');
   if (modeArg) return normalizeMode(modeArg);
   if (argv.includes('--prod')) return 'production';
   return normalizeMode(env.MERGEOS_ENV || env.NODE_ENV);
 }
 
-function shouldRunProduction(argv = process.argv, env = process.env, mode = resolveMode(argv, env)) {
+export function shouldRunProduction(argv = process.argv, env = process.env, mode = resolveMode(argv, env)) {
   return mode === 'production' || argv.includes('--prod') || env.NODE_ENV === 'production';
 }
 
-function createRuntimeConfig({ argv = process.argv, env = process.env, cwd = __dirname } = {}) {
+export function createRuntimeConfig({ argv = process.argv, env = process.env, cwd = __dirname } = {}) {
   const mode = resolveMode(argv, env);
   const production = shouldRunProduction(argv, env, mode);
   const port = Number(env.ADMIN_FRONTEND_PORT || env.ADMIN_PORT || (production ? 8082 : 5174));
@@ -71,7 +71,7 @@ function createRuntimeConfig({ argv = process.argv, env = process.env, cwd = __d
   };
 }
 
-async function createAdminServer(config) {
+export async function createAdminServer(config) {
   let vite;
   let productionTemplate;
   let productionRender;
@@ -184,7 +184,7 @@ function proxyApi(req, res, apiTarget) {
   req.pipe(proxyReq);
 }
 
-async function startServer({ argv = process.argv, env = process.env, cwd = __dirname } = {}) {
+export async function startServer({ argv = process.argv, env = process.env, cwd = __dirname } = {}) {
   const config = createRuntimeConfig({ argv, env, cwd });
   const server = await createAdminServer(config);
   server.listen(config.port, config.host, () => {

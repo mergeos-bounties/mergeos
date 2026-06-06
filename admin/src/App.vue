@@ -454,7 +454,7 @@
           <header class="task-review-header">
             <div>
               <span class="eyebrow">OPS QUEUE</span>
-              <h2>Disputes, fraud, moderation, and payout attention</h2>
+              <h2>Disputes, fraud, moderation, and payouts attention</h2>
               <p>Review closed unpaid issues, payout fraud signals, delivery failures, AI webhook failures, SSL security items, and manual credit audit rows.</p>
             </div>
             <button class="compact-action" :disabled="loading" type="button" @click="loadAdminData">
@@ -1057,7 +1057,7 @@ const navItems = [
   { id: 'overview', label: 'Overview', title: 'Platform overview', kicker: 'DASHBOARD', icon: LayoutDashboard },
   { id: 'projects', label: 'Projects', title: 'Funded projects', kicker: 'PROJECTS', icon: FolderKanban },
   { id: 'tasks', label: 'Tasks', title: 'Task operations', kicker: 'TASKS', icon: ListChecks },
-  { id: 'ledger', label: 'Ledger', title: 'Proof ledger', kicker: 'LEDGER', icon: Activity },
+  { id: 'ledger', label: 'Treasury', title: 'Treasury ledger', kicker: 'TREASURY', icon: Activity },
   { id: 'ops', label: 'Ops Queue', title: 'Operations queue', kicker: 'OPS', icon: AlertTriangle },
   { id: 'users', label: 'Users', title: 'User management', kicker: 'USERS', icon: UsersRound },
   { id: 'ssl', label: 'SSL', title: 'SSL monitoring', kicker: 'SECURITY', icon: ShieldCheck },

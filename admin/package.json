@@ -8,7 +8,8 @@
     "local": "node server.js --mode local",
     "production": "node server.js --mode production --prod",
     "build": "vite build --mode production --outDir dist/client --ssrManifest && vite build --mode production --ssr src/entry-server.js --outDir dist/server",
-    "preview": "npm run production"
+    "preview": "npm run production",
+    "test": "node --test server.test.js"
   },
   "dependencies": {
     "@lucide/vue": "latest",
