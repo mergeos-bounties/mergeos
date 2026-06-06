@@ -42,6 +42,7 @@ type Config struct {
 	PayPalEnvironment  string
 	PayPalClientID     string
 	PayPalClientSecret string
+	PayPalWebhookID    string
 
 	StripePublishableKey string
 	StripeSecretKey      string
@@ -163,6 +164,7 @@ func LoadConfig() Config {
 		PayPalEnvironment:  strings.ToLower(getenv("PAYPAL_ENV", payPalDefaultEnv)),
 		PayPalClientID:     os.Getenv("PAYPAL_CLIENT_ID"),
 		PayPalClientSecret: os.Getenv("PAYPAL_CLIENT_SECRET"),
+		PayPalWebhookID:    os.Getenv("PAYPAL_WEBHOOK_ID"),
 
 		StripePublishableKey: os.Getenv("STRIPE_PUBLISHABLE_KEY"),
 		StripeSecretKey:      os.Getenv("STRIPE_SECRET_KEY"),

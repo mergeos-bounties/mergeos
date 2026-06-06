@@ -293,7 +293,7 @@ Important backend variables:
 - `PRIMARY_DOMAIN`, `ADMIN_DOMAIN`, `SCAN_DOMAIN`: production hostnames, defaulting to `mergeos.shop`, `uta.mergeos.shop`, and `scan.mergeos.shop`
 - `PLATFORM_FEE_BPS`: platform fee basis points
 - `DEV_PAYMENT_ENABLED` and `DEV_PAYMENT_CODE`: local verifier
-- `PAYPAL_ENV`, `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`: PayPal Orders v2
+- `PAYPAL_ENV`, `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_WEBHOOK_ID`: PayPal Orders v2 plus webhook signature verification. Production rejects PayPal webhook events unless `PAYPAL_WEBHOOK_ID` is configured.
 - `STRIPE_PUBLISHABLE_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`: Stripe rail metadata and PaymentIntent verifier. When configured, the Stripe rail accepts a succeeded USD PaymentIntent ID as `payment_reference` and verifies currency and amount before project funding.
 - `CRYPTO_RPC_URL`, `CRYPTO_RECEIVER`, `CRYPTO_ASSET`, `CRYPTO_TOKEN_MINT`: Solana SPL verifier. `CRYPTO_ASSET=spl` exposes the crypto/USDT rail as a Solana transaction signature verifier for MRG-style SPL payments.
 - `MRG_SOLANA_PROGRAM_ID`: deployed MergeOS Anchor program id used by wallet migration and MRG ledger instruction metadata. Leave empty until the program is deployed; the migration API will then return `program_ready: false`.

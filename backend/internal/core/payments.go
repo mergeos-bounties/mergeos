@@ -386,10 +386,66 @@ func (p *PaymentManager) payPalAccessToken(ctx context.Context) (string, error) 
 }
 
 func (p *PaymentManager) payPalBaseURL() string {
+	if strings.HasPrefix(strings.TrimSpace(p.cfg.PayPalEnvironment), "http://") || strings.HasPrefix(strings.TrimSpace(p.cfg.PayPalEnvironment), "https://") {
+		return strings.TrimRight(strings.TrimSpace(p.cfg.PayPalEnvironment), "/")
+	}
 	if p.cfg.PayPalEnvironment == "live" {
 		return "https://api-m.paypal.com"
 	}
 	return "https://api-m.sandbox.paypal.com"
+}
+
+func (p *PaymentManager) verifyPayPalWebhookSignature(ctx context.Context, headers http.Header, event paypalWebhookEvent) (bool, error) {
+	webhookID := strings.TrimSpace(p.cfg.PayPalWebhookID)
+	if webhookID == "" {
+		if p.cfg.Environment != "production" {
+			return true, nil
+		}
+		return false, errors.New("PAYPAL_WEBHOOK_ID is required in production")
+	}
+	token, err := p.payPalAccessToken(ctx)
+	if err != nil {
+		return false, err
+	}
+	body := map[string]any{
+		"auth_algo":         strings.TrimSpace(headers.Get("PayPal-Auth-Algo")),
+		"cert_url":          strings.TrimSpace(headers.Get("PayPal-Cert-Url")),
+		"transmission_id":   strings.TrimSpace(headers.Get("PayPal-Transmission-Id")),
+		"transmission_sig":  strings.TrimSpace(headers.Get("PayPal-Transmission-Sig")),
+		"transmission_time": strings.TrimSpace(headers.Get("PayPal-Transmission-Time")),
+		"webhook_id":        webhookID,
+		"webhook_event":     event,
+	}
+	for _, key := range []string{"auth_algo", "cert_url", "transmission_id", "transmission_sig", "transmission_time"} {
+		if strings.TrimSpace(fmt.Sprint(body[key])) == "" {
+			return false, errors.New("missing PayPal webhook signature headers")
+		}
+	}
+	var payload bytes.Buffer
+	if err := json.NewEncoder(&payload).Encode(body); err != nil {
+		return false, err
+	}
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, p.payPalBaseURL()+"/v1/notifications/verify-webhook-signature", &payload)
+	if err != nil {
+		return false, err
+	}
+	httpReq.Header.Set("Authorization", "Bearer "+token)
+	httpReq.Header.Set("Content-Type", "application/json")
+	resp, err := p.client.Do(httpReq)
+	if err != nil {
+		return false, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return false, fmt.Errorf("paypal webhook signature verification failed: %s", readBody(resp.Body))
+	}
+	var decoded struct {
+		VerificationStatus string `json:"verification_status"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&decoded); err != nil {
+		return false, err
+	}
+	return strings.EqualFold(strings.TrimSpace(decoded.VerificationStatus), "SUCCESS"), nil
 }
 
 func (p *PaymentManager) verifyCrypto(ctx context.Context, reference string, expectedCents int64) (PaymentVerification, error) {
