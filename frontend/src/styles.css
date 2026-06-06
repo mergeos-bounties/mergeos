@@ -27601,8 +27601,10 @@ canvas {
     overflow-y: hidden;
     padding: 0 var(--page-gutter) 4px;
     scroll-padding-inline: var(--page-gutter);
+    scroll-snap-type: x proximity;
     overscroll-behavior-x: contain;
     scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
   }
 
   .dash-side-nav::-webkit-scrollbar {
@@ -27610,10 +27612,7 @@ canvas {
   }
 
   .dash-side-nav section {
-    display: flex;
-    flex: 0 0 auto;
-    gap: 8px;
-    min-width: 0;
+    display: contents;
   }
 
   .dash-side-nav p {
@@ -27625,6 +27624,7 @@ canvas {
     min-width: max-content;
     min-height: 44px;
     flex: 0 0 auto;
+    scroll-snap-align: start;
     border: 1px solid #dce7e1;
     border-radius: 999px;
     background: #ffffff;
@@ -27633,6 +27633,10 @@ canvas {
     font-size: 12px;
     white-space: nowrap;
     box-shadow: 0 8px 18px rgba(11, 21, 17, 0.04);
+  }
+
+  .dash-side-nav button svg {
+    flex: 0 0 auto;
   }
 
   .dash-side-nav button:hover,
