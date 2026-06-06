@@ -532,6 +532,10 @@ export class MergeOSClient {
     return this.request('/api/admin/ops-queue');
   }
 
+  adminDisputes() {
+    return this.request('/api/admin/disputes');
+  }
+
   adminReputation() {
     return this.request('/api/admin/reputation');
   }

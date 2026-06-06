@@ -611,6 +611,13 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Auth:        "admin",
 				Description: "Authenticated admin operations queue for disputes, moderation, payout review, treasury audit, security checks, and fraud signals.",
 			},
+			{
+				Method:      "GET",
+				Path:        "/api/admin/disputes",
+				Protocol:    "mergeos.admin-ops.v1",
+				Auth:        "admin",
+				Description: "Authenticated admin dispute center lanes derived from the operations queue for payout, moderation, fraud, security, token workflow, and proposal review.",
+			},
 		},
 	}
 }

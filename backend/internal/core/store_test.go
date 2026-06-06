@@ -6174,6 +6174,41 @@ func TestAdminOpsQueueReturnsDisputeModerationAndPayoutItems(t *testing.T) {
 	} else if len(action.OutputContracts) != 1 || action.OutputContracts[0].OutputProtocol != "mergeos.event.v1" {
 		t.Fatalf("open proof action missing output contract: %#v", action.OutputContracts)
 	}
+
+	clientDisputesReq := httptest.NewRequest(http.MethodGet, "/api/admin/disputes", nil)
+	clientDisputesReq.Header.Set("Authorization", "Bearer "+clientAuth.Token)
+	clientDisputesResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(clientDisputesResp, clientDisputesReq)
+	if clientDisputesResp.Code != http.StatusForbidden {
+		t.Fatalf("client admin disputes status = %d", clientDisputesResp.Code)
+	}
+
+	adminDisputesReq := httptest.NewRequest(http.MethodGet, "/api/admin/disputes", nil)
+	adminDisputesReq.Header.Set("Authorization", "Bearer "+adminAuth.Token)
+	adminDisputesResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(adminDisputesResp, adminDisputesReq)
+	if adminDisputesResp.Code != http.StatusOK {
+		t.Fatalf("admin disputes status = %d, body = %s", adminDisputesResp.Code, adminDisputesResp.Body.String())
+	}
+	var disputes AdminDisputesResponse
+	if err := json.Unmarshal(adminDisputesResp.Body.Bytes(), &disputes); err != nil {
+		t.Fatal(err)
+	}
+	if disputes.Kind != "admin_disputes" || disputes.ProtocolVersion != "mergeos.admin-ops.v1" || disputes.Stats.TotalCount != payload.Stats.TotalCount {
+		t.Fatalf("unexpected disputes response header/stats: %#v", disputes)
+	}
+	if disputes.Stats.BlockedPayoutCents <= 0 || len(disputes.Lanes) < 5 || len(disputes.OutputContracts) != 1 {
+		t.Fatalf("admin disputes missing lanes, blocked payout, or output contract: %#v", disputes)
+	}
+	laneByID := map[string]AdminDisputeLane{}
+	for _, lane := range disputes.Lanes {
+		laneByID[lane.ID] = lane
+	}
+	for _, required := range []string{"disputes", "payouts", "moderation", "fraud", "security"} {
+		if laneByID[required].Count == 0 {
+			t.Fatalf("admin disputes missing lane %s: %#v", required, disputes.Lanes)
+		}
+	}
 }
 
 func TestCreateDisputeRouteAddsAdminOpsQueueItem(t *testing.T) {

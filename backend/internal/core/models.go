@@ -2222,6 +2222,42 @@ type AdminOpsQueueStats struct {
 	UpdatedAt         *time.Time `json:"updated_at,omitempty"`
 }
 
+type AdminDisputesResponse struct {
+	ProtocolVersion string                `json:"protocol_version"`
+	Kind            string                `json:"kind"`
+	Stats           AdminDisputesStats    `json:"stats"`
+	Lanes           []AdminDisputeLane    `json:"lanes"`
+	Items           []AdminOpsQueueItem   `json:"items"`
+	OutputContracts []AgentOutputContract `json:"output_contracts,omitempty"`
+}
+
+type AdminDisputesStats struct {
+	TotalCount         int        `json:"total_count"`
+	CriticalCount      int        `json:"critical_count"`
+	HighCount          int        `json:"high_count"`
+	DisputeCount       int        `json:"dispute_count"`
+	ModerationCount    int        `json:"moderation_count"`
+	PayoutReviewCount  int        `json:"payout_review_count"`
+	ProposalCount      int        `json:"proposal_count"`
+	FraudCount         int        `json:"fraud_count"`
+	SecurityCount      int        `json:"security_count"`
+	TokenWorkflowCount int        `json:"token_workflow_count"`
+	BlockedPayoutCents int64      `json:"blocked_payout_cents"`
+	UpdatedAt          *time.Time `json:"updated_at,omitempty"`
+}
+
+type AdminDisputeLane struct {
+	ID            string              `json:"id"`
+	Title         string              `json:"title"`
+	Body          string              `json:"body"`
+	Tone          string              `json:"tone"`
+	Count         int                 `json:"count"`
+	CriticalCount int                 `json:"critical_count"`
+	HighCount     int                 `json:"high_count"`
+	RewardCents   int64               `json:"reward_cents"`
+	Items         []AdminOpsQueueItem `json:"items"`
+}
+
 type AdminOpsQueueItem struct {
 	ID           string                `json:"id"`
 	Type         string                `json:"type"`

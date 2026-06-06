@@ -451,6 +451,7 @@ await mergeos.mergeAdminTaskPullRequest('tsk_0001', 120, {
   bounty_type: 'future-small',
 });
 await mergeos.adminOpsQueue();
+await mergeos.adminDisputes();
 await mergeos.adminReputation();
 await mergeos.creditMRG({
   worker_id: 'github:contributor',

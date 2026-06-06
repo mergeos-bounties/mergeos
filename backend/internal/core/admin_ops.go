@@ -198,6 +198,157 @@ func (s *Store) AdminOpsQueue() AdminOpsQueueResponse {
 	return response
 }
 
+func (s *Store) AdminDisputes() AdminDisputesResponse {
+	queue := s.AdminOpsQueue()
+	response := AdminDisputesResponse{
+		ProtocolVersion: "mergeos.admin-ops.v1",
+		Kind:            "admin_disputes",
+		Stats: AdminDisputesStats{
+			TotalCount:        queue.Stats.TotalCount,
+			CriticalCount:     queue.Stats.CriticalCount,
+			DisputeCount:      queue.Stats.DisputeCount,
+			ModerationCount:   queue.Stats.ModerationCount,
+			PayoutReviewCount: queue.Stats.PayoutReviewCount,
+			ProposalCount:     queue.Stats.ProposalCount,
+			FraudCount:        queue.Stats.FraudCount,
+			SecurityCount:     queue.Stats.SecurityCount,
+			UpdatedAt:         queue.Stats.UpdatedAt,
+		},
+		Items: append([]AdminOpsQueueItem(nil), queue.Items...),
+		OutputContracts: []AgentOutputContract{{
+			Action:            "refresh_admin_disputes",
+			ArtifactKind:      "admin_dispute_lanes",
+			OutputEndpoint:    "/api/admin/disputes",
+			OutputProtocol:    "mergeos.admin-ops.v1",
+			OutputProtocolURL: "/protocol/admin-ops.v1.schema.json",
+			PublicURL:         "/protocol/admin-ops.v1.schema.json",
+		}},
+	}
+
+	lanes := map[string]*AdminDisputeLane{}
+	for _, item := range queue.Items {
+		laneMeta := adminDisputeLaneForType(item.Type)
+		lane := lanes[laneMeta.ID]
+		if lane == nil {
+			lane = &AdminDisputeLane{
+				ID:    laneMeta.ID,
+				Title: laneMeta.Title,
+				Body:  laneMeta.Body,
+				Tone:  laneMeta.Tone,
+				Items: []AdminOpsQueueItem{},
+			}
+			lanes[laneMeta.ID] = lane
+		}
+		lane.Count++
+		if item.Severity == "critical" {
+			lane.CriticalCount++
+		}
+		if item.Severity == "high" {
+			lane.HighCount++
+			response.Stats.HighCount++
+		}
+		if item.Type == "token_workflow_review" {
+			response.Stats.TokenWorkflowCount++
+		}
+		reward := s.adminOpsItemBlockedPayoutCents(item)
+		lane.RewardCents += reward
+		response.Stats.BlockedPayoutCents += reward
+		lane.Items = append(lane.Items, item)
+	}
+
+	order := []string{"disputes", "payouts", "moderation", "proposals", "fraud", "security", "token"}
+	for _, id := range order {
+		if lane := lanes[id]; lane != nil {
+			response.Lanes = append(response.Lanes, *lane)
+		}
+	}
+	return response
+}
+
+type adminDisputeLaneMeta struct {
+	ID    string
+	Title string
+	Body  string
+	Tone  string
+}
+
+func adminDisputeLaneForType(itemType string) adminDisputeLaneMeta {
+	switch itemType {
+	case "dispute":
+		return adminDisputeLaneMeta{
+			ID:    "disputes",
+			Title: "Customer disputes",
+			Body:  "Scope, acceptance, and delivery conflicts that need admin resolution before payout movement.",
+			Tone:  "amber",
+		}
+	case "payout_review", "payout_audit":
+		return adminDisputeLaneMeta{
+			ID:    "payouts",
+			Title: "Payout pressure",
+			Body:  "Closed issues, manual credits, and payout evidence that need treasury review.",
+			Tone:  "blue",
+		}
+	case "moderation":
+		return adminDisputeLaneMeta{
+			ID:    "moderation",
+			Title: "AI moderation",
+			Body:  "Webhook, review, and automation failures that need operator attention.",
+			Tone:  "purple",
+		}
+	case "proposal_review":
+		return adminDisputeLaneMeta{
+			ID:    "proposals",
+			Title: "Proposal decisions",
+			Body:  "Contributor proposals waiting for accept, decline, or follow-up routing.",
+			Tone:  "green",
+		}
+	case "fraud_review":
+		return adminDisputeLaneMeta{
+			ID:    "fraud",
+			Title: "Fraud signals",
+			Body:  "Duplicate payout references, rapid payout bursts, and repeated identities.",
+			Tone:  "amber",
+		}
+	case "security_moderation":
+		return adminDisputeLaneMeta{
+			ID:    "security",
+			Title: "Security checks",
+			Body:  "SSL, webhook, and operational security exceptions that block confidence.",
+			Tone:  "red",
+		}
+	case "token_workflow_review":
+		return adminDisputeLaneMeta{
+			ID:    "token",
+			Title: "Token workflow review",
+			Body:  "Airdrop and presale proofs that need operator approval before allocation moves forward.",
+			Tone:  "green",
+		}
+	default:
+		return adminDisputeLaneMeta{
+			ID:    "moderation",
+			Title: "Operations review",
+			Body:  "Operational signals that need admin review.",
+			Tone:  "blue",
+		}
+	}
+}
+
+func (s *Store) adminOpsItemBlockedPayoutCents(item AdminOpsQueueItem) int64 {
+	if item.Type != "payout_review" && item.Type != "dispute" {
+		return 0
+	}
+	taskID := strings.TrimSpace(item.TaskID)
+	if taskID == "" {
+		return 0
+	}
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	if task := s.tasks[taskID]; task != nil {
+		return task.RewardCents
+	}
+	return 0
+}
+
 func adminOpsQueueStats(items []AdminOpsQueueItem) AdminOpsQueueStats {
 	stats := AdminOpsQueueStats{TotalCount: len(items)}
 	for _, item := range items {

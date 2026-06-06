@@ -144,6 +144,7 @@ test('public agent runbook and SDK document PR monitor auto-release plus proposa
   assert.match(sdkReadme, /proposalPayloadFromBounty/);
   assert.match(sdkReadme, /proposalPacketOutputContracts/);
   assert.match(sdkReadme, /adminOpsActionOutputContracts/);
+  assert.match(sdkReadme, /adminDisputes\(\)/);
   assert.match(sdkReadme, /createProposalFromBounty\(bounty, overrides\)/);
 });
 
@@ -155,6 +156,7 @@ test('admin dashboard consumes admin ops queue action contract', async () => {
   assert.equal(actionSchema.output_contracts.items.$ref, '#/$defs/outputContract');
   assert.ok(adminOpsSchema.$defs.outputContract.required.includes('output_protocol_url'));
   assert.match(appSource, /queueActions: adminOpsQueueActions\(item\)/);
+  assert.match(appSource, /api\('\/api\/admin\/disputes'\)/);
   assert.match(appSource, /class="admin-triage-strip"/);
   assert.match(appSource, /const adminTriageRows = computed\(\(\) => \{/);
   assert.match(appSource, /function applyAdminTriageFilter\(item = \{\}\)/);

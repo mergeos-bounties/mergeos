@@ -1666,6 +1666,7 @@ test('exposes admin operations, review, settings, and integration routes', async
     { status: 200, body: { pull_request: { number: 120 } } },
     { status: 200, body: [{ id: 'note_1' }] },
     { status: 200, body: [{ id: 'att_1' }] },
+    { status: 200, body: { kind: 'admin_disputes', stats: { total_count: 1 }, lanes: [{ id: 'disputes' }] } },
     { status: 200, body: { llm_provider: 'gemini' } },
     { status: 200, body: { llm_provider: 'openrouter' } },
     { status: 200, body: [] },
@@ -1692,6 +1693,7 @@ test('exposes admin operations, review, settings, and integration routes', async
   await client.mergeAdminTaskPullRequest('tsk_1', 120, { worker_id: 'github:contributor', reward_mrg: 50, bounty_type: 'future-small' });
   await client.adminNotifications();
   await client.adminAttachments();
+  const disputes = await client.adminDisputes();
   await client.adminSettings();
   await client.updateAdminSettings({ llm_provider: 'openrouter' });
   await client.adminSSLReviews();
@@ -1713,13 +1715,15 @@ test('exposes admin operations, review, settings, and integration routes', async
   assert.equal(fetchImpl.calls[4].url, '/api/admin/tasks/tsk_1/pulls');
   assert.equal(fetchImpl.calls[5].url, '/api/admin/tasks/tsk_1/pulls/120/merge');
   assert.equal(fetchImpl.calls[5].options.method, 'POST');
-  assert.equal(fetchImpl.calls[10].url, '/api/admin/ssl');
-  assert.equal(fetchImpl.calls[12].url, '/api/admin/gemini/keys');
-  assert.equal(fetchImpl.calls[15].url, '/api/admin/gemini/keys/key_1/test');
-  assert.equal(fetchImpl.calls[17].url, '/api/admin/test-settings');
-  assert.equal(fetchImpl.calls[18].options.method, 'PATCH');
-  assert.equal(fetchImpl.calls[22].url, '/api/admin/test-settings/entries/tse_2');
-  assert.equal(fetchImpl.calls[22].options.method, 'DELETE');
+  assert.equal(disputes.kind, 'admin_disputes');
+  assert.equal(fetchImpl.calls[8].url, '/api/admin/disputes');
+  assert.equal(fetchImpl.calls[11].url, '/api/admin/ssl');
+  assert.equal(fetchImpl.calls[13].url, '/api/admin/gemini/keys');
+  assert.equal(fetchImpl.calls[16].url, '/api/admin/gemini/keys/key_1/test');
+  assert.equal(fetchImpl.calls[18].url, '/api/admin/test-settings');
+  assert.equal(fetchImpl.calls[19].options.method, 'PATCH');
+  assert.equal(fetchImpl.calls[23].url, '/api/admin/test-settings/entries/tse_2');
+  assert.equal(fetchImpl.calls[23].options.method, 'DELETE');
 });
 
 test('throws response errors with status and payload', async () => {

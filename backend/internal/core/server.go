@@ -87,6 +87,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/admin/attachments", s.adminAttachments)
 	mux.HandleFunc("GET /api/admin/ledger", s.adminLedger)
 	mux.HandleFunc("GET /api/admin/ops-queue", s.adminOpsQueue)
+	mux.HandleFunc("GET /api/admin/disputes", s.adminDisputes)
 	mux.HandleFunc("GET /api/admin/reputation", s.adminReputation)
 	mux.HandleFunc("POST /api/admin/ledger/credits", s.createAdminLedgerCredit)
 	mux.HandleFunc("GET /api/admin/settings", s.adminSettings)
@@ -1390,6 +1391,13 @@ func (s *Server) adminOpsQueue(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, s.store.AdminOpsQueue())
+}
+
+func (s *Server) adminDisputes(w http.ResponseWriter, r *http.Request) {
+	if _, ok := s.requireAdmin(w, r); !ok {
+		return
+	}
+	writeJSON(w, http.StatusOK, s.store.AdminDisputes())
 }
 
 func (s *Server) adminReputation(w http.ResponseWriter, r *http.Request) {
