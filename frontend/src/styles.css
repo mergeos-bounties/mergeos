@@ -30241,3 +30241,153 @@ canvas {
   }
 }
 
+/* Signed-in mobile final QA owner: keep the authenticated shell stable after
+   real user data, long project names, and notification/account sheets load. */
+@media (max-width: 760px) {
+  .dashboard-shell {
+    --dash-touch-target: 44px;
+    color-scheme: light;
+  }
+
+  .dashboard-shell .dash-sidebar {
+    overflow: visible;
+  }
+
+  .dashboard-shell .dash-brand {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .dashboard-shell .dash-mobile-nav {
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    align-items: stretch;
+  }
+
+  .dashboard-shell .dash-mobile-nav button {
+    min-height: var(--dash-touch-target);
+    aspect-ratio: 1.15 / 1;
+    padding: 6px 4px;
+  }
+
+  .dashboard-shell .dash-mobile-menu {
+    top: calc(82px + env(safe-area-inset-top)) !important;
+    max-height: min(54dvh, 390px) !important;
+  }
+
+  .dashboard-shell .dash-command-copy p {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .dashboard-shell .dash-command-metrics,
+  .dashboard-shell .dashboard-role-map {
+    mask-image: linear-gradient(90deg, #000 calc(100% - 26px), transparent);
+  }
+
+  .dashboard-shell .dash-top-actions {
+    grid-template-columns: var(--dash-touch-target) var(--dash-touch-target) minmax(88px, 1fr) var(--dash-touch-target) !important;
+    gap: 8px;
+  }
+
+  .dashboard-shell .dash-icon-button,
+  .dashboard-shell .dash-profile,
+  .dashboard-shell .dash-top-actions .primary-button.compact {
+    min-height: var(--dash-touch-target);
+    height: var(--dash-touch-target);
+    border-radius: 11px;
+  }
+
+  .dashboard-shell .dash-top-actions .primary-button.compact {
+    min-width: 0;
+    padding-inline: 10px;
+  }
+
+  .dashboard-shell .dash-top-actions .primary-button.compact span {
+    max-width: 13ch;
+  }
+
+  .notification-dropdown,
+  .dashboard-shell .notification-dropdown,
+  .dashboard-shell .account-context-menu,
+  .dashboard-account-menu .account-context-menu {
+    width: auto !important;
+    max-height: min(74dvh, 480px) !important;
+    border-radius: 16px;
+  }
+
+  .notification-dropdown-list,
+  .dashboard-shell .notification-dropdown-list,
+  .dashboard-shell .account-context-menu {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .dashboard-shell :is(input, select, textarea) {
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  .dashboard-shell :is(.dash-card, .rail-card, .dashboard-tool-card, .dashboard-project-panel, .dashboard-side-panel, .dash-empty-state, .payment-summary-card, .notification-center-card) {
+    padding: clamp(12px, 4vw, 16px);
+  }
+
+  .dashboard-shell :is(.dash-card, .rail-card, .dashboard-tool-card, .dashboard-project-panel, .dashboard-side-panel, .dash-empty-state) :is(h1, h2, h3, strong, p, small, span, a, button, code) {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .project-flow-shell .project-flow-main {
+    padding-bottom: calc(86px + env(safe-area-inset-bottom));
+  }
+
+  .project-account-menu .account-context-menu,
+  .project-flow-actions .locale-context-menu {
+    top: auto !important;
+    bottom: calc(12px + env(safe-area-inset-bottom)) !important;
+    max-height: min(72dvh, 460px) !important;
+    border-radius: 16px;
+  }
+
+  .project-flow-shell .project-step-actions,
+  .project-flow-shell .funding-actions {
+    background: rgba(255, 255, 255, 0.97);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(12, 28, 22, 0.08);
+    border-radius: 14px;
+    box-shadow: 0 18px 46px rgba(15, 23, 42, 0.14);
+    padding: 8px;
+  }
+
+  .project-flow-shell :is(input, select, textarea) {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 380px) {
+  .dashboard-shell .dash-mobile-nav button span {
+    display: none;
+  }
+
+  .dashboard-shell .dash-mobile-nav button {
+    aspect-ratio: 1 / 1;
+  }
+
+  .dashboard-shell .dash-top-actions {
+    grid-template-columns: 42px 42px minmax(54px, 1fr) 42px !important;
+    gap: 6px;
+  }
+
+  .dashboard-shell .dash-top-actions .primary-button.compact {
+    padding-inline: 0;
+  }
+
+  .dashboard-shell .dash-top-actions .primary-button.compact span {
+    display: none;
+  }
+
+  .notification-dropdown-actions {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
