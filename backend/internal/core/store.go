@@ -3350,7 +3350,7 @@ func marketplaceProjectTags(project *Project) []string {
 
 func marketplaceBountyRow(project *Project, task *Task) *MarketplaceBounty {
 	claimID := marketplaceBountyID(project.ID, task.IssueNumber)
-	return &MarketplaceBounty{
+	row := &MarketplaceBounty{
 		ID:                 claimID,
 		ClaimID:            claimID,
 		ProjectID:          project.ID,
@@ -3368,6 +3368,11 @@ func marketplaceBountyRow(project *Project, task *Task) *MarketplaceBounty {
 		IssueURL:           marketplacePublicRepoURL(task.IssueURL),
 		CreatedAt:          task.CreatedAt,
 	}
+	if packet := proposalPacketForTask(project, task); packet != nil {
+		row.ProposalEndpoint = packet.ProposalEndpoint
+		row.ProposalPacket = packet
+	}
+	return row
 }
 
 func marketplaceEstimatedHours(task *Task) float64 {
@@ -3550,7 +3555,8 @@ func workerProposalRows(projects map[string]*Project, tasks map[string]*Task, us
 		}
 		project := projects[task.ProjectID]
 		claimID := marketplaceBountyID(task.ProjectID, task.IssueNumber)
-		rows = append(rows, WorkerProposal{
+		packet := proposalPacketForTask(project, task)
+		row := WorkerProposal{
 			ID:                 claimID,
 			ClaimID:            claimID,
 			ProjectID:          task.ProjectID,
@@ -3567,7 +3573,12 @@ func workerProposalRows(projects map[string]*Project, tasks map[string]*Task, us
 			EvidenceRequired:   publicTaskEvidenceRequiredForTask(task),
 			IssueURL:           marketplacePublicRepoURL(task.IssueURL),
 			CreatedAt:          task.CreatedAt,
-		})
+		}
+		if packet != nil {
+			row.ProposalEndpoint = packet.ProposalEndpoint
+			row.ClaimPacket = packet
+		}
+		rows = append(rows, row)
 	}
 	sort.Slice(rows, func(i, j int) bool {
 		if rows[i].MatchScore == rows[j].MatchScore {
@@ -3582,6 +3593,69 @@ func workerProposalRows(projects map[string]*Project, tasks map[string]*Task, us
 		return rows[:8]
 	}
 	return rows
+}
+
+func proposalPacketForTask(project *Project, task *Task) *ProposalPacket {
+	if task == nil || task.RequiredWorkerKind == WorkerAgent {
+		return nil
+	}
+	claimID := marketplaceBountyID(task.ProjectID, task.IssueNumber)
+	estimatedHours := marketplaceEstimatedHours(task)
+	bidCents := task.RewardCents
+	if bidCents <= 0 {
+		bidCents = 5000
+	}
+	if estimatedHours <= 0 {
+		estimatedHours = estimatedHoursFromReward(bidCents)
+	}
+	packet := &ProposalPacket{
+		CanClaim:         taskIsOpenForClaim(task),
+		Status:           "ready",
+		ProposalEndpoint: "/api/proposals",
+		ContextURLs: map[string]string{
+			"task_protocol": "/api/public/protocol/tasks?task_id=" + claimID,
+			"marketplace":   "/api/public/marketplace",
+		},
+		Runbook: []AgentRunbookStep{
+			{Step: 1, Action: "read_task", Label: "Read public task protocol and acceptance criteria", Method: "GET", Endpoint: "/api/public/protocol/tasks?task_id=" + claimID},
+			{Step: 2, Action: "prepare_proposal", Label: "Attach bid, availability, evidence plan, and worker identity", Method: "POST", Endpoint: "/api/proposals"},
+			{Step: 3, Action: "wait_customer_review", Label: "Customer or admin reviews the proposal before claim", Method: "GET", Endpoint: "/api/workers/me"},
+		},
+		Payload: CreateProposalRequest{
+			TaskID:         claimID,
+			CoverLetter:    proposalPacketCoverLetter(project, task),
+			BidCents:       bidCents,
+			EstimatedHours: estimatedHours,
+			Availability:   "Available after customer approval",
+		},
+		EvidenceChecklist: publicTaskEvidenceRequiredForTask(task),
+		Warnings: []string{
+			"Login and link a GitHub or Solana wallet identity before submitting.",
+			"Do not include private customer data in proposal proof.",
+		},
+	}
+	if !packet.CanClaim {
+		packet.Status = "unavailable"
+	}
+	return packet
+}
+
+func proposalPacketCoverLetter(project *Project, task *Task) string {
+	title := "this bounty"
+	projectTitle := "this MergeOS project"
+	acceptance := "the published acceptance criteria"
+	if task != nil {
+		if value := strings.TrimSpace(task.Title); value != "" {
+			title = value
+		}
+		if value := strings.TrimSpace(task.Acceptance); value != "" {
+			acceptance = compactText(value)
+		}
+	}
+	if project != nil {
+		projectTitle = marketplaceProjectTitle(project)
+	}
+	return proposalText(fmt.Sprintf("I can deliver %s for %s. Scope: %s I will attach PR evidence, tests, and release notes through MergeOS.", title, projectTitle, acceptance), 2000)
 }
 
 func workerProposalMatchScore(task *Task, user *User) int {

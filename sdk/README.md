@@ -273,6 +273,17 @@ const proposalDecision = await mergeos.decideProposal(proposal.proposal.id, {
   decision: 'accepted',
 });
 console.log(proposalDecision.protocol_version, proposalDecision.proposal.status);
+
+const marketplace = await mergeos.publicMarketplace();
+const bounty = marketplace.bounties.find((row) => row.proposal_packet?.can_claim);
+if (bounty) {
+  const packetProposal = await mergeos.createProposalFromBounty(bounty, {
+    coverLetter: 'I can deliver this public packet with PR evidence and tests.',
+    availability: 'Available this week',
+  });
+  console.log(packetProposal.protocol_version, packetProposal.proposal.status);
+}
+
 const dispute = await mergeos.createDispute({
   task_id: 'tsk_0001',
   body: 'Evidence needs maintainer review.',
@@ -338,6 +349,25 @@ if (task) {
 ```
 
 `claimAgentQueueTask(task, overrides)` prefers the queue row `claim_endpoint`, falls back to the bounty id, and preserves `worker_kind` plus `agent_type` from the public work packet. Use it before `agentActionPayloadFromWorkPacket()` so the agent records evidence only after it owns the task.
+
+## Marketplace Proposal Packet
+
+```js
+import { proposalPayloadFromBounty } from '@mergeos/sdk';
+
+const marketplace = await mergeos.publicMarketplace();
+const bounty = marketplace.bounties.find((row) => row.proposal_packet?.can_claim);
+
+if (bounty) {
+  const payload = proposalPayloadFromBounty(bounty, {
+    coverLetter: 'I can ship this bounty with tests, PR evidence, and release notes.',
+  });
+  const proposal = await mergeos.createProposalFromBounty(bounty, payload);
+  console.log(proposal.kind, proposal.proposal.status);
+}
+```
+
+Public bounty rows expose `proposal_endpoint` and `proposal_packet.payload` so contributors, CLIs, and agents can submit proposals without reverse engineering dashboard forms. `createProposalFromBounty(bounty, overrides)` prefers the packet endpoint, then falls back to `/api/proposals`.
 
 ## PR Monitor Auto-Release
 

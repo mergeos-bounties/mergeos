@@ -372,6 +372,41 @@ test('validates marketplace protocol documents', () => {
         suggested_agent_type: 'qa-agent',
         bounty_type: 'future-small',
         evidence_required: ['tests', 'deploy_preview'],
+        proposal_endpoint: '/api/proposals',
+        proposal_packet: {
+          can_claim: true,
+          status: 'ready',
+          proposal_endpoint: '/api/proposals',
+          context_urls: {
+            task_protocol: '/api/public/protocol/tasks?task_id=claim_12',
+            marketplace: '/api/public/marketplace',
+          },
+          runbook: [
+            {
+              step: 1,
+              action: 'read_task',
+              label: 'Read public task protocol and acceptance criteria',
+              method: 'GET',
+              endpoint: '/api/public/protocol/tasks?task_id=claim_12',
+            },
+            {
+              step: 2,
+              action: 'prepare_proposal',
+              label: 'Attach bid, availability, evidence plan, and worker identity',
+              method: 'POST',
+              endpoint: '/api/proposals',
+            },
+          ],
+          payload: {
+            task_id: 'claim_12',
+            cover_letter: 'I can deliver this bounty with PR evidence and tests.',
+            bid_cents: 12000,
+            estimated_hours: 6,
+            availability: 'Available after customer approval',
+          },
+          evidence_checklist: ['tests', 'pull request'],
+          warnings: ['Login before submitting.'],
+        },
         source_repository: 'https://github.com/mergeos-bounties/mergeos',
         issue_url: 'https://github.com/mergeos-bounties/mergeos/issues/12',
         created_at: now,
@@ -418,6 +453,21 @@ test('validates marketplace protocol documents', () => {
   assert(invalid.errors.some((error) => error.path === 'kind'));
   assert(invalid.errors.some((error) => error.path === 'stats.open_task_count'));
   assert(invalid.errors.some((error) => error.path === 'agents[0].worker_kind'));
+
+  const invalidPacket = validateProtocolDocument({
+    ...marketplace,
+    bounties: [
+      {
+        ...marketplace.bounties[0],
+        proposal_packet: {
+          ...marketplace.bounties[0].proposal_packet,
+          payload: { ...marketplace.bounties[0].proposal_packet.payload, bid_cents: 0 },
+        },
+      },
+    ],
+  });
+  assert.equal(invalidPacket.valid, false);
+  assert(invalidPacket.errors.some((error) => error.path === 'bounties[0].proposal_packet.payload.bid_cents'));
 });
 
 test('validates live feed protocol documents', () => {
@@ -2088,6 +2138,41 @@ test('validates worker dashboard protocol documents', () => {
         match_score: 91,
         match_reasons: ['GitHub identity linked', 'Low risk reputation'],
         evidence_required: ['tests'],
+        proposal_endpoint: '/api/proposals',
+        claim_packet: {
+          can_claim: true,
+          status: 'ready',
+          proposal_endpoint: '/api/proposals',
+          context_urls: {
+            task_protocol: '/api/public/protocol/tasks?task_id=claim_public_1',
+            marketplace: '/api/public/marketplace',
+          },
+          runbook: [
+            {
+              step: 1,
+              action: 'read_task',
+              label: 'Read public task protocol and acceptance criteria',
+              method: 'GET',
+              endpoint: '/api/public/protocol/tasks?task_id=claim_public_1',
+            },
+            {
+              step: 2,
+              action: 'prepare_proposal',
+              label: 'Attach bid, availability, evidence plan, and worker identity',
+              method: 'POST',
+              endpoint: '/api/proposals',
+            },
+          ],
+          payload: {
+            task_id: 'claim_public_1',
+            cover_letter: 'I can deliver this route with tests and public protocol proof.',
+            bid_cents: 7000,
+            estimated_hours: 4,
+            availability: 'Available this week',
+          },
+          evidence_checklist: ['tests'],
+          warnings: ['Login before submitting.'],
+        },
         issue_url: 'https://github.com/mergeos-bounties/mergeos/issues/18',
         created_at: '2026-06-05T00:00:00.000Z',
       },
@@ -2128,6 +2213,21 @@ test('validates worker dashboard protocol documents', () => {
   assert.equal(invalid.valid, false);
   assert(invalid.errors.some((error) => error.path === 'kind'));
   assert(invalid.errors.some((error) => error.path === 'stats.risk_level'));
+
+  const invalidPacket = validateProtocolDocument({
+    ...dashboard,
+    proposals: [
+      {
+        ...dashboard.proposals[0],
+        claim_packet: {
+          ...dashboard.proposals[0].claim_packet,
+          payload: { ...dashboard.proposals[0].claim_packet.payload, task_id: '' },
+        },
+      },
+    ],
+  });
+  assert.equal(invalidPacket.valid, false);
+  assert(invalidPacket.errors.some((error) => error.path === 'proposals[0].claim_packet.payload.task_id'));
 });
 
 test('validates an agent protocol document', () => {

@@ -1866,6 +1866,17 @@ func TestPublicMarketplaceRouteReturnsSanitizedLiveData(t *testing.T) {
 		if len(bounty.EvidenceRequired) == 0 || !containsString(bounty.EvidenceRequired, "tests") {
 			t.Fatalf("bounty missing evidence requirements: %#v", bounty)
 		}
+		if bounty.RequiredWorkerKind != WorkerAgent {
+			if bounty.ProposalEndpoint != "/api/proposals" || bounty.ProposalPacket == nil {
+				t.Fatalf("human/hybrid bounty missing proposal packet: %#v", bounty)
+			}
+			if bounty.ProposalPacket.Payload.TaskID != bounty.ClaimID || bounty.ProposalPacket.Payload.BidCents <= 0 || bounty.ProposalPacket.Payload.CoverLetter == "" {
+				t.Fatalf("bounty proposal packet missing executable payload: %#v", bounty.ProposalPacket)
+			}
+			if bounty.ProposalPacket.ContextURLs["task_protocol"] == "" || len(bounty.ProposalPacket.Runbook) < 3 || len(bounty.ProposalPacket.Warnings) == 0 {
+				t.Fatalf("bounty proposal packet missing context or runbook: %#v", bounty.ProposalPacket)
+			}
+		}
 	}
 	if len(payload.Contributors) != 1 || payload.Contributors[0].EarnedCents == 0 {
 		t.Fatalf("contributors missing real paid task data: %#v", payload.Contributors)
@@ -5058,6 +5069,15 @@ func TestWorkerDashboardRouteMatchesGitHubWorkerAndSanitizesData(t *testing.T) {
 	if len(payload.Proposals[0].EvidenceRequired) == 0 || !containsString(payload.Proposals[0].EvidenceRequired, "tests") {
 		t.Fatalf("worker proposal missing evidence requirements: %#v", payload.Proposals[0])
 	}
+	if payload.Proposals[0].ProposalEndpoint != "/api/proposals" || payload.Proposals[0].ClaimPacket == nil {
+		t.Fatalf("worker proposal missing claim packet: %#v", payload.Proposals[0])
+	}
+	if payload.Proposals[0].ClaimPacket.Payload.TaskID != payload.Proposals[0].ClaimID || payload.Proposals[0].ClaimPacket.Payload.CoverLetter == "" || payload.Proposals[0].ClaimPacket.Payload.BidCents <= 0 {
+		t.Fatalf("worker proposal claim packet missing executable proposal payload: %#v", payload.Proposals[0].ClaimPacket)
+	}
+	if len(payload.Proposals[0].ClaimPacket.Runbook) < 3 || payload.Proposals[0].ClaimPacket.ContextURLs["marketplace"] != "/api/public/marketplace" {
+		t.Fatalf("worker proposal claim packet missing context/runbook: %#v", payload.Proposals[0].ClaimPacket)
+	}
 }
 
 func TestTaskSubmissionRouteRecordsReviewEvidence(t *testing.T) {
@@ -5582,6 +5602,14 @@ func TestWorkerCanSelfClaimProposalRoute(t *testing.T) {
 	}
 	if acceptRouteClaimID == "" || acceptRouteClaimID == acceptRouteTask.ID {
 		t.Fatalf("worker dashboard proposal missing accept-route claim id for task %q: %#v", acceptRouteTask.ID, dashboard.Proposals)
+	}
+	for _, proposal := range dashboard.Proposals {
+		if proposal.ProjectID != project.ID || proposal.RequiredWorkerKind == WorkerAgent {
+			continue
+		}
+		if proposal.ClaimPacket == nil || proposal.ClaimPacket.Payload.TaskID != proposal.ClaimID || proposal.ProposalEndpoint != "/api/proposals" {
+			t.Fatalf("worker dashboard proposal missing public proposal packet for task %q: %#v", proposal.ID, proposal)
+		}
 	}
 
 	server := NewServer(cfg, store, payments)

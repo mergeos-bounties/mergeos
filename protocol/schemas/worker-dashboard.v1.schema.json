@@ -144,6 +144,56 @@
             "items": { "type": "string", "minLength": 1, "maxLength": 120 }
           },
           "issue_url": { "type": "string", "maxLength": 512 },
+          "proposal_endpoint": { "type": "string", "maxLength": 240 },
+          "claim_packet": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["can_claim", "status", "proposal_endpoint", "payload"],
+            "properties": {
+              "can_claim": { "type": "boolean" },
+              "status": { "type": "string", "minLength": 1, "maxLength": 80 },
+              "proposal_endpoint": { "type": "string", "minLength": 1, "maxLength": 240 },
+              "context_urls": {
+                "type": "object",
+                "additionalProperties": { "type": "string", "minLength": 1, "maxLength": 500 }
+              },
+              "runbook": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["step", "action", "label", "method", "endpoint"],
+                  "properties": {
+                    "step": { "type": "integer", "minimum": 1 },
+                    "action": { "type": "string", "minLength": 1, "maxLength": 80 },
+                    "label": { "type": "string", "minLength": 1, "maxLength": 200 },
+                    "method": { "type": "string", "minLength": 1, "maxLength": 12 },
+                    "endpoint": { "type": "string", "minLength": 1, "maxLength": 300 }
+                  }
+                }
+              },
+              "payload": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["task_id", "cover_letter", "bid_cents", "estimated_hours", "availability"],
+                "properties": {
+                  "task_id": { "type": "string", "minLength": 1, "maxLength": 140 },
+                  "cover_letter": { "type": "string", "minLength": 1, "maxLength": 2000 },
+                  "bid_cents": { "type": "integer", "minimum": 1 },
+                  "estimated_hours": { "type": "number", "minimum": 0 },
+                  "availability": { "type": "string", "minLength": 1, "maxLength": 160 }
+                }
+              },
+              "evidence_checklist": {
+                "type": "array",
+                "items": { "type": "string", "minLength": 1, "maxLength": 120 }
+              },
+              "warnings": {
+                "type": "array",
+                "items": { "type": "string", "minLength": 1, "maxLength": 240 }
+              }
+            }
+          },
           "created_at": { "type": "string", "format": "date-time" }
         }
       }

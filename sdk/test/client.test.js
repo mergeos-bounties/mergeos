@@ -25,6 +25,7 @@ import {
   normalizeLegacyWalletAddress,
   normalizeSolanaWalletAddress,
   presaleReservationPayload,
+  proposalPayloadFromBounty,
   protocolEventFromMessage,
   protocolEventsFromMessage,
   protocolEventGroup,
@@ -690,6 +691,51 @@ test('sends bearer token and JSON body for task acceptance, proposals, and dispu
   assert.equal(fetchImpl.calls[6].options.method, 'POST');
   assert.equal(fetchImpl.calls[6].options.headers.Authorization, 'Bearer abc');
   assert.equal(fetchImpl.calls[6].options.body, JSON.stringify(disputePayload));
+});
+
+test('creates proposal payloads from public bounty packets', async () => {
+  const fetchImpl = fakeFetch([
+    { status: 201, body: { protocol_version: 'mergeos.proposal.v1', kind: 'proposal', proposal: { id: 'ntf_packet', status: 'submitted' } } },
+  ]);
+  const client = createMergeOSClient({ baseURL: 'https://mergeos.shop', token: 'abc', fetchImpl });
+  const bounty = {
+    id: 'bounty-prj_1-12',
+    claim_id: 'claim_12',
+    reward_cents: 5000,
+    estimated_hours: 4,
+    proposal_packet: {
+      proposal_endpoint: '/api/proposals',
+      payload: {
+        task_id: 'claim_12',
+        cover_letter: 'I can deliver this bounty with tests.',
+        bid_cents: 9000,
+        estimated_hours: 6,
+        availability: 'Available after customer approval',
+      },
+    },
+  };
+
+  assert.deepEqual(proposalPayloadFromBounty(bounty, { coverLetter: 'Ready this week.' }), {
+    task_id: 'claim_12',
+    cover_letter: 'Ready this week.',
+    bid_cents: 9000,
+    estimated_hours: 6,
+    availability: 'Available after customer approval',
+  });
+
+  const proposal = await client.createProposalFromBounty(bounty, { availability: 'Available Monday' });
+
+  assert.equal(proposal.proposal.status, 'submitted');
+  assert.equal(fetchImpl.calls[0].url, 'https://mergeos.shop/api/proposals');
+  assert.equal(fetchImpl.calls[0].options.method, 'POST');
+  assert.equal(fetchImpl.calls[0].options.headers.Authorization, 'Bearer abc');
+  assert.equal(fetchImpl.calls[0].options.body, JSON.stringify({
+    task_id: 'claim_12',
+    cover_letter: 'I can deliver this bounty with tests.',
+    bid_cents: 9000,
+    estimated_hours: 6,
+    availability: 'Available Monday',
+  }));
 });
 
 test('supports wallet, payment, and raw upload helper routes', async () => {

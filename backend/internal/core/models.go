@@ -989,22 +989,35 @@ type MarketplaceProject struct {
 }
 
 type MarketplaceBounty struct {
-	ID                 string     `json:"id"`
-	ClaimID            string     `json:"claim_id,omitempty"`
-	ProjectID          string     `json:"project_id"`
-	ProjectTitle       string     `json:"project_title"`
-	IssueNumber        int        `json:"issue_number"`
-	Title              string     `json:"title"`
-	Acceptance         string     `json:"acceptance"`
-	RewardCents        int64      `json:"reward_cents"`
-	EstimatedHours     float64    `json:"estimated_hours,omitempty"`
-	RequiredWorkerKind WorkerKind `json:"required_worker_kind"`
-	SuggestedAgentType string     `json:"suggested_agent_type,omitempty"`
-	BountyType         string     `json:"bounty_type,omitempty"`
-	EvidenceRequired   []string   `json:"evidence_required,omitempty"`
-	SourceRepository   string     `json:"source_repository,omitempty"`
-	IssueURL           string     `json:"issue_url,omitempty"`
-	CreatedAt          time.Time  `json:"created_at"`
+	ID                 string          `json:"id"`
+	ClaimID            string          `json:"claim_id,omitempty"`
+	ProjectID          string          `json:"project_id"`
+	ProjectTitle       string          `json:"project_title"`
+	IssueNumber        int             `json:"issue_number"`
+	Title              string          `json:"title"`
+	Acceptance         string          `json:"acceptance"`
+	RewardCents        int64           `json:"reward_cents"`
+	EstimatedHours     float64         `json:"estimated_hours,omitempty"`
+	RequiredWorkerKind WorkerKind      `json:"required_worker_kind"`
+	SuggestedAgentType string          `json:"suggested_agent_type,omitempty"`
+	BountyType         string          `json:"bounty_type,omitempty"`
+	EvidenceRequired   []string        `json:"evidence_required,omitempty"`
+	SourceRepository   string          `json:"source_repository,omitempty"`
+	IssueURL           string          `json:"issue_url,omitempty"`
+	ProposalEndpoint   string          `json:"proposal_endpoint,omitempty"`
+	ProposalPacket     *ProposalPacket `json:"proposal_packet,omitempty"`
+	CreatedAt          time.Time       `json:"created_at"`
+}
+
+type ProposalPacket struct {
+	CanClaim          bool                  `json:"can_claim"`
+	Status            string                `json:"status"`
+	ProposalEndpoint  string                `json:"proposal_endpoint"`
+	ContextURLs       map[string]string     `json:"context_urls,omitempty"`
+	Runbook           []AgentRunbookStep    `json:"runbook,omitempty"`
+	Payload           CreateProposalRequest `json:"payload"`
+	EvidenceChecklist []string              `json:"evidence_checklist,omitempty"`
+	Warnings          []string              `json:"warnings,omitempty"`
 }
 
 type MarketplaceContributor struct {
@@ -1997,22 +2010,24 @@ type WorkerReputationAudit struct {
 }
 
 type WorkerProposal struct {
-	ID                 string     `json:"id"`
-	ClaimID            string     `json:"claim_id,omitempty"`
-	ProjectID          string     `json:"project_id"`
-	ProjectTitle       string     `json:"project_title"`
-	IssueNumber        int        `json:"issue_number"`
-	Title              string     `json:"title"`
-	Acceptance         string     `json:"acceptance"`
-	RewardCents        int64      `json:"reward_cents"`
-	EstimatedHours     float64    `json:"estimated_hours,omitempty"`
-	RequiredWorkerKind WorkerKind `json:"required_worker_kind"`
-	SuggestedAgentType string     `json:"suggested_agent_type,omitempty"`
-	MatchScore         int        `json:"match_score"`
-	MatchReasons       []string   `json:"match_reasons,omitempty"`
-	EvidenceRequired   []string   `json:"evidence_required,omitempty"`
-	IssueURL           string     `json:"issue_url,omitempty"`
-	CreatedAt          time.Time  `json:"created_at"`
+	ID                 string          `json:"id"`
+	ClaimID            string          `json:"claim_id,omitempty"`
+	ProjectID          string          `json:"project_id"`
+	ProjectTitle       string          `json:"project_title"`
+	IssueNumber        int             `json:"issue_number"`
+	Title              string          `json:"title"`
+	Acceptance         string          `json:"acceptance"`
+	RewardCents        int64           `json:"reward_cents"`
+	EstimatedHours     float64         `json:"estimated_hours,omitempty"`
+	RequiredWorkerKind WorkerKind      `json:"required_worker_kind"`
+	SuggestedAgentType string          `json:"suggested_agent_type,omitempty"`
+	MatchScore         int             `json:"match_score"`
+	MatchReasons       []string        `json:"match_reasons,omitempty"`
+	EvidenceRequired   []string        `json:"evidence_required,omitempty"`
+	IssueURL           string          `json:"issue_url,omitempty"`
+	ProposalEndpoint   string          `json:"proposal_endpoint,omitempty"`
+	ClaimPacket        *ProposalPacket `json:"claim_packet,omitempty"`
+	CreatedAt          time.Time       `json:"created_at"`
 }
 
 type WorkerSubmittedProposal struct {

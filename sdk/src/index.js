@@ -464,6 +464,16 @@ export class MergeOSClient {
     return this.request('/api/proposals', { method: 'POST', body: payload });
   }
 
+  createProposalFromBounty(bounty = {}, overrides = {}) {
+    const endpoint = overrides.proposal_endpoint
+      || overrides.proposalEndpoint
+      || bounty.proposal_endpoint
+      || bounty.proposal_packet?.proposal_endpoint
+      || bounty.claim_packet?.proposal_endpoint
+      || '/api/proposals';
+    return this.request(endpoint, { method: 'POST', body: proposalPayloadFromBounty(bounty, overrides) });
+  }
+
   decideProposal(proposalID, payload) {
     return this.request(`/api/proposals/${encodeURIComponent(proposalID)}/decision`, { method: 'POST', body: payload });
   }
@@ -865,6 +875,24 @@ export function agentQueueTaskClaimID(task = {}, endpoint = '') {
   const source = endpoint || task.claim_endpoint || task.work_packet?.claim_endpoint || '';
   const match = String(source).match(/\/api\/tasks\/([^/]+)\/claim(?:\?|$)/);
   return match ? decodeURIComponent(match[1]) : '';
+}
+
+export function proposalPayloadFromBounty(bounty = {}, overrides = {}) {
+  const packet = bounty.proposal_packet && typeof bounty.proposal_packet === 'object'
+    ? bounty.proposal_packet
+    : bounty.claim_packet && typeof bounty.claim_packet === 'object'
+      ? bounty.claim_packet
+      : {};
+  const packetPayload = packet.payload && typeof packet.payload === 'object' ? packet.payload : {};
+  const bidCents = Number(overrides.bid_cents ?? overrides.bidCents ?? packetPayload.bid_cents ?? bounty.reward_cents) || 0;
+  const estimatedHours = Number(overrides.estimated_hours ?? overrides.estimatedHours ?? packetPayload.estimated_hours ?? bounty.estimated_hours) || 0;
+  return compactPayload({
+    task_id: overrides.task_id || overrides.taskID || packetPayload.task_id || bounty.claim_id || bounty.id || '',
+    cover_letter: overrides.cover_letter || overrides.coverLetter || packetPayload.cover_letter || '',
+    bid_cents: bidCents || undefined,
+    estimated_hours: estimatedHours || undefined,
+    availability: overrides.availability || packetPayload.availability || 'Available after customer approval',
+  });
 }
 
 export function autoReleasePayloadFromPRMonitorTask(task = {}, overrides = {}) {
