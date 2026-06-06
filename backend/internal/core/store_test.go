@@ -1333,7 +1333,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 	if payload.ProtocolVersion != "mergeos.protocol.manifest.v1" || payload.Kind != "protocol_manifest" {
 		t.Fatalf("unexpected manifest header: %#v", payload)
 	}
-	if len(payload.Schemas) != 37 {
+	if len(payload.Schemas) != 38 {
 		t.Fatalf("manifest schemas = %d: %#v", len(payload.Schemas), payload.Schemas)
 	}
 	schemas := map[string]bool{}
@@ -1342,7 +1342,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 		schemas[schema.Version] = true
 		descriptions[schema.Version] = schema.Description
 	}
-	for _, required := range []string{"mergeos.task.v1", "mergeos.task-claim.v1", "mergeos.task-submission.v1", "mergeos.task-review.v1", "mergeos.agent.v1", "mergeos.contributor.v1", "mergeos.agent-action.v1", "mergeos.agent-queue.v1", "mergeos.agent-runbook.v1", "mergeos.marketplace.v1", "mergeos.live-feed.v1", "mergeos.workflow.v1", "mergeos.estimate.v1", "mergeos.wallet-migration.v1", "mergeos.release-artifact.v1", "mergeos.repo-import.v1", "mergeos.repo-sync.v1", "mergeos.dispute.v1", "mergeos.proposal.v1", "mergeos.ai-workflow.v1", "mergeos.event.v1", "mergeos.ledger.v1", "mergeos.ledger-proof.v1", "mergeos.token-economy.v1", "mergeos.airdrop-claim.v1", "mergeos.airdrop-missions.v1", "mergeos.presale-reservation.v1", "mergeos.escrow.v1", "mergeos.payouts.v1", "mergeos.payout-release.v1", "mergeos.deployment.v1", "mergeos.pr-monitor.v1", "mergeos.scan.v1", "mergeos.customer-dashboard.v1", "mergeos.worker-dashboard.v1", "mergeos.routing.v1", "mergeos.admin-ops.v1"} {
+	for _, required := range []string{"mergeos.task.v1", "mergeos.task-claim.v1", "mergeos.task-submission.v1", "mergeos.task-review.v1", "mergeos.agent.v1", "mergeos.contributor.v1", "mergeos.agent-action.v1", "mergeos.agent-queue.v1", "mergeos.agent-runbook.v1", "mergeos.marketplace.v1", "mergeos.live-feed.v1", "mergeos.workflow.v1", "mergeos.estimate.v1", "mergeos.wallet-migration.v1", "mergeos.release-artifact.v1", "mergeos.repo-import.v1", "mergeos.repo-sync.v1", "mergeos.repo-task-funding.v1", "mergeos.dispute.v1", "mergeos.proposal.v1", "mergeos.ai-workflow.v1", "mergeos.event.v1", "mergeos.ledger.v1", "mergeos.ledger-proof.v1", "mergeos.token-economy.v1", "mergeos.airdrop-claim.v1", "mergeos.airdrop-missions.v1", "mergeos.presale-reservation.v1", "mergeos.escrow.v1", "mergeos.payouts.v1", "mergeos.payout-release.v1", "mergeos.deployment.v1", "mergeos.pr-monitor.v1", "mergeos.scan.v1", "mergeos.customer-dashboard.v1", "mergeos.worker-dashboard.v1", "mergeos.routing.v1", "mergeos.admin-ops.v1"} {
 		if !schemas[required] {
 			t.Fatalf("manifest missing schema %s: %#v", required, payload.Schemas)
 		}
@@ -1382,6 +1382,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 		"GET /api/projects/{id}/protocol/workflow",
 		"GET /api/projects/{id}/protocol/scan",
 		"GET /api/projects/{id}/routing",
+		"POST /api/projects/{id}/repo-scan/suggested-tasks/{taskID}/fund",
 		"POST /api/projects/{id}/repo-sync",
 		"POST /api/disputes",
 		"POST /api/proposals",
@@ -4771,8 +4772,23 @@ func TestProjectRepositoryScanRouteReturnsStaticFindings(t *testing.T) {
 	if err := json.Unmarshal(fundResp.Body.Bytes(), &fundedPayload); err != nil {
 		t.Fatal(err)
 	}
+	if fundedPayload.ProtocolVersion != "mergeos.repo-task-funding.v1" || fundedPayload.Kind != "repo_task_funding" {
+		t.Fatalf("unexpected repo task funding protocol: %#v", fundedPayload)
+	}
 	if fundedPayload.Task == nil || fundedPayload.Task.BountyType != repositoryScanSuggestionBountyType || fundedPayload.Task.RewardCents != taskToFund.FundingPacket.RecommendedRewardCents || fundedPayload.Task.RequiredWorkerKind == "" {
 		t.Fatalf("unexpected funded suggested task: %#v", fundedPayload)
+	}
+	if fundedPayload.FundingReference == "" || fundedPayload.TaskProtocolURL != "/api/public/protocol/tasks?task_id="+marketplaceBountyID(project.ID, fundedPayload.Task.IssueNumber) || fundedPayload.WorkflowProtocolURL != "/api/public/projects/"+project.ID+"/workflow" || fundedPayload.ScanProtocolURL != "/api/public/projects/"+project.ID+"/repo-scan" {
+		t.Fatalf("funded suggested task missing proof URLs: %#v", fundedPayload)
+	}
+	if fundedPayload.WorkPacket.ClaimEndpoint != "/api/tasks/"+marketplaceBountyID(project.ID, fundedPayload.Task.IssueNumber)+"/claim" || fundedPayload.WorkPacket.SubmitEndpoint == "" || len(fundedPayload.WorkPacket.Runbook) < 5 || len(fundedPayload.WorkPacket.ActionPayloads) < 3 {
+		t.Fatalf("funded suggested task missing agent work packet: %#v", fundedPayload.WorkPacket)
+	}
+	fundedBody := fundResp.Body.String()
+	for _, value := range []string{"scan-client@example.com", "+1 555 0155", auth.User.ID, defaultDevPaymentCode, tempDir, "super-secret-token"} {
+		if strings.Contains(fundedBody, value) {
+			t.Fatalf("funded repo task response leaked private value %q: %s", value, fundedBody)
+		}
 	}
 	rescanReq := httptest.NewRequest(http.MethodGet, "/api/projects/"+project.ID+"/repo-scan", nil)
 	rescanReq.Header.Set("Authorization", "Bearer "+auth.Token)

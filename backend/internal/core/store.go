@@ -957,13 +957,20 @@ func (s *Store) FundRepositorySuggestedTask(ctx context.Context, userID, project
 		return FundRepositorySuggestedTaskResponse{}, err
 	}
 	taskCopy := *task
+	workPacket := repositorySuggestedTaskWorkPacket(project, task, quote.Suggestion)
 	return FundRepositorySuggestedTaskResponse{
-		ProtocolVersion: "mergeos.repo-task-funding.v1",
-		Kind:            "repo_task_funding",
-		ProjectID:       project.ID,
-		SuggestedTaskID: quote.SuggestedTaskID,
-		Task:            &taskCopy,
-		LedgerEntries:   []LedgerEntry{taskReserve},
+		ProtocolVersion:     "mergeos.repo-task-funding.v1",
+		Kind:                "repo_task_funding",
+		ProjectID:           project.ID,
+		SuggestedTaskID:     quote.SuggestedTaskID,
+		Task:                &taskCopy,
+		LedgerEntries:       []LedgerEntry{taskReserve},
+		FundingReference:    taskReserve.Reference,
+		EvidenceChecklist:   append([]string(nil), quote.Suggestion.EvidenceRequired...),
+		TaskProtocolURL:     workPacket.ContextURLs["task_protocol"],
+		WorkflowProtocolURL: workPacket.ContextURLs["workflow_protocol"],
+		ScanProtocolURL:     workPacket.ContextURLs["repository_scan"],
+		WorkPacket:          workPacket,
 	}, nil
 }
 
@@ -1067,6 +1074,92 @@ func repositorySuggestedTaskAcceptance(suggestion RepositorySuggestedTask) strin
 		}
 	}
 	return strings.Join(lines, "\n")
+}
+
+func repositorySuggestedTaskWorkPacket(project *Project, task *Task, suggestion RepositorySuggestedTask) AgentWorkPacket {
+	if project == nil || task == nil {
+		return AgentWorkPacket{
+			ContextURLs:     map[string]string{},
+			Runbook:         []AgentRunbookStep{},
+			ActionPayloads:  []AgentActionPayload{},
+			DelegationChain: []string{ceoAgentType, designReviewAgentType},
+		}
+	}
+	bountyID := marketplaceBountyID(task.ProjectID, task.IssueNumber)
+	claimEndpoint := "/api/tasks/" + bountyID + "/claim"
+	submitEndpoint := "/api/tasks/" + bountyID + "/submit"
+	actionEndpoint := "/api/projects/" + task.ProjectID + "/agent-actions"
+	taskProtocolURL := "/api/public/protocol/tasks?task_id=" + bountyID
+	agentType := strings.TrimSpace(task.SuggestedAgentType)
+	if agentType == "" && task.RequiredWorkerKind == WorkerAgent {
+		agentType = "general-ai-agent"
+	}
+	contextURLs := map[string]string{
+		"task_protocol":     taskProtocolURL,
+		"agent_queue":       agentQueueEndpoint,
+		"workflow_protocol": "/api/public/projects/" + task.ProjectID + "/workflow",
+		"workflow_pulse":    "/api/public/projects/" + task.ProjectID + "/ai-workflow",
+		"repository_scan":   "/api/public/projects/" + task.ProjectID + "/repo-scan",
+		"pr_monitor":        "/api/public/projects/" + task.ProjectID + "/pull-requests",
+		"ceo_agent":         "/api/public/protocol/agents",
+		"design_review":     agentQueueEndpoint + "#design-review-agent",
+	}
+	if issueURL := marketplacePublicRepoURL(task.IssueURL); issueURL != "" {
+		contextURLs["issue"] = issueURL
+	}
+	if repoURL := projectSourceRepoURL(project); repoURL != "" {
+		contextURLs["repository"] = repoURL
+	}
+	return AgentWorkPacket{
+		ClaimEndpoint:       claimEndpoint,
+		ActionEndpoint:      actionEndpoint,
+		SubmitEndpoint:      submitEndpoint,
+		SupervisorAgentType: ceoAgentType,
+		SubagentType:        agentType,
+		DesignReviewAgent:   designReviewAgentType,
+		DelegationChain:     agentDelegationChain(agentType),
+		ContextURLs:         contextURLs,
+		Runbook: []AgentRunbookStep{
+			{Step: 1, Action: "fetch_scan", Label: "Fetch repository scan protocol", Method: "GET", Endpoint: contextURLs["repository_scan"]},
+			{Step: 2, Action: "fetch_task", Label: "Fetch funded task protocol", Method: "GET", Endpoint: taskProtocolURL},
+			{Step: 3, Action: "claim_task", Label: "Claim the funded bounty lane", Method: "POST", Endpoint: claimEndpoint},
+			{Step: 4, Action: "run_agent_checks", Label: "Run scan, review, or test evidence actions", Method: "POST", Endpoint: actionEndpoint},
+			{Step: 5, Action: "submit_review", Label: "Submit pull request and proof evidence", Method: "POST", Endpoint: submitEndpoint},
+		},
+		ActionPayloads: []AgentActionPayload{
+			repositorySuggestedTaskActionPayload("scan", "Run repository scan check", actionEndpoint, task, suggestion, contextURLs),
+			repositorySuggestedTaskActionPayload("review", "Review acceptance criteria", actionEndpoint, task, suggestion, contextURLs),
+			repositorySuggestedTaskActionPayload("test", "Attach test evidence", actionEndpoint, task, suggestion, contextURLs),
+		},
+	}
+}
+
+func repositorySuggestedTaskActionPayload(action, label, endpoint string, task *Task, suggestion RepositorySuggestedTask, contextURLs map[string]string) AgentActionPayload {
+	bountyID := marketplaceBountyID(task.ProjectID, task.IssueNumber)
+	body := map[string]any{
+		"action":            action,
+		"status":            "queued",
+		"project_id":        task.ProjectID,
+		"claim_id":          bountyID,
+		"bounty_id":         bountyID,
+		"agent_type":        protocolText(task.SuggestedAgentType, 120, "repo-scan-agent"),
+		"delegated_by":      ceoAgentType,
+		"design_agent":      designReviewAgentType,
+		"source_finding_id": suggestion.SourceFindingID,
+		"signal":            suggestion.Signal,
+		"evidence_required": append([]string(nil), suggestion.EvidenceRequired...),
+		"context_urls":      contextURLs,
+	}
+	if strings.TrimSpace(suggestion.Path) != "" {
+		body["path"] = strings.TrimSpace(suggestion.Path)
+	}
+	return AgentActionPayload{
+		Action:   action,
+		Label:    label,
+		Method:   "POST",
+		Endpoint: endpoint,
+		Body:     body,
+	}
 }
 
 func nextProjectIssueNumber(project *Project) int {

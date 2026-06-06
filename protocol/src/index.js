@@ -29,6 +29,7 @@ const schemaFiles = {
   'mergeos.release-artifact.v1': '../schemas/release-artifact.v1.schema.json',
   'mergeos.repo-import.v1': '../schemas/repo-import.v1.schema.json',
   'mergeos.repo-sync.v1': '../schemas/repo-sync.v1.schema.json',
+  'mergeos.repo-task-funding.v1': '../schemas/repo-task-funding.v1.schema.json',
   'mergeos.routing.v1': '../schemas/routing.v1.schema.json',
   'mergeos.scan.v1': '../schemas/scan.v1.schema.json',
   'mergeos.task-claim.v1': '../schemas/task-claim.v1.schema.json',

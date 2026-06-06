@@ -108,6 +108,12 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Description: "Authenticated repository sync report with issue-to-task mappings, public claim endpoints, rewards, effort, and routing lanes.",
 			},
 			{
+				Version:     "mergeos.repo-task-funding.v1",
+				Kind:        "repo_task_funding",
+				SchemaURL:   "https://mergeos.shop/protocol/repo-task-funding.v1.schema.json",
+				Description: "Authenticated funding proof packet that turns a repository scan suggestion into an escrow-backed task with ledger receipt and agent work packet URLs.",
+			},
+			{
 				Version:     "mergeos.dispute.v1",
 				Kind:        "dispute",
 				SchemaURL:   "https://mergeos.shop/protocol/dispute.v1.schema.json",
@@ -448,9 +454,9 @@ func ProtocolManifest() ProtocolManifestResponse {
 			{
 				Method:      "POST",
 				Path:        "/api/projects/{id}/repo-scan/suggested-tasks/{taskID}/fund",
-				Protocol:    "mergeos.scan.v1",
+				Protocol:    "mergeos.repo-task-funding.v1",
 				Auth:        "project",
-				Description: "Authenticated funding command that turns a repository scan suggestion into an escrow-backed task.",
+				Description: "Authenticated funding command that turns a repository scan suggestion into an escrow-backed task, ledger receipt, and agent work packet.",
 			},
 			{
 				Method:      "POST",

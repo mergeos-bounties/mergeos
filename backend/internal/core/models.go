@@ -1795,12 +1795,18 @@ type FundRepositorySuggestedTaskRequest struct {
 }
 
 type FundRepositorySuggestedTaskResponse struct {
-	ProtocolVersion string        `json:"protocol_version"`
-	Kind            string        `json:"kind"`
-	ProjectID       string        `json:"project_id"`
-	SuggestedTaskID string        `json:"suggested_task_id"`
-	Task            *Task         `json:"task"`
-	LedgerEntries   []LedgerEntry `json:"ledger_entries"`
+	ProtocolVersion     string          `json:"protocol_version"`
+	Kind                string          `json:"kind"`
+	ProjectID           string          `json:"project_id"`
+	SuggestedTaskID     string          `json:"suggested_task_id"`
+	Task                *Task           `json:"task"`
+	LedgerEntries       []LedgerEntry   `json:"ledger_entries"`
+	FundingReference    string          `json:"funding_reference,omitempty"`
+	EvidenceChecklist   []string        `json:"evidence_checklist,omitempty"`
+	TaskProtocolURL     string          `json:"task_protocol_url,omitempty"`
+	WorkflowProtocolURL string          `json:"workflow_protocol_url,omitempty"`
+	ScanProtocolURL     string          `json:"scan_protocol_url,omitempty"`
+	WorkPacket          AgentWorkPacket `json:"work_packet"`
 }
 
 type RepositorySuggestedTaskPayPalOrderRequest struct {

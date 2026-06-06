@@ -20,6 +20,7 @@ The live app exposes protocol discovery at `GET /api/public/protocol`, and serve
 - `mergeos.estimate.v1`: an authenticated project estimate document with editable budget range, confidence, assumptions, risks, and cost breakdown.
 - `mergeos.repo-import.v1`: a public repository issue import document with scored GitHub issues, effort estimates, worker lane routing, and AI task generation inputs.
 - `mergeos.repo-sync.v1`: an authenticated project repository sync report that maps imported GitHub issues to task IDs, public claim endpoints, rewards, effort, and routing lanes.
+- `mergeos.repo-task-funding.v1`: an authenticated funding proof packet that turns a repository scan suggestion into an escrow-backed task with a ledger receipt, public protocol URLs, and agent work packet runbook.
 - `mergeos.dispute.v1`: an authenticated delivery dispute document that escalates customer, worker, or admin concerns into moderation.
 - `mergeos.ai-workflow.v1`: an authenticated AI orchestration workflow covering repository import, issue scan, task generation, reward estimation, contributor routing, PR review, and deployment validation with context URLs, output protocols, action endpoints, and public-safe artifact IDs.
 - `mergeos.event.v1`: a realtime ledger/workflow event emitted by apps, agents, or integrations, including typed agent review/test/generate/deploy/scan events.
@@ -82,6 +83,8 @@ The validator is intentionally dependency-free. It covers the fields MergeOS age
 Agent work packets use `POST /api/tasks/{id}/claim` to reserve work without releasing payout. Customers and admins use `POST /api/tasks/{id}/accept` to release payout after review, or `POST /api/tasks/{id}/request-changes` to return submitted evidence to the claimed lane. Agent action records can include `delegated_by`, `design_agent`, `subagent_type`, and `delegation_chain` so public proof shows the CEO planner, design-review subagent, and execution lane behind each AI action.
 
 `GET /api/public/projects/{id}/repo-scan` returns a public `mergeos.scan.v1` document for external agents. It exposes sanitized dependency files, language counts, security/debt findings, suggested work packets, reward estimates, and funding payload templates without private customer contact data or local repository paths.
+
+`POST /api/projects/{id}/repo-scan/suggested-tasks/{taskID}/fund` returns `mergeos.repo-task-funding.v1` after payment verification. The packet links the funded task protocol, workflow graph, repository scan, claim/submit endpoints, ledger receipt, CEO agent delegation chain, design-review handoff, and action payload templates.
 
 Token workflow integrations use `POST /api/airdrop/claims` for task-based MRG airdrop proof and `POST /api/presale/reservations` for presale reservations. Both routes require an authenticated user, validate Solana wallet input, write public ledger rows, and return a proof URL for `/api/public/ledger/proof`.
 

@@ -43,6 +43,7 @@ test('loads stable task, workflow, ledger, and event schemas', () => {
     'mergeos.release-artifact.v1',
     'mergeos.repo-import.v1',
     'mergeos.repo-sync.v1',
+    'mergeos.repo-task-funding.v1',
     'mergeos.routing.v1',
     'mergeos.scan.v1',
     'mergeos.task-claim.v1',
@@ -2854,6 +2855,102 @@ test('validates repository issue sync events', () => {
 
   assert.equal(result.valid, true);
   assert.deepEqual(result.errors, []);
+});
+
+test('validates repository task funding proof packets', () => {
+  const result = validateProtocolDocument({
+    protocol_version: 'mergeos.repo-task-funding.v1',
+    kind: 'repo_task_funding',
+    project_id: 'prj_0001',
+    suggested_task_id: 'repo-task-001',
+    funding_reference: 'task:tsk_0001;repo-scan:repo-finding-001',
+    evidence_checklist: ['pull_request', 'security_review', 'regression_test'],
+    task_protocol_url: '/api/public/protocol/tasks?task_id=prj_0001:7',
+    workflow_protocol_url: '/api/public/projects/prj_0001/workflow',
+    scan_protocol_url: '/api/public/projects/prj_0001/repo-scan',
+    task: {
+      id: 'tsk_0001',
+      project_id: 'prj_0001',
+      issue_number: 7,
+      title: 'Fix: Dangerous dynamic JavaScript execution',
+      acceptance: 'Repository scan suggested task.',
+      reward_cents: 35000,
+      required_worker_kind: 'hybrid',
+      suggested_agent_type: 'security-review-agent',
+      bounty_type: 'repo_scan_suggestion',
+      status: 'open',
+      issue_url: 'https://github.com/mergeos-bounties/mergeos/issues/7',
+      created_at: '2026-06-03T00:00:00.000Z',
+    },
+    ledger_entries: [
+      {
+        sequence: 5,
+        type: 'task_reserve',
+        from_account: 'reserve:project:prj_0001',
+        to_account: 'reserve:tasks',
+        amount_cents: 35000,
+        reference: 'task:tsk_0001;repo-scan:repo-finding-001',
+        entry_hash: 'a'.repeat(64),
+        created_at: '2026-06-03T00:00:00.000Z',
+      },
+    ],
+    work_packet: {
+      claim_endpoint: '/api/tasks/prj_0001:7/claim',
+      action_endpoint: '/api/projects/prj_0001/agent-actions',
+      submit_endpoint: '/api/tasks/prj_0001:7/submit',
+      supervisor_agent_type: 'ceo-orchestrator-agent',
+      subagent_type: 'security-review-agent',
+      design_review_agent: 'design-review-agent',
+      delegation_chain: ['ceo-orchestrator-agent', 'design-review-agent', 'security-review-agent'],
+      context_urls: {
+        task_protocol: '/api/public/protocol/tasks?task_id=prj_0001:7',
+        repository_scan: '/api/public/projects/prj_0001/repo-scan',
+        workflow_protocol: '/api/public/projects/prj_0001/workflow',
+      },
+      runbook: [
+        { step: 1, action: 'fetch_scan', label: 'Fetch repository scan protocol', method: 'GET', endpoint: '/api/public/projects/prj_0001/repo-scan' },
+        { step: 2, action: 'claim_task', label: 'Claim funded bounty', method: 'POST', endpoint: '/api/tasks/prj_0001:7/claim' },
+      ],
+      action_payloads: [
+        {
+          action: 'scan',
+          label: 'Run repository scan check',
+          method: 'POST',
+          endpoint: '/api/projects/prj_0001/agent-actions',
+          body: {
+            action: 'scan',
+            status: 'queued',
+            project_id: 'prj_0001',
+            claim_id: 'prj_0001:7',
+            source_finding_id: 'repo-finding-001',
+            signal: 'dangerous_js_execution',
+          },
+        },
+      ],
+    },
+  });
+
+  assert.equal(result.valid, true);
+  assert.deepEqual(result.errors, []);
+
+  const invalid = validateProtocolDocument({
+    protocol_version: 'mergeos.repo-task-funding.v1',
+    kind: 'repo_task_funding',
+    project_id: 'prj_0001',
+    suggested_task_id: 'repo-task-001',
+    task: { id: 'tsk_0001', project_id: 'prj_0001', title: 'Task', reward_cents: 1, status: 'open' },
+    ledger_entries: [{ sequence: 1, type: 'task_reserve', amount_cents: 1, reference: 'task', entry_hash: 'short' }],
+    work_packet: {
+      claim_endpoint: '/api/tasks/prj_0001:7/claim',
+      action_endpoint: '/api/projects/prj_0001/agent-actions',
+      submit_endpoint: '/api/tasks/prj_0001:7/submit',
+      context_urls: {},
+      runbook: [],
+      action_payloads: [],
+    },
+  });
+  assert.equal(invalid.valid, false);
+  assert(invalid.errors.some((error) => error.path === 'ledger_entries[0].entry_hash'));
 });
 
 test('derives deterministic Solana contract references from ledger entries', () => {
