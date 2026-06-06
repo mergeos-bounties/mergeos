@@ -8346,16 +8346,16 @@ svg {
   font-weight: 720;
 }
 
-.token-proof-result small {
-  overflow: hidden;
-  margin-top: 4px;
-  color: #166534;
-  font-family: var(--mono-font);
-  font-size: 10px;
-  line-height: 1.4;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
+  .token-proof-result small {
+    overflow: hidden;
+    margin-top: 4px;
+    color: #166534;
+    font-family: var(--mono-font);
+    font-size: 10px;
+    line-height: 1.4;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 
 .token-proof-result-actions,
 .token-workflow-actions {
@@ -8735,6 +8735,28 @@ svg {
   .token-proof-result-actions {
     grid-column: 1 / -1;
     justify-content: stretch;
+  }
+
+  .token-proof-result small {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .token-whitepaper-thesis {
+    gap: 8px;
+  }
+
+  .token-whitepaper-thesis article {
+    padding: 10px 11px;
+  }
+
+  .token-whitepaper-thesis p {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
   }
 
   .token-whitepaper-index article {
@@ -23606,7 +23628,8 @@ svg {
   }
 
   .project-preview-dialog {
-    max-height: calc(100vh - 20px);
+    max-height: calc(100dvh - 20px);
+    overscroll-behavior: contain;
   }
 
   .project-preview-header,
@@ -27019,6 +27042,8 @@ canvas {
     grid-template-columns: 1fr;
     padding: 0;
     max-height: min(560px, calc(100dvh - var(--nav-context-top, 62px) - 12px));
+    overflow-y: auto;
+    overscroll-behavior: contain;
     transform: translateY(8px);
   }
 
@@ -27522,6 +27547,27 @@ canvas {
   .project-account-menu .account-context-menu {
     right: 0;
     max-height: min(360px, calc(100dvh - 82px));
+  }
+
+  .public-nav-actions .locale-context-menu,
+  .project-flow-actions .locale-context-menu {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    top: auto;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    z-index: 520;
+    width: auto;
+    max-height: min(72dvh, 420px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border-radius: 14px;
+    transform: translateY(14px);
+  }
+
+  .locale-menu.open .locale-context-menu,
+  .locale-context-menu.context-menu-visible {
+    transform: translateY(0);
   }
 
   .public-home-copy h1,
@@ -28452,9 +28498,13 @@ canvas {
   }
 
   .project-step-list strong {
-    font-size: 9.5px;
-    line-height: 1.08;
+    display: -webkit-box;
+    overflow: hidden;
+    font-size: 10.5px;
+    line-height: 1.12;
     white-space: normal;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
   }
 
   .project-step-actions,
@@ -29875,6 +29925,10 @@ canvas {
 }
 
 @media (max-width: 430px) {
+  .dashboard-shell .dash-mobile-nav button {
+    min-height: 44px;
+  }
+
   .dashboard-shell .dash-mobile-menu {
     grid-template-columns: minmax(0, 1fr);
     top: calc(74px + env(safe-area-inset-top));

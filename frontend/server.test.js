@@ -194,6 +194,8 @@ test('public mega menu keeps a large hover bridge to its fixed panel', async () 
 
   assert.match(cssSource, /\.nav-menu\.open::after\s*\{[\s\S]*left: -72px;[\s\S]*right: -72px;[\s\S]*height: 108px;/);
   assert.match(cssSource, /\.nav-context-menu::before\s*\{[\s\S]*left: -36px;[\s\S]*right: -36px;[\s\S]*top: -108px;[\s\S]*height: 108px;/);
+  assert.match(cssSource, /@media \(max-width: 700px\)[\s\S]*\.nav-context-menu\s*\{[\s\S]*overflow-y: auto;[\s\S]*overscroll-behavior: contain;/);
+  assert.match(cssSource, /\.public-nav-actions \.locale-context-menu,[\s\S]*\.project-flow-actions \.locale-context-menu\s*\{[\s\S]*position: fixed;[\s\S]*max-height: min\(72dvh, 420px\);[\s\S]*overflow-y: auto;/);
 });
 
 test('public agents page exposes CEO orchestrator and subagent delegation model', async () => {
@@ -215,6 +217,7 @@ test('public agents page exposes CEO orchestrator and subagent delegation model'
 
 test('public token pages expose airdrop, presale, and whitepaper routes', async () => {
   const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
+  const cssSource = await fs.readFile(new URL('./src/styles.css', import.meta.url), 'utf-8');
   const seoSource = await fs.readFile(new URL('./src/seo.js', import.meta.url), 'utf-8');
   const whitepaperSource = await fs.readFile(new URL('./public/whitepaper/mergeos-whitepaper.md', import.meta.url), 'utf-8');
 
@@ -263,6 +266,8 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(whitepaperSource, /## 14\. Presale Workflow/);
   assert.match(whitepaperSource, /## 15\. Security, Privacy, and Compliance/);
   assert.match(whitepaperSource, /## 16\. Roadmap/);
+  assert.match(cssSource, /\.token-proof-result small\s*\{[\s\S]*overflow: visible;[\s\S]*white-space: normal;[\s\S]*overflow-wrap: anywhere;/);
+  assert.match(cssSource, /\.token-whitepaper-thesis p\s*\{[\s\S]*-webkit-line-clamp: 2;/);
 });
 
 test('signed-in mobile dashboard keeps nav, actions, and popovers phone-safe', async () => {
@@ -315,6 +320,9 @@ test('signed-in mobile dashboard keeps nav, actions, and popovers phone-safe', a
   assert.match(cssSource, /\.dashboard-shell \.dash-mobile-menu\s*\{[\s\S]*position: fixed;[\s\S]*max-height: min\(58dvh, 420px\);/);
   assert.match(cssSource, /\.dashboard-shell \.notification-dropdown,[\s\S]*\.dashboard-account-menu \.account-context-menu\s*\{[\s\S]*max-width: calc\(100vw - 24px\) !important;/);
   assert.match(cssSource, /\.dashboard-shell \.dashboard-tool-form,[\s\S]*\.dashboard-shell \.worker-claim-warnings\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\);/);
+  assert.match(cssSource, /@media \(max-width: 430px\)[\s\S]*\.dashboard-shell \.dash-mobile-nav button\s*\{[\s\S]*min-height: 44px;/);
+  assert.match(cssSource, /\.project-preview-dialog\s*\{[\s\S]*max-height: calc\(100dvh - 20px\);[\s\S]*overscroll-behavior: contain;/);
+  assert.match(cssSource, /\.project-step-list strong\s*\{[\s\S]*font-size: 10\.5px;[\s\S]*-webkit-line-clamp: 2;/);
   assert.match(appSource, /dashboardNotificationMenuPlacement\.value = 'mobile-sheet';/);
   assert.match(appSource, /window\.visualViewport\?\.addEventListener\('resize', updateDashboardNotificationMenuPosition\);/);
   assert.match(appSource, /<span>New Project<\/span>/);
