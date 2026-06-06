@@ -342,7 +342,7 @@ if (task) {
 ## PR Monitor Auto-Release
 
 ```js
-import { autoReleasePayloadFromPRMonitorTask } from '@mergeos/sdk';
+import { autoReleasePayloadFromPRMonitorTask, autoReleaseProofsFromResponse } from '@mergeos/sdk';
 
 const monitor = await mergeos.projectPullRequests('prj_0001');
 const task = monitor.tasks.find((row) => row.auto_release_packet?.can_auto_release);
@@ -350,11 +350,12 @@ const task = monitor.tasks.find((row) => row.auto_release_packet?.can_auto_relea
 if (task) {
   const payload = autoReleasePayloadFromPRMonitorTask(task);
   const release = await mergeos.projectAutoRelease('prj_0001', payload);
-  console.log(release.kind, release.released_count, release.payouts.kind);
+  const proofs = autoReleaseProofsFromResponse(release);
+  console.log(release.kind, release.released_count, release.payouts.kind, proofs[0]?.ledger_reference);
 }
 ```
 
-`projectAutoReleaseFromPRMonitorTask(projectID, task)` performs the same payload build and POST in one call. The helper prefers the backend-provided `auto_release_packet.payload`, then falls back to a candidate derived from PR readiness, deployment validation signals, worker identity, and reward metadata.
+`projectAutoReleaseFromPRMonitorTask(projectID, task)` performs the same payload build and POST in one call. The helper prefers the backend-provided `auto_release_packet.payload`, then falls back to a candidate derived from PR readiness, deployment validation signals, worker identity, and reward metadata. Use `autoReleaseProofsFromResponse(response)` after release to read the public PR, deployment validation, policy, and ledger reference proof trail.
 
 ## Admin APIs
 

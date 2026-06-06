@@ -913,6 +913,10 @@ export function autoReleaseCandidateFromPRMonitorTask(task = {}, overrides = {})
   });
 }
 
+export function autoReleaseProofsFromResponse(response = {}) {
+  return Array.isArray(response.release_proofs) ? response.release_proofs.filter((proof) => proof && typeof proof === 'object') : [];
+}
+
 export function normalizeAgentAction(action = '') {
   const normalized = String(action || '').trim().toLowerCase();
   if (normalized === 'gen') return 'generate';

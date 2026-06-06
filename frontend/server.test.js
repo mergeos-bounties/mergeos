@@ -131,6 +131,7 @@ test('public agent runbook and SDK document PR monitor auto-release', async () =
   assert.match(sdkReadme, /agentQueueClaimPayload/);
   assert.match(sdkReadme, /claimAgentQueueTask\(task, overrides\)/);
   assert.match(sdkReadme, /autoReleasePayloadFromPRMonitorTask/);
+  assert.match(sdkReadme, /autoReleaseProofsFromResponse/);
   assert.match(sdkReadme, /projectAutoReleaseFromPRMonitorTask\(projectID, task\)/);
 });
 

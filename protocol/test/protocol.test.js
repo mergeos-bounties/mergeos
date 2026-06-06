@@ -1228,6 +1228,23 @@ test('validates payout settlement protocol documents', () => {
     skipped_count: 0,
     released: [{ protocol_version: 'mergeos.task-claim.v1', kind: 'task_claim', task_id: 'tsk_0001' }],
     skipped: [],
+    release_proofs: [{
+      task_id: 'tsk_0001',
+      claim_id: 'prj_0001:13',
+      issue_number: 13,
+      worker_kind: 'agent',
+      worker_id: 'github:auto-builder',
+      agent_type: 'deployment-agent',
+      pull_request_number: 151,
+      pull_request_url: 'https://github.com/mergeos-bounties/mergeos/pull/151',
+      readiness_status: 'ready',
+      risk_level: 'low',
+      deployment_status: 'validated',
+      validation_signals: ['evidence: provided', 'deployment: verified'],
+      policy: 'mergeos.auto_release.low_risk_pr.v1',
+      ledger_reference: 'task:tsk_0001;pr:https://github.com/mergeos-bounties/mergeos/pull/151;deployment_validation:validated;auto_release:mergeos.auto_release.low_risk_pr.v1',
+      released_at: now,
+    }],
     payouts,
   };
   assert.equal(validateProtocolDocument(release).valid, true);
@@ -1245,6 +1262,14 @@ test('validates payout settlement protocol documents', () => {
   });
   assert.equal(invalidRelease.valid, false);
   assert(invalidRelease.errors.some((error) => error.path === 'skipped[0].reason'));
+
+  const invalidReleaseProof = validateProtocolDocument({
+    ...release,
+    release_proofs: [{ ...release.release_proofs[0], pull_request_url: 'not-a-url', released_at: 'not-a-date' }],
+  });
+  assert.equal(invalidReleaseProof.valid, false);
+  assert(invalidReleaseProof.errors.some((error) => error.path === 'release_proofs[0].pull_request_url'));
+  assert(invalidReleaseProof.errors.some((error) => error.path === 'release_proofs[0].released_at'));
 });
 
 test('validates deployment protocol documents', () => {

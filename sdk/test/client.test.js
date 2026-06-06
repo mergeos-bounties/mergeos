@@ -10,6 +10,7 @@ import {
   agentQueueClaimPayload,
   agentQueueTaskClaimID,
   autoReleasePayloadFromPRMonitorTask,
+  autoReleaseProofsFromResponse,
   contractReferenceBytes,
   contractReferenceFromLedger,
   createMergeOSClient,
@@ -1061,11 +1062,29 @@ test('builds auto-release payloads from PR monitor task packets', () => {
   assert.equal(fallback.candidates[0].can_release, false);
 
   const fetchImpl = fakeFetch([
-    { status: 200, body: { protocol_version: 'mergeos.payout-release.v1', kind: 'auto_release', released_count: 1, skipped_count: 0 } },
+    {
+      status: 200,
+      body: {
+        protocol_version: 'mergeos.payout-release.v1',
+        kind: 'auto_release',
+        released_count: 1,
+        skipped_count: 0,
+        release_proofs: [{
+          task_id: 'tsk_1',
+          claim_id: 'prj_1:1',
+          pull_request_url: 'https://github.com/mergeos-bounties/mergeos/pull/151',
+          deployment_status: 'validated',
+          ledger_reference: 'task:tsk_1;deployment_validation:validated',
+        }],
+      },
+    },
   ]);
   const client = new MergeOSClient({ token: 'agent-token', fetchImpl });
   return client.projectAutoReleaseFromPRMonitorTask('prj_1', task).then((response) => {
     assert.equal(response.kind, 'auto_release');
+    assert.equal(autoReleaseProofsFromResponse(response)[0].deployment_status, 'validated');
+    assert.deepEqual(autoReleaseProofsFromResponse({ release_proofs: [null, response.release_proofs[0]] }), [response.release_proofs[0]]);
+    assert.deepEqual(autoReleaseProofsFromResponse({}), []);
     assert.equal(fetchImpl.calls[0].url, '/api/projects/prj_1/auto-release');
     assert.equal(fetchImpl.calls[0].options.method, 'POST');
     assert.equal(fetchImpl.calls[0].options.headers.Authorization, 'Bearer agent-token');

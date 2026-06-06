@@ -3263,6 +3263,9 @@ func TestProjectAutoReleaseRouteReleasesReadyCandidateAndRecordsPolicy(t *testin
 	if unsafePayload.ReleasedCount != 0 || unsafePayload.SkippedCount != 1 || !strings.Contains(unsafePayload.Skipped[0].Reason, "release-ready") {
 		t.Fatalf("unsafe auto-release should be skipped by release gate: %#v", unsafePayload)
 	}
+	if len(unsafePayload.ReleaseProofs) != 0 {
+		t.Fatalf("unsafe auto-release should not emit release proof: %#v", unsafePayload.ReleaseProofs)
+	}
 
 	bodyBytes, err := json.Marshal(request)
 	if err != nil {
@@ -3298,6 +3301,19 @@ func TestProjectAutoReleaseRouteReleasesReadyCandidateAndRecordsPolicy(t *testin
 	}
 	if payload.ReleasedCount != 1 || payload.SkippedCount != 0 || len(payload.Released) != 1 {
 		t.Fatalf("unexpected auto-release counts: %#v", payload)
+	}
+	if len(payload.ReleaseProofs) != 1 {
+		t.Fatalf("auto-release response missing release proof: %#v", payload)
+	}
+	proof := payload.ReleaseProofs[0]
+	if proof.TaskID != task.ID || proof.ClaimID != publicTaskID || proof.WorkerID != "github:auto-builder" || proof.PullRequestNumber != 222 {
+		t.Fatalf("unexpected auto-release proof identity: %#v", proof)
+	}
+	if proof.PullRequestURL != "https://github.com/mergeos-bounties/mergeos/pull/222" || proof.Policy != defaultAutoReleasePolicy {
+		t.Fatalf("unexpected auto-release proof evidence: %#v", proof)
+	}
+	if proof.DeploymentStatus != "not_required" || !strings.Contains(proof.LedgerReference, "auto_release:"+defaultAutoReleasePolicy) {
+		t.Fatalf("auto-release proof missing release gate reference: %#v", proof)
 	}
 	if payload.Payouts.ReleaseCount != 1 || payload.Payouts.ReleasedCents != task.RewardCents {
 		t.Fatalf("auto-release did not update payout settlement: %#v", payload.Payouts)
@@ -3462,6 +3478,12 @@ func TestProjectAutoReleaseRouteRequiresDeploymentValidation(t *testing.T) {
 	}
 	if released.ReleasedCount != 1 || released.SkippedCount != 0 {
 		t.Fatalf("validated deployment candidate should release: %#v", released)
+	}
+	if len(released.ReleaseProofs) != 1 || released.ReleaseProofs[0].DeploymentStatus != "validated" || !containsString(released.ReleaseProofs[0].ValidationSignals, "deployment: verified") {
+		t.Fatalf("validated deployment release missing deployment proof: %#v", released.ReleaseProofs)
+	}
+	if !strings.Contains(released.ReleaseProofs[0].LedgerReference, "deployment_validation:validated") {
+		t.Fatalf("validated deployment release missing ledger proof: %#v", released.ReleaseProofs[0])
 	}
 	var paidRow *ProjectPayoutRow
 	for index := range released.Payouts.Payouts {

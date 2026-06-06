@@ -4,7 +4,7 @@
   "title": "MergeOS Payout Release v1",
   "type": "object",
   "additionalProperties": false,
-  "required": ["protocol_version", "kind", "project_id", "policy", "released_count", "skipped_count", "released", "skipped", "payouts"],
+  "required": ["protocol_version", "kind", "project_id", "policy", "released_count", "skipped_count", "released", "skipped", "release_proofs", "payouts"],
   "properties": {
     "protocol_version": { "const": "mergeos.payout-release.v1" },
     "kind": { "const": "auto_release" },
@@ -28,6 +28,34 @@
         "properties": {
           "task_id": { "type": "string", "maxLength": 96 },
           "reason": { "type": "string", "minLength": 1, "maxLength": 500 }
+        }
+      }
+    },
+    "release_proofs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["task_id", "claim_id", "issue_number", "worker_kind", "worker_id", "pull_request_number", "pull_request_url", "readiness_status", "risk_level", "deployment_status", "policy", "ledger_reference", "released_at"],
+        "properties": {
+          "task_id": { "type": "string", "minLength": 1, "maxLength": 96 },
+          "claim_id": { "type": "string", "minLength": 1, "maxLength": 140 },
+          "issue_number": { "type": "integer", "minimum": 0 },
+          "worker_kind": { "enum": ["human", "agent", "hybrid"] },
+          "worker_id": { "type": "string", "minLength": 1, "maxLength": 160 },
+          "agent_type": { "type": "string", "maxLength": 96 },
+          "pull_request_number": { "type": "integer", "minimum": 1 },
+          "pull_request_url": { "type": "string", "format": "uri", "pattern": "^https?://", "minLength": 1, "maxLength": 500 },
+          "readiness_status": { "type": "string", "minLength": 1, "maxLength": 80 },
+          "risk_level": { "type": "string", "minLength": 1, "maxLength": 80 },
+          "deployment_status": { "type": "string", "minLength": 1, "maxLength": 80 },
+          "validation_signals": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1, "maxLength": 160 }
+          },
+          "policy": { "type": "string", "minLength": 1, "maxLength": 160 },
+          "ledger_reference": { "type": "string", "minLength": 1, "maxLength": 1000 },
+          "released_at": { "type": "string", "format": "date-time" }
         }
       }
     },

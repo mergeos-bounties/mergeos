@@ -41,6 +41,7 @@ func (s *Store) AutoReleaseProjectPayouts(projectID string, req ProjectAutoRelea
 		Policy:          policy,
 		Released:        []TaskClaimResponse{},
 		Skipped:         []ProjectAutoReleaseSkip{},
+		ReleaseProofs:   []ProjectAutoReleaseProof{},
 	}
 
 	for _, requestedTaskID := range taskIDs {
@@ -70,6 +71,7 @@ func (s *Store) AutoReleaseProjectPayouts(projectID string, req ProjectAutoRelea
 			continue
 		}
 		response.Released = append(response.Released, taskClaimProtocolDocument(marketplaceBountyID(released.ProjectID, released.IssueNumber), released))
+		response.ReleaseProofs = append(response.ReleaseProofs, autoReleaseProof(project, released, candidate, policy, reference))
 	}
 
 	response.ReleasedCount = len(response.Released)
@@ -370,6 +372,58 @@ func autoReleaseAcceptRequest(task *Task, candidate ProjectAutoReleaseCandidate,
 	}
 	reference = strings.TrimSpace(reference + ";auto_release:" + sanitizeLedgerReferenceValue(policy))
 	return req, ensureTaskLedgerReference(task.ID, reference), nil
+}
+
+func autoReleaseProof(project *Project, task *Task, candidate ProjectAutoReleaseCandidate, policy, reference string) ProjectAutoReleaseProof {
+	proof := ProjectAutoReleaseProof{
+		TaskID:            "",
+		ClaimID:           "",
+		IssueNumber:       0,
+		WorkerKind:        candidate.WorkerKind,
+		WorkerID:          normalizeWorkerID(candidate.WorkerID),
+		AgentType:         strings.TrimSpace(candidate.AgentType),
+		PullRequestNumber: candidate.PullRequestNumber,
+		PullRequestURL:    normalizeLedgerPullURL(candidate.PullRequestURL),
+		ReadinessStatus:   strings.TrimSpace(candidate.ReadinessStatus),
+		RiskLevel:         strings.TrimSpace(candidate.RiskLevel),
+		DeploymentStatus:  strings.TrimSpace(candidate.DeploymentStatus),
+		ValidationSignals: autoReleaseValidationSignals(candidate.ValidationSignals),
+		Policy:            normalizeAutoReleasePolicy(policy),
+		LedgerReference:   projectPayoutLedgerReference(reference),
+		ReleasedAt:        time.Now().UTC(),
+	}
+	if task != nil {
+		proof.TaskID = task.ID
+		proof.IssueNumber = task.IssueNumber
+		proof.WorkerKind = task.RequiredWorkerKind
+		if strings.TrimSpace(task.WorkerID) != "" {
+			proof.WorkerID = normalizeWorkerID(task.WorkerID)
+		}
+		if proof.AgentType == "" {
+			proof.AgentType = strings.TrimSpace(task.AgentType)
+		}
+		if project != nil {
+			proof.ClaimID = marketplaceBountyID(project.ID, task.IssueNumber)
+		}
+	}
+	if proof.DeploymentStatus == "" {
+		proof.DeploymentStatus = "not_required"
+	}
+	return proof
+}
+
+func autoReleaseValidationSignals(values []string) []string {
+	seen := map[string]bool{}
+	signals := []string{}
+	for _, value := range values {
+		value = strings.TrimSpace(value)
+		if value == "" || seen[value] {
+			continue
+		}
+		seen[value] = true
+		signals = append(signals, value)
+	}
+	return signals
 }
 
 func pullNumberFromLedgerURL(value string) int {

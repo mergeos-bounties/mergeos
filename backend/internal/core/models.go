@@ -1426,20 +1426,39 @@ type ProjectAutoReleaseCandidate struct {
 }
 
 type ProjectAutoReleaseResponse struct {
-	ProtocolVersion string                   `json:"protocol_version"`
-	Kind            string                   `json:"kind"`
-	ProjectID       string                   `json:"project_id"`
-	Policy          string                   `json:"policy"`
-	ReleasedCount   int                      `json:"released_count"`
-	SkippedCount    int                      `json:"skipped_count"`
-	Released        []TaskClaimResponse      `json:"released"`
-	Skipped         []ProjectAutoReleaseSkip `json:"skipped"`
-	Payouts         ProjectPayoutsResponse   `json:"payouts"`
+	ProtocolVersion string                    `json:"protocol_version"`
+	Kind            string                    `json:"kind"`
+	ProjectID       string                    `json:"project_id"`
+	Policy          string                    `json:"policy"`
+	ReleasedCount   int                       `json:"released_count"`
+	SkippedCount    int                       `json:"skipped_count"`
+	Released        []TaskClaimResponse       `json:"released"`
+	Skipped         []ProjectAutoReleaseSkip  `json:"skipped"`
+	ReleaseProofs   []ProjectAutoReleaseProof `json:"release_proofs"`
+	Payouts         ProjectPayoutsResponse    `json:"payouts"`
 }
 
 type ProjectAutoReleaseSkip struct {
 	TaskID string `json:"task_id"`
 	Reason string `json:"reason"`
+}
+
+type ProjectAutoReleaseProof struct {
+	TaskID            string     `json:"task_id"`
+	ClaimID           string     `json:"claim_id"`
+	IssueNumber       int        `json:"issue_number"`
+	WorkerKind        WorkerKind `json:"worker_kind"`
+	WorkerID          string     `json:"worker_id"`
+	AgentType         string     `json:"agent_type,omitempty"`
+	PullRequestNumber int        `json:"pull_request_number"`
+	PullRequestURL    string     `json:"pull_request_url"`
+	ReadinessStatus   string     `json:"readiness_status"`
+	RiskLevel         string     `json:"risk_level"`
+	DeploymentStatus  string     `json:"deployment_status"`
+	ValidationSignals []string   `json:"validation_signals,omitempty"`
+	Policy            string     `json:"policy"`
+	LedgerReference   string     `json:"ledger_reference"`
+	ReleasedAt        time.Time  `json:"released_at"`
 }
 
 type DeploymentStage struct {
