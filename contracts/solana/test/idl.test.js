@@ -4,6 +4,7 @@ import test from 'node:test';
 
 const sourceIDL = JSON.parse(readFileSync(new URL('../idl/mergeos_mrg.json', import.meta.url), 'utf8'));
 const publicIDL = JSON.parse(readFileSync(new URL('../../../frontend/public/contracts/solana/mergeos_mrg.v1.idl.json', import.meta.url), 'utf8'));
+const programSource = readFileSync(new URL('../programs/mergeos-mrg/src/lib.rs', import.meta.url), 'utf8');
 
 function instruction(name) {
   const item = sourceIDL.instructions.find((row) => row.name === name);
@@ -32,7 +33,43 @@ test('declares MRG treasury, escrow, payout, and wallet migration instructions',
 
   assert.deepEqual(argNames(instruction('mintVerifiedMrg')), ['ledgerReference', 'amount']);
   assert.deepEqual(argNames(instruction('openEscrow')), ['projectId', 'ledgerReference', 'amount']);
+  assert.deepEqual(accountNames(instruction('openEscrow')), [
+    'funder',
+    'treasuryConfig',
+    'tokenMint',
+    'funderTokenAccount',
+    'escrowVault',
+    'escrowTokenAccount',
+    'tokenProgram',
+    'systemProgram',
+  ]);
   assert.deepEqual(argNames(instruction('releasePayout')), ['payoutId', 'ledgerReference', 'amount']);
+});
+
+test('guards MRG mint, escrow PDA authority, and payout token accounts', () => {
+  assert.deepEqual(sourceIDL.metadata.security_invariants, [
+    'mint_verified_mrg requires receiver_token_account.mint == treasury_config.token_mint',
+    'open_escrow requires token_mint == treasury_config.token_mint',
+    'open_escrow requires funder_token_account.mint == token_mint and funder_token_account.owner == funder',
+    'open_escrow requires escrow_token_account.mint == token_mint and escrow_token_account.owner == escrow_vault PDA',
+    'release_payout requires escrow_token_account.mint == treasury_config.token_mint and escrow_token_account.owner == escrow_vault PDA',
+    'release_payout requires worker_token_account.mint == treasury_config.token_mint',
+  ]);
+
+  for (const snippet of [
+    'constraint = receiver_token_account.mint == token_mint.key() @ MergeOSError::TokenMintMismatch',
+    '#[account(address = treasury_config.token_mint)]',
+    'constraint = funder_token_account.mint == token_mint.key() @ MergeOSError::TokenMintMismatch',
+    'constraint = funder_token_account.owner == funder.key() @ MergeOSError::TokenAuthorityMismatch',
+    'constraint = escrow_token_account.mint == token_mint.key() @ MergeOSError::TokenMintMismatch',
+    'constraint = escrow_token_account.owner == escrow_vault.key() @ MergeOSError::TokenAuthorityMismatch',
+    'constraint = escrow_token_account.mint == treasury_config.token_mint @ MergeOSError::TokenMintMismatch',
+    'constraint = worker_token_account.mint == treasury_config.token_mint @ MergeOSError::TokenMintMismatch',
+    'Token account mint does not match the MRG mint',
+    'Token account authority does not match the expected PDA or signer',
+  ]) {
+    assert.ok(programSource.includes(snippet), `program source missing token guard: ${snippet}`);
+  }
 });
 
 test('keeps wallet migration PDA metadata aligned with protocol helpers', () => {

@@ -40,6 +40,14 @@ Other PDAs:
 ["payout", payout_id_bytes]
 ```
 
+## Token Account Guards
+
+The program constrains every MRG movement to the configured treasury mint:
+
+- `mint_verified_mrg` only mints into a receiver token account whose mint matches `treasury_config.token_mint`.
+- `open_escrow` requires the requested mint to match `treasury_config.token_mint`, the funder account to be owned by the funder, and the escrow token account to be owned by the escrow PDA.
+- `release_payout` requires both the escrow and worker token accounts to use the configured MRG mint, and requires the escrow token account to remain owned by the escrow PDA.
+
 ## Local Workflow
 
 With Anchor installed:

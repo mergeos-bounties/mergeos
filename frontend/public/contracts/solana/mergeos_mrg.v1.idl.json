@@ -22,7 +22,15 @@
     "legacy_chain_wire": {
       "trc20": "LegacyChain::Trc20",
       "evm": "LegacyChain::Evm"
-    }
+    },
+    "security_invariants": [
+      "mint_verified_mrg requires receiver_token_account.mint == treasury_config.token_mint",
+      "open_escrow requires token_mint == treasury_config.token_mint",
+      "open_escrow requires funder_token_account.mint == token_mint and funder_token_account.owner == funder",
+      "open_escrow requires escrow_token_account.mint == token_mint and escrow_token_account.owner == escrow_vault PDA",
+      "release_payout requires escrow_token_account.mint == treasury_config.token_mint and escrow_token_account.owner == escrow_vault PDA",
+      "release_payout requires worker_token_account.mint == treasury_config.token_mint"
+    ]
   },
   "instructions": [
     {
@@ -77,7 +85,6 @@
         },
         { "name": "tokenMint", "isMut": false, "isSigner": false },
         { "name": "funderTokenAccount", "isMut": true, "isSigner": false },
-        { "name": "escrowTokenAccount", "isMut": true, "isSigner": false },
         {
           "name": "escrowVault",
           "isMut": true,
@@ -89,6 +96,7 @@
             ]
           }
         },
+        { "name": "escrowTokenAccount", "isMut": true, "isSigner": false },
         { "name": "tokenProgram", "isMut": false, "isSigner": false },
         { "name": "systemProgram", "isMut": false, "isSigner": false }
       ],

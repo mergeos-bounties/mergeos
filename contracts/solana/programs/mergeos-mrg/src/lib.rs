@@ -4,7 +4,6 @@ use anchor_spl::token::{self, Mint, MintTo, Token, TokenAccount, Transfer};
 declare_id!("4gUBWum3fGKfm7BeGXryzXjPDBDLfhVJRcjN5MPnfDNW");
 
 const MAX_SYMBOL_LEN: usize = 16;
-const MAX_CHAIN_LEN: usize = 8;
 
 #[program]
 pub mod mergeos_mrg {
@@ -238,7 +237,10 @@ pub struct MintVerifiedMRG<'info> {
     pub treasury_config: Account<'info, TreasuryConfig>,
     #[account(mut, address = treasury_config.token_mint)]
     pub token_mint: Account<'info, Mint>,
-    #[account(mut)]
+    #[account(
+        mut,
+        constraint = receiver_token_account.mint == token_mint.key() @ MergeOSError::TokenMintMismatch
+    )]
     pub receiver_token_account: Account<'info, TokenAccount>,
     pub token_program: Program<'info, Token>,
 }
@@ -250,11 +252,14 @@ pub struct OpenEscrow<'info> {
     pub funder: Signer<'info>,
     #[account(mut, seeds = [b"treasury"], bump = treasury_config.bump)]
     pub treasury_config: Account<'info, TreasuryConfig>,
+    #[account(address = treasury_config.token_mint)]
     pub token_mint: Account<'info, Mint>,
-    #[account(mut)]
+    #[account(
+        mut,
+        constraint = funder_token_account.mint == token_mint.key() @ MergeOSError::TokenMintMismatch,
+        constraint = funder_token_account.owner == funder.key() @ MergeOSError::TokenAuthorityMismatch
+    )]
     pub funder_token_account: Account<'info, TokenAccount>,
-    #[account(mut)]
-    pub escrow_token_account: Account<'info, TokenAccount>,
     #[account(
         init,
         payer = funder,
@@ -263,6 +268,12 @@ pub struct OpenEscrow<'info> {
         bump
     )]
     pub escrow_vault: Account<'info, EscrowVault>,
+    #[account(
+        mut,
+        constraint = escrow_token_account.mint == token_mint.key() @ MergeOSError::TokenMintMismatch,
+        constraint = escrow_token_account.owner == escrow_vault.key() @ MergeOSError::TokenAuthorityMismatch
+    )]
+    pub escrow_token_account: Account<'info, TokenAccount>,
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
 }
@@ -276,11 +287,19 @@ pub struct ReleasePayout<'info> {
     pub treasury_config: Account<'info, TreasuryConfig>,
     #[account(mut, seeds = [b"escrow", escrow_vault.project_id.as_ref()], bump = escrow_vault.bump)]
     pub escrow_vault: Account<'info, EscrowVault>,
-    #[account(mut, address = escrow_vault.escrow_token_account)]
+    #[account(
+        mut,
+        address = escrow_vault.escrow_token_account,
+        constraint = escrow_token_account.mint == treasury_config.token_mint @ MergeOSError::TokenMintMismatch,
+        constraint = escrow_token_account.owner == escrow_vault.key() @ MergeOSError::TokenAuthorityMismatch
+    )]
     pub escrow_token_account: Account<'info, TokenAccount>,
     /// CHECK: Worker identity is stored for proof and can be a wallet owner PDA later.
     pub worker: AccountInfo<'info>,
-    #[account(mut)]
+    #[account(
+        mut,
+        constraint = worker_token_account.mint == treasury_config.token_mint @ MergeOSError::TokenMintMismatch
+    )]
     pub worker_token_account: Account<'info, TokenAccount>,
     #[account(
         init,
@@ -428,6 +447,10 @@ pub enum MergeOSError {
     InsufficientEscrow,
     #[msg("The Solana wallet account does not match the instruction argument")]
     WalletMismatch,
+    #[msg("Token account mint does not match the MRG mint")]
+    TokenMintMismatch,
+    #[msg("Token account authority does not match the expected PDA or signer")]
+    TokenAuthorityMismatch,
     #[msg("Arithmetic overflow")]
     MathOverflow,
 }
