@@ -963,6 +963,9 @@ test('funds repository scan suggested tasks and builds agent work packet actions
         claim_id: 'prj_1:12',
         bounty_id: 'prj_1:12',
         agent_type: 'security-agent',
+        source_finding_id: 'finding:auth:1',
+        signal: 'secret_pattern',
+        path: 'backend/internal/core/auth.go',
         context_urls: {
           task_protocol: '/api/public/protocol/tasks?task_id=prj_1:12',
           repository_scan: '/api/public/projects/prj_1/repo-scan',
@@ -1039,6 +1042,9 @@ test('funds repository scan suggested tasks and builds agent work packet actions
   assert.equal(agentPayload.design_agent, 'design-review-agent');
   assert.equal(agentPayload.subagent_type, 'security-agent');
   assert.deepEqual(agentPayload.delegation_chain, ['ceo-orchestrator', 'security-agent', 'design-review-agent']);
+  assert.equal(agentPayload.source_finding_id, 'finding:auth:1');
+  assert.equal(agentPayload.signal, 'secret_pattern');
+  assert.equal(agentPayload.path, 'backend/internal/core/auth.go');
   assert.equal(agentPayload.reference_url, 'https://scan.example/report');
   assert.deepEqual(agentPayload.evidence, ['Attach scan output']);
   assert.deepEqual(agentPayload.runbook, [

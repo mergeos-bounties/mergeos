@@ -1082,6 +1082,9 @@ type PublicLiveFeedItem struct {
 	Evidence         []string           `json:"evidence,omitempty"`
 	Runbook          []string           `json:"runbook,omitempty"`
 	Checks           []AgentActionCheck `json:"checks,omitempty"`
+	SourceFindingID  string             `json:"source_finding_id,omitempty"`
+	Signal           string             `json:"signal,omitempty"`
+	Path             string             `json:"path,omitempty"`
 	DelegatedBy      string             `json:"delegated_by,omitempty"`
 	DesignAgent      string             `json:"design_agent,omitempty"`
 	SubagentType     string             `json:"subagent_type,omitempty"`
@@ -1882,6 +1885,9 @@ type AIWorkflowSignal struct {
 	DesignAgent     string    `json:"design_agent,omitempty"`
 	SubagentType    string    `json:"subagent_type,omitempty"`
 	DelegationChain []string  `json:"delegation_chain,omitempty"`
+	SourceFindingID string    `json:"source_finding_id,omitempty"`
+	Signal          string    `json:"signal,omitempty"`
+	Path            string    `json:"path,omitempty"`
 	CreatedAt       time.Time `json:"created_at"`
 }
 
@@ -2164,6 +2170,9 @@ type GeminiWebhookLog struct {
 	Evidence        []string           `json:"evidence,omitempty"`
 	Runbook         []string           `json:"runbook,omitempty"`
 	Checks          []AgentActionCheck `json:"checks,omitempty"`
+	SourceFindingID string             `json:"source_finding_id,omitempty"`
+	Signal          string             `json:"signal,omitempty"`
+	Path            string             `json:"path,omitempty"`
 	DelegatedBy     string             `json:"delegated_by,omitempty"`
 	DesignAgent     string             `json:"design_agent,omitempty"`
 	SubagentType    string             `json:"subagent_type,omitempty"`
@@ -2197,6 +2206,9 @@ type AgentActionRequest struct {
 	Evidence        []string           `json:"evidence,omitempty"`
 	Runbook         []string           `json:"runbook,omitempty"`
 	Checks          []AgentActionCheck `json:"checks,omitempty"`
+	SourceFindingID string             `json:"source_finding_id,omitempty"`
+	Signal          string             `json:"signal,omitempty"`
+	Path            string             `json:"path,omitempty"`
 	DurationMillis  int64              `json:"duration_millis,omitempty"`
 }
 
@@ -2218,6 +2230,9 @@ type AgentActionResponse struct {
 	Evidence        []string           `json:"evidence,omitempty"`
 	Runbook         []string           `json:"runbook,omitempty"`
 	Checks          []AgentActionCheck `json:"checks,omitempty"`
+	SourceFindingID string             `json:"source_finding_id,omitempty"`
+	Signal          string             `json:"signal,omitempty"`
+	Path            string             `json:"path,omitempty"`
 	DelegatedBy     string             `json:"delegated_by,omitempty"`
 	DesignAgent     string             `json:"design_agent,omitempty"`
 	SubagentType    string             `json:"subagent_type,omitempty"`

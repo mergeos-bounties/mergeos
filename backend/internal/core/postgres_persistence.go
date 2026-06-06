@@ -554,6 +554,7 @@ func (p *postgresPersistence) loadGeminiWebhookLogs(ctx context.Context, state *
 	rows, err := p.db.QueryContext(ctx, `
 SELECT id, delivery_id, event_name, action, repository, pull_number, sender, status, status_code,
        error, comment_url, key_id, labels, context_urls, evidence, runbook, checks,
+       source_finding_id, signal, path,
        delegated_by, design_agent, subagent_type, delegation_chain,
        duration_millis, received_at, completed_at
 FROM gemini_webhook_logs
@@ -577,6 +578,7 @@ LIMIT 200`)
 			&log.ID, &log.DeliveryID, &log.EventName, &log.Action, &log.Repository, &log.PullNumber, &log.Sender,
 			&log.Status, &log.StatusCode, &log.Error, &log.CommentURL, &log.KeyID, &labelsRaw,
 			&contextURLsRaw, &evidenceRaw, &runbookRaw, &checksRaw,
+			&log.SourceFindingID, &log.Signal, &log.Path,
 			&log.DelegatedBy, &log.DesignAgent, &log.SubagentType, &delegationChainRaw,
 			&log.DurationMillis, &log.ReceivedAt, &completedAt,
 		); err != nil {
@@ -966,17 +968,20 @@ func saveGeminiWebhookLogs(ctx context.Context, tx *sql.Tx, logs []*GeminiWebhoo
 INSERT INTO gemini_webhook_logs (
   id, delivery_id, event_name, action, repository, pull_number, sender, status, status_code,
   error, comment_url, key_id, labels, context_urls, evidence, runbook, checks,
+  source_finding_id, signal, path,
   delegated_by, design_agent, subagent_type, delegation_chain,
   duration_millis, received_at, completed_at
 ) VALUES (
   $1, $2, $3, $4, $5, $6, $7, $8,
   $9, $10, $11, $12, $13::jsonb, $14::jsonb, $15::jsonb, $16::jsonb, $17::jsonb,
-  $18, $19, $20, $21::jsonb,
-  $22, $23, $24
+  $18, $19, $20,
+  $21, $22, $23, $24::jsonb,
+  $25, $26, $27
 )`,
 			log.ID, log.DeliveryID, log.EventName, log.Action, log.Repository, log.PullNumber, log.Sender,
 			log.Status, log.StatusCode, log.Error, log.CommentURL, log.KeyID, string(labels),
 			string(contextURLs), string(evidence), string(runbook), string(checks),
+			log.SourceFindingID, log.Signal, log.Path,
 			log.DelegatedBy, log.DesignAgent, log.SubagentType, string(delegationChain),
 			log.DurationMillis, log.ReceivedAt, log.CompletedAt,
 		); err != nil {

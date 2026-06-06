@@ -37,6 +37,9 @@ func (s *Store) RecordProjectAgentAction(projectID string, req AgentActionReques
 	evidence := normalizeAgentActionTextList(req.Evidence, 12, 220)
 	runbook := normalizeAgentActionTextList(req.Runbook, 12, 220)
 	checks := normalizeAgentActionChecks(req.Checks)
+	sourceFindingID := sanitizeLedgerReferenceValue(req.SourceFindingID)
+	signal := sanitizeLedgerReferenceValue(req.Signal)
+	sourcePath := normalizeAgentActionPath(req.Path)
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -69,6 +72,9 @@ func (s *Store) RecordProjectAgentAction(projectID string, req AgentActionReques
 		Evidence:        evidence,
 		Runbook:         runbook,
 		Checks:          checks,
+		SourceFindingID: sourceFindingID,
+		Signal:          signal,
+		Path:            sourcePath,
 		DelegatedBy:     delegatedBy,
 		DesignAgent:     designAgent,
 		SubagentType:    subagentType,
@@ -103,6 +109,9 @@ func (s *Store) RecordProjectAgentAction(projectID string, req AgentActionReques
 		Evidence:        log.Evidence,
 		Runbook:         log.Runbook,
 		Checks:          log.Checks,
+		SourceFindingID: log.SourceFindingID,
+		Signal:          log.Signal,
+		Path:            log.Path,
 		DelegatedBy:     log.DelegatedBy,
 		DesignAgent:     log.DesignAgent,
 		SubagentType:    log.SubagentType,
@@ -368,6 +377,15 @@ func normalizeAgentActionChecks(values []AgentActionCheck) []AgentActionCheck {
 		}
 	}
 	return result
+}
+
+func normalizeAgentActionPath(value string) string {
+	value = strings.TrimSpace(strings.ReplaceAll(value, "\\", "/"))
+	value = strings.TrimPrefix(value, "./")
+	if value == "" || strings.HasPrefix(value, "/") || strings.HasPrefix(value, "..") || strings.Contains(value, "/../") {
+		return ""
+	}
+	return protocolText(value, 240, "")
 }
 
 func normalizeAgentActionCheckStatus(value string) string {

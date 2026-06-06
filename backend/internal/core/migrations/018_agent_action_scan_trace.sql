@@ -1,0 +1,4 @@
+ALTER TABLE gemini_webhook_logs
+  ADD COLUMN IF NOT EXISTS source_finding_id text NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS signal text NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS path text NOT NULL DEFAULT '';

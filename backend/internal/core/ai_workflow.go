@@ -477,6 +477,9 @@ func aiWorkflowSignals(project *Project, logs []GeminiWebhookLog, deployment Pro
 			DesignAgent:     log.DesignAgent,
 			SubagentType:    log.SubagentType,
 			DelegationChain: normalizeAgentDelegationChain(log.DelegationChain, log.DelegatedBy, log.DesignAgent, log.SubagentType),
+			SourceFindingID: log.SourceFindingID,
+			Signal:          log.Signal,
+			Path:            log.Path,
 			CreatedAt:       log.ReceivedAt,
 		})
 	}

@@ -629,6 +629,9 @@ func publicAILiveFeedItem(log *GeminiWebhookLog) PublicLiveFeedItem {
 		Evidence:        normalizeAgentActionTextList(log.Evidence, 12, 220),
 		Runbook:         normalizeAgentActionTextList(log.Runbook, 12, 220),
 		Checks:          normalizeAgentActionChecks(log.Checks),
+		SourceFindingID: log.SourceFindingID,
+		Signal:          log.Signal,
+		Path:            log.Path,
 		DelegatedBy:     log.DelegatedBy,
 		DesignAgent:     log.DesignAgent,
 		SubagentType:    log.SubagentType,
@@ -1042,6 +1045,15 @@ func publicLiveFeedProtocolEvent(item PublicLiveFeedItem) EventProtocolDocument 
 	}
 	if len(item.Checks) > 0 {
 		payload["checks"] = normalizeAgentActionChecks(item.Checks)
+	}
+	if item.SourceFindingID != "" {
+		payload["source_finding_id"] = item.SourceFindingID
+	}
+	if item.Signal != "" {
+		payload["signal"] = item.Signal
+	}
+	if item.Path != "" {
+		payload["path"] = item.Path
 	}
 	if item.DelegatedBy != "" {
 		payload["delegated_by"] = item.DelegatedBy

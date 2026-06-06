@@ -119,6 +119,9 @@
             "maxItems": 8,
             "items": { "type": "string", "minLength": 1, "maxLength": 120 }
           },
+          "source_finding_id": { "type": "string", "maxLength": 160 },
+          "signal": { "type": "string", "maxLength": 120 },
+          "path": { "type": "string", "maxLength": 240 },
           "created_at": { "type": "string", "format": "date-time" }
         }
       }

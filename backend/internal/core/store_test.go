@@ -4077,6 +4077,9 @@ func TestProjectAgentActionRouteRecordsWorkflowEventAndSanitizesData(t *testing.
 		],
 		"evidence":["Smoke tests passed","Preview deployment reachable"],
 		"runbook":["Fetch task packet","Run smoke suite","Attach deployment evidence"],
+		"source_finding_id":"repo-finding-001",
+		"signal":"dangerous_js_execution",
+		"path":"backend/internal/core/agent_actions.go",
 		"checks":[
 			{"name":"Smoke suite","status":"passed","summary":"Preview route passed.","reference_url":"https://github.com/mergeos-bounties/mergeos/actions/runs/777"},
 			{"name":"Risk review","status":"needs_review","summary":"Manual acceptance note pending.","reference_url":"file:///D:/agent/internal"}
@@ -4099,6 +4102,7 @@ func TestProjectAgentActionRouteRecordsWorkflowEventAndSanitizesData(t *testing.
 		project.Tasks[0].ID,
 		"file:///D:/agent/private-plan",
 		"file:///D:/agent/internal",
+		"D:/agent",
 	}
 	body := createResp.Body.String()
 	for _, value := range privateValues {
@@ -4129,6 +4133,9 @@ func TestProjectAgentActionRouteRecordsWorkflowEventAndSanitizesData(t *testing.
 	if len(created.Checks) != 2 || created.Checks[0].Status != "passed" || created.Checks[0].ReferenceURL == "" || created.Checks[1].Status != "warning" || created.Checks[1].ReferenceURL != "" {
 		t.Fatalf("agent action checks were not normalized: %#v", created.Checks)
 	}
+	if created.SourceFindingID != "repo-finding-001" || created.Signal != "dangerous_js_execution" || created.Path != "backend/internal/core/agent_actions.go" {
+		t.Fatalf("agent action missing repository scan trace fields: %#v", created)
+	}
 	if created.DelegatedBy != ceoAgentType || created.DesignAgent != designReviewAgentType || created.SubagentType != "qa-agent" ||
 		len(created.DelegationChain) != 3 || created.DelegationChain[0] != ceoAgentType || created.DelegationChain[1] != designReviewAgentType || created.DelegationChain[2] != "qa-agent" {
 		t.Fatalf("agent action missing delegation chain: %#v", created)
@@ -4141,6 +4148,9 @@ func TestProjectAgentActionRouteRecordsWorkflowEventAndSanitizesData(t *testing.
 	}
 	if created.Log.DelegatedBy != ceoAgentType || created.Log.DesignAgent != designReviewAgentType || created.Log.SubagentType != "qa-agent" || len(created.Log.DelegationChain) != 3 {
 		t.Fatalf("agent action log missing delegation chain: %#v", created.Log)
+	}
+	if created.Log.SourceFindingID != created.SourceFindingID || created.Log.Signal != created.Signal || created.Log.Path != created.Path {
+		t.Fatalf("agent action log missing repository scan trace fields: %#v", created.Log)
 	}
 
 	workflowReq := httptest.NewRequest(http.MethodGet, "/api/projects/"+project.ID+"/ai-workflow", nil)
@@ -4166,6 +4176,9 @@ func TestProjectAgentActionRouteRecordsWorkflowEventAndSanitizesData(t *testing.
 	for _, signal := range workflow.Signals {
 		if signal.Type == "agent_action" {
 			seenAgentSignal = true
+			if signal.SourceFindingID != "repo-finding-001" || signal.Signal != "dangerous_js_execution" || signal.Path != "backend/internal/core/agent_actions.go" {
+				t.Fatalf("ai workflow agent signal missing repository scan trace: %#v", signal)
+			}
 		}
 	}
 	if !seenAgentSignal {
@@ -4203,6 +4216,9 @@ func TestProjectAgentActionRouteRecordsWorkflowEventAndSanitizesData(t *testing.
 			if item.DelegatedBy != ceoAgentType || item.DesignAgent != designReviewAgentType || item.SubagentType != "qa-agent" || len(item.DelegationChain) != 3 {
 				t.Fatalf("live feed agent action missing delegation fields: %#v", item)
 			}
+			if item.SourceFindingID != "repo-finding-001" || item.Signal != "dangerous_js_execution" || item.Path != "backend/internal/core/agent_actions.go" {
+				t.Fatalf("live feed agent action missing repository scan trace: %#v", item)
+			}
 		}
 	}
 	if !seenAgentItem {
@@ -4233,7 +4249,7 @@ func TestProjectAgentActionRouteRecordsWorkflowEventAndSanitizesData(t *testing.
 				t.Fatal(err)
 			}
 			payloadText := string(payloadBytes)
-			for _, required := range []string{"context_urls", "evidence", "runbook", "checks", "delegated_by", "design_agent", "delegation_chain", "Smoke tests passed", "https://mergeos.shop/api/public/projects/prj_0001/workflow"} {
+			for _, required := range []string{"context_urls", "evidence", "runbook", "checks", "delegated_by", "design_agent", "delegation_chain", "source_finding_id", "dangerous_js_execution", "backend/internal/core/agent_actions.go", "Smoke tests passed", "https://mergeos.shop/api/public/projects/prj_0001/workflow"} {
 				if !strings.Contains(payloadText, required) {
 					t.Fatalf("public protocol event missing %q in payload: %s", required, payloadText)
 				}
