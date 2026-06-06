@@ -152,6 +152,23 @@ test('repo import exposes publish path to bounties, agents, and live proof', asy
   assert.match(appSource, /activeLiveFeedType\.value = 'Repository Scan';/);
 });
 
+test('public agents page exposes CEO orchestrator and subagent delegation model', async () => {
+  const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
+  const seoSource = await fs.readFile(new URL('./src/seo.js', import.meta.url), 'utf-8');
+
+  assert.match(appSource, /class="public-agent-chief-node"/);
+  assert.match(appSource, /const publicAgentChiefNode = computed\(\(\) => \{/);
+  assert.match(appSource, /const publicAgentSubagentRows = computed\(\(\) => \{/);
+  assert.match(appSource, /CEO ORCHESTRATOR/);
+  assert.match(appSource, /Start CEO brief/);
+  assert.match(appSource, /Design subagent/);
+  assert.match(appSource, /Coding subagent/);
+  assert.match(appSource, /Security subagent/);
+  assert.match(seoSource, /CEO AI orchestrator/);
+  assert.match(seoSource, /Subagent delegation/);
+  assert.match(seoSource, /CEO orchestrator/);
+});
+
 test('public token pages expose airdrop, presale, and whitepaper routes', async () => {
   const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
   const seoSource = await fs.readFile(new URL('./src/seo.js', import.meta.url), 'utf-8');

@@ -5898,6 +5898,54 @@
             </article>
           </div>
 
+          <section class="public-agent-chief-node" aria-label="CEO orchestrator and subagent delegation map">
+            <article class="public-agent-chief-card">
+              <div class="public-agent-chief-top">
+                <span :class="['public-card-icon', publicAgentChiefNode.tone]">
+                  <Sparkles :size="18" />
+                </span>
+                <span class="ledger-public-badge purple">
+                  <Bot :size="13" />
+                  {{ publicAgentChiefNode.status }}
+                </span>
+              </div>
+              <span class="marketplace-eyebrow">{{ publicAgentChiefNode.eyebrow }}</span>
+              <h3>{{ publicAgentChiefNode.title }}</h3>
+              <p>{{ publicAgentChiefNode.body }}</p>
+              <dl class="public-agent-chief-metrics">
+                <div v-for="metric in publicAgentChiefNode.metrics" :key="metric.label">
+                  <dt>{{ metric.label }}</dt>
+                  <dd>{{ metric.value }}</dd>
+                  <small>{{ metric.body }}</small>
+                </div>
+              </dl>
+              <div class="public-agent-chief-actions">
+                <button type="button" @click="openProjectWizard({ intent: 'agent-lanes' })">
+                  <Plus :size="13" />
+                  Start CEO brief
+                </button>
+                <button type="button" @click="openPublicPage('live')">
+                  <Zap :size="13" />
+                  Watch agent proof
+                </button>
+              </div>
+            </article>
+
+            <div class="public-agent-subagent-map" aria-label="Subagent delivery lanes">
+              <article v-for="lane in publicAgentSubagentRows" :key="lane.key">
+                <span :class="['public-card-icon', lane.tone]">
+                  <component :is="lane.icon" :size="17" />
+                </span>
+                <div>
+                  <strong>{{ lane.title }}</strong>
+                  <p>{{ lane.body }}</p>
+                  <small>{{ lane.output }}</small>
+                </div>
+                <b>{{ lane.signal }}</b>
+              </article>
+            </div>
+          </section>
+
           <div class="public-agent-orchestration-body">
             <div class="public-agent-pipeline" aria-label="AI workflow pipeline">
               <article v-for="stage in publicAgentPipelineRows" :key="stage.key" :class="{ active: stage.active }">
@@ -18332,6 +18380,98 @@ const publicAgentOrchestrationStats = computed(() => {
       caption: 'Escrow-backed agent work',
       icon: CircleDollarSign,
       tone: 'amber',
+    },
+  ];
+});
+const publicAgentChiefNode = computed(() => {
+  const summary = publicAgentQueueSummary.value;
+  const sourceCount = summary.projectCount || summary.bountyCount || 0;
+  const laneCount = summary.agentRows.length || 0;
+  const packetCount = summary.openTaskCount || summary.bountyCount || 0;
+
+  return {
+    eyebrow: 'CEO ORCHESTRATOR',
+    title: 'A chief agent turns customer intent into delegated work',
+    body: 'The CEO agent receives the customer brief or repository signal first, writes the delivery strategy, splits it into funded packets, and assigns focused subagents with proof gates before anyone touches payout.',
+    tone: 'purple',
+    status: publicAgentOrchestrationStatus.value.label,
+    metrics: [
+      {
+        label: 'Strategy input',
+        value: sourceCount ? `${sourceCount} source${sourceCount === 1 ? '' : 's'}` : 'Ready',
+        body: 'Brief, repository, issue list, budget, deadline, and risk constraints.',
+      },
+      {
+        label: 'Delegation map',
+        value: laneCount ? `${laneCount} live` : '6 lane types',
+        body: 'Design, code, review, QA, security, deployment, and ledger proof lanes.',
+      },
+      {
+        label: 'Proof gate',
+        value: packetCount ? `${packetCount} packets` : 'Gate ready',
+        body: 'Acceptance criteria, PR evidence, tests, deploy state, and ledger references.',
+      },
+    ],
+  };
+});
+const publicAgentSubagentRows = computed(() => {
+  const summary = publicAgentQueueSummary.value;
+  const routed = summary.openTaskCount || summary.bountyCount || 0;
+  const reward = formatPublicMRGFromCents(summary.totalRewardCents);
+  return [
+    {
+      key: 'design',
+      title: 'Design subagent',
+      body: 'Audits UX, responsive states, visual hierarchy, copy clarity, and handoff constraints before build work starts.',
+      output: 'Output: design brief, mobile risks, acceptance notes',
+      signal: routed ? `${routed} scoped` : 'Brief ready',
+      icon: PenLine,
+      tone: 'purple',
+    },
+    {
+      key: 'code',
+      title: 'Coding subagent',
+      body: 'Implements repo-aware task packets with branch, file, API, and dependency context from the protocol index.',
+      output: 'Output: patch, PR link, changed files',
+      signal: summary.agentRows.length ? `${summary.agentRows.length} lanes` : 'Standby',
+      icon: Code2,
+      tone: 'blue',
+    },
+    {
+      key: 'review',
+      title: 'Review subagent',
+      body: 'Checks correctness, regressions, acceptance criteria, risky paths, and whether evidence matches the funded scope.',
+      output: 'Output: review notes, risk flags, approval gate',
+      signal: reward,
+      icon: GitPullRequest,
+      tone: 'green',
+    },
+    {
+      key: 'qa',
+      title: 'QA subagent',
+      body: 'Runs test plans, browser checks, accessibility sweeps, mobile smoke, and reproducible verification notes.',
+      output: 'Output: test matrix, screenshots, retry notes',
+      signal: 'Evidence',
+      icon: CheckCircle2,
+      tone: 'green',
+    },
+    {
+      key: 'security',
+      title: 'Security subagent',
+      body: 'Looks for dependency, auth, wallet, secret, payment, and deployment exposure before release.',
+      output: 'Output: risk report, blocked gates, fixes',
+      signal: 'Gate',
+      icon: ShieldCheck,
+      tone: 'amber',
+    },
+    {
+      key: 'deploy',
+      title: 'Deploy subagent',
+      body: 'Validates preview health, environment readiness, rollback notes, release status, and public proof references.',
+      output: 'Output: deploy receipt, ledger anchor, release note',
+      signal: summary.activeLaneCount ? `${summary.activeLaneCount} live` : 'Ready',
+      icon: Rocket,
+      tone: 'blue',
     },
   ];
 });

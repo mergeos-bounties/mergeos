@@ -474,10 +474,12 @@ export function getSeoDataForPath(path = '/', options = {}) {
       description: entry.description,
       url: canonical,
       about: [
+        'CEO AI orchestrator',
         'Repository scanning',
         'Issue analysis',
         'Task generation',
         'Reward estimation',
+        'Subagent delegation',
         'Contributor routing',
         'Pull request review',
         'Deployment validation',
@@ -490,6 +492,8 @@ export function getSeoDataForPath(path = '/', options = {}) {
       name: 'MergeOS AI agent lanes',
       description: entry.description,
       itemListElement: [
+        ['CEO orchestrator', 'Chief planning agent that turns founder intent or repository signals into funded task packets and delegates subagents.'],
+        ['Design subagents', 'UX and responsive review agents for product hierarchy, copy clarity, acceptance notes, and visual QA.'],
         ['Coding agents', 'Implementation agents for scoped task packets and repository context.'],
         ['Review agents', 'Pull request review agents for correctness, regressions, and acceptance criteria.'],
         ['Testing agents', 'QA agents for unit, integration, accessibility, and smoke evidence.'],
