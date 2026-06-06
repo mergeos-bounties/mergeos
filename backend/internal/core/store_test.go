@@ -2409,6 +2409,71 @@ func TestPublicLiveFeedRouteReturnsSanitizedTimeline(t *testing.T) {
 	}
 }
 
+func TestPublicLiveFeedSupportsReplayCursor(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:       defaultTokenSymbol,
+		StatePath:         filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:    1000,
+		DevPaymentEnabled: true,
+		DevPaymentCode:    defaultDevPaymentCode,
+		GitHubOwner:       defaultGitHubOwner,
+		BountyRoot:        filepath.Join(tempDir, "bounties"),
+		SMTPFrom:          "noreply@mergeos.local",
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	auth, err := store.Register(RegisterRequest{
+		Name:     "Cursor Client",
+		Email:    "cursor@example.com",
+		Password: "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.CreateProject(context.Background(), auth.User.ID, CreateProjectRequest{
+		Title:            "Cursor replay proof",
+		ClientName:       "Cursor Client",
+		ClientEmail:      "cursor@example.com",
+		Brief:            "Create a public timeline with multiple replayable events.",
+		BudgetCents:      120000,
+		PaymentMethod:    PaymentPayPal,
+		PaymentReference: defaultDevPaymentCode,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	full := store.PublicLiveFeed(50)
+	if len(full.Items) < 2 {
+		t.Fatalf("expected multiple live feed items: %#v", full.Items)
+	}
+	replay := store.PublicLiveFeedQuery(PublicLiveFeedQuery{
+		Limit:   50,
+		AfterID: full.Items[1].ID,
+	})
+	if !replay.Replay || !replay.CursorFound || replay.AfterID != full.Items[1].ID {
+		t.Fatalf("replay metadata = %#v", replay)
+	}
+	if len(replay.Items) != 1 || replay.Items[0].ID != full.Items[0].ID || replay.Cursor != full.Items[0].ID {
+		t.Fatalf("replay items = %#v, full = %#v", replay.Items, full.Items[:2])
+	}
+	since := full.Items[1].CreatedAt.Add(-time.Nanosecond)
+	replaySince := store.PublicEventProtocolQuery(PublicLiveFeedQuery{Limit: 50, Since: &since})
+	if !replaySince.Replay || replaySince.Since == nil || len(replaySince.Events) == 0 {
+		t.Fatalf("expected protocol events after since: %#v", replaySince)
+	}
+
+	server := NewServer(cfg, store, payments)
+	invalidReq := httptest.NewRequest(http.MethodGet, "/api/public/live-feed?since=not-a-time", nil)
+	invalidResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(invalidResp, invalidReq)
+	if invalidResp.Code != http.StatusBadRequest {
+		t.Fatalf("invalid since status = %d, body = %s", invalidResp.Code, invalidResp.Body.String())
+	}
+}
+
 func TestProjectDeploymentRouteReturnsDerivedStatusAndSanitizesData(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := Config{

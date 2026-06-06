@@ -117,6 +117,7 @@ await mergeos.publicLedgerProof();
 await mergeos.publicLedgerEvents({ limit: 40 });
 await mergeos.publicTokenEconomy();
 await mergeos.publicLiveFeed({ limit: 80 });
+await mergeos.publicLiveFeed({ limit: 80, afterID: 'event:latest', since: '2026-06-06T00:00:00Z' });
 await mergeos.publicProtocolManifest();
 await mergeos.publicProtocolTasks({ limit: 80 });
 await mergeos.publicProtocolTasks({ taskID: 'prj_public_0001:12' });
@@ -126,7 +127,7 @@ await mergeos.publicProtocolAgents({ limit: 80 });
 await mergeos.publicProtocolContributors({ limit: 80 });
 await mergeos.publicProtocolLedger();
 await mergeos.publicMergeIDEWindowsRelease();
-await mergeos.publicProtocolEvents({ limit: 80 });
+await mergeos.publicProtocolEvents({ limit: 80, cursor: 'event:latest' });
 await mergeos.publicProjectDeployment('prj_public_0001');
 await mergeos.publicProjectAIWorkflow('prj_public_0001');
 await mergeos.publicProjectWorkflow('prj_public_0001');
@@ -312,7 +313,7 @@ await mergeos.adminTestSettingsEntries();
 ## Event API
 
 ```js
-const socket = mergeos.connectEvents();
+const socket = mergeos.connectEvents({ limit: 40, afterID: 'event:latest' });
 socket.onmessage = (event) => {
   const message = JSON.parse(event.data);
   const protocolEvent = protocolEventFromMessage(message);
@@ -327,7 +328,7 @@ socket.onmessage = (event) => {
 };
 ```
 
-The stream sends `connection_ready` and `live_feed_snapshot` events immediately after connect, then broadcasts live project, PR, payout, token workflow, and ledger events. SDK helpers map live feed records such as `pr_opened`, `agent_action`, `ledger_task_payment`, `ledger_airdrop_claim`, `ledger_presale_reservation`, and `ledger_manual_credit` to stable protocol events such as `pr.opened`, `agent.tested`, `task.paid`, `airdrop.claimed`, `presale.reserved`, and `ledger.recorded`.
+The stream sends `connection_ready` and `live_feed_snapshot` events immediately after connect, then broadcasts live project, PR, payout, token workflow, and ledger events. Pass `afterID`/`cursor` or `since` to `publicLiveFeed`, `publicProtocolEvents`, or `connectEvents` to replay only events newer than the last seen cursor. SDK helpers map live feed records such as `pr_opened`, `agent_action`, `ledger_task_payment`, `ledger_airdrop_claim`, `ledger_presale_reservation`, and `ledger_manual_credit` to stable protocol events such as `pr.opened`, `agent.tested`, `task.paid`, `airdrop.claimed`, `presale.reserved`, and `ledger.recorded`.
 
 ## Solana Contract Helpers
 

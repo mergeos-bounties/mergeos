@@ -52,6 +52,11 @@ func TestWebSocketSendsReadyAndLiveFeedSnapshot(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
+	fullFeed := store.PublicLiveFeed(50)
+	if len(fullFeed.Items) < 2 {
+		t.Fatalf("expected multiple replayable feed items: %#v", fullFeed.Items)
+	}
+	afterID := fullFeed.Items[1].ID
 
 	httpServer := httptest.NewServer(NewServer(cfg, store, payments).Routes())
 	defer httpServer.Close()
@@ -65,7 +70,7 @@ func TestWebSocketSendsReadyAndLiveFeedSnapshot(t *testing.T) {
 	}
 	defer conn.Close()
 
-	handshake := websocketHandshake(parsed.Host)
+	handshake := websocketHandshakePath(parsed.Host, "/api/ws?limit=50&after_id="+url.QueryEscape(afterID))
 	if _, err := conn.Write([]byte(handshake)); err != nil {
 		t.Fatal(err)
 	}
@@ -111,6 +116,13 @@ func TestWebSocketSendsReadyAndLiveFeedSnapshot(t *testing.T) {
 	feed, ok := snapshot["feed"].(map[string]interface{})
 	if !ok {
 		t.Fatalf("snapshot missing feed: %#v", snapshot)
+	}
+	if feed["replay"] != true || feed["cursor_found"] != true || feed["after_id"] != afterID {
+		t.Fatalf("snapshot replay metadata invalid: %#v", feed)
+	}
+	items, ok := feed["items"].([]interface{})
+	if !ok || len(items) != 1 {
+		t.Fatalf("snapshot replay items invalid: %#v", feed)
 	}
 	stats, ok := feed["stats"].(map[string]interface{})
 	projectCount, countOK := stats["project_count"].(float64)
@@ -663,8 +675,12 @@ func TestWebSocketBroadcastsSanitizedAdminOpsUpdateOnDispute(t *testing.T) {
 }
 
 func websocketHandshake(host string) string {
+	return websocketHandshakePath(host, "/api/ws")
+}
+
+func websocketHandshakePath(host, path string) string {
 	key := "dGhlIHNhbXBs" + "ZSBub25jZQ=="
-	return fmt.Sprintf("GET /api/ws HTTP/1.1\r\nHost: %s\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: %s\r\nSec-WebSocket-Version: 13\r\n\r\n", host, key)
+	return fmt.Sprintf("GET %s HTTP/1.1\r\nHost: %s\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: %s\r\nSec-WebSocket-Version: 13\r\n\r\n", path, host, key)
 }
 
 func readWebSocketTextFrame(t *testing.T, reader *bufio.Reader) []byte {

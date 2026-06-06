@@ -132,8 +132,7 @@ export class MergeOSClient {
   }
 
   publicLiveFeed(options = {}) {
-    const limit = Number(options.limit) > 0 ? `?limit=${encodeURIComponent(Number(options.limit))}` : '';
-    return this.request(`/api/public/live-feed${limit}`, { auth: false });
+    return this.request(`/api/public/live-feed${liveFeedQueryString(options)}`, { auth: false });
   }
 
   publicProtocolManifest() {
@@ -179,8 +178,7 @@ export class MergeOSClient {
   }
 
   publicProtocolEvents(options = {}) {
-    const limit = Number(options.limit) > 0 ? `?limit=${encodeURIComponent(Number(options.limit))}` : '';
-    return this.request(`/api/public/protocol/events${limit}`, { auth: false });
+    return this.request(`/api/public/protocol/events${liveFeedQueryString(options)}`, { auth: false });
   }
 
   publicProjectDeployment(projectID) {
@@ -573,7 +571,8 @@ export class MergeOSClient {
     if (!this.WebSocketImpl) {
       throw new Error('WebSocket is not available; pass WebSocketImpl to MergeOSClient');
     }
-    return new this.WebSocketImpl(this.webSocketURL(options.path), options.protocols);
+    const path = options.path || `/api/ws${liveFeedQueryString(options)}`;
+    return new this.WebSocketImpl(this.webSocketURL(path), options.protocols);
   }
 }
 
@@ -889,6 +888,20 @@ function queryString(params = {}) {
   }
   const value = search.toString();
   return value ? `?${value}` : '';
+}
+
+function liveFeedQueryString(options = {}) {
+  return queryString({
+    limit: Number(options.limit) > 0 ? Number(options.limit) : '',
+    after_id: options.after_id || options.afterID || options.cursor || '',
+    since: normalizeSinceQueryValue(options.since),
+  });
+}
+
+function normalizeSinceQueryValue(value) {
+  if (!value) return '';
+  if (value instanceof Date) return value.toISOString();
+  return String(value);
 }
 
 function passwordPayload(passwordOrPayload) {

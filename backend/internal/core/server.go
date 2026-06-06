@@ -241,13 +241,12 @@ func (s *Server) publicTokenEconomy(w http.ResponseWriter, _ *http.Request) {
 }
 
 func (s *Server) publicLiveFeed(w http.ResponseWriter, r *http.Request) {
-	limit := 0
-	if raw := strings.TrimSpace(r.URL.Query().Get("limit")); raw != "" {
-		if parsed, err := strconv.Atoi(raw); err == nil {
-			limit = parsed
-		}
+	query, err := publicLiveFeedQueryFromRequest(r)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
 	}
-	writeJSON(w, http.StatusOK, s.store.PublicLiveFeed(limit))
+	writeJSON(w, http.StatusOK, s.store.PublicLiveFeedQuery(query))
 }
 
 func (s *Server) publicProtocolManifest(w http.ResponseWriter, _ *http.Request) {
@@ -265,13 +264,38 @@ func (s *Server) publicProtocolLedger(w http.ResponseWriter, _ *http.Request) {
 }
 
 func (s *Server) publicProtocolEvents(w http.ResponseWriter, r *http.Request) {
-	limit := 0
-	if raw := strings.TrimSpace(r.URL.Query().Get("limit")); raw != "" {
-		if parsed, err := strconv.Atoi(raw); err == nil {
-			limit = parsed
-		}
+	query, err := publicLiveFeedQueryFromRequest(r)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
 	}
-	writeJSON(w, http.StatusOK, s.store.PublicEventProtocol(limit))
+	writeJSON(w, http.StatusOK, s.store.PublicEventProtocolQuery(query))
+}
+
+func publicLiveFeedQueryFromRequest(r *http.Request) (PublicLiveFeedQuery, error) {
+	values := r.URL.Query()
+	query := PublicLiveFeedQuery{
+		AfterID: strings.TrimSpace(values.Get("after_id")),
+	}
+	if query.AfterID == "" {
+		query.AfterID = strings.TrimSpace(values.Get("cursor"))
+	}
+	if raw := strings.TrimSpace(values.Get("limit")); raw != "" {
+		parsed, err := strconv.Atoi(raw)
+		if err != nil {
+			return PublicLiveFeedQuery{}, fmt.Errorf("limit must be a number")
+		}
+		query.Limit = parsed
+	}
+	if raw := strings.TrimSpace(values.Get("since")); raw != "" {
+		parsed, err := time.Parse(time.RFC3339Nano, raw)
+		if err != nil {
+			return PublicLiveFeedQuery{}, fmt.Errorf("since must be an RFC3339 timestamp")
+		}
+		parsed = parsed.UTC()
+		query.Since = &parsed
+	}
+	return query, nil
 }
 
 func (s *Server) publicProtocolAgents(w http.ResponseWriter, r *http.Request) {
@@ -1074,12 +1098,17 @@ func (s *Server) markAllNotificationsRead(w http.ResponseWriter, r *http.Request
 }
 
 func (s *Server) wsHandler(w http.ResponseWriter, r *http.Request) {
+	query, err := publicLiveFeedQueryFromRequest(r)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
 	conn, err := wsUpgrade(w, r)
 	if err != nil {
 		return
 	}
 	s.eventHub.add(conn)
-	if err := s.writeWSInitialEvents(conn); err != nil {
+	if err := s.writeWSInitialEvents(conn, query); err != nil {
 		s.eventHub.remove(conn)
 		conn.close()
 		return
@@ -1087,8 +1116,8 @@ func (s *Server) wsHandler(w http.ResponseWriter, r *http.Request) {
 	go conn.readLoop(s.eventHub)
 }
 
-func (s *Server) writeWSInitialEvents(conn *wsConn) error {
-	for _, event := range s.wsInitialEvents() {
+func (s *Server) writeWSInitialEvents(conn *wsConn, query PublicLiveFeedQuery) error {
+	for _, event := range s.wsInitialEvents(query) {
 		data, err := json.Marshal(event)
 		if err != nil {
 			return err
@@ -1100,8 +1129,11 @@ func (s *Server) writeWSInitialEvents(conn *wsConn) error {
 	return nil
 }
 
-func (s *Server) wsInitialEvents() []map[string]interface{} {
+func (s *Server) wsInitialEvents(query PublicLiveFeedQuery) []map[string]interface{} {
 	now := time.Now().UTC()
+	if query.Limit <= 0 {
+		query.Limit = 20
+	}
 	return []map[string]interface{}{
 		{
 			"protocol_version": "mergeos.event.v1",
@@ -1115,8 +1147,8 @@ func (s *Server) wsInitialEvents() []map[string]interface{} {
 			"protocol_version": "mergeos.event.v1",
 			"kind":             "snapshot",
 			"type":             "live_feed_snapshot",
-			"feed":             s.store.PublicLiveFeed(20),
-			"events":           s.store.PublicEventProtocol(20),
+			"feed":             s.store.PublicLiveFeedQuery(query),
+			"events":           s.store.PublicEventProtocolQuery(query),
 			"created_at":       now,
 		},
 	}

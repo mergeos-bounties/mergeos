@@ -254,7 +254,7 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Path:        "/api/public/live-feed",
 				Protocol:    "mergeos.live-feed.v1",
 				Auth:        "none",
-				Description: "Public command center feed for project, task, PR, deployment, ledger, contributor, and AI action updates.",
+				Description: "Public command center feed for project, task, PR, deployment, ledger, contributor, and AI action updates. Supports limit, after_id/cursor, and since replay queries.",
 			},
 			{
 				Method:      "GET",
@@ -359,7 +359,7 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Path:        "/api/public/protocol/events",
 				Protocol:    "mergeos.event.v1",
 				Auth:        "none",
-				Description: "Public live-feed events as protocol documents.",
+				Description: "Public live-feed events as protocol documents with the same limit, after_id/cursor, and since replay queries as the live feed.",
 			},
 			{
 				Method:      "GET",
@@ -408,7 +408,7 @@ func ProtocolManifest() ProtocolManifestResponse {
 				Path:        "/api/ws",
 				Protocol:    "mergeos.event.v1",
 				Auth:        "none",
-				Description: "Realtime WebSocket stream for live feed snapshots and protocol event broadcasts.",
+				Description: "Realtime WebSocket stream for live feed snapshots, replayable initial snapshots via limit/after_id/since, and protocol event broadcasts.",
 			},
 			{
 				Method:      "GET",

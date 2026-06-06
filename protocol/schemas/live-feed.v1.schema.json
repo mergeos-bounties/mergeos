@@ -118,6 +118,13 @@
           "created_at": { "type": "string", "format": "date-time" }
         }
       }
-    }
+    },
+    "cursor": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "after_id": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "since": { "type": "string", "format": "date-time" },
+    "replay": { "type": "boolean" },
+    "cursor_found": { "type": "boolean" },
+    "has_more": { "type": "boolean" },
+    "total_item_count": { "type": "integer", "minimum": 0 }
   }
 }

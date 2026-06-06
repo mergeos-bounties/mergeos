@@ -1036,6 +1036,13 @@ type PublicLiveFeedResponse struct {
 	Kind            string               `json:"kind"`
 	Stats           PublicLiveFeedStats  `json:"stats"`
 	Items           []PublicLiveFeedItem `json:"items"`
+	Cursor          string               `json:"cursor,omitempty"`
+	AfterID         string               `json:"after_id,omitempty"`
+	Since           *time.Time           `json:"since,omitempty"`
+	Replay          bool                 `json:"replay,omitempty"`
+	CursorFound     bool                 `json:"cursor_found,omitempty"`
+	HasMore         bool                 `json:"has_more,omitempty"`
+	TotalItemCount  int                  `json:"total_item_count,omitempty"`
 }
 
 type PublicLiveFeedStats struct {
@@ -1081,8 +1088,15 @@ type PublicLiveFeedItem struct {
 }
 
 type PublicEventProtocolResponse struct {
-	Stats  PublicLiveFeedStats     `json:"stats"`
-	Events []EventProtocolDocument `json:"events"`
+	Stats          PublicLiveFeedStats     `json:"stats"`
+	Events         []EventProtocolDocument `json:"events"`
+	Cursor         string                  `json:"cursor,omitempty"`
+	AfterID        string                  `json:"after_id,omitempty"`
+	Since          *time.Time              `json:"since,omitempty"`
+	Replay         bool                    `json:"replay,omitempty"`
+	CursorFound    bool                    `json:"cursor_found,omitempty"`
+	HasMore        bool                    `json:"has_more,omitempty"`
+	TotalItemCount int                     `json:"total_item_count,omitempty"`
 }
 
 type PublicTaskProtocolResponse struct {

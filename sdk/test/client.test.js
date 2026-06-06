@@ -73,7 +73,7 @@ test('creates public feed and ledger verification requests without auth', async 
     fetchImpl,
   });
 
-  const payload = await client.publicLiveFeed({ limit: 80 });
+  const payload = await client.publicLiveFeed({ limit: 80, afterID: 'event:latest', since: '2026-06-06T00:00:00Z' });
   const manifest = await client.publicProtocolManifest();
   const tasks = await client.publicProtocolTasks({ limit: 80 });
   const scopedTasks = await client.publicProtocolTasks({ taskID: 'prj_1:12' });
@@ -86,7 +86,7 @@ test('creates public feed and ledger verification requests without auth', async 
   const ledgerEvents = await client.publicLedgerEvents({ limit: 20 });
   const economy = await client.publicTokenEconomy();
   const missions = await client.publicAirdropMissions();
-  const events = await client.publicProtocolEvents({ limit: 80 });
+  const events = await client.publicProtocolEvents({ limit: 80, cursor: 'event:latest' });
   const deployment = await client.publicProjectDeployment('prj_public');
   const workflow = await client.publicProjectAIWorkflow('prj_public');
   const workflowGraph = await client.publicProjectWorkflow('prj_public');
@@ -114,7 +114,7 @@ test('creates public feed and ledger verification requests without auth', async 
   assert.equal(repositoryScan.protocol_version, 'mergeos.scan.v1');
   assert.equal(pulls.protocol_version, 'mergeos.pr-monitor.v1');
   assert.deepEqual(verification, { valid: true });
-  assert.equal(fetchImpl.calls[0].url, 'https://mergeos.shop/api/public/live-feed?limit=80');
+  assert.equal(fetchImpl.calls[0].url, 'https://mergeos.shop/api/public/live-feed?limit=80&after_id=event%3Alatest&since=2026-06-06T00%3A00%3A00Z');
   assert.equal(fetchImpl.calls[0].options.headers.Authorization, undefined);
   assert.equal(fetchImpl.calls[1].url, 'https://mergeos.shop/api/public/protocol');
   assert.equal(fetchImpl.calls[1].options.headers.Authorization, undefined);
@@ -140,7 +140,7 @@ test('creates public feed and ledger verification requests without auth', async 
   assert.equal(fetchImpl.calls[11].options.headers.Authorization, undefined);
   assert.equal(fetchImpl.calls[12].url, 'https://mergeos.shop/api/public/airdrop/missions');
   assert.equal(fetchImpl.calls[12].options.headers.Authorization, undefined);
-  assert.equal(fetchImpl.calls[13].url, 'https://mergeos.shop/api/public/protocol/events?limit=80');
+  assert.equal(fetchImpl.calls[13].url, 'https://mergeos.shop/api/public/protocol/events?limit=80&after_id=event%3Alatest');
   assert.equal(fetchImpl.calls[13].options.headers.Authorization, undefined);
   assert.equal(fetchImpl.calls[14].url, 'https://mergeos.shop/api/public/projects/prj_public/deployment');
   assert.equal(fetchImpl.calls[14].options.headers.Authorization, undefined);
@@ -1003,8 +1003,20 @@ test('throws response errors with status and payload', async () => {
 });
 
 test('builds websocket URLs for event streams', () => {
+  const sockets = [];
+  class FakeWebSocket {
+    constructor(url, protocols) {
+      this.url = url;
+      this.protocols = protocols;
+      sockets.push(this);
+    }
+  }
   const client = new MergeOSClient({ baseURL: 'https://mergeos.shop' });
+  const realtimeClient = new MergeOSClient({ baseURL: 'https://mergeos.shop', WebSocketImpl: FakeWebSocket });
 
   assert.equal(client.webSocketURL('/api/ws'), 'wss://mergeos.shop/api/ws');
   assert.equal(client.webSocketURL('ws://localhost:8080/api/ws'), 'ws://localhost:8080/api/ws');
+  realtimeClient.connectEvents({ limit: 12, afterID: 'event:latest', since: new Date('2026-06-06T00:00:00Z'), protocols: ['mergeos.event.v1'] });
+  assert.equal(sockets[0].url, 'wss://mergeos.shop/api/ws?limit=12&after_id=event%3Alatest&since=2026-06-06T00%3A00%3A00.000Z');
+  assert.deepEqual(sockets[0].protocols, ['mergeos.event.v1']);
 });

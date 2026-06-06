@@ -321,14 +321,14 @@ Public:
 - `GET /api/public/ledger`
 - `GET /api/public/ledger/verify`
 - `GET /api/public/marketplace`
-- `GET /api/public/live-feed`
+- `GET /api/public/live-feed` supports `limit`, `after_id`/`cursor`, and RFC3339 `since` replay queries for reconnecting clients
 - `GET /api/public/protocol`
 - `GET /api/public/protocol/tasks`
 - `GET /api/public/protocol/agents`
 - `GET /api/public/protocol/ledger`
-- `GET /api/public/protocol/events`
+- `GET /api/public/protocol/events` supports the same replay queries as the live feed
 - `GET /api/public/projects/{id}/repo-scan`
-- `WS /api/ws`
+- `WS /api/ws` sends connection readiness plus a replayable live-feed snapshot; pass `limit`, `after_id`, or `since` in the query string to catch up after reconnect
 - `GET /protocol/runbooks/mergeide-agent.v1.json`
 - `POST /api/public/repo/issues`
 - `GET /downloads/mergeide-windows-latest.json`

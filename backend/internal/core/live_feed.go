@@ -14,8 +14,19 @@ const (
 	maxPublicLiveFeedLimit     = 120
 )
 
+type PublicLiveFeedQuery struct {
+	Limit   int
+	AfterID string
+	Since   *time.Time
+}
+
 func (s *Store) PublicLiveFeed(limit int) PublicLiveFeedResponse {
-	limit = normalizePublicLiveFeedLimit(limit)
+	return s.PublicLiveFeedQuery(PublicLiveFeedQuery{Limit: limit})
+}
+
+func (s *Store) PublicLiveFeedQuery(query PublicLiveFeedQuery) PublicLiveFeedResponse {
+	limit := normalizePublicLiveFeedLimit(query.Limit)
+	afterID := strings.TrimSpace(query.AfterID)
 
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -175,8 +186,43 @@ func (s *Store) PublicLiveFeed(limit int) PublicLiveFeedResponse {
 		}
 		return response.Items[i].CreatedAt.After(response.Items[j].CreatedAt)
 	})
+	response.TotalItemCount = len(response.Items)
+	if afterID != "" {
+		response.AfterID = afterID
+		response.Replay = true
+		for index, item := range response.Items {
+			if item.ID == afterID {
+				response.CursorFound = true
+				response.Items = response.Items[:index]
+				break
+			}
+		}
+		if !response.CursorFound && query.Since == nil {
+			response.Items = []PublicLiveFeedItem{}
+		}
+	}
+	if query.Since != nil {
+		since := query.Since.UTC()
+		response.Since = &since
+		response.Replay = true
+		filtered := make([]PublicLiveFeedItem, 0, len(response.Items))
+		for _, item := range response.Items {
+			if item.CreatedAt.After(since) {
+				filtered = append(filtered, item)
+			}
+		}
+		response.Items = filtered
+	}
+	filteredCount := len(response.Items)
 	if len(response.Items) > limit {
+		response.HasMore = true
 		response.Items = response.Items[:limit]
+	}
+	if len(response.Items) > 0 {
+		response.Cursor = response.Items[0].ID
+	}
+	if response.TotalItemCount == 0 {
+		response.TotalItemCount = filteredCount
 	}
 	return response
 }
@@ -215,14 +261,25 @@ func publicLiveFeedTrackAgentLog(activeAgents map[string]bool, log *GeminiWebhoo
 }
 
 func (s *Store) PublicEventProtocol(limit int) PublicEventProtocolResponse {
-	feed := s.PublicLiveFeed(limit)
+	return s.PublicEventProtocolQuery(PublicLiveFeedQuery{Limit: limit})
+}
+
+func (s *Store) PublicEventProtocolQuery(query PublicLiveFeedQuery) PublicEventProtocolResponse {
+	feed := s.PublicLiveFeedQuery(query)
 	events := make([]EventProtocolDocument, 0, len(feed.Items))
 	for _, item := range feed.Items {
 		events = append(events, publicLiveFeedProtocolEvent(item))
 	}
 	return PublicEventProtocolResponse{
-		Stats:  feed.Stats,
-		Events: events,
+		Stats:          feed.Stats,
+		Events:         events,
+		Cursor:         feed.Cursor,
+		AfterID:        feed.AfterID,
+		Since:          feed.Since,
+		Replay:         feed.Replay,
+		CursorFound:    feed.CursorFound,
+		HasMore:        feed.HasMore,
+		TotalItemCount: feed.TotalItemCount,
 	}
 }
 
