@@ -1596,14 +1596,41 @@
             <Plus :size="16" />
             New Project
           </button>
-          <button class="dash-profile" type="button" @click="logout">
-            <span class="profile-avatar">{{ initialsFor(user.name || user.email) }}</span>
-            <span>
-              <strong>{{ user.name || user.email || 'Signed-in user' }}</strong>
-              <small>{{ user.wallet_address ? shortWallet(user.wallet_address) : 'Customer' }}</small>
-            </span>
-            <ChevronDown :size="14" />
-          </button>
+          <div class="account-menu dashboard-account-menu" :class="{ open: activeNavMenu === 'dashboard-account' }" @mouseleave="scheduleNavContextClose" @keydown.escape.stop="closeNavContextMenu">
+            <button
+              class="dash-profile"
+              type="button"
+              :aria-label="publicNavCopy.account"
+              aria-haspopup="true"
+              :aria-expanded="activeNavMenu === 'dashboard-account'"
+              @click.stop="toggleNavContextMenu('dashboard-account')"
+            >
+              <span class="profile-avatar">{{ initialsFor(user.name || user.email) }}</span>
+              <span>
+                <strong>{{ user.name || user.email || 'Signed-in user' }}</strong>
+                <small>{{ user.wallet_address ? shortWallet(user.wallet_address) : 'Customer' }}</small>
+              </span>
+              <ChevronDown :size="14" />
+            </button>
+            <div class="account-context-menu" :class="{ 'context-menu-visible': activeNavMenu === 'dashboard-account' }" role="menu" :aria-label="publicNavCopy.account">
+              <div class="account-context-head">
+                <strong>{{ user.name || user.email || 'Signed-in user' }}</strong>
+                <small>{{ user.wallet_address ? shortWallet(user.wallet_address) : publicNavCopy.signedIn }}</small>
+              </div>
+              <button type="button" role="menuitem" @click="openDashboardFromAccountMenu">
+                <LayoutDashboard :size="15" />
+                {{ publicNavCopy.dashboard }}
+              </button>
+              <button type="button" role="menuitem" @click="openProjectWizardMessagesFromAccountMenu">
+                <MessageCircle :size="15" />
+                {{ publicNavCopy.messages }}
+              </button>
+              <button type="button" role="menuitem" @click="logoutFromAccountMenu">
+                <ArrowLeft :size="15" />
+                {{ publicNavCopy.logout }}
+              </button>
+            </div>
+          </div>
         </div>
       </header>
 
