@@ -787,6 +787,7 @@ test('validates repository sync protocol documents', () => {
         routing: {
           id: 'route:tsk_0012',
           task_id: 'tsk_0012',
+          claim_id: 'prj_0001:12',
           issue_number: 12,
           title: 'Fix #12: Fix checkout webhook',
           lane: 'backend-agent',
@@ -795,6 +796,7 @@ test('validates repository sync protocol documents', () => {
           reward_cents: 25000,
           required_worker_kind: 'agent',
           suggested_agent_type: 'backend-agent',
+          protocol_url: '/api/public/protocol/tasks?task_id=prj_0001:12',
           recommended_next_action: 'route_to_agent',
           match_score: 88,
           routing_reason: ['Agent lane has a scoped work packet.'],
@@ -803,6 +805,34 @@ test('validates repository sync protocol documents', () => {
             title: 'Backend Agent',
             status: 'active',
             queue_depth: 2,
+          },
+          routing_packet: {
+            action: 'route_to_agent',
+            method: 'POST',
+            endpoint: '/api/agent-queue/leases',
+            payload: {
+              claim_id: 'prj_0001:12',
+              bounty_id: 'prj_0001:12',
+              agent_type: 'backend-agent',
+              status: 'leased',
+            },
+            context_urls: {
+              task_protocol: '/api/public/protocol/tasks?task_id=prj_0001:12',
+              marketplace: '/api/public/marketplace',
+              agent_queue: '/api/public/protocol/agent-queue',
+              contributors: '/api/public/protocol/contributors',
+              workflow_protocol: '/api/public/projects/prj_0001/workflow',
+              workflow_pulse: '/api/public/projects/prj_0001/ai-workflow',
+              pr_monitor: '/api/public/projects/prj_0001/pull-requests',
+              issue: 'https://github.com/mergeos-bounties/mergeos/issues/12',
+            },
+            runbook: [
+              { step: 1, action: 'fetch_context', label: 'Read task protocol', method: 'GET', endpoint: '/api/public/protocol/tasks?task_id=prj_0001:12' },
+              { step: 2, action: 'lease_work', label: 'Lease agent work', method: 'POST', endpoint: '/api/agent-queue/leases' },
+            ],
+            output_contracts: [
+              { action: 'lease', artifact_kind: 'agent_lease', output_endpoint: '/api/agent-queue/leases', output_protocol: 'mergeos.agent-lease.v1', output_protocol_url: '/protocol/agent-lease.v1.schema.json', public_url: '/api/public/live-feed' },
+            ],
           },
         },
       },
@@ -824,6 +854,7 @@ test('validates repository sync protocol documents', () => {
       routing: {
         ...sync.issue_mappings[0].routing,
         recommended_next_action: 'guess',
+        routing_packet: { ...sync.issue_mappings[0].routing.routing_packet, method: 'FLY' },
       },
     }],
     synced_at: 'not-a-date',
@@ -835,6 +866,7 @@ test('validates repository sync protocol documents', () => {
   assert(invalid.errors.some((error) => error.path === 'issue_mappings[0].reward_cents'));
   assert(invalid.errors.some((error) => error.path === 'issue_mappings[0].required_worker_kind'));
   assert(invalid.errors.some((error) => error.path === 'issue_mappings[0].routing.recommended_next_action'));
+  assert(invalid.errors.some((error) => error.path === 'issue_mappings[0].routing.routing_packet.method'));
   assert(invalid.errors.some((error) => error.path === 'synced_at'));
 });
 

@@ -1148,7 +1148,25 @@ test('exposes project workflow and admin ops routes', async () => {
           task_protocol_url: '/api/public/protocol/tasks?task_id=prj_1:12',
           reward_cents: 25000,
           required_worker_kind: 'agent',
-          routing: { recommended_next_action: 'route_to_agent' },
+          routing: {
+            claim_id: 'prj_1:12',
+            protocol_url: '/api/public/protocol/tasks?task_id=prj_1:12',
+            recommended_next_action: 'route_to_agent',
+            routing_packet: {
+              action: 'route_to_agent',
+              method: 'POST',
+              endpoint: '/api/agent-queue/leases',
+              payload: {
+                claim_id: 'prj_1:12',
+                bounty_id: 'prj_1:12',
+                agent_type: 'qa-agent',
+                status: 'leased',
+              },
+              output_contracts: [
+                { action: 'lease', output_protocol: 'mergeos.agent-lease.v1' },
+              ],
+            },
+          },
         }],
       },
     },
@@ -1221,6 +1239,13 @@ test('exposes project workflow and admin ops routes', async () => {
   assert.equal(sync.issue_mappings[0].claim_id, 'prj_1:12');
   assert.equal(sync.issue_mappings[0].claim_endpoint, '/api/tasks/prj_1:12/claim');
   assert.equal(sync.issue_mappings[0].routing.recommended_next_action, 'route_to_agent');
+  assert.equal(sync.issue_mappings[0].routing.routing_packet.endpoint, '/api/agent-queue/leases');
+  assert.deepEqual(routingPacketPayload(sync.issue_mappings[0].routing), {
+    claim_id: 'prj_1:12',
+    bounty_id: 'prj_1:12',
+    agent_type: 'qa-agent',
+    status: 'leased',
+  });
   assert.equal(ops.stats.total_count, 1);
   assert.equal(reputation.stats.worker_count, 1);
   assert.equal(fetchImpl.calls[0].url, '/api/projects/prj_1/escrow');

@@ -1195,6 +1195,9 @@ func TestSyncProjectImportedIssuesAddsMissingAndTracksState(t *testing.T) {
 	if mappings[1].Routing.RecommendedNextAction != "paid" || mappings[1].TaskProtocolURL != "/api/public/protocol/tasks?task_id="+mappings[1].ClaimID {
 		t.Fatalf("existing issue routing/protocol mapping = %#v", mappings[1])
 	}
+	if mappings[1].Routing.ClaimID != mappings[1].ClaimID || mappings[1].Routing.ProtocolURL != mappings[1].TaskProtocolURL || mappings[1].Routing.RoutingPacket.Endpoint != "/api/public/ledger/proof" {
+		t.Fatalf("existing issue routing packet = %#v", mappings[1].Routing)
+	}
 	addedMapping := mappings[7]
 	if addedMapping.SyncStatus != "added" || addedMapping.TaskID == "" || addedMapping.TaskID == existing.ID || addedMapping.ClaimID != marketplaceBountyID(project.ID, 7) {
 		t.Fatalf("new issue mapping = %#v", addedMapping)
@@ -1207,6 +1210,12 @@ func TestSyncProjectImportedIssuesAddsMissingAndTracksState(t *testing.T) {
 	}
 	if addedMapping.Routing.RecommendedNextAction != "route_to_agent" || addedMapping.Routing.MatchScore <= 0 || addedMapping.Routing.RecommendedAgent == nil {
 		t.Fatalf("new issue route = %#v", addedMapping.Routing)
+	}
+	if addedMapping.Routing.ClaimID != addedMapping.ClaimID || addedMapping.Routing.ProtocolURL != addedMapping.TaskProtocolURL || addedMapping.Routing.RoutingPacket.Endpoint != "/api/agent-queue/leases" {
+		t.Fatalf("new issue executable routing packet = %#v", addedMapping.Routing)
+	}
+	if payload := addedMapping.Routing.RoutingPacket.Payload; payload["claim_id"] != addedMapping.ClaimID || payload["bounty_id"] != addedMapping.ClaimID {
+		t.Fatalf("new issue routing packet used unsafe claim payload: %#v", addedMapping.Routing.RoutingPacket)
 	}
 	tasks := store.ListTasks("")
 	if len(tasks) != 2 {

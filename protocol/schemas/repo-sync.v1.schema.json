@@ -122,10 +122,11 @@
     "routing": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "task_id", "issue_number", "title", "lane", "status", "ready", "reward_cents", "required_worker_kind", "recommended_next_action", "match_score"],
+      "required": ["id", "task_id", "claim_id", "issue_number", "title", "lane", "status", "ready", "reward_cents", "required_worker_kind", "protocol_url", "recommended_next_action", "match_score", "routing_packet"],
       "properties": {
         "id": { "type": "string", "minLength": 1, "maxLength": 160 },
         "task_id": { "type": "string", "minLength": 1, "maxLength": 96 },
+        "claim_id": { "type": "string", "minLength": 1, "maxLength": 120 },
         "issue_number": { "type": "integer", "minimum": 0 },
         "title": { "type": "string", "minLength": 1, "maxLength": 240 },
         "lane": { "type": "string", "minLength": 1, "maxLength": 160 },
@@ -138,8 +139,9 @@
         "reward_cents": { "type": "integer", "minimum": 0 },
         "required_worker_kind": { "enum": ["human", "agent", "hybrid"] },
         "suggested_agent_type": { "type": "string", "maxLength": 120 },
+        "protocol_url": { "type": "string", "minLength": 1, "maxLength": 512 },
         "recommended_next_action": {
-          "enum": ["publish_bounty", "route_to_agent", "route_hybrid_pair", "invite_contributor", "wait_for_dependencies", "paid"]
+          "enum": ["publish_bounty", "route_to_agent", "route_hybrid_pair", "invite_contributor", "review_evidence", "wait_for_dependencies", "paid"]
         },
         "match_score": { "type": "integer", "minimum": 0, "maximum": 100 },
         "routing_reason": {
@@ -147,7 +149,37 @@
           "items": { "type": "string", "minLength": 1, "maxLength": 240 }
         },
         "recommended_agent": { "$ref": "#/$defs/recommendedAgent" },
-        "recommended_worker": { "$ref": "#/$defs/recommendedWorker" }
+        "recommended_worker": { "$ref": "#/$defs/recommendedWorker" },
+        "routing_packet": { "$ref": "#/$defs/routingPacket" }
+      }
+    },
+    "routingPacket": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["action", "method", "endpoint", "context_urls", "runbook"],
+      "properties": {
+        "action": {
+          "enum": ["publish_bounty", "route_to_agent", "route_hybrid_pair", "invite_contributor", "review_evidence", "wait_for_dependencies", "paid"]
+        },
+        "method": { "enum": ["GET", "POST"] },
+        "endpoint": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "payload": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "context_urls": {
+          "type": "object",
+          "additionalProperties": { "type": "string", "maxLength": 512 }
+        },
+        "runbook": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/runbookStep" }
+        },
+        "output_contracts": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/outputContract" }
+        }
       }
     },
     "recommendedAgent": {
