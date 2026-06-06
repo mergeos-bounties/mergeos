@@ -29,6 +29,7 @@
     "onCommand:mergeide.showTasks",
     "onCommand:mergeide.runTask",
     "onCommand:mergeide.claimTask",
+    "onCommand:mergeide.submitTask",
     "onCommand:mergeide.configureAiCli"
   ],
   "contributes": {
@@ -44,6 +45,10 @@
       {
         "command": "mergeide.claimTask",
         "title": "MergeIDE: Claim Task"
+      },
+      {
+        "command": "mergeide.submitTask",
+        "title": "MergeIDE: Submit Task Evidence"
       },
       {
         "command": "mergeide.configureAiCli",
@@ -104,7 +109,7 @@
         "mergeide.autoClaimAfterRun": {
           "type": "boolean",
           "default": false,
-          "description": "Claim the task after the AI CLI exits successfully."
+          "description": "Reserve the task lane after the AI CLI exits successfully. This does not release payout."
         }
       }
     }

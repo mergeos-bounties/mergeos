@@ -1,7 +1,7 @@
 "use strict";
 
 const path = require("node:path");
-const { claimTask, findTask, listTasks, login } = require("./api");
+const { claimTask, findTask, listTasks, login, recordAgentAction, submitTaskEvidence } = require("./api");
 const { loadSettings, mergeSettings, parseArgList, readSettingsFile, saveSettings, settingsPath } = require("./settings");
 const { prepareTaskArtifacts, runAIForTask } = require("./runner");
 
@@ -21,6 +21,8 @@ async function main(argv) {
       return runCommand(flags);
     case "claim":
       return claimCommand(flags);
+    case "submit":
+      return submitCommand(flags);
     case "next":
       return nextCommand(flags);
     case "help":
@@ -88,7 +90,10 @@ async function runCommand(flags) {
   }
   if (flags.claim || settings.claim.afterRun) {
     const claimed = await claimTask(settings, task, claimOverrides(flags));
-    console.log(`Claimed ${claimed.id} with proof ${claimed.proof_hash || "n/a"}`);
+    printClaimed(claimed);
+  }
+  if (shouldSubmitAfterRun(flags)) {
+    await submitAndRecord(settings, task, flags);
   }
 }
 
@@ -97,7 +102,14 @@ async function claimCommand(flags) {
   const settings = await loadSettings(flags.settings, settingsFromFlags(flags));
   const task = await findTask(settings, taskID);
   const claimed = await claimTask(settings, task, claimOverrides(flags));
-  console.log(`Claimed ${claimed.id} with proof ${claimed.proof_hash || "n/a"}`);
+  printClaimed(claimed);
+}
+
+async function submitCommand(flags) {
+  const taskID = requiredPositional(flags, "task id");
+  const settings = await loadSettings(flags.settings, settingsFromFlags(flags));
+  const task = await findTask(settings, taskID);
+  await submitAndRecord(settings, task, flags);
 }
 
 async function nextCommand(flags) {
@@ -117,7 +129,10 @@ async function nextCommand(flags) {
   }
   if (flags.claim || settings.claim.afterRun) {
     const claimed = await claimTask(settings, task, claimOverrides(flags));
-    console.log(`Claimed ${claimed.id} with proof ${claimed.proof_hash || "n/a"}`);
+    printClaimed(claimed);
+  }
+  if (shouldSubmitAfterRun(flags)) {
+    await submitAndRecord(settings, task, flags);
   }
 }
 
@@ -186,6 +201,83 @@ function claimOverrides(flags) {
   };
 }
 
+async function submitAndRecord(settings, task, flags) {
+  const payload = submissionFromFlags(flags);
+  const submitted = await submitTaskEvidence(settings, task, payload);
+  console.log(`Submitted ${submitted.claim_id || submitted.id} for review`);
+  if (flags.agentAction === false || flags.noAgentAction) {
+    return submitted;
+  }
+  const action = await recordAgentAction(settings, submitted.project_id || task.project_id || task.projectID, agentActionFromSubmission(settings, task, submitted, flags));
+  console.log(`Recorded agent ${action.action} evidence ${action.action_id || action.id}`);
+  return submitted;
+}
+
+function submissionFromFlags(flags) {
+  const payload = {
+    pull_request_url: flags.pullRequestUrl || flags.prUrl,
+    evidence_url: flags.evidenceUrl,
+    review_notes: flags.reviewNotes || flags.notes
+  };
+  if (!payload.pull_request_url && !payload.evidence_url && !payload.review_notes) {
+    throw new Error("--pr-url, --pull-request-url, --evidence-url, or --notes is required");
+  }
+  return payload;
+}
+
+function agentActionFromSubmission(settings, task, submitted, flags) {
+  const pullRequestURL = submitted.pull_request_url || flags.pullRequestUrl || flags.prUrl || "";
+  const evidenceURL = submitted.review_evidence_url || flags.evidenceUrl || "";
+  const referenceURL = flags.referenceUrl || pullRequestURL || evidenceURL;
+  const notes = submitted.review_notes || flags.reviewNotes || flags.notes || "MergeIDE submitted task evidence for review.";
+  return {
+    action: flags.action || "generate",
+    claim_id: submitted.claim_id || task.claim_id || task.id,
+    bounty_id: submitted.claim_id || task.claim_id || task.id,
+    agent_type: flags.agentType || settings.worker.agentType || task.suggested_agent_type || "mergeide",
+    status: flags.status || "processed",
+    reference_url: referenceURL,
+    pull_number: flags.pullNumber || pullNumberFromURL(pullRequestURL),
+    labels: flags.labels,
+    context_urls: defaultContextURLs(submitted),
+    evidence: [notes, pullRequestURL, evidenceURL].filter(Boolean),
+    runbook: [
+      "Claim the funded task before recording evidence.",
+      "Submit pull request or external evidence for customer review.",
+      "Wait for customer or admin release before payout."
+    ],
+    delegated_by: flags.delegatedBy,
+    design_agent: flags.designAgent,
+    subagent_type: flags.subagentType,
+    delegation_chain: flags.delegationChain
+  };
+}
+
+function shouldSubmitAfterRun(flags) {
+  return Boolean(flags.submit || flags.prUrl || flags.pullRequestUrl || flags.evidenceUrl || flags.notes || flags.reviewNotes);
+}
+
+function defaultContextURLs(submitted) {
+  const projectID = submitted.project_id || submitted.projectID || "";
+  const claimID = submitted.claim_id || submitted.claimID || "";
+  return [
+    claimID ? `/api/public/protocol/tasks?task_id=${encodeURIComponent(claimID)}` : "",
+    projectID ? `/api/public/projects/${encodeURIComponent(projectID)}/workflow` : "",
+    projectID ? `/api/public/projects/${encodeURIComponent(projectID)}/pull-requests` : ""
+  ].filter(Boolean);
+}
+
+function pullNumberFromURL(value) {
+  const match = String(value || "").match(/\/pull\/(\d+)(?:\b|[/?#])/);
+  return match ? Number(match[1]) : 0;
+}
+
+function printClaimed(claimed) {
+  const id = claimed.claim_id || claimed.id;
+  const worker = claimed.worker_id ? ` by ${claimed.worker_id}` : "";
+  console.log(`Claimed ${id}${worker}; payout is pending review`);
+}
+
 function selectNextTask(tasks, flags) {
   const openTasks = tasks.filter((task) => task && task.status === "open");
   const kind = flags.kind;
@@ -239,9 +331,10 @@ Usage:
   mergeide login --email admin@gmail.com --password Admin123
   mergeide tasks --open
   mergeide prompt <task-id>
-  mergeide run <task-id> [--claim]
+  mergeide run <task-id> [--claim] [--submit --pr-url <url>]
   mergeide claim <task-id>
-  mergeide next [--kind agent] [--claim]
+  mergeide submit <task-id> --pr-url <url> [--evidence-url <url>] [--notes <text>]
+  mergeide next [--kind agent] [--claim] [--submit --pr-url <url>]
 
 AI CLI placeholders:
   {{prompt}}     Full task prompt

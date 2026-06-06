@@ -12,6 +12,7 @@ function activate(context) {
     vscode.commands.registerCommand("mergeide.showTasks", () => showTasks(context)),
     vscode.commands.registerCommand("mergeide.runTask", () => runTask(context)),
     vscode.commands.registerCommand("mergeide.claimTask", () => claimTask(context)),
+    vscode.commands.registerCommand("mergeide.submitTask", () => submitTask(context)),
     vscode.commands.registerCommand("mergeide.configureAiCli", () => configureAiCli())
   );
 }
@@ -25,13 +26,15 @@ async function showTasks(context) {
   if (!picked) {
     return;
   }
-  const action = await vscode.window.showQuickPick(["Run with AI CLI", "Claim task", "Open prompt only"], {
+  const action = await vscode.window.showQuickPick(["Run with AI CLI", "Claim task", "Submit evidence", "Open prompt only"], {
     placeHolder: picked.label
   });
   if (action === "Run with AI CLI") {
     openTerminal(context, ["run", picked.task.id]);
   } else if (action === "Claim task") {
     openTerminal(context, ["claim", picked.task.id]);
+  } else if (action === "Submit evidence") {
+    await submitTaskCommand(context, picked.task.id);
   } else if (action === "Open prompt only") {
     openTerminal(context, ["prompt", picked.task.id]);
   }
@@ -53,6 +56,25 @@ async function claimTaskCommand(context) {
 
 async function claimTask(context) {
   return claimTaskCommand(context);
+}
+
+async function submitTaskCommand(context, providedTaskID = "") {
+  const taskID = providedTaskID || await vscode.window.showInputBox({ prompt: "MergeOS task id to submit" });
+  if (!taskID) {
+    return;
+  }
+  const prURL = await vscode.window.showInputBox({ prompt: "GitHub pull request URL" });
+  const evidenceURL = await vscode.window.showInputBox({ prompt: "Optional evidence URL", value: "" });
+  const notes = await vscode.window.showInputBox({ prompt: "Review notes", value: "MergeIDE submitted implementation evidence for review." });
+  const args = ["submit", taskID];
+  if (prURL) args.push("--pr-url", prURL);
+  if (evidenceURL) args.push("--evidence-url", evidenceURL);
+  if (notes) args.push("--notes", notes);
+  openTerminal(context, args);
+}
+
+async function submitTask(context) {
+  return submitTaskCommand(context);
 }
 
 async function configureAiCli() {

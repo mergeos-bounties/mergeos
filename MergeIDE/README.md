@@ -1,17 +1,18 @@
 # MergeIDE
 
-MergeIDE is a VS Code style workspace bridge for MergeOS tasks. It receives tasks from MergeOS, builds a task prompt, calls the AI CLI selected by the user, and can claim the task after the CLI finishes.
+MergeIDE is a VS Code style workspace bridge for MergeOS tasks. It receives tasks from MergeOS, builds a task prompt, calls the AI CLI selected by the user, reserves the worker lane, and submits review evidence back to MergeOS.
 
 ![MergeIDE task runner](docs/mergeide-screenshot.png)
 
-MergeIDE presents MergeOS work like an IDE-native task queue: open tasks on the left, the generated task prompt in the editor, user-selected AI CLI settings on the right, and a guarded MRG claim flow that runs after the work is finished.
+MergeIDE presents MergeOS work like an IDE-native task queue: open tasks on the left, the generated task prompt in the editor, user-selected AI CLI settings on the right, and a guarded evidence flow that keeps payout release with the customer or admin review lane.
 
 The first implementation is intentionally dependency-free:
 
 - `mergeide tasks` lists MergeOS tasks from `/api/tasks`.
+- `mergeide claim <task-id>` reserves the task through `POST /api/tasks/{id}/claim`; it does not release payout.
 - `mergeide run <task-id>` writes `.mergeide/tasks/<id>/task.json`, builds a prompt, and calls the configured AI CLI.
-- `mergeide run <task-id> --claim` claims the task through `POST /api/tasks/{id}/accept` after the AI CLI exits with code `0`.
-- `mergeide claim <task-id>` only calls the MergeOS claim API.
+- `mergeide run <task-id> --claim` reserves the task lane after the AI CLI exits with code `0`.
+- `mergeide submit <task-id> --pr-url <url>` submits review evidence through `POST /api/tasks/{id}/submit` and records agent evidence through `POST /api/projects/{id}/agent-actions`.
 - The same package can be loaded as a VS Code extension with MergeIDE commands.
 
 ## Windows exe
@@ -73,10 +74,30 @@ For a custom CLI:
 node .\bin\mergeide.js configure --provider custom --command my-ai-cli --args "run --input {{promptFile}}"
 ```
 
-## Claiming MRG
+## Claim And Submit Flow
 
-MergeOS currently records payout when `/api/tasks/{id}/accept` succeeds. For that reason, `run` does not claim by default. Use `--claim` only when the AI CLI finished the task and committed the result:
+MergeOS records payout only when a project owner or admin calls `/api/tasks/{id}/accept`. MergeIDE never uses that release route for workers or agents.
+
+Reserve work before or after a successful local run:
 
 ```powershell
-node .\bin\mergeide.js run tsk_0001 --claim
+node .\bin\mergeide.js claim prj_public_0001:12
+node .\bin\mergeide.js run prj_public_0001:12
+```
+
+Submit implementation evidence for review:
+
+```powershell
+node .\bin\mergeide.js submit prj_public_0001:12 `
+  --pr-url https://github.com/acme/repo/pull/12 `
+  --evidence-url https://preview.example/deployments/mergeos `
+  --notes "Implementation, tests, and preview evidence are ready for review."
+```
+
+For a one-shot local automation, `run` can submit after the configured AI CLI exits successfully:
+
+```powershell
+node .\bin\mergeide.js run prj_public_0001:12 --claim --submit `
+  --pr-url https://github.com/acme/repo/pull/12 `
+  --notes "MergeIDE generated and verified this change."
 ```
