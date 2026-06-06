@@ -155,6 +155,7 @@ test('repo import exposes publish path to bounties, agents, and live proof', asy
 test('public token pages expose airdrop, presale, and whitepaper routes', async () => {
   const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
   const seoSource = await fs.readFile(new URL('./src/seo.js', import.meta.url), 'utf-8');
+  const whitepaperSource = await fs.readFile(new URL('./public/whitepaper/mergeos-whitepaper.md', import.meta.url), 'utf-8');
 
   for (const page of ['airdrop', 'presale', 'whitepaper']) {
     assert.match(appSource, new RegExp(`${page}: '/${page}'`));
@@ -168,11 +169,20 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /action: \{ page: 'airdrop' \}/);
   assert.match(appSource, /action: \{ page: 'presale' \}/);
   assert.match(appSource, /action: \{ page: 'whitepaper' \}/);
+  assert.match(appSource, /const whitepaperDownloadPath = '\/whitepaper\/mergeos-whitepaper\.md'/);
+  assert.match(appSource, /command: 'download-whitepaper'/);
+  assert.match(appSource, /function downloadWhitepaper\(\)/);
   assert.match(appSource, /function refreshTokenPageData\(\)/);
   assert.match(appSource, /async function copyWhitepaperOutline\(\)/);
   assert.match(seoSource, /MergeOS Airdrop \| Task-based MRG rewards with public proof/);
   assert.match(seoSource, /MergeOS Presale \| MRG reserve workflow, Solana token path, and ledger receipts/);
   assert.match(seoSource, /MergeOS Whitepaper \| AI software delivery OS architecture and MRG economy/);
+  assert.match(seoSource, /sameAs: \[absoluteUrl\('\/whitepaper\/mergeos-whitepaper\.md'/);
+  assert.match(whitepaperSource, /# MergeOS Whitepaper/);
+  assert.match(whitepaperSource, /## 4\. Repository Architecture/);
+  assert.match(whitepaperSource, /## 7\. AI Layer/);
+  assert.match(whitepaperSource, /## 10\. MRG Economy/);
+  assert.match(whitepaperSource, /## 12\. Protocol and SDK/);
 });
 
 test('creates runtime config for production defaults', () => {

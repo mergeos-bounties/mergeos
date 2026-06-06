@@ -8268,6 +8268,7 @@ const publicPagePathAliases = {
   mergeide: ['/ide', '/merge-ide', '/download'],
 };
 const publicPageNames = new Set(Object.keys(publicPagePaths));
+const whitepaperDownloadPath = '/whitepaper/mergeos-whitepaper.md';
 const projectWizardStepPaths = {
   1: '/project/new',
   2: '/project/new/scope',
@@ -11705,7 +11706,8 @@ const publicTokenPageDefinitions = {
     detailBody: 'The whitepaper links product vision to routes, contracts, SDK surfaces, live feed events, and ledger proof rows.',
     chapterTitle: 'Whitepaper chapters',
     actions: [
-      { label: 'Copy outline', primary: true, icon: FileCheck2, command: 'copy-whitepaper' },
+      { label: 'Download paper', primary: true, icon: Download, command: 'download-whitepaper' },
+      { label: 'Copy outline', icon: FileCheck2, command: 'copy-whitepaper' },
       { label: 'Protocol', icon: Code2, page: 'protocol' },
       { label: 'Contracts', icon: Lock, page: 'contracts' },
     ],
@@ -22393,6 +22395,10 @@ function handlePublicAction(action = {}) {
     void copyWhitepaperOutline();
     return;
   }
+  if (action.command === 'download-whitepaper') {
+    downloadWhitepaper();
+    return;
+  }
   if (action.command === 'auth-register') {
     openAuth('register');
     return;
@@ -22468,9 +22474,27 @@ async function copyWhitepaperOutline() {
     `Protocol: ${absolutePublicPath(publicPathForPage('protocol'))}`,
     `Contracts: ${absolutePublicPath(publicPathForPage('contracts'))}`,
     `Ledger: ${absolutePublicPath(publicPathForPage('ledger'))}`,
+    `Full paper: ${absolutePublicPath(whitepaperDownloadPath)}`,
   ].join('\n');
   const copied = await copyTextToClipboard(text);
   showToast(copied ? 'Whitepaper outline copied.' : 'Whitepaper outline is visible on the page.');
+}
+
+function downloadWhitepaper() {
+  if (!hasWindow) return;
+  const href = absolutePublicPath(whitepaperDownloadPath);
+  try {
+    const link = document.createElement('a');
+    link.href = href;
+    link.download = 'mergeos-whitepaper.md';
+    link.rel = 'noopener';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    showToast('Downloading MergeOS whitepaper.');
+  } catch {
+    openExternalURL(href);
+  }
 }
 
 function navContextMenuInlineStyle(menu) {

@@ -310,6 +310,9 @@ export function getSeoDataForPath(path = '/', options = {}) {
       headline: 'MergeOS whitepaper for AI software delivery architecture and MRG economy',
       description: entry.description,
       url: canonical,
+      sameAs: [absoluteUrl('/whitepaper/mergeos-whitepaper.md', origin)],
+      encodingFormat: 'text/markdown',
+      isAccessibleForFree: true,
       about: [
         'AI software delivery OS',
         'Repository import',
