@@ -279,7 +279,8 @@ func repositorySuggestedTaskFromFinding(project *Project, finding RepositoryScan
 			},
 			EvidenceChecklist: evidence,
 		},
-		RoutingPacket: repositorySuggestedTaskRoutingPacket(project, finding, taskID, lane, workerKind, agentType, fundEndpoint, criteria, evidence),
+		RoutingPacket:  repositorySuggestedTaskRoutingPacket(project, finding, taskID, lane, workerKind, agentType, fundEndpoint, criteria, evidence),
+		AgentRunPacket: repositorySuggestedTaskAgentRunPacket(project, finding, taskID, lane, workerKind, agentType, criteria, evidence),
 	}
 }
 
@@ -333,6 +334,84 @@ func repositorySuggestedTaskRoutingPacket(project *Project, finding RepositorySc
 		}
 	}
 	return packet
+}
+
+func repositorySuggestedTaskAgentRunPacket(project *Project, finding RepositoryScanFinding, taskID, lane string, workerKind WorkerKind, agentType string, criteria, evidence []string) *AgentRunTemplatePacket {
+	if project == nil || workerKind == WorkerHuman {
+		return nil
+	}
+	projectID := strings.TrimSpace(project.ID)
+	if agentType == "" {
+		agentType = "repo-scan-agent"
+	}
+	endpoint := "/api/projects/" + projectID + "/agent-runs"
+	actionEndpoint := "/api/projects/" + projectID + "/agent-actions"
+	submitEndpoint := "/api/tasks/{claim_id}/submit"
+	contextURLs := map[string]string{
+		"repository_scan":   "/api/public/projects/" + projectID + "/repo-scan",
+		"workflow_protocol": "/api/public/projects/" + projectID + "/workflow",
+		"workflow_pulse":    "/api/public/projects/" + projectID + "/ai-workflow",
+		"agent_queue":       agentQueueEndpoint,
+		"pr_monitor":        "/api/public/projects/" + projectID + "/pull-requests",
+	}
+	if repo := projectSourceRepoURL(project); strings.TrimSpace(repo) != "" {
+		contextURLs["source_repository"] = repo
+	}
+	payload := map[string]any{
+		"action":             repositorySuggestedTaskPrimaryAgentAction(finding.Signal, lane),
+		"claim_id":           "{funding_response.claim_id}",
+		"bounty_id":          "{funding_response.claim_id}",
+		"agent_type":         agentType,
+		"base_branch":        "main",
+		"objective":          repositorySuggestedTaskTitle(finding),
+		"suggested_task_id":  taskID,
+		"source_finding_id":  finding.ID,
+		"signal":             finding.Signal,
+		"acceptance":         append([]string(nil), criteria...),
+		"evidence_required":  append([]string(nil), evidence...),
+		"context_url_keys":   stableStrings(mapKeys(contextURLs)),
+		"after_funding_note": "Replace {funding_response.claim_id} with the claim_id returned by the repo task funding response.",
+	}
+	if strings.TrimSpace(finding.Path) != "" {
+		payload["path"] = strings.TrimSpace(finding.Path)
+	}
+	return &AgentRunTemplatePacket{
+		Status:      "after_funding",
+		Trigger:     "Fund the suggested task, then create an agent run plan with the returned claim_id.",
+		Method:      "POST",
+		Endpoint:    endpoint,
+		Payload:     payload,
+		ContextURLs: contextURLs,
+		Runbook: []AgentRunbookStep{
+			{Step: 1, Action: "fund_suggested_task", Label: "Fund this repository scan suggestion and read the returned claim_id", Method: "POST", Endpoint: "/api/projects/" + projectID + "/repo-scan/suggested-tasks/" + taskID + "/fund"},
+			{Step: 2, Action: "create_agent_run", Label: "Create an agent branch, PR plan, action payload, and output contracts", Method: "POST", Endpoint: endpoint},
+			{Step: 3, Action: "record_agent_action", Label: "Post scan, review, test, or generate evidence", Method: "POST", Endpoint: actionEndpoint},
+			{Step: 4, Action: "submit_task_evidence", Label: "Submit the PR URL and proof evidence against the funded bounty", Method: "POST", Endpoint: submitEndpoint},
+		},
+		OutputContracts: []AgentOutputContract{
+			{Action: "create_agent_run", ArtifactKind: "agent_run", OutputEndpoint: endpoint, OutputProtocol: "mergeos.agent-run.v1", OutputProtocolURL: "/protocol/agent-run.v1.schema.json", PublicURL: contextURLs["repository_scan"]},
+			{Action: "record_agent_action", ArtifactKind: "agent_action", OutputEndpoint: actionEndpoint, OutputProtocol: "mergeos.agent-action.v1", OutputProtocolURL: "/protocol/agent-action.v1.schema.json", PublicURL: contextURLs["workflow_pulse"]},
+			{Action: "submit_task_evidence", ArtifactKind: "task_submission", OutputEndpoint: submitEndpoint, OutputProtocol: "mergeos.task-submission.v1", OutputProtocolURL: "/protocol/task-submission.v1.schema.json", PublicURL: contextURLs["workflow_protocol"]},
+		},
+	}
+}
+
+func repositorySuggestedTaskPrimaryAgentAction(signal, lane string) string {
+	actions := repositorySuggestedTaskAgentActions(signal, lane)
+	if len(actions) == 0 {
+		return "review"
+	}
+	return actions[0]
+}
+
+func mapKeys(values map[string]string) []string {
+	keys := make([]string, 0, len(values))
+	for key := range values {
+		if key = strings.TrimSpace(key); key != "" {
+			keys = append(keys, key)
+		}
+	}
+	return keys
 }
 
 func repositorySuggestedTaskRoutingAction(workerKind WorkerKind) string {

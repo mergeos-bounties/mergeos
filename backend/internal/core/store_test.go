@@ -5263,6 +5263,27 @@ func TestProjectRepositoryScanRouteReturnsStaticFindings(t *testing.T) {
 	if len(taskToFund.RoutingPacket.Runbook) < 3 || len(taskToFund.RoutingPacket.OutputContracts) < 3 {
 		t.Fatalf("suggested task routing packet missing runbook or output contracts: %#v", taskToFund.RoutingPacket)
 	}
+	if taskToFund.AgentRunPacket == nil ||
+		taskToFund.AgentRunPacket.Status != "after_funding" ||
+		taskToFund.AgentRunPacket.Endpoint != "/api/projects/"+project.ID+"/agent-runs" ||
+		taskToFund.AgentRunPacket.Payload["suggested_task_id"] != taskToFund.ID ||
+		taskToFund.AgentRunPacket.Payload["claim_id"] != "{funding_response.claim_id}" ||
+		taskToFund.AgentRunPacket.ContextURLs["repository_scan"] != "/api/public/projects/"+project.ID+"/repo-scan" {
+		t.Fatalf("suggested task missing after-funding agent run packet: %#v", taskToFund.AgentRunPacket)
+	}
+	if len(taskToFund.AgentRunPacket.Runbook) < 4 || len(taskToFund.AgentRunPacket.OutputContracts) < 3 {
+		t.Fatalf("suggested task agent run packet missing runbook or output contracts: %#v", taskToFund.AgentRunPacket)
+	}
+	hasAgentRunContract := false
+	for _, contract := range taskToFund.AgentRunPacket.OutputContracts {
+		if contract.OutputProtocol == "mergeos.agent-run.v1" && contract.OutputEndpoint == taskToFund.AgentRunPacket.Endpoint {
+			hasAgentRunContract = true
+			break
+		}
+	}
+	if !hasAgentRunContract {
+		t.Fatalf("suggested task agent run packet missing agent-run contract: %#v", taskToFund.AgentRunPacket.OutputContracts)
+	}
 	hasRepoTaskFundingContract := false
 	for _, contract := range taskToFund.RoutingPacket.OutputContracts {
 		if contract.OutputProtocol == "mergeos.repo-task-funding.v1" {

@@ -1958,6 +1958,7 @@ type RepositorySuggestedTask struct {
 	EvidenceRequired     []string                `json:"evidence_required,omitempty"`
 	FundingPacket        RepositoryFundingPacket `json:"funding_packet"`
 	RoutingPacket        ProjectRoutingPacket    `json:"routing_packet"`
+	AgentRunPacket       *AgentRunTemplatePacket `json:"agent_run_packet,omitempty"`
 }
 
 type RepositoryFundingPacket struct {
@@ -1970,6 +1971,17 @@ type RepositoryFundingPacket struct {
 	FundPayload             map[string]any `json:"fund_payload"`
 	PayPalOrderPayload      map[string]any `json:"paypal_order_payload"`
 	EvidenceChecklist       []string       `json:"evidence_checklist"`
+}
+
+type AgentRunTemplatePacket struct {
+	Status          string                `json:"status"`
+	Trigger         string                `json:"trigger"`
+	Method          string                `json:"method"`
+	Endpoint        string                `json:"endpoint"`
+	Payload         map[string]any        `json:"payload"`
+	ContextURLs     map[string]string     `json:"context_urls"`
+	Runbook         []AgentRunbookStep    `json:"runbook"`
+	OutputContracts []AgentOutputContract `json:"output_contracts,omitempty"`
 }
 
 type FundRepositorySuggestedTaskRequest struct {
