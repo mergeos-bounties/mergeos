@@ -97,10 +97,13 @@ test('public system vision preserves the product thesis', async () => {
   assert.deepEqual(Object.keys(architectureManifest.frontend_system.authenticated_dashboard_urls), ['customer_dashboard', 'worker_dashboard', 'admin_console']);
   assert.equal(architectureManifest.frontend_system.authenticated_dashboard_urls.customer_dashboard.page, '/dashboard');
   assert.equal(architectureManifest.frontend_system.authenticated_dashboard_urls.customer_dashboard.api, '/api/projects/{id}/dashboard');
+  assert.deepEqual(architectureManifest.frontend_system.authenticated_dashboard_urls.customer_dashboard.capabilities, ['project overview', 'live PRs', 'escrow', 'payments', 'tasks', 'AI logs']);
   assert.equal(architectureManifest.frontend_system.authenticated_dashboard_urls.worker_dashboard.page, '/dashboard?section=worker');
   assert.equal(architectureManifest.frontend_system.authenticated_dashboard_urls.worker_dashboard.api, '/api/workers/me');
+  assert.deepEqual(architectureManifest.frontend_system.authenticated_dashboard_urls.worker_dashboard.capabilities, ['claimed tasks', 'rewards', 'reputation', 'proposals']);
   assert.equal(architectureManifest.frontend_system.authenticated_dashboard_urls.admin_console.page, '/dashboard?section=admin');
   assert.equal(architectureManifest.frontend_system.authenticated_dashboard_urls.admin_console.api, '/api/admin/ops-queue');
+  assert.deepEqual(architectureManifest.frontend_system.authenticated_dashboard_urls.admin_console.capabilities, ['treasury', 'users', 'disputes', 'payouts', 'moderation']);
   assert.ok(architectureManifest.backend_system.proposed_stack.includes('Go'));
   assert.ok(architectureManifest.backend_system.proposed_stack.includes('Rust-compatible service boundary'));
   assert.ok(architectureManifest.backend_system.proposed_stack.includes('PostgreSQL'));

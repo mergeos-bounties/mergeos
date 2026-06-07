@@ -99,15 +99,18 @@
     "authenticated_dashboard_urls": {
       "customer_dashboard": {
         "page": "/dashboard",
-        "api": "/api/projects/{id}/dashboard"
+        "api": "/api/projects/{id}/dashboard",
+        "capabilities": ["project overview", "live PRs", "escrow", "payments", "tasks", "AI logs"]
       },
       "worker_dashboard": {
         "page": "/dashboard?section=worker",
-        "api": "/api/workers/me"
+        "api": "/api/workers/me",
+        "capabilities": ["claimed tasks", "rewards", "reputation", "proposals"]
       },
       "admin_console": {
         "page": "/dashboard?section=admin",
-        "api": "/api/admin/ops-queue"
+        "api": "/api/admin/ops-queue",
+        "capabilities": ["treasury", "users", "disputes", "payouts", "moderation"]
       }
     }
   },

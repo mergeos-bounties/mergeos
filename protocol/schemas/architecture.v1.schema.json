@@ -93,28 +93,31 @@
           "properties": {
             "customer_dashboard": {
               "type": "object",
-              "required": ["page", "api"],
+              "required": ["page", "api", "capabilities"],
               "properties": {
                 "page": { "type": "string", "minLength": 1 },
-                "api": { "type": "string", "minLength": 1 }
+                "api": { "type": "string", "minLength": 1 },
+                "capabilities": { "$ref": "#/$defs/stringList" }
               },
               "additionalProperties": false
             },
             "worker_dashboard": {
               "type": "object",
-              "required": ["page", "api"],
+              "required": ["page", "api", "capabilities"],
               "properties": {
                 "page": { "type": "string", "minLength": 1 },
-                "api": { "type": "string", "minLength": 1 }
+                "api": { "type": "string", "minLength": 1 },
+                "capabilities": { "$ref": "#/$defs/stringList" }
               },
               "additionalProperties": false
             },
             "admin_console": {
               "type": "object",
-              "required": ["page", "api"],
+              "required": ["page", "api", "capabilities"],
               "properties": {
                 "page": { "type": "string", "minLength": 1 },
-                "api": { "type": "string", "minLength": 1 }
+                "api": { "type": "string", "minLength": 1 },
+                "capabilities": { "$ref": "#/$defs/stringList" }
               },
               "additionalProperties": false
             }
