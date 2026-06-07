@@ -5098,6 +5098,70 @@
             </div>
             <b>{{ tokenCeoResearchCopy.readiness }}</b>
           </div>
+          <form class="token-ceo-brief-card" @submit.prevent="submitTokenLaunchBrief">
+            <div class="token-ceo-brief-copy">
+              <span class="marketplace-eyebrow">{{ tokenCeoLaunchBriefCopy.eyebrow }}</span>
+              <strong>{{ tokenCeoLaunchBriefCopy.title }}</strong>
+              <p>{{ tokenCeoLaunchBriefCopy.body }}</p>
+            </div>
+            <div v-if="tokenLaunchBriefAttempted && tokenLaunchBriefValidationRows.length" class="wizard-validation-banner token-workflow-validation" role="alert">
+              <strong>Fix CEO brief</strong>
+              <ul>
+                <li v-for="item in tokenLaunchBriefValidationRows" :key="item.field">{{ item.message }}</li>
+              </ul>
+            </div>
+            <div class="token-ceo-brief-form">
+              <label class="wizard-field" :class="{ invalid: tokenLaunchBriefFieldError('project_title') }">
+                <span>Project title <b>*</b></span>
+                <input v-model.trim="tokenLaunchBriefForm.project_title" :disabled="tokenLaunchBriefBusy" maxlength="120" autocomplete="off" placeholder="Project or repo name" />
+                <p v-if="tokenLaunchBriefFieldError('project_title')" class="wizard-field-error">{{ tokenLaunchBriefFieldError('project_title') }}</p>
+              </label>
+              <label class="wizard-field" :class="{ invalid: tokenLaunchBriefFieldError('repository_url') }">
+                <span>Repository URL</span>
+                <input v-model.trim="tokenLaunchBriefForm.repository_url" :disabled="tokenLaunchBriefBusy" autocomplete="off" placeholder="https://github.com/org/repo" />
+                <p v-if="tokenLaunchBriefFieldError('repository_url')" class="wizard-field-error">{{ tokenLaunchBriefFieldError('repository_url') }}</p>
+              </label>
+              <label class="wizard-field full" :class="{ invalid: tokenLaunchBriefFieldError('project_summary') }">
+                <span>CEO research brief <b>*</b></span>
+                <textarea v-model.trim="tokenLaunchBriefForm.project_summary" :disabled="tokenLaunchBriefBusy" maxlength="420" rows="3" :placeholder="tokenCeoLaunchBriefCopy.summaryPlaceholder" />
+                <p v-if="tokenLaunchBriefFieldError('project_summary')" class="wizard-field-error">{{ tokenLaunchBriefFieldError('project_summary') }}</p>
+              </label>
+              <label class="wizard-field" :class="{ invalid: tokenLaunchBriefFieldError('proof_policy') }">
+                <span>Proof policy <b>*</b></span>
+                <input v-model.trim="tokenLaunchBriefForm.proof_policy" :disabled="tokenLaunchBriefBusy" maxlength="180" autocomplete="off" :placeholder="tokenCeoLaunchBriefCopy.proofPlaceholder" />
+                <p v-if="tokenLaunchBriefFieldError('proof_policy')" class="wizard-field-error">{{ tokenLaunchBriefFieldError('proof_policy') }}</p>
+              </label>
+              <label class="wizard-field">
+                <span>{{ publicPage === 'airdrop' ? 'Allocation policy' : 'Reserve policy' }}</span>
+                <input v-model.trim="tokenLaunchBriefForm.allocation_policy" :disabled="tokenLaunchBriefBusy" maxlength="180" autocomplete="off" :placeholder="tokenCeoLaunchBriefCopy.allocationPlaceholder" />
+              </label>
+            </div>
+            <p v-if="tokenLaunchBriefError" class="modal-error token-workflow-error">{{ tokenLaunchBriefError }}</p>
+            <article v-if="tokenLaunchBriefResult" class="token-proof-result token-launch-brief-result">
+              <span class="ledger-trust-icon purple">
+                <FileCheck2 :size="15" />
+              </span>
+              <div>
+                <strong>CEO brief recorded</strong>
+                <p>{{ formatTokenWorkflowResult(tokenLaunchBriefResult) }}</p>
+                <small>{{ tokenLaunchBriefResult.ledger_entry?.reference }}</small>
+              </div>
+              <div class="token-proof-result-actions">
+                <a :href="tokenLaunchBriefResult.ledger_proof_url || '/api/public/ledger/proof'" target="_blank" rel="noreferrer">Proof</a>
+                <button type="button" @click="copyTokenWorkflowHash(tokenLaunchBriefResult)">Copy hash</button>
+              </div>
+            </article>
+            <div class="token-ceo-brief-actions">
+              <button class="primary-button compact" type="submit" :disabled="tokenLaunchBriefBusy">
+                {{ tokenLaunchBriefSubmitLabel }}
+                <ArrowRight :size="14" />
+              </button>
+              <button class="secondary-button compact" type="button" @click="handlePublicAction({ page: 'agents' })" :disabled="tokenLaunchBriefBusy">
+                {{ tokenCeoLaunchBriefCopy.secondary }}
+                <Bot :size="14" />
+              </button>
+            </div>
+          </form>
           <div class="token-ceo-decision-strip" aria-label="CEO launch decision stages">
             <article v-for="row in tokenCeoDecisionRows" :key="row.label">
               <span>{{ row.label }}</span>
@@ -5115,23 +5179,6 @@
               </div>
               <b>{{ row.status }}</b>
             </article>
-          </div>
-          <div class="token-ceo-brief-card">
-            <div>
-              <span class="marketplace-eyebrow">{{ tokenCeoLaunchBriefCopy.eyebrow }}</span>
-              <strong>{{ tokenCeoLaunchBriefCopy.title }}</strong>
-              <p>{{ tokenCeoLaunchBriefCopy.body }}</p>
-            </div>
-            <div class="token-ceo-brief-actions">
-              <button class="primary-button compact" type="button" @click="handlePublicAction({ command: 'token-ceo-brief' })">
-                {{ tokenCeoLaunchBriefCopy.primary }}
-                <ArrowRight :size="14" />
-              </button>
-              <button class="secondary-button compact" type="button" @click="handlePublicAction({ page: 'agents' })">
-                {{ tokenCeoLaunchBriefCopy.secondary }}
-                <Bot :size="14" />
-              </button>
-            </div>
           </div>
           <div class="token-ceo-research-grid">
             <article v-for="row in tokenCeoResearchRows" :key="row.title">
@@ -11432,6 +11479,19 @@ const presaleReservationBusy = ref(false);
 const presaleReservationAttempted = ref(false);
 const presaleReservationError = ref('');
 const presaleReservationResult = ref(null);
+const tokenLaunchBriefForm = reactive({
+  project_title: '',
+  repository_url: '',
+  project_summary: '',
+  allocation_policy: '',
+  proof_policy: '',
+  wallet_policy: '',
+  risk_notes: '',
+});
+const tokenLaunchBriefBusy = ref(false);
+const tokenLaunchBriefAttempted = ref(false);
+const tokenLaunchBriefError = ref('');
+const tokenLaunchBriefResult = ref(null);
 const authVisible = ref(false);
 const authDialog = ref(null);
 const authMode = ref('login');
@@ -12576,18 +12636,24 @@ const tokenCeoLaunchBriefCopy = computed(() => {
   if (publicPage.value === 'airdrop') {
     return {
       eyebrow: 'CEO BRIEF INTAKE',
-      title: 'Ask the CEO agent to research your airdrop launch.',
-      body: 'Open a funded project brief with repository context, mission goals, anti-bot policy, allocation cap, and proof rules.',
+      title: 'Send a CEO airdrop brief.',
+      body: 'Record repo context, mission goals, anti-bot policy, allocation cap, and proof rules.',
       primary: 'Send CEO brief',
       secondary: 'View CEO agent',
+      summaryPlaceholder: 'Why should this project open earned MRG airdrop missions? Include repo, community, mission demand, and useful contribution evidence.',
+      proofPlaceholder: 'Require PR URL, task reference, QA evidence, deployment proof, or agent action.',
+      allocationPlaceholder: 'Cap claims by mission score, proof quality, and wallet uniqueness.',
     };
   }
   return {
     eyebrow: 'CEO BRIEF INTAKE',
-    title: 'Ask the CEO agent to research your presale window.',
-    body: 'Open a funded project brief with utility, reserve cap, wallet path, funding rail, contract proof, and compliance notes.',
+    title: 'Send a CEO presale brief.',
+    body: 'Record utility, reserve cap, wallet path, funding rail, contract proof, and compliance notes.',
     primary: 'Send CEO brief',
     secondary: 'View CEO agent',
+    summaryPlaceholder: 'Why is this project ready for an MRG presale window? Include utility, reserve cap, wallet path, funding rail, and contract proof.',
+    proofPlaceholder: 'Require wallet, funding reference, contract reference, receipt, and ledger proof.',
+    allocationPlaceholder: 'Cap reserve by tier, funding rail, review state, and compliance risk.',
   };
 });
 const tokenLaunchWizardBriefCopy = computed(() => {
@@ -12670,6 +12736,26 @@ const presaleReservationValidationRows = computed(() =>
 const presaleReservationSubmitLabel = computed(() => {
   if (presaleReservationBusy.value) return 'Recording reserve...';
   return user.value ? 'Record reservation' : 'Log in to reserve';
+});
+const tokenLaunchBriefValidationMap = computed(() => {
+  const errors = {};
+  const title = String(tokenLaunchBriefForm.project_title || '').trim();
+  const summary = String(tokenLaunchBriefForm.project_summary || '').trim();
+  const repoURL = String(tokenLaunchBriefForm.repository_url || '').trim();
+  const proofPolicy = String(tokenLaunchBriefForm.proof_policy || '').trim();
+  if (!user.value) errors.session = 'Log in before sending a CEO launch brief.';
+  if (title.length < 6) errors.project_title = 'Project title must be at least 6 characters.';
+  if (summary.length < 24) errors.project_summary = 'CEO research brief must be at least 24 characters.';
+  if (repoURL && !tokenWorkflowURLIsValid(repoURL)) errors.repository_url = 'Repository URL must start with http:// or https://.';
+  if (proofPolicy.length < 12) errors.proof_policy = 'Proof policy must explain the required evidence.';
+  return errors;
+});
+const tokenLaunchBriefValidationRows = computed(() =>
+  Object.entries(tokenLaunchBriefValidationMap.value).map(([field, message]) => ({ field, message })),
+);
+const tokenLaunchBriefSubmitLabel = computed(() => {
+  if (tokenLaunchBriefBusy.value) return 'Recording brief...';
+  return user.value ? 'Record CEO brief' : 'Log in to brief CEO';
 });
 const publicTokenMetricRows = computed(() => {
   const openTasks = Number(marketplaceStats.value.open_task_count) || (marketplaceData.value.bounties || []).length || 0;
@@ -24199,6 +24285,11 @@ function presaleReservationFieldError(field) {
   return presaleReservationValidationMap.value[field] || '';
 }
 
+function tokenLaunchBriefFieldError(field) {
+  if (!tokenLaunchBriefAttempted.value) return '';
+  return tokenLaunchBriefValidationMap.value[field] || '';
+}
+
 function tokenWorkflowIntegerAmount(value = 0) {
   return Math.round(Math.max(0, Number(value) || 0));
 }
@@ -24290,8 +24381,51 @@ async function submitPresaleReservation() {
   }
 }
 
+async function submitTokenLaunchBrief() {
+  tokenLaunchBriefAttempted.value = true;
+  tokenLaunchBriefError.value = '';
+  if (!user.value) {
+    openAuth('login');
+    showToast('Log in to send a CEO launch brief.');
+    return;
+  }
+  if (tokenLaunchBriefValidationRows.value.length) {
+    tokenLaunchBriefError.value = tokenLaunchBriefValidationRows.value[0]?.message || 'Fix CEO launch brief details.';
+    showToast(tokenLaunchBriefError.value);
+    return;
+  }
+  tokenLaunchBriefBusy.value = true;
+  try {
+    const launchType = publicPage.value === 'presale' ? 'presale' : 'airdrop';
+    const response = await api('/api/token/launch-briefs', {
+      method: 'POST',
+      body: JSON.stringify({
+        launch_type: launchType,
+        project_title: tokenLaunchBriefForm.project_title,
+        project_summary: tokenLaunchBriefForm.project_summary,
+        repository_url: tokenLaunchBriefForm.repository_url,
+        allocation_policy: tokenLaunchBriefForm.allocation_policy,
+        proof_policy: tokenLaunchBriefForm.proof_policy,
+        wallet_policy: tokenLaunchBriefForm.wallet_policy || (launchType === 'presale' ? 'Require Solana wallet, funding reference, contract reference, and receipt review.' : 'Require Solana wallet uniqueness and anti-bot review.'),
+        risk_notes: tokenLaunchBriefForm.risk_notes || (launchType === 'presale' ? 'Review reserve caps, funding rail risk, and compliance language before opening.' : 'Review bot farming, duplicated wallets, empty signups, and unverifiable proof.'),
+        research_signals: launchType === 'presale'
+          ? ['utility_readiness', 'reserve_cap', 'wallet_path', 'contract_proof']
+          : ['mission_demand', 'anti_bot', 'proof_gate', 'repo_context'],
+      }),
+    });
+    tokenLaunchBriefResult.value = response;
+    showToast('CEO launch brief recorded on the public ledger.');
+    refreshTokenPageData();
+  } catch (error) {
+    tokenLaunchBriefError.value = error.message || 'Could not record CEO launch brief.';
+    showToast(tokenLaunchBriefError.value);
+  } finally {
+    tokenLaunchBriefBusy.value = false;
+  }
+}
+
 function formatTokenWorkflowResult(result = {}) {
-  const id = result.claim_id || result.reservation_id || 'workflow';
+  const id = result.claim_id || result.reservation_id || result.brief_id || 'workflow';
   const amount = result.allocation_mrg || result.reserve_mrg || result.ledger_entry?.amount_cents || 0;
   const sequence = result.ledger_entry?.sequence ? `ledger #${result.ledger_entry.sequence}` : 'ledger receipt';
   return `${id} / ${formatMRG(amount)} / ${toTitleLabel(result.status || 'pending review')} / ${sequence}`;

@@ -8653,9 +8653,9 @@ svg {
 .token-ceo-brief-card {
   min-width: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr);
   gap: 14px;
-  align-items: center;
+  align-items: stretch;
   border: 1px solid rgba(15, 118, 110, 0.16);
   border-radius: 8px;
   background:
@@ -8664,13 +8664,13 @@ svg {
   padding: 13px;
 }
 
-.token-ceo-brief-card strong,
-.token-ceo-brief-card p {
+.token-ceo-brief-copy strong,
+.token-ceo-brief-copy p {
   display: block;
   min-width: 0;
 }
 
-.token-ceo-brief-card strong {
+.token-ceo-brief-copy strong {
   margin-top: 4px;
   color: #07130f;
   font-size: 15px;
@@ -8678,7 +8678,7 @@ svg {
   font-weight: 950;
 }
 
-.token-ceo-brief-card p {
+.token-ceo-brief-copy p {
   max-width: 760px;
   margin: 5px 0 0;
   color: #536273;
@@ -8687,12 +8687,30 @@ svg {
   font-weight: 720;
 }
 
+.token-ceo-brief-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.token-ceo-brief-form .wizard-field {
+  min-width: 0;
+}
+
+.token-ceo-brief-form .wizard-field.full,
+.token-launch-brief-result,
+.token-ceo-brief-card .token-workflow-validation,
+.token-ceo-brief-card .token-workflow-error {
+  grid-column: 1 / -1;
+}
+
 .token-ceo-brief-actions {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: stretch;
   gap: 8px;
-  min-width: 250px;
+  min-width: 0;
 }
 
 .token-ceo-brief-actions .primary-button,
@@ -9397,6 +9415,10 @@ svg {
   .token-ceo-brief-card {
     grid-template-columns: 1fr;
     gap: 10px;
+  }
+
+  .token-ceo-brief-form {
+    grid-template-columns: 1fr;
   }
 
   .token-ceo-brief-actions {
@@ -36148,6 +36170,184 @@ canvas {
     width: 34px !important;
     min-width: 34px !important;
     min-height: 34px !important;
+  }
+}
+
+/* Final token mobile containment: keep CEO/audience forms inside the viewport. */
+@media (max-width: 620px) {
+  .token-page .home-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding-inline: 12px !important;
+    overflow-x: hidden !important;
+  }
+
+  .token-page,
+  .token-shell,
+  .token-hero,
+  .token-ceo-research-panel,
+  .token-ceo-brief-card,
+  .token-ceo-brief-form,
+  .token-content-grid,
+  .token-workflow-panel,
+  .token-status-panel {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    overflow-x: hidden !important;
+  }
+
+  .token-shell,
+  .token-hero,
+  .token-content-grid,
+  .token-ceo-research-panel {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .token-hero-copy,
+  .token-ceo-research-head,
+  .token-ceo-research-head > div,
+  .token-ceo-brief-copy,
+  .token-ceo-brief-form .wizard-field,
+  .token-ceo-brief-form input,
+  .token-ceo-brief-form textarea {
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .token-hero-copy h1,
+  .token-hero-copy p,
+  .token-ceo-research-head h2,
+  .token-ceo-research-head p,
+  .token-ceo-brief-copy strong,
+  .token-ceo-brief-copy p,
+  .token-ceo-brief-form input,
+  .token-ceo-brief-form textarea {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    white-space: normal !important;
+    overflow-wrap: break-word !important;
+    word-break: normal !important;
+  }
+
+  .token-ceo-research-head {
+    grid-template-columns: 32px minmax(0, 1fr) !important;
+  }
+
+  .token-status-panel .ledger-card-head,
+  .token-ceo-research-head {
+    align-items: start !important;
+  }
+
+  .token-status-panel .ledger-card-head {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 10px !important;
+  }
+
+  .token-hero > *,
+  .token-content-grid > *,
+  .token-ceo-research-panel > *,
+  .token-ceo-research-head > *,
+  .token-ceo-brief-card > * {
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .token-status-panel .ledger-card-head button,
+  .token-ceo-research-head b {
+    width: fit-content !important;
+    max-width: 100% !important;
+    justify-self: start !important;
+    text-align: left !important;
+  }
+
+  .token-metric-grid,
+  .token-ceo-decision-strip,
+  .token-ceo-project-queue,
+  .token-ceo-research-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
+/* Description restore: keep the home page concise, but never cut product meaning. */
+.nav-context-item strong,
+.nav-feature-item strong,
+.nav-context-item small,
+.nav-feature-item small {
+  display: block !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+  overflow-wrap: break-word !important;
+  -webkit-line-clamp: unset !important;
+}
+
+.nav-links .nav-context-item,
+.nav-links .nav-feature-item {
+  min-height: unset !important;
+  height: auto !important;
+}
+
+.nav-context-menu {
+  overflow: visible !important;
+}
+
+.nav-context-panel,
+.nav-context-grid {
+  overflow-y: auto !important;
+}
+
+.home-explain-strip article {
+  min-height: unset !important;
+  height: auto !important;
+  overflow: visible !important;
+}
+
+.home-explain-strip strong,
+.home-explain-strip span,
+.home-system-summary strong,
+.home-system-summary small,
+.home-operating-note strong,
+.home-operating-note small,
+.home-system-explainer strong,
+.home-system-explainer p {
+  display: block !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+  overflow-wrap: break-word !important;
+  -webkit-line-clamp: unset !important;
+}
+
+.home-system-summary article,
+.home-operating-note article,
+.home-system-explainer article {
+  min-height: unset !important;
+  height: auto !important;
+}
+
+@media (min-width: 981px) {
+  .product-menu {
+    width: min(1260px, calc(100vw - 28px)) !important;
+    grid-template-columns: minmax(300px, 28%) minmax(0, 1fr) !important;
+  }
+
+  .product-menu .nav-context-grid {
+    grid-template-columns: repeat(3, minmax(220px, 1fr)) !important;
+  }
+
+  .solutions-menu .nav-context-grid {
+    grid-template-columns: repeat(2, minmax(240px, 1fr)) !important;
+  }
+}
+
+@media (max-width: 620px) {
+  .home-explain-strip {
+    grid-template-columns: minmax(0, 1fr) !important;
   }
 }
 
