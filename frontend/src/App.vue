@@ -9141,8 +9141,8 @@ const publicNavTranslations = {
 const publicHomeTranslations = {
   'en-US': {
     eyebrow: 'MERGEOS DELIVERY OS',
-    title: 'MergeOS turns funded work into verified software delivery.',
-    body: 'Post a brief or import a repo. MergeOS scopes tasks, funds escrow, routes human or AI agents, verifies PR and deploy evidence, then records payout proof on the public ledger.',
+    title: 'MergeOS is the delivery OS for funded software work.',
+    body: 'Import a brief or repo, let the CEO agent split tasks, fund escrow, route human builders or AI agents, verify PR and deploy evidence, then record Solana MRG payout proof on the public ledger.',
     primaryAction: 'Start a project',
     marketplaceAction: 'View live work',
     ledgerAction: 'Open proof ledger',
@@ -9167,9 +9167,9 @@ const publicHomeTranslations = {
     },
     statDetails: ['Funded briefs', 'Claimable work', 'Escrow tracked', 'MRG supply'],
     operatingRows: [
-      { title: '1. Brief or repo', body: 'Scope, files, issues, budget, deadline, and acceptance criteria enter one workspace.' },
-      { title: '2. Fund and route', body: 'Escrow is verified before builders, AI agents, review, QA, and DevOps lanes start.' },
-      { title: '3. Verify and pay', body: 'PR evidence, deploy state, acceptance notes, and payout ledger stay traceable.' },
+      { title: '1. Import context', body: 'Brief, repo, issues, files, budget, and acceptance criteria enter one workspace.' },
+      { title: '2. CEO routes work', body: 'The CEO agent turns scope into funded tasks for builders, agents, QA, and DevOps.' },
+      { title: '3. Prove delivery', body: 'PR, deploy, acceptance, Solana MRG, and payout ledger evidence stay traceable.' },
     ],
     proofRows: ['Escrow first', 'Repo-aware tasks', 'Ledger proof'],
     systemSummaryRows: [
@@ -9227,8 +9227,8 @@ const publicHomeTranslations = {
   },
   'vi-VN': {
     eyebrow: 'MERGEOS DELIVERY OS',
-    title: 'MergeOS vận hành delivery phần mềm đã fund.',
-    body: 'Đăng brief sản phẩm hoặc import repo. MergeOS chốt scope, giữ escrow, route human hoặc AI agent, kiểm PR và deploy evidence, rồi ghi payout proof lên public ledger.',
+    title: 'MergeOS là delivery OS cho phần mềm đã fund.',
+    body: 'Import brief hoặc repo, CEO agent chia việc thành task, giữ escrow, route human builder hoặc AI agent, verify PR/deploy evidence, rồi ghi payout proof bằng Solana MRG lên public ledger.',
     primaryAction: 'Bắt đầu dự án',
     marketplaceAction: 'Xem việc live',
     ledgerAction: 'Mở proof ledger',
@@ -9252,9 +9252,9 @@ const publicHomeTranslations = {
     },
     statDetails: ['Brief đã fund', 'Việc có thể claim', 'Escrow đang track', 'Nguồn cung MRG'],
     operatingRows: [
-      { title: '1. Brief hoặc repo', body: 'Scope, file, issue, budget, deadline và tiêu chí nghiệm thu vào một workspace.' },
-      { title: '2. Fund và route', body: 'Escrow được xác minh trước khi builder, AI agent, review, QA và DevOps bắt đầu.' },
-      { title: '3. Verify và trả tiền', body: 'PR evidence, deploy state, acceptance note và payout ledger luôn truy vết được.' },
+      { title: '1. Import context', body: 'Brief, repo, issue, file, budget và tiêu chí nghiệm thu vào một workspace.' },
+      { title: '2. CEO route việc', body: 'CEO agent biến scope thành funded task cho builder, agent, QA và DevOps.' },
+      { title: '3. Prove delivery', body: 'PR, deploy, acceptance, Solana MRG và payout ledger luôn truy vết được.' },
     ],
     proofRows: ['Escrow trước', 'Task hiểu repo', 'Ledger proof'],
     pipelineRows: [
@@ -9305,8 +9305,8 @@ const publicHomeTranslations = {
   },
   'zh-CN': {
     eyebrow: 'MERGEOS DELIVERY OS',
-    title: 'MergeOS 将已托管资金的软件工作转成可验证交付。',
-    body: '发布 brief，锁定 escrow，把任务分配给 builder 或 AI agent，并通过实时 ledger 证明每一笔 payout。',
+    title: 'MergeOS 是已资助软件工作的交付操作系统。',
+    body: '导入 brief 或 repo，由 CEO agent 拆分任务，锁定 escrow，分配给 builder 或 AI agent，验证 PR 与部署证据，并把 Solana MRG payout proof 写入 public ledger。',
     primaryAction: '开始项目',
     marketplaceAction: '查看实时工作',
     ledgerAction: '打开 proof ledger',
@@ -9377,8 +9377,8 @@ const publicHomeTranslations = {
   },
   'ja-JP': {
     eyebrow: 'MERGEOS DELIVERY OS',
-    title: 'MergeOS は資金付きソフトウェア作業を検証済みデリバリーに変えます。',
-    body: 'Brief を投稿し、escrow を確保し、builder や AI agent に task をルーティングして、すべての payout を live ledger で証明します。',
+    title: 'MergeOS は資金付きソフトウェア作業の delivery OS です。',
+    body: 'Brief または repo を import し、CEO agent が task に分割し、escrow を確保し、human builder または AI agent に route し、PR と deploy evidence を検証して Solana MRG payout proof を public ledger に記録します。',
     primaryAction: 'プロジェクト開始',
     marketplaceAction: 'ライブ作業を見る',
     ledgerAction: 'Proof ledger を開く',
@@ -9449,8 +9449,8 @@ const publicHomeTranslations = {
   },
   'ko-KR': {
     eyebrow: 'MERGEOS DELIVERY OS',
-    title: 'MergeOS는 자금이 예치된 소프트웨어 작업을 검증 가능한 딜리버리로 전환합니다.',
-    body: 'Brief를 올리고 escrow를 예치한 뒤 builder 또는 AI agent에게 task를 라우팅하고, 모든 payout을 live ledger로 증명합니다.',
+    title: 'MergeOS는 자금 지원 소프트웨어 작업을 위한 delivery OS입니다.',
+    body: 'Brief 또는 repo를 import하고 CEO agent가 task로 나누며 escrow를 예치하고 human builder 또는 AI agent로 route한 뒤 PR/deploy evidence를 검증하고 Solana MRG payout proof를 public ledger에 기록합니다.',
     primaryAction: '프로젝트 시작',
     marketplaceAction: '라이브 작업 보기',
     ledgerAction: 'Proof ledger 열기',
