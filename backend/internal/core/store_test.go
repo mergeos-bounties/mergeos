@@ -1441,7 +1441,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 			t.Fatalf("manifest realtime topics missing %s: %#v", topic, payload.Realtime.Topics)
 		}
 	}
-	for _, key := range []string{"manifest", "agent_queue", "agent_runbook", "project_workflow", "repository_scan", "pull_requests", "deployment"} {
+	for _, key := range []string{"manifest", "architecture_manifest", "agent_queue", "agent_runbook", "project_workflow", "repository_scan", "pull_requests", "deployment"} {
 		if payload.AgentContext.ContextURLs[key] == "" {
 			t.Fatalf("manifest agent context missing %s: %#v", key, payload.AgentContext.ContextURLs)
 		}
@@ -1469,6 +1469,16 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 	}
 	if documents["mergeos.agent-queue.v1"].PublicEndpoint != "/api/public/protocol/agent-queue" {
 		t.Fatalf("agent queue document missing public endpoint: %#v", documents["mergeos.agent-queue.v1"])
+	}
+	architectureEndpointFound := false
+	for _, endpoint := range payload.Endpoints {
+		if endpoint.Protocol == "mergeos.architecture.v1" && endpoint.Path == "/system/mergeos-architecture.v1.json" && endpoint.Access == "public" {
+			architectureEndpointFound = true
+			break
+		}
+	}
+	if !architectureEndpointFound {
+		t.Fatalf("manifest missing architecture endpoint: %#v", payload.Endpoints)
 	}
 	if !strings.Contains(descriptions["mergeos.workflow.v1"], "current AI workflow step") {
 		t.Fatalf("workflow schema description missing current step contract: %#v", descriptions["mergeos.workflow.v1"])

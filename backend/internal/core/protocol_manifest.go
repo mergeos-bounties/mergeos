@@ -396,6 +396,13 @@ func ProtocolManifest() ProtocolManifestResponse {
 		},
 		{
 			Method:      "GET",
+			Path:        "/system/mergeos-architecture.v1.json",
+			Protocol:    "mergeos.architecture.v1",
+			Auth:        "none",
+			Description: "Public product architecture manifest for MergeOS system vision, repository boundaries, user roles, frontend and backend stack, AI workflow, marketplace features, and public page URLs.",
+		},
+		{
+			Method:      "GET",
 			Path:        "/api/public/protocol/events",
 			Protocol:    "mergeos.event.v1",
 			Auth:        "none",
@@ -693,19 +700,20 @@ func ProtocolManifest() ProtocolManifestResponse {
 
 func protocolManifestAgentContextURLs() map[string]string {
 	return map[string]string{
-		"manifest":            "/api/public/protocol",
-		"marketplace":         "/api/public/marketplace",
-		"live_feed":           "/api/public/live-feed",
-		"agent_queue":         "/api/public/protocol/agent-queue",
-		"agent_runbook":       "/protocol/runbooks/mergeide-agent.v1.json",
-		"contributors":        "/api/public/protocol/contributors",
-		"ledger_proof":        "/api/public/ledger/proof",
-		"task_protocol":       "/api/public/protocol/tasks?task_id={bounty_id}",
-		"project_workflow":    "/api/public/projects/{project_id}/workflow",
-		"project_ai_workflow": "/api/public/projects/{project_id}/ai-workflow",
-		"repository_scan":     "/api/public/projects/{project_id}/repo-scan",
-		"pull_requests":       "/api/public/projects/{project_id}/pull-requests",
-		"deployment":          "/api/public/projects/{project_id}/deployment",
+		"manifest":              "/api/public/protocol",
+		"architecture_manifest": "/system/mergeos-architecture.v1.json",
+		"marketplace":           "/api/public/marketplace",
+		"live_feed":             "/api/public/live-feed",
+		"agent_queue":           "/api/public/protocol/agent-queue",
+		"agent_runbook":         "/protocol/runbooks/mergeide-agent.v1.json",
+		"contributors":          "/api/public/protocol/contributors",
+		"ledger_proof":          "/api/public/ledger/proof",
+		"task_protocol":         "/api/public/protocol/tasks?task_id={bounty_id}",
+		"project_workflow":      "/api/public/projects/{project_id}/workflow",
+		"project_ai_workflow":   "/api/public/projects/{project_id}/ai-workflow",
+		"repository_scan":       "/api/public/projects/{project_id}/repo-scan",
+		"pull_requests":         "/api/public/projects/{project_id}/pull-requests",
+		"deployment":            "/api/public/projects/{project_id}/deployment",
 	}
 }
 
