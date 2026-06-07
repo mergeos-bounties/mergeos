@@ -4624,6 +4624,15 @@
             <span class="marketplace-eyebrow">{{ publicHomeCopy.eyebrow }}</span>
             <h1 id="home-title">{{ publicHomeCopy.title }}</h1>
             <p>{{ publicHomeCopy.body }}</p>
+            <div class="home-operating-note" :aria-label="publicHomeCopy.operatingLabel">
+              <article v-for="row in homeOperatingRows" :key="row.title">
+                <component :is="row.icon" :size="14" />
+                <span>
+                  <strong>{{ row.title }}</strong>
+                  <small>{{ row.body }}</small>
+                </span>
+              </article>
+            </div>
             <div class="marketplace-actions">
               <button class="primary-button large" type="button" @click="openProjectWizard">
                 {{ publicHomeCopy.primaryAction }}
@@ -9043,6 +9052,7 @@ const publicHomeTranslations = {
     commandEyebrow: 'Live command center',
     commandTitle: 'Marketplace, tasks, escrow, ledger',
     pipelineLabel: 'Project pipeline',
+    operatingLabel: 'How MergeOS operates',
     systemSummaryLabel: 'MergeOS system summary',
     recentUpdates: 'Recent updates',
     workflowLabel: 'MergeOS workflows',
@@ -9057,6 +9067,11 @@ const publicHomeTranslations = {
       tokensMinted: 'Tokens minted',
     },
     statDetails: ['Funded briefs', 'Claimable work', 'Escrow tracked', 'MRG supply'],
+    operatingRows: [
+      { title: 'Input', body: 'Brief, repo, issues, debt, files' },
+      { title: 'Route', body: 'AI task graph, builders, agents' },
+      { title: 'Proof', body: 'Escrow, PR, deploy, payout ledger' },
+    ],
     proofRows: ['Escrow first', 'Repo-aware tasks', 'Ledger proof'],
     systemSummaryRows: [
       { title: 'Repo OS', body: 'Issues, debt, PRs, deploys' },
@@ -9123,6 +9138,7 @@ const publicHomeTranslations = {
     commandEyebrow: 'Live command center',
     commandTitle: 'Marketplace, task, escrow, ledger',
     pipelineLabel: 'Luồng dự án',
+    operatingLabel: 'Cách MergeOS vận hành',
     recentUpdates: 'Cập nhật mới',
     workflowLabel: 'Workflow MergeOS',
     talentLabel: 'Talent matching',
@@ -9136,6 +9152,11 @@ const publicHomeTranslations = {
       tokensMinted: 'Token đã mint',
     },
     statDetails: ['Brief đã fund', 'Việc có thể claim', 'Escrow đang track', 'Nguồn cung MRG'],
+    operatingRows: [
+      { title: 'Input', body: 'Brief, repo, issue, technical debt, file' },
+      { title: 'Route', body: 'AI task graph, builder, agent' },
+      { title: 'Proof', body: 'Escrow, PR, deploy, payout ledger' },
+    ],
     proofRows: ['Escrow trước', 'Task hiểu repo', 'Ledger proof'],
     pipelineRows: [
       { title: 'Brief', body: 'Scope, repo, tiêu chí nghiệm thu' },
@@ -14112,6 +14133,15 @@ const homeProofRows = computed(() => {
 const homePipelineRows = computed(() => {
   const rows = publicHomeCopy.value.pipelineRows || publicHomeTranslations['en-US'].pipelineRows;
   const icons = [FileCheck2, CreditCard, CheckCircle2];
+  return rows.map((row, index) => ({
+    icon: icons[index] || CheckCircle2,
+    title: row.title,
+    body: row.body,
+  }));
+});
+const homeOperatingRows = computed(() => {
+  const rows = publicHomeCopy.value.operatingRows || publicHomeTranslations['en-US'].operatingRows;
+  const icons = [FileCheck2, Bot, ShieldCheck];
   return rows.map((row, index) => ({
     icon: icons[index] || CheckCircle2,
     title: row.title,

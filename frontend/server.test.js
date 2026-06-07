@@ -703,6 +703,8 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.match(appSource, /class="home-mergeide-inline-link"/);
   assert.match(appSource, /class="home-system-summary"/);
   assert.match(appSource, /homeSystemSummaryRows/);
+  assert.match(appSource, /class="home-operating-note"/);
+  assert.match(appSource, /homeOperatingRows/);
   assert.match(appSource, /class="home-compact-flow"/);
   assert.match(appSource, /homePipelineRows/);
   assert.match(appSource, /class="home-system-explainer"/);
@@ -717,6 +719,8 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.match(appSource, /title: 'AI routing', body: 'Scan, split, estimate, review'/);
   assert.match(appSource, /title: 'Market \+ escrow', body: 'Funded bounties and payouts'/);
   assert.match(appSource, /title: 'MRG proof', body: 'Solana token and public ledger'/);
+  assert.match(appSource, /operatingRows: \[[\s\S]*title: 'Input', body: 'Brief, repo, issues, debt, files'/);
+  assert.match(appSource, /title: 'Proof', body: 'Escrow, PR, deploy, payout ledger'/);
   assert.match(appSource, /title: 'Route', body: 'Human, AI, or hybrid tasks'/);
   assert.match(appSource, /title: 'Prove', body: 'PR, deploy, payout ledger'/);
   assert.match(cssSource, /\.public-home-page\s*\{[\s\S]*padding-block: clamp\(14px, 2\.4vw, 30px\) clamp\(20px, 3vw, 38px\) !important;/);
@@ -730,9 +734,11 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.public-home-copy h1\s*\{[\s\S]*font-size: clamp\(31px, 10vw, 40px\) !important;/);
   assert.match(cssSource, /\.home-system-explainer\s*\{[\s\S]*grid-template-columns: repeat\(4, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /\.home-system-summary\s*\{[\s\S]*grid-template-columns: repeat\(4, minmax\(0, 1fr\)\);/);
+  assert.match(cssSource, /\.home-operating-note\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /\.home-compact-flow\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.home-system-explainer\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\);/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.home-system-summary\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\);/);
+  assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.home-operating-note\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\);/);
 });
 
 test('frontend system exposes required public pages and dashboard roles', async () => {
