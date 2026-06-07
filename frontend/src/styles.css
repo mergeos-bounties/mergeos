@@ -9139,6 +9139,42 @@ svg {
   font-weight: 920;
 }
 
+.token-workflow-proof-empty-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.token-workflow-proof-empty-steps span {
+  min-width: 0;
+  border: 1px solid rgba(15, 159, 120, 0.12);
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 8px;
+}
+
+.token-workflow-proof-empty-steps b,
+.token-workflow-proof-empty-steps small {
+  display: block;
+  min-width: 0;
+}
+
+.token-workflow-proof-empty-steps b {
+  color: #064e3b;
+  font-size: 11px;
+  line-height: 1.2;
+  font-weight: 920;
+}
+
+.token-workflow-proof-empty-steps small {
+  margin-top: 3px;
+  color: #64748b;
+  font-size: 10px;
+  line-height: 1.3;
+  font-weight: 740;
+}
+
 .token-whitepaper-reader {
   min-width: 0;
   display: grid;
@@ -9607,6 +9643,11 @@ svg {
 
   .token-workflow-proof-board header button {
     width: 100%;
+  }
+
+  .token-workflow-proof-empty-steps {
+    grid-template-columns: 1fr;
+    gap: 6px;
   }
 
   .token-workflow-proof-meta {

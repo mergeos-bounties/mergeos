@@ -5467,6 +5467,12 @@
             <article v-else class="token-workflow-proof-empty">
               <strong>{{ ledgerLoading ? 'Syncing token proofs' : tokenWorkflowProofBoard.emptyTitle }}</strong>
               <p>{{ ledgerLoading ? 'Reading public ledger rows.' : tokenWorkflowProofBoard.emptyBody }}</p>
+              <div v-if="!ledgerLoading" class="token-workflow-proof-empty-steps" aria-label="CEO proof checklist">
+                <span v-for="step in tokenWorkflowProofEmptySteps" :key="step.label">
+                  <b>{{ step.label }}</b>
+                  <small>{{ step.detail }}</small>
+                </span>
+              </div>
             </article>
           </section>
         </section>
@@ -12510,16 +12516,30 @@ const tokenWorkflowProofBoard = computed(() => {
     return {
       title: 'Recent airdrop ledger receipts',
       body: 'Airdrop claims become public pending-review rows with mission, score, proof, wallet, and hash references.',
-      emptyTitle: 'No airdrop receipts yet',
-      emptyBody: 'Record a mission claim to create the first public airdrop ledger proof.',
+      emptyTitle: 'CEO launch proof appears before claims',
+      emptyBody: 'Send a CEO airdrop brief first. MergeOS records the memo, gate summary, and ledger proof before earned missions open.',
     };
   }
   return {
     title: 'Recent presale reservation receipts',
     body: 'Presale reservations become public pending-review rows with wallet, funding rail, reserve tier, and hash references.',
-    emptyTitle: 'No presale receipts yet',
-    emptyBody: 'Reserve MRG to create the first public presale ledger proof.',
+    emptyTitle: 'CEO launch proof appears before reserves',
+    emptyBody: 'Send a CEO presale brief first. MergeOS records utility, wallet, funding, risk, and contract gates before reserve receipts open.',
   };
+});
+const tokenWorkflowProofEmptySteps = computed(() => {
+  if (publicPage.value === 'airdrop') {
+    return [
+      { label: 'CEO brief', detail: 'repo, mission demand, allocation cap' },
+      { label: 'Gate summary', detail: 'proof, wallet, anti-bot, risk' },
+      { label: 'Ledger proof', detail: 'memo hash before claim review' },
+    ];
+  }
+  return [
+    { label: 'CEO brief', detail: 'utility, tier cap, funding rail' },
+    { label: 'Gate summary', detail: 'wallet, contract, reserve risk' },
+    { label: 'Ledger proof', detail: 'memo hash before reservations' },
+  ];
 });
 const tokenCeoResearchCopy = computed(() => {
   const openTasks = Number(marketplaceStats.value.open_task_count) || (marketplaceData.value.bounties || []).length || 0;

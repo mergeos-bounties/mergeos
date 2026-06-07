@@ -1252,6 +1252,14 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /function submitAirdropClaim\(\)/);
   assert.match(appSource, /function submitPresaleReservation\(\)/);
   assert.match(appSource, /class="token-workflow-proof-board"/);
+  assert.match(appSource, /class="token-workflow-proof-empty-steps"/);
+  assert.match(appSource, /const tokenWorkflowProofEmptySteps = computed/);
+  assert.match(appSource, /CEO launch proof appears before claims/);
+  assert.match(appSource, /CEO launch proof appears before reserves/);
+  assert.match(appSource, /Send a CEO airdrop brief first\. MergeOS records the memo, gate summary, and ledger proof before earned missions open\./);
+  assert.match(appSource, /Send a CEO presale brief first\. MergeOS records utility, wallet, funding, risk, and contract gates before reserve receipts open\./);
+  assert.match(appSource, /memo hash before claim review/);
+  assert.match(appSource, /memo hash before reservations/);
   assert.match(appSource, /const tokenWorkflowProofRows = computed\(\(\) => \{/);
   assert.match(appSource, /const targetType = publicPage\.value === 'airdrop' \? 'airdrop_claim' : 'presale_reservation';/);
   assert.match(appSource, /const targetLaunchType = publicPage\.value === 'presale' \? 'presale' : 'airdrop';/);
@@ -1281,6 +1289,8 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(whitepaperSource, /## 15\. Security, Privacy, and Compliance/);
   assert.match(whitepaperSource, /## 16\. Roadmap/);
   assert.match(cssSource, /\.token-workflow-proof-board\s*\{[\s\S]*background: rgba\(255, 255, 255, 0\.86\);/);
+  assert.match(cssSource, /\.token-workflow-proof-empty-steps\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
+  assert.match(cssSource, /\.token-workflow-proof-empty-steps\s*\{[\s\S]*grid-template-columns: 1fr;[\s\S]*gap: 6px;/);
   assert.match(cssSource, /CEO token launch polish: show gates before intake, keep the review surface short/);
   assert.match(cssSource, /\.token-ceo-research-panel\s*\{[\s\S]*border: 1px solid rgba\(79, 70, 229, 0\.15\);/);
   assert.match(cssSource, /\.token-ceo-decision-strip\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
