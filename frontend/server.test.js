@@ -94,6 +94,13 @@ test('public system vision preserves the product thesis', async () => {
   assert.ok(architectureManifest.frontend_system.stack.includes('Vite SSR'));
   assert.ok(architectureManifest.frontend_system.public_pages.includes('Marketplace'));
   assert.ok(architectureManifest.frontend_system.authenticated_dashboards.includes('Customer Dashboard'));
+  assert.deepEqual(Object.keys(architectureManifest.frontend_system.authenticated_dashboard_urls), ['customer_dashboard', 'worker_dashboard', 'admin_console']);
+  assert.equal(architectureManifest.frontend_system.authenticated_dashboard_urls.customer_dashboard.page, '/dashboard');
+  assert.equal(architectureManifest.frontend_system.authenticated_dashboard_urls.customer_dashboard.api, '/api/projects/{id}/dashboard');
+  assert.equal(architectureManifest.frontend_system.authenticated_dashboard_urls.worker_dashboard.page, '/dashboard?section=worker');
+  assert.equal(architectureManifest.frontend_system.authenticated_dashboard_urls.worker_dashboard.api, '/api/workers/me');
+  assert.equal(architectureManifest.frontend_system.authenticated_dashboard_urls.admin_console.page, '/dashboard?section=admin');
+  assert.equal(architectureManifest.frontend_system.authenticated_dashboard_urls.admin_console.api, '/api/admin/ops-queue');
   assert.ok(architectureManifest.backend_system.proposed_stack.includes('Go'));
   assert.ok(architectureManifest.backend_system.proposed_stack.includes('Rust-compatible service boundary'));
   assert.ok(architectureManifest.backend_system.proposed_stack.includes('PostgreSQL'));

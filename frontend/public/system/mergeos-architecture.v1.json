@@ -95,7 +95,21 @@
   "frontend_system": {
     "stack": ["Vue 3", "Vite SSR", "TailwindCSS-compatible design tokens", "WebSockets", "realtime events"],
     "public_pages": ["Homepage", "Marketplace", "Live Feed", "Ledger Logs", "Protocol", "MergeIDE", "Airdrop", "Presale", "Whitepaper"],
-    "authenticated_dashboards": ["Customer Dashboard", "Worker Dashboard", "Admin Console"]
+    "authenticated_dashboards": ["Customer Dashboard", "Worker Dashboard", "Admin Console"],
+    "authenticated_dashboard_urls": {
+      "customer_dashboard": {
+        "page": "/dashboard",
+        "api": "/api/projects/{id}/dashboard"
+      },
+      "worker_dashboard": {
+        "page": "/dashboard?section=worker",
+        "api": "/api/workers/me"
+      },
+      "admin_console": {
+        "page": "/dashboard?section=admin",
+        "api": "/api/admin/ops-queue"
+      }
+    }
   },
   "backend_system": {
     "role": "Backend coordinates authentication, repositories, AI orchestration, task engine, payment verification, escrow coordination, live notifications, and ledger records.",

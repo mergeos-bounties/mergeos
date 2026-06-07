@@ -80,11 +80,45 @@
     },
     "frontend_system": {
       "type": "object",
-      "required": ["stack", "public_pages", "authenticated_dashboards"],
+      "required": ["stack", "public_pages", "authenticated_dashboards", "authenticated_dashboard_urls"],
       "properties": {
         "stack": { "$ref": "#/$defs/stringList" },
         "public_pages": { "$ref": "#/$defs/stringList" },
-        "authenticated_dashboards": { "$ref": "#/$defs/stringList" }
+        "authenticated_dashboards": { "$ref": "#/$defs/stringList" },
+        "authenticated_dashboard_urls": {
+          "type": "object",
+          "required": ["customer_dashboard", "worker_dashboard", "admin_console"],
+          "properties": {
+            "customer_dashboard": {
+              "type": "object",
+              "required": ["page", "api"],
+              "properties": {
+                "page": { "type": "string", "minLength": 1 },
+                "api": { "type": "string", "minLength": 1 }
+              },
+              "additionalProperties": false
+            },
+            "worker_dashboard": {
+              "type": "object",
+              "required": ["page", "api"],
+              "properties": {
+                "page": { "type": "string", "minLength": 1 },
+                "api": { "type": "string", "minLength": 1 }
+              },
+              "additionalProperties": false
+            },
+            "admin_console": {
+              "type": "object",
+              "required": ["page", "api"],
+              "properties": {
+                "page": { "type": "string", "minLength": 1 },
+                "api": { "type": "string", "minLength": 1 }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        }
       },
       "additionalProperties": false
     },
