@@ -169,7 +169,7 @@
     },
     "backend_system": {
       "type": "object",
-      "required": ["role", "proposed_stack", "runtime_routes"],
+      "required": ["role", "proposed_stack", "runtime_routes", "service_boundaries"],
       "properties": {
         "role": { "type": "string", "minLength": 1 },
         "proposed_stack": { "$ref": "#/$defs/stringList" },
@@ -185,6 +185,21 @@
             "escrow_coordination": { "type": "string", "minLength": 1 },
             "live_notifications": { "type": "string", "minLength": 1 },
             "ledger_system": { "type": "string", "minLength": 1 }
+          },
+          "additionalProperties": false
+        },
+        "service_boundaries": {
+          "type": "object",
+          "required": ["authentication", "repositories", "ai_orchestration", "task_engine", "payment_verification", "escrow_coordination", "live_notifications", "ledger_system"],
+          "properties": {
+            "authentication": { "$ref": "#/$defs/backendServiceBoundary" },
+            "repositories": { "$ref": "#/$defs/backendServiceBoundary" },
+            "ai_orchestration": { "$ref": "#/$defs/backendServiceBoundary" },
+            "task_engine": { "$ref": "#/$defs/backendServiceBoundary" },
+            "payment_verification": { "$ref": "#/$defs/backendServiceBoundary" },
+            "escrow_coordination": { "$ref": "#/$defs/backendServiceBoundary" },
+            "live_notifications": { "$ref": "#/$defs/backendServiceBoundary" },
+            "ledger_system": { "$ref": "#/$defs/backendServiceBoundary" }
           },
           "additionalProperties": false
         }
@@ -363,6 +378,18 @@
     }
   },
   "$defs": {
+    "backendServiceBoundary": {
+      "type": "object",
+      "required": ["owner", "primary_api", "state_store", "external_dependencies", "output_protocols"],
+      "properties": {
+        "owner": { "type": "string", "minLength": 1 },
+        "primary_api": { "type": "string", "minLength": 1 },
+        "state_store": { "type": "string", "minLength": 1 },
+        "external_dependencies": { "$ref": "#/$defs/stringList" },
+        "output_protocols": { "$ref": "#/$defs/stringList" }
+      },
+      "additionalProperties": false
+    },
     "roleRoute": {
       "type": "object",
       "required": ["page", "api", "capabilities"],

@@ -146,6 +146,20 @@ test('public system vision preserves the product thesis', async () => {
     live_notifications: '/api/ws',
     ledger_system: '/api/public/ledger',
   });
+  assert.deepEqual(Object.keys(architectureManifest.backend_system.service_boundaries), [
+    'authentication',
+    'repositories',
+    'ai_orchestration',
+    'task_engine',
+    'payment_verification',
+    'escrow_coordination',
+    'live_notifications',
+    'ledger_system',
+  ]);
+  assert.deepEqual(architectureManifest.backend_system.service_boundaries.repositories.output_protocols, ['mergeos.repo-import.v1', 'mergeos.scan.v1', 'mergeos.repo-sync.v1']);
+  assert.deepEqual(architectureManifest.backend_system.service_boundaries.task_engine.output_protocols, ['mergeos.workflow.v1', 'mergeos.task.v1', 'mergeos.task-claim.v1', 'mergeos.proposal.v1']);
+  assert.deepEqual(architectureManifest.backend_system.service_boundaries.escrow_coordination.output_protocols, ['mergeos.escrow.v1', 'mergeos.payouts.v1', 'mergeos.payout-release.v1']);
+  assert.deepEqual(architectureManifest.backend_system.service_boundaries.ledger_system.output_protocols, ['mergeos.ledger.v1', 'mergeos.ledger-proof.v1', 'mergeos.token-economy.v1']);
   assert.deepEqual(architectureManifest.ai_layer.workflow, [
     'Import Repository',
     'Issue Scan',

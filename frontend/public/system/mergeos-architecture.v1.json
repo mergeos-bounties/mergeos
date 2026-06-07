@@ -218,6 +218,64 @@
       "escrow_coordination": "/api/projects/{id}/escrow",
       "live_notifications": "/api/ws",
       "ledger_system": "/api/public/ledger"
+    },
+    "service_boundaries": {
+      "authentication": {
+        "owner": "session and OAuth gateway",
+        "primary_api": "/api/auth/session",
+        "state_store": "PostgreSQL users and Redis session cache",
+        "external_dependencies": ["GitHub OAuth", "Google OAuth"],
+        "output_protocols": ["mergeos.session.v1"]
+      },
+      "repositories": {
+        "owner": "repository import and scan service",
+        "primary_api": "/api/repos/import",
+        "state_store": "PostgreSQL repositories, issues, scans",
+        "external_dependencies": ["GitHub API"],
+        "output_protocols": ["mergeos.repo-import.v1", "mergeos.scan.v1", "mergeos.repo-sync.v1"]
+      },
+      "ai_orchestration": {
+        "owner": "AI workflow and agent action service",
+        "primary_api": "/api/projects/{id}/ai-workflow",
+        "state_store": "PostgreSQL AI runs and Redis agent leases",
+        "external_dependencies": ["OpenAI API", "GitHub API"],
+        "output_protocols": ["mergeos.ai-workflow.v1", "mergeos.agent-action.v1", "mergeos.agent-lease.v1"]
+      },
+      "task_engine": {
+        "owner": "task graph, bounty, claim, and review service",
+        "primary_api": "/api/projects/{id}/task-graph",
+        "state_store": "PostgreSQL tasks, claims, proposals, reviews",
+        "external_dependencies": ["GitHub API", "WebSocket gateway"],
+        "output_protocols": ["mergeos.workflow.v1", "mergeos.task.v1", "mergeos.task-claim.v1", "mergeos.proposal.v1"]
+      },
+      "payment_verification": {
+        "owner": "funding and payment verification service",
+        "primary_api": "/api/payments/order-intents",
+        "state_store": "PostgreSQL payment intents and funding receipts",
+        "external_dependencies": ["Stripe", "PayPal", "Solana MRG program"],
+        "output_protocols": ["mergeos.escrow.v1", "mergeos.repo-task-funding.v1"]
+      },
+      "escrow_coordination": {
+        "owner": "escrow reserve and payout release service",
+        "primary_api": "/api/projects/{id}/escrow",
+        "state_store": "PostgreSQL escrow, payout, and contract references",
+        "external_dependencies": ["Solana MRG program", "Ledger proof API"],
+        "output_protocols": ["mergeos.escrow.v1", "mergeos.payouts.v1", "mergeos.payout-release.v1"]
+      },
+      "live_notifications": {
+        "owner": "WebSocket and realtime event fanout",
+        "primary_api": "/api/ws",
+        "state_store": "Redis pub/sub and PostgreSQL event log",
+        "external_dependencies": ["WebSocket gateway"],
+        "output_protocols": ["mergeos.event.v1", "mergeos.live-feed.v1"]
+      },
+      "ledger_system": {
+        "owner": "public ledger and proof service",
+        "primary_api": "/api/public/ledger",
+        "state_store": "PostgreSQL immutable ledger rows and proof hashes",
+        "external_dependencies": ["Solana MRG proof manifest"],
+        "output_protocols": ["mergeos.ledger.v1", "mergeos.ledger-proof.v1", "mergeos.token-economy.v1"]
+      }
     }
   },
   "ai_layer": {
