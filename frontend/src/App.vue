@@ -4634,6 +4634,15 @@
                 <UsersRound :size="16" />
               </button>
             </div>
+            <div class="home-compact-flow" :aria-label="publicHomeCopy.pipelineLabel">
+              <article v-for="row in homePipelineRows" :key="row.title">
+                <component :is="row.icon" :size="14" />
+                <span>
+                  <strong>{{ row.title }}</strong>
+                  <small>{{ row.body }}</small>
+                </span>
+              </article>
+            </div>
             <a
               class="home-mergeide-inline-link"
               :href="mergeIdeDownloadPath"
@@ -7647,6 +7656,35 @@
             <section class="ledger-side-card ledger-chain-card">
               <h2>Hash-chain proof</h2>
               <p>{{ ledgerProofSummary.body }}</p>
+              <div class="ledger-verify-card" aria-label="Ledger verification status">
+                <div class="ledger-verify-head">
+                  <span :class="['ledger-public-badge', ledgerVerificationSummary.tone]">
+                    <ShieldCheck :size="14" />
+                    {{ ledgerVerificationSummary.label }}
+                  </span>
+                  <small>{{ ledgerVerificationSummary.updatedAt }}</small>
+                </div>
+                <strong>{{ ledgerVerificationSummary.title }}</strong>
+                <p>{{ ledgerVerificationSummary.body }}</p>
+                <div class="ledger-verify-grid">
+                  <span>
+                    <small>Rows</small>
+                    <b>{{ ledgerVerificationSummary.rows }}</b>
+                  </span>
+                  <span>
+                    <small>Last seq</small>
+                    <b>{{ ledgerVerificationSummary.lastSequence }}</b>
+                  </span>
+                  <span>
+                    <small>Last hash</small>
+                    <b>{{ ledgerVerificationSummary.lastHash }}</b>
+                  </span>
+                </div>
+                <button type="button" @click="copyLedgerVerifyPacket">
+                  Copy verify packet
+                  <Link2 :size="13" />
+                </button>
+              </div>
               <button type="button" @click="copyLedgerProofRoot">
                 Copy public root
                 <Link2 :size="13" />
@@ -11330,6 +11368,7 @@ const runtimeConfig = ref(null);
 const ledgerRawEntries = ref([]);
 const ledgerProjects = ref([]);
 const ledgerProof = ref(null);
+const ledgerVerification = ref(null);
 const ledgerEconomy = ref({
   stats: {},
   totals: {},
@@ -12864,8 +12903,50 @@ const ledgerProofSummary = computed(() => {
     verifiedLabel: `${verifiedCount}/${entryCount}`,
   };
 });
+const ledgerVerificationSummary = computed(() => {
+  const verification = ledgerVerification.value || {};
+  const entryCount = Number(verification.entry_count) || 0;
+  const lastSequence = Number(verification.last_sequence) || 0;
+  const brokenSequence = Number(verification.broken_sequence) || 0;
+  const lastHash = verification.last_hash || ledgerProof.value?.root_hash || '';
+  if (!entryCount) {
+    return {
+      tone: 'amber',
+      label: 'Awaiting rows',
+      title: 'No chain entries yet',
+      body: 'MergeOS will verify sequence, previous hash, and entry hash after the first ledger row is recorded.',
+      rows: '0',
+      lastSequence: '--',
+      lastHash: '--',
+      updatedAt: 'Not generated',
+    };
+  }
+  if (verification.valid) {
+    return {
+      tone: 'green',
+      label: 'Chain valid',
+      title: 'Ledger hash-chain verified',
+      body: 'Every public ledger row keeps the expected sequence, previous hash, and recomputed entry hash.',
+      rows: String(entryCount),
+      lastSequence: String(lastSequence),
+      lastHash: shortLedgerHash(lastHash),
+      updatedAt: verification.updated_at ? formatLedgerDateTime(verification.updated_at).full : 'Generated now',
+    };
+  }
+  return {
+    tone: 'amber',
+    label: 'Needs review',
+    title: brokenSequence ? `Broken at row ${brokenSequence}` : 'Ledger mismatch detected',
+    body: verification.error || 'The verification endpoint found a sequence or hash mismatch.',
+    rows: String(entryCount),
+    lastSequence: String(lastSequence || brokenSequence || '--'),
+    lastHash: shortLedgerHash(lastHash),
+    updatedAt: verification.updated_at ? formatLedgerDateTime(verification.updated_at).full : 'Generated now',
+  };
+});
 const ledgerVerificationChecks = computed(() => [
   `${ledgerProofSummary.value.verifiedLabel} ledger rows verified`,
+  `${ledgerVerificationSummary.value.label} via /api/public/ledger/verify`,
   `Root ${shortLedgerHash(ledgerProof.value?.root_hash)}`,
   `Public root ${shortLedgerHash(ledgerProof.value?.public_root_hash)}`,
   ledgerProofContractReference.value ? `Contract ${shortLedgerHash(ledgerProofContractReference.value)}` : 'Contract anchors pending',
@@ -12904,6 +12985,7 @@ const ledgerTrendingProjects = computed(() => {
 const ledgerProofContractReference = computed(() => contractReferenceFromRecord(ledgerProof.value || {}));
 const ledgerChainRows = computed(() => [
   { label: 'Status', value: ledgerProofSummary.value.label },
+  { label: 'Verify API', value: ledgerVerificationSummary.value.label },
   { label: 'Root hash', value: shortLedgerHash(ledgerProof.value?.root_hash) },
   { label: 'Public hash', value: shortLedgerHash(ledgerProof.value?.public_root_hash) },
   { label: 'Contract ref', value: shortLedgerHash(ledgerProofContractReference.value) },
@@ -29218,6 +29300,21 @@ async function copyLedgerContractReference() {
   showToast(copied ? 'Contract root reference copied.' : `Contract ref ${shortLedgerHash(reference)}`);
 }
 
+async function copyLedgerVerifyPacket() {
+  const payload = {
+    endpoint: '/api/public/ledger/verify',
+    valid: Boolean(ledgerVerification.value?.valid),
+    entry_count: Number(ledgerVerification.value?.entry_count) || 0,
+    last_sequence: Number(ledgerVerification.value?.last_sequence) || 0,
+    last_hash: ledgerVerification.value?.last_hash || '',
+    broken_sequence: Number(ledgerVerification.value?.broken_sequence) || 0,
+    error: ledgerVerification.value?.error || '',
+    updated_at: ledgerVerification.value?.updated_at || '',
+  };
+  const copied = await copyTextToClipboard(JSON.stringify(payload, null, 2));
+  showToast(copied ? 'Ledger verify packet copied.' : 'Ledger verify packet is visible on the page.');
+}
+
 function paymentMethodForProject() {
   if (projectPaymentMethod.value === 'Credit / Debit card') return 'card';
   if (projectPaymentMethod.value === 'USDC') return 'crypto';
@@ -29436,16 +29533,18 @@ async function loadLedgerData(options = {}) {
     ledgerLoading.value = true;
   }
   try {
-    const [entries, marketplace, proof, events, economy] = await Promise.all([
+    const [entries, marketplace, proof, verification, events, economy] = await Promise.all([
       publicApi('/api/public/ledger'),
       publicApi('/api/public/marketplace'),
       publicApi('/api/public/ledger/proof'),
+      publicApi('/api/public/ledger/verify'),
       publicApi('/api/public/ledger/events?limit=100'),
       publicApi('/api/public/token-economy'),
     ]);
     ledgerRawEntries.value = Array.isArray(entries) ? entries : [];
     ledgerProjects.value = Array.isArray(marketplace.projects) ? marketplace.projects : [];
     ledgerProof.value = proof && typeof proof === 'object' ? proof : null;
+    ledgerVerification.value = verification && typeof verification === 'object' ? verification : null;
     ledgerEventData.value = {
       stats: events?.stats || {},
       items: Array.isArray(events?.items) ? events.items : [],
@@ -29462,6 +29561,7 @@ async function loadLedgerData(options = {}) {
   } catch (error) {
     ledgerError.value = error.message;
     ledgerProof.value = null;
+    ledgerVerification.value = null;
     ledgerEventData.value = { stats: {}, items: [] };
     ledgerEconomy.value = { stats: {}, totals: {}, balances: [], flows: [], recent_entries: [] };
   } finally {

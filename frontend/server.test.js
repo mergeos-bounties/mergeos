@@ -353,6 +353,8 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.match(cssSource, /Home quality pass: one short decision screen/);
   assert.match(appSource, /class="public-notification-feed home-feed-preview"/);
   assert.match(appSource, /class="home-mergeide-inline-link"/);
+  assert.match(appSource, /class="home-compact-flow"/);
+  assert.match(appSource, /homePipelineRows/);
   assert.match(appSource, /class="home-system-explainer"/);
   assert.match(appSource, /localizedHomeWorkflowCards\.slice\(0, 4\)/);
   assert.match(appSource, /homeLiveStats\.slice\(0, 2\)/);
@@ -366,6 +368,7 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.match(cssSource, /@media \(max-width: 980px\)[\s\S]*\.home-command-panel\s*\{[\s\S]*display: block !important;[\s\S]*max-width: 560px !important;/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.public-home-copy h1\s*\{[\s\S]*font-size: clamp\(31px, 10vw, 40px\) !important;/);
   assert.match(cssSource, /\.home-system-explainer\s*\{[\s\S]*grid-template-columns: repeat\(4, minmax\(0, 1fr\)\);/);
+  assert.match(cssSource, /\.home-compact-flow\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.home-system-explainer\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\);/);
 });
 
@@ -468,11 +471,16 @@ test('ledger logs exposes compact proof timeline coverage', async () => {
   const cssSource = await fs.readFile(new URL('./src/styles.css', import.meta.url), 'utf-8');
 
   assert.match(appSource, /class="ledger-proof-timeline"/);
+  assert.match(appSource, /class="ledger-verify-card"/);
   assert.match(appSource, /<h1>Ledger Logs<\/h1>/);
   assert.match(appSource, /Transparent platform activity from the live ledger\. Payments, token mints, PR handoffs, deployment gates, AI actions, and payouts are loaded from the backend\./);
   assert.match(appSource, /Public ledger'[\s\S]*Payouts, escrow events, AI actions, releases, deployment checks, and proof logs for trust/);
   assert.match(appSource, /Ledger events'[\s\S]*Fetch sanitized escrow, payout, token, PR, deployment, and release proof rows/);
   assert.match(appSource, /Latest escrow, PR, AI, and release evidence/);
+  assert.match(appSource, /const ledgerVerification = ref\(null\);/);
+  assert.match(appSource, /const ledgerVerificationSummary = computed/);
+  assert.match(appSource, /publicApi\('\/api\/public\/ledger\/verify'\)/);
+  assert.match(appSource, /copyLedgerVerifyPacket/);
   assert.match(appSource, /const ledgerProofTimelineRows = computed/);
   assert.match(appSource, /ledgerProofLanes\.value/);
   assert.match(appSource, /key: 'escrow-proof'[\s\S]*title: 'Escrow funding'[\s\S]*Payment verification, project reserve, treasury movement, and escrow lock records/);
@@ -486,6 +494,7 @@ test('ledger logs exposes compact proof timeline coverage', async () => {
   assert.match(appSource, /mapLedgerTransparencyEvent\(latest\)/);
   assert.match(appSource, /applyLedgerProofLane\(row\.lane\)/);
   assert.match(cssSource, /\.ledger-proof-timeline-list\s*\{[\s\S]*grid-template-columns: repeat\(4, minmax\(0, 1fr\)\);/);
+  assert.match(cssSource, /\.ledger-verify-grid\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /@media \(max-width: 560px\)[\s\S]*\.ledger-proof-timeline-list\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\);/);
 });
 

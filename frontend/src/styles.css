@@ -23920,6 +23920,83 @@ svg {
   font-weight: 680;
 }
 
+.ledger-verify-card {
+  display: grid;
+  gap: 10px;
+  border: 1px solid #dbe6ef;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(236, 253, 245, 0.76), rgba(255, 255, 255, 0.96));
+  margin-top: 12px;
+  padding: 12px;
+}
+
+.ledger-verify-head {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ledger-verify-head small {
+  min-width: 0;
+  overflow: hidden;
+  color: #64748b;
+  font-size: 9px;
+  font-weight: 850;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ledger-verify-card > strong {
+  color: #111827;
+  font-size: 13px;
+  line-height: 1.2;
+  font-weight: 930;
+}
+
+.ledger-verify-card .ledger-public-badge {
+  min-height: 24px;
+  padding: 0 8px;
+  font-size: 10px;
+}
+
+.ledger-verify-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.ledger-verify-grid span {
+  min-width: 0;
+  border: 1px solid #e6edf3;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 8px;
+}
+
+.ledger-verify-grid small,
+.ledger-verify-grid b {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ledger-verify-grid small {
+  color: #7b8492;
+  font-size: 9px;
+  font-weight: 850;
+}
+
+.ledger-verify-grid b {
+  margin-top: 3px;
+  color: #111827;
+  font-size: 11px;
+  font-weight: 930;
+}
+
 .ledger-chain-row {
   display: flex;
   align-items: center;
@@ -33566,6 +33643,57 @@ canvas {
   min-height: 38px !important;
 }
 
+.home-compact-flow {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+  margin-top: 10px;
+  max-width: 560px;
+}
+
+.home-compact-flow article {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  align-items: start;
+  gap: 7px;
+  border: 1px solid rgba(11, 21, 17, 0.1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.86);
+  padding: 8px;
+}
+
+.home-compact-flow svg {
+  color: var(--green-dark);
+}
+
+.home-compact-flow strong,
+.home-compact-flow small {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.home-compact-flow strong {
+  color: #0d1713;
+  font-size: 11px;
+  line-height: 1.15;
+  font-weight: 930;
+  white-space: nowrap;
+}
+
+.home-compact-flow small {
+  display: -webkit-box;
+  margin-top: 2px;
+  color: #5d6b64;
+  font-size: 10px;
+  line-height: 1.25;
+  font-weight: 760;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
 .home-command-panel {
   padding: 10px !important;
 }
@@ -33607,6 +33735,10 @@ canvas {
 
   .public-home-copy p {
     margin-top: 8px !important;
+  }
+
+  .home-compact-flow {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .home-command-panel {
