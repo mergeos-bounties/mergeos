@@ -217,6 +217,38 @@ test('public system vision preserves the product thesis', async () => {
       event_type: 'agent_queue',
     },
   });
+  assert.deepEqual(architectureManifest.marketplace_system.action_routes, {
+    publish_bounty: {
+      command: 'Publish funded bounty from repository scope',
+      api: '/api/projects/{id}/repo-scan/suggested-tasks/{taskID}/fund',
+      output_protocol: 'mergeos.repo-task-funding.v1',
+      proof_surface: '/marketplace#marketplace-bounties',
+    },
+    submit_proposal: {
+      command: 'Submit contributor bid and availability packet',
+      api: '/api/proposals',
+      output_protocol: 'mergeos.proposal.v1',
+      proof_surface: '/dashboard?section=worker',
+    },
+    claim_task: {
+      command: 'Claim public bounty work',
+      api: '/api/tasks/{id}/claim',
+      output_protocol: 'mergeos.task-claim.v1',
+      proof_surface: '/live-feed',
+    },
+    lease_agent_work: {
+      command: 'Lease AI agent queue work before execution',
+      api: '/api/agent-queue/leases',
+      output_protocol: 'mergeos.agent-lease.v1',
+      proof_surface: '/agents',
+    },
+    submit_evidence: {
+      command: 'Submit PR, test, deployment, or agent evidence',
+      api: '/api/tasks/{id}/submit',
+      output_protocol: 'mergeos.task-submission.v1',
+      proof_surface: '/ledger',
+    },
+  });
   assert.deepEqual(architectureManifest.live_feed_system.event_routes, {
     live_prs: {
       page: '/live-feed',

@@ -215,7 +215,7 @@
     },
     "marketplace_system": {
       "type": "object",
-      "required": ["role", "features", "feature_routes"],
+      "required": ["role", "features", "feature_routes", "action_routes"],
       "properties": {
         "role": { "type": "string", "minLength": 1 },
         "features": { "$ref": "#/$defs/stringList" },
@@ -227,6 +227,18 @@
             "public_bounties": { "$ref": "#/$defs/marketplaceFeatureRoute" },
             "contributors": { "$ref": "#/$defs/marketplaceFeatureRoute" },
             "ai_agents": { "$ref": "#/$defs/marketplaceFeatureRoute" }
+          },
+          "additionalProperties": false
+        },
+        "action_routes": {
+          "type": "object",
+          "required": ["publish_bounty", "submit_proposal", "claim_task", "lease_agent_work", "submit_evidence"],
+          "properties": {
+            "publish_bounty": { "$ref": "#/$defs/marketplaceActionRoute" },
+            "submit_proposal": { "$ref": "#/$defs/marketplaceActionRoute" },
+            "claim_task": { "$ref": "#/$defs/marketplaceActionRoute" },
+            "lease_agent_work": { "$ref": "#/$defs/marketplaceActionRoute" },
+            "submit_evidence": { "$ref": "#/$defs/marketplaceActionRoute" }
           },
           "additionalProperties": false
         }
@@ -355,6 +367,17 @@
         "page": { "type": "string", "minLength": 1 },
         "api": { "type": "string", "minLength": 1 },
         "event_type": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "marketplaceActionRoute": {
+      "type": "object",
+      "required": ["command", "api", "output_protocol", "proof_surface"],
+      "properties": {
+        "command": { "type": "string", "minLength": 1 },
+        "api": { "type": "string", "minLength": 1 },
+        "output_protocol": { "type": "string", "minLength": 1 },
+        "proof_surface": { "type": "string", "minLength": 1 }
       },
       "additionalProperties": false
     },
