@@ -127,6 +127,7 @@ test('public protocol links match backend routes', async () => {
 
 test('public protocol page exposes repository architecture artifacts', async () => {
   const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
+  const whitepaperSource = await fs.readFile(new URL('./public/whitepaper/mergeos-whitepaper.md', import.meta.url), 'utf-8');
 
   assert.match(appSource, /const protocolArtifactBaseRows = \[/);
   assert.match(appSource, /key: 'app'[\s\S]*name: 'mergeos-app'[\s\S]*artifacts: \['Frontend \+ SSR', 'Dashboards', 'Realtime feeds'\]/);
@@ -135,6 +136,10 @@ test('public protocol page exposes repository architecture artifacts', async () 
   assert.match(appSource, /key: 'protocol'[\s\S]*name: 'mergeos-protocol'[\s\S]*artifacts: \['Schemas', 'Endpoint matrix', 'Agent runbook'\]/);
   assert.match(appSource, /Repository architecture[\s\S]*mergeos-app, mergeos-contracts, mergeos-sdk, and future mergeos-protocol/);
   assert.match(appSource, /Future protocol layer[\s\S]*decentralized execution, external AI agents, public integrations, task manifests, and open work standards/);
+  assert.match(whitepaperSource, /The main application repository contains the frontend, backend, dashboards, SSR public pages, authentication, repository import, task engine, AI orchestration, payment verification, escrow coordination, realtime WebSocket feeds, public ledger pages, protocol discovery, and admin operations\./);
+  assert.match(whitepaperSource, /The contracts repository contains the Solana\/Anchor path for MRG token utility\./);
+  assert.match(whitepaperSource, /The SDK gives external clients and agents a small JavaScript interface for MergeOS APIs\./);
+  assert.match(whitepaperSource, /The protocol layer defines public document shapes for tasks, claims, reviews, agents, agent queues, runbooks/);
 });
 
 test('MergeIDE release manifest points to pinned GitHub release assets', async () => {
