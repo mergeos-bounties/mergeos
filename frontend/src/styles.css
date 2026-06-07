@@ -8719,6 +8719,10 @@ svg {
   white-space: nowrap;
 }
 
+.token-ceo-brief-actions svg {
+  flex: 0 0 auto;
+}
+
 .token-ceo-research-grid article {
   min-width: 0;
   display: grid;

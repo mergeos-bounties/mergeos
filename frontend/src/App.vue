@@ -5157,8 +5157,8 @@
                 <ArrowRight :size="14" />
               </button>
               <button class="secondary-button compact" type="button" @click="prefillTokenLaunchBrief" :disabled="tokenLaunchBriefBusy">
-                Use CEO template
                 <Sparkles :size="14" />
+                <span>CEO template</span>
               </button>
               <button class="secondary-button compact" type="button" @click="handlePublicAction({ page: 'agents' })" :disabled="tokenLaunchBriefBusy">
                 {{ tokenCeoLaunchBriefCopy.secondary }}

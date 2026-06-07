@@ -1188,7 +1188,7 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /const tokenCeoLaunchBriefCopy = computed/);
   assert.match(appSource, /Send a CEO airdrop brief\./);
   assert.match(appSource, /Send a CEO presale brief\./);
-  assert.match(appSource, /Use CEO template/);
+  assert.match(appSource, /CEO template/);
   assert.match(appSource, /function prefillTokenLaunchBrief\(\)/);
   assert.match(appSource, /CEO research template added\./);
   assert.match(appSource, /MRG presale readiness review/);
