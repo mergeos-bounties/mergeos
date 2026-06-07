@@ -1942,6 +1942,17 @@
                 </button>
               </section>
 
+              <section v-if="adminOpsContractRows.length" class="admin-ops-contract-strip" aria-label="Admin ops output contracts">
+                <article v-for="contract in adminOpsContractRows" :key="contract.key">
+                  <span>{{ contract.label }}</span>
+                  <strong>{{ contract.protocol }}</strong>
+                  <a v-if="contract.url" :href="contract.url" target="_blank" rel="noreferrer">
+                    Proof
+                    <Link2 :size="12" />
+                  </a>
+                </article>
+              </section>
+
               <section class="dash-card admin-governance-card" aria-label="Admin governance runbook">
                 <div class="card-title-row">
                   <div>
@@ -21478,6 +21489,16 @@ const adminGovernanceRows = computed(() => {
 });
 const adminGovernanceActiveCount = computed(() =>
   adminGovernanceRows.value.filter((row) => row.active).length,
+);
+const adminOpsContractRows = computed(() =>
+  (Array.isArray(adminConsole.value.ops?.output_contracts) ? adminConsole.value.ops.output_contracts : [])
+    .slice(0, 4)
+    .map((contract, index) => ({
+      key: `${contract.action || 'admin-ops'}-${contract.output_protocol || index}`,
+      label: toTitleLabel(contract.artifact_kind || contract.action || 'Contract'),
+      protocol: shortLedgerReference(contract.output_protocol || contract.output_protocol_url || 'protocol'),
+      url: contract.public_url || contract.output_endpoint || '',
+    })),
 );
 const workerDashboardProfile = computed(() => workerDashboard.value.profile || {});
 const workerDashboardStats = computed(() => workerDashboard.value.stats || {});

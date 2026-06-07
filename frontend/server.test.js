@@ -198,6 +198,9 @@ test('admin dashboard consumes admin ops queue action contract', async () => {
   const adminOpsSchema = JSON.parse(await fs.readFile(new URL('./public/protocol/admin-ops.v1.schema.json', import.meta.url), 'utf-8'));
 
   const actionSchema = adminOpsSchema.properties.items.items.properties.actions.items.properties;
+  assert.equal(adminOpsSchema.properties.output_contracts.items.$ref, '#/$defs/outputContract');
+  assert.ok(adminOpsSchema.properties.stats.properties.high_count);
+  assert.ok(adminOpsSchema.properties.stats.properties.blocked_payout_cents);
   assert.equal(actionSchema.output_contracts.items.$ref, '#/$defs/outputContract');
   assert.ok(adminOpsSchema.$defs.outputContract.required.includes('output_protocol_url'));
   assert.match(appSource, /queueActions: adminOpsQueueActions\(item\)/);
@@ -206,6 +209,9 @@ test('admin dashboard consumes admin ops queue action contract', async () => {
   assert.match(appSource, /const adminTriageRows = computed\(\(\) => \{/);
   assert.match(appSource, /function applyAdminTriageFilter\(item = \{\}\)/);
   assert.match(appSource, /function adminOpsQueueActions\(item = \{\}\)/);
+  assert.match(appSource, /const adminOpsContractRows = computed\(\(\) =>/);
+  assert.match(appSource, /adminConsole\.value\.ops\?\.output_contracts/);
+  assert.match(appSource, /class="admin-ops-contract-strip"/);
   assert.match(appSource, /outputContracts: Array\.isArray\(action\.output_contracts\)/);
   assert.match(appSource, /v-for="action in item\.queueActions"/);
   assert.match(appSource, /@click="handleAdminOpsQueueAction\(item, action\)"/);

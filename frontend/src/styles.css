@@ -15766,6 +15766,59 @@ svg {
   font-weight: 800;
 }
 
+.admin-ops-contract-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.admin-ops-contract-strip article {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px 8px;
+  border: 1px solid rgba(15, 159, 120, 0.16);
+  border-radius: 8px;
+  background: #f8fffb;
+  padding: 9px 10px;
+}
+
+.admin-ops-contract-strip span,
+.admin-ops-contract-strip strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-ops-contract-strip span {
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 850;
+}
+
+.admin-ops-contract-strip strong {
+  color: #111827;
+  font-size: 12px;
+  font-weight: 930;
+}
+
+.admin-ops-contract-strip a {
+  grid-row: span 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 999px;
+  background: #ecfdf5;
+  color: var(--green-dark);
+  padding: 6px 8px;
+  font-size: 10px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
 .admin-governance-card {
   margin-top: 14px;
 }

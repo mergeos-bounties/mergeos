@@ -6298,6 +6298,12 @@ func TestAdminOpsQueueReturnsDisputeModerationAndPayoutItems(t *testing.T) {
 	if payload.Stats.TotalCount < 7 || payload.Stats.DisputeCount < 1 || payload.Stats.ModerationCount < 2 || payload.Stats.PayoutReviewCount < 3 || payload.Stats.FraudCount < 2 || payload.Stats.SecurityCount < 1 || payload.Stats.CriticalCount < 1 {
 		t.Fatalf("unexpected ops queue stats: %#v", payload.Stats)
 	}
+	if payload.Stats.HighCount < 1 || payload.Stats.BlockedPayoutCents <= 0 {
+		t.Fatalf("ops queue missing high/blocked payout stats: %#v", payload.Stats)
+	}
+	if len(payload.OutputContracts) < 2 || !containsOutputProtocol(payload.OutputContracts, "mergeos.admin-ops.v1") || !containsOutputProtocol(payload.OutputContracts, "mergeos.ledger-proof.v1") {
+		t.Fatalf("ops queue missing top-level output contracts: %#v", payload.OutputContracts)
+	}
 	seen := map[string]bool{}
 	actionSeen := map[string]bool{}
 	actionByType := map[string]AdminOpsQueueAction{}

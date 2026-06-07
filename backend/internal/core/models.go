@@ -2250,22 +2250,26 @@ type AdminReputationStats struct {
 }
 
 type AdminOpsQueueResponse struct {
-	ProtocolVersion string              `json:"protocol_version"`
-	Kind            string              `json:"kind"`
-	Stats           AdminOpsQueueStats  `json:"stats"`
-	Items           []AdminOpsQueueItem `json:"items"`
+	ProtocolVersion string                `json:"protocol_version"`
+	Kind            string                `json:"kind"`
+	Stats           AdminOpsQueueStats    `json:"stats"`
+	Items           []AdminOpsQueueItem   `json:"items"`
+	OutputContracts []AgentOutputContract `json:"output_contracts,omitempty"`
 }
 
 type AdminOpsQueueStats struct {
-	TotalCount        int        `json:"total_count"`
-	DisputeCount      int        `json:"dispute_count"`
-	ModerationCount   int        `json:"moderation_count"`
-	ProposalCount     int        `json:"proposal_count"`
-	PayoutReviewCount int        `json:"payout_review_count"`
-	FraudCount        int        `json:"fraud_count"`
-	SecurityCount     int        `json:"security_count"`
-	CriticalCount     int        `json:"critical_count"`
-	UpdatedAt         *time.Time `json:"updated_at,omitempty"`
+	TotalCount         int        `json:"total_count"`
+	DisputeCount       int        `json:"dispute_count"`
+	ModerationCount    int        `json:"moderation_count"`
+	ProposalCount      int        `json:"proposal_count"`
+	PayoutReviewCount  int        `json:"payout_review_count"`
+	FraudCount         int        `json:"fraud_count"`
+	SecurityCount      int        `json:"security_count"`
+	CriticalCount      int        `json:"critical_count"`
+	HighCount          int        `json:"high_count"`
+	TokenWorkflowCount int        `json:"token_workflow_count"`
+	BlockedPayoutCents int64      `json:"blocked_payout_cents"`
+	UpdatedAt          *time.Time `json:"updated_at,omitempty"`
 }
 
 type AdminDisputesResponse struct {

@@ -2206,6 +2206,9 @@ test('validates admin operations protocol documents', () => {
       fraud_count: 1,
       security_count: 1,
       critical_count: 1,
+      high_count: 2,
+      token_workflow_count: 1,
+      blocked_payout_cents: 5000,
       updated_at: now,
     },
     items: [
@@ -2333,6 +2336,24 @@ test('validates admin operations protocol documents', () => {
         status: 'pending_review',
         actions: [{ id: 'refresh-queue', label: 'Refresh Queue', type: 'refresh_admin_ops', method: 'GET', endpoint: '/api/admin/ops-queue' }],
         created_at: now,
+      },
+    ],
+    output_contracts: [
+      {
+        action: 'refresh_admin_ops',
+        artifact_kind: 'admin_ops_queue',
+        output_endpoint: '/api/admin/ops-queue',
+        output_protocol: 'mergeos.admin-ops.v1',
+        output_protocol_url: '/protocol/admin-ops.v1.schema.json',
+        public_url: '/protocol/admin-ops.v1.schema.json',
+      },
+      {
+        action: 'prove_ledger',
+        artifact_kind: 'ledger_proof',
+        output_endpoint: '/api/public/ledger/proof',
+        output_protocol: 'mergeos.ledger-proof.v1',
+        output_protocol_url: '/protocol/ledger-proof.v1.schema.json',
+        public_url: '/api/public/ledger/proof',
       },
     ],
   };

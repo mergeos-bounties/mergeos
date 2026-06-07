@@ -22,6 +22,7 @@ func (s *Store) AdminOpsQueue() AdminOpsQueueResponse {
 		ProtocolVersion: "mergeos.admin-ops.v1",
 		Kind:            "admin_ops",
 		Items:           []AdminOpsQueueItem{},
+		OutputContracts: adminOpsQueueOutputContracts(),
 	}
 	add := func(item AdminOpsQueueItem) {
 		if item.CreatedAt.IsZero() {
@@ -195,6 +196,9 @@ func (s *Store) AdminOpsQueue() AdminOpsQueueResponse {
 		response.Items[i].Actions = adminOpsExecutableActions(response.Items[i])
 	}
 	response.Stats = adminOpsQueueStats(response.Items)
+	for _, item := range response.Items {
+		response.Stats.BlockedPayoutCents += adminOpsItemBlockedPayoutCentsFromTasks(s.tasks, item)
+	}
 	return response
 }
 
@@ -349,6 +353,20 @@ func (s *Store) adminOpsItemBlockedPayoutCents(item AdminOpsQueueItem) int64 {
 	return 0
 }
 
+func adminOpsItemBlockedPayoutCentsFromTasks(tasks map[string]*Task, item AdminOpsQueueItem) int64 {
+	if item.Type != "payout_review" && item.Type != "dispute" {
+		return 0
+	}
+	taskID := strings.TrimSpace(item.TaskID)
+	if taskID == "" {
+		return 0
+	}
+	if task := tasks[taskID]; task != nil {
+		return task.RewardCents
+	}
+	return 0
+}
+
 func adminOpsQueueStats(items []AdminOpsQueueItem) AdminOpsQueueStats {
 	stats := AdminOpsQueueStats{TotalCount: len(items)}
 	for _, item := range items {
@@ -370,14 +388,39 @@ func adminOpsQueueStats(items []AdminOpsQueueItem) AdminOpsQueueStats {
 			stats.PayoutReviewCount++
 		case "token_workflow_review":
 			stats.ModerationCount++
+			stats.TokenWorkflowCount++
 		case "fraud_review":
 			stats.FraudCount++
 		}
 		if item.Severity == "critical" {
 			stats.CriticalCount++
 		}
+		if item.Severity == "high" {
+			stats.HighCount++
+		}
 	}
 	return stats
+}
+
+func adminOpsQueueOutputContracts() []AgentOutputContract {
+	return []AgentOutputContract{
+		{
+			Action:            "refresh_admin_ops",
+			ArtifactKind:      "admin_ops_queue",
+			OutputEndpoint:    "/api/admin/ops-queue",
+			OutputProtocol:    "mergeos.admin-ops.v1",
+			OutputProtocolURL: "/protocol/admin-ops.v1.schema.json",
+			PublicURL:         "/protocol/admin-ops.v1.schema.json",
+		},
+		{
+			Action:            "prove_ledger",
+			ArtifactKind:      "ledger_proof",
+			OutputEndpoint:    "/api/public/ledger/proof",
+			OutputProtocol:    "mergeos.ledger-proof.v1",
+			OutputProtocolURL: "/protocol/ledger-proof.v1.schema.json",
+			PublicURL:         "/api/public/ledger/proof",
+		},
+	}
 }
 
 func adminOpsItemID(prefix, id string) string {
