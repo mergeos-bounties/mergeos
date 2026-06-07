@@ -4659,7 +4659,7 @@
               </article>
             </div>
 
-            <div class="public-notification-feed" aria-live="polite">
+            <div class="public-notification-feed home-feed-preview" aria-live="polite">
               <div class="public-notification-head">
                 <span>
                   <Bell :size="15" />

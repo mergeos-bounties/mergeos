@@ -273,13 +273,21 @@ test('public menus and signed-in mobile layout keep reachable compact surfaces',
 });
 
 test('public home keeps a short decision-screen rhythm', async () => {
+  const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
   const cssSource = await fs.readFile(new URL('./src/styles.css', import.meta.url), 'utf-8');
 
   assert.match(cssSource, /Compact public home rhythm/);
+  assert.match(cssSource, /Home ultra-short pass/);
+  assert.match(appSource, /class="public-notification-feed home-feed-preview"/);
   assert.match(cssSource, /\.public-home-page\s*\{[\s\S]*padding-block: 4px 8px !important;/);
+  assert.match(cssSource, /\.public-home-page\s*\{[\s\S]*padding-block: 0 6px !important;/);
   assert.match(cssSource, /\.public-home-page \.home-container\s*\{[\s\S]*max-width: min\(900px, calc\(100vw - 32px\)\) !important;/);
+  assert.match(cssSource, /\.public-home-page \.home-container\s*\{[\s\S]*max-width: min\(760px, calc\(100vw - 28px\)\) !important;/);
   assert.match(cssSource, /\.public-home-hero\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) minmax\(236px, 270px\) !important;/);
+  assert.match(cssSource, /\.public-home-hero\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) minmax\(210px, 230px\) !important;/);
   assert.match(cssSource, /\.public-home-copy h1\s*\{[\s\S]*font-size: clamp\(27px, 2\.55vw, 34px\) !important;/);
+  assert.match(cssSource, /\.public-home-copy h1\s*\{[\s\S]*font-size: clamp\(25px, 2\.2vw, 30px\) !important;/);
+  assert.match(cssSource, /\.home-feed-preview,[\s\S]*\.home-public-graph-proof,[\s\S]*\.home-command-panel \.home-pipeline\s*\{[\s\S]*display: none !important;/);
   assert.match(cssSource, /\.home-command-panel \.public-stat-grid article:nth-child\(n \+ 3\)\s*\{[\s\S]*display: none !important;/);
   assert.match(cssSource, /@media \(max-width: 980px\)[\s\S]*\.home-command-panel\s*\{[\s\S]*display: none !important;/);
 });
@@ -385,6 +393,19 @@ test('marketplace page exposes all operating lanes at a glance', async () => {
   assert.match(appSource, /openMarketplaceSection\('marketplace-agent/);
   assert.match(cssSource, /\.marketplace-os-strip\s*\{[\s\S]*grid-template-columns: repeat\(4, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /@media \(max-width: 760px\)[\s\S]*\.marketplace-os-strip\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\);/);
+});
+
+test('marketplace AI agent matrix covers generate review and test lanes', async () => {
+  const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
+  const cssSource = await fs.readFile(new URL('./src/styles.css', import.meta.url), 'utf-8');
+
+  assert.match(appSource, /class="marketplace-agent-matrix"/);
+  assert.match(appSource, /const marketplaceAgentCapabilityMatrix = computed/);
+  assert.match(appSource, /key: 'generate'[\s\S]*title: 'Generate task graph'[\s\S]*output: 'Task packets, rewards, lanes'/);
+  assert.match(appSource, /key: 'review'[\s\S]*title: 'Review pull requests'[\s\S]*evidence: 'Review webhook record'/);
+  assert.match(appSource, /key: 'test'[\s\S]*title: 'Test and QA'[\s\S]*evidence: 'Test log and screenshot'/);
+  assert.match(appSource, /Review, test, generate, code, secure, and deploy with proof/);
+  assert.match(cssSource, /\.marketplace-agent-matrix-grid\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/);
 });
 
 test('auto-release exposes payout output contracts in schema and dashboard', async () => {

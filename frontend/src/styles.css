@@ -33765,3 +33765,77 @@ canvas {
   }
 }
 
+/* Home ultra-short pass: the landing page should fit like a decision prompt, not a brochure. */
+.public-home-page {
+  min-height: auto !important;
+  padding-block: 0 6px !important;
+}
+
+.public-home-page .home-container {
+  max-width: min(760px, calc(100vw - 28px)) !important;
+}
+
+.public-home-hero {
+  grid-template-columns: minmax(0, 1fr) minmax(210px, 230px) !important;
+  gap: 10px !important;
+  padding-block: 8px !important;
+}
+
+.public-home-copy h1 {
+  max-width: 430px !important;
+  margin-top: 3px !important;
+  font-size: clamp(25px, 2.2vw, 30px) !important;
+  line-height: 1.02 !important;
+}
+
+.public-home-copy p {
+  max-width: 380px !important;
+  margin-top: 6px !important;
+  font-size: 12px !important;
+  line-height: 1.32 !important;
+}
+
+.public-home-copy .marketplace-actions {
+  margin-top: 8px !important;
+}
+
+.public-home-copy .primary-button.large,
+.public-home-copy .secondary-button.large {
+  min-height: 34px !important;
+  padding-inline: 10px !important;
+}
+
+.home-command-panel {
+  max-width: 230px !important;
+  padding: 7px !important;
+}
+
+.home-command-panel .public-stat-grid article {
+  min-height: 30px !important;
+  padding: 5px !important;
+}
+
+.home-feed-preview,
+.home-public-graph-proof,
+.home-command-panel .home-pipeline {
+  display: none !important;
+}
+
+@media (max-width: 980px) {
+  .public-home-page {
+    padding-block: 0 8px !important;
+  }
+
+  .public-home-page .home-container {
+    max-width: min(100%, calc(100vw - 18px)) !important;
+  }
+
+  .public-home-hero {
+    padding-block: 6px !important;
+  }
+
+  .public-home-copy h1 {
+    font-size: clamp(25px, 7vw, 32px) !important;
+  }
+}
+
