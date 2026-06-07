@@ -1185,7 +1185,7 @@ func publicEventType(item PublicLiveFeedItem) string {
 		return "wallet.migrated"
 	}
 	if strings.HasPrefix(feedType, "ledger_task_payment") {
-		return "task.paid"
+		return "payout.released"
 	}
 	if strings.HasPrefix(feedType, "ledger_") {
 		return "ledger.recorded"

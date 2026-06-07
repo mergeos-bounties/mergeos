@@ -959,7 +959,7 @@ test('maps live feed records to workflow event protocol values', () => {
   const protocolEvent = {
     protocol_version: 'mergeos.event.v1',
     kind: 'event',
-    type: 'task.paid',
+    type: 'payout.released',
     payload: { ledger_sequence: 7 },
   };
 
@@ -980,7 +980,8 @@ test('maps live feed records to workflow event protocol values', () => {
   assert.equal(liveFeedTypeToProtocolEventType('proposal_accepted'), 'proposal.accepted');
   assert.equal(liveFeedTypeToProtocolEventType('proposal_declined'), 'proposal.declined');
   assert.equal(liveFeedTypeToProtocolEventType('ledger_payment_verified'), 'payment.verified');
-  assert.equal(liveFeedTypeToProtocolEventType('ledger_task_payment'), 'task.paid');
+  assert.equal(workflowEventTypes.payoutReleased, 'payout.released');
+  assert.equal(liveFeedTypeToProtocolEventType('ledger_task_payment'), 'payout.released');
   assert.equal(liveFeedTypeToProtocolEventType('ledger_airdrop_claim'), 'airdrop.claimed');
   assert.equal(liveFeedTypeToProtocolEventType('ledger_presale_reservation'), 'presale.reserved');
   assert.equal(liveFeedTypeToProtocolEventType('ledger_wallet_migration'), 'wallet.migrated');
@@ -994,7 +995,7 @@ test('maps live feed records to workflow event protocol values', () => {
   assert.deepEqual(protocolEventsFromMessage({ event: protocolEvent }), [protocolEvent]);
   assert.deepEqual(protocolEventsFromMessage({ events: { events: [protocolEvent, null, 'bad'] } }), [protocolEvent]);
   assert.deepEqual(protocolEventsFromMessage({ type: 'connection_ready' }), []);
-  assert.equal(protocolTypeFromMessage({ event: protocolEvent, protocol_type: 'ledger.recorded' }), 'task.paid');
+  assert.equal(protocolTypeFromMessage({ event: protocolEvent, protocol_type: 'ledger.recorded' }), 'payout.released');
   assert.equal(protocolTypeFromMessage({ protocol_type: 'ledger.recorded', type: 'ledger_task_payment' }), 'ledger.recorded');
   assert.equal(protocolTypeFromMessage({ type: 'ledger_manual_credit' }), 'ledger.recorded');
   assert.equal(protocolTypeFromMessage({ type: 'ledger_wallet_migration' }), 'wallet.migrated');
@@ -1008,6 +1009,7 @@ test('maps live feed records to workflow event protocol values', () => {
   assert.equal(protocolEventGroup('pr.opened'), 'pull_request');
   assert.equal(protocolEventGroup('pr.ready_for_release'), 'pull_request');
   assert.equal(protocolEventGroup('task.paid'), 'task');
+  assert.equal(protocolEventGroup('payout.released'), 'payout');
   assert.equal(protocolEventGroup('proposal.accepted'), 'proposal');
   assert.equal(protocolEventGroup('agent.tested'), 'agent');
   assert.equal(protocolEventGroup('agent.leased'), 'agent');

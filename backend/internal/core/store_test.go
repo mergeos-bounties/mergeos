@@ -2749,19 +2749,19 @@ func TestPublicLiveFeedRouteReturnsSanitizedTimeline(t *testing.T) {
 			t.Fatalf("invalid protocol event header: %#v", event)
 		}
 		eventTypes[event.Type] = true
-		if event.Type == "task.paid" && (event.AmountMRG == nil || *event.AmountMRG <= 0) {
-			t.Fatalf("task paid event missing amount: %#v", event)
+		if event.Type == "payout.released" && (event.AmountMRG == nil || *event.AmountMRG <= 0) {
+			t.Fatalf("payout released event missing amount: %#v", event)
 		}
-		if event.Type == "task.paid" {
+		if event.Type == "payout.released" {
 			if event.Payload["ledger_sequence"] == nil || len(fmt.Sprint(event.Payload["entry_hash"])) != 64 {
-				t.Fatalf("task paid event missing ledger proof payload: %#v", event)
+				t.Fatalf("payout released event missing ledger proof payload: %#v", event)
 			}
 		}
 		if (event.Type == "task.created" || event.Type == "task.accepted") && !protocolPayloadStringSliceContains(event.Payload["evidence_required"], "tests") {
 			t.Fatalf("task event missing evidence requirements: %#v", event)
 		}
 	}
-	for _, required := range []string{"project.funded", "deployment.updated", "task.accepted", "task.paid", "pr.opened"} {
+	for _, required := range []string{"project.funded", "deployment.updated", "task.accepted", "payout.released", "pr.opened"} {
 		if !eventTypes[required] {
 			t.Fatalf("protocol events missing %s item: %#v", required, eventFeed.Events)
 		}

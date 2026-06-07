@@ -30,6 +30,7 @@
         "notification.updated",
         "payment.verified",
         "task.paid",
+        "payout.released",
         "deployment.updated",
         "ledger.recorded",
         "agent.reviewed",

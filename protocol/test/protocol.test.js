@@ -3190,7 +3190,7 @@ test('validates event protocol documents and assertion helper', () => {
     protocol_version: 'mergeos.event.v1',
     kind: 'event',
     id: 'evt_0001',
-    type: 'task.paid',
+    type: 'payout.released',
     occurred_at: '2026-06-02T00:00:00.000Z',
     actor: 'mergeos-admin',
     task_id: 'tsk_0001',
@@ -3199,6 +3199,7 @@ test('validates event protocol documents and assertion helper', () => {
   };
 
   assert.equal(assertProtocolDocument(event), event);
+  assert.equal(validateProtocolDocument({ ...event, type: 'task.paid' }).valid, true);
   assert.throws(() => assertProtocolDocument({ ...event, occurred_at: 'not-a-date' }), /date-time/);
 
   const agentEvent = validateProtocolDocument({
