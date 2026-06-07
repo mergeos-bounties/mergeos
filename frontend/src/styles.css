@@ -33023,3 +33023,87 @@ canvas {
   }
 }
 
+/* Final short-home pass: keep the first screen tight and avoid marketing-page drift. */
+.public-home-page {
+  padding-block: 6px 10px !important;
+}
+
+.public-home-page .home-container {
+  max-width: min(960px, calc(100vw - 32px)) !important;
+}
+
+.public-home-hero {
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 292px) !important;
+  gap: 16px !important;
+}
+
+.public-home-copy h1 {
+  max-width: 540px !important;
+  font-size: clamp(28px, 2.85vw, 38px) !important;
+}
+
+.public-home-copy p {
+  max-width: 460px !important;
+}
+
+.public-home-copy .marketplace-eyebrow {
+  font-size: 10px !important;
+}
+
+.public-home-copy .marketplace-actions {
+  margin-top: 12px !important;
+}
+
+.public-home-copy .primary-button.large,
+.public-home-copy .secondary-button.large {
+  min-height: 38px !important;
+}
+
+.home-command-panel {
+  padding: 10px !important;
+}
+
+.home-command-panel .public-stat-grid {
+  margin-top: 8px !important;
+}
+
+.home-command-panel .public-stat-grid article {
+  min-height: 40px !important;
+  padding: 7px 8px !important;
+}
+
+.home-command-panel .public-stat-grid strong {
+  font-size: 18px !important;
+}
+
+.home-command-panel .public-stat-grid small {
+  display: none !important;
+}
+
+@media (max-width: 760px) {
+  .public-home-page {
+    padding-block: 6px 12px !important;
+  }
+
+  .public-home-page .home-container {
+    max-width: min(100%, calc(100vw - 18px)) !important;
+    padding-inline: 9px !important;
+  }
+
+  .public-home-hero {
+    gap: 10px !important;
+  }
+
+  .public-home-copy h1 {
+    font-size: clamp(27px, 8vw, 36px) !important;
+  }
+
+  .public-home-copy p {
+    margin-top: 8px !important;
+  }
+
+  .home-command-panel {
+    display: none !important;
+  }
+}
+
