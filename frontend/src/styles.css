@@ -8791,6 +8791,79 @@ svg {
   cursor: pointer;
 }
 
+.token-ceo-candidate-lane {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.token-ceo-candidate-lane article {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  border: 1px solid rgba(37, 99, 235, 0.13);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.88);
+  padding: 9px;
+}
+
+.token-ceo-candidate-lane small,
+.token-ceo-candidate-lane strong,
+.token-ceo-candidate-lane p {
+  display: block;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.token-ceo-candidate-lane small {
+  color: #2563eb;
+  font-size: 9.5px;
+  line-height: 1.15;
+  font-weight: 920;
+  text-transform: uppercase;
+}
+
+.token-ceo-candidate-lane strong {
+  margin-top: 3px;
+  color: #111827;
+  font-size: 11.5px;
+  line-height: 1.22;
+  font-weight: 940;
+}
+
+.token-ceo-candidate-lane p {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 4px 0 0;
+  color: #536273;
+  font-size: 10.5px;
+  line-height: 1.28;
+  font-weight: 740;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.token-ceo-candidate-lane button {
+  grid-column: 2;
+  width: max-content;
+  max-width: 100%;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid rgba(37, 99, 235, 0.14);
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  padding: 5px 7px;
+  font-size: 9.5px;
+  line-height: 1;
+  font-weight: 920;
+  cursor: pointer;
+}
+
 .token-ceo-project-queue {
   min-width: 0;
   display: grid;
@@ -37495,6 +37568,7 @@ canvas {
 
   .token-ceo-project-queue,
   .token-ceo-live-queue,
+  .token-ceo-candidate-lane,
   .token-ceo-source-packet,
   .token-ceo-research-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
@@ -37503,6 +37577,7 @@ canvas {
 
   .token-ceo-project-queue article,
   .token-ceo-live-queue article,
+  .token-ceo-candidate-lane article,
   .token-ceo-source-packet article,
   .token-ceo-research-grid article {
     grid-template-columns: minmax(0, 1fr) !important;
@@ -37511,6 +37586,7 @@ canvas {
   }
 
   .token-ceo-live-queue article:nth-child(n + 3),
+  .token-ceo-candidate-lane article:nth-child(n + 3),
   .token-ceo-project-queue article:nth-child(n + 5),
   .token-ceo-source-packet article:nth-child(n + 4),
   .token-ceo-research-grid article:nth-child(n + 5) {
@@ -37524,6 +37600,7 @@ canvas {
 
   .token-ceo-project-queue .ledger-trust-icon,
   .token-ceo-live-queue .ledger-trust-icon,
+  .token-ceo-candidate-lane .ledger-trust-icon,
   .token-ceo-source-packet .ledger-trust-icon,
   .token-ceo-research-grid .ledger-trust-icon {
     width: 28px !important;
@@ -37537,6 +37614,12 @@ canvas {
   .token-ceo-live-actions a {
     padding: 4px 6px !important;
     font-size: 9px !important;
+  }
+
+  .token-ceo-candidate-lane button {
+    grid-column: auto !important;
+    width: 100% !important;
+    justify-content: center !important;
   }
 
   .token-ceo-live-empty {
@@ -37556,6 +37639,7 @@ canvas {
 
   .token-ceo-project-queue small,
   .token-ceo-live-queue p,
+  .token-ceo-candidate-lane p,
   .token-ceo-research-grid p,
   .token-ceo-research-grid small {
     display: -webkit-box !important;

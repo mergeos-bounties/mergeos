@@ -5163,6 +5163,22 @@
               <ArrowRight :size="11" />
             </button>
           </article>
+          <div v-if="tokenCeoCandidateRows.length" class="token-ceo-candidate-lane" aria-label="CEO candidate projects">
+            <article v-for="row in tokenCeoCandidateRows" :key="row.key">
+              <span :class="['ledger-trust-icon', row.tone]">
+                <Compass :size="14" />
+              </span>
+              <div>
+                <small>{{ row.label }}</small>
+                <strong>{{ row.title }}</strong>
+                <p>{{ row.body }}</p>
+              </div>
+              <button type="button" @click="prefillTokenLaunchBriefFromCandidate(row)">
+                Use for CEO brief
+                <ArrowRight :size="10" />
+              </button>
+            </article>
+          </div>
           <div class="token-ceo-project-queue" aria-label="CEO project research queue">
             <article v-for="row in tokenCeoProjectResearchRows" :key="row.title">
               <span :class="['ledger-trust-icon', row.tone]">
@@ -12803,6 +12819,31 @@ const tokenCeoLiveEmptyCopy = computed(() => (
         body: 'Send the CEO repo, mission demand, anti-bot, wallet, and proof gate brief before earned claims open.',
       }
 ));
+const tokenCeoCandidateRows = computed(() => {
+  const projects = Array.isArray(marketplaceData.value.projects) ? marketplaceData.value.projects : [];
+  const bounties = Array.isArray(marketplaceData.value.bounties) ? marketplaceData.value.bounties : [];
+  const launchType = publicPage.value === 'presale' ? 'presale' : 'airdrop';
+  return projects.slice(0, 3).map((project) => {
+    const projectBounties = bounties.filter((bounty) => bounty.project_id === project.id);
+    const firstBounty = projectBounties[0] || {};
+    const sourceUrl = firstBounty.source_repository || firstBounty.issue_url || '';
+    const openTasks = Number(project.open_task_count) || projectBounties.length || 0;
+    const acceptedTasks = Number(project.accepted_task_count) || 0;
+    const budget = formatPublicMRGFromCents(Number(project.work_pool_cents || project.budget_cents) || 0);
+    return {
+      key: project.id || project.title,
+      label: launchType === 'presale' ? 'CEO presale candidate' : 'CEO airdrop candidate',
+      title: project.title || 'Funded MergeOS project',
+      body: `${budget} work pool / ${openTasks} open tasks / ${acceptedTasks} accepted`,
+      sourceUrl,
+      projectSummary: project.brief || firstBounty.acceptance || '',
+      proofPolicy: firstBounty.evidence_required?.length
+        ? `Require ${firstBounty.evidence_required.join(', ')} plus ledger proof before approval.`
+        : 'Require task evidence, review notes, repository context, and ledger proof before approval.',
+      tone: launchType === 'presale' ? 'green' : 'purple',
+    };
+  });
+});
 const tokenCeoProjectResearchRows = computed(() => {
   const openTasks = Number(marketplaceStats.value.open_task_count) || (marketplaceData.value.bounties || []).length || 0;
   const proofRows = Number(ledgerEconomyStats.value.ledger_entry_count) || ledgerRawEntries.value.length || ledgerEventItems.value.length || 0;
@@ -24617,6 +24658,25 @@ function prefillTokenLaunchBrief() {
   tokenLaunchBriefAttempted.value = false;
   tokenLaunchBriefError.value = '';
   showToast('CEO research template added.');
+}
+
+function prefillTokenLaunchBriefFromCandidate(candidate = {}) {
+  prefillTokenLaunchBrief();
+  const launchType = publicPage.value === 'presale' ? 'presale' : 'airdrop';
+  tokenLaunchBriefForm.project_title = candidate.title || tokenLaunchBriefForm.project_title;
+  tokenLaunchBriefForm.repository_url = candidate.sourceUrl || tokenLaunchBriefForm.repository_url;
+  tokenLaunchBriefForm.project_summary = launchType === 'presale'
+    ? `CEO should research whether ${candidate.title || 'this project'} is ready for an MRG presale window. ${candidate.projectSummary || candidate.body || ''}`.trim()
+    : `CEO should research whether ${candidate.title || 'this project'} deserves earned MRG airdrop missions. ${candidate.projectSummary || candidate.body || ''}`.trim();
+  tokenLaunchBriefForm.proof_policy = candidate.proofPolicy || tokenLaunchBriefForm.proof_policy;
+  tokenLaunchBriefAttempted.value = false;
+  tokenLaunchBriefError.value = '';
+  showToast('CEO candidate loaded.');
+  if (!hasWindow) return;
+  window.requestAnimationFrame(() => {
+    const target = document.querySelector('.token-ceo-brief-card');
+    target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  });
 }
 
 function openTokenLaunchBriefFromProofBoard() {
