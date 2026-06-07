@@ -4,6 +4,8 @@ import test from 'node:test';
 
 const sourceIDL = JSON.parse(readFileSync(new URL('../idl/mergeos_mrg.json', import.meta.url), 'utf8'));
 const publicIDL = JSON.parse(readFileSync(new URL('../../../frontend/public/contracts/solana/mergeos_mrg.v1.idl.json', import.meta.url), 'utf8'));
+const proofManifest = JSON.parse(readFileSync(new URL('../mergeos_mrg.proof-manifest.v1.json', import.meta.url), 'utf8'));
+const publicProofManifest = JSON.parse(readFileSync(new URL('../../../frontend/public/contracts/solana/mergeos_mrg.proof-manifest.v1.json', import.meta.url), 'utf8'));
 const programSource = readFileSync(new URL('../programs/mergeos-mrg/src/lib.rs', import.meta.url), 'utf8');
 
 function instruction(name) {
@@ -22,7 +24,9 @@ function accountNames(item) {
 
 test('publishes the same Solana MRG IDL to frontend static assets', () => {
   assert.deepEqual(publicIDL, sourceIDL);
+  assert.deepEqual(publicProofManifest, proofManifest);
   assert.equal(sourceIDL.metadata.public_idl_url, 'https://mergeos.shop/contracts/solana/mergeos_mrg.v1.idl.json');
+  assert.equal(proofManifest.public_manifest_url, 'https://mergeos.shop/contracts/solana/mergeos_mrg.proof-manifest.v1.json');
 });
 
 test('declares MRG treasury, escrow, payout, and wallet migration instructions', () => {
@@ -112,4 +116,15 @@ test('documents chain enum mapping and bytes32 ledger references', () => {
     );
     assert.equal(hasBytes32LedgerReference, true, `${item} must anchor a bytes32 ledger reference`);
   }
+});
+
+test('publishes a Solana contract proof manifest for ledger-to-instruction reconciliation', () => {
+  assert.equal(proofManifest.protocol_version, 'mergeos.solana-contract-proof.v1');
+  assert.equal(proofManifest.ledger_reference_format, 'bytes32:hex_decode(entry_hash|public_hash|contract_reference)');
+  const rows = new Map(proofManifest.instruction_map.map((row) => [row.instruction, row]));
+  assert.ok(rows.get('mintVerifiedMrg').ledger_types.includes('token_mint'));
+  assert.ok(rows.get('openEscrow').ledger_types.includes('task_reserve'));
+  assert.ok(rows.get('releasePayout').ledger_types.includes('task_payment'));
+  assert.ok(rows.get('registerLegacyWallet').ledger_types.includes('wallet_migration'));
+  assert.equal(proofManifest.sdk_helpers.legacy_wallet_hash, "legacyWalletAddressHash(chain, address, { format: 'bytes' })");
 });

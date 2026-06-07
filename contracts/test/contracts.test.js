@@ -11,6 +11,8 @@ const readmeSource = readFileSync(join(root, "README.md"), "utf8");
 const solanaReadmeSource = readFileSync(join(root, "solana", "README.md"), "utf8");
 const idl = JSON.parse(readFileSync(join(root, "solana", "idl", "mergeos_mrg.json"), "utf8"));
 const publicIDL = JSON.parse(readFileSync(join(root, "..", "frontend", "public", "contracts", "solana", "mergeos_mrg.v1.idl.json"), "utf8"));
+const proofManifest = JSON.parse(readFileSync(join(root, "solana", "mergeos_mrg.proof-manifest.v1.json"), "utf8"));
+const publicProofManifest = JSON.parse(readFileSync(join(root, "..", "frontend", "public", "contracts", "solana", "mergeos_mrg.proof-manifest.v1.json"), "utf8"));
 const backendConfigSource = readFileSync(join(root, "..", "backend", "internal", "core", "config.go"), "utf8");
 
 describe("contract package", () => {
@@ -29,6 +31,7 @@ describe("contract package", () => {
     assert.match(programSource, /declare_id!\("4gUBWum3fGKfm7BeGXryzXjPDBDLfhVJRcjN5MPnfDNW"\)/);
     assert.equal(idl.address, "4gUBWum3fGKfm7BeGXryzXjPDBDLfhVJRcjN5MPnfDNW");
     assert.deepEqual(publicIDL, idl);
+    assert.deepEqual(publicProofManifest, proofManifest);
   });
 
   it("defines the MRG mint, escrow, payout, and migration instructions", () => {
@@ -96,6 +99,18 @@ describe("contract package", () => {
     assert.match(readmeSource, /legacyWalletAddressHash/);
     assert.match(readmeSource, /ledger_reference: \[u8; 32\]/);
     assert.match(readmeSource, /legacy_address_hash: \[u8; 32\]/);
+  });
+
+  it("publishes a proof manifest that maps ledger rows to Anchor instructions", () => {
+    assert.equal(proofManifest.protocol_version, "mergeos.solana-contract-proof.v1");
+    assert.equal(proofManifest.idl_url, "https://mergeos.shop/contracts/solana/mergeos_mrg.v1.idl.json");
+    assert.equal(proofManifest.public_manifest_url, "https://mergeos.shop/contracts/solana/mergeos_mrg.proof-manifest.v1.json");
+    assert.equal(proofManifest.sdk_helpers.ledger_reference, "contractReferenceFromLedger(entry, { format: 'bytes' })");
+    const rows = new Map(proofManifest.instruction_map.map((row) => [row.instruction, row]));
+    assert.deepEqual(rows.get("mintVerifiedMrg").ledger_types, ["token_mint", "payment_verified"]);
+    assert.deepEqual(rows.get("openEscrow").pda_seeds, ["escrow", "project_id_bytes"]);
+    assert.deepEqual(rows.get("releasePayout").pda_seeds, ["payout", "payout_id_bytes"]);
+    assert.deepEqual(rows.get("registerLegacyWallet").pda_seeds, ["wallet-migration", "legacy_chain", "legacy_address_hash_bytes"]);
   });
 
   it("avoids EVM and unsafe Solana primitives", () => {

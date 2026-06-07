@@ -375,6 +375,13 @@ func ProtocolManifest() ProtocolManifestResponse {
 			},
 			{
 				Method:      "GET",
+				Path:        "/contracts/solana/mergeos_mrg.proof-manifest.v1.json",
+				Protocol:    "mergeos.solana-contract-proof.v1",
+				Auth:        "none",
+				Description: "Public Solana proof manifest mapping ledger event types to MRG Anchor instructions, PDA seeds, SDK helpers, and audit sources.",
+			},
+			{
+				Method:      "GET",
 				Path:        "/api/public/protocol/events",
 				Protocol:    "mergeos.event.v1",
 				Auth:        "none",

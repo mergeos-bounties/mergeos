@@ -1,0 +1,56 @@
+{
+  "protocol_version": "mergeos.solana-contract-proof.v1",
+  "kind": "solana_contract_proof_manifest",
+  "program": "mergeos_mrg",
+  "program_id": "4gUBWum3fGKfm7BeGXryzXjPDBDLfhVJRcjN5MPnfDNW",
+  "target_chain": "solana",
+  "token_symbol": "MRG",
+  "idl_url": "https://mergeos.shop/contracts/solana/mergeos_mrg.v1.idl.json",
+  "public_manifest_url": "https://mergeos.shop/contracts/solana/mergeos_mrg.proof-manifest.v1.json",
+  "ledger_reference_format": "bytes32:hex_decode(entry_hash|public_hash|contract_reference)",
+  "sdk_helpers": {
+    "ledger_reference": "contractReferenceFromLedger(entry, { format: 'bytes' })",
+    "legacy_wallet_hash": "legacyWalletAddressHash(chain, address, { format: 'bytes' })",
+    "wallet_migration_pda": "walletMigrationPDASeedMetadata(chain, address)"
+  },
+  "instruction_map": [
+    {
+      "ledger_types": ["token_mint", "payment_verified"],
+      "instruction": "mintVerifiedMrg",
+      "anchor_method": "mint_verified_mrg",
+      "proof_argument": "ledgerReference",
+      "output_account": "receiverTokenAccount",
+      "public_sources": ["/api/public/ledger", "/api/public/token-economy", "/api/public/ledger/proof"]
+    },
+    {
+      "ledger_types": ["project_reserve", "task_reserve"],
+      "instruction": "openEscrow",
+      "anchor_method": "open_escrow",
+      "proof_argument": "ledgerReference",
+      "pda_seeds": ["escrow", "project_id_bytes"],
+      "public_sources": ["/api/public/ledger/events", "/api/public/token-economy", "/api/public/protocol/ledger"]
+    },
+    {
+      "ledger_types": ["task_payment"],
+      "instruction": "releasePayout",
+      "anchor_method": "release_payout",
+      "proof_argument": "ledgerReference",
+      "pda_seeds": ["payout", "payout_id_bytes"],
+      "public_sources": ["/api/public/live-feed", "/api/public/protocol/events", "/api/public/ledger/proof"]
+    },
+    {
+      "ledger_types": ["wallet_migration"],
+      "instruction": "registerLegacyWallet",
+      "anchor_method": "register_legacy_wallet",
+      "proof_argument": "legacyAddressHash",
+      "pda_seeds": ["wallet-migration", "legacy_chain", "legacy_address_hash_bytes"],
+      "public_sources": ["/api/public/ledger", "/api/public/live-feed", "/api/wallet/migration"]
+    }
+  ],
+  "security_invariants": [
+    "Every token movement is constrained to treasury_config.token_mint.",
+    "Every mint, escrow, and payout instruction carries a ledger-derived bytes32 proof anchor.",
+    "Escrow and payout records are PDA-backed and keyed by public proof ids.",
+    "Legacy TRC20/EVM wallets are stored as hashes and linked to Solana wallets only through registerLegacyWallet."
+  ]
+}

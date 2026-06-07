@@ -182,6 +182,10 @@ export class MergeOSClient {
     return this.request('/downloads/mergeide-windows-latest.json', { auth: false });
   }
 
+  publicSolanaMRGContractProofManifest() {
+    return this.request('/contracts/solana/mergeos_mrg.proof-manifest.v1.json', { auth: false });
+  }
+
   publicProtocolEvents(options = {}) {
     return this.request(`/api/public/protocol/events${liveFeedQueryString(options)}`, { auth: false });
   }

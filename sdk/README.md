@@ -506,6 +506,7 @@ The stream sends `connection_ready` and `live_feed_snapshot` events immediately 
 ```js
 const reference = contractReferenceFromLedger(ledgerEntry, { format: 'bytes' });
 const legacyAddressHash = legacyWalletAddressHash('evm', '0xabc...', { format: 'bytes' });
+const proofManifest = await mergeos.publicSolanaMRGContractProofManifest();
 ```
 
 Use these helpers when sending `reference: [u8; 32]` or `legacy_address_hash: [u8; 32]` to the MergeOS Anchor program. They prefer ledger `entry_hash` / `public_hash` and only hash a sanitized reference when no ledger hash exists.
@@ -513,6 +514,8 @@ Use these helpers when sending `reference: [u8; 32]` or `legacy_address_hash: [u
 `createWalletMigration()` returns a `mergeos.wallet-migration.v1` document with the Solana target wallet, legacy address hash, PDA seed labels/formats, and `register_legacy_wallet` args for the Anchor program. Decode `contract.args.legacy_address_hash` into 32 raw bytes for the PDA hash seed; do not pass the 64-character hex string as a literal seed.
 
 The public IDL is available at `/contracts/solana/mergeos_mrg.v1.idl.json`. It includes `initializeTreasury`, `mintVerifiedMrg`, `openEscrow`, `releasePayout`, and `registerLegacyWallet`. Map protocol `legacy_chain` strings to the Anchor enum as `trc20 -> LegacyChain::Trc20` and `evm -> LegacyChain::Evm`.
+
+The public proof manifest at `/contracts/solana/mergeos_mrg.proof-manifest.v1.json` maps ledger types such as `token_mint`, `task_reserve`, `task_payment`, and `wallet_migration` to Anchor instruction names, PDA seed formats, SDK helper calls, and public audit sources.
 
 ## MergeIDE Release Artifact
 

@@ -4909,6 +4909,10 @@
                 {{ publicContractsCopy.idlAction || 'Open Solana IDL' }}
                 <ExternalLink :size="16" />
               </button>
+              <button class="secondary-button large" type="button" @click="openExternalURL(solanaMRGProofManifestPath)">
+                {{ publicContractsCopy.manifestAction || 'Open proof manifest' }}
+                <FileCheck2 :size="16" />
+              </button>
               <button class="secondary-button large" type="button" @click="copyContractsProofPacket">
                 {{ publicContractsCopy.copyRoot }}
                 <Hash :size="16" />
@@ -10651,6 +10655,7 @@ const publicContractsTranslations = {
     primaryAction: 'Open ledger proof',
     protocolAction: 'Open protocol',
     idlAction: 'Open Solana IDL',
+    manifestAction: 'Open proof manifest',
     copyRoot: 'Copy proof packet',
     statusValid: 'Proof valid',
     statusSyncing: 'Syncing',
@@ -10809,6 +10814,7 @@ const mergeIdeBuildWorkflowRow = [
   ExternalLink,
 ];
 const solanaMRGIDLPath = '/contracts/solana/mergeos_mrg.v1.idl.json';
+const solanaMRGProofManifestPath = '/contracts/solana/mergeos_mrg.proof-manifest.v1.json';
 
 const publicMergeIdeTranslations = {
   'en-US': {
@@ -12920,6 +12926,15 @@ const contractsArchitectureRows = computed(() => [
     meta: 'public IDL',
     icon: Code2,
     tone: 'green',
+  },
+  {
+    key: 'proof-manifest',
+    title: 'Contract proof manifest',
+    body: 'Public JSON maps ledger types to Anchor instructions, PDA seeds, SDK helpers, and audit source endpoints for external operators.',
+    value: 'mergeos.solana-contract-proof.v1',
+    meta: 'ledger -> instruction',
+    icon: FileCheck2,
+    tone: 'blue',
   },
   {
     key: 'token',

@@ -6,6 +6,7 @@ This package now contains the MergeOS Solana/Anchor program for the MRG token ec
 
 - `solana/programs/mergeos-mrg/src/lib.rs`: active Anchor program for MRG SPL mint operations, project escrow, payout receipts, treasury config, and legacy wallet migration.
 - `solana/idl/mergeos_mrg.json`: source IDL mirrored to the frontend public contract artifact.
+- `solana/mergeos_mrg.proof-manifest.v1.json`: source proof manifest mirrored to the frontend public contract artifact.
 - `solana/Anchor.toml`: active localnet Anchor workspace configuration.
 - `solana/Cargo.toml`: Rust workspace configuration for the active Solana program.
 

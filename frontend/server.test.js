@@ -81,8 +81,11 @@ test('public protocol schemas mirror the protocol package schemas', async () => 
 
 test('public protocol links match backend routes', async () => {
   const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
+  const manifestSource = await fs.readFile(new URL('../backend/internal/core/protocol_manifest.go', import.meta.url), 'utf-8');
 
   assert.match(appSource, /const publicProtocolManifestPath = '\/api\/public\/protocol';/);
+  assert.match(manifestSource, /\/contracts\/solana\/mergeos_mrg\.proof-manifest\.v1\.json/);
+  assert.match(manifestSource, /mergeos\.solana-contract-proof\.v1/);
   assert.match(appSource, /function publicTaskProtocolPath\(taskID = ''\)/);
   assert.match(appSource, /return id \? `\/api\/public\/protocol\/tasks\?task_id=\$\{encodeURIComponent\(id\)\}` : '\/api\/public\/protocol\/tasks';/);
   assert.match(appSource, /function publicProjectWorkflowPath\(projectID = ''\)/);
@@ -365,6 +368,20 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-workflow-proof-list article\s*\{[\s\S]*grid-template-columns: 32px minmax\(0, 1fr\);/);
   assert.match(cssSource, /\.token-proof-result small\s*\{[\s\S]*overflow: visible;[\s\S]*white-space: normal;[\s\S]*overflow-wrap: anywhere;/);
   assert.match(cssSource, /\.token-whitepaper-thesis p\s*\{[\s\S]*-webkit-line-clamp: 2;/);
+});
+
+test('contracts page exposes Solana proof manifest alongside the public IDL', async () => {
+  const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
+  const proofManifest = JSON.parse(await fs.readFile(new URL('./public/contracts/solana/mergeos_mrg.proof-manifest.v1.json', import.meta.url), 'utf-8'));
+
+  assert.equal(proofManifest.protocol_version, 'mergeos.solana-contract-proof.v1');
+  assert.equal(proofManifest.program, 'mergeos_mrg');
+  assert.ok(proofManifest.instruction_map.some((row) => row.instruction === 'openEscrow' && row.ledger_types.includes('task_reserve')));
+  assert.match(appSource, /const solanaMRGProofManifestPath = '\/contracts\/solana\/mergeos_mrg\.proof-manifest\.v1\.json';/);
+  assert.match(appSource, /openExternalURL\(solanaMRGProofManifestPath\)/);
+  assert.match(appSource, /manifestAction: 'Open proof manifest'/);
+  assert.match(appSource, /key: 'proof-manifest'/);
+  assert.match(appSource, /mergeos\.solana-contract-proof\.v1/);
 });
 
 test('signed-in mobile dashboard keeps nav, actions, and popovers phone-safe', async () => {
