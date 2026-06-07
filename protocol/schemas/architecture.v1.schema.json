@@ -379,12 +379,13 @@
         "features": { "$ref": "#/$defs/stringList" },
         "event_routes": {
           "type": "object",
-          "required": ["live_prs", "deployments", "contributors", "ai_actions"],
+          "required": ["live_prs", "deployments", "contributors", "ai_actions", "payout_events"],
           "properties": {
             "live_prs": { "$ref": "#/$defs/liveFeedEventRoute" },
             "deployments": { "$ref": "#/$defs/liveFeedEventRoute" },
             "contributors": { "$ref": "#/$defs/liveFeedEventRoute" },
-            "ai_actions": { "$ref": "#/$defs/liveFeedEventRoute" }
+            "ai_actions": { "$ref": "#/$defs/liveFeedEventRoute" },
+            "payout_events": { "$ref": "#/$defs/liveFeedEventRoute" }
           },
           "additionalProperties": false
         }

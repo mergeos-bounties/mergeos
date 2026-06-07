@@ -370,6 +370,12 @@ test('public system vision preserves the product thesis', async () => {
       event_type: 'ai_review',
       ledger_tab: 'AI Actions',
     },
+    payout_events: {
+      page: '/live-feed',
+      api: '/api/public/live-feed',
+      event_type: 'ledger_task_payment',
+      ledger_tab: 'Escrow & Payments',
+    },
   });
   assert.deepEqual(architectureManifest.ledger_system.proof_routes, {
     payouts: {
