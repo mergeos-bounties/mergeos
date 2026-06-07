@@ -607,8 +607,16 @@ func adminOpsTokenWorkflowItem(entry LedgerEntry) AdminOpsQueueItem {
 		if launchType == "" {
 			launchType = "token"
 		}
+		decision := sanitizeLedgerReferenceValue(fields["decision"])
+		if decision == "" {
+			decision = "pending_open_decision"
+		}
+		gates := sanitizeLedgerReferenceValue(fields["gates"])
+		if gates == "" {
+			gates = "ceo_memo"
+		}
 		title = "CEO token launch brief needs review"
-		body = fmt.Sprintf("%s launch brief needs CEO research, risk review, and open/no-open decision.", marketplaceTitle(launchType))
+		body = fmt.Sprintf("%s launch brief needs CEO research, risk review, and %s before allocation opens. Gates: %s.", marketplaceTitle(launchType), strings.ReplaceAll(decision, "_", " "), gates)
 		severity = "medium"
 	}
 	return AdminOpsQueueItem{

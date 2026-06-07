@@ -1735,6 +1735,9 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 	if launchBrief.LedgerEntry.Type != "token_launch_brief" || launchBrief.LedgerEntry.AmountCents != 0 || len(launchBrief.LedgerEntry.EntryHash) != 64 {
 		t.Fatalf("token launch brief ledger entry invalid: %#v", launchBrief.LedgerEntry)
 	}
+	if !strings.Contains(launchBrief.LedgerEntry.Reference, "decision:pending_open_decision") || !strings.Contains(launchBrief.LedgerEntry.Reference, "gates:repo=ready_for_review") {
+		t.Fatalf("token launch brief ledger reference missing CEO memo contract: %s", launchBrief.LedgerEntry.Reference)
+	}
 	if !stringSliceContains(launchBrief.ResearchSignals, "airdrop_launch") || !stringSliceContains(launchBrief.ResearchSignals, "repository_context") {
 		t.Fatalf("token launch brief research signals invalid: %#v", launchBrief.ResearchSignals)
 	}
@@ -1763,6 +1766,9 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 	feedTypes := map[string]bool{}
 	for _, item := range store.PublicLiveFeed(20).Items {
 		feedTypes[item.Type] = true
+		if item.Type == "ledger_token_launch_brief" && (!strings.Contains(item.Body, "pending open decision") || !strings.Contains(item.Body, "gates:")) {
+			t.Fatalf("token launch live feed missing CEO decision context: %#v", item)
+		}
 	}
 	for _, required := range []string{"ledger_airdrop_claim", "ledger_presale_reservation", "ledger_token_launch_brief"} {
 		if !feedTypes[required] {
@@ -1802,6 +1808,9 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 			tokenReviewCount++
 			if item.Status != "pending_review" || strings.Contains(item.Body, wallet) || strings.Contains(item.Reference, wallet) {
 				t.Fatalf("unsafe token workflow admin ops item: %#v", item)
+			}
+			if strings.Contains(item.Title, "CEO token launch") && (!strings.Contains(item.Body, "pending open decision") || !strings.Contains(item.Body, "repo=ready_for_review")) {
+				t.Fatalf("token launch admin ops item missing CEO decision context: %#v", item)
 			}
 		}
 	}

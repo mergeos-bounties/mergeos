@@ -915,7 +915,20 @@ func publicLiveFeedLedgerBody(entry LedgerEntry, projectTitle string) string {
 		return "MergeOS linked a legacy wallet hash to a Solana MRG wallet and staged Anchor registration proof."
 	}
 	if entry.Type == "token_launch_brief" {
-		return "MergeOS recorded a CEO research brief for a token launch decision."
+		fields := splitLedgerReference(entry.Reference)
+		launchType := sanitizeLedgerReferenceValue(fields["type"])
+		if launchType == "" {
+			launchType = "token"
+		}
+		decision := sanitizeLedgerReferenceValue(fields["decision"])
+		if decision == "" {
+			decision = "pending_open_decision"
+		}
+		gates := sanitizeLedgerReferenceValue(fields["gates"])
+		if gates == "" {
+			gates = "CEO memo gates"
+		}
+		return fmt.Sprintf("MergeOS recorded a CEO %s research brief. Decision is %s; gates: %s.", launchType, strings.ReplaceAll(decision, "_", " "), gates)
 	}
 	scope := projectTitle
 	if scope == "" {

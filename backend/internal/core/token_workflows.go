@@ -433,10 +433,13 @@ func (s *Store) RecordTokenLaunchBriefForUser(userID string, req TokenLaunchBrie
 	walletPolicy := sanitizeTokenLaunchText(req.WalletPolicy, 260)
 	riskNotes := sanitizeTokenLaunchText(req.RiskNotes, 260)
 	researchSignals := normalizeTokenLaunchResearchSignals(req.ResearchSignals, launchType, repositoryURL, proofPolicy, walletPolicy)
+	ceoMemo := tokenLaunchCEOMemo(launchType, repositoryURL, allocationPolicy, proofPolicy, walletPolicy, riskNotes)
 	briefID := s.newID("tlb")
 	reference := tokenWorkflowReference([]string{
 		"launch_brief:" + briefID,
 		"type:" + launchType,
+		"decision:" + ceoMemo.Decision,
+		"gates:" + tokenLaunchGateReference(ceoMemo.Gates),
 		"title:" + projectTitle,
 		"repo:" + repositoryURL,
 		"signals:" + strings.Join(researchSignals, ","),
@@ -469,7 +472,7 @@ func (s *Store) RecordTokenLaunchBriefForUser(userID string, req TokenLaunchBrie
 		WalletPolicy:     walletPolicy,
 		RiskNotes:        riskNotes,
 		ResearchSignals:  researchSignals,
-		CEOMemo:          tokenLaunchCEOMemo(launchType, repositoryURL, allocationPolicy, proofPolicy, walletPolicy, riskNotes),
+		CEOMemo:          ceoMemo,
 		LedgerEntry:      entry,
 		LedgerProofURL:   "/api/public/ledger/proof",
 		LiveFeedURL:      "/api/public/live-feed",
@@ -518,6 +521,17 @@ func fallbackGateEvidence(value, fallback string) string {
 		return trimmed
 	}
 	return fallback
+}
+
+func tokenLaunchGateReference(gates []CEOMemoGate) string {
+	parts := make([]string, 0, len(gates))
+	for _, gate := range gates {
+		if gate.Key == "" {
+			continue
+		}
+		parts = append(parts, gate.Key+"="+gate.Status)
+	}
+	return strings.Join(parts, ",")
 }
 
 func (s *Store) RecordPresaleReservationForUser(userID string, req PresaleReservationRequest) (PresaleReservationResponse, error) {
