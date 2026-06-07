@@ -2139,17 +2139,56 @@
 
                 <article class="dash-card">
                   <div class="card-title-row">
-                    <h2>User Risk</h2>
+                    <div>
+                      <h2>User Governance</h2>
+                      <p>Role, identity, spend, and worker-risk controls for admin moderation.</p>
+                    </div>
                     <span>{{ adminUserRows.length }}</span>
+                  </div>
+                  <div class="admin-user-control-strip" aria-label="Admin user governance summary">
+                    <button
+                      v-for="filter in adminUserFilterRows"
+                      :key="filter.key"
+                      type="button"
+                      :class="{ active: adminUserFilter === filter.key }"
+                      @click="adminUserFilter = filter.key"
+                    >
+                      <strong>{{ filter.value }}</strong>
+                      <small>{{ filter.label }}</small>
+                    </button>
                   </div>
                   <div v-if="adminUserRows.length" class="admin-user-list">
                     <article v-for="row in adminUserRows" :key="row.id">
                       <span class="contributor-avatar">{{ initialsFor(row.name) }}</span>
                       <div>
                         <strong>{{ row.name }}</strong>
+                        <small>{{ row.wallet }} / {{ row.budget }}</small>
                         <small>{{ row.email }} · {{ row.github }}</small>
                       </div>
                       <b :class="row.roleTone">{{ row.role }}</b>
+                      <small>{{ row.score }}/100 governance score</small>
+                      <div class="admin-user-actions">
+                        <button
+                          type="button"
+                          :disabled="adminUserUpdatingID === row.id || row.rawRole === 'admin'"
+                          @click="updateAdminUserRole(row, 'admin')"
+                        >
+                          <ShieldCheck :size="12" />
+                          Promote
+                        </button>
+                        <button
+                          type="button"
+                          :disabled="adminUserUpdatingID === row.id || row.rawRole !== 'admin'"
+                          @click="updateAdminUserRole(row, 'client')"
+                        >
+                          <User :size="12" />
+                          Set client
+                        </button>
+                        <button type="button" :disabled="adminUserUpdatingID === row.id" @click="copyAdminUserAudit(row)">
+                          <Link2 :size="12" />
+                          Copy audit
+                        </button>
+                      </div>
                       <small>{{ row.projects }} projects · {{ row.risk }}</small>
                     </article>
                   </div>
@@ -11434,6 +11473,8 @@ const adminConsole = ref({
 });
 const adminConsoleLoading = ref(false);
 const adminConsoleError = ref('');
+const adminUserFilter = ref('all');
+const adminUserUpdatingID = ref('');
 const dashboardNotifications = ref([]);
 const dashboardNotificationsLoading = ref(false);
 const dashboardNotificationsError = ref('');
@@ -21390,8 +21431,14 @@ const adminPayoutRows = computed(() => {
 const adminUserRows = computed(() => {
   const query = dashboardSearch.value.trim().toLowerCase();
   const rows = (adminConsole.value.users || []).map(mapAdminUserRow);
-  if (!query) return rows.slice(0, 8);
-  return rows.filter((row) => [
+  const filtered = rows.filter((row) => {
+    if (adminUserFilter.value === 'admins') return row.rawRole === 'admin';
+    if (adminUserFilter.value === 'wallet') return row.hasWallet;
+    if (adminUserFilter.value === 'risk') return row.score < 70 || !row.hasGithub || !row.hasWallet;
+    return true;
+  });
+  if (!query) return filtered.slice(0, 8);
+  return filtered.filter((row) => [
     row.name,
     row.email,
     row.role,
@@ -21399,6 +21446,15 @@ const adminUserRows = computed(() => {
     row.github,
     row.risk,
   ].filter(Boolean).join(' ').toLowerCase().includes(query)).slice(0, 8);
+});
+const adminUserFilterRows = computed(() => {
+  const rows = (adminConsole.value.users || []).map(mapAdminUserRow);
+  return [
+    { key: 'all', label: 'All users', value: String(rows.length) },
+    { key: 'admins', label: 'Admins', value: String(rows.filter((row) => row.rawRole === 'admin').length) },
+    { key: 'wallet', label: 'Wallet linked', value: String(rows.filter((row) => row.hasWallet).length) },
+    { key: 'risk', label: 'Needs review', value: String(rows.filter((row) => row.score < 70 || !row.hasGithub || !row.hasWallet).length) },
+  ];
 });
 const adminReputationRows = computed(() => {
   const query = dashboardSearch.value.trim().toLowerCase();
@@ -26763,6 +26819,63 @@ function applyAdminTriageFilter(item = {}) {
   showToast(`${item.label || 'Admin triage'} filter applied.`);
 }
 
+function adminUserPatchPayload(row = {}, role = '') {
+  return {
+    name: row.name || row.email || 'MergeOS user',
+    company_name: row.companyName || row.raw?.company_name || '',
+    email: row.email || row.raw?.email || '',
+    role: role || row.rawRole || row.raw?.role || 'client',
+  };
+}
+
+async function updateAdminUserRole(row = {}, role = '') {
+  if (!row.id || !role || adminUserUpdatingID.value) return;
+  adminUserUpdatingID.value = row.id;
+  try {
+    const updated = await api(`/api/admin/users/${encodeURIComponent(row.id)}`, {
+      method: 'PATCH',
+      body: JSON.stringify(adminUserPatchPayload(row, role)),
+    });
+    adminConsole.value = {
+      ...adminConsole.value,
+      users: (adminConsole.value.users || []).map((item) => (item.id === updated.id ? updated : item)),
+    };
+    await loadAdminConsoleData({ silent: true });
+    showToast(`${updated.name || row.name} set to ${toTitleLabel(updated.role || role)}.`);
+  } catch (error) {
+    showToast(error.message || 'Could not update user role.');
+  } finally {
+    adminUserUpdatingID.value = '';
+  }
+}
+
+async function copyAdminUserAudit(row = {}) {
+  const payload = {
+    protocol_version: 'mergeos.admin-user-governance.v1',
+    user_id: row.id,
+    role: row.rawRole,
+    identity: {
+      email: row.email,
+      github: row.github,
+      wallet: row.wallet,
+      has_github: row.hasGithub,
+      has_wallet: row.hasWallet,
+    },
+    account: {
+      projects: Number(row.projects) || 0,
+      total_budget: row.budget,
+      risk: row.risk,
+      score: row.score,
+    },
+    actions: [
+      { label: 'Promote', method: 'PATCH', endpoint: `/api/admin/users/${row.id}`, role: 'admin' },
+      { label: 'Set client', method: 'PATCH', endpoint: `/api/admin/users/${row.id}`, role: 'client' },
+    ],
+  };
+  const copied = await copyTextToClipboard(JSON.stringify(payload, null, 2));
+  showToast(copied ? 'Admin user audit copied.' : 'Admin user audit is visible in the console.');
+}
+
 async function executeAdminOpsAction(item = {}) {
   if (!item?.id || releasingTaskID.value) return;
   const packet = item.actionPacket || {};
@@ -27450,18 +27563,25 @@ function mapAdminPayoutEntry(entry = {}, taskIndex = new Map()) {
 
 function mapAdminUserRow(row = {}) {
   const audit = row.worker_audit || {};
+  const rawRole = String(row.role || 'client').toLowerCase() === 'admin' ? 'admin' : 'client';
+  const score = Number(audit.score) || 0;
   return {
     id: row.id || row.email || row.name,
     name: row.name || row.email || 'MergeOS user',
+    companyName: row.company_name || '',
     email: row.email || '-',
-    role: toTitleLabel(row.role || 'client'),
-    roleTone: row.role === 'admin' ? 'purple' : 'blue',
+    rawRole,
+    role: toTitleLabel(rawRole),
+    roleTone: rawRole === 'admin' ? 'purple' : 'blue',
     wallet: row.wallet_address ? shortWallet(row.wallet_address) : 'No wallet',
     github: row.github_username ? `github:${row.github_username}` : 'No GitHub',
+    hasWallet: Boolean(row.wallet_address),
+    hasGithub: Boolean(row.github_username),
     projects: String(Number(row.project_count) || 0),
     budget: formatMRGFromCents(row.total_budget_cents),
     risk: toTitleLabel(audit.risk_level || 'new'),
-    score: Number(audit.score) || 0,
+    score,
+    raw: row,
   };
 }
 

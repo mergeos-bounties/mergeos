@@ -16073,6 +16073,53 @@ svg {
   margin-top: 14px;
 }
 
+.admin-user-control-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.admin-user-control-strip button {
+  min-width: 0;
+  min-height: 54px;
+  display: grid;
+  align-content: center;
+  gap: 3px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #273244;
+  padding: 8px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.admin-user-control-strip button.active {
+  border-color: rgba(15, 159, 120, 0.34);
+  background: #ecfdf5;
+  color: var(--green-dark);
+}
+
+.admin-user-control-strip strong,
+.admin-user-control-strip small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-user-control-strip strong {
+  font-size: 14px;
+  font-weight: 940;
+}
+
+.admin-user-control-strip small {
+  font-size: 9px;
+  font-weight: 860;
+  text-transform: uppercase;
+}
+
 .admin-ops-row,
 .admin-payout-list article,
 .admin-user-list article,
@@ -16223,6 +16270,48 @@ svg {
 
 .admin-user-list article > small {
   grid-column: 2 / -1;
+}
+
+.admin-user-actions {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.admin-user-actions button {
+  min-width: 0;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid rgba(15, 159, 120, 0.22);
+  border-radius: 8px;
+  background: #ecfdf5;
+  color: var(--green-dark);
+  padding: 0 8px;
+  font-size: 10px;
+  font-weight: 900;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.admin-user-actions button:nth-child(2) {
+  border-color: rgba(29, 78, 216, 0.18);
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.admin-user-actions button:nth-child(3) {
+  border-color: rgba(100, 116, 139, 0.2);
+  background: #f8fafc;
+  color: #334155;
+}
+
+.admin-user-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.56;
 }
 
 .admin-reputation-list article {
@@ -31325,6 +31414,7 @@ canvas {
   .dashboard-shell .task-review-panel,
   .dashboard-shell .admin-ops-row-actions,
   .dashboard-shell .admin-dispute-item-actions,
+  .dashboard-shell .admin-user-actions,
   .dashboard-shell .payment-history-actions {
     display: grid !important;
     grid-template-columns: minmax(0, 1fr) !important;
@@ -31338,6 +31428,7 @@ canvas {
   .dashboard-shell .admin-ops-row-actions a,
   .dashboard-shell .admin-dispute-item-actions button,
   .dashboard-shell .admin-dispute-item-actions a,
+  .dashboard-shell .admin-user-actions button,
   .dashboard-shell .payment-history-actions button {
     width: 100% !important;
     min-height: 42px;

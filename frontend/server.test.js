@@ -166,6 +166,7 @@ test('public agent runbook and SDK document PR monitor auto-release plus proposa
 
 test('admin dashboard consumes admin ops queue action contract', async () => {
   const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
+  const cssSource = await fs.readFile(new URL('./src/styles.css', import.meta.url), 'utf-8');
   const adminOpsSchema = JSON.parse(await fs.readFile(new URL('./public/protocol/admin-ops.v1.schema.json', import.meta.url), 'utf-8'));
 
   const actionSchema = adminOpsSchema.properties.items.items.properties.actions.items.properties;
@@ -184,6 +185,14 @@ test('admin dashboard consumes admin ops queue action contract', async () => {
   assert.match(appSource, /case 'run_ssl_review':/);
   assert.match(appSource, /method: action\.method \|\| 'POST'/);
   assert.match(appSource, /api\(action\.endpoint \|\| '\/api\/admin\/ssl\/review', options\)/);
+  assert.match(appSource, /User Governance/);
+  assert.match(appSource, /adminUserFilterRows/);
+  assert.match(appSource, /function updateAdminUserRole\(row = \{\}, role = ''\)/);
+  assert.match(appSource, /api\(`\/api\/admin\/users\/\$\{encodeURIComponent\(row\.id\)\}`/);
+  assert.match(appSource, /mergeos\.admin-user-governance\.v1/);
+  assert.match(cssSource, /\.admin-user-control-strip\s*\{[\s\S]*grid-template-columns: repeat\(4, minmax\(0, 1fr\)\);/);
+  assert.match(cssSource, /\.admin-user-actions\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
+  assert.match(cssSource, /\.dashboard-shell \.admin-user-actions,[\s\S]*\.dashboard-shell \.payment-history-actions\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) !important;/);
 });
 
 test('live feed agent packets expose action handoff links', async () => {
