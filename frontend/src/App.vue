@@ -5098,6 +5098,36 @@
             </div>
             <b>{{ tokenCeoResearchCopy.readiness }}</b>
           </div>
+          <div class="token-ceo-decision-strip" aria-label="CEO launch decision stages">
+            <article v-for="row in tokenCeoDecisionRows" :key="row.label">
+              <span>{{ row.label }}</span>
+              <strong>{{ row.value }}</strong>
+            </article>
+          </div>
+          <div class="token-ceo-project-queue" aria-label="CEO project research queue">
+            <article v-for="row in tokenCeoProjectResearchRows" :key="row.title">
+              <span :class="['ledger-trust-icon', row.tone]">
+                <component :is="row.icon" :size="15" />
+              </span>
+              <div>
+                <strong>{{ row.title }}</strong>
+                <small>{{ row.body }}</small>
+              </div>
+              <b>{{ row.status }}</b>
+            </article>
+          </div>
+          <div class="token-ceo-research-grid">
+            <article v-for="row in tokenCeoResearchRows" :key="row.title">
+              <span :class="['ledger-trust-icon', row.tone]">
+                <component :is="row.icon" :size="15" />
+              </span>
+              <div>
+                <strong>{{ row.title }}</strong>
+                <p>{{ row.body }}</p>
+                <small>{{ row.evidence }}</small>
+              </div>
+            </article>
+          </div>
           <form class="token-ceo-brief-card" @submit.prevent="submitTokenLaunchBrief">
             <div class="token-ceo-brief-copy">
               <span class="marketplace-eyebrow">{{ tokenCeoLaunchBriefCopy.eyebrow }}</span>
@@ -5176,36 +5206,6 @@
               </button>
             </div>
           </form>
-          <div class="token-ceo-decision-strip" aria-label="CEO launch decision stages">
-            <article v-for="row in tokenCeoDecisionRows" :key="row.label">
-              <span>{{ row.label }}</span>
-              <strong>{{ row.value }}</strong>
-            </article>
-          </div>
-          <div class="token-ceo-project-queue" aria-label="CEO project research queue">
-            <article v-for="row in tokenCeoProjectResearchRows" :key="row.title">
-              <span :class="['ledger-trust-icon', row.tone]">
-                <component :is="row.icon" :size="15" />
-              </span>
-              <div>
-                <strong>{{ row.title }}</strong>
-                <small>{{ row.body }}</small>
-              </div>
-              <b>{{ row.status }}</b>
-            </article>
-          </div>
-          <div class="token-ceo-research-grid">
-            <article v-for="row in tokenCeoResearchRows" :key="row.title">
-              <span :class="['ledger-trust-icon', row.tone]">
-                <component :is="row.icon" :size="15" />
-              </span>
-              <div>
-                <strong>{{ row.title }}</strong>
-                <p>{{ row.body }}</p>
-                <small>{{ row.evidence }}</small>
-              </div>
-            </article>
-          </div>
         </section>
 
         <section v-if="publicPage !== 'whitepaper'" class="token-content-grid">
@@ -12516,14 +12516,14 @@ const tokenCeoResearchCopy = computed(() => {
   const proofRows = Number(ledgerEconomyStats.value.ledger_entry_count) || ledgerRawEntries.value.length || ledgerEventItems.value.length || 0;
   if (publicPage.value === 'airdrop') {
     return {
-      title: 'Research whether this project deserves an earned airdrop.',
-      body: 'The CEO orchestrator scores real work demand before opening allocation: missions, bounty depth, proof quality, bot risk, and wallet readiness.',
+      title: 'CEO airdrop readiness review.',
+      body: 'Score mission demand, bounty depth, proof quality, bot risk, and wallet readiness before allocation opens.',
       readiness: `${airdropMissionRows.value.length} missions / ${openTasks} tasks / ${proofRows} proofs`,
     };
   }
   return {
-    title: 'Research whether the project is ready to open presale.',
-    body: 'The CEO orchestrator checks token utility, funding rails, verified wallets, vesting clarity, contract proof, and ledger receipts before a reserve window opens.',
+    title: 'CEO presale readiness review.',
+    body: 'Check utility, funding rails, verified wallets, vesting clarity, contract proof, and ledger receipts before reserve opens.',
     readiness: `${formatPublicMRGFromCents(publicVerifiedFundingCents.value)} verified / ${proofRows} proofs`,
   };
 });

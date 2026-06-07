@@ -36433,6 +36433,56 @@ canvas {
   }
 }
 
+/* CEO token launch polish: show gates before intake, keep the review surface short. */
+.token-ceo-research-panel {
+  gap: 10px !important;
+}
+
+.token-ceo-research-head {
+  padding-bottom: 2px !important;
+}
+
+.token-ceo-decision-strip article,
+.token-ceo-project-queue article,
+.token-ceo-research-grid article {
+  box-shadow: none !important;
+}
+
+.token-ceo-decision-strip article {
+  min-height: 54px !important;
+}
+
+.token-ceo-project-queue article {
+  min-height: 104px !important;
+}
+
+.token-ceo-research-grid article {
+  min-height: 118px !important;
+}
+
+.token-ceo-brief-card {
+  margin-top: 2px !important;
+  background:
+    linear-gradient(135deg, rgba(240, 253, 250, 0.88), rgba(255, 255, 255, 0.96)),
+    #ffffff !important;
+}
+
+.token-ceo-brief-copy p {
+  max-width: 620px !important;
+}
+
+@media (max-width: 620px) {
+  .token-ceo-research-panel {
+    gap: 8px !important;
+  }
+
+  .token-ceo-decision-strip article,
+  .token-ceo-project-queue article,
+  .token-ceo-research-grid article {
+    min-height: 0 !important;
+  }
+}
+
 /* Description restore: keep the home page concise, but never cut product meaning. */
 .nav-context-item strong,
 .nav-feature-item strong,

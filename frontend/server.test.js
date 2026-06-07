@@ -1195,8 +1195,11 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /tokenLaunchBriefResult\.ceo_memo\.gates\?\.length/);
   assert.match(appSource, /action\.command === 'token-ceo-brief'/);
   assert.ok(appSource.indexOf('class="token-ceo-research-panel"') < appSource.indexOf('class="token-content-grid"'));
-  assert.match(appSource, /Research whether this project deserves an earned airdrop\./);
-  assert.match(appSource, /Research whether the project is ready to open presale\./);
+  assert.ok(appSource.indexOf('class="token-ceo-decision-strip"') < appSource.indexOf('class="token-ceo-brief-card"'));
+  assert.ok(appSource.indexOf('class="token-ceo-project-queue"') < appSource.indexOf('class="token-ceo-brief-card"'));
+  assert.ok(appSource.indexOf('class="token-ceo-research-grid"') < appSource.indexOf('class="token-ceo-brief-card"'));
+  assert.match(appSource, /CEO airdrop readiness review\./);
+  assert.match(appSource, /CEO presale readiness review\./);
   assert.match(appSource, /const tokenCeoDecisionRows = computed/);
   assert.match(appSource, /const tokenCeoProjectResearchRows = computed/);
   assert.match(appSource, /const tokenCeoLaunchBriefCopy = computed/);
@@ -1262,6 +1265,7 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(whitepaperSource, /## 15\. Security, Privacy, and Compliance/);
   assert.match(whitepaperSource, /## 16\. Roadmap/);
   assert.match(cssSource, /\.token-workflow-proof-board\s*\{[\s\S]*background: rgba\(255, 255, 255, 0\.86\);/);
+  assert.match(cssSource, /CEO token launch polish: show gates before intake, keep the review surface short/);
   assert.match(cssSource, /\.token-ceo-research-panel\s*\{[\s\S]*border: 1px solid rgba\(79, 70, 229, 0\.15\);/);
   assert.match(cssSource, /\.token-ceo-decision-strip\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /\.token-ceo-project-queue\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
@@ -1271,6 +1275,8 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(cssSource, /\.token-ceo-research-grid\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /\.token-ceo-memo-result\s*\{[\s\S]*grid-column: 1 \/ -1;/);
   assert.match(cssSource, /\.token-ceo-memo-gates\s*\{[\s\S]*grid-template-columns: repeat\(4, minmax\(0, 1fr\)\);/);
+  assert.match(cssSource, /\.token-ceo-project-queue article\s*\{[\s\S]*min-height: 104px !important;/);
+  assert.match(cssSource, /\.token-ceo-research-grid article\s*\{[\s\S]*min-height: 118px !important;/);
   assert.match(cssSource, /\.wizard-token-brief-card\s*\{[\s\S]*grid-template-columns: 34px minmax\(0, 1fr\);/);
   assert.match(cssSource, /\.wizard-token-brief-card li\s*\{[\s\S]*grid-template-columns: 58px minmax\(0, 1fr\);/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-workflow-proof-list article\s*\{[\s\S]*grid-template-columns: 32px minmax\(0, 1fr\);/);
