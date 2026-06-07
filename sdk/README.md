@@ -19,6 +19,9 @@ import {
   agentActionPayload,
   agentActionEventType,
   agentWorkPacketOutputContracts,
+  aiWorkflowCurrentStage,
+  aiWorkflowStageActionContract,
+  aiWorkflowStageContextURLs,
   contractReferenceFromLedger,
   createMergeOSClient,
   deploymentAgentActionPayload,
@@ -68,6 +71,11 @@ if (deployment.validation_packet) {
 const workflow = await mergeos.projectAIWorkflow(projects[0].id);
 console.log(workflow.protocol_version, workflow.current_step);
 console.log(workflow.stages[0]?.artifact_kind, workflow.stages[0]?.output_protocol_url);
+const currentStage = aiWorkflowCurrentStage(workflow);
+const currentContract = aiWorkflowStageActionContract(currentStage);
+const currentContextURLs = aiWorkflowStageContextURLs(currentStage);
+console.log(currentContract.output_protocol, currentContract.action_endpoint, currentStage.checklist);
+console.log(currentContextURLs.deployment_evidence || currentContextURLs.workflow);
 const agentAction = await mergeos.createProjectAgentAction(projects[0].id, {
   action: 'test',
   agent_type: 'qa-agent',

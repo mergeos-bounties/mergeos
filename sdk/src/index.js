@@ -989,6 +989,61 @@ export function deploymentValidationPayloadFromDeployment(deployment = {}, overr
   });
 }
 
+export function aiWorkflowStages(workflow = {}, status = '') {
+  const stages = Array.isArray(workflow.stages) ? workflow.stages : [];
+  const normalizedStatus = normalizeSelector(status);
+  const rows = stages.filter((stage) => stage && typeof stage === 'object');
+  if (!normalizedStatus) return rows;
+  return rows.filter((stage) => normalizeSelector(stage.status) === normalizedStatus);
+}
+
+export function aiWorkflowStage(workflow = {}, selector = '') {
+  const normalized = normalizeSelector(selector || workflow.current_step || workflow.currentStep || '');
+  if (!normalized) return aiWorkflowCurrentStage(workflow);
+  return aiWorkflowStages(workflow).find((stage) => (
+    normalizeSelector(stage.id) === normalized
+    || normalizeSelector(stage.title) === normalized
+    || normalizeSelector(stage.artifact_kind) === normalized
+    || normalizeSelector(stage.output_protocol) === normalized
+  )) || null;
+}
+
+export function aiWorkflowCurrentStage(workflow = {}) {
+  const stages = aiWorkflowStages(workflow);
+  const current = normalizeSelector(workflow.current_step || workflow.currentStep || '');
+  return stages.find((stage) => normalizeSelector(stage.id) === current)
+    || stages.find((stage) => normalizeSelector(stage.status) === 'in-progress')
+    || stages.find((stage) => normalizeSelector(stage.status) === 'pending')
+    || stages[stages.length - 1]
+    || null;
+}
+
+export function aiWorkflowStageContextURLs(stageOrWorkflow = {}, selector = '') {
+  const stage = selector ? aiWorkflowStage(stageOrWorkflow, selector) : stageOrWorkflow;
+  const urls = stage?.context_urls || stage?.contextURLs;
+  return urls && typeof urls === 'object' && !Array.isArray(urls) ? { ...urls } : {};
+}
+
+export function aiWorkflowStageActionContract(stageOrWorkflow = {}, selector = '') {
+  const stage = selector ? aiWorkflowStage(stageOrWorkflow, selector) : stageOrWorkflow;
+  if (!stage || typeof stage !== 'object') return null;
+  return compactPayload({
+    stage_id: stage.id,
+    title: stage.title,
+    status: stage.status,
+    artifact_kind: stage.artifact_kind || stage.artifactKind,
+    input_endpoint: stage.input_endpoint || stage.inputEndpoint,
+    output_endpoint: stage.output_endpoint || stage.outputEndpoint,
+    output_protocol: stage.output_protocol || stage.outputProtocol,
+    output_protocol_url: stage.output_protocol_url || stage.outputProtocolURL,
+    action_endpoint: stage.action_endpoint || stage.actionEndpoint,
+    context_urls: aiWorkflowStageContextURLs(stage),
+    checklist: Array.isArray(stage.checklist) ? stage.checklist.filter(Boolean) : [],
+    output_ids: Array.isArray(stage.output_ids) ? stage.output_ids.filter(Boolean) : [],
+    produced_count: Number(stage.produced_count ?? stage.producedCount) || 0,
+  });
+}
+
 export function agentActionPayload(action, payload = {}) {
   const normalizedAction = normalizeAgentAction(action);
   const referenceURL = payload.reference_url || payload.referenceURL || payload.deployment_url || payload.deploymentURL || payload.url || '';

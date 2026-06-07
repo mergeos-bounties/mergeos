@@ -16,6 +16,11 @@ import {
   agentQueueClaimPayload,
   agentQueueTaskClaimID,
   agentWorkPacketOutputContracts,
+  aiWorkflowCurrentStage,
+  aiWorkflowStage,
+  aiWorkflowStageActionContract,
+  aiWorkflowStageContextURLs,
+  aiWorkflowStages,
   autoReleasePayloadFromPRMonitorTask,
   autoReleaseProofsFromResponse,
   contractReferenceBytes,
@@ -655,6 +660,72 @@ test('builds and sends deployment validation payloads from deployment packets', 
   assert.equal(fetchImpl.calls[0].options.method, 'POST');
   assert.equal(fetchImpl.calls[0].options.headers.Authorization, 'Bearer agent-token');
   assert.equal(fetchImpl.calls[0].options.body, JSON.stringify(payload));
+});
+
+test('reads AI workflow stages and action contracts for external agents', () => {
+  const workflow = {
+    protocol_version: 'mergeos.ai-workflow.v1',
+    current_step: 'deployment_validation',
+    stages: [
+      {
+        id: 'repo_import',
+        title: 'Repository import',
+        status: 'complete',
+        artifact_kind: 'repository_context',
+        output_endpoint: '/api/public/projects/prj_1/repo-scan',
+        output_protocol: 'mergeos.repo-import.v1',
+        output_protocol_url: '/protocol/repo-import.v1.schema.json',
+        context_urls: { repository: 'https://github.com/acme/repo' },
+        checklist: ['Attach repository context.'],
+        produced_count: 1,
+      },
+      {
+        id: 'deployment_validation',
+        title: 'Deployment validation',
+        status: 'in_progress',
+        artifact_kind: 'deployment_evidence',
+        input_endpoint: '/api/public/projects/prj_1/pull-requests',
+        output_endpoint: '/api/public/projects/prj_1/deployment',
+        output_protocol: 'mergeos.deployment.v1',
+        output_protocol_url: '/protocol/deployment.v1.schema.json',
+        action_endpoint: '/api/projects/prj_1/agent-actions',
+        context_urls: {
+          deployment_evidence: '/api/public/projects/prj_1/deployment',
+          workflow: '/api/public/projects/prj_1/workflow',
+        },
+        checklist: ['Check deployment preview.', 'Publish deployment state before payout release.'],
+        output_ids: ['deployment:prj_1'],
+        produced_count: 0,
+      },
+    ],
+  };
+
+  assert.equal(aiWorkflowStages(workflow).length, 2);
+  assert.equal(aiWorkflowStages(workflow, 'in_progress')[0].id, 'deployment_validation');
+  assert.equal(aiWorkflowCurrentStage(workflow).id, 'deployment_validation');
+  assert.equal(aiWorkflowStage(workflow, 'mergeos.deployment.v1').id, 'deployment_validation');
+  assert.deepEqual(aiWorkflowStageContextURLs(workflow, 'deployment_validation'), {
+    deployment_evidence: '/api/public/projects/prj_1/deployment',
+    workflow: '/api/public/projects/prj_1/workflow',
+  });
+  assert.deepEqual(aiWorkflowStageActionContract(workflow, 'deployment_evidence'), {
+    stage_id: 'deployment_validation',
+    title: 'Deployment validation',
+    status: 'in_progress',
+    artifact_kind: 'deployment_evidence',
+    input_endpoint: '/api/public/projects/prj_1/pull-requests',
+    output_endpoint: '/api/public/projects/prj_1/deployment',
+    output_protocol: 'mergeos.deployment.v1',
+    output_protocol_url: '/protocol/deployment.v1.schema.json',
+    action_endpoint: '/api/projects/prj_1/agent-actions',
+    context_urls: {
+      deployment_evidence: '/api/public/projects/prj_1/deployment',
+      workflow: '/api/public/projects/prj_1/workflow',
+    },
+    checklist: ['Check deployment preview.', 'Publish deployment state before payout release.'],
+    output_ids: ['deployment:prj_1'],
+    produced_count: 0,
+  });
 });
 
 test('builds and sends typed AI agent action helpers', async () => {
