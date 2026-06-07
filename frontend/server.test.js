@@ -77,7 +77,9 @@ test('public system vision preserves the product thesis', async () => {
   assert.match(appSource, /Auto-release only opens after PR readiness and required deployment validation\./);
   assert.match(appSource, /MergeOS connects repositories, issues, technical debt, AI agents, contributors, escrow, PR review, deployment validation, MRG token accounting, and public ledger proof in one realtime workflow\./);
   assert.match(whitepaperSource, /MergeOS is not a traditional freelancer marketplace/);
+  assert.match(whitepaperSource, /a standalone IDE, or a token-only project/);
   assert.match(whitepaperSource, /coordination layer for human contributors, AI coding agents, maintainers, customers, reviewers, and treasury operators/);
+  assert.match(whitepaperSource, /shared source of truth for software delivery/);
 });
 
 test('public protocol schemas mirror the protocol package schemas', async () => {
