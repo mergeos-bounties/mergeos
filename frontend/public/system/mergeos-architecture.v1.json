@@ -511,6 +511,7 @@
       "estimate time",
       "estimate budget",
       "generate tasks",
+      "assign worker type",
       "review pull requests",
       "run security review",
       "validate deployments"
@@ -552,6 +553,26 @@
         "queue_api": "/api/public/protocol/deployment",
         "output_protocol": "mergeos.deployment.v1",
         "proof_surface": "/ledger"
+      }
+    },
+    "ai_agent_capabilities": {
+      "review": {
+        "description": "Review pull requests, acceptance evidence, and release readiness from marketplace work packets.",
+        "agent_role": "review_agent",
+        "output_protocol": "mergeos.pr-monitor.v1",
+        "proof_surface": "/ledger"
+      },
+      "test": {
+        "description": "Run quality checks, validate acceptance criteria, and publish test evidence for claimed work.",
+        "agent_role": "testing_agent",
+        "output_protocol": "mergeos.ai-workflow.v1",
+        "proof_surface": "/live-feed"
+      },
+      "generate": {
+        "description": "Generate task packets, worker type routing, budget signals, and contributor-ready bounty context.",
+        "agent_role": "coding_agent",
+        "output_protocol": "mergeos.workflow.v1",
+        "proof_surface": "/marketplace#marketplace-bounties"
       }
     },
     "action_routes": {

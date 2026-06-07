@@ -286,7 +286,7 @@
     },
     "ai_layer": {
       "type": "object",
-      "required": ["capabilities", "workflow", "agent_roles", "action_routes"],
+      "required": ["capabilities", "workflow", "agent_roles", "ai_agent_capabilities", "action_routes"],
       "properties": {
         "capabilities": { "$ref": "#/$defs/stringList" },
         "workflow": { "$ref": "#/$defs/stringList" },
@@ -298,6 +298,16 @@
             "review_agent": { "$ref": "#/$defs/aiAgentRole" },
             "testing_agent": { "$ref": "#/$defs/aiAgentRole" },
             "deployment_agent": { "$ref": "#/$defs/aiAgentRole" }
+          },
+          "additionalProperties": false
+        },
+        "ai_agent_capabilities": {
+          "type": "object",
+          "required": ["review", "test", "generate"],
+          "properties": {
+            "review": { "$ref": "#/$defs/aiAgentCapability" },
+            "test": { "$ref": "#/$defs/aiAgentCapability" },
+            "generate": { "$ref": "#/$defs/aiAgentCapability" }
           },
           "additionalProperties": false
         },
@@ -662,6 +672,17 @@
         "lane": { "type": "string", "minLength": 1 },
         "primary_actions": { "$ref": "#/$defs/stringList" },
         "queue_api": { "type": "string", "minLength": 1 },
+        "output_protocol": { "type": "string", "minLength": 1 },
+        "proof_surface": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "aiAgentCapability": {
+      "type": "object",
+      "required": ["description", "agent_role", "output_protocol", "proof_surface"],
+      "properties": {
+        "description": { "type": "string", "minLength": 1 },
+        "agent_role": { "type": "string", "minLength": 1 },
         "output_protocol": { "type": "string", "minLength": 1 },
         "proof_surface": { "type": "string", "minLength": 1 }
       },

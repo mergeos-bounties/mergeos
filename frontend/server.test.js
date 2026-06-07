@@ -218,6 +218,7 @@ test('public system vision preserves the product thesis', async () => {
   assert.ok(architectureManifest.ai_layer.capabilities.includes('estimate complexity'));
   assert.ok(architectureManifest.ai_layer.capabilities.includes('estimate time'));
   assert.ok(architectureManifest.ai_layer.capabilities.includes('estimate budget'));
+  assert.ok(architectureManifest.ai_layer.capabilities.includes('assign worker type'));
   assert.deepEqual(architectureManifest.ai_layer.workflow, [
     'Import Repository',
     'Issue Scan',
@@ -241,6 +242,10 @@ test('public system vision preserves the product thesis', async () => {
   assert.equal(architectureManifest.ai_layer.agent_roles.review_agent.output_protocol, 'mergeos.pr-monitor.v1');
   assert.equal(architectureManifest.ai_layer.agent_roles.testing_agent.output_protocol, 'mergeos.ai-workflow.v1');
   assert.equal(architectureManifest.ai_layer.agent_roles.deployment_agent.output_protocol, 'mergeos.deployment.v1');
+  assert.deepEqual(Object.keys(architectureManifest.ai_layer.ai_agent_capabilities), ['review', 'test', 'generate']);
+  assert.equal(architectureManifest.ai_layer.ai_agent_capabilities.review.agent_role, 'review_agent');
+  assert.equal(architectureManifest.ai_layer.ai_agent_capabilities.test.agent_role, 'testing_agent');
+  assert.equal(architectureManifest.ai_layer.ai_agent_capabilities.generate.agent_role, 'coding_agent');
   assert.deepEqual(architectureManifest.ai_layer.action_routes, {
     scan_repository: {
       api: '/api/public/projects/{id}/repo-scan',
