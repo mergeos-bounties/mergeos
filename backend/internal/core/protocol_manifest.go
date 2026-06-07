@@ -404,7 +404,7 @@ func ProtocolManifest() ProtocolManifestResponse {
 			Path:        "/api/public/token/launch-briefs",
 			Protocol:    "mergeos.token-launch-brief.v1",
 			Auth:        "none",
-			Description: "Public CEO token launch research queue for projects requesting an earned airdrop or presale window, derived from ledger-backed launch memos.",
+			Description: "Public CEO token launch research queue for projects requesting an earned airdrop or presale window, filterable by launch_type and derived from ledger-backed launch memos.",
 		},
 		{
 			Method:      "GET",

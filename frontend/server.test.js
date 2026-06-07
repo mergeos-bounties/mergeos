@@ -1203,6 +1203,7 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /id="token-workflow"/);
   assert.match(appSource, /class="token-ceo-research-panel"/);
   assert.match(appSource, /CEO LAUNCH DECISION/);
+  assert.match(appSource, /Queue API/);
   assert.match(appSource, /class="token-ceo-decision-strip"/);
   assert.match(appSource, /class="token-ceo-queue-stats"/);
   assert.match(appSource, /class="token-ceo-project-queue"/);
@@ -1225,6 +1226,8 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.ok(appSource.indexOf('class="token-ceo-research-grid"') < appSource.indexOf('class="token-ceo-brief-card"'));
   assert.match(appSource, /CEO airdrop readiness review\./);
   assert.match(appSource, /CEO presale readiness review\./);
+  assert.match(appSource, /const tokenCeoQueueURL = computed/);
+  assert.match(appSource, /\/api\/public\/token\/launch-briefs\?launch_type=\$\{publicPage\.value === 'presale' \? 'presale' : 'airdrop'\}/);
   assert.match(appSource, /const tokenCeoDecisionRows = computed/);
   assert.match(appSource, /const tokenCeoQueueStatRows = computed/);
   assert.match(appSource, /const tokenCeoProjectResearchRows = computed/);
@@ -1360,6 +1363,7 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(cssSource, /\.token-workflow-proof-empty-actions\s*\{[\s\S]*display: grid;[\s\S]*grid-template-columns: 1fr;/);
   assert.match(cssSource, /CEO token launch polish: show gates before intake, keep the review surface short/);
   assert.match(cssSource, /\.token-ceo-research-panel\s*\{[\s\S]*border: 1px solid rgba\(79, 70, 229, 0\.15\);/);
+  assert.match(cssSource, /\.token-ceo-head-actions\s*\{[\s\S]*justify-items: end;/);
   assert.match(cssSource, /\.token-ceo-decision-strip\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /\.token-ceo-queue-stats\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /\.token-ceo-project-queue\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);

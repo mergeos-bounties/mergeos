@@ -8545,6 +8545,31 @@ svg {
   overflow-wrap: anywhere;
 }
 
+.token-ceo-head-actions {
+  min-width: 0;
+  display: grid;
+  justify-items: end;
+  gap: 7px;
+}
+
+.token-ceo-head-actions a {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: 1px solid rgba(37, 99, 235, 0.16);
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  padding: 0 9px;
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 910;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
 .token-ceo-research-grid {
   min-width: 0;
   display: grid;
@@ -9844,6 +9869,15 @@ svg {
     width: 100%;
     max-width: none;
     text-align: left;
+  }
+
+  .token-ceo-head-actions {
+    grid-column: 2;
+    justify-items: start;
+  }
+
+  .token-ceo-head-actions a {
+    width: fit-content;
   }
 
   .token-ceo-memo-lane b {
@@ -37212,6 +37246,17 @@ canvas {
   .token-ceo-research-head b {
     grid-column: 2 !important;
     padding: 5px 8px !important;
+  }
+
+  .token-ceo-head-actions {
+    grid-column: 2 !important;
+    justify-items: start !important;
+    gap: 6px !important;
+  }
+
+  .token-ceo-head-actions a {
+    min-height: 26px !important;
+    padding-inline: 8px !important;
   }
 
   .token-ceo-brief-card {

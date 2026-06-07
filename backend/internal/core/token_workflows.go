@@ -253,8 +253,17 @@ func (s *Server) publicAirdropMissions(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, PublicAirdropMissions())
 }
 
-func (s *Server) publicTokenLaunchBriefs(w http.ResponseWriter, _ *http.Request) {
-	writeJSON(w, http.StatusOK, s.store.PublicTokenLaunchBriefs())
+func (s *Server) publicTokenLaunchBriefs(w http.ResponseWriter, r *http.Request) {
+	launchType := strings.TrimSpace(r.URL.Query().Get("launch_type"))
+	if launchType != "" {
+		normalized, err := normalizeTokenLaunchType(launchType)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		launchType = normalized
+	}
+	writeJSON(w, http.StatusOK, s.store.PublicTokenLaunchBriefs(launchType))
 }
 
 func PublicAirdropMissions() AirdropMissionsResponse {
@@ -441,7 +450,7 @@ func (s *Store) RecordTokenLaunchBrief(req TokenLaunchBriefRequest) (TokenLaunch
 	return s.RecordTokenLaunchBriefForUser("", req)
 }
 
-func (s *Store) PublicTokenLaunchBriefs() PublicTokenLaunchBriefsResponse {
+func (s *Store) PublicTokenLaunchBriefs(launchTypeFilter string) PublicTokenLaunchBriefsResponse {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -457,12 +466,18 @@ func (s *Store) PublicTokenLaunchBriefs() PublicTokenLaunchBriefsResponse {
 		fields := tokenWorkflowReferenceFields(entry.Reference)
 		launchType := fields["type"]
 		switch launchType {
+		case "airdrop", "presale":
+		default:
+			launchType = "token_launch"
+		}
+		if launchTypeFilter != "" && launchType != launchTypeFilter {
+			continue
+		}
+		switch launchType {
 		case "airdrop":
 			response.Stats.AirdropCount++
 		case "presale":
 			response.Stats.PresaleCount++
-		default:
-			launchType = "token_launch"
 		}
 		if response.Stats.UpdatedAt == nil || entry.CreatedAt.After(*response.Stats.UpdatedAt) {
 			updatedAt := entry.CreatedAt

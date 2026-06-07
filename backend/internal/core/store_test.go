@@ -1784,6 +1784,23 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 	if publicLaunchBriefs.Briefs[0].ResearchSource != "https://github.com/mergeos-bounties/mergeos" || publicLaunchBriefs.Briefs[0].GateSummary != "4/4 gates ready for CEO review" || !stringSliceContains(publicLaunchBriefs.Briefs[0].ResearchSignals, "research_source") {
 		t.Fatalf("public token launch brief missing CEO research fields: %#v", publicLaunchBriefs.Briefs[0])
 	}
+	filteredLaunchBriefsResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(filteredLaunchBriefsResp, httptest.NewRequest(http.MethodGet, "/api/public/token/launch-briefs?launch_type=airdrop", nil))
+	if filteredLaunchBriefsResp.Code != http.StatusOK {
+		t.Fatalf("filtered public token launch briefs status = %d, body = %s", filteredLaunchBriefsResp.Code, filteredLaunchBriefsResp.Body.String())
+	}
+	var filteredLaunchBriefs PublicTokenLaunchBriefsResponse
+	if err := json.Unmarshal(filteredLaunchBriefsResp.Body.Bytes(), &filteredLaunchBriefs); err != nil {
+		t.Fatal(err)
+	}
+	if filteredLaunchBriefs.Stats.BriefCount != 1 || filteredLaunchBriefs.Stats.AirdropCount != 1 || filteredLaunchBriefs.Stats.PresaleCount != 0 || len(filteredLaunchBriefs.Briefs) != 1 {
+		t.Fatalf("filtered public token launch briefs invalid: %#v", filteredLaunchBriefs)
+	}
+	invalidFilteredLaunchBriefsResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(invalidFilteredLaunchBriefsResp, httptest.NewRequest(http.MethodGet, "/api/public/token/launch-briefs?launch_type=ico", nil))
+	if invalidFilteredLaunchBriefsResp.Code != http.StatusBadRequest || !strings.Contains(invalidFilteredLaunchBriefsResp.Body.String(), "launch_type must be airdrop or presale") {
+		t.Fatalf("invalid filtered public token launch briefs status = %d, body = %s", invalidFilteredLaunchBriefsResp.Code, invalidFilteredLaunchBriefsResp.Body.String())
+	}
 	tokenWorkflowNotifications := 0
 	for _, note := range store.ListNotifications(auth.User.ID) {
 		if note.Channel == "token_workflow" {

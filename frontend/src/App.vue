@@ -5107,7 +5107,13 @@
               <h2 id="token-ceo-research-title">{{ tokenCeoResearchCopy.title }}</h2>
               <p>{{ tokenCeoResearchCopy.body }}</p>
             </div>
-            <b>{{ tokenCeoResearchCopy.readiness }}</b>
+            <div class="token-ceo-head-actions">
+              <b>{{ tokenCeoResearchCopy.readiness }}</b>
+              <a :href="tokenCeoQueueURL" target="_blank" rel="noreferrer">
+                Queue API
+                <Link2 :size="11" />
+              </a>
+            </div>
           </div>
           <div class="token-ceo-decision-strip" aria-label="CEO launch decision stages">
             <article v-for="row in tokenCeoDecisionRows" :key="row.label">
@@ -12648,6 +12654,9 @@ const tokenCeoResearchCopy = computed(() => {
     readiness: `${formatPublicMRGFromCents(publicVerifiedFundingCents.value)} verified / ${ceoMemos} CEO memos / ${proofRows} proofs`,
   };
 });
+const tokenCeoQueueURL = computed(() =>
+  `/api/public/token/launch-briefs?launch_type=${publicPage.value === 'presale' ? 'presale' : 'airdrop'}`,
+);
 const tokenCeoResearchRows = computed(() => {
   const openTasks = Number(marketplaceStats.value.open_task_count) || (marketplaceData.value.bounties || []).length || 0;
   const agentTasks = Number(agentQueueData.value.stats?.total_count) || (agentQueueData.value.tasks || []).length || 0;
