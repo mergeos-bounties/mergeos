@@ -304,6 +304,32 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.match(cssSource, /@media \(max-width: 980px\)[\s\S]*\.home-command-panel\s*\{[\s\S]*display: none !important;/);
 });
 
+test('frontend system exposes required public pages and dashboard roles', async () => {
+  const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
+
+  for (const [page, pathValue] of [
+    ['home', '/'],
+    ['marketplace', '/marketplace'],
+    ['live', '/live-feed'],
+    ['ledger', '/ledger'],
+    ['customers', '/customers'],
+    ['contributors', '/contributors'],
+    ['agents', '/agents'],
+    ['admins', '/admins'],
+  ]) {
+    assert.match(appSource, new RegExp(`${page}: '${pathValue.replace('/', '\\/')}'`));
+  }
+  assert.match(appSource, /marketplace: \['\/work-marketplace'[\s\S]*'\/live-projects'[\s\S]*'\/public-bounties'[\s\S]*'\/ai-agent-marketplace'\]/);
+  assert.match(appSource, /live: \['\/live'[\s\S]*'\/live-prs'[\s\S]*'\/deployment-feed'[\s\S]*'\/ai-action-feed'/);
+  assert.match(appSource, /ledger: \['\/ledger-logs'[\s\S]*'\/escrow-events'[\s\S]*'\/payout-logs'[\s\S]*'\/ai-action-logs'[\s\S]*'\/pr-proof-logs'\]/);
+  assert.match(appSource, /const dashboardRoleCoverageRows = computed\(\(\) => \{/);
+  assert.match(appSource, /label: 'Worker Dashboard'/);
+  assert.match(appSource, /label: 'Admin Console'/);
+  assert.match(appSource, /label: 'Project overview'[\s\S]*label: 'Live PRs'[\s\S]*label: 'Escrow'[\s\S]*label: 'Payments'[\s\S]*label: 'Tasks'[\s\S]*label: 'AI logs'/);
+  assert.match(appSource, /label: 'Claimed tasks'[\s\S]*label: 'Rewards'[\s\S]*label: 'Reputation'[\s\S]*label: 'Proposals'/);
+  assert.match(appSource, /label: 'Treasury'[\s\S]*label: 'Users'[\s\S]*label: 'Disputes'[\s\S]*label: 'Payouts'[\s\S]*label: 'Moderation'/);
+});
+
 test('customer dashboard exposes compact operating lanes after login', async () => {
   const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
   const cssSource = await fs.readFile(new URL('./src/styles.css', import.meta.url), 'utf-8');
