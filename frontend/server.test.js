@@ -1185,6 +1185,13 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /Ask the CEO agent to research your presale window\./);
   assert.match(appSource, /openProjectWizard\(\{ intent: 'token-launch' \}\)/);
   assert.match(appSource, /nextIntent === 'token-launch'/);
+  assert.match(appSource, /const tokenLaunchBriefMode = ref\(''\)/);
+  assert.match(appSource, /class="wizard-token-brief-card"/);
+  assert.match(appSource, /const tokenLaunchWizardBriefCopy = computed/);
+  assert.match(appSource, /const tokenLaunchWizardChecklist = computed/);
+  assert.match(appSource, /CEO presale research mode/);
+  assert.match(appSource, /CEO airdrop research mode/);
+  assert.match(appSource, /tokenLaunchBriefMode\.value = isPresale \? 'presale' : 'airdrop'/);
   assert.match(appSource, /CEO research brief for earned MRG airdrop/);
   assert.match(appSource, /CEO research brief for MRG presale window/);
   assert.match(appSource, /Mission demand/);
@@ -1231,6 +1238,8 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(cssSource, /\.token-ceo-project-queue\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /\.token-ceo-brief-card\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) auto;/);
   assert.match(cssSource, /\.token-ceo-research-grid\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
+  assert.match(cssSource, /\.wizard-token-brief-card\s*\{[\s\S]*grid-template-columns: 34px minmax\(0, 1fr\);/);
+  assert.match(cssSource, /\.wizard-token-brief-card li\s*\{[\s\S]*grid-template-columns: 58px minmax\(0, 1fr\);/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-workflow-proof-list article\s*\{[\s\S]*grid-template-columns: 32px minmax\(0, 1fr\);/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-status-panel \.ledger-card-head\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) auto;/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-metric-grid\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/);

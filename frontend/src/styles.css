@@ -1167,6 +1167,86 @@ svg {
   color: #ffffff;
 }
 
+.wizard-token-brief-card {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 10px;
+  border: 1px solid rgba(15, 118, 110, 0.18);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(236, 253, 245, 0.92), rgba(255, 255, 255, 0.96)),
+    #ffffff;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.055);
+  padding: 13px;
+}
+
+.wizard-token-brief-icon {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: #dff8ee;
+  color: var(--green-dark);
+}
+
+.wizard-token-brief-card strong,
+.wizard-token-brief-card p,
+.wizard-token-brief-card small {
+  min-width: 0;
+}
+
+.wizard-token-brief-card strong {
+  display: block;
+  color: #07130f;
+  font-size: 13px;
+  line-height: 1.22;
+  font-weight: 930;
+}
+
+.wizard-token-brief-card p {
+  margin: 5px 0 0;
+  color: #536273;
+  font-size: 11px;
+  line-height: 1.36;
+  font-weight: 700;
+}
+
+.wizard-token-brief-card ol {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 6px;
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wizard-token-brief-card li {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  gap: 7px;
+  align-items: start;
+  border-top: 1px solid rgba(15, 118, 110, 0.1);
+  padding-top: 7px;
+}
+
+.wizard-token-brief-card li span {
+  color: #0f766e;
+  font-size: 10px;
+  line-height: 1.2;
+  font-weight: 920;
+  text-transform: uppercase;
+}
+
+.wizard-token-brief-card li small {
+  color: #51625c;
+  font-size: 10.5px;
+  line-height: 1.28;
+  font-weight: 720;
+}
+
 .wizard-quality-card {
   position: relative;
   overflow: hidden;

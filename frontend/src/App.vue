@@ -199,6 +199,22 @@
           <p>{{ wizardIntroCopy }}</p>
         </div>
 
+        <article v-if="projectWizardStage === 'setup' && tokenLaunchBriefMode" class="wizard-token-brief-card" aria-label="CEO token launch research brief">
+          <span class="wizard-token-brief-icon">
+            <Compass :size="17" />
+          </span>
+          <div>
+            <strong>{{ tokenLaunchWizardBriefCopy.title }}</strong>
+            <p>{{ tokenLaunchWizardBriefCopy.body }}</p>
+          </div>
+          <ol>
+            <li v-for="item in tokenLaunchWizardChecklist" :key="item.label">
+              <span>{{ item.label }}</span>
+              <small>{{ item.detail }}</small>
+            </li>
+          </ol>
+        </article>
+
         <nav class="project-step-list" aria-label="Project setup steps">
           <button
             v-for="step in projectSetupSteps"
@@ -11446,6 +11462,7 @@ const publicModeVisible = ref(Boolean(initialProjectWizardRoute) || initialPubli
 const projectWizardVisible = ref(Boolean(initialProjectWizardRoute));
 const projectWizardStage = ref(initialProjectWizardRoute?.stage || 'setup');
 const projectWizardStep = ref(initialProjectWizardRoute?.step || 1);
+const tokenLaunchBriefMode = ref('');
 const projectPreviewVisible = ref(false);
 const projectPreviewDialog = ref(null);
 const projectFundingAmount = ref('');
@@ -12572,6 +12589,32 @@ const tokenCeoLaunchBriefCopy = computed(() => {
     primary: 'Send CEO brief',
     secondary: 'View CEO agent',
   };
+});
+const tokenLaunchWizardBriefCopy = computed(() => {
+  if (tokenLaunchBriefMode.value === 'presale') {
+    return {
+      title: 'CEO presale research mode',
+      body: 'This project brief is preloaded for a CEO agent to decide whether a presale window should open.',
+    };
+  }
+  return {
+    title: 'CEO airdrop research mode',
+    body: 'This project brief is preloaded for a CEO agent to decide whether earned airdrop missions should open.',
+  };
+});
+const tokenLaunchWizardChecklist = computed(() => {
+  if (tokenLaunchBriefMode.value === 'presale') {
+    return [
+      { label: 'Utility', detail: 'MRG usage, reserve tiers, caps' },
+      { label: 'Rails', detail: 'Wallet, funding, contract proof' },
+      { label: 'Memo', detail: 'Open/no-open decision' },
+    ];
+  }
+  return [
+    { label: 'Demand', detail: 'Repo, backlog, mission fit' },
+    { label: 'Risk', detail: 'Anti-bot, proof, wallet checks' },
+    { label: 'Memo', detail: 'Open/no-open decision' },
+  ];
 });
 const tokenWorkflowProofRows = computed(() => {
   const targetType = publicPage.value === 'airdrop' ? 'airdrop_claim' : 'presale_reservation';
@@ -24840,6 +24883,7 @@ function applyProjectWizardIntent(intent = '') {
 
   if (nextIntent === 'token-launch') {
     const isPresale = publicPage.value === 'presale';
+    tokenLaunchBriefMode.value = isPresale ? 'presale' : 'airdrop';
     projectSetupForm.projectType = 'New Project';
     projectSetupForm.title = isPresale
       ? 'CEO research brief for MRG presale window'
@@ -24876,6 +24920,7 @@ function openProjectWizard(options = {}) {
   projectPreviewVisible.value = false;
   projectWizardStage.value = 'setup';
   projectWizardStep.value = 1;
+  tokenLaunchBriefMode.value = '';
   resetProjectValidation();
   errorMessage.value = '';
   projectPaymentSuccessMethod.value = '';
@@ -24891,6 +24936,7 @@ function restartProjectWizard(options = {}) {
   projectPreviewVisible.value = false;
   projectWizardStage.value = 'setup';
   projectWizardStep.value = 1;
+  tokenLaunchBriefMode.value = '';
   resetProjectValidation();
   updateProjectWizardBrowserPath(Boolean(options.replace));
   scrollProjectFlowTop();
@@ -24901,6 +24947,7 @@ function closeProjectWizard(options = {}) {
   projectWizardVisible.value = false;
   projectWizardStage.value = 'setup';
   projectWizardStep.value = 1;
+  tokenLaunchBriefMode.value = '';
   resetProjectValidation();
   if (options.updatePath !== false) {
     updatePublicBrowserPath(publicPage.value, Boolean(options.replace));
