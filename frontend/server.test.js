@@ -269,6 +269,20 @@ test('live feed page exposes realtime operating lanes', async () => {
   assert.match(cssSource, /@media \(max-width: 760px\)[\s\S]*\.live-feed-operating-strip\s*\{[\s\S]*grid-template-columns: 1fr;/);
 });
 
+test('live feed exposes the full AI workflow trace', async () => {
+  const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
+
+  assert.match(appSource, /const liveFeedWorkflowTraceDefinitions = \[/);
+  assert.match(appSource, /phase: 'Import Repository'[\s\S]*phase: 'Issue Scan'[\s\S]*phase: 'Task Generation'[\s\S]*phase: 'Reward Estimation'[\s\S]*phase: 'Contributor Routing'[\s\S]*phase: 'PR Review'[\s\S]*phase: 'Deployment Validation'/);
+  assert.match(appSource, /rawTypes: \['project_funded', 'repo_scan'\]/);
+  assert.match(appSource, /body: 'Repository scan rows expose bugs, technical debt, dependencies, and risk signals before tasking\.'/);
+  assert.match(appSource, /schema: 'task_opened \| agent_action'/);
+  assert.match(appSource, /schema: 'task_claimed \| agent_\*'/);
+  assert.match(appSource, /schema: 'task_submitted \| task_changes_requested \| task_accepted \| ai_review'/);
+  assert.match(appSource, /schema: 'deployment_validation \| deployment_status'/);
+  assert.match(appSource, /phase: 'Payout \/ Ledger Release'/);
+});
+
 test('public menus and signed-in mobile layout keep reachable compact surfaces', async () => {
   const cssSource = await fs.readFile(new URL('./src/styles.css', import.meta.url), 'utf-8');
 
