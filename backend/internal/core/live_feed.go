@@ -333,8 +333,24 @@ func publicDeploymentLiveFeedItem(deployment ProjectDeploymentResponse) PublicLi
 		ProjectTitle: projectTitle,
 		Actor:        "mergeos-orchestrator",
 		Reference:    "project:" + deployment.ProjectID,
-		Status:       status,
-		CreatedAt:    deployment.UpdatedAt,
+		ContextURLs: []string{
+			fmt.Sprintf("/api/public/projects/%s/deployment", deployment.ProjectID),
+			fmt.Sprintf("/api/public/projects/%s/workflow", deployment.ProjectID),
+			"/api/public/ledger/proof",
+		},
+		Evidence: []string{
+			fmt.Sprintf("deployment_status:%s", status),
+			fmt.Sprintf("deployment_progress:%d", deployment.Progress),
+			"ledger_proof:/api/public/ledger/proof",
+		},
+		Runbook: []string{
+			"Open deployment proof.",
+			"Check workflow stage readiness.",
+			"Verify ledger proof before release.",
+		},
+		URL:       fmt.Sprintf("/api/public/projects/%s/deployment", deployment.ProjectID),
+		Status:    status,
+		CreatedAt: deployment.UpdatedAt,
 	}
 }
 

@@ -2698,6 +2698,19 @@ func TestPublicLiveFeedRouteReturnsSanitizedTimeline(t *testing.T) {
 	seenEvidence := map[string]bool{}
 	for _, item := range payload.Items {
 		seen[item.Type] = true
+		if item.Type == "deployment_validation" {
+			if item.URL != "/api/public/projects/"+project.ID+"/deployment" {
+				t.Fatalf("deployment feed URL = %q", item.URL)
+			}
+			for _, required := range []string{"/api/public/projects/" + project.ID + "/deployment", "/api/public/projects/" + project.ID + "/workflow", "/api/public/ledger/proof"} {
+				if !containsString(item.ContextURLs, required) {
+					t.Fatalf("deployment feed missing context %s: %#v", required, item)
+				}
+			}
+			if !containsString(item.Evidence, "ledger_proof:/api/public/ledger/proof") {
+				t.Fatalf("deployment feed missing ledger evidence: %#v", item)
+			}
+		}
 		if (item.Type == "task_opened" || item.Type == "task_accepted") && containsString(item.EvidenceRequired, "tests") {
 			seenEvidence[item.Type] = true
 		}
