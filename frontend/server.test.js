@@ -319,15 +319,18 @@ test('public home keeps a short decision-screen rhythm', async () => {
 
   assert.match(cssSource, /Compact public home rhythm/);
   assert.match(cssSource, /Home ultra-short pass/);
+  assert.match(cssSource, /Home micro-screen pass/);
   assert.match(appSource, /class="public-notification-feed home-feed-preview"/);
   assert.match(cssSource, /\.public-home-page\s*\{[\s\S]*padding-block: 4px 8px !important;/);
   assert.match(cssSource, /\.public-home-page\s*\{[\s\S]*padding-block: 0 6px !important;/);
   assert.match(cssSource, /\.public-home-page \.home-container\s*\{[\s\S]*max-width: min\(900px, calc\(100vw - 32px\)\) !important;/);
   assert.match(cssSource, /\.public-home-page \.home-container\s*\{[\s\S]*max-width: min\(760px, calc\(100vw - 28px\)\) !important;/);
+  assert.match(cssSource, /\.public-home-page \.home-container\s*\{[\s\S]*max-width: min\(700px, calc\(100vw - 30px\)\) !important;/);
   assert.match(cssSource, /\.public-home-hero\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) minmax\(236px, 270px\) !important;/);
   assert.match(cssSource, /\.public-home-hero\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) minmax\(210px, 230px\) !important;/);
   assert.match(cssSource, /\.public-home-copy h1\s*\{[\s\S]*font-size: clamp\(27px, 2\.55vw, 34px\) !important;/);
   assert.match(cssSource, /\.public-home-copy h1\s*\{[\s\S]*font-size: clamp\(25px, 2\.2vw, 30px\) !important;/);
+  assert.match(cssSource, /\.public-home-copy h1\s*\{[\s\S]*font-size: clamp\(24px, 2vw, 28px\) !important;/);
   assert.match(cssSource, /\.home-feed-preview,[\s\S]*\.home-public-graph-proof,[\s\S]*\.home-command-panel \.home-pipeline\s*\{[\s\S]*display: none !important;/);
   assert.match(cssSource, /\.home-command-panel \.public-stat-grid article:nth-child\(n \+ 3\)\s*\{[\s\S]*display: none !important;/);
   assert.match(cssSource, /@media \(max-width: 980px\)[\s\S]*\.home-command-panel\s*\{[\s\S]*display: none !important;/);

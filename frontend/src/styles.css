@@ -33839,3 +33839,108 @@ canvas {
   }
 }
 
+/* Home micro-screen pass: keep the first page short enough to decide without scrolling. */
+.public-home-page {
+  min-height: calc(100dvh - 82px) !important;
+  display: grid !important;
+  align-items: center !important;
+  padding-block: 0 !important;
+}
+
+.public-home-page .home-container {
+  max-width: min(700px, calc(100vw - 30px)) !important;
+}
+
+.public-home-layout {
+  padding-block: 0 !important;
+}
+
+.public-home-hero {
+  grid-template-columns: minmax(0, 1fr) 196px !important;
+  gap: 9px !important;
+  padding-block: 0 !important;
+}
+
+.public-home-copy h1 {
+  max-width: 390px !important;
+  font-size: clamp(24px, 2vw, 28px) !important;
+  line-height: 1.01 !important;
+}
+
+.public-home-copy p {
+  max-width: 350px !important;
+  font-size: 11.5px !important;
+  line-height: 1.28 !important;
+}
+
+.public-home-copy .marketplace-actions {
+  max-width: 400px !important;
+}
+
+.public-home-copy .primary-button.large,
+.public-home-copy .secondary-button.large {
+  min-height: 32px !important;
+  padding-inline: 9px !important;
+  font-size: 11px !important;
+}
+
+.home-command-panel {
+  max-width: 196px !important;
+  padding: 6px !important;
+  border-radius: 9px !important;
+}
+
+.home-command-head {
+  grid-template-columns: 26px minmax(0, 1fr) auto !important;
+}
+
+.home-command-mark,
+.home-stat-icon {
+  width: 22px !important;
+  height: 22px !important;
+}
+
+.home-command-panel .public-stat-grid {
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 5px !important;
+  margin-top: 6px !important;
+}
+
+.home-command-panel .public-stat-grid article {
+  min-height: 28px !important;
+  grid-template-columns: 22px minmax(0, 1fr) !important;
+  padding: 5px !important;
+}
+
+@media (max-width: 1180px) {
+  .public-home-page {
+    align-items: start !important;
+    padding-block: 12px 0 !important;
+  }
+}
+
+@media (max-width: 980px) {
+  .public-home-page {
+    min-height: auto !important;
+    display: block !important;
+    padding-block: 10px 12px !important;
+  }
+
+  .public-home-hero {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .public-home-copy h1 {
+    max-width: 360px !important;
+    font-size: clamp(25px, 7vw, 31px) !important;
+  }
+
+  .public-home-copy p {
+    max-width: 330px !important;
+  }
+
+  .home-command-panel {
+    display: none !important;
+  }
+}
+
