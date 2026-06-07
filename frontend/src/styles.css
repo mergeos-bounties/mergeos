@@ -30848,6 +30848,180 @@ canvas {
   }
 }
 
+/* Signed-in mobile customer workflow owner: escrow, routing, repository intel,
+   deployment, and AI log surfaces stay readable after customer data hydrates. */
+@media (max-width: 760px) {
+  .dashboard-shell :is(
+    .escrow-stat-grid,
+    .routing-stat-grid,
+    .repo-intel-stats,
+    .deployment-signal-strip,
+    .delivery-snapshot-stats,
+    .delivery-snapshot-components,
+    .ai-log-stat-grid,
+    .pr-monitor-stats,
+    .pr-monitor-signals
+  ) {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .dashboard-shell :is(
+    .escrow-task-list article,
+    .routing-lane-strip article,
+    .routing-route-list article,
+    .routing-proposal-list article,
+    .deployment-status-row,
+    .deployment-action-row,
+    .deployment-stage-list article,
+    .ai-log-list article,
+    .delivery-snapshot-main,
+    .delivery-snapshot-progress,
+    .repo-intel-section-head
+  ) {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .dashboard-shell :is(
+    .escrow-task-list article,
+    .routing-lane-strip article,
+    .routing-route-list article,
+    .routing-proposal-list article,
+    .deployment-stage-list article,
+    .ai-log-list article
+  ) > * {
+    min-width: 0;
+    max-width: 100%;
+    justify-self: stretch;
+  }
+
+  .dashboard-shell :is(
+    .escrow-task-main,
+    .escrow-task-money,
+    .routing-route-main,
+    .routing-route-candidate,
+    .routing-route-score,
+    .routing-proposal-main,
+    .routing-proposal-bid,
+    .routing-proposal-decision,
+    .deployment-action-row > div,
+    .deployment-stage-list article > div,
+    .ai-log-list article > div,
+    .delivery-snapshot-progress > div,
+    .repo-intel-section
+  ) {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .dashboard-shell :is(
+    .escrow-task-list strong,
+    .escrow-task-list small,
+    .routing-lane-strip strong,
+    .routing-lane-strip small,
+    .routing-route-list strong,
+    .routing-route-list small,
+    .routing-route-list b,
+    .routing-proposal-list strong,
+    .routing-proposal-list small,
+    .routing-proposal-list p,
+    .deployment-status-row strong,
+    .deployment-status-row small,
+    .deployment-action-row strong,
+    .deployment-action-row small,
+    .deployment-stage-list strong,
+    .deployment-stage-list small,
+    .deployment-stage-list b,
+    .ai-log-list strong,
+    .ai-log-list small,
+    .ai-log-list p,
+    .ai-log-context-links a,
+    .delivery-snapshot-main strong,
+    .delivery-snapshot-main small,
+    .delivery-snapshot-components b,
+    .repo-intel-section-head strong,
+    .repo-intel-section-head small
+  ) {
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    text-overflow: clip;
+    white-space: normal;
+  }
+
+  .dashboard-shell :is(
+    .delivery-snapshot-actions,
+    .escrow-control-actions,
+    .routing-board-actions,
+    .repo-intel-actions,
+    .ai-log-actions,
+    .pr-monitor-heading-actions,
+    .routing-proposal-buttons
+  ) {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .dashboard-shell :is(
+    .delivery-snapshot-actions,
+    .escrow-control-actions,
+    .routing-board-actions,
+    .repo-intel-actions,
+    .ai-log-actions,
+    .pr-monitor-heading-actions,
+    .routing-proposal-buttons
+  ) > * {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 42px;
+    justify-content: center;
+    white-space: normal;
+  }
+
+  .dashboard-shell .repo-intel-grid,
+  .dashboard-shell .routing-lane-strip,
+  .dashboard-shell .deployment-stage-list,
+  .dashboard-shell .ai-log-context-links {
+    grid-template-columns: minmax(0, 1fr) !important;
+    min-width: 0;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 430px) {
+  .dashboard-shell :is(
+    .escrow-stat-grid,
+    .routing-stat-grid,
+    .repo-intel-stats,
+    .deployment-signal-strip,
+    .delivery-snapshot-stats,
+    .delivery-snapshot-components,
+    .ai-log-stat-grid,
+    .pr-monitor-stats,
+    .pr-monitor-signals,
+    .delivery-snapshot-actions,
+    .escrow-control-actions,
+    .routing-board-actions,
+    .repo-intel-actions,
+    .ai-log-actions,
+    .pr-monitor-heading-actions,
+    .routing-proposal-buttons
+  ) {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
 /* Signed-in mobile unified owner: one sticky header, compact admin triage,
    and stable project wizard actions after authenticated data loads. */
 @media (max-width: 760px) {

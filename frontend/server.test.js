@@ -519,6 +519,11 @@ test('signed-in mobile dashboard keeps nav, actions, and popovers phone-safe', a
   assert.match(cssSource, /\.dashboard-shell \.admin-user-control-strip button\s*\{[\s\S]*scroll-snap-align: start;[\s\S]*min-height: 48px;/);
   assert.match(cssSource, /\.dashboard-shell \.worker-proposal-actions,[\s\S]*\.dashboard-shell \.payment-history-actions\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) !important;/);
   assert.match(cssSource, /\.project-step-actions,[\s\S]*\.funding-actions\s*\{[\s\S]*position: sticky;[\s\S]*bottom: 0;/);
+  assert.match(cssSource, /Signed-in mobile customer workflow owner/);
+  assert.match(cssSource, /\.dashboard-shell :is\([\s\S]*\.escrow-stat-grid,[\s\S]*\.routing-stat-grid,[\s\S]*\.repo-intel-stats,[\s\S]*\.deployment-signal-strip,[\s\S]*\.ai-log-stat-grid,[\s\S]*\)\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\) !important;/);
+  assert.match(cssSource, /\.dashboard-shell :is\([\s\S]*\.escrow-task-list article,[\s\S]*\.routing-lane-strip article,[\s\S]*\.routing-route-list article,[\s\S]*\.routing-proposal-list article,[\s\S]*\.deployment-status-row,[\s\S]*\.deployment-stage-list article,[\s\S]*\.ai-log-list article,[\s\S]*\)\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) !important;/);
+  assert.match(cssSource, /\.dashboard-shell :is\([\s\S]*\.delivery-snapshot-actions,[\s\S]*\.escrow-control-actions,[\s\S]*\.routing-board-actions,[\s\S]*\.repo-intel-actions,[\s\S]*\.ai-log-actions,[\s\S]*\.pr-monitor-heading-actions,[\s\S]*\.routing-proposal-buttons[\s\S]*\)\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\) !important;/);
+  assert.match(cssSource, /@media \(max-width: 430px\)[\s\S]*\.dashboard-shell :is\([\s\S]*\.escrow-stat-grid,[\s\S]*\.routing-stat-grid,[\s\S]*\.repo-intel-stats,[\s\S]*\.deployment-signal-strip,[\s\S]*\.routing-proposal-buttons[\s\S]*\)\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) !important;/);
 });
 
 test('AI workflow dashboard exposes stage checklists from the protocol contract', async () => {
