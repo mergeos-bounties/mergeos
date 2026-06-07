@@ -1270,6 +1270,9 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /let idPattern = \/presale:\(\[\^;\]\+\)\//);
   assert.match(appSource, /if \(isLaunchBrief\) idPattern = \/launch_brief:\(\[\^;\]\+\)\//);
   assert.match(appSource, /if \(isAirdrop\) idPattern = \/airdrop:\(\[\^;\]\+\)\//);
+  assert.match(appSource, /const gateSummaryMatch = reference\.match\(\/gate_summary:\(\[\^;\]\+\)\/\);/);
+  assert.match(appSource, /const gateSummary = gateSummaryMatch\?\.\[1\]/);
+  assert.match(appSource, /\$\{toTitleLabel\(decisionMatch\?\.\[1\] \|\| 'pending open decision'\)\} \/ \$\{gateSummary\}/);
   assert.match(appSource, /amount: isLaunchBrief \? 'CEO memo' : formatLedgerMRGFromCents\(entry\.amount_cents\)/);
   assert.match(appSource, /command: 'airdrop-claim'/);
   assert.match(appSource, /command: 'presale-reserve'/);
