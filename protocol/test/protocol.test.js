@@ -53,6 +53,7 @@ test('loads stable task, workflow, ledger, and event schemas', () => {
     'mergeos.task-submission.v1',
     'mergeos.task.v1',
     'mergeos.token-economy.v1',
+    'mergeos.token-launch-brief.v1',
     'mergeos.wallet-migration.v1',
     'mergeos.worker-dashboard.v1',
     'mergeos.workflow.v1',
@@ -85,7 +86,7 @@ test('validates public architecture manifest protocol document', () => {
   assert.equal(manifest.public_urls.architecture_manifest, '/system/mergeos-architecture.v1.json');
 });
 
-test('validates airdrop claim and presale reservation protocol documents', () => {
+test('validates airdrop claim, presale reservation, and token launch brief protocol documents', () => {
   const now = '2026-06-06T00:00:00.000Z';
   const hash = 'a'.repeat(64);
   const previousHash = '0'.repeat(64);
@@ -145,9 +146,39 @@ test('validates airdrop claim and presale reservation protocol documents', () =>
     live_feed_url: '/api/public/live-feed',
     created_at: now,
   };
+  const tokenLaunchBrief = {
+    protocol_version: 'mergeos.token-launch-brief.v1',
+    kind: 'token_launch_brief',
+    brief_id: 'tlb_0003',
+    status: 'research_pending',
+    launch_type: 'airdrop',
+    project_title: 'MergeOS partner airdrop research',
+    project_summary: 'Research whether this repository community should open earned MRG airdrop missions with proof gates.',
+    repository_url: 'https://github.com/mergeos-bounties/mergeos',
+    allocation_policy: 'Cap earned claims by mission and proof quality.',
+    proof_policy: 'Require PR, task, QA, or deployment evidence.',
+    wallet_policy: 'Require Solana wallet uniqueness and review.',
+    risk_notes: 'Watch bot farming and duplicate wallets.',
+    research_signals: ['airdrop_launch', 'repo_demand', 'anti_bot', 'repository_context'],
+    ledger_entry: {
+      sequence: 3,
+      type: 'token_launch_brief',
+      from_account: 'token:launch-intake',
+      to_account: 'ceo:research',
+      amount_cents: 0,
+      reference: 'launch_brief:tlb_0003;type:airdrop',
+      previous_hash: 'b'.repeat(64),
+      entry_hash: 'c'.repeat(64),
+      created_at: now,
+    },
+    ledger_proof_url: '/api/public/ledger/proof',
+    live_feed_url: '/api/public/live-feed',
+    created_at: now,
+  };
 
   assert.equal(validateProtocolDocument(airdropClaim).valid, true);
   assert.equal(validateProtocolDocument(presaleReservation).valid, true);
+  assert.equal(validateProtocolDocument(tokenLaunchBrief).valid, true);
 
   const invalidClaim = validateProtocolDocument({ ...airdropClaim, allocation_mrg: 100001 });
   assert.equal(invalidClaim.valid, false);
@@ -156,6 +187,10 @@ test('validates airdrop claim and presale reservation protocol documents', () =>
   const invalidReservation = validateProtocolDocument({ ...presaleReservation, funding_rail: 'tron' });
   assert.equal(invalidReservation.valid, false);
   assert(invalidReservation.errors.some((error) => error.path === 'funding_rail'));
+
+  const invalidLaunchBrief = validateProtocolDocument({ ...tokenLaunchBrief, launch_type: 'ico' });
+  assert.equal(invalidLaunchBrief.valid, false);
+  assert(invalidLaunchBrief.errors.some((error) => error.path === 'launch_type'));
 });
 
 test('validates task-based airdrop mission catalog protocol documents', () => {

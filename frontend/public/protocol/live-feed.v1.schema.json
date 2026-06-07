@@ -79,6 +79,7 @@
               "ledger_manual_credit",
               "ledger_airdrop_claim",
               "ledger_presale_reservation",
+              "ledger_token_launch_brief",
               "ledger_wallet_migration",
               "proposal_submitted",
               "proposal_accepted",

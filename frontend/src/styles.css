@@ -35169,9 +35169,145 @@ canvas {
     width: 100% !important;
   }
 
-  .home-command-panel .public-stat-grid article {
+.home-command-panel .public-stat-grid article {
     min-height: 68px !important;
     padding: 10px !important;
+  }
+}
+
+/* Home description pass: enough product meaning, still a short first screen. */
+.public-home-page {
+  padding-block: clamp(8px, 1.4vw, 18px) clamp(14px, 2vw, 24px) !important;
+  overflow-x: hidden !important;
+}
+
+.public-home-page .home-container {
+  max-width: 980px !important;
+}
+
+.public-home-hero {
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 306px) !important;
+  gap: clamp(18px, 2.8vw, 34px) !important;
+}
+
+.public-home-copy {
+  max-width: 600px !important;
+}
+
+.public-home-copy h1 {
+  max-width: 570px !important;
+  font-size: clamp(38px, 4vw, 56px) !important;
+  line-height: 1 !important;
+  overflow-wrap: anywhere !important;
+}
+
+.public-home-copy p {
+  max-width: 585px !important;
+  margin-top: 12px !important;
+  font-size: clamp(15px, 1vw, 17px) !important;
+  line-height: 1.48 !important;
+  overflow-wrap: anywhere !important;
+}
+
+.home-explain-strip {
+  max-width: 600px !important;
+  margin-top: 13px !important;
+  gap: 7px !important;
+}
+
+.home-explain-strip article {
+  min-height: 68px !important;
+  padding: 10px 11px !important;
+  overflow: hidden !important;
+}
+
+.home-explain-strip strong,
+.home-explain-strip span,
+.home-command-head div,
+.home-command-head div strong {
+  min-width: 0 !important;
+  overflow-wrap: anywhere !important;
+}
+
+.home-command-head div strong {
+  white-space: normal !important;
+}
+
+.home-command-panel {
+  max-width: 306px !important;
+  padding: 12px !important;
+}
+
+.home-command-panel .public-stat-grid article {
+  min-height: 66px !important;
+}
+
+@media (max-width: 980px) {
+  .public-home-page .home-container {
+    max-width: 650px !important;
+  }
+
+  .public-home-hero {
+    gap: 12px !important;
+  }
+
+  .public-home-copy h1 {
+    font-size: clamp(34px, 7.4vw, 44px) !important;
+  }
+
+  .home-command-panel {
+    max-width: 100% !important;
+  }
+}
+
+@media (max-width: 620px) {
+  .home-shell {
+    overflow-x: hidden !important;
+  }
+
+  .public-home-page .home-container,
+  .public-home-layout,
+  .public-home-hero,
+  .public-home-copy {
+    width: min(100%, calc(100vw - 18px)) !important;
+    max-width: min(100%, calc(100vw - 18px)) !important;
+    min-width: 0 !important;
+    overflow-x: hidden !important;
+  }
+
+  .public-home-page {
+    padding-block: 10px 14px !important;
+  }
+
+  .public-home-copy,
+  .public-home-copy h1,
+  .public-home-copy p,
+  .home-explain-strip,
+  .home-command-panel {
+    max-width: 100% !important;
+  }
+
+  .public-home-copy h1 {
+    width: 100% !important;
+    font-size: clamp(26px, 7.4vw, 31px) !important;
+    line-height: 1.06 !important;
+    white-space: normal !important;
+    word-break: normal !important;
+    overflow-wrap: break-word !important;
+  }
+
+  .public-home-copy p {
+    font-size: 13.5px !important;
+    line-height: 1.42 !important;
+    white-space: normal !important;
+    overflow-wrap: break-word !important;
+  }
+
+  .home-explain-strip span {
+    display: block !important;
+    -webkit-line-clamp: 3 !important;
+    white-space: normal !important;
+    overflow-wrap: break-word !important;
   }
 }
 
@@ -35901,6 +36037,117 @@ canvas {
 
   .home-command-panel .public-stat-grid article {
     min-height: 64px !important;
+  }
+}
+
+/* Final home copy/layout override: must stay after older home passes. */
+.public-home-page {
+  overflow-x: hidden !important;
+  padding-block: clamp(8px, 1.4vw, 18px) clamp(14px, 2vw, 24px) !important;
+}
+
+.public-home-page .home-container {
+  max-width: 980px !important;
+}
+
+.public-home-hero {
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 306px) !important;
+  gap: clamp(18px, 2.8vw, 34px) !important;
+}
+
+.public-home-copy h1 {
+  max-width: 570px !important;
+  font-size: clamp(38px, 4vw, 56px) !important;
+  line-height: 1 !important;
+  white-space: normal !important;
+  overflow-wrap: break-word !important;
+}
+
+.public-home-copy p {
+  max-width: 585px !important;
+  font-size: clamp(15px, 1vw, 17px) !important;
+  line-height: 1.48 !important;
+  white-space: normal !important;
+  overflow-wrap: break-word !important;
+}
+
+.home-command-head div {
+  min-width: 0 !important;
+}
+
+.home-command-head div strong {
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+}
+
+@media (max-width: 620px) {
+  .home-shell,
+  .public-home-page {
+    overflow-x: hidden !important;
+  }
+
+  .public-home-page .home-container,
+  .public-home-layout,
+  .public-home-hero,
+  .public-home-copy,
+  .public-home-copy h1,
+  .public-home-copy p,
+  .home-explain-strip,
+  .home-command-panel {
+    width: min(100%, calc(100vw - 18px)) !important;
+    max-width: min(100%, calc(100vw - 18px)) !important;
+    min-width: 0 !important;
+    overflow-x: hidden !important;
+  }
+
+  .public-home-hero {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .public-home-copy h1 {
+    font-size: clamp(25px, 7vw, 30px) !important;
+    line-height: 1.08 !important;
+  }
+
+  .public-home-copy p {
+    display: block !important;
+    font-size: 13.5px !important;
+    line-height: 1.42 !important;
+    overflow: visible !important;
+    -webkit-line-clamp: unset !important;
+  }
+
+  .home-explain-strip strong,
+  .home-explain-strip span {
+    display: block !important;
+    white-space: normal !important;
+    overflow-wrap: break-word !important;
+    overflow: visible !important;
+    -webkit-line-clamp: unset !important;
+  }
+
+  .home-navbar .nav-inner {
+    width: min(100%, calc(100vw - 20px)) !important;
+    max-width: min(100%, calc(100vw - 20px)) !important;
+    padding-inline: 0 !important;
+    margin-inline: auto !important;
+  }
+
+  .home-navbar .brand-link {
+    min-width: 0 !important;
+  }
+
+  .home-navbar .public-nav-actions {
+    gap: 5px !important;
+  }
+
+  .home-navbar .public-nav-actions .locale-button,
+  .home-navbar .account-icon-button,
+  .home-navbar .hamburger-button {
+    width: 34px !important;
+    min-width: 34px !important;
+    min-height: 34px !important;
   }
 }
 

@@ -766,8 +766,8 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.doesNotMatch(appSource, /class="home-system-explainer"/);
   assert.doesNotMatch(appSource, /localizedHomeWorkflowCards\.slice\(0, 4\)/);
   assert.match(appSource, /homeLiveStats\.slice\(0, 2\)/);
-  assert.match(appSource, /MergeOS turns funded work into verified delivery\./);
-  assert.match(appSource, /Post a brief, fund escrow, route tasks to builders or AI agents, and prove every payout through the live ledger\./);
+  assert.match(appSource, /MergeOS runs funded software delivery\./);
+  assert.match(appSource, /Turn a brief or repo into funded tasks with AI routing, escrow, PR checks, deploy proof, and ledger payout proof\./);
   assert.match(appSource, /title: 'Product OS'[\s\S]*Project intake, repo import, AI task graph, escrow, PR monitor, deployment gates, and ledger proof stay in one operating flow\./);
   assert.match(appSource, /title: 'Delivery lanes'[\s\S]*Route funded work to human contributors, AI agents, or hybrid teams with shared scope, acceptance criteria, and payout state\./);
   assert.match(appSource, /title: 'Public proof layer'[\s\S]*Marketplace activity, escrow, token mint, PR evidence, deployment checks, SDK context, and protocol documents are discoverable\./);
@@ -775,8 +775,8 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.match(appSource, /title: 'AI routing', body: 'Scan, split, estimate, review'/);
   assert.match(appSource, /title: 'Market \+ escrow', body: 'Funded bounties and payouts'/);
   assert.match(appSource, /title: 'MRG proof', body: 'Solana token and public ledger'/);
-  assert.match(appSource, /operatingRows: \[[\s\S]*title: 'Input', body: 'Brief, repo, issues, debt, files'/);
-  assert.match(appSource, /title: 'Proof', body: 'Escrow, PR, deploy, payout ledger'/);
+  assert.match(appSource, /operatingRows: \[[\s\S]*title: 'Plan the work', body: 'Briefs, repos, issues, and files become funded scopes\.'/);
+  assert.match(appSource, /title: 'Prove payout', body: 'Escrow, PR evidence, deploy checks, and ledger proof stay public\.'/);
   assert.match(appSource, /title: 'Route', body: 'Human, AI, or hybrid tasks'/);
   assert.match(appSource, /title: 'Prove', body: 'PR, deploy, payout ledger'/);
   assert.match(cssSource, /\.public-home-page\s*\{[\s\S]*padding-block: clamp\(10px, 1\.8vw, 22px\) clamp\(18px, 2\.4vw, 30px\) !important;/);
@@ -790,6 +790,9 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.match(cssSource, /\.home-command-panel \.public-stat-grid article:nth-child\(n \+ 3\)\s*\{[\s\S]*display: none !important;/);
   assert.match(cssSource, /@media \(max-width: 980px\)[\s\S]*\.home-command-panel\s*\{[\s\S]*display: block !important;[\s\S]*max-width: 520px !important;/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.public-home-copy h1\s*\{[\s\S]*font-size: clamp\(30px, 9\.5vw, 38px\) !important;/);
+  assert.match(cssSource, /Home description pass: enough product meaning, still a short first screen/);
+  assert.match(cssSource, /\.public-home-page \.home-container\s*\{[\s\S]*max-width: 980px !important;/);
+  assert.match(cssSource, /\.public-home-copy h1\s*\{[\s\S]*font-size: clamp\(38px, 4vw, 56px\) !important;/);
 });
 
 test('frontend system exposes required public pages and dashboard roles', async () => {

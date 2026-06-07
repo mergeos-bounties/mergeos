@@ -188,6 +188,8 @@ func (s *Store) PublicTokenEconomy() PublicTokenEconomyResponse {
 			response.Totals.PresaleReserveCents += entry.AmountCents
 			response.Stats.PresaleCount++
 			response.Stats.TokenEventCount++
+		case "token_launch_brief":
+			response.Stats.TokenEventCount++
 		}
 	}
 	if response.Totals.MintedCents == 0 {
@@ -286,6 +288,8 @@ func publicTokenEconomyFlowLabel(entryType string) string {
 		return "Airdrop claim"
 	case "presale_reservation":
 		return "Presale reservation"
+	case "token_launch_brief":
+		return "CEO token launch brief"
 	default:
 		return strings.ReplaceAll(entryType, "_", " ")
 	}

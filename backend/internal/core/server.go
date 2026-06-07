@@ -67,6 +67,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/auth/github/callback", s.githubCallback)
 	mux.HandleFunc("POST /api/airdrop/claims", s.createAirdropClaim)
 	mux.HandleFunc("POST /api/presale/reservations", s.createPresaleReservation)
+	mux.HandleFunc("POST /api/token/launch-briefs", s.createTokenLaunchBrief)
 	mux.HandleFunc("POST /api/wallets", s.createWallet)
 	mux.HandleFunc("GET /api/wallets/{address}", s.wallet)
 	mux.HandleFunc("POST /api/wallets/link", s.linkWallet)

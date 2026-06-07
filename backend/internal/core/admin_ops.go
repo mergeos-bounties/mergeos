@@ -169,7 +169,7 @@ func (s *Store) AdminOpsQueue() AdminOpsQueueResponse {
 	}
 
 	for _, entry := range s.ledger {
-		if entry.Type != "airdrop_claim" && entry.Type != "presale_reservation" {
+		if entry.Type != "airdrop_claim" && entry.Type != "presale_reservation" && entry.Type != "token_launch_brief" {
 			continue
 		}
 		add(adminOpsTokenWorkflowItem(entry))
@@ -601,6 +601,16 @@ func adminOpsTokenWorkflowItem(entry LedgerEntry) AdminOpsQueueItem {
 		title = "Presale reservation needs review"
 		body = fmt.Sprintf("%s %s reservation via %s needs funding review.", formatTokenAmount(entry.AmountCents), tier, rail)
 	}
+	if entry.Type == "token_launch_brief" {
+		kind = "token-launch"
+		launchType := sanitizeLedgerReferenceValue(fields["type"])
+		if launchType == "" {
+			launchType = "token"
+		}
+		title = "CEO token launch brief needs review"
+		body = fmt.Sprintf("%s launch brief needs CEO research, risk review, and open/no-open decision.", marketplaceTitle(launchType))
+		severity = "medium"
+	}
 	return AdminOpsQueueItem{
 		ID:        fmt.Sprintf("%s:%d", kind, entry.Sequence),
 		Type:      "token_workflow_review",
@@ -634,6 +644,14 @@ func publicTokenWorkflowReviewReference(entry LedgerEntry) string {
 		}
 		if rail := sanitizeLedgerReferenceValue(fields["rail"]); rail != "" {
 			parts = append(parts, "rail:"+rail)
+		}
+	}
+	if entry.Type == "token_launch_brief" {
+		if briefID := sanitizeLedgerReferenceValue(fields["launch_brief"]); briefID != "" {
+			parts = append(parts, "launch_brief:"+briefID)
+		}
+		if launchType := sanitizeLedgerReferenceValue(fields["type"]); launchType != "" {
+			parts = append(parts, "type:"+launchType)
 		}
 	}
 	parts = append(parts, fmt.Sprintf("ledger:%d", entry.Sequence))

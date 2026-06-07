@@ -15,6 +15,7 @@ const (
 	airdropClaimProtocolVersion             = "mergeos.airdrop-claim.v1"
 	airdropMissionsProtocolVersion          = "mergeos.airdrop-missions.v1"
 	presaleReservationProtocolVersion       = "mergeos.presale-reservation.v1"
+	tokenLaunchBriefProtocolVersion         = "mergeos.token-launch-brief.v1"
 	defaultAirdropAllocationMRG       int64 = 250
 	maxAirdropAllocationMRG           int64 = 100000
 	minPresaleReserveMRG              int64 = 100
@@ -95,6 +96,38 @@ type PresaleReservationResponse struct {
 	FundingReference string      `json:"funding_reference,omitempty"`
 	Tier             string      `json:"tier"`
 	Notes            string      `json:"notes,omitempty"`
+	LedgerEntry      LedgerEntry `json:"ledger_entry"`
+	LedgerProofURL   string      `json:"ledger_proof_url"`
+	LiveFeedURL      string      `json:"live_feed_url"`
+	CreatedAt        time.Time   `json:"created_at"`
+}
+
+type TokenLaunchBriefRequest struct {
+	LaunchType       string   `json:"launch_type"`
+	ProjectTitle     string   `json:"project_title"`
+	ProjectSummary   string   `json:"project_summary"`
+	RepositoryURL    string   `json:"repository_url,omitempty"`
+	AllocationPolicy string   `json:"allocation_policy,omitempty"`
+	ProofPolicy      string   `json:"proof_policy,omitempty"`
+	WalletPolicy     string   `json:"wallet_policy,omitempty"`
+	RiskNotes        string   `json:"risk_notes,omitempty"`
+	ResearchSignals  []string `json:"research_signals,omitempty"`
+}
+
+type TokenLaunchBriefResponse struct {
+	ProtocolVersion  string      `json:"protocol_version"`
+	Kind             string      `json:"kind"`
+	BriefID          string      `json:"brief_id"`
+	Status           string      `json:"status"`
+	LaunchType       string      `json:"launch_type"`
+	ProjectTitle     string      `json:"project_title"`
+	ProjectSummary   string      `json:"project_summary"`
+	RepositoryURL    string      `json:"repository_url,omitempty"`
+	AllocationPolicy string      `json:"allocation_policy,omitempty"`
+	ProofPolicy      string      `json:"proof_policy,omitempty"`
+	WalletPolicy     string      `json:"wallet_policy,omitempty"`
+	RiskNotes        string      `json:"risk_notes,omitempty"`
+	ResearchSignals  []string    `json:"research_signals"`
 	LedgerEntry      LedgerEntry `json:"ledger_entry"`
 	LedgerProofURL   string      `json:"ledger_proof_url"`
 	LiveFeedURL      string      `json:"live_feed_url"`
@@ -237,6 +270,26 @@ func (s *Server) createPresaleReservation(w http.ResponseWriter, r *http.Request
 	writeJSON(w, http.StatusCreated, response)
 }
 
+func (s *Server) createTokenLaunchBrief(w http.ResponseWriter, r *http.Request) {
+	user, ok := s.requireUser(w, r)
+	if !ok {
+		return
+	}
+	var req TokenLaunchBriefRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	response, err := s.store.RecordTokenLaunchBriefForUser(user.ID, req)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	s.broadcastLiveFeedEvent("ledger_token_launch_brief")
+	s.broadcastAdminOpsUpdated()
+	writeJSON(w, http.StatusCreated, response)
+}
+
 func (s *Store) RecordAirdropClaim(req AirdropClaimRequest) (AirdropClaimResponse, error) {
 	return s.RecordAirdropClaimForUser("", req)
 }
@@ -334,6 +387,78 @@ func (s *Store) RecordPresaleReservation(req PresaleReservationRequest) (Presale
 	return s.RecordPresaleReservationForUser("", req)
 }
 
+func (s *Store) RecordTokenLaunchBrief(req TokenLaunchBriefRequest) (TokenLaunchBriefResponse, error) {
+	return s.RecordTokenLaunchBriefForUser("", req)
+}
+
+func (s *Store) RecordTokenLaunchBriefForUser(userID string, req TokenLaunchBriefRequest) (TokenLaunchBriefResponse, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	launchType, err := normalizeTokenLaunchType(req.LaunchType)
+	if err != nil {
+		return TokenLaunchBriefResponse{}, err
+	}
+	projectTitle := sanitizeTokenLaunchText(req.ProjectTitle, 140)
+	if len(projectTitle) < 6 {
+		return TokenLaunchBriefResponse{}, errors.New("project_title must be at least 6 characters")
+	}
+	projectSummary := sanitizeTokenLaunchText(req.ProjectSummary, 1000)
+	if len(projectSummary) < 24 {
+		return TokenLaunchBriefResponse{}, errors.New("project_summary must be at least 24 characters")
+	}
+	repositoryURL := normalizeTokenWorkflowURL(req.RepositoryURL)
+	if repositoryURL == "" && strings.TrimSpace(req.RepositoryURL) != "" {
+		return TokenLaunchBriefResponse{}, errors.New("repository_url must be an http(s) URL")
+	}
+	allocationPolicy := sanitizeTokenLaunchText(req.AllocationPolicy, 260)
+	proofPolicy := sanitizeTokenLaunchText(req.ProofPolicy, 260)
+	walletPolicy := sanitizeTokenLaunchText(req.WalletPolicy, 260)
+	riskNotes := sanitizeTokenLaunchText(req.RiskNotes, 260)
+	researchSignals := normalizeTokenLaunchResearchSignals(req.ResearchSignals, launchType, repositoryURL, proofPolicy, walletPolicy)
+	briefID := s.newID("tlb")
+	reference := tokenWorkflowReference([]string{
+		"launch_brief:" + briefID,
+		"type:" + launchType,
+		"title:" + projectTitle,
+		"repo:" + repositoryURL,
+		"signals:" + strings.Join(researchSignals, ","),
+	})
+	entry := s.addLedger("token_launch_brief", "token:launch-intake", "ceo:research", 0, reference)
+	if strings.TrimSpace(userID) != "" {
+		s.addNotificationLocked(
+			userID,
+			"",
+			"token_workflow",
+			"CEO token launch brief received",
+			fmt.Sprintf("CEO research brief for %s is recorded and waiting for launch decision review.", marketplaceTitle(launchType)),
+			tokenWorkflowReviewStatus("launch_brief", briefID, entry.Sequence),
+		)
+	}
+	if err := s.saveLocked(); err != nil {
+		return TokenLaunchBriefResponse{}, err
+	}
+	return TokenLaunchBriefResponse{
+		ProtocolVersion:  tokenLaunchBriefProtocolVersion,
+		Kind:             "token_launch_brief",
+		BriefID:          briefID,
+		Status:           "research_pending",
+		LaunchType:       launchType,
+		ProjectTitle:     projectTitle,
+		ProjectSummary:   projectSummary,
+		RepositoryURL:    repositoryURL,
+		AllocationPolicy: allocationPolicy,
+		ProofPolicy:      proofPolicy,
+		WalletPolicy:     walletPolicy,
+		RiskNotes:        riskNotes,
+		ResearchSignals:  researchSignals,
+		LedgerEntry:      entry,
+		LedgerProofURL:   "/api/public/ledger/proof",
+		LiveFeedURL:      "/api/public/live-feed",
+		CreatedAt:        entry.CreatedAt,
+	}, nil
+}
+
 func (s *Store) RecordPresaleReservationForUser(userID string, req PresaleReservationRequest) (PresaleReservationResponse, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -409,6 +534,60 @@ func tokenWorkflowReviewStatus(kind, id string, sequence int) string {
 	}
 	parts = append(parts, "status:pending_review")
 	return strings.Join(parts, ";")
+}
+
+func normalizeTokenLaunchType(value string) (string, error) {
+	normalized := strings.ToLower(strings.TrimSpace(value))
+	switch normalized {
+	case "airdrop", "earned_airdrop", "task_airdrop":
+		return "airdrop", nil
+	case "presale", "reserve", "reservation":
+		return "presale", nil
+	default:
+		return "", errors.New("launch_type must be airdrop or presale")
+	}
+}
+
+func sanitizeTokenLaunchText(value string, maxLen int) string {
+	text := strings.TrimSpace(value)
+	text = strings.Join(strings.Fields(text), " ")
+	if maxLen > 0 && len(text) > maxLen {
+		text = text[:maxLen]
+	}
+	return sanitizeLedgerReferenceValue(text)
+}
+
+func normalizeTokenLaunchResearchSignals(values []string, launchType, repositoryURL, proofPolicy, walletPolicy string) []string {
+	seen := map[string]bool{}
+	signals := []string{}
+	add := func(value string) {
+		normalized := normalizeTokenWorkflowID(value)
+		if normalized == "" || seen[normalized] {
+			return
+		}
+		seen[normalized] = true
+		signals = append(signals, normalized)
+	}
+	add(launchType + "_launch")
+	for _, value := range values {
+		add(value)
+	}
+	if repositoryURL != "" {
+		add("repository_context")
+	}
+	if proofPolicy != "" {
+		add("proof_policy")
+	}
+	if walletPolicy != "" {
+		add("wallet_policy")
+	}
+	if len(signals) == 0 {
+		add("ceo_research")
+	}
+	if len(signals) > 12 {
+		signals = signals[:12]
+	}
+	return signals
 }
 
 func selectedAirdropAllocationMRG(req AirdropClaimRequest) int64 {

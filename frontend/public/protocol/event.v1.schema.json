@@ -26,6 +26,7 @@
         "proposal.declined",
         "airdrop.claimed",
         "presale.reserved",
+        "token.launch_brief",
         "wallet.migrated",
         "notification.updated",
         "payment.verified",

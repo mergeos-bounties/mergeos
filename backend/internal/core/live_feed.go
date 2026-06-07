@@ -901,6 +901,8 @@ func publicLiveFeedLedgerTitle(entryType string) string {
 		return "Airdrop claim recorded"
 	case "presale_reservation":
 		return "Presale reservation recorded"
+	case "token_launch_brief":
+		return "CEO token launch brief recorded"
 	case "wallet_migration":
 		return "Solana wallet migration staged"
 	default:
@@ -911,6 +913,9 @@ func publicLiveFeedLedgerTitle(entryType string) string {
 func publicLiveFeedLedgerBody(entry LedgerEntry, projectTitle string) string {
 	if entry.Type == "wallet_migration" {
 		return "MergeOS linked a legacy wallet hash to a Solana MRG wallet and staged Anchor registration proof."
+	}
+	if entry.Type == "token_launch_brief" {
+		return "MergeOS recorded a CEO research brief for a token launch decision."
 	}
 	scope := projectTitle
 	if scope == "" {
@@ -1197,6 +1202,8 @@ func publicEventType(item PublicLiveFeedItem) string {
 		return "airdrop.claimed"
 	case "ledger_presale_reservation":
 		return "presale.reserved"
+	case "ledger_token_launch_brief":
+		return "token.launch_brief"
 	case "ledger_wallet_migration":
 		return "wallet.migrated"
 	}

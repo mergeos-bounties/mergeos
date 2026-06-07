@@ -200,6 +200,12 @@ func ProtocolManifest() ProtocolManifestResponse {
 			Description: "Authenticated MRG presale reservation with Solana wallet, reserve amount, funding rail, pending review status, and ledger receipt.",
 		},
 		{
+			Version:     "mergeos.token-launch-brief.v1",
+			Kind:        "token_launch_brief",
+			SchemaURL:   "https://mergeos.shop/protocol/token-launch-brief.v1.schema.json",
+			Description: "Authenticated CEO launch research brief for projects requesting earned airdrop missions or presale windows, with ledger receipt and live-feed proof URLs.",
+		},
+		{
 			Version:     "mergeos.escrow.v1",
 			Kind:        "escrow",
 			SchemaURL:   "https://mergeos.shop/protocol/escrow.v1.schema.json",
@@ -385,6 +391,13 @@ func ProtocolManifest() ProtocolManifestResponse {
 			Protocol:    "mergeos.presale-reservation.v1",
 			Auth:        "user",
 			Description: "Authenticated presale reservation that validates Solana wallet, reserve amount, and funding rail before recording a ledger receipt.",
+		},
+		{
+			Method:      "POST",
+			Path:        "/api/token/launch-briefs",
+			Protocol:    "mergeos.token-launch-brief.v1",
+			Auth:        "user",
+			Description: "Authenticated CEO token launch brief intake for projects requesting airdrop or presale research before a launch window opens.",
 		},
 		{
 			Method:      "GET",
