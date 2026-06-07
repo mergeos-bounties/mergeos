@@ -14904,6 +14904,7 @@ const publicInfoPages = {
       { title: 'MRG token economy', body: 'Funding, token minting, reserves, treasury balances, payout contracts, and contract references become auditable economic signals.', icon: Lock, tone: 'amber' },
       { title: 'Public ledger logs', body: 'Sanitized escrow, payout, PR, AI action, deployment, and release events provide proof without exposing private workspace data.', icon: ShieldCheck, tone: 'green' },
       { title: 'Repository architecture', body: 'mergeos-app runs frontend, backend, dashboards, APIs, SSR, orchestration, and realtime feeds; mergeos-contracts and mergeos-sdk extend the ecosystem.', icon: GitBranch, tone: 'blue' },
+      { title: 'Frontend stack', body: 'Vue 3, Vite SSR, Tailwind-style design tokens, WebSocket updates, and realtime event hydration keep public pages and dashboards connected.', icon: Code2, tone: 'amber' },
       { title: 'Future protocol layer', body: 'mergeos-protocol standardizes decentralized execution, external AI agents, public integrations, task manifests, and open work standards.', icon: Code2, tone: 'purple' },
     ],
     repositoryArchitecture: {

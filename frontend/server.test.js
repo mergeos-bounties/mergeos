@@ -344,7 +344,18 @@ test('public home keeps a short decision-screen rhythm', async () => {
 
 test('frontend system exposes required public pages and dashboard roles', async () => {
   const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
+  const packageSource = JSON.parse(await fs.readFile(new URL('./package.json', import.meta.url), 'utf-8'));
+  const mainSource = await fs.readFile(new URL('./src/main.js', import.meta.url), 'utf-8');
+  const clientSource = await fs.readFile(new URL('./src/entry-client.js', import.meta.url), 'utf-8');
 
+  assert.ok(packageSource.dependencies.vue);
+  assert.ok(packageSource.dependencies['@vue/server-renderer']);
+  assert.ok(packageSource.devDependencies.vite);
+  assert.match(packageSource.scripts['build:production'], /vite build --mode production --outDir dist\/client --ssrManifest && vite build --mode production --ssr src\/entry-server\.js/);
+  assert.match(mainSource, /createSSRApp/);
+  assert.match(clientSource, /hasSSRMarkup \? createHydratedApp\(initialPath\) : createClientApp/);
+  assert.match(appSource, /Vue 3, Vite SSR, Tailwind-style design tokens, WebSocket updates, and realtime event hydration/);
+  assert.match(appSource, /new WebSocket\(wsURL\(\)\)/);
   for (const [page, pathValue] of [
     ['home', '/'],
     ['marketplace', '/marketplace'],
