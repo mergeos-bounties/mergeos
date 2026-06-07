@@ -6109,6 +6109,18 @@
             </article>
           </div>
 
+          <div class="public-backend-stack-strip" aria-label="Backend runtime stack">
+            <article v-for="stack in publicBackendRuntimeStackRows" :key="stack.label">
+              <span :class="['public-card-icon', stack.tone]">
+                <component :is="stack.icon" :size="15" />
+              </span>
+              <div>
+                <strong>{{ stack.label }}</strong>
+                <small>{{ stack.value }}</small>
+              </div>
+            </article>
+          </div>
+
           <div class="public-backend-plane-body">
             <section class="public-backend-surface-panel" :aria-labelledby="`backend-surfaces-${activeLocale}`">
               <div class="public-backend-panel-head">
@@ -17347,6 +17359,15 @@ const publicBackendControlStats = computed(() => {
     { label: copy.auth, value: `${publicBackendAuthReadyCount.value} / 3`, caption: copy.authCaption, icon: LockKeyhole, tone: 'amber' },
   ];
 });
+
+const publicBackendRuntimeStackRows = computed(() => [
+  { label: 'Go / Rust', value: 'API control plane', icon: Box, tone: 'blue' },
+  { label: 'PostgreSQL', value: 'Workflow state', icon: ShieldCheck, tone: 'green' },
+  { label: 'Redis', value: 'Realtime cache', icon: Zap, tone: 'amber' },
+  { label: 'GitHub API', value: 'Repo and PR sync', icon: GitBranch, tone: 'purple' },
+  { label: 'OpenAI API', value: 'AI orchestration', icon: Bot, tone: 'green' },
+  { label: 'WebSocket gateway', value: '/api/ws events', icon: Code2, tone: 'blue' },
+]);
 
 function publicBackendEndpointCount(pattern) {
   const matcher = pattern instanceof RegExp ? pattern : new RegExp(String(pattern || ''), 'i');

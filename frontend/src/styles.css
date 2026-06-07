@@ -5687,6 +5687,52 @@ svg {
   font-weight: 720;
 }
 
+.public-backend-stack-strip {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.public-backend-stack-strip article {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.86);
+  padding: 8px;
+}
+
+.public-backend-stack-strip .public-card-icon {
+  width: 30px;
+  height: 30px;
+  margin: 0;
+}
+
+.public-backend-stack-strip strong,
+.public-backend-stack-strip small {
+  min-width: 0;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.public-backend-stack-strip strong {
+  color: #0f172a;
+  font-size: 12px;
+  font-weight: 940;
+}
+
+.public-backend-stack-strip small {
+  margin-top: 2px;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 760;
+}
+
 .public-backend-plane-body {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.08fr) minmax(280px, 0.76fr);
@@ -24644,6 +24690,10 @@ svg {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .public-backend-stack-strip {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .public-backend-plane-body {
     grid-template-columns: 1fr;
   }
@@ -24989,6 +25039,10 @@ svg {
 
   .public-backend-plane {
     padding: 16px;
+  }
+
+  .public-backend-stack-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .public-backend-surface-panel,

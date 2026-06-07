@@ -425,6 +425,20 @@ test('public agents page exposes CEO orchestrator and subagent delegation model'
   assert.match(seoSource, /CEO orchestrator/);
 });
 
+test('public backend page exposes the proposed runtime stack', async () => {
+  const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
+  const cssSource = await fs.readFile(new URL('./src/styles.css', import.meta.url), 'utf-8');
+
+  assert.match(appSource, /class="public-backend-stack-strip"/);
+  assert.match(appSource, /const publicBackendRuntimeStackRows = computed/);
+  for (const label of ['Go / Rust', 'PostgreSQL', 'Redis', 'GitHub API', 'OpenAI API', 'WebSocket gateway']) {
+    assert.match(appSource, new RegExp(`label: '${label.replace('/', '\\/')}'`));
+  }
+  assert.match(cssSource, /\.public-backend-stack-strip\s*\{[\s\S]*grid-template-columns: repeat\(6, minmax\(0, 1fr\)\);/);
+  assert.match(cssSource, /@media \(max-width: 980px\)[\s\S]*\.public-backend-stack-strip\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
+  assert.match(cssSource, /@media \(max-width: 520px\)[\s\S]*\.public-backend-stack-strip\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/);
+});
+
 test('public token pages expose airdrop, presale, and whitepaper routes', async () => {
   const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
   const cssSource = await fs.readFile(new URL('./src/styles.css', import.meta.url), 'utf-8');
