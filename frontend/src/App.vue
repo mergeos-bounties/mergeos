@@ -5088,6 +5088,18 @@
               <strong>{{ row.value }}</strong>
             </article>
           </div>
+          <div class="token-ceo-project-queue" aria-label="CEO project research queue">
+            <article v-for="row in tokenCeoProjectResearchRows" :key="row.title">
+              <span :class="['ledger-trust-icon', row.tone]">
+                <component :is="row.icon" :size="15" />
+              </span>
+              <div>
+                <strong>{{ row.title }}</strong>
+                <small>{{ row.body }}</small>
+              </div>
+              <b>{{ row.status }}</b>
+            </article>
+          </div>
           <div class="token-ceo-research-grid">
             <article v-for="row in tokenCeoResearchRows" :key="row.title">
               <span :class="['ledger-trust-icon', row.tone]">
@@ -12472,6 +12484,58 @@ const tokenCeoDecisionRows = computed(() => {
     { label: 'Research', value: 'Utility + caps' },
     { label: 'Gate', value: 'Wallet + funding' },
     { label: 'Approve', value: 'Reserve receipt' },
+  ];
+});
+const tokenCeoProjectResearchRows = computed(() => {
+  const openTasks = Number(marketplaceStats.value.open_task_count) || (marketplaceData.value.bounties || []).length || 0;
+  const proofRows = Number(ledgerEconomyStats.value.ledger_entry_count) || ledgerRawEntries.value.length || ledgerEventItems.value.length || 0;
+  if (publicPage.value === 'airdrop') {
+    return [
+      {
+        title: 'Project brief intake',
+        body: 'CEO reviews the repository, bounty backlog, mission type, and why this community should earn MRG.',
+        status: `${openTasks} tasks`,
+        icon: FolderKanban,
+        tone: 'blue',
+      },
+      {
+        title: 'Proof risk review',
+        body: 'Reject empty signup farming; require task references, PR URLs, QA evidence, and wallet uniqueness.',
+        status: `${proofRows} proofs`,
+        icon: ShieldCheck,
+        tone: 'amber',
+      },
+      {
+        title: 'Allocation memo',
+        body: 'CEO writes the launch memo before missions open: cap, claim rules, review owner, and ledger receipt path.',
+        status: 'Memo gate',
+        icon: FileCheck2,
+        tone: 'green',
+      },
+    ];
+  }
+  return [
+    {
+      title: 'Project utility intake',
+      body: 'CEO checks what MRG unlocks for this project: funded work, agent usage, escrow, or protocol access.',
+      status: 'Utility gate',
+      icon: Compass,
+      tone: 'blue',
+    },
+    {
+      title: 'Reserve risk review',
+      body: 'Validate wallet readiness, funding rail, allocation cap, contract reference, and compliance language.',
+      status: `${formatPublicMRGFromCents(publicVerifiedFundingCents.value)} verified`,
+      icon: LockKeyhole,
+      tone: 'amber',
+    },
+    {
+      title: 'Open-window memo',
+      body: 'Presale opens only after CEO signs the reserve window, receipt policy, and ledger proof checklist.',
+      status: 'CEO signoff',
+      icon: FileCheck2,
+      tone: 'green',
+    },
   ];
 });
 const tokenWorkflowProofRows = computed(() => {
