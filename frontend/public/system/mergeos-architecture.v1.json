@@ -649,6 +649,47 @@
       }
     }
   },
+  "escrow_payment_system": {
+    "role": "Funding, escrow reserve, bounty funding, auto-release, and public payout proof lifecycle.",
+    "payment_methods": ["card", "PayPal", "crypto", "MRG token reserve"],
+    "escrow_lifecycle": {
+      "verify_funding": {
+        "command": "Verify customer funding source before work starts",
+        "api": "/api/payments/order-intents",
+        "output_protocol": "mergeos.payment-order.v1",
+        "ledger_event": "payment_verified",
+        "proof_surface": "/ledger"
+      },
+      "lock_project_escrow": {
+        "command": "Lock project escrow for scoped delivery",
+        "api": "/api/projects/{id}/escrow",
+        "output_protocol": "mergeos.escrow.v1",
+        "ledger_event": "escrow_locked",
+        "proof_surface": "/contracts"
+      },
+      "reserve_task_bounty": {
+        "command": "Reserve funded bounty from repository task scope",
+        "api": "/api/projects/{id}/repo-scan/suggested-tasks/{taskID}/fund",
+        "output_protocol": "mergeos.repo-task-funding.v1",
+        "ledger_event": "task_funded",
+        "proof_surface": "/marketplace#marketplace-bounties"
+      },
+      "auto_release_payment": {
+        "command": "Release payout after PR, review, deployment, and acceptance gates",
+        "api": "/api/projects/{id}/auto-release",
+        "output_protocol": "mergeos.payout-release.v1",
+        "ledger_event": "payout_released",
+        "proof_surface": "/ledger"
+      },
+      "publish_payout_proof": {
+        "command": "Publish immutable payout and contract proof",
+        "api": "/api/public/ledger/proof",
+        "output_protocol": "mergeos.ledger-proof.v1",
+        "ledger_event": "ledger_task_payment",
+        "proof_surface": "/ledger"
+      }
+    }
+  },
   "live_feed_system": {
     "role": "Public realtime stream for pull requests, deployments, contributor activity, AI actions, and payout events.",
     "features": ["Live PRs", "Deployments", "Active Contributors", "AI Actions", "Payout Events"],

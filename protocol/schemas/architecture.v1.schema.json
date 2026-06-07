@@ -18,6 +18,7 @@
     "backend_system",
     "ai_layer",
     "marketplace_system",
+    "escrow_payment_system",
     "live_feed_system",
     "ledger_system",
     "token_economy_system",
@@ -349,6 +350,27 @@
       },
       "additionalProperties": false
     },
+    "escrow_payment_system": {
+      "type": "object",
+      "required": ["role", "payment_methods", "escrow_lifecycle"],
+      "properties": {
+        "role": { "type": "string", "minLength": 1 },
+        "payment_methods": { "$ref": "#/$defs/stringList" },
+        "escrow_lifecycle": {
+          "type": "object",
+          "required": ["verify_funding", "lock_project_escrow", "reserve_task_bounty", "auto_release_payment", "publish_payout_proof"],
+          "properties": {
+            "verify_funding": { "$ref": "#/$defs/escrowLifecycleStep" },
+            "lock_project_escrow": { "$ref": "#/$defs/escrowLifecycleStep" },
+            "reserve_task_bounty": { "$ref": "#/$defs/escrowLifecycleStep" },
+            "auto_release_payment": { "$ref": "#/$defs/escrowLifecycleStep" },
+            "publish_payout_proof": { "$ref": "#/$defs/escrowLifecycleStep" }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
     "live_feed_system": {
       "type": "object",
       "required": ["role", "features", "event_routes"],
@@ -573,6 +595,18 @@
         "command": { "type": "string", "minLength": 1 },
         "api": { "type": "string", "minLength": 1 },
         "output_protocol": { "type": "string", "minLength": 1 },
+        "proof_surface": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "escrowLifecycleStep": {
+      "type": "object",
+      "required": ["command", "api", "output_protocol", "ledger_event", "proof_surface"],
+      "properties": {
+        "command": { "type": "string", "minLength": 1 },
+        "api": { "type": "string", "minLength": 1 },
+        "output_protocol": { "type": "string", "minLength": 1 },
+        "ledger_event": { "type": "string", "minLength": 1 },
         "proof_surface": { "type": "string", "minLength": 1 }
       },
       "additionalProperties": false

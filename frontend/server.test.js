@@ -332,6 +332,19 @@ test('public system vision preserves the product thesis', async () => {
       proof_surface: '/ledger',
     },
   });
+  assert.equal(architectureManifest.escrow_payment_system.role, 'Funding, escrow reserve, bounty funding, auto-release, and public payout proof lifecycle.');
+  assert.deepEqual(architectureManifest.escrow_payment_system.payment_methods, ['card', 'PayPal', 'crypto', 'MRG token reserve']);
+  assert.deepEqual(Object.keys(architectureManifest.escrow_payment_system.escrow_lifecycle), [
+    'verify_funding',
+    'lock_project_escrow',
+    'reserve_task_bounty',
+    'auto_release_payment',
+    'publish_payout_proof',
+  ]);
+  assert.equal(architectureManifest.escrow_payment_system.escrow_lifecycle.verify_funding.output_protocol, 'mergeos.payment-order.v1');
+  assert.equal(architectureManifest.escrow_payment_system.escrow_lifecycle.lock_project_escrow.output_protocol, 'mergeos.escrow.v1');
+  assert.equal(architectureManifest.escrow_payment_system.escrow_lifecycle.auto_release_payment.api, '/api/projects/{id}/auto-release');
+  assert.equal(architectureManifest.escrow_payment_system.escrow_lifecycle.publish_payout_proof.output_protocol, 'mergeos.ledger-proof.v1');
   assert.deepEqual(architectureManifest.live_feed_system.event_routes, {
     live_prs: {
       page: '/live-feed',
