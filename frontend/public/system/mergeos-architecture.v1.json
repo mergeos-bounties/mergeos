@@ -508,6 +508,7 @@
       "detect dependency risk",
       "analyze issues",
       "estimate complexity",
+      "estimate time",
       "estimate budget",
       "generate tasks",
       "review pull requests",

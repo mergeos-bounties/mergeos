@@ -215,6 +215,9 @@ test('public system vision preserves the product thesis', async () => {
   assert.deepEqual(architectureManifest.backend_system.service_boundaries.task_engine.output_protocols, ['mergeos.workflow.v1', 'mergeos.task.v1', 'mergeos.task-claim.v1', 'mergeos.proposal.v1']);
   assert.deepEqual(architectureManifest.backend_system.service_boundaries.escrow_coordination.output_protocols, ['mergeos.escrow.v1', 'mergeos.payouts.v1', 'mergeos.payout-release.v1']);
   assert.deepEqual(architectureManifest.backend_system.service_boundaries.ledger_system.output_protocols, ['mergeos.ledger.v1', 'mergeos.ledger-proof.v1', 'mergeos.token-economy.v1']);
+  assert.ok(architectureManifest.ai_layer.capabilities.includes('estimate complexity'));
+  assert.ok(architectureManifest.ai_layer.capabilities.includes('estimate time'));
+  assert.ok(architectureManifest.ai_layer.capabilities.includes('estimate budget'));
   assert.deepEqual(architectureManifest.ai_layer.workflow, [
     'Import Repository',
     'Issue Scan',
@@ -753,7 +756,7 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.match(appSource, /localizedHomeWorkflowCards\.slice\(0, 4\)/);
   assert.match(appSource, /homeLiveStats\.slice\(0, 2\)/);
   assert.match(appSource, /MergeOS turns funded software work into verified delivery\./);
-  assert.match(appSource, /One command layer for software projects: capture the brief, import repo context, lock escrow, route tasks to builders or AI agents, review PRs, validate deployment, and publish payout proof\./);
+  assert.match(appSource, /One command layer for software delivery: turn briefs, repos, issues, and technical debt into AI-estimated tasks, escrow-backed work, PR review, deployment checks, and public payout proof\./);
   assert.match(appSource, /title: 'Product OS'[\s\S]*Project intake, repo import, AI task graph, escrow, PR monitor, deployment gates, and ledger proof stay in one operating flow\./);
   assert.match(appSource, /title: 'Delivery lanes'[\s\S]*Route funded work to human contributors, AI agents, or hybrid teams with shared scope, acceptance criteria, and payout state\./);
   assert.match(appSource, /title: 'Public proof layer'[\s\S]*Marketplace activity, escrow, token mint, PR evidence, deployment checks, SDK context, and protocol documents are discoverable\./);
