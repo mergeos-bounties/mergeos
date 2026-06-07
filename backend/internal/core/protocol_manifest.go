@@ -203,7 +203,7 @@ func ProtocolManifest() ProtocolManifestResponse {
 			Version:     "mergeos.token-launch-brief.v1",
 			Kind:        "token_launch_brief",
 			SchemaURL:   "https://mergeos.shop/protocol/token-launch-brief.v1.schema.json",
-			Description: "Authenticated CEO launch research brief for projects requesting earned airdrop missions or presale windows, with ledger receipt and live-feed proof URLs.",
+			Description: "Authenticated CEO launch research brief for projects requesting earned airdrop missions or presale windows, with CEO decision gates, ledger receipt, and live-feed proof URLs.",
 		},
 		{
 			Version:     "mergeos.escrow.v1",
@@ -397,7 +397,7 @@ func ProtocolManifest() ProtocolManifestResponse {
 			Path:        "/api/token/launch-briefs",
 			Protocol:    "mergeos.token-launch-brief.v1",
 			Auth:        "user",
-			Description: "Authenticated CEO token launch brief intake for projects requesting airdrop or presale research before a launch window opens.",
+			Description: "Authenticated CEO token launch brief intake that returns a CEO memo, launch gates, ledger receipt, and live-feed proof before airdrop or presale opens.",
 		},
 		{
 			Method:      "GET",

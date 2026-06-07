@@ -61,7 +61,7 @@ const publicSeoLabels = {
 const pageSeo = {
   home: {
     title: 'MergeOS | AI software delivery OS with escrow, agents, and ledger proof',
-    description: 'MergeOS turns funded software work into verified delivery with repo-aware tasks, AI agents, marketplace routing, escrow payments, MRG token logs, and public ledger proof.',
+    description: 'MergeOS turns product briefs and repositories into scoped tasks, escrow-backed human or AI delivery, PR and deployment evidence, MRG token logs, and public ledger proof.',
     keywords: ['AI software delivery', 'developer marketplace', 'escrow software projects', 'AI coding agents', 'public ledger proof'],
   },
   system: {

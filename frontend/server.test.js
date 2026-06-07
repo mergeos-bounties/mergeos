@@ -491,10 +491,15 @@ test('public protocol links match backend routes', async () => {
   const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
   const manifestSource = await fs.readFile(new URL('../backend/internal/core/protocol_manifest.go', import.meta.url), 'utf-8');
   const paymentOrderSchema = JSON.parse(await fs.readFile(new URL('./public/protocol/payment-order.v1.schema.json', import.meta.url), 'utf-8'));
+  const tokenLaunchBriefSchema = JSON.parse(await fs.readFile(new URL('./public/protocol/token-launch-brief.v1.schema.json', import.meta.url), 'utf-8'));
 
   assert.match(appSource, /const publicProtocolManifestPath = '\/api\/public\/protocol';/);
   assert.equal(paymentOrderSchema.properties.provider.enum.includes('paypal'), true);
   assert.equal(paymentOrderSchema.properties.provider.enum.includes('stripe'), true);
+  assert.equal(tokenLaunchBriefSchema.required.includes('ceo_memo'), true);
+  assert.equal(tokenLaunchBriefSchema.properties.ceo_memo.required.includes('gates'), true);
+  assert.equal(tokenLaunchBriefSchema.properties.ceo_memo.properties.gates.items.properties.status.enum.includes('ready_for_review'), true);
+  assert.equal(tokenLaunchBriefSchema.properties.ceo_memo.properties.gates.items.properties.status.enum.includes('needs_evidence'), true);
   assert.match(manifestSource, /mergeos\.payment-order\.v1/);
   assert.match(manifestSource, /payment-order\.v1\.schema\.json/);
   assert.match(manifestSource, /\/contracts\/solana\/mergeos_mrg\.proof-manifest\.v1\.json/);
@@ -502,6 +507,8 @@ test('public protocol links match backend routes', async () => {
   assert.match(manifestSource, /\/system\/mergeos-architecture\.v1\.json/);
   assert.match(manifestSource, /mergeos\.architecture\.v1/);
   assert.match(manifestSource, /architecture\.v1\.schema\.json/);
+  assert.match(manifestSource, /CEO decision gates/);
+  assert.match(manifestSource, /returns a CEO memo, launch gates, ledger receipt/);
   assert.match(manifestSource, /"architecture_manifest":\s+"\/system\/mergeos-architecture\.v1\.json"/);
   assert.match(appSource, /function publicTaskProtocolPath\(taskID = ''\)/);
   assert.match(appSource, /return id \? `\/api\/public\/protocol\/tasks\?task_id=\$\{encodeURIComponent\(id\)\}` : '\/api\/public\/protocol\/tasks';/);
@@ -766,8 +773,8 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.doesNotMatch(appSource, /class="home-system-explainer"/);
   assert.doesNotMatch(appSource, /localizedHomeWorkflowCards\.slice\(0, 4\)/);
   assert.match(appSource, /homeLiveStats\.slice\(0, 2\)/);
-  assert.match(appSource, /MergeOS runs funded software delivery\./);
-  assert.match(appSource, /Post a product brief or import a repo\. MergeOS scopes the work, funds escrow, routes human or AI agents, verifies PR and deploy evidence, then records payout proof on the public ledger\./);
+  assert.match(appSource, /MergeOS turns funded work into verified software delivery\./);
+  assert.match(appSource, /Post a brief or import a repo\. MergeOS scopes tasks, funds escrow, routes human or AI agents, verifies PR and deploy evidence, then records payout proof on the public ledger\./);
   assert.match(appSource, /Đăng brief sản phẩm hoặc import repo\. MergeOS chốt scope, giữ escrow, route human hoặc AI agent, kiểm PR và deploy evidence, rồi ghi payout proof lên public ledger\./);
   assert.match(appSource, /title: 'Product OS'[\s\S]*Project intake, repo import, AI task graph, escrow, PR monitor, deployment gates, and ledger proof stay in one operating flow\./);
   assert.match(appSource, /title: 'Delivery lanes'[\s\S]*Route funded work to human contributors, AI agents, or hybrid teams with shared scope, acceptance criteria, and payout state\./);
