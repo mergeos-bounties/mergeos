@@ -497,6 +497,14 @@ export class MergeOSClient {
     return this.createAgentQueueLease(leaseOrPacket, { ...overrides, status: overrides.status || 'heartbeat' });
   }
 
+  createAgentRunFromWorkPacket(workPacket = {}, action = 'generate', overrides = {}) {
+    const runOverrides = { ...overrides, action };
+    return this.request(agentRunEndpointFromWorkPacket(workPacket, runOverrides), {
+      method: 'POST',
+      body: agentRunPayloadFromWorkPacket(workPacket, action, overrides),
+    });
+  }
+
   submitTask(taskID, payload) {
     return this.request(`/api/tasks/${encodeURIComponent(taskID)}/submit`, { method: 'POST', body: payload });
   }
@@ -1142,6 +1150,39 @@ export function agentActionPayloadFromWorkPacket(workPacket = {}, action = 'revi
     subagent_type: overrides.subagent_type || overrides.subagentType || body.subagent_type || workPacket.subagent_type,
     delegation_chain: overrides.delegation_chain || overrides.delegationChain || body.delegation_chain || workPacket.delegation_chain || [],
   });
+}
+
+export function agentRunEndpointFromWorkPacket(workPacket = {}, overrides = {}) {
+  return overrides.run_endpoint
+    || overrides.runEndpoint
+    || workPacket.run_endpoint
+    || workPacket.runEndpoint
+    || selectedAgentRunPayload(workPacket, overrides.action || overrides.agentAction || '')?.endpoint
+    || '';
+}
+
+export function agentRunPayloadFromWorkPacket(workPacket = {}, action = 'generate', overrides = {}) {
+  const normalizedAction = normalizeAgentAction(action || overrides.action || overrides.agentAction);
+  const selected = selectedAgentRunPayload(workPacket, normalizedAction);
+  const body = selected.body && typeof selected.body === 'object' ? selected.body : {};
+  const contextURLs = overrides.context_urls || overrides.contextURLs || overrides.contextUrls || body.context_urls || workPacket.context_urls || {};
+  return compactPayload({
+    ...body,
+    ...overrides,
+    action: normalizeAgentAction(overrides.action || overrides.agentAction || body.action || selected.action || normalizedAction),
+    claim_id: overrides.claim_id || overrides.claimId || body.claim_id || workPacket.claim_id || '',
+    bounty_id: overrides.bounty_id || overrides.bountyId || body.bounty_id || body.claim_id || workPacket.bounty_id || workPacket.claim_id || '',
+    agent_type: overrides.agent_type || overrides.agentType || body.agent_type || workPacket.subagent_type || '',
+    base_branch: overrides.base_branch || overrides.baseBranch || body.base_branch || 'main',
+    objective: overrides.objective || body.objective || '',
+    context_urls: normalizeContextURLList(contextURLs),
+  });
+}
+
+function selectedAgentRunPayload(workPacket = {}, action = '') {
+  const normalizedAction = normalizeAgentAction(action);
+  const runPayloads = Array.isArray(workPacket.run_payloads) ? workPacket.run_payloads : [];
+  return runPayloads.find((item) => normalizeAgentAction(item?.action || item?.body?.action) === normalizedAction) || runPayloads[0] || {};
 }
 
 export function agentWorkPacketOutputContracts(workPacket = {}, action = '') {

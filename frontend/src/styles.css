@@ -35083,3 +35083,47 @@ canvas {
   }
 }
 
+/* Homepage description balance: enough context, still one clean decision screen. */
+.public-home-copy p {
+  max-width: 660px !important;
+  font-size: clamp(16px, 1.08vw, 18px) !important;
+  line-height: 1.5 !important;
+}
+
+.public-home-copy h1 {
+  max-width: 660px !important;
+}
+
+.home-compact-flow {
+  max-width: 660px !important;
+}
+
+.home-system-explainer {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+
+.home-system-explainer article:nth-child(n + 4) {
+  display: none !important;
+}
+
+@media (max-width: 980px) {
+  .public-home-copy p {
+    max-width: 620px !important;
+  }
+
+  .home-system-explainer {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 620px) {
+  .public-home-copy p {
+    font-size: 14px !important;
+    line-height: 1.45 !important;
+  }
+
+  .home-system-explainer {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+

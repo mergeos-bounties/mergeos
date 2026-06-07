@@ -6,6 +6,8 @@ import {
   adminOpsQueueOutputContracts,
   airdropClaimPayload,
   agentActionPayloadFromWorkPacket,
+  agentRunEndpointFromWorkPacket,
+  agentRunPayloadFromWorkPacket,
   agentReviewPayloadFromPRMonitorTask,
   agentActionPayload,
   agentActionEventType,
@@ -1864,6 +1866,28 @@ test('funds repository scan suggested tasks and builds agent work packet actions
       { step: 1, action: 'fetch_scan', endpoint: '/api/public/projects/prj_1/repo-scan' },
       { step: 2, action: 'claim_task', endpoint: '/api/tasks/prj_1:12/claim' },
     ],
+    run_endpoint: '/api/projects/prj_1/agent-runs',
+    run_payloads: [{
+      action: 'scan',
+      label: 'Create repository scan run plan',
+      method: 'POST',
+      endpoint: '/api/projects/prj_1/agent-runs',
+      body: {
+        action: 'scan',
+        claim_id: 'prj_1:12',
+        bounty_id: 'prj_1:12',
+        agent_type: 'security-agent',
+        base_branch: 'main',
+        objective: 'Fix leaked secret pattern',
+        source_finding_id: 'finding:auth:1',
+        signal: 'secret_pattern',
+        path: 'backend/internal/core/auth.go',
+        context_urls: [
+          '/api/public/protocol/tasks?task_id=prj_1:12',
+          '/api/public/projects/prj_1/repo-scan',
+        ],
+      },
+    }],
     action_payloads: [{
       action: 'scan',
       label: 'Run repository scan check',
@@ -1887,6 +1911,13 @@ test('funds repository scan suggested tasks and builds agent work packet actions
       },
     }],
     output_contracts: [{
+      action: 'create_agent_run',
+      artifact_kind: 'agent_run',
+      output_endpoint: '/api/projects/prj_1/agent-runs',
+      output_protocol: 'mergeos.agent-run.v1',
+      output_protocol_url: '/protocol/agent-run.v1.schema.json',
+      public_url: '/api/public/protocol/tasks?task_id=prj_1:12',
+    }, {
       action: 'scan',
       artifact_kind: 'repository_scan',
       output_endpoint: '/api/projects/prj_1/agent-actions',
@@ -1908,6 +1939,14 @@ test('funds repository scan suggested tasks and builds agent work packet actions
         work_packet: workPacket,
       },
     },
+    {
+      status: 201,
+      body: {
+        protocol_version: 'mergeos.agent-run.v1',
+        kind: 'agent_run',
+        run_id: 'run_prj_1_12_scan',
+      },
+    },
   ]);
   const client = new MergeOSClient({ token: 'client-token', fetchImpl });
 
@@ -1925,6 +1964,12 @@ test('funds repository scan suggested tasks and builds agent work packet actions
   });
   const order = await client.createRepositorySuggestedTaskPayPalOrder('prj_1', 'finding:auth:1', paypalPayload);
   const funded = await client.fundRepositorySuggestedTask('prj_1', 'finding:auth:1', fundingPayload);
+  const runPayload = agentRunPayloadFromWorkPacket(funded.work_packet, 'scan', {
+    objective: 'Verify secret remediation before PR',
+  });
+  const runPlan = await client.createAgentRunFromWorkPacket(funded.work_packet, 'scan', {
+    objective: 'Verify secret remediation before PR',
+  });
   const agentPayload = agentActionPayloadFromWorkPacket(funded.work_packet, 'scan', {
     status: 'processed',
     referenceURL: 'https://scan.example/report',
@@ -1953,6 +1998,33 @@ test('funds repository scan suggested tasks and builds agent work packet actions
   assert.equal(fetchImpl.calls[1].url, '/api/projects/prj_1/repo-scan/suggested-tasks/finding%3Aauth%3A1/fund');
   assert.equal(fetchImpl.calls[1].options.method, 'POST');
   assert.equal(fetchImpl.calls[1].options.body, JSON.stringify(fundingPayload));
+  assert.equal(agentRunEndpointFromWorkPacket(funded.work_packet), '/api/projects/prj_1/agent-runs');
+  assert.equal(agentRunEndpointFromWorkPacket({
+    run_payloads: [
+      { action: 'review', endpoint: '/api/projects/prj_1/agent-runs/review' },
+      { action: 'scan', endpoint: '/api/projects/prj_1/agent-runs/scan' },
+    ],
+  }, { action: 'scan' }), '/api/projects/prj_1/agent-runs/scan');
+  assert.deepEqual(runPayload, {
+    action: 'scan',
+    claim_id: 'prj_1:12',
+    bounty_id: 'prj_1:12',
+    agent_type: 'security-agent',
+    base_branch: 'main',
+    objective: 'Verify secret remediation before PR',
+    source_finding_id: 'finding:auth:1',
+    signal: 'secret_pattern',
+    path: 'backend/internal/core/auth.go',
+    context_urls: [
+      '/api/public/protocol/tasks?task_id=prj_1:12',
+      '/api/public/projects/prj_1/repo-scan',
+    ],
+  });
+  assert.equal(runPlan.protocol_version, 'mergeos.agent-run.v1');
+  assert.equal(fetchImpl.calls[2].url, '/api/projects/prj_1/agent-runs');
+  assert.equal(fetchImpl.calls[2].options.method, 'POST');
+  assert.equal(fetchImpl.calls[2].options.headers.Authorization, 'Bearer client-token');
+  assert.equal(fetchImpl.calls[2].options.body, JSON.stringify(runPayload));
   assert.deepEqual(agentPayload.context_urls, [
     '/api/public/protocol/tasks?task_id=prj_1:12',
     '/api/public/projects/prj_1/repo-scan',
@@ -1969,7 +2041,8 @@ test('funds repository scan suggested tasks and builds agent work packet actions
   assert.equal(agentPayload.reference_url, 'https://scan.example/report');
   assert.deepEqual(agentPayload.evidence, ['Attach scan output']);
   assert.equal(agentWorkPacketOutputContracts(funded.work_packet, 'scan')[0].public_url, '/api/public/projects/prj_1/repo-scan');
-  assert.equal(agentWorkPacketOutputContracts(funded.work_packet).length, 1);
+  assert.equal(agentWorkPacketOutputContracts(funded.work_packet, 'create_agent_run')[0].output_protocol, 'mergeos.agent-run.v1');
+  assert.equal(agentWorkPacketOutputContracts(funded.work_packet).length, 2);
   assert.deepEqual(agentPayload.runbook, [
     '1. fetch_scan (/api/public/projects/prj_1/repo-scan)',
     '2. claim_task (/api/tasks/prj_1:12/claim)',

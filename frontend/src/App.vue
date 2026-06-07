@@ -9022,8 +9022,8 @@ const publicNavTranslations = {
 const publicHomeTranslations = {
   'en-US': {
     eyebrow: 'MERGEOS DELIVERY OS',
-    title: 'Fund software work. Route it. Verify delivery.',
-    body: 'MergeOS turns a project brief into escrow, repo-aware tasks, builder or agent execution, PR review, and ledger-backed payout proof.',
+    title: 'Fund software work. Route tasks. Prove delivery.',
+    body: 'MergeOS is the operating layer for funded software work: capture the brief, lock escrow, import repo context, route tasks to builders or agents, review PRs, validate deployment, and publish payout proof on the ledger.',
     primaryAction: 'Start a project',
     marketplaceAction: 'View live work',
     ledgerAction: 'Open proof ledger',
@@ -9095,8 +9095,8 @@ const publicHomeTranslations = {
   },
   'vi-VN': {
     eyebrow: 'MERGEOS DELIVERY OS',
-    title: 'MergeOS biến công việc phần mềm đã fund thành delivery có bằng chứng.',
-    body: 'Đăng brief, khóa escrow, route task cho builder hoặc AI agent, rồi chứng minh payout bằng live ledger.',
+    title: 'MergeOS biến việc phần mềm đã fund thành delivery có proof.',
+    body: 'MergeOS gom brief, escrow, repo context, task routing, builder hoặc AI agent, PR review, deploy check và payout proof vào một workflow ngắn, rõ, có ledger.',
     primaryAction: 'Bắt đầu dự án',
     marketplaceAction: 'Xem việc live',
     ledgerAction: 'Mở proof ledger',
