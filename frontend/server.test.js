@@ -689,7 +689,9 @@ test('public agents page exposes AI layer capability checklist', async () => {
   const cssSource = await fs.readFile(new URL('./src/styles.css', import.meta.url), 'utf-8');
 
   assert.match(appSource, /class="public-agent-capability-strip"/);
+  assert.match(appSource, /class="public-agent-action-contracts"/);
   assert.match(appSource, /const publicAgentCapabilityRows = computed/);
+  assert.match(appSource, /const publicAgentActionContractRows = computed/);
   assert.match(appSource, /label: 'Scan repository'/);
   assert.match(appSource, /Detect bugs, technical debt, and dependencies/);
   assert.match(appSource, /label: 'Analyze issues'/);
@@ -703,10 +705,19 @@ test('public agents page exposes AI layer capability checklist', async () => {
   assert.match(appSource, /The task engine converts analysis into scoped work packets with acceptance criteria, evidence requirements, dependencies, and suggested lane\./);
   assert.match(appSource, /Create scoped task packets, reward estimates, worker kind, suggested agent type, and dependency order\./);
   assert.match(appSource, /Review agents inspect patches for correctness, regressions, acceptance criteria coverage, risk notes, and release readiness\./);
+  assert.match(appSource, /action: 'scan'[\s\S]*label: 'Scan agent'[\s\S]*proof: '\/api\/public\/projects\/\{id\}\/repo-scan'/);
+  assert.match(appSource, /action: 'generate'[\s\S]*label: 'Coding agent'[\s\S]*outputProtocol: 'mergeos\.agent-action\.v1'/);
+  assert.match(appSource, /action: 'review'[\s\S]*label: 'Review agent'[\s\S]*proof: '\/api\/public\/projects\/\{id\}\/pull-requests'/);
+  assert.match(appSource, /action: 'test'[\s\S]*label: 'QA agent'[\s\S]*proof: '\/api\/public\/projects\/\{id\}\/ai-workflow'/);
+  assert.match(appSource, /action: 'deploy'[\s\S]*label: 'Deploy agent'[\s\S]*outputProtocol: 'mergeos\.deployment\.v1'/);
+  assert.match(appSource, /copyPublicAgentActionContract/);
   assert.match(appSource, /Review, QA, security, DevOps, customer approval, and payout release can all be tracked from SDK consumers\./);
   assert.match(cssSource, /\.public-agent-capability-strip\s*\{[\s\S]*grid-template-columns: repeat\(4, minmax\(0, 1fr\)\);/);
+  assert.match(cssSource, /\.public-agent-action-contracts\s*\{[\s\S]*grid-template-columns: repeat\(5, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /@media \(max-width: 980px\)[\s\S]*\.public-agent-capability-strip\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/);
+  assert.match(cssSource, /@media \(max-width: 980px\)[\s\S]*\.public-agent-action-contracts\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /@media \(max-width: 520px\)[\s\S]*\.public-agent-capability-strip\s*\{[\s\S]*grid-template-columns: 1fr;/);
+  assert.match(cssSource, /@media \(max-width: 520px\)[\s\S]*\.public-agent-action-contracts\s*\{[\s\S]*grid-template-columns: 1fr;/);
 });
 
 test('public token pages expose airdrop, presale, and whitepaper routes', async () => {

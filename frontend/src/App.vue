@@ -6020,6 +6020,38 @@
             </article>
           </div>
 
+          <section class="public-agent-action-contracts" aria-label="Executable AI agent action contracts">
+            <article v-for="contract in publicAgentActionContractRows" :key="contract.action">
+              <div class="public-agent-action-contract-top">
+                <span :class="['public-card-icon', contract.tone]">
+                  <component :is="contract.icon" :size="15" />
+                </span>
+                <div>
+                  <strong>{{ contract.label }}</strong>
+                  <small>{{ contract.body }}</small>
+                </div>
+              </div>
+              <dl>
+                <div>
+                  <dt>Action</dt>
+                  <dd>{{ contract.action }}</dd>
+                </div>
+                <div>
+                  <dt>Endpoint</dt>
+                  <dd>{{ contract.endpoint }}</dd>
+                </div>
+                <div>
+                  <dt>Output</dt>
+                  <dd>{{ contract.outputProtocol }}</dd>
+                </div>
+              </dl>
+              <button type="button" @click="copyPublicAgentActionContract(contract)">
+                Copy contract
+                <Link2 :size="12" />
+              </button>
+            </article>
+          </section>
+
           <section class="public-agent-chief-node" aria-label="CEO orchestrator and subagent delegation map">
             <article class="public-agent-chief-card">
               <div class="public-agent-chief-top">
@@ -18959,6 +18991,59 @@ const publicAgentCapabilityRows = computed(() => [
   },
 ]);
 
+const publicAgentActionContractRows = computed(() => [
+  {
+    action: 'scan',
+    label: 'Scan agent',
+    body: 'Find bugs, dependency risk, technical debt, secrets, and repository context before task funding.',
+    endpoint: '/api/projects/{id}/agent-actions',
+    outputProtocol: 'mergeos.agent-action.v1',
+    proof: '/api/public/projects/{id}/repo-scan',
+    icon: Bug,
+    tone: 'amber',
+  },
+  {
+    action: 'generate',
+    label: 'Coding agent',
+    body: 'Generate implementation patches or task outputs from scoped packets, runbooks, and context URLs.',
+    endpoint: '/api/projects/{id}/agent-actions',
+    outputProtocol: 'mergeos.agent-action.v1',
+    proof: '/api/public/projects/{id}/workflow',
+    icon: Code2,
+    tone: 'blue',
+  },
+  {
+    action: 'review',
+    label: 'Review agent',
+    body: 'Attach PR review evidence, risk notes, acceptance coverage, and release readiness checks.',
+    endpoint: '/api/projects/{id}/agent-actions',
+    outputProtocol: 'mergeos.agent-action.v1',
+    proof: '/api/public/projects/{id}/pull-requests',
+    icon: GitPullRequest,
+    tone: 'green',
+  },
+  {
+    action: 'test',
+    label: 'QA agent',
+    body: 'Record test plans, smoke results, accessibility notes, regression coverage, and retry evidence.',
+    endpoint: '/api/projects/{id}/agent-actions',
+    outputProtocol: 'mergeos.agent-action.v1',
+    proof: '/api/public/projects/{id}/ai-workflow',
+    icon: CheckCircle2,
+    tone: 'purple',
+  },
+  {
+    action: 'deploy',
+    label: 'Deploy agent',
+    body: 'Validate preview health, environment readiness, rollout notes, rollback state, and release gates.',
+    endpoint: '/api/projects/{id}/agent-actions',
+    outputProtocol: 'mergeos.deployment.v1',
+    proof: '/api/public/projects/{id}/deployment',
+    icon: Rocket,
+    tone: 'blue',
+  },
+]);
+
 const publicAgentChiefNode = computed(() => {
   const summary = publicAgentQueueSummary.value;
   const sourceCount = summary.projectCount || summary.bountyCount || 0;
@@ -22555,6 +22640,18 @@ async function copyPublicAgentContext(context = {}) {
   }
   const copied = await copyTextToClipboard(reference);
   showToast(copied ? `${context.label || 'Agent context'} URL copied.` : reference);
+}
+
+async function copyPublicAgentActionContract(contract = {}) {
+  const payload = {
+    action: contract.action || '',
+    endpoint: contract.endpoint || '/api/projects/{id}/agent-actions',
+    output_protocol: contract.outputProtocol || 'mergeos.agent-action.v1',
+    proof: contract.proof || '',
+    schema: '/protocol/agent-action.v1.schema.json',
+  };
+  const copied = await copyTextToClipboard(JSON.stringify(payload, null, 2));
+  showToast(copied ? `${contract.label || 'Agent action'} contract copied.` : 'Agent action contract is visible on the page.');
 }
 
 async function copyProtocolDocumentReference(doc = {}) {

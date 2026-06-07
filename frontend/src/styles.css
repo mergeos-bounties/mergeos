@@ -6664,6 +6664,108 @@ svg {
   font-weight: 740;
 }
 
+.public-agent-action-contracts {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.public-agent-action-contracts article {
+  min-width: 0;
+  display: grid;
+  gap: 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.92);
+  padding: 10px;
+}
+
+.public-agent-action-contract-top {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  gap: 9px;
+  align-items: start;
+}
+
+.public-agent-action-contract-top .public-card-icon {
+  width: 32px;
+  height: 32px;
+  margin: 0;
+}
+
+.public-agent-action-contracts strong,
+.public-agent-action-contracts small,
+.public-agent-action-contracts dd {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.public-agent-action-contracts strong {
+  display: block;
+  color: #0f172a;
+  font-size: 12px;
+  line-height: 1.2;
+  font-weight: 940;
+  white-space: nowrap;
+}
+
+.public-agent-action-contracts small {
+  display: -webkit-box;
+  margin-top: 3px;
+  color: #64748b;
+  font-size: 10px;
+  line-height: 1.32;
+  font-weight: 740;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.public-agent-action-contracts dl {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+}
+
+.public-agent-action-contracts dl div {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  gap: 7px;
+  align-items: center;
+}
+
+.public-agent-action-contracts dt {
+  color: #64748b;
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.public-agent-action-contracts dd {
+  margin: 0;
+  color: #111827;
+  font-size: 10px;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.public-agent-action-contracts button {
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid #dbe6ef;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #0f766e;
+  padding: 0 10px;
+  font-size: 10px;
+  font-weight: 900;
+}
+
 .public-agent-chief-node {
   min-width: 0;
   display: grid;
@@ -24898,6 +25000,10 @@ svg {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .public-agent-action-contracts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .public-solution-stat-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -25271,6 +25377,10 @@ svg {
   }
 
   .public-agent-capability-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .public-agent-action-contracts {
     grid-template-columns: 1fr;
   }
 
