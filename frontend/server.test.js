@@ -1296,6 +1296,7 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /function submitAirdropClaim\(\)/);
   assert.match(appSource, /function submitPresaleReservation\(\)/);
   assert.match(appSource, /class="token-workflow-proof-board"/);
+  assert.match(appSource, /class="token-ceo-memo-lane"/);
   assert.match(appSource, /class="token-workflow-proof-empty-steps"/);
   assert.match(appSource, /class="token-workflow-proof-empty-actions"/);
   assert.match(appSource, /@click="openTokenLaunchBriefFromProofBoard"/);
@@ -1309,6 +1310,7 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /memo hash before claim review/);
   assert.match(appSource, /memo hash before reservations/);
   assert.match(appSource, /const tokenWorkflowProofRows = computed\(\(\) => \{/);
+  assert.match(appSource, /const tokenWorkflowCeoMemoRows = computed\(\(\) => \{/);
   assert.match(appSource, /const targetType = publicPage\.value === 'airdrop' \? 'airdrop_claim' : 'presale_reservation';/);
   assert.match(appSource, /const targetLaunchType = publicPage\.value === 'presale' \? 'presale' : 'airdrop';/);
   assert.match(appSource, /entry\?\.type !== 'token_launch_brief'/);
@@ -1341,6 +1343,8 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(whitepaperSource, /## 15\. Security, Privacy, and Compliance/);
   assert.match(whitepaperSource, /## 16\. Roadmap/);
   assert.match(cssSource, /\.token-workflow-proof-board\s*\{[\s\S]*background: rgba\(255, 255, 255, 0\.86\);/);
+  assert.match(cssSource, /\.token-ceo-memo-lane\s*\{[\s\S]*background: linear-gradient/);
+  assert.match(cssSource, /\.token-ceo-memo-lane article\s*\{[\s\S]*grid-template-columns: 30px minmax\(0, 1fr\) auto;/);
   assert.match(cssSource, /\.token-workflow-proof-empty-steps\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /\.token-workflow-proof-empty-actions\s*\{[\s\S]*display: flex;/);
   assert.match(cssSource, /\.token-workflow-proof-empty-actions button:first-child\s*\{[\s\S]*background: var\(--green\);/);
@@ -1366,6 +1370,7 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(cssSource, /\.wizard-token-brief-card\s*\{[\s\S]*grid-template-columns: 34px minmax\(0, 1fr\);/);
   assert.match(cssSource, /\.wizard-token-brief-card li\s*\{[\s\S]*grid-template-columns: 58px minmax\(0, 1fr\);/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-workflow-proof-list article\s*\{[\s\S]*grid-template-columns: 32px minmax\(0, 1fr\);/);
+  assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-memo-lane article,[\s\S]*\.token-workflow-proof-list article\s*\{[\s\S]*grid-template-columns: 32px minmax\(0, 1fr\);/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-status-panel \.ledger-card-head\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) auto;/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-metric-grid\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-status-panel > p\s*\{[\s\S]*display: none;/);

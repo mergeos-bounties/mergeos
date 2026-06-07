@@ -5488,6 +5488,19 @@
               </button>
             </header>
             <div v-if="tokenWorkflowProofRows.length" class="token-workflow-proof-list">
+              <div v-if="tokenWorkflowCeoMemoRows.length" class="token-ceo-memo-lane" aria-label="CEO memo lane">
+                <article v-for="row in tokenWorkflowCeoMemoRows" :key="row.key">
+                  <span class="ledger-trust-icon blue">
+                    <FileCheck2 :size="14" />
+                  </span>
+                  <div>
+                    <small>CEO memo</small>
+                    <strong>{{ row.title }}</strong>
+                    <p>{{ row.body }}</p>
+                  </div>
+                  <b>{{ row.created }}</b>
+                </article>
+              </div>
               <article v-for="row in tokenWorkflowProofRows" :key="row.key">
                 <span :class="['ledger-trust-icon', row.tone]">
                   <component :is="row.icon" :size="15" />
@@ -12833,6 +12846,15 @@ const tokenWorkflowProofRows = computed(() => {
     .slice()
     .reverse()
     .slice(0, 6)
+    .map(mapTokenWorkflowProofRow);
+});
+const tokenWorkflowCeoMemoRows = computed(() => {
+  const targetLaunchType = publicPage.value === 'presale' ? 'presale' : 'airdrop';
+  return ledgerRawEntries.value
+    .filter((entry) => entry?.type === 'token_launch_brief' && String(entry.reference || '').includes(`type:${targetLaunchType}`))
+    .slice()
+    .reverse()
+    .slice(0, 3)
     .map(mapTokenWorkflowProofRow);
 });
 const airdropClaimValidationMap = computed(() => {
