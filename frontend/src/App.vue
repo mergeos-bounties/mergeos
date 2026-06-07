@@ -5972,6 +5972,18 @@
             </article>
           </div>
 
+          <div class="public-agent-capability-strip" aria-label="AI layer capabilities">
+            <article v-for="capability in publicAgentCapabilityRows" :key="capability.label">
+              <span :class="['public-card-icon', capability.tone]">
+                <component :is="capability.icon" :size="15" />
+              </span>
+              <div>
+                <strong>{{ capability.label }}</strong>
+                <small>{{ capability.value }}</small>
+              </div>
+            </article>
+          </div>
+
           <section class="public-agent-chief-node" aria-label="CEO orchestrator and subagent delegation map">
             <article class="public-agent-chief-card">
               <div class="public-agent-chief-top">
@@ -18770,6 +18782,34 @@ const publicAgentOrchestrationStats = computed(() => {
     },
   ];
 });
+
+const publicAgentCapabilityRows = computed(() => [
+  {
+    label: 'Scan repository',
+    value: 'Detect bugs, technical debt, and dependencies',
+    icon: Bug,
+    tone: 'amber',
+  },
+  {
+    label: 'Analyze issues',
+    value: 'Estimate complexity, time, and budget',
+    icon: Search,
+    tone: 'blue',
+  },
+  {
+    label: 'Generate tasks',
+    value: 'Create task graph and assign worker type',
+    icon: ListTodo,
+    tone: 'green',
+  },
+  {
+    label: 'Review PRs',
+    value: 'Code review, security review, and deployment validation',
+    icon: GitPullRequest,
+    tone: 'purple',
+  },
+]);
+
 const publicAgentChiefNode = computed(() => {
   const summary = publicAgentQueueSummary.value;
   const sourceCount = summary.projectCount || summary.bountyCount || 0;

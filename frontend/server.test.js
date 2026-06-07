@@ -439,6 +439,25 @@ test('public backend page exposes the proposed runtime stack', async () => {
   assert.match(cssSource, /@media \(max-width: 520px\)[\s\S]*\.public-backend-stack-strip\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/);
 });
 
+test('public agents page exposes AI layer capability checklist', async () => {
+  const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
+  const cssSource = await fs.readFile(new URL('./src/styles.css', import.meta.url), 'utf-8');
+
+  assert.match(appSource, /class="public-agent-capability-strip"/);
+  assert.match(appSource, /const publicAgentCapabilityRows = computed/);
+  assert.match(appSource, /label: 'Scan repository'/);
+  assert.match(appSource, /Detect bugs, technical debt, and dependencies/);
+  assert.match(appSource, /label: 'Analyze issues'/);
+  assert.match(appSource, /Estimate complexity, time, and budget/);
+  assert.match(appSource, /label: 'Generate tasks'/);
+  assert.match(appSource, /Create task graph and assign worker type/);
+  assert.match(appSource, /label: 'Review PRs'/);
+  assert.match(appSource, /Code review, security review, and deployment validation/);
+  assert.match(cssSource, /\.public-agent-capability-strip\s*\{[\s\S]*grid-template-columns: repeat\(4, minmax\(0, 1fr\)\);/);
+  assert.match(cssSource, /@media \(max-width: 980px\)[\s\S]*\.public-agent-capability-strip\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/);
+  assert.match(cssSource, /@media \(max-width: 520px\)[\s\S]*\.public-agent-capability-strip\s*\{[\s\S]*grid-template-columns: 1fr;/);
+});
+
 test('public token pages expose airdrop, presale, and whitepaper routes', async () => {
   const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
   const cssSource = await fs.readFile(new URL('./src/styles.css', import.meta.url), 'utf-8');

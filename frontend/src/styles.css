@@ -6617,6 +6617,53 @@ svg {
   font-weight: 720;
 }
 
+.public-agent-capability-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.public-agent-capability-strip article {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 10px;
+}
+
+.public-agent-capability-strip .public-card-icon {
+  width: 32px;
+  height: 32px;
+  margin: 0;
+}
+
+.public-agent-capability-strip strong,
+.public-agent-capability-strip small {
+  min-width: 0;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.public-agent-capability-strip strong {
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 940;
+  white-space: nowrap;
+}
+
+.public-agent-capability-strip small {
+  margin-top: 3px;
+  color: #64748b;
+  font-size: 10px;
+  line-height: 1.35;
+  font-weight: 740;
+}
+
 .public-agent-chief-node {
   min-width: 0;
   display: grid;
@@ -24730,6 +24777,10 @@ svg {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .public-agent-capability-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .public-solution-stat-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -25099,6 +25150,10 @@ svg {
   }
 
   .public-agent-signal-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .public-agent-capability-strip {
     grid-template-columns: 1fr;
   }
 
