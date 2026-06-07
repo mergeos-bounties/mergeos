@@ -92,6 +92,12 @@ func ProtocolManifest() ProtocolManifestResponse {
 			Description: "Authenticated project estimate document with editable budget range, confidence, assumptions, risks, and cost breakdown.",
 		},
 		{
+			Version:     "mergeos.payment-order.v1",
+			Kind:        "payment_order",
+			SchemaURL:   "https://mergeos.shop/protocol/payment-order.v1.schema.json",
+			Description: "Authenticated PayPal order or Stripe PaymentIntent bootstrap document for project funding and repository task funding before escrow verification.",
+		},
+		{
 			Version:     "mergeos.wallet-migration.v1",
 			Kind:        "wallet_migration",
 			SchemaURL:   "https://mergeos.shop/protocol/wallet-migration.v1.schema.json",

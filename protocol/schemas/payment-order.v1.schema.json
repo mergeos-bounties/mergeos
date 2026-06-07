@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mergeos.shop/protocol/payment-order.v1.schema.json",
+  "title": "MergeOS Payment Order v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["payment_reference", "status", "provider"],
+  "properties": {
+    "order_id": { "type": "string", "minLength": 1, "maxLength": 160 },
+    "payment_reference": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "payment_intent_id": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "client_secret": { "type": "string", "minLength": 1, "maxLength": 512 },
+    "approval_url": { "type": "string", "maxLength": 1000 },
+    "status": { "type": "string", "minLength": 1, "maxLength": 80 },
+    "provider": { "enum": ["paypal", "stripe", "dev-stripe"] },
+    "flow": { "enum": ["project_funding", "repo_task_funding"] },
+    "amount_cents": { "type": "integer", "minimum": 0 },
+    "currency": { "type": "string", "minLength": 3, "maxLength": 3 },
+    "mode": { "type": "string", "maxLength": 120 },
+    "public_key": { "type": "string", "maxLength": 240 },
+    "brand": { "type": "string", "maxLength": 80 },
+    "last4": { "type": "string", "pattern": "^[0-9]{4}$" }
+  },
+  "oneOf": [
+    {
+      "title": "PayPal order",
+      "required": ["order_id", "approval_url", "flow", "amount_cents", "currency"],
+      "properties": {
+        "provider": { "const": "paypal" }
+      }
+    },
+    {
+      "title": "Stripe PaymentIntent",
+      "required": ["payment_intent_id", "mode"],
+      "properties": {
+        "provider": { "enum": ["stripe", "dev-stripe"] }
+      }
+    }
+  ]
+}

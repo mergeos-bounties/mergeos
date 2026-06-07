@@ -82,8 +82,13 @@ test('public protocol schemas mirror the protocol package schemas', async () => 
 test('public protocol links match backend routes', async () => {
   const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
   const manifestSource = await fs.readFile(new URL('../backend/internal/core/protocol_manifest.go', import.meta.url), 'utf-8');
+  const paymentOrderSchema = JSON.parse(await fs.readFile(new URL('./public/protocol/payment-order.v1.schema.json', import.meta.url), 'utf-8'));
 
   assert.match(appSource, /const publicProtocolManifestPath = '\/api\/public\/protocol';/);
+  assert.equal(paymentOrderSchema.properties.provider.enum.includes('paypal'), true);
+  assert.equal(paymentOrderSchema.properties.provider.enum.includes('stripe'), true);
+  assert.match(manifestSource, /mergeos\.payment-order\.v1/);
+  assert.match(manifestSource, /payment-order\.v1\.schema\.json/);
   assert.match(manifestSource, /\/contracts\/solana\/mergeos_mrg\.proof-manifest\.v1\.json/);
   assert.match(manifestSource, /mergeos\.solana-contract-proof\.v1/);
   assert.match(appSource, /function publicTaskProtocolPath\(taskID = ''\)/);
