@@ -1707,6 +1707,18 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 		t.Fatalf("invalid token launch brief status = %d, body = %s", invalidLaunchResp.Code, invalidLaunchResp.Body.String())
 	}
 
+	missingSourceLaunchReq := httptest.NewRequest(http.MethodPost, "/api/token/launch-briefs", strings.NewReader(`{
+		"launch_type":"airdrop",
+		"project_title":"MergeOS partner airdrop research",
+		"project_summary":"Research whether this repository community should open earned MRG airdrop missions with proof gates."
+	}`))
+	missingSourceLaunchReq.Header.Set("Authorization", "Bearer "+auth.Token)
+	missingSourceLaunchResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(missingSourceLaunchResp, missingSourceLaunchReq)
+	if missingSourceLaunchResp.Code != http.StatusBadRequest || !strings.Contains(missingSourceLaunchResp.Body.String(), "repository_url is required for CEO launch research") {
+		t.Fatalf("missing source token launch brief status = %d, body = %s", missingSourceLaunchResp.Code, missingSourceLaunchResp.Body.String())
+	}
+
 	launchReq := httptest.NewRequest(http.MethodPost, "/api/token/launch-briefs", strings.NewReader(`{
 		"launch_type":"airdrop",
 		"project_title":"MergeOS partner airdrop research",

@@ -424,8 +424,12 @@ func (s *Store) RecordTokenLaunchBriefForUser(userID string, req TokenLaunchBrie
 	if len(projectSummary) < 24 {
 		return TokenLaunchBriefResponse{}, errors.New("project_summary must be at least 24 characters")
 	}
-	repositoryURL := normalizeTokenWorkflowURL(req.RepositoryURL)
-	if repositoryURL == "" && strings.TrimSpace(req.RepositoryURL) != "" {
+	rawRepositoryURL := strings.TrimSpace(req.RepositoryURL)
+	repositoryURL := normalizeTokenWorkflowURL(rawRepositoryURL)
+	if rawRepositoryURL == "" {
+		return TokenLaunchBriefResponse{}, errors.New("repository_url is required for CEO launch research")
+	}
+	if repositoryURL == "" {
 		return TokenLaunchBriefResponse{}, errors.New("repository_url must be an http(s) URL")
 	}
 	allocationPolicy := sanitizeTokenLaunchText(req.AllocationPolicy, 260)

@@ -497,6 +497,7 @@ test('public protocol links match backend routes', async () => {
   assert.equal(paymentOrderSchema.properties.provider.enum.includes('paypal'), true);
   assert.equal(paymentOrderSchema.properties.provider.enum.includes('stripe'), true);
   assert.equal(tokenLaunchBriefSchema.required.includes('ceo_memo'), true);
+  assert.equal(tokenLaunchBriefSchema.required.includes('repository_url'), true);
   assert.equal(tokenLaunchBriefSchema.properties.ceo_memo.required.includes('gates'), true);
   assert.equal(tokenLaunchBriefSchema.properties.ceo_memo.properties.gates.items.properties.status.enum.includes('ready_for_review'), true);
   assert.equal(tokenLaunchBriefSchema.properties.ceo_memo.properties.gates.items.properties.status.enum.includes('needs_evidence'), true);
@@ -1229,10 +1230,11 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /CEO template/);
   assert.match(appSource, /Wallet policy <b>\*<\/b>/);
   assert.match(appSource, /CEO risk notes <b>\*<\/b>/);
-  assert.match(appSource, /Research URL/);
+  assert.match(appSource, /Research URL <b>\*<\/b>/);
   assert.match(appSource, /urlPlaceholder: 'https:\/\/github\.com\/org\/repo or public proof page'/);
   assert.match(appSource, /urlPlaceholder: 'https:\/\/project\.site\/whitepaper or Solana contract proof'/);
   assert.match(appSource, /Use a repo, task board, docs, website, or public proof URL for CEO research\./);
+  assert.match(appSource, /Research URL is required for CEO launch research\./);
   assert.match(appSource, /Research URL must start with http:\/\/ or https:\/\/\./);
   assert.match(appSource, /tokenLaunchBriefFieldError\('wallet_policy'\)/);
   assert.match(appSource, /tokenLaunchBriefFieldError\('risk_notes'\)/);

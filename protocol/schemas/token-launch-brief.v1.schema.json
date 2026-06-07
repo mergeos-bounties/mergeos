@@ -12,6 +12,7 @@
     "launch_type",
     "project_title",
     "project_summary",
+    "repository_url",
     "research_signals",
     "ceo_memo",
     "ledger_entry",

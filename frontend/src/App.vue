@@ -5158,7 +5158,7 @@
                 <p v-if="tokenLaunchBriefFieldError('project_title')" class="wizard-field-error">{{ tokenLaunchBriefFieldError('project_title') }}</p>
               </label>
               <label class="wizard-field" :class="{ invalid: tokenLaunchBriefFieldError('repository_url') }">
-                <span>Research URL</span>
+                <span>Research URL <b>*</b></span>
                 <input v-model.trim="tokenLaunchBriefForm.repository_url" :disabled="tokenLaunchBriefBusy" autocomplete="off" :placeholder="tokenCeoLaunchBriefCopy.urlPlaceholder" />
                 <small class="wizard-field-hint">{{ tokenCeoLaunchBriefCopy.urlHint }}</small>
                 <p v-if="tokenLaunchBriefFieldError('repository_url')" class="wizard-field-error">{{ tokenLaunchBriefFieldError('repository_url') }}</p>
@@ -12855,7 +12855,8 @@ const tokenLaunchBriefValidationMap = computed(() => {
   if (!user.value) errors.session = 'Log in before sending a CEO launch brief.';
   if (title.length < 6) errors.project_title = 'Project title must be at least 6 characters.';
   if (summary.length < 24) errors.project_summary = 'CEO research brief must be at least 24 characters.';
-  if (repoURL && !tokenWorkflowURLIsValid(repoURL)) errors.repository_url = 'Research URL must start with http:// or https://.';
+  if (!repoURL) errors.repository_url = 'Research URL is required for CEO launch research.';
+  else if (!tokenWorkflowURLIsValid(repoURL)) errors.repository_url = 'Research URL must start with http:// or https://.';
   if (proofPolicy.length < 12) errors.proof_policy = 'Proof policy must explain the required evidence.';
   if (walletPolicy.length < 12) errors.wallet_policy = 'Wallet policy must explain wallet ownership or uniqueness checks.';
   if (riskNotes.length < 12) errors.risk_notes = 'CEO risk notes must explain the launch risk review.';
