@@ -493,7 +493,7 @@ if (task) {
 
 ## Deployment Validation Packet
 
-Authenticated deployment documents can include `validation_packet`, a CEO-orchestrated handoff for deployment agents. Use `deploymentValidationPayloadFromDeployment(deployment, overrides)` to build the deploy action payload, or `createDeploymentValidationFromDeployment(projectID, deployment, overrides)` to post it to the packet endpoint in one call. Public deployment documents omit this packet.
+Authenticated deployment documents can include `validation_packet`, a CEO-orchestrated handoff for deployment agents. Use `deploymentValidationPayloadFromDeployment(deployment, overrides)` to build the deploy action payload, or `createDeploymentValidationFromDeployment(projectID, deployment, overrides)` to post it to the packet endpoint in one call. `deploymentValidationOutputContracts(deployment, action?)` returns the deployment evidence and ledger proof contracts the agent is expected to refresh. Public deployment documents omit the packet but still expose `ledger_proof_url`.
 
 `createProjectAgentReviewFromPRMonitorTask(projectID, task)` uses the authenticated `review_packet` from PR monitor rows to record review-agent evidence against `/api/projects/{id}/agent-actions`. The packet includes PR number, review checks, context URLs, runbook steps, and CEO-to-review-agent delegation metadata.
 

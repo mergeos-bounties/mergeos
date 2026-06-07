@@ -1458,6 +1458,7 @@ type ProjectDeploymentResponse struct {
 	Status           string             `json:"status"`
 	Progress         int                `json:"progress"`
 	UpdatedAt        time.Time          `json:"updated_at"`
+	LedgerProofURL   string             `json:"ledger_proof_url,omitempty"`
 	ValidationPacket map[string]any     `json:"validation_packet,omitempty"`
 	Stages           []DeploymentStage  `json:"stages"`
 	Signals          []DeploymentSignal `json:"signals"`

@@ -2938,6 +2938,9 @@ func TestProjectDeploymentRouteReturnsDerivedStatusAndSanitizesData(t *testing.T
 	if payload.ProjectID != project.ID || payload.Status != "validating" || payload.Progress == 0 {
 		t.Fatalf("unexpected deployment summary: %#v", payload)
 	}
+	if payload.LedgerProofURL != "/api/public/ledger/proof" {
+		t.Fatalf("deployment response missing ledger proof URL: %#v", payload)
+	}
 	seenStages := map[string]bool{}
 	for _, stage := range payload.Stages {
 		seenStages[stage.ID] = true
@@ -2958,6 +2961,10 @@ func TestProjectDeploymentRouteReturnsDerivedStatusAndSanitizesData(t *testing.T
 	}
 	if endpoint := payload.ValidationPacket["validation_endpoint"]; endpoint != "/api/projects/"+project.ID+"/agent-actions" {
 		t.Fatalf("unexpected validation endpoint: %#v", payload.ValidationPacket)
+	}
+	outputContracts := payload.ValidationPacket["output_contracts"]
+	if !outputContractPayloadContainsProtocol(outputContracts, "mergeos.deployment.v1") || !outputContractPayloadContainsProtocol(outputContracts, "mergeos.ledger-proof.v1") {
+		t.Fatalf("validation packet missing deployment output contracts: %#v", payload.ValidationPacket["output_contracts"])
 	}
 	packetPayload, ok := payload.ValidationPacket["payload"].(map[string]any)
 	if !ok {
@@ -3087,12 +3094,19 @@ func TestProjectDeploymentUsesDeploymentAgentAction(t *testing.T) {
 	if !foundDeployStage || !foundDeploySignal {
 		t.Fatalf("deployment response missing deploy agent evidence: stage=%t signal=%t payload=%#v", foundDeployStage, foundDeploySignal, payload)
 	}
+	if payload.LedgerProofURL != "/api/public/ledger/proof" {
+		t.Fatalf("deployment response missing public ledger proof URL: %#v", payload)
+	}
 	if payload.ValidationPacket == nil {
 		t.Fatalf("deployment response missing deploy validation packet: %#v", payload)
 	}
 	packetPayload, ok := payload.ValidationPacket["payload"].(map[string]any)
 	if !ok || packetPayload["reference_url"] != "https://vercel.example/deployments/mergeos-preview" {
 		t.Fatalf("validation packet did not reuse deployment proof URL: %#v", payload.ValidationPacket)
+	}
+	outputContracts := payload.ValidationPacket["output_contracts"]
+	if !outputContractPayloadContainsProtocol(outputContracts, "mergeos.ledger-proof.v1") {
+		t.Fatalf("validation packet missing ledger proof contract: %#v", payload.ValidationPacket["output_contracts"])
 	}
 }
 
@@ -3175,6 +3189,9 @@ func TestPublicProjectDeploymentRouteReturnsSanitizedReadiness(t *testing.T) {
 	}
 	if payload.ProjectID != project.ID || payload.Progress == 0 {
 		t.Fatalf("unexpected public deployment summary: %#v", payload)
+	}
+	if payload.LedgerProofURL != "/api/public/ledger/proof" {
+		t.Fatalf("public deployment response missing ledger proof URL: %#v", payload)
 	}
 	if payload.ValidationPacket != nil || strings.Contains(body, "validation_packet") {
 		t.Fatalf("public deployment response leaked validation packet: %s", body)
@@ -6937,6 +6954,25 @@ func protocolPayloadStringSliceContains(value any, expected string) bool {
 	case []any:
 		for _, item := range typed {
 			if fmt.Sprint(item) == expected {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func outputContractPayloadContainsProtocol(value any, protocol string) bool {
+	protocol = strings.TrimSpace(protocol)
+	if protocol == "" {
+		return false
+	}
+	switch typed := value.(type) {
+	case []AgentOutputContract:
+		return containsOutputProtocol(typed, protocol)
+	case []any:
+		for _, item := range typed {
+			row, ok := item.(map[string]any)
+			if ok && fmt.Sprint(row["output_protocol"]) == protocol {
 				return true
 			}
 		}

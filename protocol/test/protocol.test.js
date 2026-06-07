@@ -1730,6 +1730,7 @@ test('validates deployment protocol documents', () => {
     status: 'validating',
     progress: 60,
     updated_at: now,
+    ledger_proof_url: '/api/public/ledger/proof',
     validation_packet: {
       status: 'needs_validation',
       method: 'POST',
@@ -1747,7 +1748,26 @@ test('validates deployment protocol documents', () => {
         pr_monitor: '/api/projects/prj_0001/pull-requests',
         workflow: '/api/projects/prj_0001/protocol/workflow',
         payouts: '/api/projects/prj_0001/payouts',
+        ledger_proof: '/api/public/ledger/proof',
       },
+      output_contracts: [
+        {
+          action: 'record_deploy_evidence',
+          artifact_kind: 'deployment_evidence',
+          output_endpoint: '/api/public/projects/prj_0001/deployment',
+          output_protocol: 'mergeos.deployment.v1',
+          output_protocol_url: '/protocol/deployment.v1.schema.json',
+          public_url: '/api/public/projects/prj_0001/deployment',
+        },
+        {
+          action: 'prove_ledger',
+          artifact_kind: 'ledger_proof',
+          output_endpoint: '/api/public/ledger/proof',
+          output_protocol: 'mergeos.ledger-proof.v1',
+          output_protocol_url: '/protocol/ledger-proof.v1.schema.json',
+          public_url: '/api/public/ledger/proof',
+        },
+      ],
       runbook: [
         { step: 1, action: 'inspect_deployment', label: 'Inspect deployment validation stages', endpoint: '/api/projects/prj_0001/deployment' },
         { step: 2, action: 'record_deploy_evidence', label: 'Record deployment-agent evidence', endpoint: '/api/projects/prj_0001/agent-actions' },

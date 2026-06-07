@@ -31,6 +31,7 @@ import {
   contractReferenceFromLedger,
   createMergeOSClient,
   deploymentAgentActionPayload,
+  deploymentValidationOutputContracts,
   deploymentValidationPayloadFromDeployment,
   isAgentActionEventType,
   isLikelySolanaWallet,
@@ -682,7 +683,26 @@ test('builds and sends deployment validation payloads from deployment packets', 
       context_urls: {
         deployment: '/api/projects/prj_1/deployment',
         payouts: '/api/projects/prj_1/payouts',
+        ledger_proof: '/api/public/ledger/proof',
       },
+      output_contracts: [
+        {
+          action: 'record_deploy_evidence',
+          artifact_kind: 'deployment_evidence',
+          output_endpoint: '/api/public/projects/prj_1/deployment',
+          output_protocol: 'mergeos.deployment.v1',
+          output_protocol_url: '/protocol/deployment.v1.schema.json',
+          public_url: '/api/public/projects/prj_1/deployment',
+        },
+        {
+          action: 'prove_ledger',
+          artifact_kind: 'ledger_proof',
+          output_endpoint: '/api/public/ledger/proof',
+          output_protocol: 'mergeos.ledger-proof.v1',
+          output_protocol_url: '/protocol/ledger-proof.v1.schema.json',
+          public_url: '/api/public/ledger/proof',
+        },
+      ],
       runbook: [
         { step: 1, action: 'inspect_deployment', endpoint: '/api/projects/prj_1/deployment' },
       ],
@@ -708,6 +728,8 @@ test('builds and sends deployment validation payloads from deployment packets', 
   assert.equal(payload.reference_url, 'https://vercel.example/deployments/mergeos-preview');
   assert.deepEqual(payload.context_urls, ['/api/projects/prj_1/deployment']);
   assert.deepEqual(payload.delegation_chain, ['ceo-strategy-agent', 'deployment-agent']);
+  assert.equal(deploymentValidationOutputContracts(deployment).length, 2);
+  assert.equal(deploymentValidationOutputContracts(deployment, 'prove_ledger')[0].output_protocol, 'mergeos.ledger-proof.v1');
 
   const fetchImpl = fakeFetch([
     { status: 201, body: { protocol_version: 'mergeos.agent-action.v1', kind: 'agent_action', log: { event_name: 'agent_action', action: 'deploy' } } },

@@ -992,6 +992,14 @@ export function deploymentValidationPayloadFromDeployment(deployment = {}, overr
   });
 }
 
+export function deploymentValidationOutputContracts(deployment = {}, action = '') {
+  const packet = deployment.validation_packet && typeof deployment.validation_packet === 'object' ? deployment.validation_packet : {};
+  const contracts = Array.isArray(packet.output_contracts) ? packet.output_contracts.filter((contract) => contract && typeof contract === 'object') : [];
+  const normalizedAction = String(action || '').trim().toLowerCase();
+  if (!normalizedAction) return contracts;
+  return contracts.filter((contract) => String(contract.action || '').trim().toLowerCase() === normalizedAction);
+}
+
 export function aiWorkflowStages(workflow = {}, status = '') {
   const stages = Array.isArray(workflow.stages) ? workflow.stages : [];
   const normalizedStatus = normalizeSelector(status);

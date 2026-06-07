@@ -13,6 +13,7 @@
     "status": { "enum": ["queued", "validating", "ready"] },
     "progress": { "type": "integer", "minimum": 0, "maximum": 100 },
     "updated_at": { "type": "string", "format": "date-time" },
+    "ledger_proof_url": { "type": "string", "maxLength": 512 },
     "validation_packet": {
       "type": "object",
       "additionalProperties": true
