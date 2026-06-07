@@ -493,6 +493,12 @@ test('signed-in mobile dashboard keeps nav, actions, and popovers phone-safe', a
   assert.match(appSource, /function handleWSNotificationsUpdated\(payload = \{\}\)/);
   assert.match(appSource, /loadDashboardNotifications\(\{ silent: true \}\)/);
   assert.match(appSource, /async function loadDashboardNotifications\(options = \{\}\)/);
+  assert.match(cssSource, /Signed-in mobile visual QA sweep/);
+  assert.match(cssSource, /\.dashboard-shell \.dash-sidebar\s*\{[\s\S]*position: sticky !important;[\s\S]*z-index: 980;/);
+  assert.match(cssSource, /\.dashboard-shell \.dash-command-metrics\s*\{[\s\S]*grid-auto-flow: column;[\s\S]*overflow-x: auto;/);
+  assert.match(cssSource, /\.dashboard-shell \.worker-dashboard-grid,[\s\S]*\.dashboard-shell \.payment-summary-grid\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) !important;/);
+  assert.match(cssSource, /\.dashboard-shell \.worker-proposal-actions,[\s\S]*\.dashboard-shell \.payment-history-actions\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) !important;/);
+  assert.match(cssSource, /\.project-step-actions,[\s\S]*\.funding-actions\s*\{[\s\S]*position: sticky;[\s\S]*bottom: 0;/);
 });
 
 test('AI workflow dashboard exposes stage checklists from the protocol contract', async () => {

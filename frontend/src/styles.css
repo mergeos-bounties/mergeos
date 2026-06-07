@@ -31208,3 +31208,217 @@ canvas {
   }
 }
 
+/* Signed-in mobile visual QA sweep: compact the real post-login surfaces after
+   data hydration, so worker/admin cards and the project wizard stay readable. */
+@media (max-width: 760px) {
+  .dashboard-shell {
+    --dash-mobile-header-height: 88px;
+    --dash-mobile-gutter: clamp(12px, 4vw, 16px);
+    display: grid;
+    gap: 0;
+  }
+
+  .dashboard-shell .dash-sidebar {
+    position: sticky !important;
+    top: 0;
+    z-index: 980;
+    min-height: var(--dash-mobile-header-height);
+    padding-bottom: 8px !important;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+  }
+
+  .dashboard-shell .dash-workspace {
+    min-width: 0;
+    padding-top: 0 !important;
+  }
+
+  .dashboard-shell .dash-topbar {
+    margin-top: 8px;
+  }
+
+  .dashboard-shell .dash-command-strip {
+    gap: 12px !important;
+    padding: 14px !important;
+  }
+
+  .dashboard-shell .dash-command-metrics {
+    display: grid !important;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(138px, 44vw);
+    grid-template-columns: none !important;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .dashboard-shell .dash-command-metrics article {
+    min-height: 72px;
+    scroll-snap-align: start;
+  }
+
+  .dashboard-shell .dashboard-role-map {
+    gap: 9px !important;
+    padding-bottom: 4px !important;
+  }
+
+  .dashboard-shell .dashboard-role-map article {
+    min-width: min(258px, 78vw) !important;
+    padding: 12px !important;
+  }
+
+  .dashboard-shell .dash-main {
+    display: grid !important;
+    gap: 12px !important;
+  }
+
+  .dashboard-shell .worker-dashboard-grid,
+  .dashboard-shell .dash-metrics,
+  .dashboard-shell .admin-console-grid,
+  .dashboard-shell .admin-governance-grid,
+  .dashboard-shell .admin-dispute-grid,
+  .dashboard-shell .admin-triage-strip,
+  .dashboard-shell .dashboard-agent-grid,
+  .dashboard-shell .dashboard-analytics-grid,
+  .dashboard-shell .payment-summary-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 10px !important;
+  }
+
+  .dashboard-shell .worker-audit-layout,
+  .dashboard-shell .worker-audit-stats,
+  .dashboard-shell .worker-audit-status-row,
+  .dashboard-shell .worker-audit-flags,
+  .dashboard-shell .risk-grid,
+  .dashboard-shell .payment-history-meta {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .dashboard-shell .worker-score-ring {
+    width: 132px;
+    height: 132px;
+    justify-self: center;
+  }
+
+  .dashboard-shell .worker-proposal-list article,
+  .dashboard-shell .worker-submitted-proposal-list article,
+  .dashboard-shell .dash-pr-row,
+  .dashboard-shell .admin-ops-row,
+  .dashboard-shell .admin-dispute-item,
+  .dashboard-shell .payment-history-row,
+  .dashboard-shell .notification-center-list article {
+    grid-template-columns: minmax(0, 1fr) !important;
+    align-items: stretch !important;
+  }
+
+  .dashboard-shell .worker-proposal-list > article > span,
+  .dashboard-shell .worker-proposal-list > article > b,
+  .dashboard-shell .payment-history-side,
+  .dashboard-shell .dash-pr-stat,
+  .dashboard-shell .dash-pr-actions {
+    justify-self: stretch !important;
+    text-align: left !important;
+  }
+
+  .dashboard-shell .worker-proposal-actions,
+  .dashboard-shell .dash-pr-actions,
+  .dashboard-shell .task-review-panel,
+  .dashboard-shell .admin-ops-row-actions,
+  .dashboard-shell .admin-dispute-item-actions,
+  .dashboard-shell .payment-history-actions {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 8px !important;
+  }
+
+  .dashboard-shell .worker-proposal-actions button,
+  .dashboard-shell .dash-pr-actions button,
+  .dashboard-shell .dash-pr-actions a,
+  .dashboard-shell .admin-ops-row-actions button,
+  .dashboard-shell .admin-ops-row-actions a,
+  .dashboard-shell .admin-dispute-item-actions button,
+  .dashboard-shell .admin-dispute-item-actions a,
+  .dashboard-shell .payment-history-actions button {
+    width: 100% !important;
+    min-height: 42px;
+    justify-content: center;
+  }
+
+  .dashboard-shell .dash-card,
+  .dashboard-shell .rail-card,
+  .dashboard-shell .dashboard-tool-card,
+  .dashboard-shell .dash-empty-state,
+  .dashboard-shell .payment-summary-card {
+    overflow: hidden;
+  }
+
+  .dashboard-shell :is(.dash-card, .rail-card, .dashboard-tool-card, .dash-empty-state, .payment-summary-card) :is(h1, h2, h3, strong, p, small, span, a, button, code, b, em) {
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  .dashboard-shell .notification-dropdown,
+  .dashboard-shell .account-context-menu,
+  .dashboard-shell .dash-mobile-menu {
+    max-height: min(68dvh, 520px) !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+  }
+
+  .project-flow-shell {
+    --project-mobile-gutter: clamp(12px, 4vw, 16px);
+  }
+
+  .project-flow-title {
+    padding-inline: 0 !important;
+  }
+
+  .project-flow-board,
+  .project-flow-rail,
+  .wizard-card,
+  .rail-card {
+    border-radius: 10px !important;
+  }
+
+  .wizard-card,
+  .rail-card,
+  .review-card,
+  .payment-details-box,
+  .tokens-box {
+    padding: 14px !important;
+  }
+
+  .project-step-actions,
+  .funding-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 80;
+    margin-inline: calc(var(--project-mobile-gutter) * -1);
+    border-top: 1px solid rgba(15, 23, 42, 0.08);
+    background: rgba(255, 255, 255, 0.97);
+    padding: 10px var(--project-mobile-gutter) calc(10px + env(safe-area-inset-bottom)) !important;
+    box-shadow: 0 -14px 34px rgba(15, 23, 42, 0.08);
+  }
+}
+
+@media (max-width: 430px) {
+  .dashboard-shell {
+    --dash-mobile-header-height: 84px;
+    --dash-mobile-gutter: 12px;
+  }
+
+  .dashboard-shell .dash-command-metrics {
+    grid-auto-columns: minmax(132px, 72vw);
+  }
+
+  .dashboard-shell .dash-mobile-nav button span {
+    font-size: 9.5px;
+  }
+
+  .project-step-actions,
+  .funding-actions {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
