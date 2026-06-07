@@ -605,6 +605,12 @@ test('public agents page exposes AI layer capability checklist', async () => {
   assert.match(appSource, /Create task graph and assign worker type/);
   assert.match(appSource, /label: 'Review PRs'/);
   assert.match(appSource, /Code review, security review, and deployment validation/);
+  assert.match(appSource, /AI scans source repositories, imported issues, dependencies, technical debt markers, secrets risk, and bug candidates before task creation\./);
+  assert.match(appSource, /Models estimate complexity, time, budget, security exposure, test gaps, and deployment constraints for each issue\./);
+  assert.match(appSource, /The task engine converts analysis into scoped work packets with acceptance criteria, evidence requirements, dependencies, and suggested lane\./);
+  assert.match(appSource, /Create scoped task packets, reward estimates, worker kind, suggested agent type, and dependency order\./);
+  assert.match(appSource, /Review agents inspect patches for correctness, regressions, acceptance criteria coverage, risk notes, and release readiness\./);
+  assert.match(appSource, /Review, QA, security, DevOps, customer approval, and payout release can all be tracked from SDK consumers\./);
   assert.match(cssSource, /\.public-agent-capability-strip\s*\{[\s\S]*grid-template-columns: repeat\(4, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /@media \(max-width: 980px\)[\s\S]*\.public-agent-capability-strip\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /@media \(max-width: 520px\)[\s\S]*\.public-agent-capability-strip\s*\{[\s\S]*grid-template-columns: 1fr;/);
