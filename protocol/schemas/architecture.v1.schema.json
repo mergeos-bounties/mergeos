@@ -122,10 +122,26 @@
     },
     "frontend_system": {
       "type": "object",
-      "required": ["stack", "public_pages", "authenticated_dashboards", "authenticated_dashboard_urls"],
+      "required": ["stack", "public_pages", "public_page_routes", "authenticated_dashboards", "authenticated_dashboard_urls"],
       "properties": {
         "stack": { "$ref": "#/$defs/stringList" },
         "public_pages": { "$ref": "#/$defs/stringList" },
+        "public_page_routes": {
+          "type": "object",
+          "required": ["homepage", "marketplace", "live_feed", "ledger_logs", "protocol", "mergeide", "airdrop", "presale", "whitepaper"],
+          "properties": {
+            "homepage": { "$ref": "#/$defs/publicPageRoute" },
+            "marketplace": { "$ref": "#/$defs/publicPageRoute" },
+            "live_feed": { "$ref": "#/$defs/publicPageRoute" },
+            "ledger_logs": { "$ref": "#/$defs/publicPageRoute" },
+            "protocol": { "$ref": "#/$defs/publicPageRoute" },
+            "mergeide": { "$ref": "#/$defs/publicPageRoute" },
+            "airdrop": { "$ref": "#/$defs/publicPageRoute" },
+            "presale": { "$ref": "#/$defs/publicPageRoute" },
+            "whitepaper": { "$ref": "#/$defs/publicPageRoute" }
+          },
+          "additionalProperties": false
+        },
         "authenticated_dashboards": { "$ref": "#/$defs/stringList" },
         "authenticated_dashboard_urls": {
           "type": "object",
@@ -387,6 +403,17 @@
         "state_store": { "type": "string", "minLength": 1 },
         "external_dependencies": { "$ref": "#/$defs/stringList" },
         "output_protocols": { "$ref": "#/$defs/stringList" }
+      },
+      "additionalProperties": false
+    },
+    "publicPageRoute": {
+      "type": "object",
+      "required": ["page", "api", "seo_title", "proof_surface"],
+      "properties": {
+        "page": { "type": "string", "minLength": 1 },
+        "api": { "type": "string", "minLength": 1 },
+        "seo_title": { "type": "string", "minLength": 1 },
+        "proof_surface": { "type": "string", "minLength": 1 }
       },
       "additionalProperties": false
     },

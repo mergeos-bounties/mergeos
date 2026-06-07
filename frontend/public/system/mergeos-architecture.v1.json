@@ -187,6 +187,62 @@
   "frontend_system": {
     "stack": ["Vue 3", "Vite SSR", "TailwindCSS-compatible design tokens", "WebSockets", "realtime events"],
     "public_pages": ["Homepage", "Marketplace", "Live Feed", "Ledger Logs", "Protocol", "MergeIDE", "Airdrop", "Presale", "Whitepaper"],
+    "public_page_routes": {
+      "homepage": {
+        "page": "/",
+        "api": "/system/mergeos-architecture.v1.json",
+        "seo_title": "MergeOS | AI software delivery operating system",
+        "proof_surface": "/ledger"
+      },
+      "marketplace": {
+        "page": "/marketplace",
+        "api": "/api/public/marketplace",
+        "seo_title": "MergeOS Marketplace | Live bounties, contributors, and AI agents",
+        "proof_surface": "/marketplace#marketplace-bounties"
+      },
+      "live_feed": {
+        "page": "/live-feed",
+        "api": "/api/public/live-feed",
+        "seo_title": "MergeOS Live Feed | PRs, deployments, contributors, and AI actions",
+        "proof_surface": "/live-feed"
+      },
+      "ledger_logs": {
+        "page": "/ledger",
+        "api": "/api/public/ledger",
+        "seo_title": "MergeOS Ledger Logs | Public payout, escrow, PR, AI, and release proof",
+        "proof_surface": "/api/public/ledger/proof"
+      },
+      "protocol": {
+        "page": "/protocol",
+        "api": "/api/public/protocol/manifest",
+        "seo_title": "MergeOS Protocol | Public schemas, endpoints, and SDK contracts",
+        "proof_surface": "/protocol/architecture.v1.schema.json"
+      },
+      "mergeide": {
+        "page": "/mergeide",
+        "api": "/downloads/mergeide/latest.json",
+        "seo_title": "MergeIDE | IDE for funded work, agents, and proof-backed delivery",
+        "proof_surface": "/protocol/runbooks/mergeide-agent.v1.json"
+      },
+      "airdrop": {
+        "page": "/airdrop",
+        "api": "/api/public/airdrop/missions",
+        "seo_title": "MergeOS Airdrop | Task-based MRG rewards with public proof",
+        "proof_surface": "/api/public/ledger/proof"
+      },
+      "presale": {
+        "page": "/presale",
+        "api": "/api/presale/reservations",
+        "seo_title": "MergeOS Presale | MRG reserve workflow and ledger receipts",
+        "proof_surface": "/api/public/ledger/proof"
+      },
+      "whitepaper": {
+        "page": "/whitepaper",
+        "api": "/whitepaper/mergeos-whitepaper.md",
+        "seo_title": "MergeOS Whitepaper | AI software delivery OS architecture and MRG economy",
+        "proof_surface": "/system/mergeos-architecture.v1.json"
+      }
+    },
     "authenticated_dashboards": ["Customer Dashboard", "Worker Dashboard", "Admin Console"],
     "authenticated_dashboard_urls": {
       "customer_dashboard": {

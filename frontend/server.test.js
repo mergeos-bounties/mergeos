@@ -118,6 +118,26 @@ test('public system vision preserves the product thesis', async () => {
   assert.ok(architectureManifest.frontend_system.stack.includes('Vue 3'));
   assert.ok(architectureManifest.frontend_system.stack.includes('Vite SSR'));
   assert.ok(architectureManifest.frontend_system.public_pages.includes('Marketplace'));
+  assert.deepEqual(Object.keys(architectureManifest.frontend_system.public_page_routes), [
+    'homepage',
+    'marketplace',
+    'live_feed',
+    'ledger_logs',
+    'protocol',
+    'mergeide',
+    'airdrop',
+    'presale',
+    'whitepaper',
+  ]);
+  assert.equal(architectureManifest.frontend_system.public_page_routes.homepage.api, '/system/mergeos-architecture.v1.json');
+  assert.equal(architectureManifest.frontend_system.public_page_routes.marketplace.api, '/api/public/marketplace');
+  assert.equal(architectureManifest.frontend_system.public_page_routes.live_feed.api, '/api/public/live-feed');
+  assert.equal(architectureManifest.frontend_system.public_page_routes.ledger_logs.proof_surface, '/api/public/ledger/proof');
+  assert.equal(architectureManifest.frontend_system.public_page_routes.protocol.api, '/api/public/protocol/manifest');
+  assert.equal(architectureManifest.frontend_system.public_page_routes.mergeide.api, '/downloads/mergeide/latest.json');
+  assert.equal(architectureManifest.frontend_system.public_page_routes.airdrop.api, '/api/public/airdrop/missions');
+  assert.equal(architectureManifest.frontend_system.public_page_routes.presale.api, '/api/presale/reservations');
+  assert.equal(architectureManifest.frontend_system.public_page_routes.whitepaper.api, '/whitepaper/mergeos-whitepaper.md');
   assert.ok(architectureManifest.frontend_system.authenticated_dashboards.includes('Customer Dashboard'));
   assert.deepEqual(Object.keys(architectureManifest.frontend_system.authenticated_dashboard_urls), ['customer_dashboard', 'worker_dashboard', 'admin_console']);
   assert.equal(architectureManifest.frontend_system.authenticated_dashboard_urls.customer_dashboard.page, '/dashboard');
