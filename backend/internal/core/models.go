@@ -970,6 +970,7 @@ type ImportedRepoIssue struct {
 	Comments           int        `json:"comments"`
 	Score              int        `json:"score"`
 	Complexity         string     `json:"complexity"`
+	RiskLevel          string     `json:"risk_level"`
 	EstimatedCents     int64      `json:"estimated_cents"`
 	EstimatedHours     float64    `json:"estimated_hours"`
 	RequiredWorkerKind WorkerKind `json:"required_worker_kind"`

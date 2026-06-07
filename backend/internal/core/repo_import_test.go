@@ -52,4 +52,7 @@ func TestScoreRepoIssue(t *testing.T) {
 	if issue.EstimatedHours <= 0 {
 		t.Fatalf("estimated hours = %.1f", issue.EstimatedHours)
 	}
+	if issue.Complexity != "high" || issue.RiskLevel != "high" {
+		t.Fatalf("analysis = complexity %q risk %q, want high/high", issue.Complexity, issue.RiskLevel)
+	}
 }

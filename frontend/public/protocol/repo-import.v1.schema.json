@@ -20,7 +20,7 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["number", "title", "state", "url", "labels", "comments", "score", "complexity", "estimated_cents", "estimated_hours", "required_worker_kind", "reasons", "created_at", "updated_at"],
+        "required": ["number", "title", "state", "url", "labels", "comments", "score", "complexity", "risk_level", "estimated_cents", "estimated_hours", "required_worker_kind", "reasons", "created_at", "updated_at"],
         "properties": {
           "number": { "type": "integer", "minimum": 1 },
           "title": { "type": "string", "minLength": 1, "maxLength": 500 },
@@ -30,6 +30,7 @@
           "comments": { "type": "integer", "minimum": 0 },
           "score": { "type": "integer", "minimum": 0, "maximum": 100 },
           "complexity": { "enum": ["low", "medium", "high"] },
+          "risk_level": { "enum": ["low", "medium", "high"] },
           "estimated_cents": { "type": "integer", "minimum": 0 },
           "estimated_hours": { "type": "number", "minimum": 0 },
           "required_worker_kind": { "enum": ["human", "agent", "hybrid"] },

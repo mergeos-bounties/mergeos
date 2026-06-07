@@ -321,6 +321,7 @@ func scoreRepoIssue(row githubIssueRow) *ImportedRepoIssue {
 	} else if score >= 45 {
 		complexity = "medium"
 	}
+	riskLevel := importedIssueRiskLevel(score, text)
 
 	estimated := int64(6000 + score*450)
 	estimated = ((estimated + 999) / 1000) * 1000
@@ -336,6 +337,7 @@ func scoreRepoIssue(row githubIssueRow) *ImportedRepoIssue {
 		Comments:           row.Comments,
 		Score:              score,
 		Complexity:         complexity,
+		RiskLevel:          riskLevel,
 		EstimatedCents:     estimated,
 		EstimatedHours:     estimatedHours,
 		RequiredWorkerKind: kind,
@@ -344,6 +346,16 @@ func scoreRepoIssue(row githubIssueRow) *ImportedRepoIssue {
 		CreatedAt:          row.CreatedAt,
 		UpdatedAt:          row.UpdatedAt,
 	}
+}
+
+func importedIssueRiskLevel(score int, text string) string {
+	if score >= 75 || containsIssueTerm(text, "security") || containsIssueTerm(text, "payment") || containsIssueTerm(text, "data loss") {
+		return "high"
+	}
+	if score >= 45 || containsIssueTerm(text, "auth") || containsIssueTerm(text, "crash") || containsIssueTerm(text, "regression") {
+		return "medium"
+	}
+	return "low"
 }
 
 func estimatedIssueHours(score int, complexity string) float64 {

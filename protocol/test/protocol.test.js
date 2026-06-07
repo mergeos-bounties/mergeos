@@ -722,6 +722,7 @@ test('validates repository import protocol documents', () => {
         comments: 4,
         score: 91,
         complexity: 'high',
+        risk_level: 'high',
         estimated_cents: 15000,
         estimated_hours: 7.5,
         required_worker_kind: 'hybrid',
@@ -739,6 +740,7 @@ test('validates repository import protocol documents', () => {
         comments: 1,
         score: 45,
         complexity: 'medium',
+        risk_level: 'medium',
         estimated_cents: 6000,
         estimated_hours: 3,
         required_worker_kind: 'agent',
@@ -757,13 +759,14 @@ test('validates repository import protocol documents', () => {
     kind: 'repo_scan',
     issue_count: -1,
     planning_packet: { ...planningPacket, summary: { ...planningPacket.summary, issue_count: -1 } },
-    issues: [{ ...report.issues[0], score: 101, required_worker_kind: 'bot', updated_at: 'not-a-date' }],
+    issues: [{ ...report.issues[0], score: 101, risk_level: 'critical', required_worker_kind: 'bot', updated_at: 'not-a-date' }],
   });
   assert.equal(invalid.valid, false);
   assert(invalid.errors.some((error) => error.path === 'kind'));
   assert(invalid.errors.some((error) => error.path === 'issue_count'));
   assert(invalid.errors.some((error) => error.path === 'planning_packet.summary.issue_count'));
   assert(invalid.errors.some((error) => error.path === 'issues[0].score'));
+  assert(invalid.errors.some((error) => error.path === 'issues[0].risk_level'));
   assert(invalid.errors.some((error) => error.path === 'issues[0].required_worker_kind'));
   assert(invalid.errors.some((error) => error.path === 'issues[0].updated_at'));
 });
