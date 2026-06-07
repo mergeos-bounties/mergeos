@@ -42,6 +42,7 @@ import {
   routingPacketOutputContracts,
   routingPacketPayload,
   walletMigrationPDASeedMetadata,
+  workerDashboardProofLinks,
 } from '@mergeos/sdk';
 
 const mergeos = createMergeOSClient({
@@ -363,7 +364,8 @@ const dispute = await mergeos.createDispute({
   severity: 'high',
 });
 console.log(dispute.protocol_version, dispute.severity);
-await mergeos.workerDashboard();
+const worker = await mergeos.workerDashboard();
+console.log(workerDashboardProofLinks(worker).map((row) => row.url));
 ```
 
 ## Token Workflow APIs

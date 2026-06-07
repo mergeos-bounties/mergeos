@@ -65,6 +65,7 @@ import {
   routingPacketOutputContracts,
   routingPacketPayload,
   walletMigrationPDASeedMetadata,
+  workerDashboardProofLinks,
   workflowEventTypes,
 } from '../src/index.js';
 
@@ -1298,6 +1299,34 @@ test('reads admin ops action output contracts for operator agents', () => {
   assert.equal(adminOpsQueueOutputContracts(queue).length, 2);
   assert.equal(adminOpsQueueOutputContracts(queue, 'prove_ledger')[0].output_protocol, 'mergeos.ledger-proof.v1');
   assert.deepEqual(adminOpsQueueOutputContracts({}, 'refresh_admin_ops'), []);
+});
+
+test('reads worker dashboard ledger proof links for claimed work and rewards', () => {
+  const dashboard = {
+    claimed_tasks: [
+      {
+        id: 'prj_1:12',
+        project_id: 'prj_1',
+        issue_number: 12,
+        title: 'Ship worker proof',
+        ledger_proof_url: '/api/public/ledger/proof',
+      },
+      { id: 'prj_1:13', title: 'No proof yet' },
+    ],
+    rewards: [
+      {
+        sequence: 7,
+        type: 'task_payment',
+        reference: 'task:prj_1:12',
+        ledger_proof_url: '/api/public/ledger/proof',
+      },
+    ],
+  };
+
+  assert.equal(workerDashboardProofLinks(dashboard).length, 2);
+  assert.equal(workerDashboardProofLinks(dashboard, 'claimed_task')[0].issue_number, 12);
+  assert.equal(workerDashboardProofLinks(dashboard, 'reward')[0].reference, 'task:prj_1:12');
+  assert.deepEqual(workerDashboardProofLinks({}, 'reward'), []);
 });
 
 test('supports wallet, payment, and raw upload helper routes', async () => {

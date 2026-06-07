@@ -1401,6 +1401,36 @@ export function autoReleaseProofsFromResponse(response = {}) {
   return Array.isArray(response.release_proofs) ? response.release_proofs.filter((proof) => proof && typeof proof === 'object') : [];
 }
 
+export function workerDashboardProofLinks(dashboard = {}, kind = '') {
+  const normalized = String(kind || '').trim().toLowerCase();
+  const links = [];
+  for (const task of Array.isArray(dashboard.claimed_tasks) ? dashboard.claimed_tasks : []) {
+    const url = String(task?.ledger_proof_url || '').trim();
+    if (!url) continue;
+    links.push({
+      kind: 'claimed_task',
+      task_id: task.id || '',
+      project_id: task.project_id || '',
+      issue_number: Number(task.issue_number) || 0,
+      title: task.title || '',
+      url,
+    });
+  }
+  for (const reward of Array.isArray(dashboard.rewards) ? dashboard.rewards : []) {
+    const url = String(reward?.ledger_proof_url || '').trim();
+    if (!url) continue;
+    links.push({
+      kind: 'reward',
+      sequence: Number(reward.sequence) || 0,
+      type: reward.type || '',
+      reference: reward.reference || reward.entry_hash || '',
+      url,
+    });
+  }
+  if (!normalized) return links;
+  return links.filter((link) => link.kind === normalized);
+}
+
 export function normalizeAgentAction(action = '') {
   const normalized = String(action || '').trim().toLowerCase();
   if (normalized === 'gen') return 'generate';
