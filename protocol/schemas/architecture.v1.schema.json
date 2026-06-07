@@ -153,10 +153,24 @@
     },
     "ai_layer": {
       "type": "object",
-      "required": ["capabilities", "workflow"],
+      "required": ["capabilities", "workflow", "action_routes"],
       "properties": {
         "capabilities": { "$ref": "#/$defs/stringList" },
-        "workflow": { "$ref": "#/$defs/stringList" }
+        "workflow": { "$ref": "#/$defs/stringList" },
+        "action_routes": {
+          "type": "object",
+          "required": ["scan_repository", "analyze_issues", "generate_tasks", "route_workers", "review_prs", "test_builds", "validate_deployments"],
+          "properties": {
+            "scan_repository": { "$ref": "#/$defs/aiActionRoute" },
+            "analyze_issues": { "$ref": "#/$defs/aiActionRoute" },
+            "generate_tasks": { "$ref": "#/$defs/aiActionRoute" },
+            "route_workers": { "$ref": "#/$defs/aiActionRoute" },
+            "review_prs": { "$ref": "#/$defs/aiActionRoute" },
+            "test_builds": { "$ref": "#/$defs/aiActionRoute" },
+            "validate_deployments": { "$ref": "#/$defs/aiActionRoute" }
+          },
+          "additionalProperties": false
+        }
       },
       "additionalProperties": false
     },
@@ -304,6 +318,16 @@
         "api": { "type": "string", "minLength": 1 },
         "event_type": { "type": "string", "minLength": 1 },
         "proof_api": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "aiActionRoute": {
+      "type": "object",
+      "required": ["api", "output_protocol", "proof_surface"],
+      "properties": {
+        "api": { "type": "string", "minLength": 1 },
+        "output_protocol": { "type": "string", "minLength": 1 },
+        "proof_surface": { "type": "string", "minLength": 1 }
       },
       "additionalProperties": false
     },

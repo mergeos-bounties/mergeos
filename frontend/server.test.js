@@ -130,6 +130,43 @@ test('public system vision preserves the product thesis', async () => {
     'PR Review',
     'Deployment Validation',
   ]);
+  assert.deepEqual(architectureManifest.ai_layer.action_routes, {
+    scan_repository: {
+      api: '/api/public/projects/{id}/repo-scan',
+      output_protocol: 'mergeos.scan.v1',
+      proof_surface: '/live-feed',
+    },
+    analyze_issues: {
+      api: '/api/projects/{id}/ai-workflow',
+      output_protocol: 'mergeos.ai-workflow.v1',
+      proof_surface: '/dashboard',
+    },
+    generate_tasks: {
+      api: '/api/projects/{id}/task-graph',
+      output_protocol: 'mergeos.workflow.v1',
+      proof_surface: '/marketplace#marketplace-bounties',
+    },
+    route_workers: {
+      api: '/api/public/protocol/routing',
+      output_protocol: 'mergeos.routing.v1',
+      proof_surface: '/marketplace',
+    },
+    review_prs: {
+      api: '/api/public/projects/{id}/pull-requests',
+      output_protocol: 'mergeos.pr-monitor.v1',
+      proof_surface: '/ledger',
+    },
+    test_builds: {
+      api: '/api/public/projects/{id}/ai-workflow',
+      output_protocol: 'mergeos.ai-workflow.v1',
+      proof_surface: '/live-feed',
+    },
+    validate_deployments: {
+      api: '/api/public/protocol/deployment',
+      output_protocol: 'mergeos.deployment.v1',
+      proof_surface: '/ledger',
+    },
+  });
   assert.ok(architectureManifest.marketplace_system.features.includes('Live Projects'));
   assert.ok(architectureManifest.marketplace_system.features.includes('Public Bounties'));
   assert.ok(architectureManifest.marketplace_system.features.includes('AI Agents'));
