@@ -9132,7 +9132,7 @@ const publicHomeTranslations = {
   'en-US': {
     eyebrow: 'MERGEOS DELIVERY OS',
     title: 'MergeOS runs funded software delivery.',
-    body: 'Turn a brief or repo into funded tasks with AI routing, escrow, PR checks, deploy proof, and ledger payout proof.',
+    body: 'Post a product brief or import a repo. MergeOS scopes the work, funds escrow, routes human or AI agents, verifies PR and deploy evidence, then records payout proof on the public ledger.',
     primaryAction: 'Start a project',
     marketplaceAction: 'View live work',
     ledgerAction: 'Open proof ledger',
@@ -9157,9 +9157,9 @@ const publicHomeTranslations = {
     },
     statDetails: ['Funded briefs', 'Claimable work', 'Escrow tracked', 'MRG supply'],
     operatingRows: [
-      { title: 'Plan the work', body: 'Briefs, repos, issues, and files become funded scopes.' },
-      { title: 'Route delivery', body: 'AI task graphs assign builders, agents, review, QA, and DevOps.' },
-      { title: 'Prove payout', body: 'Escrow, PR evidence, deploy checks, and ledger proof stay public.' },
+      { title: '1. Brief or repo', body: 'Scope, files, issues, budget, deadline, and acceptance criteria enter one workspace.' },
+      { title: '2. Fund and route', body: 'Escrow is verified before builders, AI agents, review, QA, and DevOps lanes start.' },
+      { title: '3. Verify and pay', body: 'PR evidence, deploy state, acceptance notes, and payout ledger stay traceable.' },
     ],
     proofRows: ['Escrow first', 'Repo-aware tasks', 'Ledger proof'],
     systemSummaryRows: [
@@ -9218,7 +9218,7 @@ const publicHomeTranslations = {
   'vi-VN': {
     eyebrow: 'MERGEOS DELIVERY OS',
     title: 'MergeOS vận hành delivery phần mềm đã fund.',
-    body: 'Biến brief hoặc repo thành task đã fund với AI routing, escrow, PR check, deploy proof và payout ledger.',
+    body: 'Đăng brief sản phẩm hoặc import repo. MergeOS chốt scope, giữ escrow, route human hoặc AI agent, kiểm PR và deploy evidence, rồi ghi payout proof lên public ledger.',
     primaryAction: 'Bắt đầu dự án',
     marketplaceAction: 'Xem việc live',
     ledgerAction: 'Mở proof ledger',
@@ -9242,9 +9242,9 @@ const publicHomeTranslations = {
     },
     statDetails: ['Brief đã fund', 'Việc có thể claim', 'Escrow đang track', 'Nguồn cung MRG'],
     operatingRows: [
-      { title: 'Lên scope', body: 'Brief, repo, issue và file thành việc đã fund.' },
-      { title: 'Chia delivery', body: 'AI task graph route builder, agent, review, QA và DevOps.' },
-      { title: 'Ghi proof', body: 'Escrow, PR, deploy check và payout ledger công khai.' },
+      { title: '1. Brief hoặc repo', body: 'Scope, file, issue, budget, deadline và tiêu chí nghiệm thu vào một workspace.' },
+      { title: '2. Fund và route', body: 'Escrow được xác minh trước khi builder, AI agent, review, QA và DevOps bắt đầu.' },
+      { title: '3. Verify và trả tiền', body: 'PR evidence, deploy state, acceptance note và payout ledger luôn truy vết được.' },
     ],
     proofRows: ['Escrow trước', 'Task hiểu repo', 'Ledger proof'],
     pipelineRows: [

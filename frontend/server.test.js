@@ -767,7 +767,8 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.doesNotMatch(appSource, /localizedHomeWorkflowCards\.slice\(0, 4\)/);
   assert.match(appSource, /homeLiveStats\.slice\(0, 2\)/);
   assert.match(appSource, /MergeOS runs funded software delivery\./);
-  assert.match(appSource, /Turn a brief or repo into funded tasks with AI routing, escrow, PR checks, deploy proof, and ledger payout proof\./);
+  assert.match(appSource, /Post a product brief or import a repo\. MergeOS scopes the work, funds escrow, routes human or AI agents, verifies PR and deploy evidence, then records payout proof on the public ledger\./);
+  assert.match(appSource, /Đăng brief sản phẩm hoặc import repo\. MergeOS chốt scope, giữ escrow, route human hoặc AI agent, kiểm PR và deploy evidence, rồi ghi payout proof lên public ledger\./);
   assert.match(appSource, /title: 'Product OS'[\s\S]*Project intake, repo import, AI task graph, escrow, PR monitor, deployment gates, and ledger proof stay in one operating flow\./);
   assert.match(appSource, /title: 'Delivery lanes'[\s\S]*Route funded work to human contributors, AI agents, or hybrid teams with shared scope, acceptance criteria, and payout state\./);
   assert.match(appSource, /title: 'Public proof layer'[\s\S]*Marketplace activity, escrow, token mint, PR evidence, deployment checks, SDK context, and protocol documents are discoverable\./);
@@ -775,24 +776,27 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.match(appSource, /title: 'AI routing', body: 'Scan, split, estimate, review'/);
   assert.match(appSource, /title: 'Market \+ escrow', body: 'Funded bounties and payouts'/);
   assert.match(appSource, /title: 'MRG proof', body: 'Solana token and public ledger'/);
-  assert.match(appSource, /operatingRows: \[[\s\S]*title: 'Plan the work', body: 'Briefs, repos, issues, and files become funded scopes\.'/);
-  assert.match(appSource, /title: 'Prove payout', body: 'Escrow, PR evidence, deploy checks, and ledger proof stay public\.'/);
+  assert.match(appSource, /operatingRows: \[[\s\S]*title: '1\. Brief or repo', body: 'Scope, files, issues, budget, deadline, and acceptance criteria enter one workspace\.'/);
+  assert.match(appSource, /title: '3\. Verify and pay', body: 'PR evidence, deploy state, acceptance notes, and payout ledger stay traceable\.'/);
+  assert.match(appSource, /title: '1\. Brief hoặc repo', body: 'Scope, file, issue, budget, deadline và tiêu chí nghiệm thu vào một workspace\.'/);
+  assert.match(appSource, /title: '3\. Verify và trả tiền', body: 'PR evidence, deploy state, acceptance note và payout ledger luôn truy vết được\.'/);
   assert.match(appSource, /title: 'Route', body: 'Human, AI, or hybrid tasks'/);
   assert.match(appSource, /title: 'Prove', body: 'PR, deploy, payout ledger'/);
-  assert.match(cssSource, /\.public-home-page\s*\{[\s\S]*padding-block: clamp\(10px, 1\.8vw, 22px\) clamp\(18px, 2\.4vw, 30px\) !important;/);
-  assert.match(cssSource, /\.public-home-page \.home-container\s*\{[\s\S]*max-width: 1040px !important;/);
-  assert.match(cssSource, /\.public-home-hero\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) minmax\(280px, 326px\) !important;/);
-  assert.match(cssSource, /\.public-home-copy h1\s*\{[\s\S]*font-size: clamp\(40px, 4\.25vw, 60px\) !important;/);
-  assert.match(cssSource, /\.home-command-panel\s*\{[\s\S]*max-width: 326px !important;/);
+  assert.match(cssSource, /\.public-home-page\s*\{[\s\S]*padding-block: clamp\(8px, 1\.4vw, 18px\) clamp\(14px, 2vw, 24px\) !important;/);
+  assert.match(cssSource, /\.public-home-page \.home-container\s*\{[\s\S]*max-width: 980px !important;/);
+  assert.match(cssSource, /\.public-home-hero\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) minmax\(260px, 306px\) !important;/);
+  assert.match(cssSource, /\.public-home-copy h1\s*\{[\s\S]*font-size: clamp\(38px, 4vw, 56px\) !important;/);
+  assert.match(cssSource, /\.home-command-panel\s*\{[\s\S]*max-width: 306px !important;/);
   assert.match(cssSource, /\.home-explain-strip\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\) !important;/);
   assert.match(cssSource, /@media \(max-width: 980px\)[\s\S]*\.home-explain-strip\s*\{[\s\S]*grid-template-columns: 1fr !important;/);
   assert.match(cssSource, /\.home-system-summary,[\s\S]*\.home-compact-flow,[\s\S]*\.home-system-explainer,[\s\S]*\.home-command-panel \.home-feed-preview,[\s\S]*\.home-command-panel \.home-pipeline\s*\{[\s\S]*display: none !important;/);
   assert.match(cssSource, /\.home-command-panel \.public-stat-grid article:nth-child\(n \+ 3\)\s*\{[\s\S]*display: none !important;/);
-  assert.match(cssSource, /@media \(max-width: 980px\)[\s\S]*\.home-command-panel\s*\{[\s\S]*display: block !important;[\s\S]*max-width: 520px !important;/);
-  assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.public-home-copy h1\s*\{[\s\S]*font-size: clamp\(30px, 9\.5vw, 38px\) !important;/);
+  assert.match(cssSource, /@media \(max-width: 980px\)[\s\S]*\.home-command-panel\s*\{[\s\S]*max-width: 100% !important;/);
+  assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.public-home-copy h1\s*\{[\s\S]*font-size: clamp\(26px, 7\.4vw, 31px\) !important;/);
   assert.match(cssSource, /Home description pass: enough product meaning, still a short first screen/);
   assert.match(cssSource, /\.public-home-page \.home-container\s*\{[\s\S]*max-width: 980px !important;/);
   assert.match(cssSource, /\.public-home-copy h1\s*\{[\s\S]*font-size: clamp\(38px, 4vw, 56px\) !important;/);
+  assert.match(cssSource, /\.home-explain-strip span\s*\{[\s\S]*-webkit-line-clamp: 3 !important;/);
 });
 
 test('frontend system exposes required public pages and dashboard roles', async () => {

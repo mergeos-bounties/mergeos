@@ -35242,9 +35242,13 @@ canvas {
 }
 
 .home-explain-strip article {
-  min-height: 68px !important;
+  min-height: 86px !important;
   padding: 10px 11px !important;
   overflow: hidden !important;
+}
+
+.home-explain-strip span {
+  -webkit-line-clamp: 3 !important;
 }
 
 .home-explain-strip strong,
