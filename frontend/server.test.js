@@ -790,10 +790,11 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.match(appSource, /title: 'Route', body: 'Human, AI, or hybrid tasks'/);
   assert.match(appSource, /title: 'Prove', body: 'PR, deploy, payout ledger'/);
   assert.match(cssSource, /\.public-home-page\s*\{[\s\S]*padding-block: clamp\(8px, 1\.4vw, 18px\) clamp\(14px, 2vw, 24px\) !important;/);
-  assert.match(cssSource, /\.public-home-page \.home-container\s*\{[\s\S]*max-width: 980px !important;/);
-  assert.match(cssSource, /\.public-home-hero\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) minmax\(260px, 306px\) !important;/);
-  assert.match(cssSource, /\.public-home-copy h1\s*\{[\s\S]*font-size: clamp\(38px, 4vw, 56px\) !important;/);
-  assert.match(cssSource, /\.home-command-panel\s*\{[\s\S]*max-width: 306px !important;/);
+  assert.match(cssSource, /Homepage product polish: wider desktop rhythm, shorter proof rail/);
+  assert.match(cssSource, /\.public-home-page \.home-container\s*\{[\s\S]*max-width: 1120px !important;/);
+  assert.match(cssSource, /\.public-home-hero\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) minmax\(320px, 380px\) !important;/);
+  assert.match(cssSource, /\.public-home-copy h1\s*\{[\s\S]*font-size: clamp\(42px, 4\.4vw, 68px\) !important;/);
+  assert.match(cssSource, /\.home-command-panel\s*\{[\s\S]*max-width: 380px !important;/);
   assert.match(cssSource, /\.home-explain-strip\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\) !important;/);
   assert.match(cssSource, /@media \(max-width: 980px\)[\s\S]*\.home-explain-strip\s*\{[\s\S]*grid-template-columns: 1fr !important;/);
   assert.match(cssSource, /\.home-system-summary,[\s\S]*\.home-compact-flow,[\s\S]*\.home-system-explainer,[\s\S]*\.home-command-panel \.home-feed-preview,[\s\S]*\.home-command-panel \.home-pipeline\s*\{[\s\S]*display: none !important;/);
@@ -801,9 +802,8 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.match(cssSource, /@media \(max-width: 980px\)[\s\S]*\.home-command-panel\s*\{[\s\S]*max-width: 100% !important;/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.public-home-copy h1\s*\{[\s\S]*font-size: clamp\(26px, 7\.4vw, 31px\) !important;/);
   assert.match(cssSource, /Home description pass: enough product meaning, still a short first screen/);
-  assert.match(cssSource, /\.public-home-page \.home-container\s*\{[\s\S]*max-width: 980px !important;/);
-  assert.match(cssSource, /\.public-home-copy h1\s*\{[\s\S]*font-size: clamp\(38px, 4vw, 56px\) !important;/);
-  assert.match(cssSource, /\.home-explain-strip span\s*\{[\s\S]*-webkit-line-clamp: 3 !important;/);
+  assert.match(cssSource, /\.home-explain-strip article\s*\{[\s\S]*min-height: 62px !important;/);
+  assert.match(cssSource, /\.home-explain-strip span\s*\{[\s\S]*-webkit-line-clamp: 2 !important;/);
 });
 
 test('frontend system exposes required public pages and dashboard roles', async () => {

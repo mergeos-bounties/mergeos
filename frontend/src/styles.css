@@ -36345,6 +36345,94 @@ canvas {
   }
 }
 
+/* Homepage product polish: wider desktop rhythm, shorter proof rail. */
+.public-home-page .home-container {
+  max-width: 1120px !important;
+}
+
+.public-home-hero {
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 380px) !important;
+  align-items: center !important;
+  gap: clamp(22px, 3.4vw, 48px) !important;
+}
+
+.public-home-copy {
+  max-width: 660px !important;
+}
+
+.public-home-copy h1 {
+  max-width: 650px !important;
+  font-size: clamp(42px, 4.4vw, 68px) !important;
+  line-height: 0.98 !important;
+}
+
+.public-home-copy p {
+  max-width: 640px !important;
+}
+
+.home-explain-strip {
+  max-width: 650px !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+}
+
+.home-explain-strip article {
+  min-height: 62px !important;
+  padding: 9px 10px !important;
+  background: rgba(255, 255, 255, 0.82) !important;
+}
+
+.home-explain-strip strong {
+  font-size: 11px !important;
+}
+
+.home-explain-strip span {
+  font-size: 10.5px !important;
+  line-height: 1.32 !important;
+  -webkit-line-clamp: 2 !important;
+}
+
+.home-command-panel {
+  max-width: 380px !important;
+  padding: 14px !important;
+}
+
+.home-command-panel .public-stat-grid article {
+  min-height: 76px !important;
+}
+
+@media (max-width: 980px) {
+  .public-home-page .home-container {
+    max-width: 700px !important;
+  }
+
+  .public-home-hero {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .home-explain-strip {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .home-command-panel {
+    max-width: 100% !important;
+  }
+}
+
+@media (max-width: 620px) {
+  .public-home-copy h1 {
+    font-size: clamp(28px, 8.4vw, 34px) !important;
+  }
+
+  .home-explain-strip article {
+    min-height: 0 !important;
+  }
+
+  .home-explain-strip span {
+    -webkit-line-clamp: 3 !important;
+  }
+}
+
 /* Description restore: keep the home page concise, but never cut product meaning. */
 .nav-context-item strong,
 .nav-feature-item strong,
