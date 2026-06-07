@@ -26604,6 +26604,194 @@ body {
   box-shadow: 0 18px 38px rgba(11, 21, 17, 0.07);
 }
 
+/* Compact public home: keep the landing page short and task-focused. */
+.public-home-page {
+  padding-top: 22px;
+  padding-bottom: 26px;
+}
+
+.public-home-layout {
+  gap: 16px;
+}
+
+.public-home-hero {
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 400px);
+  gap: 20px;
+}
+
+.public-home-copy {
+  padding-top: 20px;
+  padding-bottom: 0;
+}
+
+.public-home-copy h1 {
+  max-width: 760px;
+  margin-top: 12px;
+  font-size: clamp(42px, 5vw, 66px);
+  line-height: 0.98;
+}
+
+.public-home-copy p {
+  max-width: 620px;
+  margin-top: 12px;
+  font-size: 16px;
+  line-height: 1.45;
+}
+
+.public-home-copy .marketplace-actions {
+  margin-top: 16px;
+}
+
+.home-proof-stack,
+.home-mergeide-signal,
+.home-system-signal,
+.home-token-signal {
+  margin-top: 12px;
+}
+
+.home-command-panel {
+  padding: 16px;
+}
+
+.home-command-panel .public-stat-grid {
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.home-command-panel .public-stat-grid article {
+  min-height: 54px;
+  padding: 9px;
+}
+
+.home-command-panel .home-pipeline {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.home-command-panel .home-pipeline article {
+  min-height: 46px;
+}
+
+.home-command-panel .public-notification-feed {
+  display: none;
+}
+
+.public-workflow-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.public-workflow-grid button {
+  padding: 14px;
+}
+
+.public-workflow-grid .public-card-icon {
+  margin-bottom: 10px;
+}
+
+.public-ide-strip {
+  margin-top: 0;
+  padding: 18px;
+}
+
+.public-ide-points {
+  display: none;
+}
+
+@media (max-width: 700px) {
+  .public-home-page {
+    padding-top: 12px;
+    padding-bottom: 18px;
+  }
+
+  .public-home-layout {
+    gap: 12px;
+  }
+
+  .public-home-hero {
+    gap: 12px;
+  }
+
+  .public-home-copy {
+    padding-top: 8px;
+  }
+
+  .public-home-copy h1 {
+    margin-top: 8px;
+    font-size: clamp(34px, 11vw, 46px);
+  }
+
+  .public-home-copy p {
+    margin-top: 10px;
+    font-size: 14px;
+    line-height: 1.38;
+  }
+
+  .public-home-copy .marketplace-actions {
+    margin-top: 12px;
+  }
+
+  .home-proof-stack {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .home-proof-stack article {
+    min-height: 34px;
+    padding: 7px 8px;
+  }
+
+  .home-mergeide-signal small,
+  .home-command-panel .home-pipeline,
+  .home-public-graph-proof {
+    display: none;
+  }
+
+  .home-mergeide-signal {
+    padding: 10px;
+  }
+
+  .home-mergeide-signal > div {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .home-command-panel {
+    padding: 12px;
+  }
+
+  .home-command-panel .public-stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .home-command-panel .public-stat-grid article {
+    min-height: 50px;
+  }
+
+  .public-workflow-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .public-workflow-grid button {
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr);
+    column-gap: 10px;
+    align-items: start;
+    padding: 12px;
+  }
+
+  .public-workflow-grid .public-card-icon {
+    grid-row: 1 / 4;
+    width: 34px;
+    height: 34px;
+    margin-bottom: 0;
+  }
+
+  .public-workflow-grid p {
+    margin-top: 4px;
+    -webkit-line-clamp: 1;
+  }
+}
+
 .public-talent-strip {
   border-color: rgba(11, 21, 17, 0.1);
   background: #0c1713;

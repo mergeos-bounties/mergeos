@@ -4608,7 +4608,7 @@
               <small>{{ publicMergeIdeCopy.downloadMeta }}</small>
               <div>
                 <a
-                  class="home-mergeide-download"
+                  class="primary-button large mergeide-download-button"
                   :href="mergeIdeDownloadPath"
                   :download="mergeIdeDownloadFileName"
                   @click="closeNavContextMenu"
@@ -4623,25 +4623,6 @@
               </div>
             </div>
 
-            <div class="home-system-signal" :aria-label="publicSystemBlueprintCopy.mapLabel">
-              <span>{{ publicSystemBlueprintCopy.eyebrow }}</span>
-              <strong>{{ publicSystemBlueprintCopy.title }}</strong>
-              <small>{{ publicSystemBlueprintPipelineRows.join(' / ') }}</small>
-            </div>
-
-            <div class="home-token-signal" aria-label="MRG public token routes">
-              <span>
-                <CircleDollarSign :size="15" />
-                MRG PUBLIC ROUTES
-              </span>
-              <strong>Airdrop, Presale, and Whitepaper now share the same proof layer.</strong>
-              <div>
-                <button v-for="item in homeTokenSignalRows" :key="item.title" type="button" @click="handlePublicAction(item.action)">
-                  <component :is="item.icon" :size="14" />
-                  {{ item.title }}
-                </button>
-              </div>
-            </div>
           </div>
 
           <aside class="public-home-panel home-command-panel" :aria-label="publicHomeCopy.commandLabel">
@@ -4703,48 +4684,8 @@
           </aside>
         </section>
 
-        <section class="public-system-blueprint home-system-blueprint" :aria-labelledby="`home-system-blueprint-${activeLocale}`">
-          <div class="public-system-blueprint-head">
-            <div>
-              <span class="marketplace-eyebrow">{{ publicSystemBlueprintCopy.eyebrow }}</span>
-              <h2 :id="`home-system-blueprint-${activeLocale}`">{{ publicSystemBlueprintCopy.title }}</h2>
-              <p>{{ publicSystemBlueprintCopy.body }}</p>
-            </div>
-            <div class="public-system-blueprint-proof">
-              <strong>{{ publicSystemBlueprintCopy.proofTitle }}</strong>
-              <small>{{ publicSystemBlueprintCopy.proofBody }}</small>
-            </div>
-          </div>
-
-          <div class="public-system-blueprint-map" :aria-label="publicSystemBlueprintCopy.mapLabel">
-            <article v-for="node in publicSystemBlueprintNodes" :key="`home-${node.title}`">
-              <span :class="['public-card-icon', node.tone]">
-                <component :is="node.icon" :size="16" />
-              </span>
-              <div>
-                <strong>{{ node.title }}</strong>
-                <p>{{ node.body }}</p>
-              </div>
-            </article>
-          </div>
-
-          <ol class="public-system-blueprint-pipeline" :aria-label="publicSystemBlueprintCopy.pipelineLabel">
-            <li v-for="(step, index) in publicSystemBlueprintPipelineRows" :key="`home-${step}`">
-              <span>{{ index + 1 }}</span>
-              <strong>{{ step }}</strong>
-            </li>
-          </ol>
-
-          <div class="public-system-blueprint-rails" :aria-label="publicSystemBlueprintCopy.railLabel">
-            <article v-for="rail in publicSystemBlueprintRails" :key="`home-${rail.title}`">
-              <strong>{{ rail.title }}</strong>
-              <p>{{ rail.body }}</p>
-            </article>
-          </div>
-        </section>
-
         <section class="public-workflow-grid" :aria-label="publicHomeCopy.workflowLabel">
-          <button v-for="card in localizedHomeWorkflowCards" :key="card.title" type="button" @click="handlePublicAction(card.action)">
+          <button v-for="card in localizedHomeWorkflowCards.slice(0, 3)" :key="card.title" type="button" @click="handlePublicAction(card.action)">
             <span :class="['public-card-icon', card.tone]">
               <component :is="card.icon" :size="19" />
             </span>
@@ -4757,72 +4698,6 @@
           </button>
         </section>
 
-        <section class="public-ide-strip" aria-labelledby="home-mergeide-title">
-          <div class="public-ide-copy">
-            <span class="marketplace-eyebrow">{{ publicMergeIdeCopy.homeEyebrow }}</span>
-            <h2 id="home-mergeide-title">{{ publicMergeIdeCopy.homeTitle }}</h2>
-            <p>{{ publicMergeIdeCopy.homeBody }}</p>
-            <div class="marketplace-actions">
-              <a
-                class="primary-button large mergeide-download-button"
-                :href="mergeIdeDownloadPath"
-                :download="mergeIdeDownloadFileName"
-                @click="closeNavContextMenu"
-              >
-                {{ publicMergeIdeCopy.downloadAction }}
-                <Download :size="16" />
-              </a>
-              <button class="secondary-button large" type="button" @click="openPublicPage('mergeide')">
-                {{ publicMergeIdeCopy.openAction }}
-                <ArrowRight :size="16" />
-              </button>
-            </div>
-            <div class="public-ide-points">
-              <span v-for="point in publicMergeIdeCopy.homePoints" :key="point">
-                <CheckCircle2 :size="14" />
-                {{ point }}
-              </span>
-            </div>
-          </div>
-
-          <aside class="mergeide-mini-console" :aria-label="publicMergeIdeCopy.consoleTitle">
-            <div class="mergeide-console-top">
-              <span><Code2 :size="17" /></span>
-              <div>
-                <strong>{{ publicMergeIdeCopy.consoleTitle }}</strong>
-                <small>{{ publicMergeIdeCopy.consoleSubtitle }}</small>
-              </div>
-              <b>{{ publicMergeIdeCopy.status }}</b>
-            </div>
-            <code>{{ publicMergeIdeCopy.command }}</code>
-            <article v-for="row in publicMergeIdeCopy.previewRows" :key="row[0]">
-              <span><CheckCircle2 :size="14" /></span>
-              <div>
-                <strong>{{ row[0] }}</strong>
-                <small>{{ row[1] }}</small>
-              </div>
-            </article>
-          </aside>
-        </section>
-
-        <section class="public-talent-strip" :aria-label="publicHomeCopy.talentLabel">
-          <div>
-            <span class="marketplace-eyebrow">{{ publicHomeCopy.talentEyebrow }}</span>
-            <h2>{{ publicHomeCopy.talentTitle }}</h2>
-            <p>{{ publicHomeCopy.talentBody }}</p>
-          </div>
-          <div class="public-talent-list">
-            <article v-for="row in localizedHomeTalentRows" :key="row.title">
-              <span :class="['public-card-icon', row.tone]">
-                <component :is="row.icon" :size="18" />
-              </span>
-              <div>
-                <strong>{{ row.title }}</strong>
-                <small>{{ row.body }}</small>
-              </div>
-            </article>
-          </div>
-        </section>
       </div>
     </main>
 
