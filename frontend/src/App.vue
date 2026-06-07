@@ -5156,6 +5156,10 @@
                 {{ tokenLaunchBriefSubmitLabel }}
                 <ArrowRight :size="14" />
               </button>
+              <button class="secondary-button compact" type="button" @click="prefillTokenLaunchBrief" :disabled="tokenLaunchBriefBusy">
+                Use CEO template
+                <Sparkles :size="14" />
+              </button>
               <button class="secondary-button compact" type="button" @click="handlePublicAction({ page: 'agents' })" :disabled="tokenLaunchBriefBusy">
                 {{ tokenCeoLaunchBriefCopy.secondary }}
                 <Bot :size="14" />
@@ -24288,6 +24292,40 @@ function presaleReservationFieldError(field) {
 function tokenLaunchBriefFieldError(field) {
   if (!tokenLaunchBriefAttempted.value) return '';
   return tokenLaunchBriefValidationMap.value[field] || '';
+}
+
+function prefillTokenLaunchBrief() {
+  const launchType = publicPage.value === 'presale' ? 'presale' : 'airdrop';
+  tokenLaunchBriefForm.project_title = tokenLaunchBriefForm.project_title || (launchType === 'presale'
+    ? 'MRG presale readiness review'
+    : 'Earned MRG airdrop mission review');
+  if (launchType === 'presale') {
+    tokenLaunchBriefForm.project_summary = tokenLaunchBriefForm.project_summary
+      || 'CEO should research whether this project has enough utility, wallet readiness, reserve discipline, funding rail evidence, and Solana contract proof to open an MRG presale window.';
+    tokenLaunchBriefForm.proof_policy = tokenLaunchBriefForm.proof_policy
+      || 'Require verified wallet, funding reference, reserve tier, contract reference, receipt review, and public ledger proof before allocation.';
+    tokenLaunchBriefForm.allocation_policy = tokenLaunchBriefForm.allocation_policy
+      || 'Cap reserve by tier, funding rail, review state, treasury risk, and compliance language.';
+    tokenLaunchBriefForm.wallet_policy = tokenLaunchBriefForm.wallet_policy
+      || 'Require Solana wallet ownership, funding reference, duplicate-wallet review, and receipt reconciliation.';
+    tokenLaunchBriefForm.risk_notes = tokenLaunchBriefForm.risk_notes
+      || 'CEO must flag reserve caps, payment reversals, unclear utility, contract mismatch, and compliance language before opening.';
+  } else {
+    const missionCount = Number(airdropMissionsData.value?.stats?.mission_count) || airdropMissionRows.value.length || 0;
+    tokenLaunchBriefForm.project_summary = tokenLaunchBriefForm.project_summary
+      || `CEO should research whether this project deserves earned MRG airdrop missions based on repo demand, bounty depth, contributor usefulness, proof quality, wallet uniqueness, and ${missionCount} available mission types.`;
+    tokenLaunchBriefForm.proof_policy = tokenLaunchBriefForm.proof_policy
+      || 'Require repo import, task reference, PR URL or deployment proof, QA evidence, agent review, and ledger receipt before claim approval.';
+    tokenLaunchBriefForm.allocation_policy = tokenLaunchBriefForm.allocation_policy
+      || 'Cap claims by mission score, useful work evidence, proof quality, anti-bot review, and wallet uniqueness.';
+    tokenLaunchBriefForm.wallet_policy = tokenLaunchBriefForm.wallet_policy
+      || 'Require Solana wallet uniqueness, duplicate claim review, and anti-bot checks before allocation.';
+    tokenLaunchBriefForm.risk_notes = tokenLaunchBriefForm.risk_notes
+      || 'CEO must flag empty signups, bot farming, weak repo evidence, duplicate wallets, and unverifiable proof.';
+  }
+  tokenLaunchBriefAttempted.value = false;
+  tokenLaunchBriefError.value = '';
+  showToast('CEO research template added.');
 }
 
 function tokenWorkflowIntegerAmount(value = 0) {

@@ -1188,6 +1188,11 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /const tokenCeoLaunchBriefCopy = computed/);
   assert.match(appSource, /Send a CEO airdrop brief\./);
   assert.match(appSource, /Send a CEO presale brief\./);
+  assert.match(appSource, /Use CEO template/);
+  assert.match(appSource, /function prefillTokenLaunchBrief\(\)/);
+  assert.match(appSource, /CEO research template added\./);
+  assert.match(appSource, /MRG presale readiness review/);
+  assert.match(appSource, /Earned MRG airdrop mission review/);
   assert.match(appSource, /openProjectWizard\(\{ intent: 'token-launch' \}\)/);
   assert.match(appSource, /nextIntent === 'token-launch'/);
   assert.match(appSource, /const tokenLaunchBriefMode = ref\(''\)/);
@@ -1247,6 +1252,7 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(cssSource, /\.token-ceo-project-queue\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /\.token-ceo-brief-card\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\);/);
   assert.match(cssSource, /\.token-ceo-brief-form\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/);
+  assert.match(cssSource, /\.token-ceo-brief-actions\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) auto auto;/);
   assert.match(cssSource, /\.token-ceo-research-grid\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /\.wizard-token-brief-card\s*\{[\s\S]*grid-template-columns: 34px minmax\(0, 1fr\);/);
   assert.match(cssSource, /\.wizard-token-brief-card li\s*\{[\s\S]*grid-template-columns: 58px minmax\(0, 1fr\);/);
