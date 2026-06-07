@@ -88,6 +88,13 @@ test('public system vision preserves the product thesis', async () => {
   assert.match(whitepaperSource, /shared source of truth for software delivery/);
   assert.equal(architectureManifest.protocol_version, 'mergeos.architecture.v1');
   assert.equal(architectureManifest.positioning, 'AI software delivery operating system');
+  assert.deepEqual(Object.keys(architectureManifest.system_inputs), ['repositories', 'issues', 'technical_debt', 'bug_fixes', 'pull_requests', 'deployments']);
+  assert.equal(architectureManifest.system_inputs.repositories.api, '/api/repos/import');
+  assert.equal(architectureManifest.system_inputs.issues.output_protocol, 'mergeos.repo-sync.v1');
+  assert.equal(architectureManifest.system_inputs.technical_debt.output_protocol, 'mergeos.scan.v1');
+  assert.equal(architectureManifest.system_inputs.bug_fixes.api, '/api/tasks/{id}/submit');
+  assert.equal(architectureManifest.system_inputs.pull_requests.api, '/api/public/projects/{id}/pull-requests');
+  assert.equal(architectureManifest.system_inputs.deployments.output_protocol, 'mergeos.deployment.v1');
   assert.deepEqual(Object.keys(architectureManifest.product_vision.workflow_routes), architectureManifest.product_vision.core_loop);
   assert.deepEqual(architectureManifest.product_vision.workflow_routes, {
     import_repository: { page: '/project/new', api: '/api/repos/import', proof_surface: '/live-feed' },

@@ -9,6 +9,7 @@
     "product",
     "positioning",
     "thesis",
+    "system_inputs",
     "product_vision",
     "repository_architecture",
     "users",
@@ -30,6 +31,19 @@
     "not_a": {
       "type": "array",
       "items": { "type": "string", "minLength": 1 }
+    },
+    "system_inputs": {
+      "type": "object",
+      "required": ["repositories", "issues", "technical_debt", "bug_fixes", "pull_requests", "deployments"],
+      "properties": {
+        "repositories": { "$ref": "#/$defs/systemInputRoute" },
+        "issues": { "$ref": "#/$defs/systemInputRoute" },
+        "technical_debt": { "$ref": "#/$defs/systemInputRoute" },
+        "bug_fixes": { "$ref": "#/$defs/systemInputRoute" },
+        "pull_requests": { "$ref": "#/$defs/systemInputRoute" },
+        "deployments": { "$ref": "#/$defs/systemInputRoute" }
+      },
+      "additionalProperties": false
     },
     "product_vision": {
       "type": "object",
@@ -394,6 +408,18 @@
     }
   },
   "$defs": {
+    "systemInputRoute": {
+      "type": "object",
+      "required": ["source", "api", "workflow_step", "output_protocol", "proof_surface"],
+      "properties": {
+        "source": { "type": "string", "minLength": 1 },
+        "api": { "type": "string", "minLength": 1 },
+        "workflow_step": { "type": "string", "minLength": 1 },
+        "output_protocol": { "type": "string", "minLength": 1 },
+        "proof_surface": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
     "backendServiceBoundary": {
       "type": "object",
       "required": ["owner", "primary_api", "state_store", "external_dependencies", "output_protocols"],

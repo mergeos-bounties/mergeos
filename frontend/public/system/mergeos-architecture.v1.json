@@ -9,6 +9,50 @@
     "standalone IDE",
     "token-only project"
   ],
+  "system_inputs": {
+    "repositories": {
+      "source": "GitHub repository URL or connected installation",
+      "api": "/api/repos/import",
+      "workflow_step": "import_repository",
+      "output_protocol": "mergeos.repo-import.v1",
+      "proof_surface": "/live-feed"
+    },
+    "issues": {
+      "source": "GitHub issues, labels, comments, and repository sync events",
+      "api": "/api/projects/{id}/repo-sync",
+      "workflow_step": "scan_issues_with_ai",
+      "output_protocol": "mergeos.repo-sync.v1",
+      "proof_surface": "/marketplace#marketplace-bounties"
+    },
+    "technical_debt": {
+      "source": "AI repository scan findings, dependency risk, and code health signals",
+      "api": "/api/public/projects/{id}/repo-scan",
+      "workflow_step": "generate_task_graph",
+      "output_protocol": "mergeos.scan.v1",
+      "proof_surface": "/dashboard"
+    },
+    "bug_fixes": {
+      "source": "Funded bounty tasks, task claims, submissions, and review decisions",
+      "api": "/api/tasks/{id}/submit",
+      "workflow_step": "review_pull_requests",
+      "output_protocol": "mergeos.task-submission.v1",
+      "proof_surface": "/ledger"
+    },
+    "pull_requests": {
+      "source": "GitHub pull requests, review state, checks, and accepted evidence",
+      "api": "/api/public/projects/{id}/pull-requests",
+      "workflow_step": "review_pull_requests",
+      "output_protocol": "mergeos.pr-monitor.v1",
+      "proof_surface": "/ledger"
+    },
+    "deployments": {
+      "source": "Deployment checks, environment health, release evidence, and gate status",
+      "api": "/api/public/protocol/deployment",
+      "workflow_step": "validate_deployment",
+      "output_protocol": "mergeos.deployment.v1",
+      "proof_surface": "/live-feed"
+    }
+  },
   "product_vision": {
     "summary": "A workflow layer combining GitHub-style repository context, Stripe-style payment verification, Linear-style task operations, Upwork-style contributor routing, Vercel-style deployment proof, and AI agent execution.",
     "core_loop": [
