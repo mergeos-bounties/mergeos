@@ -419,6 +419,10 @@ test('ledger logs exposes compact proof timeline coverage', async () => {
   const cssSource = await fs.readFile(new URL('./src/styles.css', import.meta.url), 'utf-8');
 
   assert.match(appSource, /class="ledger-proof-timeline"/);
+  assert.match(appSource, /<h1>Ledger Logs<\/h1>/);
+  assert.match(appSource, /Transparent platform activity from the live ledger\. Payments, token mints, PR handoffs, deployment gates, AI actions, and payouts are loaded from the backend\./);
+  assert.match(appSource, /Public ledger'[\s\S]*Payouts, escrow events, AI actions, releases, deployment checks, and proof logs for trust/);
+  assert.match(appSource, /Ledger events'[\s\S]*Fetch sanitized escrow, payout, token, PR, deployment, and release proof rows/);
   assert.match(appSource, /Latest escrow, PR, AI, and release evidence/);
   assert.match(appSource, /const ledgerProofTimelineRows = computed/);
   assert.match(appSource, /ledgerProofLanes\.value/);
