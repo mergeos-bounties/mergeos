@@ -402,6 +402,32 @@
       }
     }
   },
+  "dashboard_system": {
+    "role": "Authenticated command surfaces for customers, workers, and admins after login.",
+    "surfaces": {
+      "customer_dashboard": {
+        "page": "/dashboard",
+        "primary_api": "/api/projects/{id}/dashboard",
+        "modules": ["project overview", "live PRs", "escrow", "payments", "tasks", "AI logs"],
+        "realtime_events": ["project_funded", "task_submitted", "deployment_status", "ai_review", "ledger_task_payment"],
+        "proof_surface": "/ledger"
+      },
+      "worker_dashboard": {
+        "page": "/dashboard?section=worker",
+        "primary_api": "/api/workers/me",
+        "modules": ["claimed tasks", "rewards", "reputation", "proposals"],
+        "realtime_events": ["task_claimed", "proposal_submitted", "task_submitted", "task_reviewed", "ledger_task_payment"],
+        "proof_surface": "/dashboard?section=worker"
+      },
+      "admin_console": {
+        "page": "/dashboard?section=admin",
+        "primary_api": "/api/admin/ops-queue",
+        "modules": ["treasury", "users", "disputes", "payouts", "moderation"],
+        "realtime_events": ["dispute_opened", "payout_ready", "agent_release", "treasury_signal", "moderation_event"],
+        "proof_surface": "/ledger"
+      }
+    }
+  },
   "backend_system": {
     "role": "Backend coordinates authentication, repositories, AI orchestration, task engine, payment verification, escrow coordination, live notifications, and ledger records.",
     "proposed_stack": ["Go", "Rust-compatible service boundary", "PostgreSQL", "Redis", "GitHub API", "OpenAI API", "WebSocket gateway"],

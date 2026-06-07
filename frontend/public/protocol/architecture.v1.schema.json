@@ -14,6 +14,7 @@
     "repository_architecture",
     "users",
     "frontend_system",
+    "dashboard_system",
     "backend_system",
     "ai_layer",
     "marketplace_system",
@@ -219,6 +220,24 @@
               },
               "additionalProperties": false
             }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "dashboard_system": {
+      "type": "object",
+      "required": ["role", "surfaces"],
+      "properties": {
+        "role": { "type": "string", "minLength": 1 },
+        "surfaces": {
+          "type": "object",
+          "required": ["customer_dashboard", "worker_dashboard", "admin_console"],
+          "properties": {
+            "customer_dashboard": { "$ref": "#/$defs/dashboardSurface" },
+            "worker_dashboard": { "$ref": "#/$defs/dashboardSurface" },
+            "admin_console": { "$ref": "#/$defs/dashboardSurface" }
           },
           "additionalProperties": false
         }
@@ -512,6 +531,18 @@
         "page": { "type": "string", "minLength": 1 },
         "api": { "type": "string", "minLength": 1 },
         "capabilities": { "$ref": "#/$defs/stringList" }
+      },
+      "additionalProperties": false
+    },
+    "dashboardSurface": {
+      "type": "object",
+      "required": ["page", "primary_api", "modules", "realtime_events", "proof_surface"],
+      "properties": {
+        "page": { "type": "string", "minLength": 1 },
+        "primary_api": { "type": "string", "minLength": 1 },
+        "modules": { "$ref": "#/$defs/stringList" },
+        "realtime_events": { "$ref": "#/$defs/stringList" },
+        "proof_surface": { "type": "string", "minLength": 1 }
       },
       "additionalProperties": false
     },

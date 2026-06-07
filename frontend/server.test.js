@@ -175,6 +175,15 @@ test('public system vision preserves the product thesis', async () => {
   assert.equal(architectureManifest.frontend_system.authenticated_dashboard_urls.admin_console.page, '/dashboard?section=admin');
   assert.equal(architectureManifest.frontend_system.authenticated_dashboard_urls.admin_console.api, '/api/admin/ops-queue');
   assert.deepEqual(architectureManifest.frontend_system.authenticated_dashboard_urls.admin_console.capabilities, ['treasury', 'users', 'disputes', 'payouts', 'moderation']);
+  assert.equal(architectureManifest.dashboard_system.role, 'Authenticated command surfaces for customers, workers, and admins after login.');
+  assert.deepEqual(Object.keys(architectureManifest.dashboard_system.surfaces), ['customer_dashboard', 'worker_dashboard', 'admin_console']);
+  assert.deepEqual(architectureManifest.dashboard_system.surfaces.customer_dashboard.modules, ['project overview', 'live PRs', 'escrow', 'payments', 'tasks', 'AI logs']);
+  assert.ok(architectureManifest.dashboard_system.surfaces.customer_dashboard.realtime_events.includes('ai_review'));
+  assert.deepEqual(architectureManifest.dashboard_system.surfaces.worker_dashboard.modules, ['claimed tasks', 'rewards', 'reputation', 'proposals']);
+  assert.ok(architectureManifest.dashboard_system.surfaces.worker_dashboard.realtime_events.includes('ledger_task_payment'));
+  assert.deepEqual(architectureManifest.dashboard_system.surfaces.admin_console.modules, ['treasury', 'users', 'disputes', 'payouts', 'moderation']);
+  assert.ok(architectureManifest.dashboard_system.surfaces.admin_console.realtime_events.includes('payout_ready'));
+  assert.equal(architectureManifest.dashboard_system.surfaces.admin_console.primary_api, '/api/admin/ops-queue');
   assert.ok(architectureManifest.backend_system.proposed_stack.includes('Go'));
   assert.ok(architectureManifest.backend_system.proposed_stack.includes('Rust-compatible service boundary'));
   assert.ok(architectureManifest.backend_system.proposed_stack.includes('PostgreSQL'));
