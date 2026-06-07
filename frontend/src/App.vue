@@ -4680,6 +4680,22 @@
           </aside>
         </section>
 
+        <section class="home-system-explainer" :aria-label="publicHomeCopy.workflowLabel">
+          <article v-for="card in localizedHomeWorkflowCards.slice(0, 4)" :key="card.title">
+            <span :class="['public-card-icon', card.tone]">
+              <component :is="card.icon" :size="17" />
+            </span>
+            <div>
+              <strong>{{ card.title }}</strong>
+              <p>{{ card.body }}</p>
+            </div>
+            <button type="button" @click="handlePublicAction(card.action)">
+              {{ card.cta }}
+              <ArrowRight :size="13" />
+            </button>
+          </article>
+        </section>
+
       </div>
     </main>
 
@@ -26281,8 +26297,12 @@ function mapMarketplaceBounty(bounty = {}, index = 0) {
   const agentType = bounty.suggested_agent_type || '';
   const issueNumber = Number(bounty.issue_number) || 0;
   const id = bounty.id || `${bounty.project_id || 'project'}:${issueNumber || index}`;
+  const claimID = bounty.claim_id || id;
   return {
     id,
+    claimId: claimID,
+    claimEndpoint: bounty.claim_endpoint || `/api/tasks/${claimID}/claim`,
+    proposalEndpoint: bounty.proposal_endpoint || '',
     icon: agentType ? marketplaceAgentIcon(agentType) : (workerKind === 'human' ? User : Bot),
     title: bounty.title || labels.openBounty,
     acceptance: trimMarketplaceText(bounty.acceptance, labels.acceptanceFallback),

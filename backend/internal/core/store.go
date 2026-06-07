@@ -3424,6 +3424,7 @@ func marketplaceBountyRow(project *Project, task *Task) *MarketplaceBounty {
 		EvidenceRequired:   publicTaskEvidenceRequiredForTask(task),
 		SourceRepository:   marketplacePublicRepoURL(projectSourceRepoURL(project)),
 		IssueURL:           marketplacePublicRepoURL(task.IssueURL),
+		ClaimEndpoint:      "/api/tasks/" + claimID + "/claim",
 		CreatedAt:          task.CreatedAt,
 	}
 	if packet := proposalPacketForTask(project, task); packet != nil {

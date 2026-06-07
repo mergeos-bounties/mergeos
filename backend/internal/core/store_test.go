@@ -1988,6 +1988,9 @@ func TestPublicMarketplaceRouteReturnsSanitizedLiveData(t *testing.T) {
 		if strings.TrimSpace(bounty.ClaimID) == "" || bounty.ClaimID == bounty.ID && !strings.Contains(bounty.ClaimID, ":") {
 			t.Fatalf("bounty missing public claim id: %#v", bounty)
 		}
+		if bounty.ClaimEndpoint != "/api/tasks/"+bounty.ClaimID+"/claim" {
+			t.Fatalf("bounty missing public claim endpoint: %#v", bounty)
+		}
 		if bounty.IssueURL != "" && !strings.HasPrefix(bounty.IssueURL, "http") {
 			t.Fatalf("bounty issue URL is not public: %#v", bounty)
 		}

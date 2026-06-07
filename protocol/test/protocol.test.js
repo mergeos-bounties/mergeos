@@ -387,6 +387,7 @@ test('validates marketplace protocol documents', () => {
         suggested_agent_type: 'qa-agent',
         bounty_type: 'future-small',
         evidence_required: ['tests', 'deploy_preview'],
+        claim_endpoint: '/api/tasks/claim_12/claim',
         proposal_endpoint: '/api/proposals',
         proposal_packet: {
           can_claim: true,

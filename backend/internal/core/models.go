@@ -1038,6 +1038,7 @@ type MarketplaceBounty struct {
 	EvidenceRequired   []string        `json:"evidence_required,omitempty"`
 	SourceRepository   string          `json:"source_repository,omitempty"`
 	IssueURL           string          `json:"issue_url,omitempty"`
+	ClaimEndpoint      string          `json:"claim_endpoint,omitempty"`
 	ProposalEndpoint   string          `json:"proposal_endpoint,omitempty"`
 	ProposalPacket     *ProposalPacket `json:"proposal_packet,omitempty"`
 	CreatedAt          time.Time       `json:"created_at"`

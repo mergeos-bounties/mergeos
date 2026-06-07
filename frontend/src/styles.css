@@ -34620,3 +34620,94 @@ canvas {
   }
 }
 
+/* Homepage explainer: enough product context without returning to a long brochure. */
+.home-system-explainer {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: clamp(14px, 2vw, 22px) 0 0;
+}
+
+.home-system-explainer article {
+  min-width: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  border: 1px solid rgba(11, 21, 17, 0.1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 13px;
+  box-shadow: 0 14px 36px rgba(11, 21, 17, 0.055);
+}
+
+.home-system-explainer strong,
+.home-system-explainer p {
+  min-width: 0;
+}
+
+.home-system-explainer strong {
+  display: block;
+  color: #0d1713;
+  font-size: 14px;
+  line-height: 1.2;
+  font-weight: 930;
+}
+
+.home-system-explainer p {
+  margin: 5px 0 0;
+  color: #5d6b64;
+  font-size: 12px;
+  line-height: 1.38;
+  font-weight: 720;
+}
+
+.home-system-explainer button {
+  width: max-content;
+  max-width: 100%;
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid rgba(11, 21, 17, 0.1);
+  border-radius: 8px;
+  background: #ffffff;
+  color: #0f766e;
+  padding: 0 10px;
+  font-size: 11px;
+  line-height: 1;
+  font-weight: 900;
+}
+
+.home-system-explainer button:hover {
+  border-color: rgba(16, 165, 127, 0.35);
+  background: #ecfdf5;
+}
+
+@media (max-width: 980px) {
+  .home-system-explainer {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .home-system-explainer {
+    grid-template-columns: minmax(0, 1fr);
+    margin-top: 12px;
+  }
+
+  .home-system-explainer article {
+    grid-template-columns: 38px minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    align-items: start;
+    padding: 12px;
+  }
+
+  .home-system-explainer article > span {
+    grid-row: 1 / span 2;
+  }
+
+  .home-system-explainer button {
+    grid-column: 2;
+  }
+}
+

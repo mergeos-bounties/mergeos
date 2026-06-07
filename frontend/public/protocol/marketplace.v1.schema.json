@@ -59,7 +59,7 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["id", "project_id", "project_title", "issue_number", "title", "acceptance", "reward_cents", "required_worker_kind", "created_at"],
+        "required": ["id", "project_id", "project_title", "issue_number", "title", "acceptance", "reward_cents", "required_worker_kind", "claim_endpoint", "created_at"],
         "properties": {
           "id": { "type": "string", "minLength": 1, "maxLength": 96 },
           "claim_id": { "type": "string", "maxLength": 96 },
@@ -79,6 +79,7 @@
           },
           "source_repository": { "type": "string", "maxLength": 512 },
           "issue_url": { "type": "string", "maxLength": 512 },
+          "claim_endpoint": { "type": "string", "maxLength": 240 },
           "proposal_endpoint": { "type": "string", "maxLength": 240 },
           "proposal_packet": {
             "type": "object",

@@ -346,6 +346,8 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.match(cssSource, /Home quality pass: one short decision screen/);
   assert.match(appSource, /class="public-notification-feed home-feed-preview"/);
   assert.match(appSource, /class="home-mergeide-inline-link"/);
+  assert.match(appSource, /class="home-system-explainer"/);
+  assert.match(appSource, /localizedHomeWorkflowCards\.slice\(0, 4\)/);
   assert.match(appSource, /homeLiveStats\.slice\(0, 2\)/);
   assert.match(cssSource, /\.public-home-page\s*\{[\s\S]*padding-block: clamp\(14px, 2\.4vw, 30px\) clamp\(20px, 3vw, 38px\) !important;/);
   assert.match(cssSource, /\.public-home-page \.home-container\s*\{[\s\S]*max-width: 1080px !important;/);
@@ -356,6 +358,8 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.match(cssSource, /\.home-command-panel \.public-stat-grid article:nth-child\(n \+ 3\)\s*\{[\s\S]*display: none !important;/);
   assert.match(cssSource, /@media \(max-width: 980px\)[\s\S]*\.home-command-panel\s*\{[\s\S]*display: block !important;[\s\S]*max-width: 560px !important;/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.public-home-copy h1\s*\{[\s\S]*font-size: clamp\(31px, 10vw, 40px\) !important;/);
+  assert.match(cssSource, /\.home-system-explainer\s*\{[\s\S]*grid-template-columns: repeat\(4, minmax\(0, 1fr\)\);/);
+  assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.home-system-explainer\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\);/);
 });
 
 test('frontend system exposes required public pages and dashboard roles', async () => {
@@ -507,6 +511,9 @@ test('marketplace proposal packets expose output contracts for contributors', as
   const marketplaceSchema = JSON.parse(await fs.readFile(new URL('./public/protocol/marketplace.v1.schema.json', import.meta.url), 'utf-8'));
   const proposalPacket = marketplaceSchema.properties.bounties.items.properties.proposal_packet;
 
+  assert.ok(marketplaceSchema.properties.bounties.items.required.includes('claim_endpoint'));
+  assert.equal(marketplaceSchema.properties.bounties.items.properties.claim_endpoint.maxLength, 240);
+  assert.match(appSource, /claimEndpoint: bounty\.claim_endpoint \|\| `\/api\/tasks\/\$\{claimID\}\/claim`/);
   assert.equal(proposalPacket.properties.output_contracts.items.$ref, '#/$defs/outputContract');
   assert.ok(marketplaceSchema.$defs.outputContract.required.includes('output_protocol_url'));
   assert.match(appSource, /function workerProposalContractRows\(contracts = \[\]\)/);
