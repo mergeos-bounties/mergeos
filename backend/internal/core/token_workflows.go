@@ -503,7 +503,7 @@ func tokenLaunchCEOMemo(launchType, repositoryURL, allocationPolicy, proofPolicy
 		ReviewOwner:   "CEO token launch reviewer",
 		NextAction:    "Write an open/no-open memo before publishing claimable earned missions.",
 		Gates: []CEOMemoGate{
-			{Key: "repo", Label: "Repository and mission demand", Status: gateStatus(repositoryURL), Required: true, Evidence: fallbackGateEvidence(repositoryURL, "Repository URL, task backlog, mission-market fit")},
+			{Key: "source", Label: "Research source and mission demand", Status: gateStatus(repositoryURL), Required: true, Evidence: fallbackGateEvidence(repositoryURL, "Research URL, task backlog, mission-market fit")},
 			{Key: "proof", Label: "Proof policy", Status: gateStatus(proofPolicy), Required: true, Evidence: fallbackGateEvidence(proofPolicy, "PR, task, QA, deployment, or agent evidence")},
 			{Key: "wallet", Label: "Wallet uniqueness", Status: gateStatus(walletPolicy), Required: true, Evidence: fallbackGateEvidence(walletPolicy, "Solana wallet uniqueness and duplicate review")},
 			{Key: "risk", Label: "Anti-bot and allocation risk", Status: gateStatus(riskNotes), Required: true, Evidence: fallbackGateEvidence(riskNotes, "Bot farming, duplicate wallets, and allocation cap review")},
@@ -675,6 +675,7 @@ func normalizeTokenLaunchResearchSignals(values []string, launchType, repository
 		add(value)
 	}
 	if repositoryURL != "" {
+		add("research_source")
 		add("repository_context")
 	}
 	if proofPolicy != "" {

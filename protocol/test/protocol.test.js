@@ -159,7 +159,7 @@ test('validates airdrop claim, presale reservation, and token launch brief proto
     proof_policy: 'Require PR, task, QA, or deployment evidence.',
     wallet_policy: 'Require Solana wallet uniqueness and review.',
     risk_notes: 'Watch bot farming and duplicate wallets.',
-    research_signals: ['airdrop_launch', 'repo_demand', 'anti_bot', 'repository_context'],
+    research_signals: ['airdrop_launch', 'research_source', 'anti_bot', 'repository_context'],
     ceo_memo: {
       decision: 'pending_open_decision',
       decision_label: 'Airdrop missions stay closed until CEO signs demand, proof, wallet, and allocation gates.',
@@ -167,11 +167,11 @@ test('validates airdrop claim, presale reservation, and token launch brief proto
       next_action: 'Review repository demand, mission proof, anti-bot policy, wallet uniqueness, and allocation caps.',
       gates: [
         {
-          key: 'repo',
-          label: 'Repository demand',
+          key: 'source',
+          label: 'Research source demand',
           status: 'ready_for_review',
           required: true,
-          evidence: 'Repository context and task demand attached.',
+          evidence: 'Research source and task demand attached.',
         },
         {
           key: 'anti_bot',
