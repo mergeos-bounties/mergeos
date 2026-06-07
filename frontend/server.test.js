@@ -178,6 +178,38 @@ test('public system vision preserves the product thesis', async () => {
       ledger_tab: 'AI Actions',
     },
   });
+  assert.deepEqual(architectureManifest.ledger_system.proof_routes, {
+    payouts: {
+      page: '/ledger',
+      api: '/api/public/ledger/events',
+      event_type: 'ledger_task_payment',
+      proof_api: '/api/public/ledger/proof',
+    },
+    escrow_events: {
+      page: '/ledger',
+      api: '/api/public/ledger/events',
+      event_type: 'payment_verified',
+      proof_api: '/api/public/ledger/proof',
+    },
+    pr_events: {
+      page: '/ledger',
+      api: '/api/public/ledger/events',
+      event_type: 'task_submitted',
+      proof_api: '/api/public/ledger/proof',
+    },
+    ai_actions: {
+      page: '/ledger',
+      api: '/api/public/ledger/events',
+      event_type: 'ai_review',
+      proof_api: '/api/public/ledger/proof',
+    },
+    releases: {
+      page: '/ledger',
+      api: '/api/public/ledger/events',
+      event_type: 'payout_released',
+      proof_api: '/api/public/ledger/proof',
+    },
+  });
   assert.equal(architectureManifest.public_urls.marketplace_api, '/api/public/marketplace');
   assert.equal(architectureManifest.public_urls.live_feed_api, '/api/public/live-feed');
   assert.equal(architectureManifest.public_urls.agent_queue_api, '/api/public/protocol/agent-queue');

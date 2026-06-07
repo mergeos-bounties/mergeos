@@ -17,6 +17,7 @@
     "ai_layer",
     "marketplace_system",
     "live_feed_system",
+    "ledger_system",
     "public_urls"
   ],
   "properties": {
@@ -196,6 +197,27 @@
       },
       "additionalProperties": false
     },
+    "ledger_system": {
+      "type": "object",
+      "required": ["role", "features", "proof_routes"],
+      "properties": {
+        "role": { "type": "string", "minLength": 1 },
+        "features": { "$ref": "#/$defs/stringList" },
+        "proof_routes": {
+          "type": "object",
+          "required": ["payouts", "escrow_events", "pr_events", "ai_actions", "releases"],
+          "properties": {
+            "payouts": { "$ref": "#/$defs/ledgerProofRoute" },
+            "escrow_events": { "$ref": "#/$defs/ledgerProofRoute" },
+            "pr_events": { "$ref": "#/$defs/ledgerProofRoute" },
+            "ai_actions": { "$ref": "#/$defs/ledgerProofRoute" },
+            "releases": { "$ref": "#/$defs/ledgerProofRoute" }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
     "public_urls": {
       "type": "object",
       "required": [
@@ -268,6 +290,17 @@
         "api": { "type": "string", "minLength": 1 },
         "event_type": { "type": "string", "minLength": 1 },
         "ledger_tab": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "ledgerProofRoute": {
+      "type": "object",
+      "required": ["page", "api", "event_type", "proof_api"],
+      "properties": {
+        "page": { "type": "string", "minLength": 1 },
+        "api": { "type": "string", "minLength": 1 },
+        "event_type": { "type": "string", "minLength": 1 },
+        "proof_api": { "type": "string", "minLength": 1 }
       },
       "additionalProperties": false
     },

@@ -205,6 +205,42 @@
       }
     }
   },
+  "ledger_system": {
+    "role": "Public transparency log for payouts, escrow events, PR evidence, AI actions, release proof, token mints, and contract references.",
+    "features": ["Payouts", "Escrow Events", "PR Events", "AI Actions", "Releases", "Token Events"],
+    "proof_routes": {
+      "payouts": {
+        "page": "/ledger",
+        "api": "/api/public/ledger/events",
+        "event_type": "ledger_task_payment",
+        "proof_api": "/api/public/ledger/proof"
+      },
+      "escrow_events": {
+        "page": "/ledger",
+        "api": "/api/public/ledger/events",
+        "event_type": "payment_verified",
+        "proof_api": "/api/public/ledger/proof"
+      },
+      "pr_events": {
+        "page": "/ledger",
+        "api": "/api/public/ledger/events",
+        "event_type": "task_submitted",
+        "proof_api": "/api/public/ledger/proof"
+      },
+      "ai_actions": {
+        "page": "/ledger",
+        "api": "/api/public/ledger/events",
+        "event_type": "ai_review",
+        "proof_api": "/api/public/ledger/proof"
+      },
+      "releases": {
+        "page": "/ledger",
+        "api": "/api/public/ledger/events",
+        "event_type": "payout_released",
+        "proof_api": "/api/public/ledger/proof"
+      }
+    }
+  },
   "public_urls": {
     "system": "/system",
     "marketplace": "/marketplace",
