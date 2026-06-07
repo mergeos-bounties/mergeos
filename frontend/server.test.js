@@ -216,6 +216,10 @@ test('worker dashboard renders ledger proof links for accepted work and rewards'
 
   assert.match(appSource, /ledgerProofURL: task\.ledger_proof_url \|\| ''/);
   assert.match(appSource, /ledgerProofURL: entry\.ledger_proof_url \|\| ''/);
+  assert.match(appSource, /workerDashboard\.value\.rewards/);
+  assert.match(appSource, /workerDashboard\.value\.reputation/);
+  assert.match(appSource, /workerDashboard\.value\.proposals/);
+  assert.match(appSource, /workerDashboard\.value\.submitted_proposals/);
   assert.match(appSource, /v-if="task\.ledgerProofURL"[\s\S]{0,120}Proof/);
   assert.match(appSource, /v-if="reward\.ledgerProofURL"[\s\S]{0,120}Proof/);
   assert.ok(schema.properties.claimed_tasks.items.properties.ledger_proof_url);
@@ -235,6 +239,12 @@ test('admin dashboard consumes admin ops queue action contract', async () => {
   assert.ok(adminOpsSchema.$defs.outputContract.required.includes('output_protocol_url'));
   assert.match(appSource, /queueActions: adminOpsQueueActions\(item\)/);
   assert.match(appSource, /api\('\/api\/admin\/disputes'\)/);
+  assert.match(appSource, /api\('\/api\/admin\/summary'\)/);
+  assert.match(appSource, /api\('\/api\/admin\/ops-queue'\)/);
+  assert.match(appSource, /api\('\/api\/admin\/users'\)/);
+  assert.match(appSource, /api\('\/api\/admin\/reputation'\)/);
+  assert.match(appSource, /api\('\/api\/admin\/ledger'\)/);
+  assert.match(appSource, /api\('\/api\/admin\/tasks'\)/);
   assert.match(appSource, /class="admin-triage-strip"/);
   assert.match(appSource, /const adminTriageRows = computed\(\(\) => \{/);
   assert.match(appSource, /function applyAdminTriageFilter\(item = \{\}\)/);
@@ -409,6 +419,10 @@ test('customer dashboard exposes compact operating lanes after login', async () 
   assert.match(appSource, /label: 'Payments'/);
   assert.match(appSource, /label: 'Tasks'/);
   assert.match(appSource, /label: 'AI logs'/);
+  assert.match(appSource, /api\('\/api\/customers\/me'\)/);
+  assert.match(appSource, /api\(`\/api\/projects\/\$\{encodeURIComponent\(targetProjectID\)\}\/escrow`\)/);
+  assert.match(appSource, /api\(`\/api\/projects\/\$\{encodeURIComponent\(targetProjectID\)\}\/ai-workflow`\)/);
+  assert.match(appSource, /loadDashboardProjectDashboardData\(selectedDashboardProjectID\.value, \{ silent: true \}\)/);
   assert.match(appSource, /function handleCustomerDashboardOperatingLane/);
   assert.match(cssSource, /\.customer-dashboard-operating-strip\s*\{[\s\S]*grid-template-columns: repeat\(6, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /@media \(max-width: 760px\)[\s\S]*\.dashboard-shell \.customer-dashboard-operating-strip\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\) !important;/);
