@@ -783,8 +783,9 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.match(appSource, /title: 'Funding', body: 'Escrow and Solana MRG accounting stay attached to each task\.'/);
   assert.match(appSource, /title: 'Proof', body: 'PR, deploy, acceptance, payout, and ledger receipts remain public\.'/);
   assert.match(appSource, /title: 'Dau vao', body: 'Brief, repo, issue, file, budget va deadline\.'/);
-  assert.match(appSource, /Import a brief or repo, let the CEO agent split tasks, fund escrow, route human builders or AI agents, verify PR and deploy evidence, then record Solana MRG payout proof on the public ledger\./);
-  assert.match(appSource, /Import brief hoặc repo, CEO agent chia việc thành task, giữ escrow, route human builder hoặc AI agent, verify PR\/deploy evidence, rồi ghi payout proof bằng Solana MRG lên public ledger\./);
+  assert.match(appSource, /MergeOS connects repo context, AI task planning, escrow funding, marketplace routing, PR\/deploy verification, and Solana MRG ledger proof\./);
+  assert.match(appSource, /Import a brief or repo, let the CEO agent split work, route builders or agents, then release payouts with public evidence\./);
+  assert.match(appSource, /MergeOS nối repo context, AI task planning, escrow funding, marketplace routing, PR\/deploy verification và Solana MRG ledger proof\./);
   assert.match(appSource, /title: 'Product OS'[\s\S]*Project intake, repo import, AI task graph, escrow, PR monitor, deployment gates, and ledger proof stay in one operating flow\./);
   assert.match(appSource, /title: 'Delivery lanes'[\s\S]*Route funded work to human contributors, AI agents, or hybrid teams with shared scope, acceptance criteria, and payout state\./);
   assert.match(appSource, /title: 'Public proof layer'[\s\S]*Marketplace activity, escrow, token mint, PR evidence, deployment checks, SDK context, and protocol documents are discoverable\./);

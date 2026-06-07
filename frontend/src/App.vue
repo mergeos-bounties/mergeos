@@ -9233,7 +9233,7 @@ const publicHomeTranslations = {
   'en-US': {
     eyebrow: 'MERGEOS DELIVERY OS',
     title: 'MergeOS is the delivery OS for funded software work.',
-    body: 'Import a brief or repo, let the CEO agent split tasks, fund escrow, route human builders or AI agents, verify PR and deploy evidence, then record Solana MRG payout proof on the public ledger.',
+    body: 'MergeOS connects repo context, AI task planning, escrow funding, marketplace routing, PR/deploy verification, and Solana MRG ledger proof. Import a brief or repo, let the CEO agent split work, route builders or agents, then release payouts with public evidence.',
     primaryAction: 'Start a project',
     marketplaceAction: 'View live work',
     ledgerAction: 'Open proof ledger',
@@ -9326,7 +9326,7 @@ const publicHomeTranslations = {
   'vi-VN': {
     eyebrow: 'MERGEOS DELIVERY OS',
     title: 'MergeOS là delivery OS cho phần mềm đã fund.',
-    body: 'Import brief hoặc repo, CEO agent chia việc thành task, giữ escrow, route human builder hoặc AI agent, verify PR/deploy evidence, rồi ghi payout proof bằng Solana MRG lên public ledger.',
+    body: 'MergeOS nối repo context, AI task planning, escrow funding, marketplace routing, PR/deploy verification và Solana MRG ledger proof. Import brief hoặc repo, CEO agent chia việc, route builder hoặc agent, rồi release payout với public evidence.',
     primaryAction: 'Bắt đầu dự án',
     marketplaceAction: 'Xem việc live',
     ledgerAction: 'Mở proof ledger',
