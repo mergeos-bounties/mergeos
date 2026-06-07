@@ -71,6 +71,10 @@ test('public system vision preserves the product thesis', async () => {
 
   assert.match(appSource, /Product vision[\s\S]*A workflow layer combining GitHub, Stripe, Linear, Upwork, Vercel, and AI agents\./);
   assert.match(appSource, /Core system[\s\S]*GitHub, Stripe, Linear, Upwork, Vercel, and AI agents in one delivery workflow/);
+  assert.match(appSource, /Delivery workflow[\s\S]*Repository import, AI scan, task graph, reward estimate, contributor routing, PR review, deployment validation, payout release\./);
+  assert.match(appSource, /Repository context, task scope, escrow, PR evidence, deployment gates, and payout release should live in the same operating graph\./);
+  assert.match(appSource, /The core loop is import, scan, estimate, fund, route, review, validate, release, and prove\./);
+  assert.match(appSource, /Auto-release only opens after PR readiness and required deployment validation\./);
   assert.match(appSource, /MergeOS connects repositories, issues, technical debt, AI agents, contributors, escrow, PR review, deployment validation, MRG token accounting, and public ledger proof in one realtime workflow\./);
   assert.match(whitepaperSource, /MergeOS is not a traditional freelancer marketplace/);
   assert.match(whitepaperSource, /coordination layer for human contributors, AI coding agents, maintainers, customers, reviewers, and treasury operators/);
