@@ -395,15 +395,19 @@ test('marketplace page exposes all operating lanes at a glance', async () => {
   assert.match(cssSource, /@media \(max-width: 760px\)[\s\S]*\.marketplace-os-strip\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\);/);
 });
 
-test('marketplace AI agent matrix covers generate review and test lanes', async () => {
+test('marketplace AI agent matrix covers all AI agent lanes', async () => {
   const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
   const cssSource = await fs.readFile(new URL('./src/styles.css', import.meta.url), 'utf-8');
 
   assert.match(appSource, /class="marketplace-agent-matrix"/);
   assert.match(appSource, /const marketplaceAgentCapabilityMatrix = computed/);
+  assert.match(appSource, /const marketplaceAgentCapabilityDefinitions = \[[\s\S]*key: 'generate'[\s\S]*key: 'code'[\s\S]*key: 'review'[\s\S]*key: 'test'[\s\S]*key: 'secure'[\s\S]*key: 'deploy'/);
   assert.match(appSource, /key: 'generate'[\s\S]*title: 'Generate task graph'[\s\S]*output: 'Task packets, rewards, lanes'/);
+  assert.match(appSource, /key: 'code'[\s\S]*title: 'Code implementation'[\s\S]*evidence: 'PR URL and commit refs'/);
   assert.match(appSource, /key: 'review'[\s\S]*title: 'Review pull requests'[\s\S]*evidence: 'Review webhook record'/);
   assert.match(appSource, /key: 'test'[\s\S]*title: 'Test and QA'[\s\S]*evidence: 'Test log and screenshot'/);
+  assert.match(appSource, /key: 'secure'[\s\S]*title: 'Security validation'[\s\S]*evidence: 'Audit note and findings'/);
+  assert.match(appSource, /key: 'deploy'[\s\S]*title: 'Deployment gate'[\s\S]*evidence: 'Deployment proof row'/);
   assert.match(appSource, /Review, test, generate, code, secure, and deploy with proof/);
   assert.match(cssSource, /\.marketplace-agent-matrix-grid\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/);
 });
