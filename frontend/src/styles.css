@@ -31393,6 +31393,8 @@ canvas {
   .dashboard-shell .worker-submitted-proposal-list article,
   .dashboard-shell .dash-pr-row,
   .dashboard-shell .admin-ops-row,
+  .dashboard-shell .admin-user-list article,
+  .dashboard-shell .admin-reputation-list article,
   .dashboard-shell .admin-dispute-item,
   .dashboard-shell .payment-history-row,
   .dashboard-shell .notification-center-list article {
@@ -31402,11 +31404,31 @@ canvas {
 
   .dashboard-shell .worker-proposal-list > article > span,
   .dashboard-shell .worker-proposal-list > article > b,
+  .dashboard-shell .admin-user-list b,
+  .dashboard-shell .admin-reputation-list b,
   .dashboard-shell .payment-history-side,
   .dashboard-shell .dash-pr-stat,
   .dashboard-shell .dash-pr-actions {
     justify-self: stretch !important;
     text-align: left !important;
+  }
+
+  .dashboard-shell .admin-user-control-strip {
+    display: grid !important;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(132px, 42vw);
+    grid-template-columns: none !important;
+    gap: 8px !important;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 2px;
+  }
+
+  .dashboard-shell .admin-user-control-strip button {
+    scroll-snap-align: start;
+    min-height: 48px;
   }
 
   .dashboard-shell .worker-proposal-actions,
