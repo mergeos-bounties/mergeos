@@ -2246,6 +2246,37 @@ test('validates admin operations protocol documents', () => {
 
   assert.equal(validateProtocolDocument(queue).valid, true);
 
+  const disputes = {
+    ...queue,
+    kind: 'admin_disputes',
+    stats: {
+      ...queue.stats,
+      high_count: 2,
+      token_workflow_count: 1,
+      blocked_payout_cents: 25000,
+    },
+    lanes: [{
+      id: 'payouts',
+      title: 'Payout review',
+      body: 'Closed issues, blocked releases, and manual payout audits.',
+      tone: 'amber',
+      count: 1,
+      critical_count: 0,
+      high_count: 1,
+      reward_cents: 25000,
+      items: [queue.items[1]],
+    }],
+    output_contracts: [{
+      action: 'refresh_admin_disputes',
+      artifact_kind: 'admin_dispute_lanes',
+      output_endpoint: '/api/admin/disputes',
+      output_protocol: 'mergeos.admin-ops.v1',
+      output_protocol_url: '/protocol/admin-ops.v1.schema.json',
+    }],
+  };
+
+  assert.equal(validateProtocolDocument(disputes).valid, true);
+
   const invalid = validateProtocolDocument({
     ...queue,
     kind: 'admin_queue',
