@@ -815,6 +815,11 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.match(cssSource, /Home description pass: enough product meaning, still a short first screen/);
   assert.match(cssSource, /\.home-explain-strip article\s*\{[\s\S]*min-height: 62px !important;/);
   assert.match(cssSource, /\.home-explain-strip span\s*\{[\s\S]*-webkit-line-clamp: 2 !important;/);
+  assert.match(cssSource, /Home compact product story pass: enough meaning without a tall manual page/);
+  assert.match(cssSource, /\/\* Home compact product story pass:[\s\S]*\.public-home-page\s*\{[\s\S]*min-height: auto !important;[\s\S]*padding-block: clamp\(10px, 1\.8vw, 24px\) clamp\(18px, 2\.6vw, 32px\) !important;/);
+  assert.match(cssSource, /\/\* Home compact product story pass:[\s\S]*\.public-home-page \.home-container\s*\{[\s\S]*max-width: 1040px !important;/);
+  assert.match(cssSource, /\/\* Home compact product story pass:[\s\S]*\.home-command-panel\s*\{[\s\S]*align-self: start !important;/);
+  assert.match(cssSource, /@media \(max-width: 980px\)[\s\S]*\.home-command-panel\s*\{[\s\S]*display: none !important;/);
 });
 
 test('frontend system exposes required public pages and dashboard roles', async () => {
