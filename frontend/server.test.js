@@ -243,6 +243,20 @@ test('live feed agent packets expose action handoff links', async () => {
   assert.match(appSource, /bountyID: liveFeedAgentBountyID\(item, contextUrls\)/);
 });
 
+test('live feed page exposes realtime operating lanes', async () => {
+  const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
+  const cssSource = await fs.readFile(new URL('./src/styles.css', import.meta.url), 'utf-8');
+
+  assert.match(appSource, /class="live-feed-operating-strip"/);
+  assert.match(appSource, /const liveFeedOperatingRows = computed/);
+  assert.match(appSource, /label: 'Live PRs'/);
+  assert.match(appSource, /label: 'Deployments'/);
+  assert.match(appSource, /label: 'Active contributors'/);
+  assert.match(appSource, /label: 'AI actions'/);
+  assert.match(cssSource, /\.live-feed-operating-strip\s*\{[\s\S]*grid-template-columns: repeat\(4, minmax\(0, 1fr\)\);/);
+  assert.match(cssSource, /@media \(max-width: 760px\)[\s\S]*\.live-feed-operating-strip\s*\{[\s\S]*grid-template-columns: 1fr;/);
+});
+
 test('public menus and signed-in mobile layout keep reachable compact surfaces', async () => {
   const cssSource = await fs.readFile(new URL('./src/styles.css', import.meta.url), 'utf-8');
 

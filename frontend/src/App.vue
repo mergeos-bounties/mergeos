@@ -6679,6 +6679,22 @@
           </aside>
         </section>
 
+        <section class="live-feed-operating-strip" aria-label="Live feed realtime operating lanes">
+          <article v-for="row in liveFeedOperatingRows" :key="row.key">
+            <span :class="['ledger-trust-icon', row.tone]">
+              <component :is="row.icon" :size="15" />
+            </span>
+            <div>
+              <strong>{{ row.value }}</strong>
+              <small>{{ row.label }}</small>
+              <p>{{ row.caption }}</p>
+            </div>
+            <button type="button" :disabled="!row.filterLabel" @click="setLiveFeedType(row.filterLabel)">
+              <ArrowRight :size="12" />
+            </button>
+          </article>
+        </section>
+
         <section class="live-feed-proof-lanes" aria-label="Realtime proof lanes">
           <article v-for="lane in liveFeedProofLanes" :key="lane.key">
             <div class="live-feed-proof-head">
@@ -13006,6 +13022,51 @@ const liveFeedResultLabel = computed(() => {
   if (!total) return 'Waiting for public realtime events';
   if (activeLiveFeedType.value === 'All activity') return `${total} live event${total === 1 ? '' : 's'} visible`;
   return `${visible} of ${total} events match ${activeLiveFeedType.value}`;
+});
+const liveFeedOperatingRows = computed(() => {
+  const countRows = (matcher) => liveFeedAllItemsView.value.filter(matcher);
+  const prRows = countRows((item) => ['task_submitted', 'task_changes_requested', 'task_accepted', 'pr_opened', 'pr_ready_for_release'].includes(item.rawType));
+  const deploymentRows = countRows((item) => item.rawType === 'deployment_validation' || item.rawType === 'deployment_status');
+  const aiRows = countRows((item) => item.rawType === 'ai_review' || item.rawType === 'agent_action');
+  const contributorRows = liveFeedContributorRows.value;
+  return [
+    {
+      key: 'prs',
+      label: 'Live PRs',
+      value: String(prRows.length),
+      caption: prRows[0]?.project || 'Review stream',
+      icon: GitPullRequest,
+      tone: 'green',
+      filterLabel: 'Review Submitted',
+    },
+    {
+      key: 'deployments',
+      label: 'Deployments',
+      value: String(deploymentRows.length),
+      caption: deploymentRows[0]?.project || 'Release checks',
+      icon: Rocket,
+      tone: 'blue',
+      filterLabel: 'Deployment Validation',
+    },
+    {
+      key: 'contributors',
+      label: 'Active contributors',
+      value: String(contributorRows.length),
+      caption: contributorRows[0]?.name || 'Accepted work signals',
+      icon: UserCheck,
+      tone: 'amber',
+      filterLabel: 'All activity',
+    },
+    {
+      key: 'ai-actions',
+      label: 'AI actions',
+      value: String(aiRows.length),
+      caption: aiRows[0]?.title || 'Agent review packets',
+      icon: Bot,
+      tone: 'purple',
+      filterLabel: 'AI Review',
+    },
+  ];
 });
 const liveFeedProofLanes = computed(() => {
   const definitions = [
