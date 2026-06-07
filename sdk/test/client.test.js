@@ -374,15 +374,25 @@ test('filters public agent protocol documents by action and capability', () => {
         open_task_count: 1,
         budget_mrg: 1500,
       },
+      {
+        type: 'coding-agent',
+        title: 'Coding agent',
+        supported_actions: ['generate'],
+        capabilities: ['implementation_generation'],
+        status: 'standby',
+        open_task_count: 0,
+        budget_mrg: 800,
+      },
     ],
   };
 
   assert.equal(agentSupportsAction(protocol.agents[1], 'deploy'), true);
   assert.equal(agentSupportsAction(protocol.agents[1], 'gen'), false);
+  assert.equal(agentSupportsAction(protocol.agents[3], 'gen'), true);
   assert.equal(agentHasCapability(protocol.agents[1], 'deployment_validation'), true);
   assert.equal(agentHasCapability(protocol.agents[1], 'devops'), true);
   assert.deepEqual(agentProtocolAgents(protocol, { action: 'deploy' }).map((agent) => agent.type), ['deployment-agent']);
-  assert.deepEqual(agentProtocolAgents(protocol, { action: 'generate' }).map((agent) => agent.type), ['ceo-strategy-agent']);
+  assert.deepEqual(agentProtocolAgents(protocol, { action: 'gen' }).map((agent) => agent.type), ['ceo-strategy-agent', 'coding-agent']);
   assert.deepEqual(agentProtocolAgents(protocol, { capability: 'deployment_validation', openOnly: true }).map((agent) => agent.type), ['deployment-agent']);
   assert.equal(bestAgentForAction(protocol, 'deploy').type, 'deployment-agent');
   assert.equal(bestAgentForAction(protocol, 'generate', { capability: 'task_decomposition' }).type, 'ceo-strategy-agent');
