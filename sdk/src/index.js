@@ -670,6 +670,17 @@ export class MergeOSClient {
     const path = options.path || `/api/ws${liveFeedQueryString(options)}`;
     return new this.WebSocketImpl(this.webSocketURL(path), options.protocols);
   }
+
+  connectDiscoveredEvents(discoveryOrManifest = {}, options = {}) {
+    if (!this.WebSocketImpl) {
+      throw new Error('WebSocket is not available; pass WebSocketImpl to MergeOSClient');
+    }
+    const manifest = protocolManifestSource(discoveryOrManifest);
+    const realtime = protocolManifestRealtime(manifest);
+    const path = options.path || protocolManifestEventStreamPath(manifest, options);
+    const protocols = options.protocols || (realtime.protocolVersion ? [realtime.protocolVersion] : undefined);
+    return new this.WebSocketImpl(this.webSocketURL(path), protocols);
+  }
 }
 
 export function createMergeOSClient(options = {}) {
@@ -741,7 +752,8 @@ export function protocolManifestContextURLs(manifest = {}) {
 }
 
 export function protocolManifestRealtime(manifest = {}) {
-  const realtime = manifest.realtime && typeof manifest.realtime === 'object' ? manifest.realtime : {};
+  const source = protocolManifestSource(manifest);
+  const realtime = source.realtime && typeof source.realtime === 'object' ? source.realtime : {};
   return {
     protocolVersion: realtime.protocol_version || 'mergeos.event.v1',
     websocketPath: realtime.websocket_path || '/api/ws',
@@ -751,6 +763,11 @@ export function protocolManifestRealtime(manifest = {}) {
     topics: Array.isArray(realtime.topics) ? realtime.topics.filter(Boolean) : [],
     raw: realtime,
   };
+}
+
+export function protocolManifestEventStreamPath(discoveryOrManifest = {}, options = {}) {
+  const realtime = protocolManifestRealtime(discoveryOrManifest);
+  return appendQueryString(realtime.websocketPath, liveFeedQueryString(options));
 }
 
 export function protocolManifestDocument(manifest = {}, selector = '') {
@@ -1436,6 +1453,22 @@ function liveFeedQueryString(options = {}) {
     after_id: options.after_id || options.afterID || options.cursor || '',
     since: normalizeSinceQueryValue(options.since),
   });
+}
+
+function appendQueryString(path = '/api/ws', query = '') {
+  const normalizedPath = String(path || '/api/ws');
+  const normalizedQuery = String(query || '');
+  if (!normalizedQuery) return normalizedPath;
+  const suffix = normalizedQuery.startsWith('?') ? normalizedQuery.slice(1) : normalizedQuery;
+  if (!suffix) return normalizedPath;
+  return `${normalizedPath}${normalizedPath.includes('?') ? '&' : '?'}${suffix}`;
+}
+
+function protocolManifestSource(discoveryOrManifest = {}) {
+  if (discoveryOrManifest && typeof discoveryOrManifest === 'object' && discoveryOrManifest.manifest) {
+    return discoveryOrManifest.manifest;
+  }
+  return discoveryOrManifest || {};
 }
 
 function normalizeSinceQueryValue(value) {

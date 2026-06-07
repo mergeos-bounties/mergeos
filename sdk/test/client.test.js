@@ -42,6 +42,7 @@ import {
   protocolManifestDiscovery,
   protocolManifestDocument,
   protocolManifestEndpoint,
+  protocolManifestEventStreamPath,
   protocolManifestRealtime,
   protocolTypeFromMessage,
   repoPlanningOutputContracts,
@@ -1856,4 +1857,36 @@ test('builds websocket URLs for event streams', () => {
   realtimeClient.connectEvents({ limit: 12, afterID: 'event:latest', since: new Date('2026-06-06T00:00:00Z'), protocols: ['mergeos.event.v1'] });
   assert.equal(sockets[0].url, 'wss://mergeos.shop/api/ws?limit=12&after_id=event%3Alatest&since=2026-06-06T00%3A00%3A00.000Z');
   assert.deepEqual(sockets[0].protocols, ['mergeos.event.v1']);
+});
+
+test('connects realtime streams from protocol discovery metadata', () => {
+  const sockets = [];
+  class FakeWebSocket {
+    constructor(url, protocols) {
+      this.url = url;
+      this.protocols = protocols;
+      sockets.push(this);
+    }
+  }
+  const manifest = {
+    realtime: {
+      protocol_version: 'mergeos.event.v2',
+      websocket_path: '/api/ws/protocol?scope=public',
+      ready_event: 'connection_ready',
+      snapshot_event: 'live_feed_snapshot',
+      heartbeat_event: 'heartbeat',
+      topics: ['ledger', 'agents'],
+    },
+  };
+  const discovery = protocolManifestDiscovery(manifest);
+  const client = new MergeOSClient({ baseURL: 'https://mergeos.shop', WebSocketImpl: FakeWebSocket });
+
+  assert.equal(
+    protocolManifestEventStreamPath(discovery, { limit: 24, cursor: 'event:latest' }),
+    '/api/ws/protocol?scope=public&limit=24&after_id=event%3Alatest',
+  );
+  client.connectDiscoveredEvents(discovery, { limit: 24, cursor: 'event:latest' });
+
+  assert.equal(sockets[0].url, 'wss://mergeos.shop/api/ws/protocol?scope=public&limit=24&after_id=event%3Alatest');
+  assert.deepEqual(sockets[0].protocols, ['mergeos.event.v2']);
 });

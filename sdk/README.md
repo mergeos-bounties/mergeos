@@ -195,6 +195,7 @@ import {
   protocolManifestContextURL,
   protocolManifestDocument,
   protocolManifestEndpoint,
+  protocolManifestEventStreamPath,
   protocolManifestRealtime,
 } from '@mergeos/sdk';
 
@@ -213,8 +214,12 @@ const taskURL = protocolManifestContextURL(discovery.manifest, 'task_protocol', 
 const workflowEndpoint = protocolManifestEndpoint(discovery.manifest, 'mergeos.workflow.v1');
 const agentQueueDoc = protocolManifestDocument(discovery.manifest, 'agent_queue');
 const realtime = protocolManifestRealtime(discovery.manifest);
+const streamPath = protocolManifestEventStreamPath(discovery, {
+  limit: 40,
+  afterID: 'event:latest',
+});
 
-console.log(workflowURL, taskURL, workflowEndpoint.path, agentQueueDoc.schemaURL, realtime.readyEvent);
+console.log(workflowURL, taskURL, workflowEndpoint.path, agentQueueDoc.schemaURL, realtime.readyEvent, streamPath);
 ```
 
 `publicProtocolDiscovery()` normalizes the enriched `/api/public/protocol` manifest into documents, endpoints, realtime stream metadata, and agent context URLs. External agents, IDE extensions, and integration clients should start here before fetching task manifests, workflow graphs, repository scans, deployment status, or ledger proof.
@@ -526,6 +531,16 @@ socket.onmessage = (event) => {
     console.log('protocol event', item.type, item);
   }
 };
+```
+
+Agents and IDE extensions can also open the stream from discovery metadata so the WebSocket path and protocol version follow `/api/public/protocol`.
+
+```js
+const discovery = await mergeos.publicProtocolDiscovery();
+const socket = mergeos.connectDiscoveredEvents(discovery, {
+  limit: 40,
+  cursor: 'event:latest',
+});
 ```
 
 The stream sends `connection_ready` and `live_feed_snapshot` events immediately after connect, then broadcasts live project, PR, payout, token workflow, wallet migration, notification refresh, and ledger events. Pass `afterID`/`cursor` or `since` to `publicLiveFeed`, `publicProtocolEvents`, or `connectEvents` to replay only events newer than the last seen cursor. SDK helpers map live feed records such as `pr_opened`, `agent_action`, `ledger_task_payment`, `ledger_airdrop_claim`, `ledger_presale_reservation`, `ledger_wallet_migration`, `notifications_updated`, and `ledger_manual_credit` to stable protocol events such as `pr.opened`, `agent.tested`, `task.paid`, `airdrop.claimed`, `presale.reserved`, `wallet.migrated`, `notification.updated`, and `ledger.recorded`.
