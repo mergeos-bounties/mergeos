@@ -175,6 +175,36 @@
       }
     }
   },
+  "live_feed_system": {
+    "role": "Public realtime stream for pull requests, deployments, contributor activity, AI actions, and payout events.",
+    "features": ["Live PRs", "Deployments", "Active Contributors", "AI Actions", "Payout Events"],
+    "event_routes": {
+      "live_prs": {
+        "page": "/live-feed",
+        "api": "/api/public/live-feed",
+        "event_type": "task_submitted",
+        "ledger_tab": "Tasks & PRs"
+      },
+      "deployments": {
+        "page": "/live-feed",
+        "api": "/api/public/live-feed",
+        "event_type": "deployment_status",
+        "ledger_tab": "Milestones"
+      },
+      "contributors": {
+        "page": "/live-feed",
+        "api": "/api/public/live-feed",
+        "event_type": "task_claimed",
+        "ledger_tab": "Tasks & PRs"
+      },
+      "ai_actions": {
+        "page": "/live-feed",
+        "api": "/api/public/live-feed",
+        "event_type": "ai_review",
+        "ledger_tab": "AI Actions"
+      }
+    }
+  },
   "public_urls": {
     "system": "/system",
     "marketplace": "/marketplace",

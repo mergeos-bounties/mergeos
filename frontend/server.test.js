@@ -152,6 +152,32 @@ test('public system vision preserves the product thesis', async () => {
       event_type: 'agent_queue',
     },
   });
+  assert.deepEqual(architectureManifest.live_feed_system.event_routes, {
+    live_prs: {
+      page: '/live-feed',
+      api: '/api/public/live-feed',
+      event_type: 'task_submitted',
+      ledger_tab: 'Tasks & PRs',
+    },
+    deployments: {
+      page: '/live-feed',
+      api: '/api/public/live-feed',
+      event_type: 'deployment_status',
+      ledger_tab: 'Milestones',
+    },
+    contributors: {
+      page: '/live-feed',
+      api: '/api/public/live-feed',
+      event_type: 'task_claimed',
+      ledger_tab: 'Tasks & PRs',
+    },
+    ai_actions: {
+      page: '/live-feed',
+      api: '/api/public/live-feed',
+      event_type: 'ai_review',
+      ledger_tab: 'AI Actions',
+    },
+  });
   assert.equal(architectureManifest.public_urls.marketplace_api, '/api/public/marketplace');
   assert.equal(architectureManifest.public_urls.live_feed_api, '/api/public/live-feed');
   assert.equal(architectureManifest.public_urls.agent_queue_api, '/api/public/protocol/agent-queue');
