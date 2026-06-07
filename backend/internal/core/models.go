@@ -1307,8 +1307,44 @@ type PublicContributorProtocolResponse struct {
 type ProtocolManifestResponse struct {
 	ProtocolVersion string                     `json:"protocol_version"`
 	Kind            string                     `json:"kind"`
+	Status          string                     `json:"status"`
+	GeneratedAt     time.Time                  `json:"generated_at"`
+	Stats           ProtocolManifestStats      `json:"stats"`
+	Realtime        ProtocolManifestRealtime   `json:"realtime"`
+	AgentContext    ProtocolManifestContext    `json:"agent_context"`
+	Documents       []ProtocolManifestDocument `json:"documents"`
 	Schemas         []ProtocolManifestSchema   `json:"schemas"`
 	Endpoints       []ProtocolManifestEndpoint `json:"endpoints"`
+}
+
+type ProtocolManifestStats struct {
+	SchemaCount          int `json:"schema_count"`
+	PublicEndpointCount  int `json:"public_endpoint_count"`
+	AgentContextURLCount int `json:"agent_context_url_count"`
+	RealtimeStreamCount  int `json:"realtime_stream_count"`
+}
+
+type ProtocolManifestRealtime struct {
+	ProtocolVersion string   `json:"protocol_version"`
+	WebSocketPath   string   `json:"websocket_path"`
+	ReadyEvent      string   `json:"ready_event"`
+	SnapshotEvent   string   `json:"snapshot_event"`
+	HeartbeatEvent  string   `json:"heartbeat_event"`
+	Topics          []string `json:"topics"`
+}
+
+type ProtocolManifestContext struct {
+	ContextURLs map[string]string `json:"context_urls"`
+	Runbook     []string          `json:"runbook"`
+}
+
+type ProtocolManifestDocument struct {
+	ProtocolVersion string `json:"protocol_version"`
+	Kind            string `json:"kind"`
+	Title           string `json:"title"`
+	SchemaURL       string `json:"schema_url"`
+	PublicEndpoint  string `json:"public_endpoint,omitempty"`
+	Description     string `json:"description"`
 }
 
 type ProtocolManifestSchema struct {
@@ -1319,11 +1355,15 @@ type ProtocolManifestSchema struct {
 }
 
 type ProtocolManifestEndpoint struct {
-	Method      string `json:"method"`
-	Path        string `json:"path"`
-	Protocol    string `json:"protocol,omitempty"`
-	Auth        string `json:"auth"`
-	Description string `json:"description"`
+	ID              string `json:"id,omitempty"`
+	Method          string `json:"method"`
+	Path            string `json:"path"`
+	Protocol        string `json:"protocol,omitempty"`
+	ProtocolVersion string `json:"protocol_version,omitempty"`
+	Auth            string `json:"auth"`
+	Access          string `json:"access,omitempty"`
+	Category        string `json:"category,omitempty"`
+	Description     string `json:"description"`
 }
 
 type TaskProtocolDocument struct {

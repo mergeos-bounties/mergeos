@@ -1351,8 +1351,36 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 	if payload.ProtocolVersion != "mergeos.protocol.manifest.v1" || payload.Kind != "protocol_manifest" {
 		t.Fatalf("unexpected manifest header: %#v", payload)
 	}
+	if payload.Status != "active" || payload.GeneratedAt.IsZero() {
+		t.Fatalf("manifest missing status/generated_at: %#v", payload)
+	}
 	if len(payload.Schemas) != 39 {
 		t.Fatalf("manifest schemas = %d: %#v", len(payload.Schemas), payload.Schemas)
+	}
+	if len(payload.Documents) != len(payload.Schemas) {
+		t.Fatalf("manifest documents should mirror schemas: docs=%d schemas=%d", len(payload.Documents), len(payload.Schemas))
+	}
+	if payload.Stats.SchemaCount != len(payload.Schemas) || payload.Stats.PublicEndpointCount != len(payload.Endpoints) {
+		t.Fatalf("manifest stats do not match rows: %#v", payload.Stats)
+	}
+	if payload.Stats.AgentContextURLCount < 8 || payload.Stats.RealtimeStreamCount != 1 {
+		t.Fatalf("manifest stats missing context/realtime counts: %#v", payload.Stats)
+	}
+	if payload.Realtime.ProtocolVersion != "mergeos.event.v1" || payload.Realtime.WebSocketPath != "/api/ws" || payload.Realtime.ReadyEvent != "realtime_ready" || payload.Realtime.SnapshotEvent != "realtime_snapshot" || payload.Realtime.HeartbeatEvent != "realtime_heartbeat" {
+		t.Fatalf("manifest realtime metadata missing event contract: %#v", payload.Realtime)
+	}
+	for _, topic := range []string{"marketplace", "tasks", "agent-actions", "deployments", "ledger", "notifications"} {
+		if !stringSliceContains(payload.Realtime.Topics, topic) {
+			t.Fatalf("manifest realtime topics missing %s: %#v", topic, payload.Realtime.Topics)
+		}
+	}
+	for _, key := range []string{"manifest", "agent_queue", "agent_runbook", "project_workflow", "repository_scan", "pull_requests", "deployment"} {
+		if payload.AgentContext.ContextURLs[key] == "" {
+			t.Fatalf("manifest agent context missing %s: %#v", key, payload.AgentContext.ContextURLs)
+		}
+	}
+	if len(payload.AgentContext.Runbook) < 4 {
+		t.Fatalf("manifest agent runbook too small: %#v", payload.AgentContext.Runbook)
 	}
 	schemas := map[string]bool{}
 	descriptions := map[string]string{}
@@ -1360,16 +1388,32 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 		schemas[schema.Version] = true
 		descriptions[schema.Version] = schema.Description
 	}
+	documents := map[string]ProtocolManifestDocument{}
+	for _, document := range payload.Documents {
+		documents[document.ProtocolVersion] = document
+	}
 	for _, required := range []string{"mergeos.task.v1", "mergeos.task-claim.v1", "mergeos.task-submission.v1", "mergeos.task-review.v1", "mergeos.agent.v1", "mergeos.contributor.v1", "mergeos.agent-action.v1", "mergeos.agent-lease.v1", "mergeos.agent-queue.v1", "mergeos.agent-runbook.v1", "mergeos.marketplace.v1", "mergeos.live-feed.v1", "mergeos.workflow.v1", "mergeos.estimate.v1", "mergeos.wallet-migration.v1", "mergeos.release-artifact.v1", "mergeos.repo-import.v1", "mergeos.repo-sync.v1", "mergeos.repo-task-funding.v1", "mergeos.dispute.v1", "mergeos.proposal.v1", "mergeos.ai-workflow.v1", "mergeos.event.v1", "mergeos.ledger.v1", "mergeos.ledger-proof.v1", "mergeos.token-economy.v1", "mergeos.airdrop-claim.v1", "mergeos.airdrop-missions.v1", "mergeos.presale-reservation.v1", "mergeos.escrow.v1", "mergeos.payouts.v1", "mergeos.payout-release.v1", "mergeos.deployment.v1", "mergeos.pr-monitor.v1", "mergeos.scan.v1", "mergeos.customer-dashboard.v1", "mergeos.worker-dashboard.v1", "mergeos.routing.v1", "mergeos.admin-ops.v1"} {
 		if !schemas[required] {
 			t.Fatalf("manifest missing schema %s: %#v", required, payload.Schemas)
 		}
+		if documents[required].SchemaURL == "" {
+			t.Fatalf("manifest missing document %s: %#v", required, payload.Documents)
+		}
+	}
+	if documents["mergeos.agent-queue.v1"].PublicEndpoint != "/api/public/protocol/agent-queue" {
+		t.Fatalf("agent queue document missing public endpoint: %#v", documents["mergeos.agent-queue.v1"])
 	}
 	if !strings.Contains(descriptions["mergeos.workflow.v1"], "current AI workflow step") {
 		t.Fatalf("workflow schema description missing current step contract: %#v", descriptions["mergeos.workflow.v1"])
 	}
 	endpoints := map[string]bool{}
 	for _, endpoint := range payload.Endpoints {
+		if endpoint.ID == "" || endpoint.Access == "" || endpoint.Category == "" {
+			t.Fatalf("manifest endpoint missing discovery metadata: %#v", endpoint)
+		}
+		if endpoint.Protocol != "" && endpoint.ProtocolVersion != endpoint.Protocol {
+			t.Fatalf("manifest endpoint protocol_version mismatch: %#v", endpoint)
+		}
 		endpoints[endpoint.Method+" "+endpoint.Path] = true
 	}
 	for _, required := range []string{

@@ -90,6 +90,14 @@ test('public protocol links match backend routes', async () => {
   assert.match(appSource, /return id \? `\/api\/public\/protocol\/tasks\?task_id=\$\{encodeURIComponent\(id\)\}` : '\/api\/public\/protocol\/tasks';/);
   assert.match(appSource, /function publicProjectWorkflowPath\(projectID = ''\)/);
   assert.match(appSource, /return id \? `\/api\/public\/projects\/\$\{encodeURIComponent\(id\)\}\/workflow` : '';/);
+  assert.match(appSource, /const protocolDocumentRowsRaw = computed\(\(\) => Array\.isArray\(protocolManifestView\.value\.documents\) \? protocolManifestView\.value\.documents : \[\]\);/);
+  assert.match(appSource, /const stats = protocolManifestView\.value\.stats \|\| \{\};/);
+  assert.match(appSource, /protocolManifestView\.value\.agent_context\?\.context_urls/);
+  assert.match(appSource, /protocolManifestView\.value\.realtime\?\.websocket_path/);
+  assert.match(manifestSource, /GeneratedAt:\s+time\.Now\(\)\.UTC\(\)/);
+  assert.match(manifestSource, /Documents: protocolManifestDocuments\(schemas, endpoints\)/);
+  assert.match(manifestSource, /ContextURLs: contextURLs/);
+  assert.match(manifestSource, /WebSocketPath:\s+"\/api\/ws"/);
   assert.doesNotMatch(appSource, /\/api\/public\/protocol\/index/);
   assert.doesNotMatch(appSource, /\/api\/public\/bounties\/[^`'"]*\/protocol/);
   assert.doesNotMatch(appSource, /\/api\/public\/projects\/[^`'"]*\/workflow\/protocol/);

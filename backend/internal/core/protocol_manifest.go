@@ -1,630 +1,785 @@
 package core
 
+import (
+	"strings"
+	"time"
+)
+
 func ProtocolManifest() ProtocolManifestResponse {
+	schemas := []ProtocolManifestSchema{
+		{
+			Version:     "mergeos.task.v1",
+			Kind:        "task",
+			SchemaURL:   "https://mergeos.shop/protocol/task.v1.schema.json",
+			Description: "Claimable bounty task with reward, worker lane, acceptance criteria, and evidence requirements.",
+		},
+		{
+			Version:     "mergeos.task-claim.v1",
+			Kind:        "task_claim",
+			SchemaURL:   "https://mergeos.shop/protocol/task-claim.v1.schema.json",
+			Description: "Authenticated bounty claim or release document with worker identity, claimed task status, and optional payout proof after acceptance.",
+		},
+		{
+			Version:     "mergeos.task-submission.v1",
+			Kind:        "task_submission",
+			SchemaURL:   "https://mergeos.shop/protocol/task-submission.v1.schema.json",
+			Description: "Authenticated task evidence submission with pull request URL, review evidence, notes, assigned worker authorization, and public-safe submitted status.",
+		},
+		{
+			Version:     "mergeos.task-review.v1",
+			Kind:        "task_review",
+			SchemaURL:   "https://mergeos.shop/protocol/task-review.v1.schema.json",
+			Description: "Authenticated customer/admin review decision that requests changes and returns a submitted task to the claimed lane before payout release.",
+		},
+		{
+			Version:     "mergeos.agent.v1",
+			Kind:        "agent",
+			SchemaURL:   "https://mergeos.shop/protocol/agent.v1.schema.json",
+			Description: "AI agent lane with supported actions, capabilities, active bounty demand, and open task references.",
+		},
+		{
+			Version:     "mergeos.contributor.v1",
+			Kind:        "contributor",
+			SchemaURL:   "https://mergeos.shop/protocol/contributor.v1.schema.json",
+			Description: "Public contributor reputation, capability, payout, risk, and open bounty matching document for marketplace routing.",
+		},
+		{
+			Version:     "mergeos.agent-action.v1",
+			Kind:        "agent_action",
+			SchemaURL:   "https://mergeos.shop/protocol/agent-action.v1.schema.json",
+			Description: "Authenticated AI agent action document for review, test, generate, scan, deployment evidence, CEO delegation, and design-review handoff.",
+		},
+		{
+			Version:     "mergeos.agent-lease.v1",
+			Kind:        "agent_lease",
+			SchemaURL:   "https://mergeos.shop/protocol/agent-lease.v1.schema.json",
+			Description: "Authenticated AI agent lease and heartbeat document for reserving public claim-safe work packets without exposing internal task identifiers.",
+		},
+		{
+			Version:     "mergeos.agent-queue.v1",
+			Kind:        "agent_queue",
+			SchemaURL:   "https://mergeos.shop/protocol/agent-queue.v1.schema.json",
+			Description: "Public AI agent work queue with executable work packets, task context URLs, claim endpoints, and evidence payload templates.",
+		},
+		{
+			Version:     "mergeos.agent-runbook.v1",
+			Kind:        "agent_runbook",
+			SchemaURL:   "https://mergeos.shop/protocol/agent-runbook.v1.schema.json",
+			Description: "Public external AI agent runbook with context URLs, claim flow, action templates, evidence contract, and safety guardrails.",
+		},
+		{
+			Version:     "mergeos.marketplace.v1",
+			Kind:        "marketplace",
+			SchemaURL:   "https://mergeos.shop/protocol/marketplace.v1.schema.json",
+			Description: "Public realtime marketplace with funded projects, open bounties, active contributors, AI agent demand, and funding stats.",
+		},
+		{
+			Version:     "mergeos.live-feed.v1",
+			Kind:        "live_feed",
+			SchemaURL:   "https://mergeos.shop/protocol/live-feed.v1.schema.json",
+			Description: "Public realtime command center feed with project, task, PR, deployment, ledger, contributor, and AI action updates.",
+		},
+		{
+			Version:     "mergeos.workflow.v1",
+			Kind:        "workflow",
+			SchemaURL:   "https://mergeos.shop/protocol/workflow.v1.schema.json",
+			Description: "Project workflow graph with progress, current AI workflow step, public task nodes, dependency edges, executable stage contracts, and release status.",
+		},
+		{
+			Version:     "mergeos.estimate.v1",
+			Kind:        "project_estimate",
+			SchemaURL:   "https://mergeos.shop/protocol/estimate.v1.schema.json",
+			Description: "Authenticated project estimate document with editable budget range, confidence, assumptions, risks, and cost breakdown.",
+		},
+		{
+			Version:     "mergeos.wallet-migration.v1",
+			Kind:        "wallet_migration",
+			SchemaURL:   "https://mergeos.shop/protocol/wallet-migration.v1.schema.json",
+			Description: "Authenticated legacy TRC20/EVM wallet migration document with Solana target wallet, legacy address hash, and Anchor register_legacy_wallet arguments.",
+		},
+		{
+			Version:     "mergeos.release-artifact.v1",
+			Kind:        "release_artifact",
+			SchemaURL:   "https://mergeos.shop/protocol/release-artifact.v1.schema.json",
+			Description: "Public downloadable artifact manifest for MergeIDE executables, preview kits, release provenance, and agent installation links.",
+		},
+		{
+			Version:     "mergeos.repo-import.v1",
+			Kind:        "repo_import",
+			SchemaURL:   "https://mergeos.shop/protocol/repo-import.v1.schema.json",
+			Description: "Public repository issue import document with scored GitHub issues, effort estimates, worker lane routing, and AI task generation inputs.",
+		},
+		{
+			Version:     "mergeos.repo-sync.v1",
+			Kind:        "repo_sync",
+			SchemaURL:   "https://mergeos.shop/protocol/repo-sync.v1.schema.json",
+			Description: "Authenticated repository sync report with issue-to-task mappings, public claim endpoints, rewards, effort, and routing lanes.",
+		},
+		{
+			Version:     "mergeos.repo-task-funding.v1",
+			Kind:        "repo_task_funding",
+			SchemaURL:   "https://mergeos.shop/protocol/repo-task-funding.v1.schema.json",
+			Description: "Authenticated funding proof packet that turns a repository scan suggestion into an escrow-backed task with ledger receipt and agent work packet URLs.",
+		},
+		{
+			Version:     "mergeos.dispute.v1",
+			Kind:        "dispute",
+			SchemaURL:   "https://mergeos.shop/protocol/dispute.v1.schema.json",
+			Description: "Authenticated delivery dispute document for customer, worker, or admin escalation into the moderation queue.",
+		},
+		{
+			Version:     "mergeos.proposal.v1",
+			Kind:        "proposal",
+			SchemaURL:   "https://mergeos.shop/protocol/proposal.v1.schema.json",
+			Description: "Authenticated worker proposal submission with bid, availability, customer notification, and admin review routing.",
+		},
+		{
+			Version:     "mergeos.ai-workflow.v1",
+			Kind:        "ai_workflow",
+			SchemaURL:   "https://mergeos.shop/protocol/ai-workflow.v1.schema.json",
+			Description: "Authenticated AI orchestration workflow with executable stage contracts, context URLs, output protocols, and public-safe produced artifact IDs.",
+		},
+		{
+			Version:     "mergeos.event.v1",
+			Kind:        "event",
+			SchemaURL:   "https://mergeos.shop/protocol/event.v1.schema.json",
+			Description: "Realtime project, task, PR, deployment, ledger, and AI agent event envelope.",
+		},
+		{
+			Version:     "mergeos.ledger.v1",
+			Kind:        "ledger",
+			SchemaURL:   "https://mergeos.shop/protocol/ledger.v1.schema.json",
+			Description: "Public ledger entries with hash-chain verification metadata for payouts, fees, token minting, and manual credits.",
+		},
+		{
+			Version:     "mergeos.ledger-proof.v1",
+			Kind:        "ledger_proof",
+			SchemaURL:   "https://mergeos.shop/protocol/ledger-proof.v1.schema.json",
+			Description: "Public ledger proof manifest with original root hash, redacted public root hash, row verification, and contract reference anchor.",
+		},
+		{
+			Version:     "mergeos.token-economy.v1",
+			Kind:        "token_economy",
+			SchemaURL:   "https://mergeos.shop/protocol/token-economy.v1.schema.json",
+			Description: "Public MRG token economy document with verified funding, minting, escrow reserve, treasury, payout totals, flows, and recent ledger rows.",
+		},
+		{
+			Version:     "mergeos.airdrop-claim.v1",
+			Kind:        "airdrop_claim",
+			SchemaURL:   "https://mergeos.shop/protocol/airdrop-claim.v1.schema.json",
+			Description: "Authenticated task-based MRG airdrop claim with mission, Solana wallet, work proof, ledger receipt, and live-feed proof URLs.",
+		},
+		{
+			Version:     "mergeos.airdrop-missions.v1",
+			Kind:        "airdrop_missions",
+			SchemaURL:   "https://mergeos.shop/protocol/airdrop-missions.v1.schema.json",
+			Description: "Public task-based MRG airdrop mission catalog with proof requirements, allocation caps, proof signals, and score weights.",
+		},
+		{
+			Version:     "mergeos.presale-reservation.v1",
+			Kind:        "presale_reservation",
+			SchemaURL:   "https://mergeos.shop/protocol/presale-reservation.v1.schema.json",
+			Description: "Authenticated MRG presale reservation with Solana wallet, reserve amount, funding rail, pending review status, and ledger receipt.",
+		},
+		{
+			Version:     "mergeos.escrow.v1",
+			Kind:        "escrow",
+			SchemaURL:   "https://mergeos.shop/protocol/escrow.v1.schema.json",
+			Description: "Authenticated project escrow document with reserve, release, payout, remaining balance, and per-task settlement state.",
+		},
+		{
+			Version:     "mergeos.payouts.v1",
+			Kind:        "payouts",
+			SchemaURL:   "https://mergeos.shop/protocol/payouts.v1.schema.json",
+			Description: "Authenticated payout settlement document with release status, paid/open task counts, ledger proof references, payout accounts, and per-task payment state.",
+		},
+		{
+			Version:     "mergeos.payout-release.v1",
+			Kind:        "auto_release",
+			SchemaURL:   "https://mergeos.shop/protocol/payout-release.v1.schema.json",
+			Description: "Authenticated auto-release command result with released/skipped counts, deployment validation gates, task claim receipts, and the updated payout settlement document.",
+		},
+		{
+			Version:     "mergeos.deployment.v1",
+			Kind:        "deployment",
+			SchemaURL:   "https://mergeos.shop/protocol/deployment.v1.schema.json",
+			Description: "Authenticated deployment validation document with release gate progress, rollout stages, deployment evidence, and AI/deployment signals.",
+		},
+		{
+			Version:     "mergeos.pr-monitor.v1",
+			Kind:        "pr_monitor",
+			SchemaURL:   "https://mergeos.shop/protocol/pr-monitor.v1.schema.json",
+			Description: "Authenticated live pull request monitor with task linkage, readiness gates, merge risk, labels, authors, and GitHub sync health.",
+		},
+		{
+			Version:     "mergeos.scan.v1",
+			Kind:        "repository_scan",
+			SchemaURL:   "https://mergeos.shop/protocol/scan.v1.schema.json",
+			Description: "Repository scan findings for security, dependency, quality, and technical debt signals.",
+		},
+		{
+			Version:     "mergeos.customer-dashboard.v1",
+			Kind:        "customer_dashboard",
+			SchemaURL:   "https://mergeos.shop/protocol/customer-dashboard.v1.schema.json",
+			Description: "Authenticated customer delivery dashboard with project overview, escrow, payouts, deployment, AI workflow, task graph, repository scan, and PR monitor data.",
+		},
+		{
+			Version:     "mergeos.worker-dashboard.v1",
+			Kind:        "worker_dashboard",
+			SchemaURL:   "https://mergeos.shop/protocol/worker-dashboard.v1.schema.json",
+			Description: "Authenticated worker dashboard with claimed tasks, rewards, reputation audit, matched proposals, and linked identity status.",
+		},
+		{
+			Version:     "mergeos.routing.v1",
+			Kind:        "project_routing",
+			SchemaURL:   "https://mergeos.shop/protocol/routing.v1.schema.json",
+			Description: "Authenticated project routing document with human, agent, and hybrid lanes, readiness blockers, candidate counts, and recommended next actions.",
+		},
+		{
+			Version:     "mergeos.admin-ops.v1",
+			Kind:        "admin_ops",
+			SchemaURL:   "https://mergeos.shop/protocol/admin-ops.v1.schema.json",
+			Description: "Authenticated admin operations queue for treasury review, disputes, moderation, payout audits, security checks, and fraud signals.",
+		},
+	}
+	endpoints := []ProtocolManifestEndpoint{
+		{
+			Method:      "GET",
+			Path:        "/api/public/protocol",
+			Auth:        "none",
+			Description: "Protocol manifest and endpoint discovery for external agents and integrations.",
+		},
+		{
+			Method:      "GET",
+			Path:        "/api/public/protocol/tasks",
+			Protocol:    "mergeos.task.v1",
+			Auth:        "none",
+			Description: "Public open bounty tasks as protocol documents.",
+		},
+		{
+			Method:      "GET",
+			Path:        "/api/public/marketplace",
+			Protocol:    "mergeos.marketplace.v1",
+			Auth:        "none",
+			Description: "Public realtime marketplace for funded projects, open bounties, contributors, and AI agent lanes.",
+		},
+		{
+			Method:      "GET",
+			Path:        "/api/public/live-feed",
+			Protocol:    "mergeos.live-feed.v1",
+			Auth:        "none",
+			Description: "Public command center feed for project, task, PR, deployment, ledger, contributor, and AI action updates. Supports limit, after_id/cursor, and since replay queries.",
+		},
+		{
+			Method:      "GET",
+			Path:        "/api/public/protocol/agents",
+			Protocol:    "mergeos.agent.v1",
+			Auth:        "none",
+			Description: "Public AI agent lanes as protocol documents.",
+		},
+		{
+			Method:      "GET",
+			Path:        "/api/public/protocol/agent-queue",
+			Protocol:    "mergeos.agent-queue.v1",
+			Auth:        "none",
+			Description: "Public claim-safe AI agent queue with executable work packets for agent-ready and hybrid bounties.",
+		},
+		{
+			Method:      "GET",
+			Path:        "/api/public/agents/queue",
+			Protocol:    "mergeos.agent-queue.v1",
+			Auth:        "none",
+			Description: "Compatibility alias for public AI agent queue clients; prefer /api/public/protocol/agent-queue for new integrations.",
+		},
+		{
+			Method:      "POST",
+			Path:        "/api/agent-queue/leases",
+			Protocol:    "mergeos.agent-lease.v1",
+			Auth:        "worker",
+			Description: "Authenticated AI agent lease and heartbeat endpoint for claim-safe work packets discovered from the public agent queue.",
+		},
+		{
+			Method:      "GET",
+			Path:        "/protocol/runbooks/mergeide-agent.v1.json",
+			Protocol:    "mergeos.agent-runbook.v1",
+			Auth:        "none",
+			Description: "Public MergeIDE and external-agent runbook with protocol context URLs, claim flow, action templates, and evidence guardrails.",
+		},
+		{
+			Method:      "GET",
+			Path:        "/api/public/protocol/contributors",
+			Protocol:    "mergeos.contributor.v1",
+			Auth:        "none",
+			Description: "Public contributor reputation and routing documents for human, agent, and hybrid marketplace workers.",
+		},
+		{
+			Method:      "GET",
+			Path:        "/downloads/mergeide-windows-latest.json",
+			Protocol:    "mergeos.release-artifact.v1",
+			Auth:        "none",
+			Description: "Public MergeIDE Windows executable release manifest with download URL, release tag, workflow provenance, and preview-kit fallback.",
+		},
+		{
+			Method:      "GET",
+			Path:        "/api/public/protocol/ledger",
+			Protocol:    "mergeos.ledger.v1",
+			Auth:        "none",
+			Description: "Public ledger proof document with sanitized ledger rows and hash-chain verification.",
+		},
+		{
+			Method:      "GET",
+			Path:        "/api/public/ledger/proof",
+			Protocol:    "mergeos.ledger-proof.v1",
+			Auth:        "none",
+			Description: "Public proof manifest for full and redacted ledger hash chains, row verification, and contract anchor references.",
+		},
+		{
+			Method:      "GET",
+			Path:        "/api/public/ledger/events",
+			Protocol:    "mergeos.live-feed.v1",
+			Auth:        "none",
+			Description: "Ledger-scoped public event feed for escrow, token mint, treasury, payout, and release proof rows.",
+		},
+		{
+			Method:      "GET",
+			Path:        "/api/public/token-economy",
+			Protocol:    "mergeos.token-economy.v1",
+			Auth:        "none",
+			Description: "Public MRG economy totals for verified funding, token minting, escrow reserves, treasury fees, and released rewards.",
+		},
+		{
+			Method:      "GET",
+			Path:        "/api/public/airdrop/missions",
+			Protocol:    "mergeos.airdrop-missions.v1",
+			Auth:        "none",
+			Description: "Public airdrop mission board with proof requirements, mission scores, default allocations, and per-mission caps.",
+		},
+		{
+			Method:      "POST",
+			Path:        "/api/airdrop/claims",
+			Protocol:    "mergeos.airdrop-claim.v1",
+			Auth:        "user",
+			Description: "Authenticated task-based airdrop claim that validates Solana wallet and work proof before recording a ledger receipt.",
+		},
+		{
+			Method:      "POST",
+			Path:        "/api/presale/reservations",
+			Protocol:    "mergeos.presale-reservation.v1",
+			Auth:        "user",
+			Description: "Authenticated presale reservation that validates Solana wallet, reserve amount, and funding rail before recording a ledger receipt.",
+		},
+		{
+			Method:      "GET",
+			Path:        "/contracts/solana/mergeos_mrg.v1.idl.json",
+			Protocol:    "mergeos.solana-mrg-program.v1",
+			Auth:        "none",
+			Description: "Public Anchor-compatible IDL for the Solana MRG treasury, escrow, payout, and wallet migration program.",
+		},
+		{
+			Method:      "GET",
+			Path:        "/contracts/solana/mergeos_mrg.proof-manifest.v1.json",
+			Protocol:    "mergeos.solana-contract-proof.v1",
+			Auth:        "none",
+			Description: "Public Solana proof manifest mapping ledger event types to MRG Anchor instructions, PDA seeds, SDK helpers, and audit sources.",
+		},
+		{
+			Method:      "GET",
+			Path:        "/api/public/protocol/events",
+			Protocol:    "mergeos.event.v1",
+			Auth:        "none",
+			Description: "Public live-feed events as protocol documents with the same limit, after_id/cursor, and since replay queries as the live feed.",
+		},
+		{
+			Method:      "GET",
+			Path:        "/api/public/projects/{id}/deployment",
+			Protocol:    "mergeos.deployment.v1",
+			Auth:        "none",
+			Description: "Public sanitized deployment readiness document for marketplace projects, release gates, agent signals, and deployment validation progress.",
+		},
+		{
+			Method:      "GET",
+			Path:        "/api/public/projects/{id}/ai-workflow",
+			Protocol:    "mergeos.ai-workflow.v1",
+			Auth:        "none",
+			Description: "Public sanitized AI workflow timeline for marketplace projects across repository import, issue scan, task generation, routing, PR review, and deployment validation.",
+		},
+		{
+			Method:      "GET",
+			Path:        "/api/public/projects/{id}/workflow",
+			Protocol:    "mergeos.workflow.v1",
+			Auth:        "none",
+			Description: "Public sanitized project workflow graph with claim-safe task IDs, dependency edges, readiness, and agent context endpoints.",
+		},
+		{
+			Method:      "GET",
+			Path:        "/api/public/projects/{id}/repo-scan",
+			Protocol:    "mergeos.scan.v1",
+			Auth:        "none",
+			Description: "Public claim-safe repository scan with dependency, technical debt, security findings, suggested tasks, and funding packet templates.",
+		},
+		{
+			Method:      "GET",
+			Path:        "/api/public/projects/{id}/pull-requests",
+			Protocol:    "mergeos.pr-monitor.v1",
+			Auth:        "none",
+			Description: "Public sanitized PR monitor for marketplace projects, linked issues, pull request readiness, and review state without exposing internal task identifiers.",
+		},
+		{
+			Method:      "POST",
+			Path:        "/api/public/repo/issues",
+			Protocol:    "mergeos.repo-import.v1",
+			Auth:        "none",
+			Description: "Public GitHub repository issue import and AI scoring report.",
+		},
+		{
+			Method:      "WS",
+			Path:        "/api/ws",
+			Protocol:    "mergeos.event.v1",
+			Auth:        "none",
+			Description: "Realtime WebSocket stream for live feed snapshots, replayable initial snapshots via limit/after_id/since, and protocol event broadcasts.",
+		},
+		{
+			Method:      "GET",
+			Path:        "/api/projects/{id}/protocol/workflow",
+			Protocol:    "mergeos.workflow.v1",
+			Auth:        "project",
+			Description: "Authenticated project workflow graph protocol document.",
+		},
+		{
+			Method:      "GET",
+			Path:        "/api/projects/{id}/protocol/scan",
+			Protocol:    "mergeos.scan.v1",
+			Auth:        "project",
+			Description: "Authenticated repository scan protocol document.",
+		},
+		{
+			Method:      "GET",
+			Path:        "/api/projects/{id}/routing",
+			Protocol:    "mergeos.routing.v1",
+			Auth:        "project",
+			Description: "Authenticated contributor and AI agent routing plan for project tasks, readiness blockers, candidate lanes, and next actions.",
+		},
+		{
+			Method:      "POST",
+			Path:        "/api/payments/paypal/orders",
+			Protocol:    "mergeos.payment-order.v1",
+			Auth:        "user",
+			Description: "Authenticated PayPal checkout bootstrap that stores a server-side order intent and returns order_id plus payment_reference for project funding.",
+		},
+		{
+			Method:      "POST",
+			Path:        "/api/projects/{id}/repo-scan/suggested-tasks/{taskID}/paypal-order",
+			Protocol:    "mergeos.scan.v1",
+			Auth:        "project",
+			Description: "Authenticated checkout bootstrap for funding a repository scan suggested task with a server-side PayPal order intent.",
+		},
+		{
+			Method:      "POST",
+			Path:        "/api/projects/{id}/repo-scan/suggested-tasks/{taskID}/fund",
+			Protocol:    "mergeos.repo-task-funding.v1",
+			Auth:        "project",
+			Description: "Authenticated funding command that turns a repository scan suggestion into an escrow-backed task, ledger receipt, and agent work packet.",
+		},
+		{
+			Method:      "POST",
+			Path:        "/api/projects/{id}/repo-sync",
+			Protocol:    "mergeos.repo-sync.v1",
+			Auth:        "project",
+			Description: "Authenticated issue sync report that converts imported GitHub issues into MergeOS task rows.",
+		},
+		{
+			Method:      "POST",
+			Path:        "/api/disputes",
+			Protocol:    "mergeos.dispute.v1",
+			Auth:        "user",
+			Description: "Authenticated customer, worker, or admin dispute escalation into the admin moderation queue.",
+		},
+		{
+			Method:      "GET",
+			Path:        "/api/projects/{id}/escrow",
+			Protocol:    "mergeos.escrow.v1",
+			Auth:        "project",
+			Description: "Authenticated project escrow reserve, release, payout, and task settlement document.",
+		},
+		{
+			Method:      "GET",
+			Path:        "/api/projects/{id}/payouts",
+			Protocol:    "mergeos.payouts.v1",
+			Auth:        "project",
+			Description: "Authenticated project payout settlement document with release state, payout rows, ledger proof references, and payout accounts.",
+		},
+		{
+			Method:      "POST",
+			Path:        "/api/projects/{id}/auto-release",
+			Protocol:    "mergeos.payout-release.v1",
+			Auth:        "project",
+			Description: "Authenticated auto-release command for low-risk PR monitor candidates that validates deployment-sensitive work, accepts tasks, and writes ledger-backed payout proof.",
+		},
+		{
+			Method:      "GET",
+			Path:        "/api/projects/{id}/deployment",
+			Protocol:    "mergeos.deployment.v1",
+			Auth:        "project",
+			Description: "Authenticated deployment validation state with rollout stages, release gates, and evidence signals.",
+		},
+		{
+			Method:      "GET",
+			Path:        "/api/projects/{id}/ai-workflow",
+			Protocol:    "mergeos.ai-workflow.v1",
+			Auth:        "project",
+			Description: "Authenticated AI orchestration timeline for repository import, issue scan, task generation, routing, PR review, and deployment validation.",
+		},
+		{
+			Method:      "POST",
+			Path:        "/api/projects/{id}/agent-actions",
+			Protocol:    "mergeos.agent-action.v1",
+			Auth:        "project_or_assigned_worker",
+			Description: "Authenticated AI agent evidence writer for project owners or assigned workers after a claim_id/bounty_id lane is accepted.",
+		},
+		{
+			Method:      "GET",
+			Path:        "/api/projects/{id}/pull-requests",
+			Protocol:    "mergeos.pr-monitor.v1",
+			Auth:        "project",
+			Description: "Authenticated live pull request monitor for linked bounty tasks, readiness gates, and merge risk.",
+		},
+		{
+			Method:      "GET",
+			Path:        "/api/projects/{id}/dashboard",
+			Protocol:    "mergeos.customer-dashboard.v1",
+			Auth:        "project",
+			Description: "Authenticated customer dashboard for delivery status, escrow, workflow graph, repository scan, AI activity, and live PR monitoring.",
+		},
+		{
+			Method:      "GET",
+			Path:        "/api/workers/me",
+			Protocol:    "mergeos.worker-dashboard.v1",
+			Auth:        "worker",
+			Description: "Authenticated worker dashboard for claimed work, payout references, reputation, and proposal routing.",
+		},
+		{
+			Method:      "POST",
+			Path:        "/api/proposals",
+			Protocol:    "mergeos.proposal.v1",
+			Auth:        "worker",
+			Description: "Authenticated worker proposal submission for an open bounty task, with customer notification and admin proposal review signal.",
+		},
+		{
+			Method:      "POST",
+			Path:        "/api/proposals/{id}/decision",
+			Protocol:    "mergeos.proposal.v1",
+			Auth:        "project",
+			Description: "Authenticated customer or admin proposal decision that accepts a worker bid into a claimed task or declines it with dashboard status updates.",
+		},
+		{
+			Method:      "POST",
+			Path:        "/api/projects/evaluate-price",
+			Protocol:    "mergeos.estimate.v1",
+			Auth:        "user",
+			Description: "Authenticated project estimate for editable budget range, confidence, cost breakdown, assumptions, and risks.",
+		},
+		{
+			Method:      "POST",
+			Path:        "/api/wallets/migrations",
+			Protocol:    "mergeos.wallet-migration.v1",
+			Auth:        "user",
+			Description: "Authenticated legacy TRC20/EVM wallet migration into a Solana MRG wallet with Anchor contract registration metadata.",
+		},
+		{
+			Method:      "POST",
+			Path:        "/api/tasks/{id}/accept",
+			Protocol:    "mergeos.task-claim.v1",
+			Auth:        "project_owner_or_admin",
+			Description: "Authenticated payout release endpoint for submitted or claimed task ids after review approval.",
+		},
+		{
+			Method:      "POST",
+			Path:        "/api/tasks/{id}/claim",
+			Protocol:    "mergeos.task-claim.v1",
+			Auth:        "worker",
+			Description: "Authenticated claim alias used by public AI agent work packets and worker bounty links.",
+		},
+		{
+			Method:      "POST",
+			Path:        "/api/tasks/{id}/submit",
+			Protocol:    "mergeos.task-submission.v1",
+			Auth:        "assigned_worker_or_project",
+			Description: "Authenticated task evidence submission for a claimed bounty, including GitHub PR, evidence URL, and review notes.",
+		},
+		{
+			Method:      "POST",
+			Path:        "/api/tasks/{id}/request-changes",
+			Protocol:    "mergeos.task-review.v1",
+			Auth:        "project_owner_or_admin",
+			Description: "Authenticated review decision that asks the assigned worker to update evidence before payout release.",
+		},
+		{
+			Method:      "GET",
+			Path:        "/api/admin/ops-queue",
+			Protocol:    "mergeos.admin-ops.v1",
+			Auth:        "admin",
+			Description: "Authenticated admin operations queue for disputes, moderation, payout review, treasury audit, security checks, and fraud signals.",
+		},
+		{
+			Method:      "GET",
+			Path:        "/api/admin/disputes",
+			Protocol:    "mergeos.admin-ops.v1",
+			Auth:        "admin",
+			Description: "Authenticated admin dispute center lanes derived from the operations queue for payout, moderation, fraud, security, token workflow, and proposal review.",
+		},
+	}
+
+	contextURLs := protocolManifestAgentContextURLs()
 	return ProtocolManifestResponse{
 		ProtocolVersion: "mergeos.protocol.manifest.v1",
 		Kind:            "protocol_manifest",
-		Schemas: []ProtocolManifestSchema{
-			{
-				Version:     "mergeos.task.v1",
-				Kind:        "task",
-				SchemaURL:   "https://mergeos.shop/protocol/task.v1.schema.json",
-				Description: "Claimable bounty task with reward, worker lane, acceptance criteria, and evidence requirements.",
-			},
-			{
-				Version:     "mergeos.task-claim.v1",
-				Kind:        "task_claim",
-				SchemaURL:   "https://mergeos.shop/protocol/task-claim.v1.schema.json",
-				Description: "Authenticated bounty claim or release document with worker identity, claimed task status, and optional payout proof after acceptance.",
-			},
-			{
-				Version:     "mergeos.task-submission.v1",
-				Kind:        "task_submission",
-				SchemaURL:   "https://mergeos.shop/protocol/task-submission.v1.schema.json",
-				Description: "Authenticated task evidence submission with pull request URL, review evidence, notes, assigned worker authorization, and public-safe submitted status.",
-			},
-			{
-				Version:     "mergeos.task-review.v1",
-				Kind:        "task_review",
-				SchemaURL:   "https://mergeos.shop/protocol/task-review.v1.schema.json",
-				Description: "Authenticated customer/admin review decision that requests changes and returns a submitted task to the claimed lane before payout release.",
-			},
-			{
-				Version:     "mergeos.agent.v1",
-				Kind:        "agent",
-				SchemaURL:   "https://mergeos.shop/protocol/agent.v1.schema.json",
-				Description: "AI agent lane with supported actions, capabilities, active bounty demand, and open task references.",
-			},
-			{
-				Version:     "mergeos.contributor.v1",
-				Kind:        "contributor",
-				SchemaURL:   "https://mergeos.shop/protocol/contributor.v1.schema.json",
-				Description: "Public contributor reputation, capability, payout, risk, and open bounty matching document for marketplace routing.",
-			},
-			{
-				Version:     "mergeos.agent-action.v1",
-				Kind:        "agent_action",
-				SchemaURL:   "https://mergeos.shop/protocol/agent-action.v1.schema.json",
-				Description: "Authenticated AI agent action document for review, test, generate, scan, deployment evidence, CEO delegation, and design-review handoff.",
-			},
-			{
-				Version:     "mergeos.agent-lease.v1",
-				Kind:        "agent_lease",
-				SchemaURL:   "https://mergeos.shop/protocol/agent-lease.v1.schema.json",
-				Description: "Authenticated AI agent lease and heartbeat document for reserving public claim-safe work packets without exposing internal task identifiers.",
-			},
-			{
-				Version:     "mergeos.agent-queue.v1",
-				Kind:        "agent_queue",
-				SchemaURL:   "https://mergeos.shop/protocol/agent-queue.v1.schema.json",
-				Description: "Public AI agent work queue with executable work packets, task context URLs, claim endpoints, and evidence payload templates.",
-			},
-			{
-				Version:     "mergeos.agent-runbook.v1",
-				Kind:        "agent_runbook",
-				SchemaURL:   "https://mergeos.shop/protocol/agent-runbook.v1.schema.json",
-				Description: "Public external AI agent runbook with context URLs, claim flow, action templates, evidence contract, and safety guardrails.",
-			},
-			{
-				Version:     "mergeos.marketplace.v1",
-				Kind:        "marketplace",
-				SchemaURL:   "https://mergeos.shop/protocol/marketplace.v1.schema.json",
-				Description: "Public realtime marketplace with funded projects, open bounties, active contributors, AI agent demand, and funding stats.",
-			},
-			{
-				Version:     "mergeos.live-feed.v1",
-				Kind:        "live_feed",
-				SchemaURL:   "https://mergeos.shop/protocol/live-feed.v1.schema.json",
-				Description: "Public realtime command center feed with project, task, PR, deployment, ledger, contributor, and AI action updates.",
-			},
-			{
-				Version:     "mergeos.workflow.v1",
-				Kind:        "workflow",
-				SchemaURL:   "https://mergeos.shop/protocol/workflow.v1.schema.json",
-				Description: "Project workflow graph with progress, current AI workflow step, public task nodes, dependency edges, executable stage contracts, and release status.",
-			},
-			{
-				Version:     "mergeos.estimate.v1",
-				Kind:        "project_estimate",
-				SchemaURL:   "https://mergeos.shop/protocol/estimate.v1.schema.json",
-				Description: "Authenticated project estimate document with editable budget range, confidence, assumptions, risks, and cost breakdown.",
-			},
-			{
-				Version:     "mergeos.wallet-migration.v1",
-				Kind:        "wallet_migration",
-				SchemaURL:   "https://mergeos.shop/protocol/wallet-migration.v1.schema.json",
-				Description: "Authenticated legacy TRC20/EVM wallet migration document with Solana target wallet, legacy address hash, and Anchor register_legacy_wallet arguments.",
-			},
-			{
-				Version:     "mergeos.release-artifact.v1",
-				Kind:        "release_artifact",
-				SchemaURL:   "https://mergeos.shop/protocol/release-artifact.v1.schema.json",
-				Description: "Public downloadable artifact manifest for MergeIDE executables, preview kits, release provenance, and agent installation links.",
-			},
-			{
-				Version:     "mergeos.repo-import.v1",
-				Kind:        "repo_import",
-				SchemaURL:   "https://mergeos.shop/protocol/repo-import.v1.schema.json",
-				Description: "Public repository issue import document with scored GitHub issues, effort estimates, worker lane routing, and AI task generation inputs.",
-			},
-			{
-				Version:     "mergeos.repo-sync.v1",
-				Kind:        "repo_sync",
-				SchemaURL:   "https://mergeos.shop/protocol/repo-sync.v1.schema.json",
-				Description: "Authenticated repository sync report with issue-to-task mappings, public claim endpoints, rewards, effort, and routing lanes.",
-			},
-			{
-				Version:     "mergeos.repo-task-funding.v1",
-				Kind:        "repo_task_funding",
-				SchemaURL:   "https://mergeos.shop/protocol/repo-task-funding.v1.schema.json",
-				Description: "Authenticated funding proof packet that turns a repository scan suggestion into an escrow-backed task with ledger receipt and agent work packet URLs.",
-			},
-			{
-				Version:     "mergeos.dispute.v1",
-				Kind:        "dispute",
-				SchemaURL:   "https://mergeos.shop/protocol/dispute.v1.schema.json",
-				Description: "Authenticated delivery dispute document for customer, worker, or admin escalation into the moderation queue.",
-			},
-			{
-				Version:     "mergeos.proposal.v1",
-				Kind:        "proposal",
-				SchemaURL:   "https://mergeos.shop/protocol/proposal.v1.schema.json",
-				Description: "Authenticated worker proposal submission with bid, availability, customer notification, and admin review routing.",
-			},
-			{
-				Version:     "mergeos.ai-workflow.v1",
-				Kind:        "ai_workflow",
-				SchemaURL:   "https://mergeos.shop/protocol/ai-workflow.v1.schema.json",
-				Description: "Authenticated AI orchestration workflow with executable stage contracts, context URLs, output protocols, and public-safe produced artifact IDs.",
-			},
-			{
-				Version:     "mergeos.event.v1",
-				Kind:        "event",
-				SchemaURL:   "https://mergeos.shop/protocol/event.v1.schema.json",
-				Description: "Realtime project, task, PR, deployment, ledger, and AI agent event envelope.",
-			},
-			{
-				Version:     "mergeos.ledger.v1",
-				Kind:        "ledger",
-				SchemaURL:   "https://mergeos.shop/protocol/ledger.v1.schema.json",
-				Description: "Public ledger entries with hash-chain verification metadata for payouts, fees, token minting, and manual credits.",
-			},
-			{
-				Version:     "mergeos.ledger-proof.v1",
-				Kind:        "ledger_proof",
-				SchemaURL:   "https://mergeos.shop/protocol/ledger-proof.v1.schema.json",
-				Description: "Public ledger proof manifest with original root hash, redacted public root hash, row verification, and contract reference anchor.",
-			},
-			{
-				Version:     "mergeos.token-economy.v1",
-				Kind:        "token_economy",
-				SchemaURL:   "https://mergeos.shop/protocol/token-economy.v1.schema.json",
-				Description: "Public MRG token economy document with verified funding, minting, escrow reserve, treasury, payout totals, flows, and recent ledger rows.",
-			},
-			{
-				Version:     "mergeos.airdrop-claim.v1",
-				Kind:        "airdrop_claim",
-				SchemaURL:   "https://mergeos.shop/protocol/airdrop-claim.v1.schema.json",
-				Description: "Authenticated task-based MRG airdrop claim with mission, Solana wallet, work proof, ledger receipt, and live-feed proof URLs.",
-			},
-			{
-				Version:     "mergeos.airdrop-missions.v1",
-				Kind:        "airdrop_missions",
-				SchemaURL:   "https://mergeos.shop/protocol/airdrop-missions.v1.schema.json",
-				Description: "Public task-based MRG airdrop mission catalog with proof requirements, allocation caps, proof signals, and score weights.",
-			},
-			{
-				Version:     "mergeos.presale-reservation.v1",
-				Kind:        "presale_reservation",
-				SchemaURL:   "https://mergeos.shop/protocol/presale-reservation.v1.schema.json",
-				Description: "Authenticated MRG presale reservation with Solana wallet, reserve amount, funding rail, pending review status, and ledger receipt.",
-			},
-			{
-				Version:     "mergeos.escrow.v1",
-				Kind:        "escrow",
-				SchemaURL:   "https://mergeos.shop/protocol/escrow.v1.schema.json",
-				Description: "Authenticated project escrow document with reserve, release, payout, remaining balance, and per-task settlement state.",
-			},
-			{
-				Version:     "mergeos.payouts.v1",
-				Kind:        "payouts",
-				SchemaURL:   "https://mergeos.shop/protocol/payouts.v1.schema.json",
-				Description: "Authenticated payout settlement document with release status, paid/open task counts, ledger proof references, payout accounts, and per-task payment state.",
-			},
-			{
-				Version:     "mergeos.payout-release.v1",
-				Kind:        "auto_release",
-				SchemaURL:   "https://mergeos.shop/protocol/payout-release.v1.schema.json",
-				Description: "Authenticated auto-release command result with released/skipped counts, deployment validation gates, task claim receipts, and the updated payout settlement document.",
-			},
-			{
-				Version:     "mergeos.deployment.v1",
-				Kind:        "deployment",
-				SchemaURL:   "https://mergeos.shop/protocol/deployment.v1.schema.json",
-				Description: "Authenticated deployment validation document with release gate progress, rollout stages, deployment evidence, and AI/deployment signals.",
-			},
-			{
-				Version:     "mergeos.pr-monitor.v1",
-				Kind:        "pr_monitor",
-				SchemaURL:   "https://mergeos.shop/protocol/pr-monitor.v1.schema.json",
-				Description: "Authenticated live pull request monitor with task linkage, readiness gates, merge risk, labels, authors, and GitHub sync health.",
-			},
-			{
-				Version:     "mergeos.scan.v1",
-				Kind:        "repository_scan",
-				SchemaURL:   "https://mergeos.shop/protocol/scan.v1.schema.json",
-				Description: "Repository scan findings for security, dependency, quality, and technical debt signals.",
-			},
-			{
-				Version:     "mergeos.customer-dashboard.v1",
-				Kind:        "customer_dashboard",
-				SchemaURL:   "https://mergeos.shop/protocol/customer-dashboard.v1.schema.json",
-				Description: "Authenticated customer delivery dashboard with project overview, escrow, payouts, deployment, AI workflow, task graph, repository scan, and PR monitor data.",
-			},
-			{
-				Version:     "mergeos.worker-dashboard.v1",
-				Kind:        "worker_dashboard",
-				SchemaURL:   "https://mergeos.shop/protocol/worker-dashboard.v1.schema.json",
-				Description: "Authenticated worker dashboard with claimed tasks, rewards, reputation audit, matched proposals, and linked identity status.",
-			},
-			{
-				Version:     "mergeos.routing.v1",
-				Kind:        "project_routing",
-				SchemaURL:   "https://mergeos.shop/protocol/routing.v1.schema.json",
-				Description: "Authenticated project routing document with human, agent, and hybrid lanes, readiness blockers, candidate counts, and recommended next actions.",
-			},
-			{
-				Version:     "mergeos.admin-ops.v1",
-				Kind:        "admin_ops",
-				SchemaURL:   "https://mergeos.shop/protocol/admin-ops.v1.schema.json",
-				Description: "Authenticated admin operations queue for treasury review, disputes, moderation, payout audits, security checks, and fraud signals.",
+		Status:          "active",
+		GeneratedAt:     time.Now().UTC(),
+		Stats: ProtocolManifestStats{
+			SchemaCount:          len(schemas),
+			PublicEndpointCount:  len(endpoints),
+			AgentContextURLCount: len(contextURLs),
+			RealtimeStreamCount:  1,
+		},
+		Realtime: ProtocolManifestRealtime{
+			ProtocolVersion: "mergeos.event.v1",
+			WebSocketPath:   "/api/ws",
+			ReadyEvent:      "realtime_ready",
+			SnapshotEvent:   "realtime_snapshot",
+			HeartbeatEvent:  "realtime_heartbeat",
+			Topics: []string{
+				"marketplace",
+				"tasks",
+				"proposals",
+				"agent-actions",
+				"deployments",
+				"ledger",
+				"notifications",
 			},
 		},
-		Endpoints: []ProtocolManifestEndpoint{
-			{
-				Method:      "GET",
-				Path:        "/api/public/protocol",
-				Auth:        "none",
-				Description: "Protocol manifest and endpoint discovery for external agents and integrations.",
-			},
-			{
-				Method:      "GET",
-				Path:        "/api/public/protocol/tasks",
-				Protocol:    "mergeos.task.v1",
-				Auth:        "none",
-				Description: "Public open bounty tasks as protocol documents.",
-			},
-			{
-				Method:      "GET",
-				Path:        "/api/public/marketplace",
-				Protocol:    "mergeos.marketplace.v1",
-				Auth:        "none",
-				Description: "Public realtime marketplace for funded projects, open bounties, contributors, and AI agent lanes.",
-			},
-			{
-				Method:      "GET",
-				Path:        "/api/public/live-feed",
-				Protocol:    "mergeos.live-feed.v1",
-				Auth:        "none",
-				Description: "Public command center feed for project, task, PR, deployment, ledger, contributor, and AI action updates. Supports limit, after_id/cursor, and since replay queries.",
-			},
-			{
-				Method:      "GET",
-				Path:        "/api/public/protocol/agents",
-				Protocol:    "mergeos.agent.v1",
-				Auth:        "none",
-				Description: "Public AI agent lanes as protocol documents.",
-			},
-			{
-				Method:      "GET",
-				Path:        "/api/public/protocol/agent-queue",
-				Protocol:    "mergeos.agent-queue.v1",
-				Auth:        "none",
-				Description: "Public claim-safe AI agent queue with executable work packets for agent-ready and hybrid bounties.",
-			},
-			{
-				Method:      "GET",
-				Path:        "/api/public/agents/queue",
-				Protocol:    "mergeos.agent-queue.v1",
-				Auth:        "none",
-				Description: "Compatibility alias for public AI agent queue clients; prefer /api/public/protocol/agent-queue for new integrations.",
-			},
-			{
-				Method:      "POST",
-				Path:        "/api/agent-queue/leases",
-				Protocol:    "mergeos.agent-lease.v1",
-				Auth:        "worker",
-				Description: "Authenticated AI agent lease and heartbeat endpoint for claim-safe work packets discovered from the public agent queue.",
-			},
-			{
-				Method:      "GET",
-				Path:        "/protocol/runbooks/mergeide-agent.v1.json",
-				Protocol:    "mergeos.agent-runbook.v1",
-				Auth:        "none",
-				Description: "Public MergeIDE and external-agent runbook with protocol context URLs, claim flow, action templates, and evidence guardrails.",
-			},
-			{
-				Method:      "GET",
-				Path:        "/api/public/protocol/contributors",
-				Protocol:    "mergeos.contributor.v1",
-				Auth:        "none",
-				Description: "Public contributor reputation and routing documents for human, agent, and hybrid marketplace workers.",
-			},
-			{
-				Method:      "GET",
-				Path:        "/downloads/mergeide-windows-latest.json",
-				Protocol:    "mergeos.release-artifact.v1",
-				Auth:        "none",
-				Description: "Public MergeIDE Windows executable release manifest with download URL, release tag, workflow provenance, and preview-kit fallback.",
-			},
-			{
-				Method:      "GET",
-				Path:        "/api/public/protocol/ledger",
-				Protocol:    "mergeos.ledger.v1",
-				Auth:        "none",
-				Description: "Public ledger proof document with sanitized ledger rows and hash-chain verification.",
-			},
-			{
-				Method:      "GET",
-				Path:        "/api/public/ledger/proof",
-				Protocol:    "mergeos.ledger-proof.v1",
-				Auth:        "none",
-				Description: "Public proof manifest for full and redacted ledger hash chains, row verification, and contract anchor references.",
-			},
-			{
-				Method:      "GET",
-				Path:        "/api/public/ledger/events",
-				Protocol:    "mergeos.live-feed.v1",
-				Auth:        "none",
-				Description: "Ledger-scoped public event feed for escrow, token mint, treasury, payout, and release proof rows.",
-			},
-			{
-				Method:      "GET",
-				Path:        "/api/public/token-economy",
-				Protocol:    "mergeos.token-economy.v1",
-				Auth:        "none",
-				Description: "Public MRG economy totals for verified funding, token minting, escrow reserves, treasury fees, and released rewards.",
-			},
-			{
-				Method:      "GET",
-				Path:        "/api/public/airdrop/missions",
-				Protocol:    "mergeos.airdrop-missions.v1",
-				Auth:        "none",
-				Description: "Public airdrop mission board with proof requirements, mission scores, default allocations, and per-mission caps.",
-			},
-			{
-				Method:      "POST",
-				Path:        "/api/airdrop/claims",
-				Protocol:    "mergeos.airdrop-claim.v1",
-				Auth:        "user",
-				Description: "Authenticated task-based airdrop claim that validates Solana wallet and work proof before recording a ledger receipt.",
-			},
-			{
-				Method:      "POST",
-				Path:        "/api/presale/reservations",
-				Protocol:    "mergeos.presale-reservation.v1",
-				Auth:        "user",
-				Description: "Authenticated presale reservation that validates Solana wallet, reserve amount, and funding rail before recording a ledger receipt.",
-			},
-			{
-				Method:      "GET",
-				Path:        "/contracts/solana/mergeos_mrg.v1.idl.json",
-				Protocol:    "mergeos.solana-mrg-program.v1",
-				Auth:        "none",
-				Description: "Public Anchor-compatible IDL for the Solana MRG treasury, escrow, payout, and wallet migration program.",
-			},
-			{
-				Method:      "GET",
-				Path:        "/contracts/solana/mergeos_mrg.proof-manifest.v1.json",
-				Protocol:    "mergeos.solana-contract-proof.v1",
-				Auth:        "none",
-				Description: "Public Solana proof manifest mapping ledger event types to MRG Anchor instructions, PDA seeds, SDK helpers, and audit sources.",
-			},
-			{
-				Method:      "GET",
-				Path:        "/api/public/protocol/events",
-				Protocol:    "mergeos.event.v1",
-				Auth:        "none",
-				Description: "Public live-feed events as protocol documents with the same limit, after_id/cursor, and since replay queries as the live feed.",
-			},
-			{
-				Method:      "GET",
-				Path:        "/api/public/projects/{id}/deployment",
-				Protocol:    "mergeos.deployment.v1",
-				Auth:        "none",
-				Description: "Public sanitized deployment readiness document for marketplace projects, release gates, agent signals, and deployment validation progress.",
-			},
-			{
-				Method:      "GET",
-				Path:        "/api/public/projects/{id}/ai-workflow",
-				Protocol:    "mergeos.ai-workflow.v1",
-				Auth:        "none",
-				Description: "Public sanitized AI workflow timeline for marketplace projects across repository import, issue scan, task generation, routing, PR review, and deployment validation.",
-			},
-			{
-				Method:      "GET",
-				Path:        "/api/public/projects/{id}/workflow",
-				Protocol:    "mergeos.workflow.v1",
-				Auth:        "none",
-				Description: "Public sanitized project workflow graph with claim-safe task IDs, dependency edges, readiness, and agent context endpoints.",
-			},
-			{
-				Method:      "GET",
-				Path:        "/api/public/projects/{id}/repo-scan",
-				Protocol:    "mergeos.scan.v1",
-				Auth:        "none",
-				Description: "Public claim-safe repository scan with dependency, technical debt, security findings, suggested tasks, and funding packet templates.",
-			},
-			{
-				Method:      "GET",
-				Path:        "/api/public/projects/{id}/pull-requests",
-				Protocol:    "mergeos.pr-monitor.v1",
-				Auth:        "none",
-				Description: "Public sanitized PR monitor for marketplace projects, linked issues, pull request readiness, and review state without exposing internal task identifiers.",
-			},
-			{
-				Method:      "POST",
-				Path:        "/api/public/repo/issues",
-				Protocol:    "mergeos.repo-import.v1",
-				Auth:        "none",
-				Description: "Public GitHub repository issue import and AI scoring report.",
-			},
-			{
-				Method:      "WS",
-				Path:        "/api/ws",
-				Protocol:    "mergeos.event.v1",
-				Auth:        "none",
-				Description: "Realtime WebSocket stream for live feed snapshots, replayable initial snapshots via limit/after_id/since, and protocol event broadcasts.",
-			},
-			{
-				Method:      "GET",
-				Path:        "/api/projects/{id}/protocol/workflow",
-				Protocol:    "mergeos.workflow.v1",
-				Auth:        "project",
-				Description: "Authenticated project workflow graph protocol document.",
-			},
-			{
-				Method:      "GET",
-				Path:        "/api/projects/{id}/protocol/scan",
-				Protocol:    "mergeos.scan.v1",
-				Auth:        "project",
-				Description: "Authenticated repository scan protocol document.",
-			},
-			{
-				Method:      "GET",
-				Path:        "/api/projects/{id}/routing",
-				Protocol:    "mergeos.routing.v1",
-				Auth:        "project",
-				Description: "Authenticated contributor and AI agent routing plan for project tasks, readiness blockers, candidate lanes, and next actions.",
-			},
-			{
-				Method:      "POST",
-				Path:        "/api/payments/paypal/orders",
-				Protocol:    "mergeos.payment-order.v1",
-				Auth:        "user",
-				Description: "Authenticated PayPal checkout bootstrap that stores a server-side order intent and returns order_id plus payment_reference for project funding.",
-			},
-			{
-				Method:      "POST",
-				Path:        "/api/projects/{id}/repo-scan/suggested-tasks/{taskID}/paypal-order",
-				Protocol:    "mergeos.scan.v1",
-				Auth:        "project",
-				Description: "Authenticated checkout bootstrap for funding a repository scan suggested task with a server-side PayPal order intent.",
-			},
-			{
-				Method:      "POST",
-				Path:        "/api/projects/{id}/repo-scan/suggested-tasks/{taskID}/fund",
-				Protocol:    "mergeos.repo-task-funding.v1",
-				Auth:        "project",
-				Description: "Authenticated funding command that turns a repository scan suggestion into an escrow-backed task, ledger receipt, and agent work packet.",
-			},
-			{
-				Method:      "POST",
-				Path:        "/api/projects/{id}/repo-sync",
-				Protocol:    "mergeos.repo-sync.v1",
-				Auth:        "project",
-				Description: "Authenticated issue sync report that converts imported GitHub issues into MergeOS task rows.",
-			},
-			{
-				Method:      "POST",
-				Path:        "/api/disputes",
-				Protocol:    "mergeos.dispute.v1",
-				Auth:        "user",
-				Description: "Authenticated customer, worker, or admin dispute escalation into the admin moderation queue.",
-			},
-			{
-				Method:      "GET",
-				Path:        "/api/projects/{id}/escrow",
-				Protocol:    "mergeos.escrow.v1",
-				Auth:        "project",
-				Description: "Authenticated project escrow reserve, release, payout, and task settlement document.",
-			},
-			{
-				Method:      "GET",
-				Path:        "/api/projects/{id}/payouts",
-				Protocol:    "mergeos.payouts.v1",
-				Auth:        "project",
-				Description: "Authenticated project payout settlement document with release state, payout rows, ledger proof references, and payout accounts.",
-			},
-			{
-				Method:      "POST",
-				Path:        "/api/projects/{id}/auto-release",
-				Protocol:    "mergeos.payout-release.v1",
-				Auth:        "project",
-				Description: "Authenticated auto-release command for low-risk PR monitor candidates that validates deployment-sensitive work, accepts tasks, and writes ledger-backed payout proof.",
-			},
-			{
-				Method:      "GET",
-				Path:        "/api/projects/{id}/deployment",
-				Protocol:    "mergeos.deployment.v1",
-				Auth:        "project",
-				Description: "Authenticated deployment validation state with rollout stages, release gates, and evidence signals.",
-			},
-			{
-				Method:      "GET",
-				Path:        "/api/projects/{id}/ai-workflow",
-				Protocol:    "mergeos.ai-workflow.v1",
-				Auth:        "project",
-				Description: "Authenticated AI orchestration timeline for repository import, issue scan, task generation, routing, PR review, and deployment validation.",
-			},
-			{
-				Method:      "POST",
-				Path:        "/api/projects/{id}/agent-actions",
-				Protocol:    "mergeos.agent-action.v1",
-				Auth:        "project_or_assigned_worker",
-				Description: "Authenticated AI agent evidence writer for project owners or assigned workers after a claim_id/bounty_id lane is accepted.",
-			},
-			{
-				Method:      "GET",
-				Path:        "/api/projects/{id}/pull-requests",
-				Protocol:    "mergeos.pr-monitor.v1",
-				Auth:        "project",
-				Description: "Authenticated live pull request monitor for linked bounty tasks, readiness gates, and merge risk.",
-			},
-			{
-				Method:      "GET",
-				Path:        "/api/projects/{id}/dashboard",
-				Protocol:    "mergeos.customer-dashboard.v1",
-				Auth:        "project",
-				Description: "Authenticated customer dashboard for delivery status, escrow, workflow graph, repository scan, AI activity, and live PR monitoring.",
-			},
-			{
-				Method:      "GET",
-				Path:        "/api/workers/me",
-				Protocol:    "mergeos.worker-dashboard.v1",
-				Auth:        "worker",
-				Description: "Authenticated worker dashboard for claimed work, payout references, reputation, and proposal routing.",
-			},
-			{
-				Method:      "POST",
-				Path:        "/api/proposals",
-				Protocol:    "mergeos.proposal.v1",
-				Auth:        "worker",
-				Description: "Authenticated worker proposal submission for an open bounty task, with customer notification and admin proposal review signal.",
-			},
-			{
-				Method:      "POST",
-				Path:        "/api/proposals/{id}/decision",
-				Protocol:    "mergeos.proposal.v1",
-				Auth:        "project",
-				Description: "Authenticated customer or admin proposal decision that accepts a worker bid into a claimed task or declines it with dashboard status updates.",
-			},
-			{
-				Method:      "POST",
-				Path:        "/api/projects/evaluate-price",
-				Protocol:    "mergeos.estimate.v1",
-				Auth:        "user",
-				Description: "Authenticated project estimate for editable budget range, confidence, cost breakdown, assumptions, and risks.",
-			},
-			{
-				Method:      "POST",
-				Path:        "/api/wallets/migrations",
-				Protocol:    "mergeos.wallet-migration.v1",
-				Auth:        "user",
-				Description: "Authenticated legacy TRC20/EVM wallet migration into a Solana MRG wallet with Anchor contract registration metadata.",
-			},
-			{
-				Method:      "POST",
-				Path:        "/api/tasks/{id}/accept",
-				Protocol:    "mergeos.task-claim.v1",
-				Auth:        "project_owner_or_admin",
-				Description: "Authenticated payout release endpoint for submitted or claimed task ids after review approval.",
-			},
-			{
-				Method:      "POST",
-				Path:        "/api/tasks/{id}/claim",
-				Protocol:    "mergeos.task-claim.v1",
-				Auth:        "worker",
-				Description: "Authenticated claim alias used by public AI agent work packets and worker bounty links.",
-			},
-			{
-				Method:      "POST",
-				Path:        "/api/tasks/{id}/submit",
-				Protocol:    "mergeos.task-submission.v1",
-				Auth:        "assigned_worker_or_project",
-				Description: "Authenticated task evidence submission for a claimed bounty, including GitHub PR, evidence URL, and review notes.",
-			},
-			{
-				Method:      "POST",
-				Path:        "/api/tasks/{id}/request-changes",
-				Protocol:    "mergeos.task-review.v1",
-				Auth:        "project_owner_or_admin",
-				Description: "Authenticated review decision that asks the assigned worker to update evidence before payout release.",
-			},
-			{
-				Method:      "GET",
-				Path:        "/api/admin/ops-queue",
-				Protocol:    "mergeos.admin-ops.v1",
-				Auth:        "admin",
-				Description: "Authenticated admin operations queue for disputes, moderation, payout review, treasury audit, security checks, and fraud signals.",
-			},
-			{
-				Method:      "GET",
-				Path:        "/api/admin/disputes",
-				Protocol:    "mergeos.admin-ops.v1",
-				Auth:        "admin",
-				Description: "Authenticated admin dispute center lanes derived from the operations queue for payout, moderation, fraud, security, token workflow, and proposal review.",
+		AgentContext: ProtocolManifestContext{
+			ContextURLs: contextURLs,
+			Runbook: []string{
+				"Fetch /api/public/protocol for schema, endpoint, realtime, and agent context discovery.",
+				"Fetch marketplace, live feed, workflow, repository scan, and agent queue documents before claiming work.",
+				"Use authenticated task, proposal, lease, agent action, and evidence endpoints for state-changing work.",
+				"Attach ledger, deployment, or PR proof URLs to every release or payout action.",
 			},
 		},
+		Documents: protocolManifestDocuments(schemas, endpoints),
+		Schemas:   schemas,
+		Endpoints: protocolManifestEndpoints(endpoints),
 	}
+}
+
+func protocolManifestAgentContextURLs() map[string]string {
+	return map[string]string{
+		"manifest":            "/api/public/protocol",
+		"marketplace":         "/api/public/marketplace",
+		"live_feed":           "/api/public/live-feed",
+		"agent_queue":         "/api/public/protocol/agent-queue",
+		"agent_runbook":       "/protocol/runbooks/mergeide-agent.v1.json",
+		"contributors":        "/api/public/protocol/contributors",
+		"ledger_proof":        "/api/public/ledger/proof",
+		"task_protocol":       "/api/public/protocol/tasks?task_id={bounty_id}",
+		"project_workflow":    "/api/public/projects/{project_id}/workflow",
+		"project_ai_workflow": "/api/public/projects/{project_id}/ai-workflow",
+		"repository_scan":     "/api/public/projects/{project_id}/repo-scan",
+		"pull_requests":       "/api/public/projects/{project_id}/pull-requests",
+		"deployment":          "/api/public/projects/{project_id}/deployment",
+	}
+}
+
+func protocolManifestDocuments(schemas []ProtocolManifestSchema, endpoints []ProtocolManifestEndpoint) []ProtocolManifestDocument {
+	publicEndpointByProtocol := map[string]string{}
+	for _, endpoint := range endpoints {
+		if endpoint.Protocol == "" || endpoint.Auth != "none" {
+			continue
+		}
+		if _, exists := publicEndpointByProtocol[endpoint.Protocol]; !exists {
+			publicEndpointByProtocol[endpoint.Protocol] = endpoint.Path
+		}
+	}
+	documents := make([]ProtocolManifestDocument, 0, len(schemas))
+	for _, schema := range schemas {
+		documents = append(documents, ProtocolManifestDocument{
+			ProtocolVersion: schema.Version,
+			Kind:            schema.Kind,
+			Title:           protocolManifestTitle(schema.Kind),
+			SchemaURL:       schema.SchemaURL,
+			PublicEndpoint:  publicEndpointByProtocol[schema.Version],
+			Description:     schema.Description,
+		})
+	}
+	return documents
+}
+
+func protocolManifestEndpoints(endpoints []ProtocolManifestEndpoint) []ProtocolManifestEndpoint {
+	rows := make([]ProtocolManifestEndpoint, 0, len(endpoints))
+	for _, endpoint := range endpoints {
+		row := endpoint
+		if row.ID == "" {
+			row.ID = protocolManifestEndpointID(endpoint)
+		}
+		if row.ProtocolVersion == "" {
+			row.ProtocolVersion = row.Protocol
+		}
+		if row.Access == "" {
+			row.Access = protocolManifestAccess(row.Auth)
+		}
+		if row.Category == "" {
+			row.Category = protocolManifestCategory(row)
+		}
+		rows = append(rows, row)
+	}
+	return rows
+}
+
+func protocolManifestEndpointID(endpoint ProtocolManifestEndpoint) string {
+	parts := []string{strings.ToLower(endpoint.Method), strings.Trim(endpoint.Path, "/")}
+	id := strings.Join(parts, ":")
+	replacer := strings.NewReplacer("/", "-", "{", "", "}", "", "?", "-", "=", "-", "&", "-")
+	return replacer.Replace(id)
+}
+
+func protocolManifestAccess(auth string) string {
+	if auth == "" || auth == "none" {
+		return "public"
+	}
+	if auth == "project" {
+		return "project"
+	}
+	return "authenticated"
+}
+
+func protocolManifestCategory(endpoint ProtocolManifestEndpoint) string {
+	haystack := strings.ToLower(endpoint.Path + " " + endpoint.Protocol + " " + endpoint.Description)
+	switch {
+	case strings.Contains(haystack, "agent"):
+		return "agents"
+	case strings.Contains(haystack, "marketplace") || strings.Contains(haystack, "task"):
+		return "tasks"
+	case strings.Contains(haystack, "workflow") || strings.Contains(haystack, "routing"):
+		return "workflow"
+	case strings.Contains(haystack, "repo"):
+		return "repository"
+	case strings.Contains(haystack, "deployment") || strings.Contains(haystack, "pull-request") || strings.Contains(haystack, "pull-requests"):
+		return "deployment"
+	case strings.Contains(haystack, "ledger") || strings.Contains(haystack, "escrow") || strings.Contains(haystack, "payout") || strings.Contains(haystack, "token"):
+		return "ledger"
+	case strings.Contains(haystack, "live-feed") || strings.Contains(haystack, "events") || endpoint.Method == "WS":
+		return "realtime"
+	case strings.Contains(haystack, "admin") || strings.Contains(haystack, "dispute"):
+		return "admin"
+	default:
+		return "discovery"
+	}
+}
+
+func protocolManifestTitle(kind string) string {
+	title := strings.ReplaceAll(strings.TrimSpace(kind), "_", " ")
+	if title == "" {
+		return "Protocol document"
+	}
+	return strings.Title(title)
 }
