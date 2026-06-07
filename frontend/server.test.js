@@ -505,6 +505,7 @@ test('public protocol links match backend routes', async () => {
   assert.match(manifestSource, /payment-order\.v1\.schema\.json/);
   assert.match(manifestSource, /\/contracts\/solana\/mergeos_mrg\.proof-manifest\.v1\.json/);
   assert.match(manifestSource, /mergeos\.solana-contract-proof\.v1/);
+  assert.match(manifestSource, /\/api\/public\/token\/launch-briefs/);
   assert.match(manifestSource, /\/system\/mergeos-architecture\.v1\.json/);
   assert.match(manifestSource, /mergeos\.architecture\.v1/);
   assert.match(manifestSource, /architecture\.v1\.schema\.json/);
@@ -1311,6 +1312,9 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /memo hash before reservations/);
   assert.match(appSource, /const tokenWorkflowProofRows = computed\(\(\) => \{/);
   assert.match(appSource, /const tokenWorkflowCeoMemoRows = computed\(\(\) => \{/);
+  assert.match(appSource, /const tokenLaunchBriefsData = ref/);
+  assert.match(appSource, /publicApi\('\/api\/public\/token\/launch-briefs'\)/);
+  assert.match(appSource, /function mapTokenLaunchBriefQueueRow\(brief = \{\}\)/);
   assert.match(appSource, /const targetType = publicPage\.value === 'airdrop' \? 'airdrop_claim' : 'presale_reservation';/);
   assert.match(appSource, /const targetLaunchType = publicPage\.value === 'presale' \? 'presale' : 'airdrop';/);
   assert.match(appSource, /entry\?\.type !== 'token_launch_brief'/);

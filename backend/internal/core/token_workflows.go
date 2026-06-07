@@ -135,6 +135,35 @@ type TokenLaunchBriefResponse struct {
 	CreatedAt        time.Time   `json:"created_at"`
 }
 
+type PublicTokenLaunchBriefsResponse struct {
+	ProtocolVersion string                         `json:"protocol_version"`
+	Kind            string                         `json:"kind"`
+	Stats           PublicTokenLaunchBriefsStats   `json:"stats"`
+	Briefs          []PublicTokenLaunchBriefRecord `json:"briefs"`
+}
+
+type PublicTokenLaunchBriefsStats struct {
+	BriefCount   int        `json:"brief_count"`
+	AirdropCount int        `json:"airdrop_count"`
+	PresaleCount int        `json:"presale_count"`
+	UpdatedAt    *time.Time `json:"updated_at,omitempty"`
+}
+
+type PublicTokenLaunchBriefRecord struct {
+	BriefID         string    `json:"brief_id"`
+	LaunchType      string    `json:"launch_type"`
+	ProjectTitle    string    `json:"project_title"`
+	Decision        string    `json:"decision"`
+	GateSummary     string    `json:"gate_summary"`
+	GatesReference  string    `json:"gates_reference"`
+	ResearchSource  string    `json:"research_source"`
+	ResearchSignals []string  `json:"research_signals"`
+	LedgerSequence  int       `json:"ledger_sequence"`
+	EntryHash       string    `json:"entry_hash"`
+	LedgerProofURL  string    `json:"ledger_proof_url"`
+	CreatedAt       time.Time `json:"created_at"`
+}
+
 type CEOMemoGate struct {
 	Key      string `json:"key"`
 	Label    string `json:"label"`
@@ -222,6 +251,10 @@ var airdropMissionCatalog = []AirdropMission{
 
 func (s *Server) publicAirdropMissions(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, PublicAirdropMissions())
+}
+
+func (s *Server) publicTokenLaunchBriefs(w http.ResponseWriter, _ *http.Request) {
+	writeJSON(w, http.StatusOK, s.store.PublicTokenLaunchBriefs())
 }
 
 func PublicAirdropMissions() AirdropMissionsResponse {
@@ -406,6 +439,59 @@ func (s *Store) RecordPresaleReservation(req PresaleReservationRequest) (Presale
 
 func (s *Store) RecordTokenLaunchBrief(req TokenLaunchBriefRequest) (TokenLaunchBriefResponse, error) {
 	return s.RecordTokenLaunchBriefForUser("", req)
+}
+
+func (s *Store) PublicTokenLaunchBriefs() PublicTokenLaunchBriefsResponse {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	response := PublicTokenLaunchBriefsResponse{
+		ProtocolVersion: tokenLaunchBriefProtocolVersion,
+		Kind:            "token_launch_briefs",
+		Briefs:          []PublicTokenLaunchBriefRecord{},
+	}
+	for _, entry := range s.ledger {
+		if entry.Type != "token_launch_brief" {
+			continue
+		}
+		fields := tokenWorkflowReferenceFields(entry.Reference)
+		launchType := fields["type"]
+		switch launchType {
+		case "airdrop":
+			response.Stats.AirdropCount++
+		case "presale":
+			response.Stats.PresaleCount++
+		default:
+			launchType = "token_launch"
+		}
+		if response.Stats.UpdatedAt == nil || entry.CreatedAt.After(*response.Stats.UpdatedAt) {
+			updatedAt := entry.CreatedAt
+			response.Stats.UpdatedAt = &updatedAt
+		}
+		record := PublicTokenLaunchBriefRecord{
+			BriefID:         fields["launch_brief"],
+			LaunchType:      launchType,
+			ProjectTitle:    fields["title"],
+			Decision:        fields["decision"],
+			GateSummary:     fields["gate_summary"],
+			GatesReference:  fields["gates"],
+			ResearchSource:  fields["source"],
+			ResearchSignals: tokenWorkflowReferenceList(fields["signals"]),
+			LedgerSequence:  entry.Sequence,
+			EntryHash:       entry.EntryHash,
+			LedgerProofURL:  "/api/public/ledger/proof",
+			CreatedAt:       entry.CreatedAt,
+		}
+		if record.ResearchSource == "" {
+			record.ResearchSource = fields["repo"]
+		}
+		response.Briefs = append(response.Briefs, record)
+	}
+	for i, j := 0, len(response.Briefs)-1; i < j; i, j = i+1, j-1 {
+		response.Briefs[i], response.Briefs[j] = response.Briefs[j], response.Briefs[i]
+	}
+	response.Stats.BriefCount = len(response.Briefs)
+	return response
 }
 
 func (s *Store) RecordTokenLaunchBriefForUser(userID string, req TokenLaunchBriefRequest) (TokenLaunchBriefResponse, error) {
@@ -860,4 +946,33 @@ func tokenWorkflowReference(parts []string) string {
 		clean = append(clean, strings.TrimSpace(key)+":"+value)
 	}
 	return strings.Join(clean, ";")
+}
+
+func tokenWorkflowReferenceFields(reference string) map[string]string {
+	fields := map[string]string{}
+	for _, part := range strings.Split(reference, ";") {
+		key, value, ok := strings.Cut(part, ":")
+		key = strings.TrimSpace(key)
+		value = strings.TrimSpace(value)
+		if !ok || key == "" || value == "" {
+			continue
+		}
+		fields[key] = value
+	}
+	return fields
+}
+
+func tokenWorkflowReferenceList(value string) []string {
+	if strings.TrimSpace(value) == "" {
+		return []string{}
+	}
+	parts := strings.Split(value, ",")
+	items := make([]string, 0, len(parts))
+	for _, part := range parts {
+		item := strings.TrimSpace(part)
+		if item != "" {
+			items = append(items, item)
+		}
+	}
+	return items
 }

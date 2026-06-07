@@ -11646,6 +11646,10 @@ const ledgerEconomy = ref({
   flows: [],
   recent_entries: [],
 });
+const tokenLaunchBriefsData = ref({
+  stats: {},
+  briefs: [],
+});
 const airdropMissionsData = ref({
   stats: {},
   missions: [],
@@ -12613,6 +12617,9 @@ const tokenWorkflowProofEmptySteps = computed(() => {
 });
 const tokenLaunchBriefProofCount = computed(() => {
   const targetLaunchType = publicPage.value === 'presale' ? 'presale' : 'airdrop';
+  const publicBriefs = Array.isArray(tokenLaunchBriefsData.value?.briefs) ? tokenLaunchBriefsData.value.briefs : [];
+  const publicCount = publicBriefs.filter((brief) => brief.launch_type === targetLaunchType).length;
+  if (publicCount) return publicCount;
   return ledgerRawEntries.value.filter((entry) => {
     if (entry?.type !== 'token_launch_brief') return false;
     return String(entry.reference || '').includes(`type:${targetLaunchType}`);
@@ -12850,6 +12857,12 @@ const tokenWorkflowProofRows = computed(() => {
 });
 const tokenWorkflowCeoMemoRows = computed(() => {
   const targetLaunchType = publicPage.value === 'presale' ? 'presale' : 'airdrop';
+  const publicBriefs = Array.isArray(tokenLaunchBriefsData.value?.briefs) ? tokenLaunchBriefsData.value.briefs : [];
+  const publicRows = publicBriefs
+    .filter((brief) => brief.launch_type === targetLaunchType)
+    .slice(0, 3)
+    .map(mapTokenLaunchBriefQueueRow);
+  if (publicRows.length) return publicRows;
   return ledgerRawEntries.value
     .filter((entry) => entry?.type === 'token_launch_brief' && String(entry.reference || '').includes(`type:${targetLaunchType}`))
     .slice()
@@ -24700,6 +24713,20 @@ function mapTokenWorkflowProofRow(entry = {}) {
   };
 }
 
+function mapTokenLaunchBriefQueueRow(brief = {}) {
+  const decision = toTitleLabel(brief.decision || 'pending open decision');
+  const gateSummary = brief.gate_summary || 'CEO gates pending';
+  const source = brief.research_source ? ' / source linked' : '';
+  return {
+    key: `public-token-launch-${brief.ledger_sequence || brief.brief_id || brief.entry_hash || 'memo'}`,
+    title: `CEO ${toTitleLabel(brief.launch_type || 'launch')} ${brief.brief_id || 'memo'}`,
+    body: `${decision} / ${gateSummary}${source}`,
+    reference: brief.research_source || brief.entry_hash || '',
+    hash: shortLedgerHash(brief.entry_hash),
+    created: formatLedgerDateTime(brief.created_at).full,
+  };
+}
+
 async function copyTokenWorkflowHash(result = {}) {
   const hash = result.ledger_entry?.entry_hash || '';
   if (!hash) {
@@ -30325,13 +30352,14 @@ async function loadLedgerData(options = {}) {
     ledgerLoading.value = true;
   }
   try {
-    const [entries, marketplace, proof, verification, events, economy] = await Promise.all([
+    const [entries, marketplace, proof, verification, events, economy, launchBriefs] = await Promise.all([
       publicApi('/api/public/ledger'),
       publicApi('/api/public/marketplace'),
       publicApi('/api/public/ledger/proof'),
       publicApi('/api/public/ledger/verify'),
       publicApi('/api/public/ledger/events?limit=100'),
       publicApi('/api/public/token-economy'),
+      publicApi('/api/public/token/launch-briefs'),
     ]);
     ledgerRawEntries.value = Array.isArray(entries) ? entries : [];
     ledgerProjects.value = Array.isArray(marketplace.projects) ? marketplace.projects : [];
@@ -30350,12 +30378,19 @@ async function loadLedgerData(options = {}) {
           recent_entries: Array.isArray(economy.recent_entries) ? economy.recent_entries : [],
         }
       : { stats: {}, totals: {}, balances: [], flows: [], recent_entries: [] };
+    tokenLaunchBriefsData.value = launchBriefs && typeof launchBriefs === 'object'
+      ? {
+          stats: launchBriefs.stats || {},
+          briefs: Array.isArray(launchBriefs.briefs) ? launchBriefs.briefs : [],
+        }
+      : { stats: {}, briefs: [] };
   } catch (error) {
     ledgerError.value = error.message;
     ledgerProof.value = null;
     ledgerVerification.value = null;
     ledgerEventData.value = { stats: {}, items: [] };
     ledgerEconomy.value = { stats: {}, totals: {}, balances: [], flows: [], recent_entries: [] };
+    tokenLaunchBriefsData.value = { stats: {}, briefs: [] };
   } finally {
     ledgerLoading.value = false;
   }

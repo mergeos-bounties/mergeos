@@ -1516,6 +1516,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 		"GET /api/public/ledger/events",
 		"GET /api/public/token-economy",
 		"GET /api/public/airdrop/missions",
+		"GET /api/public/token/launch-briefs",
 		"POST /api/airdrop/claims",
 		"POST /api/presale/reservations",
 		"POST /api/token/launch-briefs",
@@ -1764,6 +1765,24 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 	}
 	if launchBrief.CEOMemo.Gates[0].Status != "ready_for_review" || !launchBrief.CEOMemo.Gates[0].Required {
 		t.Fatalf("token launch brief CEO memo gate invalid: %#v", launchBrief.CEOMemo.Gates[0])
+	}
+	publicLaunchBriefsResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(publicLaunchBriefsResp, httptest.NewRequest(http.MethodGet, "/api/public/token/launch-briefs", nil))
+	if publicLaunchBriefsResp.Code != http.StatusOK {
+		t.Fatalf("public token launch briefs status = %d, body = %s", publicLaunchBriefsResp.Code, publicLaunchBriefsResp.Body.String())
+	}
+	var publicLaunchBriefs PublicTokenLaunchBriefsResponse
+	if err := json.Unmarshal(publicLaunchBriefsResp.Body.Bytes(), &publicLaunchBriefs); err != nil {
+		t.Fatal(err)
+	}
+	if publicLaunchBriefs.ProtocolVersion != tokenLaunchBriefProtocolVersion || publicLaunchBriefs.Kind != "token_launch_briefs" || publicLaunchBriefs.Stats.BriefCount != 1 || publicLaunchBriefs.Stats.AirdropCount != 1 {
+		t.Fatalf("public token launch briefs summary invalid: %#v", publicLaunchBriefs)
+	}
+	if len(publicLaunchBriefs.Briefs) != 1 || publicLaunchBriefs.Briefs[0].BriefID != launchBrief.BriefID || publicLaunchBriefs.Briefs[0].LaunchType != "airdrop" {
+		t.Fatalf("public token launch briefs rows invalid: %#v", publicLaunchBriefs.Briefs)
+	}
+	if publicLaunchBriefs.Briefs[0].ResearchSource != "https://github.com/mergeos-bounties/mergeos" || publicLaunchBriefs.Briefs[0].GateSummary != "4/4 gates ready for CEO review" || !stringSliceContains(publicLaunchBriefs.Briefs[0].ResearchSignals, "research_source") {
+		t.Fatalf("public token launch brief missing CEO research fields: %#v", publicLaunchBriefs.Briefs[0])
 	}
 	tokenWorkflowNotifications := 0
 	for _, note := range store.ListNotifications(auth.User.ID) {

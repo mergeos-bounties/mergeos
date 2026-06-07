@@ -401,6 +401,13 @@ func ProtocolManifest() ProtocolManifestResponse {
 		},
 		{
 			Method:      "GET",
+			Path:        "/api/public/token/launch-briefs",
+			Protocol:    "mergeos.token-launch-brief.v1",
+			Auth:        "none",
+			Description: "Public CEO token launch research queue for projects requesting an earned airdrop or presale window, derived from ledger-backed launch memos.",
+		},
+		{
+			Method:      "GET",
 			Path:        "/contracts/solana/mergeos_mrg.v1.idl.json",
 			Protocol:    "mergeos.solana-mrg-program.v1",
 			Auth:        "none",
