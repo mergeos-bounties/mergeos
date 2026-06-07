@@ -470,6 +470,12 @@ test('marketplace page exposes all operating lanes at a glance', async () => {
   assert.match(appSource, /label: 'Contributors'/);
   assert.match(appSource, /label: 'AI agents'/);
   assert.match(appSource, /openMarketplaceSection\('marketplace-agent/);
+  assert.match(appSource, /if \(payload\.type === 'agent_queue'\)/);
+  assert.match(appSource, /if \(payload\.type === 'agent_presence'\)/);
+  assert.match(appSource, /if \(payload\.type === 'agent_claim'\)/);
+  assert.match(appSource, /if \(payload\.type === 'agent_submit'\)/);
+  assert.match(appSource, /if \(payload\.type === 'agent_release'\)/);
+  assert.match(appSource, /hydrateAgentQueueData\(queue\)/);
   assert.match(cssSource, /\.marketplace-os-strip\s*\{[\s\S]*grid-template-columns: repeat\(4, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /@media \(max-width: 760px\)[\s\S]*\.marketplace-os-strip\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\);/);
 });
