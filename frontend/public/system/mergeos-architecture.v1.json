@@ -55,6 +55,44 @@
   },
   "product_vision": {
     "summary": "A workflow layer combining GitHub-style repository context, Stripe-style payment verification, Linear-style task operations, Upwork-style contributor routing, Vercel-style deployment proof, and AI agent execution.",
+    "product_composition": {
+      "github": {
+        "source_model": "Repository, issue, pull request, and source context",
+        "mergeos_capability": "Import repository context, sync issues, scan dependencies, and monitor pull requests",
+        "primary_route": "/repo-import",
+        "proof_surface": "/api/public/projects/{id}/pull-requests"
+      },
+      "stripe": {
+        "source_model": "Payment intent, verified funding, and receipt workflow",
+        "mergeos_capability": "Verify card, PayPal, or crypto funding before escrow and bounty publication",
+        "primary_route": "/api/payments/order-intents",
+        "proof_surface": "/ledger"
+      },
+      "linear": {
+        "source_model": "Structured task graph, ownership, status, and acceptance criteria",
+        "mergeos_capability": "Generate task graph, assign worker type, track acceptance, and expose task state",
+        "primary_route": "/api/projects/{id}/task-graph",
+        "proof_surface": "/dashboard"
+      },
+      "upwork": {
+        "source_model": "Contributor marketplace, proposals, claims, reputation, and payout identity",
+        "mergeos_capability": "Route funded work to contributors, AI agents, or hybrid teams with public claim records",
+        "primary_route": "/marketplace",
+        "proof_surface": "/marketplace#marketplace-contributors"
+      },
+      "vercel": {
+        "source_model": "Deployment checks, release status, environment health, and deploy proof",
+        "mergeos_capability": "Validate deployments before payout release and publish deployment evidence",
+        "primary_route": "/api/public/protocol/deployment",
+        "proof_surface": "/live-feed"
+      },
+      "ai_agents": {
+        "source_model": "Coding, review, testing, deployment, and security agents",
+        "mergeos_capability": "Scan repos, generate tasks, review PRs, test builds, and validate release gates",
+        "primary_route": "/agents",
+        "proof_surface": "/api/public/agents/queue"
+      }
+    },
     "core_loop": [
       "import_repository",
       "scan_issues_with_ai",

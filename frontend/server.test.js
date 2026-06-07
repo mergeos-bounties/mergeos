@@ -95,6 +95,13 @@ test('public system vision preserves the product thesis', async () => {
   assert.equal(architectureManifest.system_inputs.bug_fixes.api, '/api/tasks/{id}/submit');
   assert.equal(architectureManifest.system_inputs.pull_requests.api, '/api/public/projects/{id}/pull-requests');
   assert.equal(architectureManifest.system_inputs.deployments.output_protocol, 'mergeos.deployment.v1');
+  assert.deepEqual(Object.keys(architectureManifest.product_vision.product_composition), ['github', 'stripe', 'linear', 'upwork', 'vercel', 'ai_agents']);
+  assert.equal(architectureManifest.product_vision.product_composition.github.primary_route, '/repo-import');
+  assert.equal(architectureManifest.product_vision.product_composition.stripe.primary_route, '/api/payments/order-intents');
+  assert.equal(architectureManifest.product_vision.product_composition.linear.primary_route, '/api/projects/{id}/task-graph');
+  assert.equal(architectureManifest.product_vision.product_composition.upwork.primary_route, '/marketplace');
+  assert.equal(architectureManifest.product_vision.product_composition.vercel.primary_route, '/api/public/protocol/deployment');
+  assert.equal(architectureManifest.product_vision.product_composition.ai_agents.primary_route, '/agents');
   assert.deepEqual(Object.keys(architectureManifest.product_vision.workflow_routes), architectureManifest.product_vision.core_loop);
   assert.deepEqual(architectureManifest.product_vision.workflow_routes, {
     import_repository: { page: '/project/new', api: '/api/repos/import', proof_surface: '/live-feed' },

@@ -47,9 +47,22 @@
     },
     "product_vision": {
       "type": "object",
-      "required": ["summary", "core_loop", "workflow_routes"],
+      "required": ["summary", "product_composition", "core_loop", "workflow_routes"],
       "properties": {
         "summary": { "type": "string", "minLength": 1 },
+        "product_composition": {
+          "type": "object",
+          "required": ["github", "stripe", "linear", "upwork", "vercel", "ai_agents"],
+          "properties": {
+            "github": { "$ref": "#/$defs/productCompositionLayer" },
+            "stripe": { "$ref": "#/$defs/productCompositionLayer" },
+            "linear": { "$ref": "#/$defs/productCompositionLayer" },
+            "upwork": { "$ref": "#/$defs/productCompositionLayer" },
+            "vercel": { "$ref": "#/$defs/productCompositionLayer" },
+            "ai_agents": { "$ref": "#/$defs/productCompositionLayer" }
+          },
+          "additionalProperties": false
+        },
         "core_loop": {
           "type": "array",
           "minItems": 1,
@@ -408,6 +421,17 @@
     }
   },
   "$defs": {
+    "productCompositionLayer": {
+      "type": "object",
+      "required": ["source_model", "mergeos_capability", "primary_route", "proof_surface"],
+      "properties": {
+        "source_model": { "type": "string", "minLength": 1 },
+        "mergeos_capability": { "type": "string", "minLength": 1 },
+        "primary_route": { "type": "string", "minLength": 1 },
+        "proof_surface": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
     "systemInputRoute": {
       "type": "object",
       "required": ["source", "api", "workflow_step", "output_protocol", "proof_surface"],
