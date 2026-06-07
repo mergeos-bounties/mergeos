@@ -497,6 +497,36 @@
       "PR Review",
       "Deployment Validation"
     ],
+    "agent_roles": {
+      "coding_agent": {
+        "lane": "AI coding agent",
+        "primary_actions": ["implement scoped task", "generate patch", "attach repository context"],
+        "queue_api": "/api/public/protocol/agent-queue",
+        "output_protocol": "mergeos.agent-action.v1",
+        "proof_surface": "/live-feed"
+      },
+      "review_agent": {
+        "lane": "AI review agent",
+        "primary_actions": ["review pull request", "detect security risk", "publish review evidence"],
+        "queue_api": "/api/public/projects/{id}/pull-requests",
+        "output_protocol": "mergeos.pr-monitor.v1",
+        "proof_surface": "/ledger"
+      },
+      "testing_agent": {
+        "lane": "AI testing agent",
+        "primary_actions": ["run quality checks", "validate acceptance criteria", "publish test result"],
+        "queue_api": "/api/public/projects/{id}/ai-workflow",
+        "output_protocol": "mergeos.ai-workflow.v1",
+        "proof_surface": "/live-feed"
+      },
+      "deployment_agent": {
+        "lane": "AI deployment agent",
+        "primary_actions": ["validate deployment", "check environment health", "attach release evidence"],
+        "queue_api": "/api/public/protocol/deployment",
+        "output_protocol": "mergeos.deployment.v1",
+        "proof_surface": "/ledger"
+      }
+    },
     "action_routes": {
       "scan_repository": {
         "api": "/api/public/projects/{id}/repo-scan",

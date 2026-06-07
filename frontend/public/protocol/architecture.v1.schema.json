@@ -266,10 +266,21 @@
     },
     "ai_layer": {
       "type": "object",
-      "required": ["capabilities", "workflow", "action_routes"],
+      "required": ["capabilities", "workflow", "agent_roles", "action_routes"],
       "properties": {
         "capabilities": { "$ref": "#/$defs/stringList" },
         "workflow": { "$ref": "#/$defs/stringList" },
+        "agent_roles": {
+          "type": "object",
+          "required": ["coding_agent", "review_agent", "testing_agent", "deployment_agent"],
+          "properties": {
+            "coding_agent": { "$ref": "#/$defs/aiAgentRole" },
+            "review_agent": { "$ref": "#/$defs/aiAgentRole" },
+            "testing_agent": { "$ref": "#/$defs/aiAgentRole" },
+            "deployment_agent": { "$ref": "#/$defs/aiAgentRole" }
+          },
+          "additionalProperties": false
+        },
         "action_routes": {
           "type": "object",
           "required": ["scan_repository", "analyze_issues", "generate_tasks", "route_workers", "review_prs", "test_builds", "validate_deployments"],
@@ -573,6 +584,18 @@
       "required": ["api", "output_protocol", "proof_surface"],
       "properties": {
         "api": { "type": "string", "minLength": 1 },
+        "output_protocol": { "type": "string", "minLength": 1 },
+        "proof_surface": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "aiAgentRole": {
+      "type": "object",
+      "required": ["lane", "primary_actions", "queue_api", "output_protocol", "proof_surface"],
+      "properties": {
+        "lane": { "type": "string", "minLength": 1 },
+        "primary_actions": { "$ref": "#/$defs/stringList" },
+        "queue_api": { "type": "string", "minLength": 1 },
         "output_protocol": { "type": "string", "minLength": 1 },
         "proof_surface": { "type": "string", "minLength": 1 }
       },

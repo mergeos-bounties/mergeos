@@ -215,6 +215,20 @@ test('public system vision preserves the product thesis', async () => {
     'PR Review',
     'Deployment Validation',
   ]);
+  assert.deepEqual(Object.keys(architectureManifest.ai_layer.agent_roles), [
+    'coding_agent',
+    'review_agent',
+    'testing_agent',
+    'deployment_agent',
+  ]);
+  assert.deepEqual(architectureManifest.ai_layer.agent_roles.coding_agent.primary_actions, [
+    'implement scoped task',
+    'generate patch',
+    'attach repository context',
+  ]);
+  assert.equal(architectureManifest.ai_layer.agent_roles.review_agent.output_protocol, 'mergeos.pr-monitor.v1');
+  assert.equal(architectureManifest.ai_layer.agent_roles.testing_agent.output_protocol, 'mergeos.ai-workflow.v1');
+  assert.equal(architectureManifest.ai_layer.agent_roles.deployment_agent.output_protocol, 'mergeos.deployment.v1');
   assert.deepEqual(architectureManifest.ai_layer.action_routes, {
     scan_repository: {
       api: '/api/public/projects/{id}/repo-scan',
