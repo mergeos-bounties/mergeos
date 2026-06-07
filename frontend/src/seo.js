@@ -364,6 +364,8 @@ export function getSeoDataForPath(path = '/', options = {}) {
       headline: 'MergeOS system architecture and product vision',
       description: entry.description,
       url: canonical,
+      sameAs: [absoluteUrl('/system/mergeos-architecture.v1.json', origin)],
+      encodingFormat: 'application/json',
       about: [
         'AI orchestration',
         'Contributor marketplace',

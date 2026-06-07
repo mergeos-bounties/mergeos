@@ -1,0 +1,141 @@
+{
+  "protocol_version": "mergeos.architecture.v1",
+  "kind": "product_architecture",
+  "product": "MergeOS",
+  "positioning": "AI software delivery operating system",
+  "thesis": "MergeOS turns repositories, issues, technical debt, bug fixes, pull requests, deployments, escrow, contributors, AI agents, token accounting, and public ledger proof into one realtime workflow.",
+  "not_a": [
+    "traditional freelancer marketplace",
+    "standalone IDE",
+    "token-only project"
+  ],
+  "product_vision": {
+    "summary": "A workflow layer combining GitHub-style repository context, Stripe-style payment verification, Linear-style task operations, Upwork-style contributor routing, Vercel-style deployment proof, and AI agent execution.",
+    "core_loop": [
+      "import_repository",
+      "scan_issues_with_ai",
+      "generate_task_graph",
+      "estimate_rewards",
+      "fund_escrow",
+      "route_contributors_or_agents",
+      "review_pull_requests",
+      "validate_deployment",
+      "release_payment",
+      "publish_ledger_proof"
+    ]
+  },
+  "repository_architecture": [
+    {
+      "name": "mergeos-app",
+      "role": "Primary product repository",
+      "contains": [
+        "frontend",
+        "backend",
+        "dashboards",
+        "APIs",
+        "SSR",
+        "orchestration logic",
+        "realtime feeds"
+      ]
+    },
+    {
+      "name": "mergeos-contracts",
+      "role": "Blockchain and treasury repository",
+      "contains": [
+        "MRG token",
+        "escrow contracts",
+        "treasury contracts",
+        "payout contracts"
+      ]
+    },
+    {
+      "name": "mergeos-sdk",
+      "role": "Integration repository",
+      "contains": [
+        "task APIs",
+        "workflow APIs",
+        "event APIs",
+        "helper libraries",
+        "agent run helpers"
+      ]
+    },
+    {
+      "name": "mergeos-protocol",
+      "role": "Future open protocol layer",
+      "contains": [
+        "decentralized execution standards",
+        "external AI agent contracts",
+        "public integrations",
+        "open task manifests"
+      ]
+    }
+  ],
+  "users": [
+    {
+      "type": "customers",
+      "examples": ["startups", "SaaS companies", "repository owners", "founders"],
+      "dashboard": "Customer Dashboard"
+    },
+    {
+      "type": "contributors",
+      "examples": ["frontend developers", "backend developers", "designers", "QA engineers", "DevOps", "security auditors"],
+      "dashboard": "Worker Dashboard"
+    },
+    {
+      "type": "ai_agents",
+      "examples": ["coding agents", "review agents", "testing agents", "deployment agents"],
+      "surface": "Agent queue, agent runbooks, and agent run packets"
+    },
+    {
+      "type": "admins",
+      "examples": ["treasury operators", "dispute handlers", "moderation", "payout management"],
+      "dashboard": "Admin Console"
+    }
+  ],
+  "frontend_system": {
+    "stack": ["Vue 3", "Vite SSR", "TailwindCSS-compatible design tokens", "WebSockets", "realtime events"],
+    "public_pages": ["Homepage", "Marketplace", "Live Feed", "Ledger Logs", "Protocol", "MergeIDE", "Airdrop", "Presale", "Whitepaper"],
+    "authenticated_dashboards": ["Customer Dashboard", "Worker Dashboard", "Admin Console"]
+  },
+  "backend_system": {
+    "role": "Backend coordinates authentication, repositories, AI orchestration, task engine, payment verification, escrow coordination, live notifications, and ledger records.",
+    "proposed_stack": ["Go", "PostgreSQL", "Redis", "GitHub API", "OpenAI API", "WebSocket gateway"]
+  },
+  "ai_layer": {
+    "capabilities": [
+      "scan repositories",
+      "detect bugs",
+      "detect technical debt",
+      "detect dependency risk",
+      "analyze issues",
+      "estimate complexity",
+      "estimate budget",
+      "generate tasks",
+      "review pull requests",
+      "run security review",
+      "validate deployments"
+    ],
+    "workflow": [
+      "Import Repository",
+      "Issue Scan",
+      "Task Generation",
+      "Reward Estimation",
+      "Contributor Routing",
+      "PR Review",
+      "Deployment Validation"
+    ]
+  },
+  "marketplace_system": {
+    "role": "Realtime economy for live projects, public bounties, contributor proposals, AI agent lanes, escrow-backed work, and payout proof.",
+    "features": ["Live Projects", "Public Bounties", "AI Agents", "Contributor Signals", "Escrow Proof", "Ledger Logs"]
+  },
+  "public_urls": {
+    "system": "/system",
+    "marketplace": "/marketplace",
+    "live_feed": "/live-feed",
+    "ledger": "/ledger",
+    "protocol": "/protocol",
+    "whitepaper": "/whitepaper",
+    "architecture_manifest": "/system/mergeos-architecture.v1.json"
+  }
+}

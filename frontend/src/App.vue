@@ -15051,6 +15051,7 @@ const publicInfoPages = {
     actions: [
       { label: 'Explore product', primary: true, icon: ArrowRight, page: 'product' },
       { label: 'Open protocol', icon: Code2, page: 'protocol' },
+      { label: 'Architecture JSON', icon: GitBranch, url: '/system/mergeos-architecture.v1.json' },
     ],
     summary: [
       { label: 'Core system', value: 'GitHub, Stripe, Linear, Upwork, Vercel, and AI agents in one delivery workflow', icon: Box, tone: 'green' },

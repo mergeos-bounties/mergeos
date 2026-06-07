@@ -67,10 +67,15 @@ test('loads mode env before fallback without overriding real env', async () => {
 
 test('public system vision preserves the product thesis', async () => {
   const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
+  const seoSource = await fs.readFile(new URL('./src/seo.js', import.meta.url), 'utf-8');
   const whitepaperSource = await fs.readFile(new URL('./public/whitepaper/mergeos-whitepaper.md', import.meta.url), 'utf-8');
+  const architectureManifest = JSON.parse(await fs.readFile(new URL('./public/system/mergeos-architecture.v1.json', import.meta.url), 'utf-8'));
 
   assert.match(appSource, /Product vision[\s\S]*A workflow layer combining GitHub, Stripe, Linear, Upwork, Vercel, and AI agents\./);
   assert.match(appSource, /Core system[\s\S]*GitHub, Stripe, Linear, Upwork, Vercel, and AI agents in one delivery workflow/);
+  assert.match(appSource, /Architecture JSON[\s\S]*\/system\/mergeos-architecture\.v1\.json/);
+  assert.match(seoSource, /sameAs: \[absoluteUrl\('\/system\/mergeos-architecture\.v1\.json'/);
+  assert.match(seoSource, /encodingFormat: 'application\/json'/);
   assert.match(appSource, /Delivery workflow[\s\S]*Repository import, AI scan, task graph, reward estimate, contributor routing, PR review, deployment validation, payout release\./);
   assert.match(appSource, /Repository context, task scope, escrow, PR evidence, deployment gates, and payout release should live in the same operating graph\./);
   assert.match(appSource, /The core loop is import, scan, estimate, fund, route, review, validate, release, and prove\./);
@@ -81,6 +86,27 @@ test('public system vision preserves the product thesis', async () => {
   assert.match(whitepaperSource, /GitHub-style repository context, Stripe-style payment verification, Linear-style task operations, Upwork-style contributor markets, Vercel-style deployment proof, and AI agent execution/);
   assert.match(whitepaperSource, /coordination layer for human contributors, AI coding agents, maintainers, customers, reviewers, and treasury operators/);
   assert.match(whitepaperSource, /shared source of truth for software delivery/);
+  assert.equal(architectureManifest.protocol_version, 'mergeos.architecture.v1');
+  assert.equal(architectureManifest.positioning, 'AI software delivery operating system');
+  assert.deepEqual(architectureManifest.repository_architecture.map((repo) => repo.name), ['mergeos-app', 'mergeos-contracts', 'mergeos-sdk', 'mergeos-protocol']);
+  assert.deepEqual(architectureManifest.users.map((row) => row.type), ['customers', 'contributors', 'ai_agents', 'admins']);
+  assert.ok(architectureManifest.frontend_system.stack.includes('Vue 3'));
+  assert.ok(architectureManifest.frontend_system.stack.includes('Vite SSR'));
+  assert.ok(architectureManifest.frontend_system.public_pages.includes('Marketplace'));
+  assert.ok(architectureManifest.frontend_system.authenticated_dashboards.includes('Customer Dashboard'));
+  assert.ok(architectureManifest.backend_system.proposed_stack.includes('Go'));
+  assert.ok(architectureManifest.backend_system.proposed_stack.includes('PostgreSQL'));
+  assert.deepEqual(architectureManifest.ai_layer.workflow, [
+    'Import Repository',
+    'Issue Scan',
+    'Task Generation',
+    'Reward Estimation',
+    'Contributor Routing',
+    'PR Review',
+    'Deployment Validation',
+  ]);
+  assert.ok(architectureManifest.marketplace_system.features.includes('Public Bounties'));
+  assert.equal(architectureManifest.public_urls.architecture_manifest, '/system/mergeos-architecture.v1.json');
 });
 
 test('public protocol schemas mirror the protocol package schemas', async () => {
