@@ -5451,8 +5451,14 @@ func TestWorkerDashboardRouteMatchesGitHubWorkerAndSanitizesData(t *testing.T) {
 	if len(payload.ClaimedTasks) != 1 || payload.ClaimedTasks[0].ProjectTitle != "Worker dashboard proof" {
 		t.Fatalf("claimed tasks missing accepted task: %#v", payload.ClaimedTasks)
 	}
+	if payload.ClaimedTasks[0].LedgerProofURL != "/api/public/ledger/proof" {
+		t.Fatalf("claimed task missing ledger proof URL: %#v", payload.ClaimedTasks[0])
+	}
 	if len(payload.Rewards) == 0 {
 		t.Fatalf("worker rewards missing payout ledger row: %#v", payload.Rewards)
+	}
+	if payload.Rewards[0].LedgerProofURL != "/api/public/ledger/proof" {
+		t.Fatalf("worker reward missing ledger proof URL: %#v", payload.Rewards[0])
 	}
 	if len(payload.Proposals) == 0 {
 		t.Fatalf("worker dashboard missing proposal opportunities: %#v", payload.Proposals)

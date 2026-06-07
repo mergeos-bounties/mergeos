@@ -2118,6 +2118,7 @@ type WorkerClaimedTask struct {
 	AgentType         string     `json:"agent_type,omitempty"`
 	Status            string     `json:"status"`
 	ProofHash         string     `json:"proof_hash,omitempty"`
+	LedgerProofURL    string     `json:"ledger_proof_url,omitempty"`
 	IssueURL          string     `json:"issue_url,omitempty"`
 	PullRequestURL    string     `json:"pull_request_url,omitempty"`
 	ReviewEvidenceURL string     `json:"review_evidence_url,omitempty"`
@@ -2127,12 +2128,13 @@ type WorkerClaimedTask struct {
 }
 
 type WorkerRewardEntry struct {
-	Sequence    int       `json:"sequence"`
-	Type        string    `json:"type"`
-	AmountCents int64     `json:"amount_cents"`
-	Reference   string    `json:"reference"`
-	EntryHash   string    `json:"entry_hash"`
-	CreatedAt   time.Time `json:"created_at"`
+	Sequence       int       `json:"sequence"`
+	Type           string    `json:"type"`
+	AmountCents    int64     `json:"amount_cents"`
+	Reference      string    `json:"reference"`
+	EntryHash      string    `json:"entry_hash"`
+	LedgerProofURL string    `json:"ledger_proof_url,omitempty"`
+	CreatedAt      time.Time `json:"created_at"`
 }
 
 type WorkerReputation struct {

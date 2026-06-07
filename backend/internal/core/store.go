@@ -1821,12 +1821,13 @@ func (s *Store) WorkerDashboard(userID string) WorkerDashboardResponse {
 			continue
 		}
 		response.Rewards = append(response.Rewards, WorkerRewardEntry{
-			Sequence:    entry.Sequence,
-			Type:        entry.Type,
-			AmountCents: entry.AmountCents,
-			Reference:   publicWorkerRewardReference(entry.Reference),
-			EntryHash:   entry.EntryHash,
-			CreatedAt:   entry.CreatedAt,
+			Sequence:       entry.Sequence,
+			Type:           entry.Type,
+			AmountCents:    entry.AmountCents,
+			Reference:      publicWorkerRewardReference(entry.Reference),
+			EntryHash:      entry.EntryHash,
+			LedgerProofURL: "/api/public/ledger/proof",
+			CreatedAt:      entry.CreatedAt,
 		})
 	}
 	sort.Slice(response.Rewards, func(i, j int) bool {
@@ -3560,7 +3561,7 @@ func workerClaimedTaskRow(project *Project, task *Task) WorkerClaimedTask {
 	if status == "" || status == string(TaskOpen) {
 		status = "claimed"
 	}
-	return WorkerClaimedTask{
+	row := WorkerClaimedTask{
 		ID:                marketplaceBountyID(task.ProjectID, task.IssueNumber),
 		ProjectID:         task.ProjectID,
 		ProjectTitle:      marketplaceProjectTitle(project),
@@ -3579,6 +3580,10 @@ func workerClaimedTaskRow(project *Project, task *Task) WorkerClaimedTask {
 		AcceptedAt:        task.AcceptedAt,
 		SubmittedAt:       task.SubmittedAt,
 	}
+	if taskIsReleased(task) {
+		row.LedgerProofURL = "/api/public/ledger/proof"
+	}
+	return row
 }
 
 func taskHasWorker(task *Task) bool {

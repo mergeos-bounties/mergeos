@@ -53,6 +53,7 @@
           "agent_type": { "type": "string", "maxLength": 120 },
           "status": { "enum": ["claimed", "submitted", "accepted"] },
           "proof_hash": { "type": "string", "maxLength": 128 },
+          "ledger_proof_url": { "type": "string", "maxLength": 512 },
           "issue_url": { "type": "string", "maxLength": 512 },
           "pull_request_url": { "type": "string", "maxLength": 512 },
           "review_evidence_url": { "type": "string", "maxLength": 512 },
@@ -74,6 +75,7 @@
           "amount_cents": { "type": "integer", "minimum": 0 },
           "reference": { "type": "string", "maxLength": 512 },
           "entry_hash": { "type": "string", "maxLength": 128 },
+          "ledger_proof_url": { "type": "string", "maxLength": 512 },
           "created_at": { "type": "string", "format": "date-time" }
         }
       }

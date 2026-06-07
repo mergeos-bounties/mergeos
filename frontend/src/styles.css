@@ -16481,6 +16481,18 @@ svg {
   font-weight: 760;
 }
 
+.worker-reward-list a {
+  border: 1px solid rgba(15, 159, 120, 0.22);
+  border-radius: 999px;
+  background: #ecfdf5;
+  color: var(--green-dark);
+  padding: 5px 8px;
+  font-size: 10px;
+  font-weight: 900;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
 .worker-identity-list b,
 .worker-proposal-list > article > b {
   border-radius: 999px;

@@ -2386,6 +2386,10 @@
                         <Link2 :size="12" />
                         Evidence
                       </a>
+                      <a v-if="task.ledgerProofURL" :href="task.ledgerProofURL" target="_blank" rel="noreferrer">
+                        <ShieldCheck :size="12" />
+                        Proof
+                      </a>
                       <button
                         v-if="task.canSubmitReview"
                         type="button"
@@ -2471,7 +2475,10 @@
                         <strong>{{ reward.amount }}</strong>
                         <small>{{ reward.type }} · {{ reward.when }}</small>
                       </div>
-                      <span>{{ reward.ref }}</span>
+                      <a v-if="reward.ledgerProofURL" :href="reward.ledgerProofURL" target="_blank" rel="noreferrer">
+                        Proof
+                      </a>
+                      <span v-else>{{ reward.ref }}</span>
                     </article>
                   </div>
                   <article v-else class="dash-empty-state compact">
@@ -27850,6 +27857,7 @@ function mapWorkerClaimedTask(task = {}) {
     pullRequestURL,
     reviewEvidenceURL,
     reviewNotes: task.review_notes || '',
+    ledgerProofURL: task.ledger_proof_url || '',
     submittedAt: task.submitted_at || '',
     reviewURL: pullRequestURL || reviewEvidenceURL || '',
     canSubmitReview: status === 'claimed',
@@ -27863,6 +27871,7 @@ function mapWorkerReward(entry = {}) {
     type: entry.type === 'manual_credit' ? 'Manual credit' : 'Task payout',
     amount: formatMRGFromCents(entry.amount_cents),
     ref: shortLedgerReference(entry.reference || entry.entry_hash || `#${entry.sequence}`),
+    ledgerProofURL: entry.ledger_proof_url || '',
     when: when.full,
   };
 }

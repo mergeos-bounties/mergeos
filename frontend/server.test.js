@@ -180,6 +180,18 @@ test('public agent runbook and SDK document PR monitor auto-release plus proposa
   assert.match(sdkReadme, /createProposalFromBounty\(bounty, overrides\)/);
 });
 
+test('worker dashboard renders ledger proof links for accepted work and rewards', async () => {
+  const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
+  const schema = JSON.parse(await fs.readFile(new URL('./public/protocol/worker-dashboard.v1.schema.json', import.meta.url), 'utf-8'));
+
+  assert.match(appSource, /ledgerProofURL: task\.ledger_proof_url \|\| ''/);
+  assert.match(appSource, /ledgerProofURL: entry\.ledger_proof_url \|\| ''/);
+  assert.match(appSource, /v-if="task\.ledgerProofURL"[\s\S]{0,120}Proof/);
+  assert.match(appSource, /v-if="reward\.ledgerProofURL"[\s\S]{0,120}Proof/);
+  assert.ok(schema.properties.claimed_tasks.items.properties.ledger_proof_url);
+  assert.ok(schema.properties.rewards.items.properties.ledger_proof_url);
+});
+
 test('admin dashboard consumes admin ops queue action contract', async () => {
   const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
   const cssSource = await fs.readFile(new URL('./src/styles.css', import.meta.url), 'utf-8');
