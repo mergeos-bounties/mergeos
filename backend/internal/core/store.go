@@ -1735,10 +1735,16 @@ func defaultAgentFocus(agentType string) []string {
 	if containsAny(normalized, []string{"qa", "test"}) {
 		return []string{"test_plan", "smoke_testing", "regression_evidence"}
 	}
+	if containsAny(normalized, []string{"security", "dependency"}) {
+		return []string{"repository_scan", "risk_detection", "security_review"}
+	}
+	if containsAny(normalized, []string{"review", "audit"}) {
+		return []string{"code_review", "pr_review", "evidence_review"}
+	}
 	if containsAny(normalized, []string{"deploy", "release", "devops"}) {
 		return []string{"release_gate", "deployment_health", "rollback_readiness"}
 	}
-	if containsAny(normalized, []string{"scan", "security", "dependency"}) {
+	if containsAny(normalized, []string{"scan"}) {
 		return []string{"repository_scan", "risk_detection", "security_review"}
 	}
 	return []string{"task_execution", "evidence_reporting"}

@@ -1107,7 +1107,7 @@ func TestMarketplaceExposesBaselineAgentHierarchy(t *testing.T) {
 	}{
 		{agentType: "coding-agent", focus: "implementation"},
 		{agentType: "qa-agent", focus: "smoke_testing"},
-		{agentType: "review-agent", focus: "task_execution"},
+		{agentType: "review-agent", focus: "pr_review"},
 		{agentType: "deployment-agent", focus: "deployment_health"},
 		{agentType: "repo-scan-agent", focus: "repository_scan"},
 		{agentType: "security-review-agent", focus: "security_review"},
