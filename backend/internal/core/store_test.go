@@ -4646,6 +4646,26 @@ func TestProjectAgentActionRouteRecordsWorkflowEventAndSanitizesData(t *testing.
 		t.Fatalf("claimed worker action did not inherit accepted agent type: %#v", workerAction)
 	}
 
+	genAliasReq := httptest.NewRequest(http.MethodPost, "/api/projects/"+project.ID+"/agent-actions", strings.NewReader(fmt.Sprintf(`{
+		"action":"gen",
+		"claim_id":%q,
+		"status":"processed",
+		"evidence":["Generated task plan normalized from gen alias"]
+	}`, claimID)))
+	genAliasReq.Header.Set("Authorization", "Bearer "+workerAuth.Token)
+	genAliasResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(genAliasResp, genAliasReq)
+	if genAliasResp.Code != http.StatusCreated {
+		t.Fatalf("gen alias agent action status = %d, body = %s", genAliasResp.Code, genAliasResp.Body.String())
+	}
+	var genAliasAction AgentActionResponse
+	if err := json.Unmarshal(genAliasResp.Body.Bytes(), &genAliasAction); err != nil {
+		t.Fatal(err)
+	}
+	if genAliasAction.Action != "generate" || genAliasAction.ClaimID != claimID || genAliasAction.BountyID != claimID {
+		t.Fatalf("gen alias did not normalize to generate with public claim fields: %#v", genAliasAction)
+	}
+
 	missingClaimReq := httptest.NewRequest(http.MethodPost, "/api/projects/"+project.ID+"/agent-actions", strings.NewReader(`{"action":"test"}`))
 	missingClaimReq.Header.Set("Authorization", "Bearer "+workerAuth.Token)
 	missingClaimResp := httptest.NewRecorder()
