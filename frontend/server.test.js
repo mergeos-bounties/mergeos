@@ -130,6 +130,28 @@ test('public system vision preserves the product thesis', async () => {
   assert.ok(architectureManifest.marketplace_system.features.includes('Live Projects'));
   assert.ok(architectureManifest.marketplace_system.features.includes('Public Bounties'));
   assert.ok(architectureManifest.marketplace_system.features.includes('AI Agents'));
+  assert.deepEqual(architectureManifest.marketplace_system.feature_routes, {
+    live_projects: {
+      page: '/marketplace#marketplace-projects',
+      api: '/api/public/marketplace',
+      event_type: 'project_funded',
+    },
+    public_bounties: {
+      page: '/marketplace#marketplace-bounties',
+      api: '/api/public/marketplace',
+      event_type: 'task_opened',
+    },
+    contributors: {
+      page: '/marketplace#marketplace-contributors',
+      api: '/api/public/marketplace',
+      event_type: 'proposal_submitted',
+    },
+    ai_agents: {
+      page: '/marketplace#marketplace-agents',
+      api: '/api/public/protocol/agent-queue',
+      event_type: 'agent_queue',
+    },
+  });
   assert.equal(architectureManifest.public_urls.marketplace_api, '/api/public/marketplace');
   assert.equal(architectureManifest.public_urls.live_feed_api, '/api/public/live-feed');
   assert.equal(architectureManifest.public_urls.agent_queue_api, '/api/public/protocol/agent-queue');

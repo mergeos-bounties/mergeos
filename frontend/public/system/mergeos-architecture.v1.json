@@ -151,7 +151,29 @@
   },
   "marketplace_system": {
     "role": "Realtime economy for live projects, public bounties, contributor proposals, AI agent lanes, escrow-backed work, and payout proof.",
-    "features": ["Live Projects", "Public Bounties", "AI Agents", "Contributor Signals", "Escrow Proof", "Ledger Logs"]
+    "features": ["Live Projects", "Public Bounties", "AI Agents", "Contributor Signals", "Escrow Proof", "Ledger Logs"],
+    "feature_routes": {
+      "live_projects": {
+        "page": "/marketplace#marketplace-projects",
+        "api": "/api/public/marketplace",
+        "event_type": "project_funded"
+      },
+      "public_bounties": {
+        "page": "/marketplace#marketplace-bounties",
+        "api": "/api/public/marketplace",
+        "event_type": "task_opened"
+      },
+      "contributors": {
+        "page": "/marketplace#marketplace-contributors",
+        "api": "/api/public/marketplace",
+        "event_type": "proposal_submitted"
+      },
+      "ai_agents": {
+        "page": "/marketplace#marketplace-agents",
+        "api": "/api/public/protocol/agent-queue",
+        "event_type": "agent_queue"
+      }
+    }
   },
   "public_urls": {
     "system": "/system",
