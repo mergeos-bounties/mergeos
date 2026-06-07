@@ -338,10 +338,10 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.match(cssSource, /\.public-home-copy h1\s*\{[\s\S]*font-size: clamp\(27px, 2\.55vw, 34px\) !important;/);
   assert.match(cssSource, /\.public-home-copy h1\s*\{[\s\S]*font-size: clamp\(25px, 2\.2vw, 30px\) !important;/);
   assert.match(cssSource, /\.public-home-copy h1\s*\{[\s\S]*font-size: clamp\(24px, 2vw, 28px\) !important;/);
-  assert.match(cssSource, /\.public-home-page \.home-container\s*\{[\s\S]*max-width: 1080px !important;/);
-  assert.match(cssSource, /\.public-home-hero\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) minmax\(320px, 380px\) !important;/);
-  assert.match(cssSource, /\.public-home-copy h1\s*\{[\s\S]*font-size: clamp\(44px, 5vw, 68px\) !important;/);
-  assert.match(cssSource, /\.home-command-panel\s*\{[\s\S]*max-width: 380px !important;/);
+  assert.match(cssSource, /\.public-home-page \.home-container\s*\{[\s\S]*max-width: 980px !important;/);
+  assert.match(cssSource, /\.public-home-hero\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) minmax\(300px, 340px\) !important;/);
+  assert.match(cssSource, /\.public-home-copy h1\s*\{[\s\S]*font-size: clamp\(38px, 4\.1vw, 56px\) !important;/);
+  assert.match(cssSource, /\.home-command-panel\s*\{[\s\S]*max-width: 340px !important;/);
   assert.match(cssSource, /\.home-feed-preview,[\s\S]*\.home-public-graph-proof,[\s\S]*\.home-command-panel \.home-pipeline\s*\{[\s\S]*display: none !important;/);
   assert.match(cssSource, /\.home-command-panel \.public-stat-grid article:nth-child\(n \+ 3\)\s*\{[\s\S]*display: none !important;/);
   assert.match(cssSource, /@media \(max-width: 980px\)[\s\S]*\.home-command-panel\s*\{[\s\S]*display: none !important;/);

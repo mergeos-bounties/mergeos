@@ -33949,53 +33949,53 @@ canvas {
   min-height: calc(100svh - 82px) !important;
   display: grid !important;
   align-items: center !important;
-  padding-block: 18px 24px !important;
+  padding-block: 10px 18px !important;
 }
 
 .public-home-page .home-container {
   width: min(100%, calc(100vw - 56px)) !important;
-  max-width: 1080px !important;
+  max-width: 980px !important;
 }
 
 .public-home-hero {
-  grid-template-columns: minmax(0, 1fr) minmax(320px, 380px) !important;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 340px) !important;
   align-items: center !important;
-  gap: clamp(28px, 4vw, 56px) !important;
+  gap: clamp(22px, 3.2vw, 40px) !important;
   padding-block: 0 !important;
 }
 
 .public-home-copy h1 {
-  max-width: 650px !important;
-  margin-top: 10px !important;
-  font-size: clamp(44px, 5vw, 68px) !important;
-  line-height: 0.97 !important;
+  max-width: 560px !important;
+  margin-top: 8px !important;
+  font-size: clamp(38px, 4.1vw, 56px) !important;
+  line-height: 0.99 !important;
 }
 
 .public-home-copy p {
-  max-width: 620px !important;
-  margin-top: 18px !important;
-  font-size: clamp(17px, 1.55vw, 21px) !important;
+  max-width: 560px !important;
+  margin-top: 14px !important;
+  font-size: clamp(16px, 1.18vw, 18px) !important;
   line-height: 1.48 !important;
 }
 
 .public-home-copy .marketplace-actions {
-  max-width: 620px !important;
+  max-width: 560px !important;
   gap: 10px !important;
-  margin-top: 22px !important;
+  margin-top: 18px !important;
 }
 
 .public-home-copy .primary-button.large,
 .public-home-copy .secondary-button.large {
-  min-height: 48px !important;
-  padding-inline: 18px !important;
+  min-height: 44px !important;
+  padding-inline: 16px !important;
   font-size: 14px !important;
 }
 
 .home-command-panel {
-  max-width: 380px !important;
-  padding: 18px !important;
+  max-width: 340px !important;
+  padding: 16px !important;
   border-radius: 8px !important;
-  box-shadow: 0 18px 46px rgba(15, 23, 42, 0.1) !important;
+  box-shadow: 0 16px 38px rgba(15, 23, 42, 0.09) !important;
 }
 
 .home-command-head {
@@ -34019,24 +34019,24 @@ canvas {
 .home-command-panel .public-stat-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   gap: 10px !important;
-  margin-top: 18px !important;
+  margin-top: 14px !important;
 }
 
 .home-command-panel .public-stat-grid article {
-  min-height: 86px !important;
+  min-height: 78px !important;
   grid-template-columns: minmax(0, 1fr) !important;
   align-content: space-between !important;
-  gap: 10px !important;
-  padding: 14px !important;
+  gap: 8px !important;
+  padding: 12px !important;
 }
 
 .home-command-panel .public-stat-grid article:nth-child(n + 3) {
-  display: grid !important;
+  display: none !important;
 }
 
 .home-stat-icon {
-  width: 34px !important;
-  height: 34px !important;
+  width: 30px !important;
+  height: 30px !important;
 }
 
 .home-command-panel .public-stat-grid article > div > span {
@@ -34044,7 +34044,7 @@ canvas {
 }
 
 .home-command-panel .public-stat-grid strong {
-  font-size: clamp(22px, 2.3vw, 30px) !important;
+  font-size: clamp(20px, 1.8vw, 26px) !important;
   line-height: 1 !important;
 }
 
@@ -34052,7 +34052,7 @@ canvas {
   .public-home-page {
     min-height: auto !important;
     display: block !important;
-    padding-block: 22px 28px !important;
+    padding-block: 18px 24px !important;
   }
 
   .public-home-page .home-container {
@@ -34065,8 +34065,8 @@ canvas {
   }
 
   .public-home-copy h1 {
-    max-width: 560px !important;
-    font-size: clamp(36px, 10vw, 52px) !important;
+    max-width: 520px !important;
+    font-size: clamp(34px, 9vw, 46px) !important;
   }
 
   .public-home-copy p {
@@ -34075,8 +34075,7 @@ canvas {
   }
 
   .home-command-panel {
-    display: block !important;
-    max-width: none !important;
+    display: none !important;
   }
 }
 
