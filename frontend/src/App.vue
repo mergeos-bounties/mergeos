@@ -24621,9 +24621,10 @@ function mapTokenWorkflowProofRow(entry = {}) {
   const decisionMatch = reference.match(/decision:([^;]+)/);
   const gatesMatch = reference.match(/gates:([^;]+)/);
   const gateSummaryMatch = reference.match(/gate_summary:([^;]+)/);
+  const sourceMatch = reference.match(/source:([^;]+)/) || reference.match(/repo:([^;]+)/);
   const gateSummary = gateSummaryMatch?.[1] || (gatesMatch?.[1] ? `${gatesMatch[1].split(',').length} CEO gates` : 'CEO gates');
   const headline = isLaunchBrief
-    ? `${toTitleLabel(decisionMatch?.[1] || 'pending open decision')} / ${gateSummary}`
+    ? `${toTitleLabel(decisionMatch?.[1] || 'pending open decision')} / ${gateSummary}${sourceMatch?.[1] ? ' / source linked' : ''}`
     : isAirdrop
     ? `${toTitleLabel(missionMatch?.[1] || 'Airdrop claim')} / ${scoreMatch?.[1] ? `${scoreMatch[1]} score` : 'pending score'}`
     : `${toTitleLabel(tierMatch?.[1] || 'Presale reserve')} / ${toTitleLabel(railMatch?.[1] || 'review rail')}`;

@@ -1738,6 +1738,9 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 	if !strings.Contains(launchBrief.LedgerEntry.Reference, "decision:pending_open_decision") || !strings.Contains(launchBrief.LedgerEntry.Reference, "gates:repo=ready_for_review") || !strings.Contains(launchBrief.LedgerEntry.Reference, "gate_summary:4/4 gates ready for CEO review") {
 		t.Fatalf("token launch brief ledger reference missing CEO memo contract: %s", launchBrief.LedgerEntry.Reference)
 	}
+	if !strings.Contains(launchBrief.LedgerEntry.Reference, "source:https://github.com/mergeos-bounties/mergeos") || !strings.Contains(launchBrief.LedgerEntry.Reference, "repo:https://github.com/mergeos-bounties/mergeos") {
+		t.Fatalf("token launch brief ledger reference missing research source: %s", launchBrief.LedgerEntry.Reference)
+	}
 	if !stringSliceContains(launchBrief.ResearchSignals, "airdrop_launch") || !stringSliceContains(launchBrief.ResearchSignals, "repository_context") {
 		t.Fatalf("token launch brief research signals invalid: %#v", launchBrief.ResearchSignals)
 	}
@@ -1766,7 +1769,7 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 	feedTypes := map[string]bool{}
 	for _, item := range store.PublicLiveFeed(20).Items {
 		feedTypes[item.Type] = true
-		if item.Type == "ledger_token_launch_brief" && (!strings.Contains(item.Body, "pending open decision") || !strings.Contains(item.Body, "4/4 gates ready for CEO review") || !strings.Contains(item.Body, "Gates:")) {
+		if item.Type == "ledger_token_launch_brief" && (!strings.Contains(item.Body, "pending open decision") || !strings.Contains(item.Body, "4/4 gates ready for CEO review") || !strings.Contains(item.Body, "Gates:") || !strings.Contains(item.Body, "Research source attached")) {
 			t.Fatalf("token launch live feed missing CEO decision context: %#v", item)
 		}
 	}

@@ -442,6 +442,7 @@ func (s *Store) RecordTokenLaunchBriefForUser(userID string, req TokenLaunchBrie
 		"gates:" + tokenLaunchGateReference(ceoMemo.Gates),
 		"gate_summary:" + tokenLaunchGateSummary(ceoMemo.Gates),
 		"title:" + projectTitle,
+		"source:" + repositoryURL,
 		"repo:" + repositoryURL,
 		"signals:" + strings.Join(researchSignals, ","),
 	})
