@@ -32407,3 +32407,304 @@ canvas {
   }
 }
 
+/* Compact public rhythm: keep pages short enough to scan without removing content. */
+.public-home-page,
+.public-info-page,
+.marketplace-page,
+.ledger-page,
+.protocol-page,
+.mergeide-page,
+.contracts-page,
+.token-page {
+  padding-block: clamp(10px, 1.6vw, 22px) clamp(24px, 3vw, 38px) !important;
+}
+
+.home-container {
+  max-width: min(1180px, calc(100vw - 28px));
+}
+
+.public-home-layout,
+.public-info-layout,
+.marketplace-layout,
+.ledger-shell,
+.protocol-shell,
+.mergeide-shell,
+.contracts-shell,
+.token-shell {
+  gap: clamp(14px, 2vw, 24px) !important;
+}
+
+.public-home-hero {
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 370px) !important;
+  gap: clamp(16px, 1.8vw, 24px) !important;
+  padding-block: clamp(8px, 1.6vh, 16px) clamp(16px, 2.2vh, 26px) !important;
+}
+
+.public-home-copy {
+  max-width: 760px !important;
+}
+
+.public-home-copy h1 {
+  max-width: 760px !important;
+  margin-top: 8px !important;
+  font-size: clamp(38px, 4.2vw, 54px) !important;
+  line-height: 0.98 !important;
+}
+
+.public-home-copy p {
+  max-width: 560px !important;
+  margin-top: 10px !important;
+  line-height: 1.42 !important;
+}
+
+.marketplace-actions {
+  gap: 8px !important;
+  margin-top: 14px !important;
+}
+
+.primary-button.large,
+.secondary-button.large {
+  min-height: 44px !important;
+  padding-inline: 16px !important;
+}
+
+.home-proof-stack {
+  gap: 7px !important;
+  margin-top: 12px !important;
+}
+
+.home-proof-stack article {
+  min-height: 32px !important;
+  padding-inline: 11px !important;
+  font-size: 12px !important;
+}
+
+.home-mergeide-signal {
+  width: min(100%, 610px) !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  margin-top: 10px !important;
+  padding: 10px 12px !important;
+  gap: 6px 10px !important;
+}
+
+.home-mergeide-signal strong {
+  font-size: clamp(15px, 1.35vw, 18px) !important;
+  line-height: 1.18 !important;
+}
+
+.home-mergeide-signal small {
+  display: none !important;
+}
+
+.home-mergeide-signal > span {
+  grid-column: 1 / -1;
+}
+
+.home-mergeide-signal > div {
+  flex-wrap: nowrap !important;
+  gap: 6px !important;
+}
+
+.home-mergeide-signal a,
+.home-mergeide-signal button {
+  min-height: 34px !important;
+  padding-inline: 10px !important;
+  font-size: 11px !important;
+}
+
+.home-command-panel {
+  padding: 16px !important;
+}
+
+.home-command-head {
+  gap: 10px !important;
+}
+
+.home-command-mark {
+  width: 38px !important;
+  height: 38px !important;
+}
+
+.public-stat-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+  margin-top: 12px !important;
+}
+
+.public-stat-grid article {
+  align-items: center !important;
+  border: 1px solid rgba(15, 23, 42, 0.08) !important;
+  border-radius: 8px !important;
+  padding: 10px !important;
+}
+
+.public-stat-grid strong {
+  font-size: clamp(21px, 2.1vw, 28px) !important;
+}
+
+.home-pipeline {
+  gap: 8px !important;
+  margin-top: 12px !important;
+}
+
+.home-pipeline article {
+  min-height: 74px !important;
+  padding: 10px !important;
+}
+
+.home-public-graph-proof,
+.public-notification-feed {
+  margin-top: 12px !important;
+  padding-top: 12px !important;
+}
+
+.public-notification-feed {
+  gap: 9px !important;
+}
+
+.public-notification-feed article:nth-of-type(n + 2) {
+  display: none !important;
+}
+
+.public-workflow-grid,
+.mergeide-feature-grid,
+.token-chapter-grid,
+.token-whitepaper-section-list {
+  gap: 12px !important;
+}
+
+.public-workflow-grid button,
+.mergeide-feature-grid article,
+.token-chapter-grid article,
+.token-whitepaper-section-list article {
+  padding: 14px !important;
+}
+
+.mergeide-hero,
+.token-hero {
+  gap: clamp(16px, 2vw, 24px) !important;
+  padding-block: clamp(10px, 2vw, 18px) !important;
+}
+
+.mergeide-download-panel,
+.token-workflow-panel,
+.token-whitepaper-reader,
+.contracts-board,
+.ledger-main-panel,
+.protocol-board {
+  padding: clamp(16px, 2vw, 24px) !important;
+}
+
+@media (max-width: 980px) {
+  .home-container {
+    max-width: min(100%, calc(100vw - 24px));
+    padding-inline: 12px !important;
+  }
+
+  .public-home-hero {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 14px !important;
+    padding-block: 10px 16px !important;
+  }
+
+  .public-home-copy h1 {
+    font-size: clamp(34px, 10vw, 48px) !important;
+  }
+
+  .home-command-panel {
+    padding: 12px !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .public-home-page,
+  .public-info-page,
+  .marketplace-page,
+  .ledger-page,
+  .protocol-page,
+  .mergeide-page,
+  .contracts-page,
+  .token-page {
+    padding-block: 8px 24px !important;
+  }
+
+  .public-home-copy p,
+  .token-hero-copy p,
+  .mergeide-hero-copy p,
+  .contracts-hero-copy p,
+  .protocol-hero-copy p,
+  .ledger-hero-copy p {
+    font-size: 14px !important;
+    line-height: 1.38 !important;
+  }
+
+  .marketplace-actions {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .marketplace-actions .primary-button,
+  .marketplace-actions .secondary-button {
+    width: 100% !important;
+  }
+
+  .home-proof-stack,
+  .home-mergeide-signal small,
+  .home-public-graph-proof,
+  .public-notification-feed {
+    display: none !important;
+  }
+
+  .public-stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .home-pipeline {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  .home-pipeline article {
+    min-height: 64px !important;
+    padding: 8px !important;
+  }
+
+  .home-pipeline article small {
+    display: none !important;
+  }
+
+  .public-workflow-grid,
+  .mergeide-feature-grid,
+  .token-chapter-grid,
+  .token-whitepaper-section-list {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .project-flow-main {
+    gap: 8px !important;
+    padding-top: 8px !important;
+  }
+
+  .project-flow-sidebar {
+    gap: 8px !important;
+  }
+
+  .project-flow-title h1 {
+    font-size: clamp(23px, 7vw, 29px) !important;
+  }
+
+  .project-step-list button {
+    min-height: 50px !important;
+    padding: 6px 4px !important;
+  }
+
+  .wizard-card,
+  .rail-card,
+  .review-card,
+  .payment-details-box,
+  .tokens-box {
+    padding: 12px !important;
+  }
+}
+
