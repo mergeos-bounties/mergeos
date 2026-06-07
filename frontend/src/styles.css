@@ -8570,6 +8570,57 @@ svg {
   overflow-wrap: anywhere;
 }
 
+.token-ceo-brief-card {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  border: 1px solid rgba(15, 118, 110, 0.16);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(236, 253, 245, 0.9), rgba(255, 255, 255, 0.95)),
+    #ffffff;
+  padding: 13px;
+}
+
+.token-ceo-brief-card strong,
+.token-ceo-brief-card p {
+  display: block;
+  min-width: 0;
+}
+
+.token-ceo-brief-card strong {
+  margin-top: 4px;
+  color: #07130f;
+  font-size: 15px;
+  line-height: 1.2;
+  font-weight: 950;
+}
+
+.token-ceo-brief-card p {
+  max-width: 760px;
+  margin: 5px 0 0;
+  color: #536273;
+  font-size: 11.5px;
+  line-height: 1.42;
+  font-weight: 720;
+}
+
+.token-ceo-brief-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 250px;
+}
+
+.token-ceo-brief-actions .primary-button,
+.token-ceo-brief-actions .secondary-button {
+  min-height: 38px;
+  white-space: nowrap;
+}
+
 .token-ceo-research-grid article {
   min-width: 0;
   display: grid;
@@ -9261,6 +9312,23 @@ svg {
     grid-column: auto;
     margin-top: 0;
     text-align: right;
+  }
+
+  .token-ceo-brief-card {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .token-ceo-brief-actions {
+    min-width: 0;
+    display: grid;
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+
+  .token-ceo-brief-actions .primary-button,
+  .token-ceo-brief-actions .secondary-button {
+    width: 100%;
   }
 
   .token-metric-grid {

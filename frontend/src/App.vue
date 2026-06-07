@@ -5100,6 +5100,23 @@
               <b>{{ row.status }}</b>
             </article>
           </div>
+          <div class="token-ceo-brief-card">
+            <div>
+              <span class="marketplace-eyebrow">{{ tokenCeoLaunchBriefCopy.eyebrow }}</span>
+              <strong>{{ tokenCeoLaunchBriefCopy.title }}</strong>
+              <p>{{ tokenCeoLaunchBriefCopy.body }}</p>
+            </div>
+            <div class="token-ceo-brief-actions">
+              <button class="primary-button compact" type="button" @click="handlePublicAction({ command: 'token-ceo-brief' })">
+                {{ tokenCeoLaunchBriefCopy.primary }}
+                <ArrowRight :size="14" />
+              </button>
+              <button class="secondary-button compact" type="button" @click="handlePublicAction({ page: 'agents' })">
+                {{ tokenCeoLaunchBriefCopy.secondary }}
+                <Bot :size="14" />
+              </button>
+            </div>
+          </div>
           <div class="token-ceo-research-grid">
             <article v-for="row in tokenCeoResearchRows" :key="row.title">
               <span :class="['ledger-trust-icon', row.tone]">
@@ -12537,6 +12554,24 @@ const tokenCeoProjectResearchRows = computed(() => {
       tone: 'green',
     },
   ];
+});
+const tokenCeoLaunchBriefCopy = computed(() => {
+  if (publicPage.value === 'airdrop') {
+    return {
+      eyebrow: 'CEO BRIEF INTAKE',
+      title: 'Ask the CEO agent to research your airdrop launch.',
+      body: 'Open a funded project brief with repository context, mission goals, anti-bot policy, allocation cap, and proof rules.',
+      primary: 'Send CEO brief',
+      secondary: 'View CEO agent',
+    };
+  }
+  return {
+    eyebrow: 'CEO BRIEF INTAKE',
+    title: 'Ask the CEO agent to research your presale window.',
+    body: 'Open a funded project brief with utility, reserve cap, wallet path, funding rail, contract proof, and compliance notes.',
+    primary: 'Send CEO brief',
+    secondary: 'View CEO agent',
+  };
 });
 const tokenWorkflowProofRows = computed(() => {
   const targetType = publicPage.value === 'airdrop' ? 'airdrop_claim' : 'presale_reservation';
@@ -23977,6 +24012,10 @@ function handlePublicAction(action = {}) {
     openProjectWizard();
     return;
   }
+  if (action.command === 'token-ceo-brief') {
+    openProjectWizard({ intent: 'token-launch' });
+    return;
+  }
   if (action.command === 'copy-whitepaper') {
     void copyWhitepaperOutline();
     return;
@@ -24794,6 +24833,28 @@ function applyProjectWizardIntent(intent = '') {
 
   if (nextIntent === 'estimate' && !projectSetupForm.projectType) {
     projectSetupForm.projectType = 'New Project';
+    projectWizardStage.value = 'setup';
+    projectWizardStep.value = 1;
+    return;
+  }
+
+  if (nextIntent === 'token-launch') {
+    const isPresale = publicPage.value === 'presale';
+    projectSetupForm.projectType = 'New Project';
+    projectSetupForm.title = isPresale
+      ? 'CEO research brief for MRG presale window'
+      : 'CEO research brief for earned MRG airdrop';
+    projectSetupForm.shortDescription = isPresale
+      ? 'Ask the CEO agent to research utility, reserve caps, wallet path, funding rail, Solana contract proof, compliance language, and ledger receipt gates before opening presale.'
+      : 'Ask the CEO agent to research repository demand, mission rules, anti-bot policy, allocation cap, Solana wallet readiness, and ledger proof gates before opening an earned airdrop.';
+    projectSetupForm.overview = isPresale
+      ? 'We want MergeOS CEO orchestration to decide whether this project is ready for a presale window. Review product utility, reserve tiers, funding rails, wallet verification, vesting/compliance notes, contract references, and public proof requirements.'
+      : 'We want MergeOS CEO orchestration to decide whether this project deserves an earned airdrop. Review repository context, bounty/task demand, mission catalog fit, proof evidence, anti-bot risk, wallet uniqueness, and claim review capacity.';
+    projectSetupForm.requirements = isPresale
+      ? 'Deliver a CEO launch memo covering utility, allocation caps, funding checks, wallet gates, contract proof, ledger receipt policy, risk flags, and a clear open/no-open decision.'
+      : 'Deliver a CEO launch memo covering mission-market fit, claim rules, proof requirements, anti-bot gates, allocation caps, review owner, ledger receipt policy, and a clear open/no-open decision.';
+    projectSetupForm.techStack = projectSetupForm.techStack || 'MergeOS, Solana, MRG, ledger proof, CEO agent';
+    projectSetupForm.allowAgents = true;
     projectWizardStage.value = 'setup';
     projectWizardStep.value = 1;
     return;
