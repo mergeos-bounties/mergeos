@@ -5165,6 +5165,16 @@
                 <span>{{ publicPage === 'airdrop' ? 'Allocation policy' : 'Reserve policy' }}</span>
                 <input v-model.trim="tokenLaunchBriefForm.allocation_policy" :disabled="tokenLaunchBriefBusy" maxlength="180" autocomplete="off" :placeholder="tokenCeoLaunchBriefCopy.allocationPlaceholder" />
               </label>
+              <label class="wizard-field" :class="{ invalid: tokenLaunchBriefFieldError('wallet_policy') }">
+                <span>Wallet policy <b>*</b></span>
+                <input v-model.trim="tokenLaunchBriefForm.wallet_policy" :disabled="tokenLaunchBriefBusy" maxlength="180" autocomplete="off" :placeholder="tokenCeoLaunchBriefCopy.walletPlaceholder" />
+                <p v-if="tokenLaunchBriefFieldError('wallet_policy')" class="wizard-field-error">{{ tokenLaunchBriefFieldError('wallet_policy') }}</p>
+              </label>
+              <label class="wizard-field" :class="{ invalid: tokenLaunchBriefFieldError('risk_notes') }">
+                <span>CEO risk notes <b>*</b></span>
+                <input v-model.trim="tokenLaunchBriefForm.risk_notes" :disabled="tokenLaunchBriefBusy" maxlength="180" autocomplete="off" :placeholder="tokenCeoLaunchBriefCopy.riskPlaceholder" />
+                <p v-if="tokenLaunchBriefFieldError('risk_notes')" class="wizard-field-error">{{ tokenLaunchBriefFieldError('risk_notes') }}</p>
+              </label>
             </div>
             <p v-if="tokenLaunchBriefError" class="modal-error token-workflow-error">{{ tokenLaunchBriefError }}</p>
             <article v-if="tokenLaunchBriefResult" class="token-proof-result token-launch-brief-result">
@@ -12657,6 +12667,8 @@ const tokenCeoLaunchBriefCopy = computed(() => {
       summaryPlaceholder: 'Why should this project open earned MRG airdrop missions? Include repo, community, mission demand, and useful contribution evidence.',
       proofPlaceholder: 'Require PR URL, task reference, QA evidence, deployment proof, or agent action.',
       allocationPlaceholder: 'Cap claims by mission score, proof quality, and wallet uniqueness.',
+      walletPlaceholder: 'Require Solana wallet uniqueness, duplicate review, and anti-bot checks.',
+      riskPlaceholder: 'Flag bot farming, empty signups, weak proof, and duplicate wallets.',
     };
   }
   return {
@@ -12668,6 +12680,8 @@ const tokenCeoLaunchBriefCopy = computed(() => {
     summaryPlaceholder: 'Why is this project ready for an MRG presale window? Include utility, reserve cap, wallet path, funding rail, and contract proof.',
     proofPlaceholder: 'Require wallet, funding reference, contract reference, receipt, and ledger proof.',
     allocationPlaceholder: 'Cap reserve by tier, funding rail, review state, and compliance risk.',
+    walletPlaceholder: 'Require Solana wallet ownership, funding reference, and receipt reconciliation.',
+    riskPlaceholder: 'Flag reserve caps, reversal risk, contract mismatch, and compliance language.',
   };
 });
 const tokenLaunchWizardBriefCopy = computed(() => {
@@ -12763,11 +12777,15 @@ const tokenLaunchBriefValidationMap = computed(() => {
   const summary = String(tokenLaunchBriefForm.project_summary || '').trim();
   const repoURL = String(tokenLaunchBriefForm.repository_url || '').trim();
   const proofPolicy = String(tokenLaunchBriefForm.proof_policy || '').trim();
+  const walletPolicy = String(tokenLaunchBriefForm.wallet_policy || '').trim();
+  const riskNotes = String(tokenLaunchBriefForm.risk_notes || '').trim();
   if (!user.value) errors.session = 'Log in before sending a CEO launch brief.';
   if (title.length < 6) errors.project_title = 'Project title must be at least 6 characters.';
   if (summary.length < 24) errors.project_summary = 'CEO research brief must be at least 24 characters.';
   if (repoURL && !tokenWorkflowURLIsValid(repoURL)) errors.repository_url = 'Repository URL must start with http:// or https://.';
   if (proofPolicy.length < 12) errors.proof_policy = 'Proof policy must explain the required evidence.';
+  if (walletPolicy.length < 12) errors.wallet_policy = 'Wallet policy must explain wallet ownership or uniqueness checks.';
+  if (riskNotes.length < 12) errors.risk_notes = 'CEO risk notes must explain the launch risk review.';
   return errors;
 });
 const tokenLaunchBriefValidationRows = computed(() =>

@@ -1207,6 +1207,12 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /Send a CEO airdrop brief\./);
   assert.match(appSource, /Send a CEO presale brief\./);
   assert.match(appSource, /CEO template/);
+  assert.match(appSource, /Wallet policy <b>\*<\/b>/);
+  assert.match(appSource, /CEO risk notes <b>\*<\/b>/);
+  assert.match(appSource, /tokenLaunchBriefFieldError\('wallet_policy'\)/);
+  assert.match(appSource, /tokenLaunchBriefFieldError\('risk_notes'\)/);
+  assert.match(appSource, /walletPlaceholder: 'Require Solana wallet uniqueness, duplicate review, and anti-bot checks\.'/);
+  assert.match(appSource, /riskPlaceholder: 'Flag reserve caps, reversal risk, contract mismatch, and compliance language\.'/);
   assert.match(appSource, /function prefillTokenLaunchBrief\(\)/);
   assert.match(appSource, /CEO research template added\./);
   assert.match(appSource, /MRG presale readiness review/);
@@ -1216,6 +1222,8 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /const tokenLaunchBriefMode = ref\(''\)/);
   assert.match(appSource, /const tokenLaunchBriefForm = reactive/);
   assert.match(appSource, /const tokenLaunchBriefValidationMap = computed/);
+  assert.match(appSource, /errors\.wallet_policy = 'Wallet policy must explain wallet ownership or uniqueness checks\.'/);
+  assert.match(appSource, /errors\.risk_notes = 'CEO risk notes must explain the launch risk review\.'/);
   assert.match(appSource, /api\('\/api\/token\/launch-briefs'/);
   assert.match(appSource, /function submitTokenLaunchBrief\(\)/);
   assert.match(appSource, /ceo_memo/);
