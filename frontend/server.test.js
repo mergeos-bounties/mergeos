@@ -110,7 +110,12 @@ test('public system vision preserves the product thesis', async () => {
     'PR Review',
     'Deployment Validation',
   ]);
+  assert.ok(architectureManifest.marketplace_system.features.includes('Live Projects'));
   assert.ok(architectureManifest.marketplace_system.features.includes('Public Bounties'));
+  assert.ok(architectureManifest.marketplace_system.features.includes('AI Agents'));
+  assert.equal(architectureManifest.public_urls.marketplace_api, '/api/public/marketplace');
+  assert.equal(architectureManifest.public_urls.live_feed_api, '/api/public/live-feed');
+  assert.equal(architectureManifest.public_urls.agent_queue_api, '/api/public/protocol/agent-queue');
   assert.equal(architectureManifest.public_urls.architecture_manifest, '/system/mergeos-architecture.v1.json');
 });
 

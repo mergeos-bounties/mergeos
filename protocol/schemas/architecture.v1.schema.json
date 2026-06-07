@@ -117,7 +117,7 @@
     },
     "public_urls": {
       "type": "object",
-      "required": ["system", "marketplace", "live_feed", "ledger", "protocol", "whitepaper", "architecture_manifest"],
+      "required": ["system", "marketplace", "live_feed", "ledger", "protocol", "whitepaper", "architecture_manifest", "marketplace_api", "live_feed_api", "agent_queue_api"],
       "properties": {
         "system": { "type": "string", "minLength": 1 },
         "marketplace": { "type": "string", "minLength": 1 },
@@ -125,7 +125,10 @@
         "ledger": { "type": "string", "minLength": 1 },
         "protocol": { "type": "string", "minLength": 1 },
         "whitepaper": { "type": "string", "minLength": 1 },
-        "architecture_manifest": { "type": "string", "minLength": 1 }
+        "architecture_manifest": { "type": "string", "minLength": 1 },
+        "marketplace_api": { "type": "string", "minLength": 1 },
+        "live_feed_api": { "type": "string", "minLength": 1 },
+        "agent_queue_api": { "type": "string", "minLength": 1 }
       },
       "additionalProperties": false
     }

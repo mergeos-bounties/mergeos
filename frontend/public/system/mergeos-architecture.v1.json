@@ -136,6 +136,9 @@
     "ledger": "/ledger",
     "protocol": "/protocol",
     "whitepaper": "/whitepaper",
-    "architecture_manifest": "/system/mergeos-architecture.v1.json"
+    "architecture_manifest": "/system/mergeos-architecture.v1.json",
+    "marketplace_api": "/api/public/marketplace",
+    "live_feed_api": "/api/public/live-feed",
+    "agent_queue_api": "/api/public/protocol/agent-queue"
   }
 }
