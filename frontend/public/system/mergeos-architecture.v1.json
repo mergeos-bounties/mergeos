@@ -146,22 +146,42 @@
     {
       "type": "customers",
       "examples": ["startups", "SaaS companies", "repository owners", "founders"],
-      "dashboard": "Customer Dashboard"
+      "dashboard": "Customer Dashboard",
+      "role_routes": {
+        "page": "/dashboard",
+        "api": "/api/projects/{id}/dashboard",
+        "capabilities": ["project overview", "live PRs", "escrow", "payments", "tasks", "AI logs"]
+      }
     },
     {
       "type": "contributors",
       "examples": ["frontend developers", "backend developers", "designers", "QA engineers", "DevOps", "security auditors"],
-      "dashboard": "Worker Dashboard"
+      "dashboard": "Worker Dashboard",
+      "role_routes": {
+        "page": "/dashboard?section=worker",
+        "api": "/api/workers/me",
+        "capabilities": ["claimed tasks", "rewards", "reputation", "proposals"]
+      }
     },
     {
       "type": "ai_agents",
       "examples": ["coding agents", "review agents", "testing agents", "deployment agents"],
-      "surface": "Agent queue, agent runbooks, and agent run packets"
+      "surface": "Agent queue, agent runbooks, and agent run packets",
+      "role_routes": {
+        "page": "/agents",
+        "api": "/api/public/agents/queue",
+        "capabilities": ["scan repositories", "generate task packets", "review PRs", "test builds", "validate deployments"]
+      }
     },
     {
       "type": "admins",
       "examples": ["treasury operators", "dispute handlers", "moderation", "payout management"],
-      "dashboard": "Admin Console"
+      "dashboard": "Admin Console",
+      "role_routes": {
+        "page": "/dashboard?section=admin",
+        "api": "/api/admin/ops-queue",
+        "capabilities": ["treasury", "users", "disputes", "payouts", "moderation"]
+      }
     }
   ],
   "frontend_system": {

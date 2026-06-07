@@ -104,7 +104,7 @@
       "minItems": 4,
       "items": {
         "type": "object",
-        "required": ["type", "examples"],
+        "required": ["type", "examples", "role_routes"],
         "properties": {
           "type": { "enum": ["customers", "contributors", "ai_agents", "admins"] },
           "examples": {
@@ -113,7 +113,8 @@
             "items": { "type": "string", "minLength": 1 }
           },
           "dashboard": { "type": "string" },
-          "surface": { "type": "string" }
+          "surface": { "type": "string" },
+          "role_routes": { "$ref": "#/$defs/roleRoute" }
         },
         "additionalProperties": false
       }
@@ -327,6 +328,16 @@
     }
   },
   "$defs": {
+    "roleRoute": {
+      "type": "object",
+      "required": ["page", "api", "capabilities"],
+      "properties": {
+        "page": { "type": "string", "minLength": 1 },
+        "api": { "type": "string", "minLength": 1 },
+        "capabilities": { "$ref": "#/$defs/stringList" }
+      },
+      "additionalProperties": false
+    },
     "workflowRoute": {
       "type": "object",
       "required": ["page", "api", "proof_surface"],

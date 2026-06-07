@@ -109,6 +109,12 @@ test('public system vision preserves the product thesis', async () => {
     { primary: '/protocol', protocol: '/protocol/architecture.v1.schema.json', public_reference: '/system/mergeos-architecture.v1.json' },
   ]);
   assert.deepEqual(architectureManifest.users.map((row) => row.type), ['customers', 'contributors', 'ai_agents', 'admins']);
+  assert.deepEqual(architectureManifest.users.map((row) => row.role_routes), [
+    { page: '/dashboard', api: '/api/projects/{id}/dashboard', capabilities: ['project overview', 'live PRs', 'escrow', 'payments', 'tasks', 'AI logs'] },
+    { page: '/dashboard?section=worker', api: '/api/workers/me', capabilities: ['claimed tasks', 'rewards', 'reputation', 'proposals'] },
+    { page: '/agents', api: '/api/public/agents/queue', capabilities: ['scan repositories', 'generate task packets', 'review PRs', 'test builds', 'validate deployments'] },
+    { page: '/dashboard?section=admin', api: '/api/admin/ops-queue', capabilities: ['treasury', 'users', 'disputes', 'payouts', 'moderation'] },
+  ]);
   assert.ok(architectureManifest.frontend_system.stack.includes('Vue 3'));
   assert.ok(architectureManifest.frontend_system.stack.includes('Vite SSR'));
   assert.ok(architectureManifest.frontend_system.public_pages.includes('Marketplace'));
