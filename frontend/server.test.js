@@ -1204,6 +1204,7 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /CEO LAUNCH DECISION/);
   assert.match(appSource, /class="token-ceo-decision-strip"/);
   assert.match(appSource, /class="token-ceo-project-queue"/);
+  assert.match(appSource, /class="token-ceo-source-packet"/);
   assert.match(appSource, /class="token-ceo-brief-card"/);
   assert.match(appSource, /@submit\.prevent="submitTokenLaunchBrief"/);
   assert.match(appSource, /class="token-ceo-memo-result"/);
@@ -1223,6 +1224,7 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /CEO presale readiness review\./);
   assert.match(appSource, /const tokenCeoDecisionRows = computed/);
   assert.match(appSource, /const tokenCeoProjectResearchRows = computed/);
+  assert.match(appSource, /const tokenCeoSourcePacketRows = computed/);
   assert.match(appSource, /const tokenCeoLaunchBriefCopy = computed/);
   assert.match(appSource, /const tokenLaunchBriefProofCount = computed/);
   assert.match(appSource, /entry\?\.type !== 'token_launch_brief'/);
@@ -1269,6 +1271,10 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /CEO research brief for MRG presale window/);
   assert.match(appSource, /Mission demand/);
   assert.match(appSource, /Reserve receipt/);
+  assert.match(appSource, /Project seeking a task-based MRG airdrop/);
+  assert.match(appSource, /Project seeking an MRG presale window/);
+  assert.match(appSource, /Research URL, bounty demand, proof depth, wallet risk/);
+  assert.match(appSource, /Whitepaper, utility, reserve cap, funding rail, contract proof/);
   assert.match(appSource, /Project brief intake/);
   assert.match(appSource, /Project utility intake/);
   assert.match(appSource, /Proof risk review/);
@@ -1338,6 +1344,7 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(cssSource, /\.token-ceo-research-panel\s*\{[\s\S]*border: 1px solid rgba\(79, 70, 229, 0\.15\);/);
   assert.match(cssSource, /\.token-ceo-decision-strip\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /\.token-ceo-project-queue\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
+  assert.match(cssSource, /\.token-ceo-source-packet\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /\.token-ceo-brief-card\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\);/);
   assert.match(cssSource, /\.token-ceo-brief-form\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /\.token-ceo-brief-actions\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) auto auto;/);
@@ -1347,6 +1354,7 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(cssSource, /\.token-proof-result-actions a,[\s\S]*\.token-proof-result-actions button\s*\{[\s\S]*display: inline-flex;/);
   assert.match(cssSource, /\.token-ceo-memo-gates\s*\{[\s\S]*grid-template-columns: repeat\(4, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /\.token-ceo-project-queue article\s*\{[\s\S]*min-height: 104px !important;/);
+  assert.match(cssSource, /\.token-ceo-source-packet article\s*\{[\s\S]*grid-template-columns: 30px minmax\(0, 1fr\);/);
   assert.match(cssSource, /\.token-ceo-research-grid article\s*\{[\s\S]*min-height: 118px !important;/);
   assert.match(cssSource, /\.wizard-token-brief-card\s*\{[\s\S]*grid-template-columns: 34px minmax\(0, 1fr\);/);
   assert.match(cssSource, /\.wizard-token-brief-card li\s*\{[\s\S]*grid-template-columns: 58px minmax\(0, 1fr\);/);
@@ -1364,6 +1372,7 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-memo-gates\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\) !important;/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-memo-source\s*\{[\s\S]*width: 100% !important;/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-project-queue article:nth-child\(n \+ 3\),[\s\S]*\.token-ceo-research-grid article:nth-child\(n \+ 3\)\s*\{[\s\S]*display: none !important;/);
+  assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-source-packet,[\s\S]*\.token-ceo-research-grid\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\) !important;/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-research-grid small\s*\{[\s\S]*display: none !important;/);
   assert.match(cssSource, /\.token-proof-result small\s*\{[\s\S]*overflow: visible;[\s\S]*white-space: normal;[\s\S]*overflow-wrap: anywhere;/);
   assert.match(cssSource, /\.token-whitepaper-thesis p\s*\{[\s\S]*-webkit-line-clamp: 2;/);

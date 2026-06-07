@@ -5127,6 +5127,17 @@
               <b>{{ row.status }}</b>
             </article>
           </div>
+          <div class="token-ceo-source-packet" aria-label="CEO research packet">
+            <article v-for="row in tokenCeoSourcePacketRows" :key="row.label">
+              <span :class="['ledger-trust-icon', row.tone]">
+                <component :is="row.icon" :size="14" />
+              </span>
+              <div>
+                <small>{{ row.label }}</small>
+                <strong>{{ row.value }}</strong>
+              </div>
+            </article>
+          </div>
           <div class="token-ceo-research-grid">
             <article v-for="row in tokenCeoResearchRows" :key="row.title">
               <span :class="['ledger-trust-icon', row.tone]">
@@ -12723,6 +12734,21 @@ const tokenCeoProjectResearchRows = computed(() => {
       icon: FileCheck2,
       tone: 'green',
     },
+  ];
+});
+const tokenCeoSourcePacketRows = computed(() => {
+  const ceoMemos = tokenLaunchBriefProofCount.value;
+  if (publicPage.value === 'airdrop') {
+    return [
+      { label: 'Project ask', value: 'Project seeking a task-based MRG airdrop', icon: Trophy, tone: 'green' },
+      { label: 'CEO reads', value: 'Research URL, bounty demand, proof depth, wallet risk', icon: Link2, tone: 'blue' },
+      { label: 'CEO output', value: `${ceoMemos} memo(s), gate summary, ledger proof before claims`, icon: FileCheck2, tone: 'purple' },
+    ];
+  }
+  return [
+    { label: 'Project ask', value: 'Project seeking an MRG presale window', icon: CircleDollarSign, tone: 'green' },
+    { label: 'CEO reads', value: 'Whitepaper, utility, reserve cap, funding rail, contract proof', icon: Link2, tone: 'blue' },
+    { label: 'CEO output', value: `${ceoMemos} memo(s), reserve gate, ledger proof before receipts`, icon: FileCheck2, tone: 'purple' },
   ];
 });
 const tokenCeoLaunchBriefCopy = computed(() => {
