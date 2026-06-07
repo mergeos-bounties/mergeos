@@ -5127,6 +5127,42 @@
               <strong>{{ row.value }}</strong>
             </article>
           </div>
+          <div v-if="tokenCeoLiveQueueRows.length" class="token-ceo-live-queue" aria-label="Live CEO memo queue">
+            <article v-for="row in tokenCeoLiveQueueRows" :key="row.key">
+              <span :class="['ledger-trust-icon', row.tone]">
+                <FileCheck2 :size="14" />
+              </span>
+              <div>
+                <small>{{ row.label }}</small>
+                <strong>{{ row.title }}</strong>
+                <p>{{ row.summary }}</p>
+              </div>
+              <div class="token-ceo-live-actions">
+                <a :href="row.proofUrl" target="_blank" rel="noreferrer">
+                  Proof
+                  <Link2 :size="10" />
+                </a>
+                <a v-if="row.sourceUrl" :href="row.sourceUrl" target="_blank" rel="noreferrer">
+                  Source
+                  <Link2 :size="10" />
+                </a>
+              </div>
+            </article>
+          </div>
+          <article v-else class="token-ceo-live-empty" aria-label="Empty CEO memo queue">
+            <span class="ledger-trust-icon purple">
+              <FileCheck2 :size="14" />
+            </span>
+            <div>
+              <small>Live CEO queue</small>
+              <strong>{{ tokenCeoLiveEmptyCopy.title }}</strong>
+              <p>{{ tokenCeoLiveEmptyCopy.body }}</p>
+            </div>
+            <button type="button" @click="openTokenLaunchBriefFromProofBoard">
+              Open CEO brief
+              <ArrowRight :size="11" />
+            </button>
+          </article>
           <div class="token-ceo-project-queue" aria-label="CEO project research queue">
             <article v-for="row in tokenCeoProjectResearchRows" :key="row.title">
               <span :class="['ledger-trust-icon', row.tone]">
@@ -12735,6 +12771,38 @@ const tokenCeoQueueStatRows = computed(() => {
     { label: 'Public source', value: 'API + ledger' },
   ];
 });
+const tokenCeoLiveQueueRows = computed(() => {
+  const currentType = publicPage.value === 'presale' ? 'presale' : 'airdrop';
+  const briefs = Array.isArray(tokenLaunchBriefsData.value?.briefs) ? tokenLaunchBriefsData.value.briefs : [];
+  return briefs
+    .filter((brief) => brief.launch_type === currentType)
+    .slice(0, 3)
+    .map((brief) => {
+      const decision = toTitleLabel(brief.decision || 'CEO memo');
+      const gate = brief.gate_summary || 'CEO gates pending';
+      const source = String(brief.research_source || '').trim();
+      return {
+        key: `${brief.brief_id || brief.ledger_sequence}-${brief.entry_hash || ''}`,
+        label: `${decision} / #${brief.ledger_sequence || 'ledger'}`,
+        title: brief.project_title || `${toTitleLabel(currentType)} launch memo`,
+        summary: gate,
+        sourceUrl: /^https?:\/\//i.test(source) ? source : '',
+        proofUrl: brief.ledger_proof_url || '/api/public/ledger/proof',
+        tone: currentType === 'presale' ? 'green' : 'purple',
+      };
+    });
+});
+const tokenCeoLiveEmptyCopy = computed(() => (
+  publicPage.value === 'presale'
+    ? {
+        title: 'No presale memo recorded yet.',
+        body: 'Send the CEO utility, reserve, wallet, funding, and contract proof brief before reserve receipts open.',
+      }
+    : {
+        title: 'No airdrop memo recorded yet.',
+        body: 'Send the CEO repo, mission demand, anti-bot, wallet, and proof gate brief before earned claims open.',
+      }
+));
 const tokenCeoProjectResearchRows = computed(() => {
   const openTasks = Number(marketplaceStats.value.open_task_count) || (marketplaceData.value.bounties || []).length || 0;
   const proofRows = Number(ledgerEconomyStats.value.ledger_entry_count) || ledgerRawEntries.value.length || ledgerEventItems.value.length || 0;
