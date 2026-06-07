@@ -4684,20 +4684,6 @@
           </aside>
         </section>
 
-        <section class="public-workflow-grid" :aria-label="publicHomeCopy.workflowLabel">
-          <button v-for="card in localizedHomeWorkflowCards.slice(0, 3)" :key="card.title" type="button" @click="handlePublicAction(card.action)">
-            <span :class="['public-card-icon', card.tone]">
-              <component :is="card.icon" :size="19" />
-            </span>
-            <strong>{{ card.title }}</strong>
-            <p>{{ card.body }}</p>
-            <small>
-              {{ card.cta }}
-              <ArrowRight :size="13" />
-            </small>
-          </button>
-        </section>
-
       </div>
     </main>
 

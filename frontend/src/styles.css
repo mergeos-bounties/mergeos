@@ -32708,3 +32708,140 @@ canvas {
   }
 }
 
+/* Short public home: the landing should sell the flow, not the whole manual. */
+.public-home-page {
+  min-height: calc(100svh - 68px) !important;
+  padding-block: clamp(8px, 1.4vw, 18px) clamp(14px, 2vw, 24px) !important;
+}
+
+.public-home-page .home-container {
+  max-width: min(1120px, calc(100vw - 28px)) !important;
+}
+
+.public-home-layout {
+  gap: 0 !important;
+}
+
+.public-home-hero {
+  min-height: calc(100svh - 104px) !important;
+  grid-template-columns: minmax(0, 1.02fr) minmax(300px, 350px) !important;
+  align-items: center !important;
+  gap: clamp(14px, 2vw, 24px) !important;
+  padding-block: 0 !important;
+}
+
+.public-home-copy h1 {
+  max-width: 660px !important;
+  font-size: clamp(36px, 4vw, 50px) !important;
+  line-height: 0.99 !important;
+}
+
+.public-home-copy p {
+  max-width: 540px !important;
+  font-size: 15px !important;
+  line-height: 1.42 !important;
+}
+
+.public-home-copy .marketplace-actions {
+  margin-top: 14px !important;
+}
+
+.home-proof-stack {
+  margin-top: 12px !important;
+}
+
+.home-proof-stack article {
+  min-height: 30px !important;
+  padding-inline: 10px !important;
+}
+
+.home-mergeide-signal {
+  width: min(100%, 560px) !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  padding: 9px 10px !important;
+}
+
+.home-mergeide-signal > span,
+.home-mergeide-signal small {
+  display: none !important;
+}
+
+.home-mergeide-signal strong {
+  font-size: 15px !important;
+}
+
+.home-command-panel {
+  margin-top: 0 !important;
+  padding: 12px !important;
+}
+
+.home-command-head {
+  grid-template-columns: 34px minmax(0, 1fr) auto !important;
+}
+
+.home-command-mark {
+  width: 34px !important;
+  height: 34px !important;
+}
+
+.home-command-mark img {
+  width: 24px !important;
+  height: 24px !important;
+}
+
+.home-command-panel .public-stat-grid {
+  gap: 7px !important;
+  margin-top: 10px !important;
+}
+
+.home-command-panel .public-stat-grid article {
+  min-height: 50px !important;
+  padding: 8px !important;
+}
+
+.home-command-panel .public-stat-grid strong {
+  font-size: clamp(18px, 1.9vw, 23px) !important;
+}
+
+.home-command-panel .home-pipeline,
+.home-public-graph-proof,
+.home-command-panel .public-notification-feed {
+  display: none !important;
+}
+
+@media (max-width: 980px) {
+  .public-home-page {
+    min-height: auto !important;
+  }
+
+  .public-home-page .home-container {
+    max-width: min(100%, calc(100vw - 20px)) !important;
+  }
+
+  .public-home-hero {
+    min-height: 0 !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    align-items: start !important;
+    gap: 12px !important;
+    padding-block: 8px 14px !important;
+  }
+
+  .public-home-copy h1 {
+    font-size: clamp(31px, 9vw, 43px) !important;
+  }
+
+  .home-mergeide-signal {
+    display: none !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .public-home-copy .marketplace-actions {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .home-command-panel .public-stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
