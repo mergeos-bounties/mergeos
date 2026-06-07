@@ -3136,7 +3136,26 @@ func TestProjectDeploymentUsesDeploymentAgentAction(t *testing.T) {
 	if !ok || packetPayload["reference_url"] != "https://vercel.example/deployments/mergeos-preview" {
 		t.Fatalf("validation packet did not reuse deployment proof URL: %#v", payload.ValidationPacket)
 	}
+	runPayload, ok := payload.ValidationPacket["run_payload"].(map[string]any)
+	if !ok ||
+		payload.ValidationPacket["run_endpoint"] != "/api/projects/"+project.ID+"/agent-runs" ||
+		runPayload["action"] != "deploy" ||
+		runPayload["agent_type"] != "deployment-agent" ||
+		runPayload["base_branch"] != "main" ||
+		runPayload["reference_url"] != "https://vercel.example/deployments/mergeos-preview" {
+		t.Fatalf("validation packet missing deployment agent run payload: %#v", payload.ValidationPacket)
+	}
+	if claimID, _ := runPayload["claim_id"].(string); claimID != "{deployment_task_claim_id}" && !strings.HasPrefix(claimID, "bounty_"+project.ID+"_") {
+		t.Fatalf("validation packet run payload should use a deployment task claim id or placeholder: %#v", runPayload)
+	}
+	contextURLs, ok := runPayload["context_urls"].([]any)
+	if !ok || len(contextURLs) < 4 {
+		t.Fatalf("validation packet run payload missing deployment context URLs: %#v", runPayload)
+	}
 	outputContracts := payload.ValidationPacket["output_contracts"]
+	if !outputContractPayloadContainsProtocol(outputContracts, "mergeos.agent-run.v1") {
+		t.Fatalf("validation packet missing agent run contract: %#v", payload.ValidationPacket["output_contracts"])
+	}
 	if !outputContractPayloadContainsProtocol(outputContracts, "mergeos.ledger-proof.v1") {
 		t.Fatalf("validation packet missing ledger proof contract: %#v", payload.ValidationPacket["output_contracts"])
 	}

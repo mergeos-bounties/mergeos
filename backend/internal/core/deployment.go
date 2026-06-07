@@ -185,9 +185,36 @@ func projectDeploymentValidationPacket(project *Project, stages []DeploymentStag
 	if issue := targetStage.SourceTaskIssueNumber; issue > 0 {
 		payload.BountyID = marketplaceBountyID(project.ID, issue)
 	}
+	claimID := strings.TrimSpace(payload.BountyID)
+	if claimID == "" {
+		claimID = "{deployment_task_claim_id}"
+	}
+	contextURLs := map[string]string{
+		"deployment":   fmt.Sprintf("/api/projects/%s/deployment", project.ID),
+		"pr_monitor":   fmt.Sprintf("/api/projects/%s/pull-requests", project.ID),
+		"workflow":     fmt.Sprintf("/api/projects/%s/protocol/workflow", project.ID),
+		"payouts":      fmt.Sprintf("/api/projects/%s/payouts", project.ID),
+		"ledger_proof": "/api/public/ledger/proof",
+		"public_feed":  "/api/public/live-feed",
+	}
+	runEndpoint := fmt.Sprintf("/api/projects/%s/agent-runs", project.ID)
+	runPayload := map[string]any{
+		"action":       "deploy",
+		"claim_id":     claimID,
+		"bounty_id":    claimID,
+		"agent_type":   "deployment-agent",
+		"base_branch":  "main",
+		"objective":    "Validate deployment handoff and release gate for " + publicLiveFeedProjectTitle(project),
+		"context_urls": deploymentValidationContextURLList(contextURLs),
+	}
+	if targetStage.URL != "" {
+		runPayload["reference_url"] = targetStage.URL
+	}
 	return map[string]any{
 		"status":              status,
 		"method":              "POST",
+		"run_endpoint":        runEndpoint,
+		"run_payload":         runPayload,
 		"validation_endpoint": fmt.Sprintf("/api/projects/%s/agent-actions", project.ID),
 		"target_stage": map[string]any{
 			"id":      targetStage.ID,
@@ -198,15 +225,16 @@ func projectDeploymentValidationPacket(project *Project, stages []DeploymentStag
 			"url":     targetStage.URL,
 			"updated": targetStage.UpdatedAt,
 		},
-		"context_urls": map[string]string{
-			"deployment":   fmt.Sprintf("/api/projects/%s/deployment", project.ID),
-			"pr_monitor":   fmt.Sprintf("/api/projects/%s/pull-requests", project.ID),
-			"workflow":     fmt.Sprintf("/api/projects/%s/protocol/workflow", project.ID),
-			"payouts":      fmt.Sprintf("/api/projects/%s/payouts", project.ID),
-			"ledger_proof": "/api/public/ledger/proof",
-			"public_feed":  "/api/public/live-feed",
-		},
+		"context_urls": contextURLs,
 		"output_contracts": []AgentOutputContract{
+			{
+				Action:            "create_agent_run",
+				ArtifactKind:      "agent_run",
+				OutputEndpoint:    runEndpoint,
+				OutputProtocol:    "mergeos.agent-run.v1",
+				OutputProtocolURL: "/protocol/agent-run.v1.schema.json",
+				PublicURL:         fmt.Sprintf("/api/public/projects/%s/deployment", project.ID),
+			},
 			{
 				Action:            "record_deploy_evidence",
 				ArtifactKind:      "deployment_evidence",
@@ -227,10 +255,22 @@ func projectDeploymentValidationPacket(project *Project, stages []DeploymentStag
 		"runbook": []map[string]any{
 			{"step": 1, "action": "inspect_deployment", "label": "Inspect deployment validation stages", "endpoint": fmt.Sprintf("/api/projects/%s/deployment", project.ID)},
 			{"step": 2, "action": "verify_release_gate", "label": "Verify accepted tasks, deployment proof, and payout readiness", "endpoint": fmt.Sprintf("/api/projects/%s/payouts", project.ID)},
-			{"step": 3, "action": "record_deploy_evidence", "label": "Record deployment-agent evidence", "endpoint": fmt.Sprintf("/api/projects/%s/agent-actions", project.ID)},
+			{"step": 3, "action": "create_agent_run", "label": "Create deployment-agent branch, PR plan, and evidence contracts", "endpoint": runEndpoint},
+			{"step": 4, "action": "record_deploy_evidence", "label": "Record deployment-agent evidence", "endpoint": fmt.Sprintf("/api/projects/%s/agent-actions", project.ID)},
 		},
 		"payload": payload,
 	}
+}
+
+func deploymentValidationContextURLList(context map[string]string) []string {
+	keys := []string{"deployment", "pr_monitor", "workflow", "payouts", "ledger_proof", "public_feed"}
+	result := []string{}
+	for _, key := range keys {
+		if value := strings.TrimSpace(context[key]); value != "" {
+			result = append(result, value)
+		}
+	}
+	return result
 }
 
 func (s *Store) deploymentHandoffStageLocked(project *Project, tasks []*Task) DeploymentStage {
