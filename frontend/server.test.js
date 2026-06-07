@@ -324,6 +324,11 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /api\('\/api\/presale\/reservations'/);
   assert.match(appSource, /function submitAirdropClaim\(\)/);
   assert.match(appSource, /function submitPresaleReservation\(\)/);
+  assert.match(appSource, /class="token-workflow-proof-board"/);
+  assert.match(appSource, /const tokenWorkflowProofRows = computed\(\(\) => \{/);
+  assert.match(appSource, /const targetType = publicPage\.value === 'airdrop' \? 'airdrop_claim' : 'presale_reservation';/);
+  assert.match(appSource, /function mapTokenWorkflowProofRow\(entry = \{\}\)/);
+  assert.match(appSource, /reference\.match\(isAirdrop \? \/airdrop:\(\[\^;\]\+\)\/ : \/presale:\(\[\^;\]\+\)\//);
   assert.match(appSource, /command: 'airdrop-claim'/);
   assert.match(appSource, /command: 'presale-reserve'/);
   assert.match(appSource, /function refreshTokenPageData\(\)/);
@@ -341,6 +346,8 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(whitepaperSource, /## 14\. Presale Workflow/);
   assert.match(whitepaperSource, /## 15\. Security, Privacy, and Compliance/);
   assert.match(whitepaperSource, /## 16\. Roadmap/);
+  assert.match(cssSource, /\.token-workflow-proof-board\s*\{[\s\S]*background: rgba\(255, 255, 255, 0\.86\);/);
+  assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-workflow-proof-list article\s*\{[\s\S]*grid-template-columns: 32px minmax\(0, 1fr\);/);
   assert.match(cssSource, /\.token-proof-result small\s*\{[\s\S]*overflow: visible;[\s\S]*white-space: normal;[\s\S]*overflow-wrap: anywhere;/);
   assert.match(cssSource, /\.token-whitepaper-thesis p\s*\{[\s\S]*-webkit-line-clamp: 2;/);
 });

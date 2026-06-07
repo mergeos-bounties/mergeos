@@ -8381,6 +8381,151 @@ svg {
   justify-content: space-between;
 }
 
+.token-workflow-proof-board {
+  min-width: 0;
+  display: grid;
+  gap: 12px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.86);
+  padding: clamp(13px, 2vw, 17px);
+}
+
+.token-workflow-proof-board header {
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.token-workflow-proof-board h3 {
+  margin: 4px 0 0;
+  color: var(--ink);
+  font-size: 17px;
+  line-height: 1.15;
+  font-weight: 940;
+}
+
+.token-workflow-proof-board p {
+  margin: 6px 0 0;
+  color: #52645d;
+  font-size: 12px;
+  line-height: 1.45;
+  font-weight: 680;
+}
+
+.token-workflow-proof-board header button {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid rgba(15, 159, 120, 0.2);
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--green-dark);
+  padding: 0 12px;
+  font-size: 11px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.token-workflow-proof-list {
+  display: grid;
+  gap: 8px;
+}
+
+.token-workflow-proof-list article {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) minmax(150px, auto);
+  align-items: center;
+  gap: 11px;
+  border: 1px solid #edf2ef;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 10px;
+}
+
+.token-workflow-proof-list strong,
+.token-workflow-proof-list p,
+.token-workflow-proof-list small,
+.token-workflow-proof-meta b,
+.token-workflow-proof-meta em {
+  min-width: 0;
+}
+
+.token-workflow-proof-list strong {
+  display: block;
+  color: #0f172a;
+  font-size: 12px;
+  font-weight: 930;
+}
+
+.token-workflow-proof-list p,
+.token-workflow-proof-list small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.token-workflow-proof-list p {
+  margin: 4px 0 0;
+  color: #40534b;
+  font-size: 11px;
+  line-height: 1.35;
+  font-weight: 740;
+  white-space: nowrap;
+}
+
+.token-workflow-proof-list small {
+  display: block;
+  margin-top: 4px;
+  color: #64748b;
+  font-family: var(--mono-font);
+  font-size: 9px;
+  white-space: nowrap;
+}
+
+.token-workflow-proof-meta {
+  min-width: 0;
+  display: grid;
+  justify-items: end;
+  gap: 3px;
+  text-align: right;
+}
+
+.token-workflow-proof-meta b {
+  color: #064e3b;
+  font-size: 12px;
+  font-weight: 930;
+}
+
+.token-workflow-proof-meta em {
+  overflow: hidden;
+  max-width: 170px;
+  color: #64748b;
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 760;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.token-workflow-proof-empty {
+  border: 1px dashed rgba(15, 159, 120, 0.22);
+  border-radius: 8px;
+  background: #f8fffb;
+  padding: 13px;
+}
+
+.token-workflow-proof-empty strong {
+  display: block;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 920;
+}
+
 .token-whitepaper-reader {
   min-width: 0;
   display: grid;
@@ -8716,19 +8861,22 @@ svg {
   }
 
   .token-workflow-head,
-  .token-workflow-actions {
+  .token-workflow-actions,
+  .token-workflow-proof-board header {
     align-items: stretch;
     flex-direction: column;
   }
 
   .token-timeline-list li,
   .token-proof-list article,
-  .token-proof-result {
+  .token-proof-result,
+  .token-workflow-proof-list article {
     grid-template-columns: 32px minmax(0, 1fr);
   }
 
   .token-timeline-list b,
-  .token-proof-list b {
+  .token-proof-list b,
+  .token-workflow-proof-meta {
     grid-column: 2;
   }
 
@@ -8775,6 +8923,24 @@ svg {
 
   .token-proof-result-actions button {
     flex: 1 1 120px;
+  }
+
+  .token-workflow-proof-board header button {
+    width: 100%;
+  }
+
+  .token-workflow-proof-meta {
+    justify-items: start;
+    text-align: left;
+  }
+
+  .token-workflow-proof-list p,
+  .token-workflow-proof-list small,
+  .token-workflow-proof-meta em {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
 
   .token-page .marketplace-actions .primary-button,

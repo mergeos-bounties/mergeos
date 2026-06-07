@@ -5364,6 +5364,41 @@
               </button>
             </footer>
           </form>
+
+          <section class="token-workflow-proof-board" aria-label="Recent token workflow proofs">
+            <header>
+              <div>
+                <span class="marketplace-eyebrow">LIVE PROOF</span>
+                <h3>{{ tokenWorkflowProofBoard.title }}</h3>
+                <p>{{ tokenWorkflowProofBoard.body }}</p>
+              </div>
+              <button type="button" :disabled="ledgerLoading" @click="loadLedgerData">
+                <RefreshCw :class="{ 'loading-spin': ledgerLoading }" :size="13" />
+                Refresh proofs
+              </button>
+            </header>
+            <div v-if="tokenWorkflowProofRows.length" class="token-workflow-proof-list">
+              <article v-for="row in tokenWorkflowProofRows" :key="row.key">
+                <span :class="['ledger-trust-icon', row.tone]">
+                  <component :is="row.icon" :size="15" />
+                </span>
+                <div>
+                  <strong>{{ row.title }}</strong>
+                  <p>{{ row.body }}</p>
+                  <small>{{ row.reference }}</small>
+                </div>
+                <div class="token-workflow-proof-meta">
+                  <b>{{ row.amount }}</b>
+                  <small>{{ row.hash }}</small>
+                  <em>{{ row.created }}</em>
+                </div>
+              </article>
+            </div>
+            <article v-else class="token-workflow-proof-empty">
+              <strong>{{ ledgerLoading ? 'Syncing token proofs' : tokenWorkflowProofBoard.emptyTitle }}</strong>
+              <p>{{ ledgerLoading ? 'Reading public ledger rows.' : tokenWorkflowProofBoard.emptyBody }}</p>
+            </article>
+          </section>
         </section>
 
         <section v-if="publicPage === 'whitepaper'" class="token-whitepaper-reader" aria-labelledby="whitepaper-reader-title">
@@ -12201,6 +12236,31 @@ const publicTokenWorkflowCopy = computed(() => {
     title: 'Reserve MRG with a public receipt',
     body: 'Lock in a presale reservation with wallet, tier, amount, and funding rail. Accepted distribution still requires review, but the reservation proof is visible.',
   };
+});
+const tokenWorkflowProofBoard = computed(() => {
+  if (publicPage.value === 'airdrop') {
+    return {
+      title: 'Recent airdrop ledger receipts',
+      body: 'Airdrop claims become public pending-review rows with mission, score, proof, wallet, and hash references.',
+      emptyTitle: 'No airdrop receipts yet',
+      emptyBody: 'Record a mission claim to create the first public airdrop ledger proof.',
+    };
+  }
+  return {
+    title: 'Recent presale reservation receipts',
+    body: 'Presale reservations become public pending-review rows with wallet, funding rail, reserve tier, and hash references.',
+    emptyTitle: 'No presale receipts yet',
+    emptyBody: 'Reserve MRG to create the first public presale ledger proof.',
+  };
+});
+const tokenWorkflowProofRows = computed(() => {
+  const targetType = publicPage.value === 'airdrop' ? 'airdrop_claim' : 'presale_reservation';
+  return ledgerRawEntries.value
+    .filter((entry) => entry?.type === targetType)
+    .slice()
+    .reverse()
+    .slice(0, 6)
+    .map(mapTokenWorkflowProofRow);
 });
 const airdropClaimValidationMap = computed(() => {
   const errors = {};
@@ -23398,6 +23458,33 @@ function formatTokenWorkflowResult(result = {}) {
   const amount = result.allocation_mrg || result.reserve_mrg || result.ledger_entry?.amount_cents || 0;
   const sequence = result.ledger_entry?.sequence ? `ledger #${result.ledger_entry.sequence}` : 'ledger receipt';
   return `${id} / ${formatMRG(amount)} / ${toTitleLabel(result.status || 'pending review')} / ${sequence}`;
+}
+
+function mapTokenWorkflowProofRow(entry = {}) {
+  const isAirdrop = entry.type === 'airdrop_claim';
+  const when = formatLedgerDateTime(entry.created_at);
+  const reference = String(entry.reference || '').trim();
+  const idMatch = reference.match(isAirdrop ? /airdrop:([^;]+)/ : /presale:([^;]+)/);
+  const id = idMatch?.[1] || `ledger-${entry.sequence || entry.entry_hash || 'proof'}`;
+  const missionMatch = reference.match(/mission:([^;]+)/);
+  const tierMatch = reference.match(/tier:([^;]+)/);
+  const railMatch = reference.match(/rail:([^;]+)/);
+  const scoreMatch = reference.match(/score:([^;]+)/);
+  const headline = isAirdrop
+    ? `${toTitleLabel(missionMatch?.[1] || 'Airdrop claim')} / ${scoreMatch?.[1] ? `${scoreMatch[1]} score` : 'pending score'}`
+    : `${toTitleLabel(tierMatch?.[1] || 'Presale reserve')} / ${toTitleLabel(railMatch?.[1] || 'review rail')}`;
+  return {
+    key: `${entry.type}-${entry.sequence || id}`,
+    icon: isAirdrop ? Trophy : CircleDollarSign,
+    tone: isAirdrop ? 'purple' : 'green',
+    title: `${isAirdrop ? 'Airdrop' : 'Presale'} ${id}`,
+    body: headline,
+    amount: formatLedgerMRGFromCents(entry.amount_cents),
+    reference: shortLedgerReference(reference || entry.entry_hash || id),
+    rawReference: reference,
+    hash: shortLedgerHash(entry.entry_hash),
+    created: when.full,
+  };
 }
 
 async function copyTokenWorkflowHash(result = {}) {
