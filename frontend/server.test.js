@@ -195,6 +195,21 @@ test('live feed agent packets expose action handoff links', async () => {
   assert.match(appSource, /bountyID: liveFeedAgentBountyID\(item, contextUrls\)/);
 });
 
+test('public menus and signed-in mobile layout keep reachable compact surfaces', async () => {
+  const cssSource = await fs.readFile(new URL('./src/styles.css', import.meta.url), 'utf-8');
+
+  assert.match(cssSource, /Public menu \+ signed-in mobile stabilization owner/);
+  assert.match(cssSource, /\.nav-menu\.open::after\s*\{[\s\S]*height: 132px;/);
+  assert.match(cssSource, /\.nav-context-menu\s*\{[\s\S]*z-index: 430;[\s\S]*overflow: hidden;/);
+  assert.match(cssSource, /\.product-menu\s*\{[\s\S]*width: min\(1180px, calc\(100vw - 32px\)\);/);
+  assert.match(cssSource, /\.hero-section\s*\{[\s\S]*min-height: calc\(100dvh - 82px\);/);
+  assert.match(cssSource, /\.product-console\s*\{[\s\S]*max-width: 610px;/);
+  assert.match(cssSource, /@media \(max-width: 980px\)[\s\S]*\.nav-context-menu::before\s*\{[\s\S]*pointer-events: none;/);
+  assert.match(cssSource, /\.dashboard-shell \.dash-mobile-nav\s*\{[\s\S]*grid-template-columns: repeat\(4, minmax\(0, 1fr\)\);/);
+  assert.match(cssSource, /\.notification-dropdown,[\s\S]*\.dashboard-shell \.notification-dropdown,[\s\S]*\.dashboard-shell \.account-context-menu,[\s\S]*\.dashboard-shell \.dashboard-project-actions-panel\s*\{[\s\S]*position: fixed !important;/);
+  assert.match(cssSource, /max-width: calc\(100vw - \(var\(--dash-mobile-gutter, 14px\) \* 2\)\) !important;/);
+});
+
 test('agent work packets expose authenticated lease action', async () => {
   const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
   const cssSource = await fs.readFile(new URL('./src/styles.css', import.meta.url), 'utf-8');
