@@ -25,6 +25,7 @@ test('loads stable task, workflow, ledger, and event schemas', () => {
     'mergeos.ai-workflow.v1',
     'mergeos.airdrop-claim.v1',
     'mergeos.airdrop-missions.v1',
+    'mergeos.architecture.v1',
     'mergeos.contributor.v1',
     'mergeos.customer-dashboard.v1',
     'mergeos.deployment.v1',
@@ -57,6 +58,7 @@ test('loads stable task, workflow, ledger, and event schemas', () => {
     'mergeos.workflow.v1',
   ]);
   assert.equal(schemaForProtocol('mergeos.task.v1').title, 'MergeOS Task v1');
+  assert.equal(schemaForProtocol('mergeos.architecture.v1').title, 'MergeOS Product Architecture');
 });
 
 test('publishes protocol schemas unchanged to frontend public artifacts', () => {
@@ -71,6 +73,16 @@ test('publishes protocol schemas unchanged to frontend public artifacts', () => 
     const publicSchema = readFileSync(new URL(file, publicDir), 'utf8');
     assert.equal(publicSchema, sourceSchema, `${file} must be copied unchanged to frontend/public/protocol`);
   }
+});
+
+test('validates public architecture manifest protocol document', () => {
+  const manifest = JSON.parse(readFileSync(new URL('../../frontend/public/system/mergeos-architecture.v1.json', import.meta.url), 'utf8'));
+  const result = validateProtocolDocument(manifest);
+
+  assert.equal(result.valid, true, JSON.stringify(result.errors));
+  assert.equal(manifest.protocol_version, 'mergeos.architecture.v1');
+  assert.equal(manifest.kind, 'product_architecture');
+  assert.equal(manifest.public_urls.architecture_manifest, '/system/mergeos-architecture.v1.json');
 });
 
 test('validates airdrop claim and presale reservation protocol documents', () => {

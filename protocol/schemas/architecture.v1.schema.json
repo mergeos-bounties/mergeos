@@ -1,0 +1,141 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mergeos.shop/protocol/architecture.v1.schema.json",
+  "title": "MergeOS Product Architecture",
+  "type": "object",
+  "required": [
+    "protocol_version",
+    "kind",
+    "product",
+    "positioning",
+    "thesis",
+    "product_vision",
+    "repository_architecture",
+    "users",
+    "frontend_system",
+    "backend_system",
+    "ai_layer",
+    "marketplace_system",
+    "public_urls"
+  ],
+  "properties": {
+    "protocol_version": { "const": "mergeos.architecture.v1" },
+    "kind": { "const": "product_architecture" },
+    "product": { "const": "MergeOS" },
+    "positioning": { "type": "string", "minLength": 1 },
+    "thesis": { "type": "string", "minLength": 1 },
+    "not_a": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "product_vision": {
+      "type": "object",
+      "required": ["summary", "core_loop"],
+      "properties": {
+        "summary": { "type": "string", "minLength": 1 },
+        "core_loop": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      },
+      "additionalProperties": false
+    },
+    "repository_architecture": {
+      "type": "array",
+      "minItems": 4,
+      "items": {
+        "type": "object",
+        "required": ["name", "role", "contains"],
+        "properties": {
+          "name": { "enum": ["mergeos-app", "mergeos-contracts", "mergeos-sdk", "mergeos-protocol"] },
+          "role": { "type": "string", "minLength": 1 },
+          "contains": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string", "minLength": 1 }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "users": {
+      "type": "array",
+      "minItems": 4,
+      "items": {
+        "type": "object",
+        "required": ["type", "examples"],
+        "properties": {
+          "type": { "enum": ["customers", "contributors", "ai_agents", "admins"] },
+          "examples": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string", "minLength": 1 }
+          },
+          "dashboard": { "type": "string" },
+          "surface": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "frontend_system": {
+      "type": "object",
+      "required": ["stack", "public_pages", "authenticated_dashboards"],
+      "properties": {
+        "stack": { "$ref": "#/$defs/stringList" },
+        "public_pages": { "$ref": "#/$defs/stringList" },
+        "authenticated_dashboards": { "$ref": "#/$defs/stringList" }
+      },
+      "additionalProperties": false
+    },
+    "backend_system": {
+      "type": "object",
+      "required": ["role", "proposed_stack"],
+      "properties": {
+        "role": { "type": "string", "minLength": 1 },
+        "proposed_stack": { "$ref": "#/$defs/stringList" }
+      },
+      "additionalProperties": false
+    },
+    "ai_layer": {
+      "type": "object",
+      "required": ["capabilities", "workflow"],
+      "properties": {
+        "capabilities": { "$ref": "#/$defs/stringList" },
+        "workflow": { "$ref": "#/$defs/stringList" }
+      },
+      "additionalProperties": false
+    },
+    "marketplace_system": {
+      "type": "object",
+      "required": ["role", "features"],
+      "properties": {
+        "role": { "type": "string", "minLength": 1 },
+        "features": { "$ref": "#/$defs/stringList" }
+      },
+      "additionalProperties": false
+    },
+    "public_urls": {
+      "type": "object",
+      "required": ["system", "marketplace", "live_feed", "ledger", "protocol", "whitepaper", "architecture_manifest"],
+      "properties": {
+        "system": { "type": "string", "minLength": 1 },
+        "marketplace": { "type": "string", "minLength": 1 },
+        "live_feed": { "type": "string", "minLength": 1 },
+        "ledger": { "type": "string", "minLength": 1 },
+        "protocol": { "type": "string", "minLength": 1 },
+        "whitepaper": { "type": "string", "minLength": 1 },
+        "architecture_manifest": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "$defs": {
+    "stringList": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    }
+  },
+  "additionalProperties": false
+}

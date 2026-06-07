@@ -74,6 +74,12 @@ func ProtocolManifest() ProtocolManifestResponse {
 			Description: "Public external AI agent runbook with context URLs, claim flow, action templates, evidence contract, and safety guardrails.",
 		},
 		{
+			Version:     "mergeos.architecture.v1",
+			Kind:        "product_architecture",
+			SchemaURL:   "https://mergeos.shop/protocol/architecture.v1.schema.json",
+			Description: "Public product architecture manifest for MergeOS system vision, repository boundaries, user roles, frontend and backend stack, AI workflow, marketplace features, and public page URLs.",
+		},
+		{
 			Version:     "mergeos.marketplace.v1",
 			Kind:        "marketplace",
 			SchemaURL:   "https://mergeos.shop/protocol/marketplace.v1.schema.json",

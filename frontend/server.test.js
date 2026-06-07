@@ -137,6 +137,7 @@ test('public protocol links match backend routes', async () => {
   assert.match(manifestSource, /mergeos\.solana-contract-proof\.v1/);
   assert.match(manifestSource, /\/system\/mergeos-architecture\.v1\.json/);
   assert.match(manifestSource, /mergeos\.architecture\.v1/);
+  assert.match(manifestSource, /architecture\.v1\.schema\.json/);
   assert.match(manifestSource, /"architecture_manifest":\s+"\/system\/mergeos-architecture\.v1\.json"/);
   assert.match(appSource, /function publicTaskProtocolPath\(taskID = ''\)/);
   assert.match(appSource, /return id \? `\/api\/public\/protocol\/tasks\?task_id=\$\{encodeURIComponent\(id\)\}` : '\/api\/public\/protocol\/tasks';/);
