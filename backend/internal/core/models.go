@@ -2040,6 +2040,7 @@ type AIWorkflowStage struct {
 	Body              string            `json:"body"`
 	Status            string            `json:"status"`
 	Tone              string            `json:"tone"`
+	ActorLane         string            `json:"actor_lane"`
 	ArtifactKind      string            `json:"artifact_kind"`
 	InputEndpoint     string            `json:"input_endpoint,omitempty"`
 	OutputEndpoint    string            `json:"output_endpoint"`

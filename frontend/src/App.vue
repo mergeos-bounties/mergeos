@@ -4278,6 +4278,7 @@
                 <div>
                   <strong>{{ stage.title }}</strong>
                   <small>{{ stage.body }}</small>
+                  <em v-if="stage.actorLabel">{{ stage.actorLabel }}</em>
                 </div>
                 <b>{{ stage.status }}</b>
               </article>
@@ -28218,6 +28219,7 @@ function mapDashboardAIWorkflowStage(stage = {}) {
     tone: stage.tone || (stage.status === 'complete' ? 'green' : stage.status === 'in_progress' ? 'blue' : 'amber'),
     checklist,
     checklistLabel: checklist.length ? `Checks: ${checklist.slice(0, 2).map((item) => trimMarketplaceText(item, 'Workflow check')).join(' / ')}` : '',
+    actorLabel: stage.actor_lane ? `Lane: ${toTitleLabel(stage.actor_lane)}` : '',
   };
 }
 

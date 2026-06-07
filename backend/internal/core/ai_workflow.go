@@ -348,9 +348,25 @@ func aiWorkflowStageWithContract(project *Project, stage AIWorkflowStage, produc
 	stage.OutputIDs = stableStrings(outputIDs)
 	stage.ContextURLs = aiWorkflowStageContextURLs(project, stage.ID)
 	stage.Checklist = aiWorkflowStageChecklist(stage.ID)
+	stage.ActorLane = aiWorkflowStageActorLane(stage.ID)
 	stage.InputEndpoint, stage.OutputEndpoint, stage.OutputProtocol, stage.ActionEndpoint, stage.ArtifactKind = aiWorkflowStageContract(projectID, stage.ID)
 	stage.OutputProtocolURL = aiWorkflowProtocolSchemaURL(stage.OutputProtocol)
 	return stage
+}
+
+func aiWorkflowStageActorLane(stageID string) string {
+	switch stageID {
+	case "repo_import":
+		return "system"
+	case "issue_scan", "task_generation", "reward_estimation":
+		return "ai"
+	case "contributor_routing", "pr_review":
+		return "hybrid"
+	case "deployment_validation":
+		return "deployment_agent"
+	default:
+		return "system"
+	}
 }
 
 func aiWorkflowStageChecklist(stageID string) []string {

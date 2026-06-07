@@ -4015,6 +4015,7 @@ func TestProjectAIWorkflowRouteReturnsWorkflowAndSanitizesData(t *testing.T) {
 		seenStages[stage.ID] = true
 		stageByID[stage.ID] = stage
 		if strings.TrimSpace(stage.ArtifactKind) == "" ||
+			strings.TrimSpace(stage.ActorLane) == "" ||
 			strings.TrimSpace(stage.OutputEndpoint) == "" ||
 			strings.TrimSpace(stage.OutputProtocol) == "" ||
 			strings.TrimSpace(stage.OutputProtocolURL) == "" ||
@@ -4052,6 +4053,15 @@ func TestProjectAIWorkflowRouteReturnsWorkflowAndSanitizesData(t *testing.T) {
 	}
 	if !containsStringLike(stageByID["contributor_routing"].Checklist, "output contracts") {
 		t.Fatalf("routing checklist missing output contract gate: %#v", stageByID["contributor_routing"].Checklist)
+	}
+	if stageByID["repo_import"].ActorLane != "system" ||
+		stageByID["issue_scan"].ActorLane != "ai" ||
+		stageByID["task_generation"].ActorLane != "ai" ||
+		stageByID["reward_estimation"].ActorLane != "ai" ||
+		stageByID["contributor_routing"].ActorLane != "hybrid" ||
+		stageByID["pr_review"].ActorLane != "hybrid" ||
+		stageByID["deployment_validation"].ActorLane != "deployment_agent" {
+		t.Fatalf("ai workflow actor lanes mismatch: %#v", stageByID)
 	}
 	prReviewStage := stageByID["pr_review"]
 	if prReviewStage.ArtifactKind != "agent_action" ||

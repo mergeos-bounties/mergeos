@@ -884,11 +884,15 @@ test('AI workflow dashboard exposes stage checklists from the protocol contract'
   const workflowStageSchema = workflowSchema.properties.stages.items;
 
   assert.ok(aiStageSchema.required.includes('checklist'));
+  assert.ok(aiStageSchema.required.includes('actor_lane'));
+  assert.deepEqual(aiStageSchema.properties.actor_lane.enum, ['system', 'ai', 'human', 'hybrid', 'deployment_agent']);
   assert.equal(aiStageSchema.properties.checklist.minItems, 1);
   assert.equal(workflowStageSchema.properties.checklist.maxItems, 8);
   assert.match(appSource, /<em v-if="stage\.checklistLabel">\{\{ stage\.checklistLabel \}\}<\/em>/);
+  assert.match(appSource, /<em v-if="stage\.actorLabel">\{\{ stage\.actorLabel \}\}<\/em>/);
   assert.match(appSource, /const checklist = Array\.isArray\(stage\.checklist\) \? stage\.checklist\.filter\(Boolean\) : \[\];/);
   assert.match(appSource, /checklistLabel: checklist\.length \? `Checks: \$\{checklist\.slice\(0, 2\)/);
+  assert.match(appSource, /actorLabel: stage\.actor_lane \? `Lane: \$\{toTitleLabel\(stage\.actor_lane\)\}` : ''/);
   assert.match(cssSource, /\.ai-workflow-list em\s*\{[\s\S]*-webkit-line-clamp: 2;/);
 });
 

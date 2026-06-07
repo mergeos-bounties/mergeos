@@ -34,7 +34,7 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["id", "title", "body", "status", "tone", "artifact_kind", "output_endpoint", "output_protocol", "output_protocol_url", "context_urls", "checklist", "produced_count", "updated_at"],
+        "required": ["id", "title", "body", "status", "tone", "actor_lane", "artifact_kind", "output_endpoint", "output_protocol", "output_protocol_url", "context_urls", "checklist", "produced_count", "updated_at"],
         "properties": {
           "id": {
             "enum": [
@@ -51,6 +51,7 @@
           "body": { "type": "string", "maxLength": 1000 },
           "status": { "enum": ["pending", "in_progress", "complete"] },
           "tone": { "enum": ["amber", "blue", "green"] },
+          "actor_lane": { "enum": ["system", "ai", "human", "hybrid", "deployment_agent"] },
           "artifact_kind": {
             "enum": [
               "repository_context",
