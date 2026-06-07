@@ -33416,3 +33416,145 @@ canvas {
   }
 }
 
+/* Compact public home rhythm: keep the home page short and make deep pages carry detail. */
+.public-home-page {
+  padding-block: 4px 8px !important;
+}
+
+.public-home-page .home-container {
+  max-width: min(900px, calc(100vw - 32px)) !important;
+}
+
+.public-home-layout {
+  min-height: 0 !important;
+}
+
+.public-home-hero {
+  min-height: 0 !important;
+  grid-template-columns: minmax(0, 1fr) minmax(236px, 270px) !important;
+  align-items: start !important;
+  gap: 14px !important;
+}
+
+.public-home-copy {
+  padding-block: 0 !important;
+}
+
+.public-home-copy h1 {
+  max-width: 500px !important;
+  margin-top: 5px !important;
+  font-size: clamp(27px, 2.55vw, 34px) !important;
+  line-height: 1.04 !important;
+}
+
+.public-home-copy p {
+  max-width: 430px !important;
+  margin-top: 8px !important;
+  font-size: 13px !important;
+  line-height: 1.36 !important;
+}
+
+.public-home-copy .marketplace-actions {
+  gap: 7px !important;
+  margin-top: 10px !important;
+}
+
+.public-home-copy .primary-button.large,
+.public-home-copy .secondary-button.large {
+  min-height: 36px !important;
+  padding-inline: 12px !important;
+  font-size: 12px !important;
+}
+
+.home-command-panel {
+  padding: 8px !important;
+  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.055) !important;
+}
+
+.home-command-head {
+  gap: 7px !important;
+}
+
+.home-command-mark {
+  width: 30px !important;
+  height: 30px !important;
+}
+
+.home-command-head div span,
+.home-command-head div strong {
+  display: block !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.home-command-head div span {
+  font-size: 9px !important;
+}
+
+.home-command-head div strong {
+  font-size: 12px !important;
+}
+
+.home-command-panel .ledger-live-dot {
+  min-height: 20px !important;
+  padding-inline: 7px !important;
+  font-size: 10px !important;
+}
+
+.home-command-panel .public-stat-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 6px !important;
+  margin-top: 8px !important;
+}
+
+.home-command-panel .public-stat-grid article {
+  min-height: 34px !important;
+  grid-template-columns: 24px minmax(0, 1fr) !important;
+  gap: 6px !important;
+  padding: 6px !important;
+}
+
+.home-stat-icon {
+  width: 24px !important;
+  height: 24px !important;
+}
+
+.home-command-panel .public-stat-grid article > div > span {
+  font-size: 9px !important;
+}
+
+.home-command-panel .public-stat-grid strong {
+  font-size: 14px !important;
+  line-height: 1.05 !important;
+}
+
+.home-command-panel .public-stat-grid article:nth-child(n + 3) {
+  display: none !important;
+}
+
+@media (max-width: 980px) {
+  .public-home-page .home-container {
+    max-width: min(100%, calc(100vw - 18px)) !important;
+    padding-inline: 9px !important;
+  }
+
+  .public-home-hero {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 8px !important;
+  }
+
+  .public-home-copy h1 {
+    max-width: 420px !important;
+    font-size: clamp(26px, 7.6vw, 34px) !important;
+  }
+
+  .public-home-copy p {
+    max-width: 390px !important;
+  }
+
+  .home-command-panel {
+    display: none !important;
+  }
+}
+

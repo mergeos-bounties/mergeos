@@ -272,6 +272,18 @@ test('public menus and signed-in mobile layout keep reachable compact surfaces',
   assert.match(cssSource, /max-width: calc\(100vw - \(var\(--dash-mobile-gutter, 14px\) \* 2\)\) !important;/);
 });
 
+test('public home keeps a short decision-screen rhythm', async () => {
+  const cssSource = await fs.readFile(new URL('./src/styles.css', import.meta.url), 'utf-8');
+
+  assert.match(cssSource, /Compact public home rhythm/);
+  assert.match(cssSource, /\.public-home-page\s*\{[\s\S]*padding-block: 4px 8px !important;/);
+  assert.match(cssSource, /\.public-home-page \.home-container\s*\{[\s\S]*max-width: min\(900px, calc\(100vw - 32px\)\) !important;/);
+  assert.match(cssSource, /\.public-home-hero\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) minmax\(236px, 270px\) !important;/);
+  assert.match(cssSource, /\.public-home-copy h1\s*\{[\s\S]*font-size: clamp\(27px, 2\.55vw, 34px\) !important;/);
+  assert.match(cssSource, /\.home-command-panel \.public-stat-grid article:nth-child\(n \+ 3\)\s*\{[\s\S]*display: none !important;/);
+  assert.match(cssSource, /@media \(max-width: 980px\)[\s\S]*\.home-command-panel\s*\{[\s\S]*display: none !important;/);
+});
+
 test('ledger logs exposes compact proof timeline coverage', async () => {
   const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
   const cssSource = await fs.readFile(new URL('./src/styles.css', import.meta.url), 'utf-8');
