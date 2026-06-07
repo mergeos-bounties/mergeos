@@ -102,6 +102,18 @@ test('public system vision preserves the product thesis', async () => {
   assert.equal(architectureManifest.product_vision.product_composition.upwork.primary_route, '/marketplace');
   assert.equal(architectureManifest.product_vision.product_composition.vercel.primary_route, '/api/public/protocol/deployment');
   assert.equal(architectureManifest.product_vision.product_composition.ai_agents.primary_route, '/agents');
+  assert.deepEqual(Object.keys(architectureManifest.product_vision.core_value_workflows), [
+    'import_repository',
+    'ai_issue_scan',
+    'automatic_task_split',
+    'create_bounty',
+    'lock_escrow',
+    'watch_live_prs',
+    'track_deployments',
+    'auto_release_payment',
+  ]);
+  assert.equal(architectureManifest.product_vision.core_value_workflows.create_bounty.output_protocol, 'mergeos.repo-task-funding.v1');
+  assert.equal(architectureManifest.product_vision.core_value_workflows.auto_release_payment.output_protocol, 'mergeos.payout-release.v1');
   assert.deepEqual(Object.keys(architectureManifest.product_vision.workflow_routes), architectureManifest.product_vision.core_loop);
   assert.deepEqual(architectureManifest.product_vision.workflow_routes, {
     import_repository: { page: '/project/new', api: '/api/repos/import', proof_surface: '/live-feed' },

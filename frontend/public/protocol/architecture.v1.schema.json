@@ -47,7 +47,7 @@
     },
     "product_vision": {
       "type": "object",
-      "required": ["summary", "product_composition", "core_loop", "workflow_routes"],
+      "required": ["summary", "product_composition", "core_value_workflows", "core_loop", "workflow_routes"],
       "properties": {
         "summary": { "type": "string", "minLength": 1 },
         "product_composition": {
@@ -60,6 +60,21 @@
             "upwork": { "$ref": "#/$defs/productCompositionLayer" },
             "vercel": { "$ref": "#/$defs/productCompositionLayer" },
             "ai_agents": { "$ref": "#/$defs/productCompositionLayer" }
+          },
+          "additionalProperties": false
+        },
+        "core_value_workflows": {
+          "type": "object",
+          "required": ["import_repository", "ai_issue_scan", "automatic_task_split", "create_bounty", "lock_escrow", "watch_live_prs", "track_deployments", "auto_release_payment"],
+          "properties": {
+            "import_repository": { "$ref": "#/$defs/coreValueWorkflow" },
+            "ai_issue_scan": { "$ref": "#/$defs/coreValueWorkflow" },
+            "automatic_task_split": { "$ref": "#/$defs/coreValueWorkflow" },
+            "create_bounty": { "$ref": "#/$defs/coreValueWorkflow" },
+            "lock_escrow": { "$ref": "#/$defs/coreValueWorkflow" },
+            "watch_live_prs": { "$ref": "#/$defs/coreValueWorkflow" },
+            "track_deployments": { "$ref": "#/$defs/coreValueWorkflow" },
+            "auto_release_payment": { "$ref": "#/$defs/coreValueWorkflow" }
           },
           "additionalProperties": false
         },
@@ -421,6 +436,18 @@
     }
   },
   "$defs": {
+    "coreValueWorkflow": {
+      "type": "object",
+      "required": ["user_action", "page", "api", "output_protocol", "proof_surface"],
+      "properties": {
+        "user_action": { "type": "string", "minLength": 1 },
+        "page": { "type": "string", "minLength": 1 },
+        "api": { "type": "string", "minLength": 1 },
+        "output_protocol": { "type": "string", "minLength": 1 },
+        "proof_surface": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
     "productCompositionLayer": {
       "type": "object",
       "required": ["source_model", "mergeos_capability", "primary_route", "proof_surface"],

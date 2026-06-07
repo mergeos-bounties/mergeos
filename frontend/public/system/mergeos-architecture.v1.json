@@ -93,6 +93,64 @@
         "proof_surface": "/api/public/agents/queue"
       }
     },
+    "core_value_workflows": {
+      "import_repository": {
+        "user_action": "Import an existing repository",
+        "page": "/project/new",
+        "api": "/api/repos/import",
+        "output_protocol": "mergeos.repo-import.v1",
+        "proof_surface": "/live-feed"
+      },
+      "ai_issue_scan": {
+        "user_action": "Scan issues and technical debt with AI",
+        "page": "/repo-import",
+        "api": "/api/public/projects/{id}/repo-scan",
+        "output_protocol": "mergeos.scan.v1",
+        "proof_surface": "/live-feed"
+      },
+      "automatic_task_split": {
+        "user_action": "Automatically split work into task graph",
+        "page": "/dashboard",
+        "api": "/api/projects/{id}/task-graph",
+        "output_protocol": "mergeos.workflow.v1",
+        "proof_surface": "/marketplace#marketplace-bounties"
+      },
+      "create_bounty": {
+        "user_action": "Create a public funded bounty",
+        "page": "/marketplace",
+        "api": "/api/projects/{id}/repo-scan/suggested-tasks/{taskID}/fund",
+        "output_protocol": "mergeos.repo-task-funding.v1",
+        "proof_surface": "/marketplace#marketplace-bounties"
+      },
+      "lock_escrow": {
+        "user_action": "Lock escrow before work starts",
+        "page": "/project/new/review",
+        "api": "/api/projects/{id}/escrow",
+        "output_protocol": "mergeos.escrow.v1",
+        "proof_surface": "/contracts"
+      },
+      "watch_live_prs": {
+        "user_action": "Watch pull requests live",
+        "page": "/live-feed",
+        "api": "/api/public/projects/{id}/pull-requests",
+        "output_protocol": "mergeos.pr-monitor.v1",
+        "proof_surface": "/ledger"
+      },
+      "track_deployments": {
+        "user_action": "Track deployments in realtime",
+        "page": "/live-feed",
+        "api": "/api/public/protocol/deployment",
+        "output_protocol": "mergeos.deployment.v1",
+        "proof_surface": "/live-feed"
+      },
+      "auto_release_payment": {
+        "user_action": "Release payment automatically after review gates",
+        "page": "/dashboard?section=admin",
+        "api": "/api/public/protocol/payout-settlement",
+        "output_protocol": "mergeos.payout-release.v1",
+        "proof_surface": "/ledger"
+      }
+    },
     "core_loop": [
       "import_repository",
       "scan_issues_with_ai",
