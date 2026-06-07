@@ -357,9 +357,18 @@ test('frontend system exposes required public pages and dashboard roles', async 
   assert.match(appSource, /const dashboardRoleCoverageRows = computed\(\(\) => \{/);
   assert.match(appSource, /label: 'Worker Dashboard'/);
   assert.match(appSource, /label: 'Admin Console'/);
+  assert.match(appSource, /key: 'customer'[\s\S]*title: 'Project owner cockpit'/);
+  assert.match(appSource, /key: 'worker'[\s\S]*title: 'Contributor workbench'/);
+  assert.match(appSource, /key: 'ai-agents'[\s\S]*title: 'Agent execution layer'/);
+  assert.match(appSource, /key: 'admin'[\s\S]*title: 'Treasury and trust ops'/);
   assert.match(appSource, /label: 'Project overview'[\s\S]*label: 'Live PRs'[\s\S]*label: 'Escrow'[\s\S]*label: 'Payments'[\s\S]*label: 'Tasks'[\s\S]*label: 'AI logs'/);
   assert.match(appSource, /label: 'Claimed tasks'[\s\S]*label: 'Rewards'[\s\S]*label: 'Reputation'[\s\S]*label: 'Proposals'/);
+  assert.match(appSource, /label: 'Coding agents'[\s\S]*label: 'Review agents'[\s\S]*label: 'Testing agents'[\s\S]*label: 'Deployment agents'/);
   assert.match(appSource, /label: 'Treasury'[\s\S]*label: 'Users'[\s\S]*label: 'Disputes'[\s\S]*label: 'Payouts'[\s\S]*label: 'Moderation'/);
+  assert.match(appSource, /Founders, startups, SaaS teams, and repo owners/);
+  assert.match(appSource, /Frontend, backend, design, QA, DevOps, and security contributors/);
+  assert.match(appSource, /Coding, review, testing, deployment, and security agents/);
+  assert.match(appSource, /treasury operators, dispute handlers, moderators, and payout managers/);
 });
 
 test('customer dashboard exposes compact operating lanes after login', async () => {

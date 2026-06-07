@@ -22045,8 +22045,11 @@ const dashboardRoleCoverageRows = computed(() => {
   const adminSummary = adminConsole.value.summary || {};
   const adminOps = adminConsole.value.ops?.stats || {};
   const adminDisputes = adminConsole.value.disputes?.stats || {};
+  const agentTaskCount = Number(agentQueueData.value.stats?.total_count) || marketplaceAgentWorkPacketRows.value.length || 0;
+  const agentLaneCount = agentQueueAgentsView.value.length || marketplaceAgentSourceRows.value.length || marketplaceAgentsView.value.length || 0;
   const customerActive = (dashboardSection.value === 'projects' || dashboardSection.value === 'payments') && !dashboardToolSectionView.value;
   const workerActive = dashboardSection.value === 'worker';
+  const agentActive = dashboardSection.value === 'agents';
   const adminActive = dashboardSection.value === 'admin';
 
   return [
@@ -22097,6 +22100,30 @@ const dashboardRoleCoverageRows = computed(() => {
         { label: 'Rewards', section: 'worker' },
         { label: 'Reputation', section: 'worker' },
         { label: 'Proposals', section: 'worker' },
+      ],
+    },
+    {
+      key: 'ai-agents',
+      eyebrow: 'AI Agents',
+      title: 'Agent execution layer',
+      body: 'AI coding, review, testing, deployment, and security agents route work packets through evidence gates.',
+      icon: Bot,
+      tone: 'purple',
+      status: agentActive ? 'Active' : 'Ready',
+      active: agentActive,
+      locked: false,
+      actionLabel: 'Open agents',
+      primary: { section: 'agents' },
+      stats: [
+        { label: 'Agent tasks', value: String(agentTaskCount) },
+        { label: 'Agent lanes', value: String(agentLaneCount) },
+        { label: 'Evidence', value: String(marketplaceAgentCapabilityDefinitions.length) },
+      ],
+      lanes: [
+        { label: 'Coding agents', section: 'agents' },
+        { label: 'Review agents', section: 'agents' },
+        { label: 'Testing agents', section: 'agents' },
+        { label: 'Deployment agents', section: 'agents' },
       ],
     },
     {
