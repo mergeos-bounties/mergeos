@@ -342,31 +342,19 @@ test('public home keeps a short decision-screen rhythm', async () => {
   const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
   const cssSource = await fs.readFile(new URL('./src/styles.css', import.meta.url), 'utf-8');
 
-  assert.match(cssSource, /Compact public home rhythm/);
-  assert.match(cssSource, /Home ultra-short pass/);
-  assert.match(cssSource, /Home micro-screen pass/);
-  assert.match(cssSource, /Home refined compact pass/);
+  assert.match(cssSource, /Home quality pass: one short decision screen/);
   assert.match(appSource, /class="public-notification-feed home-feed-preview"/);
   assert.match(appSource, /class="home-mergeide-inline-link"/);
   assert.match(appSource, /homeLiveStats\.slice\(0, 2\)/);
-  assert.match(cssSource, /\.public-home-page\s*\{[\s\S]*padding-block: 4px 8px !important;/);
-  assert.match(cssSource, /\.public-home-page\s*\{[\s\S]*padding-block: 0 6px !important;/);
-  assert.match(cssSource, /\.public-home-page \.home-container\s*\{[\s\S]*max-width: min\(900px, calc\(100vw - 32px\)\) !important;/);
-  assert.match(cssSource, /\.public-home-page \.home-container\s*\{[\s\S]*max-width: min\(760px, calc\(100vw - 28px\)\) !important;/);
-  assert.match(cssSource, /\.public-home-page \.home-container\s*\{[\s\S]*max-width: min\(700px, calc\(100vw - 30px\)\) !important;/);
-  assert.match(cssSource, /\.public-home-hero\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) minmax\(236px, 270px\) !important;/);
-  assert.match(cssSource, /\.public-home-hero\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) minmax\(210px, 230px\) !important;/);
-  assert.match(cssSource, /\.public-home-copy h1\s*\{[\s\S]*font-size: clamp\(27px, 2\.55vw, 34px\) !important;/);
-  assert.match(cssSource, /\.public-home-copy h1\s*\{[\s\S]*font-size: clamp\(25px, 2\.2vw, 30px\) !important;/);
-  assert.match(cssSource, /\.public-home-copy h1\s*\{[\s\S]*font-size: clamp\(24px, 2vw, 28px\) !important;/);
-  assert.match(cssSource, /\.public-home-page \.home-container\s*\{[\s\S]*max-width: 980px !important;/);
-  assert.match(cssSource, /\.public-home-hero\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) minmax\(300px, 340px\) !important;/);
-  assert.match(cssSource, /\.public-home-copy h1\s*\{[\s\S]*font-size: clamp\(38px, 4\.1vw, 56px\) !important;/);
-  assert.match(cssSource, /\.home-command-panel\s*\{[\s\S]*max-width: 340px !important;/);
-  assert.match(cssSource, /\.home-mergeide-inline-link\s*\{[\s\S]*font-size: 13px !important;/);
-  assert.match(cssSource, /\.home-feed-preview,[\s\S]*\.home-public-graph-proof,[\s\S]*\.home-command-panel \.home-pipeline\s*\{[\s\S]*display: none !important;/);
+  assert.match(cssSource, /\.public-home-page\s*\{[\s\S]*padding-block: clamp\(14px, 2\.4vw, 30px\) clamp\(20px, 3vw, 38px\) !important;/);
+  assert.match(cssSource, /\.public-home-page \.home-container\s*\{[\s\S]*max-width: 1080px !important;/);
+  assert.match(cssSource, /\.public-home-hero\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) minmax\(286px, 332px\) !important;/);
+  assert.match(cssSource, /\.public-home-copy h1\s*\{[\s\S]*font-size: clamp\(42px, 4\.7vw, 66px\) !important;/);
+  assert.match(cssSource, /\.home-command-panel\s*\{[\s\S]*max-width: 332px !important;/);
+  assert.match(cssSource, /\.home-mergeide-inline-link,[\s\S]*\.home-proof-stack,[\s\S]*\.home-mergeide-signal,[\s\S]*\.home-public-graph-proof,[\s\S]*\.home-command-panel \.home-pipeline,[\s\S]*\.home-command-panel \.home-feed-preview\s*\{[\s\S]*display: none !important;/);
   assert.match(cssSource, /\.home-command-panel \.public-stat-grid article:nth-child\(n \+ 3\)\s*\{[\s\S]*display: none !important;/);
-  assert.match(cssSource, /@media \(max-width: 980px\)[\s\S]*\.home-command-panel\s*\{[\s\S]*display: none !important;/);
+  assert.match(cssSource, /@media \(max-width: 980px\)[\s\S]*\.home-command-panel\s*\{[\s\S]*display: block !important;[\s\S]*max-width: 560px !important;/);
+  assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.public-home-copy h1\s*\{[\s\S]*font-size: clamp\(31px, 10vw, 40px\) !important;/);
 });
 
 test('frontend system exposes required public pages and dashboard roles', async () => {
@@ -434,6 +422,12 @@ test('customer dashboard exposes compact operating lanes after login', async () 
   assert.match(appSource, /function handleCustomerDashboardOperatingLane/);
   assert.match(cssSource, /\.customer-dashboard-operating-strip\s*\{[\s\S]*grid-template-columns: repeat\(6, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /@media \(max-width: 760px\)[\s\S]*\.dashboard-shell \.customer-dashboard-operating-strip\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\) !important;/);
+  assert.match(cssSource, /Signed-in home quality pass: compact command center/);
+  assert.match(cssSource, /\.dashboard-shell \.dash-command-strip\s*\{[\s\S]*width: min\(100% - 36px, 1120px\);[\s\S]*grid-template-columns: minmax\(0, 0\.95fr\) minmax\(360px, 1fr\) !important;/);
+  assert.match(cssSource, /\.dashboard-shell \.dash-command-copy h1\s*\{[\s\S]*font-size: clamp\(34px, 3\.4vw, 48px\) !important;/);
+  assert.match(cssSource, /\.dashboard-shell \.dashboard-role-map\s*\{[\s\S]*grid-template-columns: repeat\(4, minmax\(0, 1fr\)\) !important;/);
+  assert.match(cssSource, /\.dashboard-shell \.dashboard-role-stats,[\s\S]*\.dashboard-shell \.dashboard-role-lanes\s*\{[\s\S]*display: none !important;/);
+  assert.match(cssSource, /@media \(max-width: 760px\)[\s\S]*\.dashboard-shell \.dashboard-role-map article:nth-child\(n \+ 3\)\s*\{[\s\S]*display: none !important;/);
 });
 
 test('ledger logs exposes compact proof timeline coverage', async () => {
