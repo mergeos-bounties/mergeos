@@ -128,10 +128,27 @@ type TokenLaunchBriefResponse struct {
 	WalletPolicy     string      `json:"wallet_policy,omitempty"`
 	RiskNotes        string      `json:"risk_notes,omitempty"`
 	ResearchSignals  []string    `json:"research_signals"`
+	CEOMemo          CEOMemo     `json:"ceo_memo"`
 	LedgerEntry      LedgerEntry `json:"ledger_entry"`
 	LedgerProofURL   string      `json:"ledger_proof_url"`
 	LiveFeedURL      string      `json:"live_feed_url"`
 	CreatedAt        time.Time   `json:"created_at"`
+}
+
+type CEOMemoGate struct {
+	Key      string `json:"key"`
+	Label    string `json:"label"`
+	Status   string `json:"status"`
+	Required bool   `json:"required"`
+	Evidence string `json:"evidence"`
+}
+
+type CEOMemo struct {
+	Decision      string        `json:"decision"`
+	DecisionLabel string        `json:"decision_label"`
+	ReviewOwner   string        `json:"review_owner"`
+	NextAction    string        `json:"next_action"`
+	Gates         []CEOMemoGate `json:"gates"`
 }
 
 var airdropMissionCatalog = []AirdropMission{
@@ -452,11 +469,55 @@ func (s *Store) RecordTokenLaunchBriefForUser(userID string, req TokenLaunchBrie
 		WalletPolicy:     walletPolicy,
 		RiskNotes:        riskNotes,
 		ResearchSignals:  researchSignals,
+		CEOMemo:          tokenLaunchCEOMemo(launchType, repositoryURL, allocationPolicy, proofPolicy, walletPolicy, riskNotes),
 		LedgerEntry:      entry,
 		LedgerProofURL:   "/api/public/ledger/proof",
 		LiveFeedURL:      "/api/public/live-feed",
 		CreatedAt:        entry.CreatedAt,
 	}, nil
+}
+
+func tokenLaunchCEOMemo(launchType, repositoryURL, allocationPolicy, proofPolicy, walletPolicy, riskNotes string) CEOMemo {
+	if launchType == "presale" {
+		return CEOMemo{
+			Decision:      "pending_open_decision",
+			DecisionLabel: "Presale window not open until CEO signs utility, reserve, wallet, contract, and ledger gates.",
+			ReviewOwner:   "CEO token launch reviewer",
+			NextAction:    "Write an open/no-open memo before accepting reservations as approved allocation.",
+			Gates: []CEOMemoGate{
+				{Key: "utility", Label: "Utility and reserve cap", Status: gateStatus(allocationPolicy), Required: true, Evidence: fallbackGateEvidence(allocationPolicy, "MRG utility, tier caps, and reserve limits")},
+				{Key: "wallet", Label: "Wallet and funding rail", Status: gateStatus(walletPolicy), Required: true, Evidence: fallbackGateEvidence(walletPolicy, "Solana wallet, funding reference, and payer review")},
+				{Key: "contract", Label: "Contract and ledger proof", Status: gateStatus(proofPolicy), Required: true, Evidence: fallbackGateEvidence(proofPolicy, "Solana contract reference, receipt hash, and public ledger proof")},
+				{Key: "risk", Label: "Compliance and reversal risk", Status: gateStatus(riskNotes), Required: true, Evidence: fallbackGateEvidence(riskNotes, "Reserve caps, payment reversal, and compliance language review")},
+			},
+		}
+	}
+	return CEOMemo{
+		Decision:      "pending_open_decision",
+		DecisionLabel: "Airdrop missions not open until CEO signs demand, proof, anti-bot, wallet, and allocation gates.",
+		ReviewOwner:   "CEO token launch reviewer",
+		NextAction:    "Write an open/no-open memo before publishing claimable earned missions.",
+		Gates: []CEOMemoGate{
+			{Key: "repo", Label: "Repository and mission demand", Status: gateStatus(repositoryURL), Required: true, Evidence: fallbackGateEvidence(repositoryURL, "Repository URL, task backlog, mission-market fit")},
+			{Key: "proof", Label: "Proof policy", Status: gateStatus(proofPolicy), Required: true, Evidence: fallbackGateEvidence(proofPolicy, "PR, task, QA, deployment, or agent evidence")},
+			{Key: "wallet", Label: "Wallet uniqueness", Status: gateStatus(walletPolicy), Required: true, Evidence: fallbackGateEvidence(walletPolicy, "Solana wallet uniqueness and duplicate review")},
+			{Key: "risk", Label: "Anti-bot and allocation risk", Status: gateStatus(riskNotes), Required: true, Evidence: fallbackGateEvidence(riskNotes, "Bot farming, duplicate wallets, and allocation cap review")},
+		},
+	}
+}
+
+func gateStatus(value string) string {
+	if strings.TrimSpace(value) == "" {
+		return "needs_evidence"
+	}
+	return "ready_for_review"
+}
+
+func fallbackGateEvidence(value, fallback string) string {
+	if trimmed := strings.TrimSpace(value); trimmed != "" {
+		return trimmed
+	}
+	return fallback
 }
 
 func (s *Store) RecordPresaleReservationForUser(userID string, req PresaleReservationRequest) (PresaleReservationResponse, error) {

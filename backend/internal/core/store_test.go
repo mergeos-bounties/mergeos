@@ -1738,6 +1738,15 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 	if !stringSliceContains(launchBrief.ResearchSignals, "airdrop_launch") || !stringSliceContains(launchBrief.ResearchSignals, "repository_context") {
 		t.Fatalf("token launch brief research signals invalid: %#v", launchBrief.ResearchSignals)
 	}
+	if launchBrief.CEOMemo.Decision != "pending_open_decision" || launchBrief.CEOMemo.ReviewOwner != "CEO token launch reviewer" || len(launchBrief.CEOMemo.Gates) != 4 {
+		t.Fatalf("token launch brief CEO memo invalid: %#v", launchBrief.CEOMemo)
+	}
+	if !strings.Contains(launchBrief.CEOMemo.DecisionLabel, "Airdrop missions not open") || !strings.Contains(launchBrief.CEOMemo.NextAction, "open/no-open memo") {
+		t.Fatalf("token launch brief CEO memo decision invalid: %#v", launchBrief.CEOMemo)
+	}
+	if launchBrief.CEOMemo.Gates[0].Status != "ready_for_review" || !launchBrief.CEOMemo.Gates[0].Required {
+		t.Fatalf("token launch brief CEO memo gate invalid: %#v", launchBrief.CEOMemo.Gates[0])
+	}
 	tokenWorkflowNotifications := 0
 	for _, note := range store.ListNotifications(auth.User.ID) {
 		if note.Channel == "token_workflow" {

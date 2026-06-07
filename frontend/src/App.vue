@@ -5146,6 +5146,16 @@
                 <p>{{ formatTokenWorkflowResult(tokenLaunchBriefResult) }}</p>
                 <small>{{ tokenLaunchBriefResult.ledger_entry?.reference }}</small>
               </div>
+              <div v-if="tokenLaunchBriefResult.ceo_memo" class="token-ceo-memo-result">
+                <strong>{{ tokenLaunchBriefResult.ceo_memo.decision_label }}</strong>
+                <small>{{ tokenLaunchBriefResult.ceo_memo.review_owner }} / {{ tokenLaunchBriefResult.ceo_memo.next_action }}</small>
+                <div v-if="tokenLaunchBriefResult.ceo_memo.gates?.length" class="token-ceo-memo-gates">
+                  <span v-for="gate in tokenLaunchBriefResult.ceo_memo.gates" :key="gate.key">
+                    <b>{{ gate.label }}</b>
+                    <small>{{ toTitleLabel(gate.status) }}</small>
+                  </span>
+                </div>
+              </div>
               <div class="token-proof-result-actions">
                 <a :href="tokenLaunchBriefResult.ledger_proof_url || '/api/public/ledger/proof'" target="_blank" rel="noreferrer">Proof</a>
                 <button type="button" @click="copyTokenWorkflowHash(tokenLaunchBriefResult)">Copy hash</button>

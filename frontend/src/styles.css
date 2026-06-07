@@ -8906,6 +8906,70 @@ svg {
     white-space: nowrap;
   }
 
+.token-ceo-memo-result {
+  grid-column: 1 / -1;
+  min-width: 0;
+  border: 1px solid rgba(79, 70, 229, 0.14);
+  border-radius: 8px;
+  background: rgba(238, 242, 255, 0.7);
+  padding: 10px;
+}
+
+.token-ceo-memo-result strong,
+.token-ceo-memo-result small,
+.token-ceo-memo-gates b {
+  display: block;
+  min-width: 0;
+}
+
+.token-ceo-memo-result > strong {
+  color: #312e81;
+  font-size: 12px;
+  line-height: 1.32;
+  font-weight: 930;
+}
+
+.token-ceo-memo-result > small {
+  margin-top: 4px;
+  color: #4f46e5;
+  font-size: 10.5px;
+  line-height: 1.35;
+  font-weight: 760;
+  overflow-wrap: anywhere;
+}
+
+.token-ceo-memo-gates {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.token-ceo-memo-gates span {
+  min-width: 0;
+  border: 1px solid rgba(79, 70, 229, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.82);
+  padding: 7px;
+}
+
+.token-ceo-memo-gates b {
+  color: #111827;
+  font-size: 10px;
+  line-height: 1.22;
+  font-weight: 910;
+}
+
+.token-ceo-memo-gates small {
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 9px;
+  line-height: 1;
+  font-weight: 860;
+  text-transform: uppercase;
+}
+
 .token-proof-result-actions,
 .token-workflow-actions {
   display: flex;
@@ -36516,6 +36580,10 @@ canvas {
 
   .token-ceo-brief-actions .secondary-button:last-child {
     grid-column: 1 / -1 !important;
+  }
+
+  .token-ceo-memo-gates {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 
   .token-ceo-decision-strip {
