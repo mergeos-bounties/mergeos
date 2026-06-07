@@ -5064,6 +5064,38 @@
           </aside>
         </section>
 
+        <section v-if="publicPage === 'airdrop' || publicPage === 'presale'" class="token-ceo-research-panel" aria-labelledby="token-ceo-research-title">
+          <div class="token-ceo-research-head">
+            <span class="public-card-icon purple">
+              <Search :size="18" />
+            </span>
+            <div>
+              <span class="marketplace-eyebrow">CEO LAUNCH DECISION</span>
+              <h2 id="token-ceo-research-title">{{ tokenCeoResearchCopy.title }}</h2>
+              <p>{{ tokenCeoResearchCopy.body }}</p>
+            </div>
+            <b>{{ tokenCeoResearchCopy.readiness }}</b>
+          </div>
+          <div class="token-ceo-decision-strip" aria-label="CEO launch decision stages">
+            <article v-for="row in tokenCeoDecisionRows" :key="row.label">
+              <span>{{ row.label }}</span>
+              <strong>{{ row.value }}</strong>
+            </article>
+          </div>
+          <div class="token-ceo-research-grid">
+            <article v-for="row in tokenCeoResearchRows" :key="row.title">
+              <span :class="['ledger-trust-icon', row.tone]">
+                <component :is="row.icon" :size="15" />
+              </span>
+              <div>
+                <strong>{{ row.title }}</strong>
+                <p>{{ row.body }}</p>
+                <small>{{ row.evidence }}</small>
+              </div>
+            </article>
+          </div>
+        </section>
+
         <section class="token-content-grid">
           <div class="token-main-panel">
             <div class="contracts-section-head">
@@ -5118,32 +5150,6 @@
           Presale reservations are pending review. This page does not promise returns, trading value, or automatic allocation.
           Participation depends on identity, wallet, funding, contract, and ledger checks.
         </p>
-
-        <section v-if="publicPage === 'airdrop' || publicPage === 'presale'" class="token-ceo-research-panel" aria-labelledby="token-ceo-research-title">
-          <div class="token-ceo-research-head">
-            <span class="public-card-icon purple">
-              <Search :size="18" />
-            </span>
-            <div>
-              <span class="marketplace-eyebrow">CEO RESEARCH DESK</span>
-              <h2 id="token-ceo-research-title">{{ tokenCeoResearchCopy.title }}</h2>
-              <p>{{ tokenCeoResearchCopy.body }}</p>
-            </div>
-            <b>{{ tokenCeoResearchCopy.readiness }}</b>
-          </div>
-          <div class="token-ceo-research-grid">
-            <article v-for="row in tokenCeoResearchRows" :key="row.title">
-              <span :class="['ledger-trust-icon', row.tone]">
-                <component :is="row.icon" :size="15" />
-              </span>
-              <div>
-                <strong>{{ row.title }}</strong>
-                <p>{{ row.body }}</p>
-                <small>{{ row.evidence }}</small>
-              </div>
-            </article>
-          </div>
-        </section>
 
         <section v-if="publicPage === 'airdrop' || publicPage === 'presale'" id="token-workflow" class="token-workflow-panel" aria-label="MRG proof workflow">
           <div class="token-workflow-head">
@@ -12446,6 +12452,20 @@ const tokenCeoResearchRows = computed(() => {
       icon: Lock,
       tone: 'amber',
     },
+  ];
+});
+const tokenCeoDecisionRows = computed(() => {
+  if (publicPage.value === 'airdrop') {
+    return [
+      { label: 'Research', value: 'Mission demand' },
+      { label: 'Gate', value: 'Proof + anti-bot' },
+      { label: 'Approve', value: 'Claim review' },
+    ];
+  }
+  return [
+    { label: 'Research', value: 'Utility + caps' },
+    { label: 'Gate', value: 'Wallet + funding' },
+    { label: 'Approve', value: 'Reserve receipt' },
   ];
 });
 const tokenWorkflowProofRows = computed(() => {

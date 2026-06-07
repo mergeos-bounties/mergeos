@@ -8472,6 +8472,44 @@ svg {
   gap: 10px;
 }
 
+.token-ceo-decision-strip {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.token-ceo-decision-strip article {
+  min-width: 0;
+  border: 1px solid rgba(79, 70, 229, 0.12);
+  border-radius: 8px;
+  background: rgba(238, 242, 255, 0.72);
+  padding: 9px 10px;
+}
+
+.token-ceo-decision-strip span,
+.token-ceo-decision-strip strong {
+  display: block;
+  min-width: 0;
+}
+
+.token-ceo-decision-strip span {
+  color: #4f46e5;
+  font-size: 10px;
+  line-height: 1.2;
+  font-weight: 920;
+  text-transform: uppercase;
+}
+
+.token-ceo-decision-strip strong {
+  margin-top: 4px;
+  color: #111827;
+  font-size: 12px;
+  line-height: 1.2;
+  font-weight: 940;
+  overflow-wrap: anywhere;
+}
+
 .token-ceo-research-grid article {
   min-width: 0;
   display: grid;
@@ -9131,7 +9169,7 @@ svg {
 
 @media (max-width: 620px) {
   .token-hero-copy {
-    padding-top: 22px;
+    padding-top: 14px;
   }
 
   .token-hero-copy h1 {
@@ -9141,12 +9179,33 @@ svg {
     text-wrap: wrap;
   }
 
-  .token-metric-grid,
   .token-form-grid,
   .token-ceo-research-grid,
+  .token-ceo-decision-strip,
   .token-whitepaper-thesis,
   .token-chapter-grid {
     grid-template-columns: 1fr;
+  }
+
+  .token-metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .token-status-panel {
+    padding: 14px;
+  }
+
+  .token-status-panel > p {
+    display: none;
+  }
+
+  .token-status-panel .ledger-card-head {
+    gap: 8px;
+  }
+
+  .token-status-panel .ledger-card-head button {
+    min-height: 38px;
   }
 
   .token-whitepaper-brief .contracts-section-head {
@@ -28861,19 +28920,25 @@ canvas {
 
   .token-status-panel .ledger-card-head {
     display: grid;
-    grid-template-columns: 1fr;
-    align-items: stretch;
-    gap: 10px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
   }
 
   .token-status-panel .ledger-card-head button {
-    width: 100%;
+    width: auto;
     min-width: 0;
     justify-content: center;
+    padding: 0 12px;
   }
 
   .token-metric-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .token-status-panel {
+    padding: 14px;
   }
 }
 
