@@ -151,7 +151,30 @@
     },
     "public_urls": {
       "type": "object",
-      "required": ["system", "marketplace", "live_feed", "ledger", "protocol", "whitepaper", "architecture_manifest", "marketplace_api", "live_feed_api", "agent_queue_api"],
+      "required": [
+        "system",
+        "marketplace",
+        "live_feed",
+        "ledger",
+        "protocol",
+        "whitepaper",
+        "architecture_manifest",
+        "marketplace_api",
+        "live_feed_api",
+        "agent_queue_api",
+        "ledger_api",
+        "ledger_events_api",
+        "ledger_verify_api",
+        "ledger_proof_api",
+        "token_economy_api",
+        "airdrop_missions_api",
+        "airdrop_claims_api",
+        "presale_reservations_api",
+        "project_escrow_api",
+        "project_payouts_api",
+        "solana_mrg_idl",
+        "solana_mrg_proof_manifest"
+      ],
       "properties": {
         "system": { "type": "string", "minLength": 1 },
         "marketplace": { "type": "string", "minLength": 1 },
@@ -162,7 +185,19 @@
         "architecture_manifest": { "type": "string", "minLength": 1 },
         "marketplace_api": { "type": "string", "minLength": 1 },
         "live_feed_api": { "type": "string", "minLength": 1 },
-        "agent_queue_api": { "type": "string", "minLength": 1 }
+        "agent_queue_api": { "type": "string", "minLength": 1 },
+        "ledger_api": { "type": "string", "minLength": 1 },
+        "ledger_events_api": { "type": "string", "minLength": 1 },
+        "ledger_verify_api": { "type": "string", "minLength": 1 },
+        "ledger_proof_api": { "type": "string", "minLength": 1 },
+        "token_economy_api": { "type": "string", "minLength": 1 },
+        "airdrop_missions_api": { "type": "string", "minLength": 1 },
+        "airdrop_claims_api": { "type": "string", "minLength": 1 },
+        "presale_reservations_api": { "type": "string", "minLength": 1 },
+        "project_escrow_api": { "type": "string", "minLength": 1 },
+        "project_payouts_api": { "type": "string", "minLength": 1 },
+        "solana_mrg_idl": { "type": "string", "minLength": 1 },
+        "solana_mrg_proof_manifest": { "type": "string", "minLength": 1 }
       },
       "additionalProperties": false
     }

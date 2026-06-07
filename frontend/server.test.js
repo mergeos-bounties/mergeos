@@ -123,6 +123,18 @@ test('public system vision preserves the product thesis', async () => {
   assert.equal(architectureManifest.public_urls.marketplace_api, '/api/public/marketplace');
   assert.equal(architectureManifest.public_urls.live_feed_api, '/api/public/live-feed');
   assert.equal(architectureManifest.public_urls.agent_queue_api, '/api/public/protocol/agent-queue');
+  assert.equal(architectureManifest.public_urls.ledger_api, '/api/public/ledger');
+  assert.equal(architectureManifest.public_urls.ledger_events_api, '/api/public/ledger/events');
+  assert.equal(architectureManifest.public_urls.ledger_verify_api, '/api/public/ledger/verify');
+  assert.equal(architectureManifest.public_urls.ledger_proof_api, '/api/public/ledger/proof');
+  assert.equal(architectureManifest.public_urls.token_economy_api, '/api/public/token-economy');
+  assert.equal(architectureManifest.public_urls.airdrop_missions_api, '/api/public/airdrop/missions');
+  assert.equal(architectureManifest.public_urls.airdrop_claims_api, '/api/airdrop/claims');
+  assert.equal(architectureManifest.public_urls.presale_reservations_api, '/api/presale/reservations');
+  assert.equal(architectureManifest.public_urls.project_escrow_api, '/api/projects/{id}/escrow');
+  assert.equal(architectureManifest.public_urls.project_payouts_api, '/api/projects/{id}/payouts');
+  assert.equal(architectureManifest.public_urls.solana_mrg_idl, '/contracts/solana/mergeos_mrg.v1.idl.json');
+  assert.equal(architectureManifest.public_urls.solana_mrg_proof_manifest, '/contracts/solana/mergeos_mrg.proof-manifest.v1.json');
   assert.equal(architectureManifest.public_urls.architecture_manifest, '/system/mergeos-architecture.v1.json');
 });
 

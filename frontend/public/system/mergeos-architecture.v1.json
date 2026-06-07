@@ -153,6 +153,18 @@
     "architecture_manifest": "/system/mergeos-architecture.v1.json",
     "marketplace_api": "/api/public/marketplace",
     "live_feed_api": "/api/public/live-feed",
-    "agent_queue_api": "/api/public/protocol/agent-queue"
+    "agent_queue_api": "/api/public/protocol/agent-queue",
+    "ledger_api": "/api/public/ledger",
+    "ledger_events_api": "/api/public/ledger/events",
+    "ledger_verify_api": "/api/public/ledger/verify",
+    "ledger_proof_api": "/api/public/ledger/proof",
+    "token_economy_api": "/api/public/token-economy",
+    "airdrop_missions_api": "/api/public/airdrop/missions",
+    "airdrop_claims_api": "/api/airdrop/claims",
+    "presale_reservations_api": "/api/presale/reservations",
+    "project_escrow_api": "/api/projects/{id}/escrow",
+    "project_payouts_api": "/api/projects/{id}/payouts",
+    "solana_mrg_idl": "/contracts/solana/mergeos_mrg.v1.idl.json",
+    "solana_mrg_proof_manifest": "/contracts/solana/mergeos_mrg.proof-manifest.v1.json"
   }
 }
