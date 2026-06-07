@@ -258,6 +258,20 @@ test('public menus and signed-in mobile layout keep reachable compact surfaces',
   assert.match(cssSource, /max-width: calc\(100vw - \(var\(--dash-mobile-gutter, 14px\) \* 2\)\) !important;/);
 });
 
+test('ledger logs exposes compact proof timeline coverage', async () => {
+  const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
+  const cssSource = await fs.readFile(new URL('./src/styles.css', import.meta.url), 'utf-8');
+
+  assert.match(appSource, /class="ledger-proof-timeline"/);
+  assert.match(appSource, /Latest escrow, PR, AI, and release evidence/);
+  assert.match(appSource, /const ledgerProofTimelineRows = computed/);
+  assert.match(appSource, /ledgerProofLanes\.value/);
+  assert.match(appSource, /mapLedgerTransparencyEvent\(latest\)/);
+  assert.match(appSource, /applyLedgerProofLane\(row\.lane\)/);
+  assert.match(cssSource, /\.ledger-proof-timeline-list\s*\{[\s\S]*grid-template-columns: repeat\(4, minmax\(0, 1fr\)\);/);
+  assert.match(cssSource, /@media \(max-width: 560px\)[\s\S]*\.ledger-proof-timeline-list\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\);/);
+});
+
 test('agent work packets expose authenticated lease action', async () => {
   const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
   const cssSource = await fs.readFile(new URL('./src/styles.css', import.meta.url), 'utf-8');

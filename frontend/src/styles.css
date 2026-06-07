@@ -20078,6 +20078,122 @@ svg {
   font-weight: 900;
 }
 
+.ledger-proof-timeline {
+  min-width: 0;
+  display: grid;
+  gap: 12px;
+  border: 1px solid #dbe6ef;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.04);
+  padding: 15px;
+}
+
+.ledger-proof-timeline-head {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ledger-proof-timeline-head h2 {
+  margin: 4px 0 0;
+  color: #111827;
+  font-size: 16px;
+  line-height: 1.2;
+  font-weight: 930;
+}
+
+.ledger-proof-timeline-head small {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #475569;
+  padding: 5px 8px;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.ledger-proof-timeline-list {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.ledger-proof-timeline-list article {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  gap: 9px;
+  align-items: start;
+  border: 1px solid #e6edf3;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 10px;
+}
+
+.ledger-proof-timeline-list strong,
+.ledger-proof-timeline-list p,
+.ledger-proof-timeline-list small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ledger-proof-timeline-list strong {
+  display: block;
+  color: #111827;
+  font-size: 12px;
+  line-height: 1.2;
+  font-weight: 930;
+  white-space: nowrap;
+}
+
+.ledger-proof-timeline-list p {
+  display: -webkit-box;
+  margin: 4px 0 0;
+  color: #475569;
+  font-size: 11px;
+  line-height: 1.35;
+  font-weight: 760;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.ledger-proof-timeline-list small {
+  display: block;
+  margin-top: 6px;
+  color: #7b8492;
+  font-size: 10px;
+  font-weight: 760;
+  white-space: nowrap;
+}
+
+.ledger-proof-timeline-list button {
+  grid-column: 2;
+  width: fit-content;
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid #dbe6ef;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #273244;
+  padding: 0 9px;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.ledger-proof-timeline > p {
+  margin: 0;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 760;
+}
+
 .ledger-economy-detail-grid {
   min-width: 0;
   display: grid;
@@ -33104,6 +33220,26 @@ canvas {
 
   .home-command-panel {
     display: none !important;
+  }
+}
+
+@media (max-width: 980px) {
+  .ledger-proof-timeline-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .ledger-proof-timeline {
+    padding: 12px;
+  }
+
+  .ledger-proof-timeline-head {
+    align-items: flex-start;
+  }
+
+  .ledger-proof-timeline-list {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

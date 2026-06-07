@@ -7248,6 +7248,33 @@
           </article>
         </section>
 
+        <section class="ledger-proof-timeline" aria-label="Latest proof timeline">
+          <div class="ledger-proof-timeline-head">
+            <div>
+              <span class="marketplace-eyebrow">PROOF TIMELINE</span>
+              <h2>Latest escrow, PR, AI, and release evidence</h2>
+            </div>
+            <small>{{ ledgerProofTimelineRows.length }} lanes</small>
+          </div>
+          <div v-if="ledgerProofTimelineRows.length" class="ledger-proof-timeline-list">
+            <article v-for="row in ledgerProofTimelineRows" :key="row.key">
+              <span :class="['ledger-economy-mini-icon', row.tone]">
+                <component :is="row.icon" :size="15" />
+              </span>
+              <div>
+                <strong>{{ row.title }}</strong>
+                <p>{{ row.body }}</p>
+                <small>{{ row.meta }}</small>
+              </div>
+              <button type="button" @click="applyLedgerProofLane(row.lane)">
+                View
+                <ArrowRight :size="12" />
+              </button>
+            </article>
+          </div>
+          <p v-else>{{ ledgerLoading ? 'Syncing public proof timeline.' : 'Funding, PR, AI, and release proof rows will appear here.' }}</p>
+        </section>
+
         <section class="ledger-economy-detail-grid" aria-label="MRG economy operations">
           <article class="ledger-economy-panel">
             <div class="ledger-economy-panel-head">
@@ -12561,6 +12588,26 @@ const ledgerProofLanes = computed(() => {
     };
   });
 });
+const ledgerProofTimelineRows = computed(() =>
+  ledgerProofLanes.value
+    .map((lane) => {
+      const latest = ledgerEventItems.value
+        .filter((item) => typeof lane.predicate === 'function' && lane.predicate(item))
+        .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))[0];
+      if (!latest) return null;
+      const event = mapLedgerTransparencyEvent(latest);
+      return {
+        key: `${lane.key}:${event.key}`,
+        lane,
+        icon: lane.icon,
+        tone: lane.tone,
+        title: lane.title,
+        body: `${event.type} - ${event.project}`,
+        meta: [event.auditLabel || event.secondaryAmount, event.ref, `${event.date} ${event.time}`].filter(Boolean).join(' - '),
+      };
+    })
+    .filter(Boolean),
+);
 const ledgerFilterResultLabel = computed(() => {
   const total = ledgerEventItems.value.length;
   const visible = ledgerEvents.value.length;
