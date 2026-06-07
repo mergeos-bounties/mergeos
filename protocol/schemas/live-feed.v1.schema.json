@@ -85,6 +85,7 @@
               "proposal_declined",
               "repo_issues_synced",
               "agent_action",
+              "agent_lease",
               "pr_opened",
               "ai_review",
               "pr_ready_for_release"
