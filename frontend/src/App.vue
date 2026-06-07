@@ -4634,6 +4634,17 @@
                 <UsersRound :size="16" />
               </button>
             </div>
+            <div class="home-system-summary" :aria-label="publicHomeCopy.systemSummaryLabel">
+              <article v-for="row in homeSystemSummaryRows" :key="row.title">
+                <span :class="['public-card-icon', row.tone]">
+                  <component :is="row.icon" :size="14" />
+                </span>
+                <span>
+                  <strong>{{ row.title }}</strong>
+                  <small>{{ row.body }}</small>
+                </span>
+              </article>
+            </div>
             <div class="home-compact-flow" :aria-label="publicHomeCopy.pipelineLabel">
               <article v-for="row in homePipelineRows" :key="row.title">
                 <component :is="row.icon" :size="14" />
@@ -9032,6 +9043,7 @@ const publicHomeTranslations = {
     commandEyebrow: 'Live command center',
     commandTitle: 'Marketplace, tasks, escrow, ledger',
     pipelineLabel: 'Project pipeline',
+    systemSummaryLabel: 'MergeOS system summary',
     recentUpdates: 'Recent updates',
     workflowLabel: 'MergeOS workflows',
     talentLabel: 'Talent matching',
@@ -9046,6 +9058,12 @@ const publicHomeTranslations = {
     },
     statDetails: ['Funded briefs', 'Claimable work', 'Escrow tracked', 'MRG supply'],
     proofRows: ['Escrow first', 'Repo-aware tasks', 'Ledger proof'],
+    systemSummaryRows: [
+      { title: 'Repo OS', body: 'Issues, debt, PRs, deploys' },
+      { title: 'AI routing', body: 'Scan, split, estimate, review' },
+      { title: 'Market + escrow', body: 'Funded bounties and payouts' },
+      { title: 'MRG proof', body: 'Solana token and public ledger' },
+    ],
     pipelineRows: [
       { title: 'Brief', body: 'Scope, repo, acceptance criteria' },
       { title: 'Route', body: 'Human, AI, or hybrid tasks' },
@@ -14096,6 +14114,17 @@ const homePipelineRows = computed(() => {
   const icons = [FileCheck2, CreditCard, CheckCircle2];
   return rows.map((row, index) => ({
     icon: icons[index] || CheckCircle2,
+    title: row.title,
+    body: row.body,
+  }));
+});
+const homeSystemSummaryRows = computed(() => {
+  const rows = publicHomeCopy.value.systemSummaryRows || publicHomeTranslations['en-US'].systemSummaryRows;
+  const icons = [GitBranch, Bot, CircleDollarSign, ShieldCheck];
+  const tones = ['blue', 'purple', 'green', 'orange'];
+  return rows.map((row, index) => ({
+    icon: icons[index] || Box,
+    tone: tones[index] || 'green',
     title: row.title,
     body: row.body,
   }));
