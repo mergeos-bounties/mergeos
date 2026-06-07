@@ -108,6 +108,16 @@ test('public system vision preserves the product thesis', async () => {
   assert.ok(architectureManifest.backend_system.proposed_stack.includes('GitHub API'));
   assert.ok(architectureManifest.backend_system.proposed_stack.includes('OpenAI API'));
   assert.ok(architectureManifest.backend_system.proposed_stack.includes('WebSocket gateway'));
+  assert.deepEqual(architectureManifest.backend_system.runtime_routes, {
+    authentication: '/api/auth/session',
+    repository_import: '/api/repos/import',
+    ai_orchestration: '/api/projects/{id}/ai-workflow',
+    task_engine: '/api/projects/{id}/task-graph',
+    payment_verification: '/api/payments/order-intents',
+    escrow_coordination: '/api/projects/{id}/escrow',
+    live_notifications: '/api/ws',
+    ledger_system: '/api/public/ledger',
+  });
   assert.deepEqual(architectureManifest.ai_layer.workflow, [
     'Import Repository',
     'Issue Scan',

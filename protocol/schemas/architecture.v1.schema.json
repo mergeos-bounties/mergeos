@@ -124,10 +124,25 @@
     },
     "backend_system": {
       "type": "object",
-      "required": ["role", "proposed_stack"],
+      "required": ["role", "proposed_stack", "runtime_routes"],
       "properties": {
         "role": { "type": "string", "minLength": 1 },
-        "proposed_stack": { "$ref": "#/$defs/stringList" }
+        "proposed_stack": { "$ref": "#/$defs/stringList" },
+        "runtime_routes": {
+          "type": "object",
+          "required": ["authentication", "repository_import", "ai_orchestration", "task_engine", "payment_verification", "escrow_coordination", "live_notifications", "ledger_system"],
+          "properties": {
+            "authentication": { "type": "string", "minLength": 1 },
+            "repository_import": { "type": "string", "minLength": 1 },
+            "ai_orchestration": { "type": "string", "minLength": 1 },
+            "task_engine": { "type": "string", "minLength": 1 },
+            "payment_verification": { "type": "string", "minLength": 1 },
+            "escrow_coordination": { "type": "string", "minLength": 1 },
+            "live_notifications": { "type": "string", "minLength": 1 },
+            "ledger_system": { "type": "string", "minLength": 1 }
+          },
+          "additionalProperties": false
+        }
       },
       "additionalProperties": false
     },
