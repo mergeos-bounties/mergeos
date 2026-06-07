@@ -4624,15 +4624,6 @@
             <span class="marketplace-eyebrow">{{ publicHomeCopy.eyebrow }}</span>
             <h1 id="home-title">{{ publicHomeCopy.title }}</h1>
             <p>{{ publicHomeCopy.body }}</p>
-            <div class="home-operating-note" :aria-label="publicHomeCopy.operatingLabel">
-              <article v-for="row in homeOperatingRows" :key="row.title">
-                <component :is="row.icon" :size="14" />
-                <span>
-                  <strong>{{ row.title }}</strong>
-                  <small>{{ row.body }}</small>
-                </span>
-              </article>
-            </div>
             <div class="marketplace-actions">
               <button class="primary-button large" type="button" @click="openProjectWizard">
                 {{ publicHomeCopy.primaryAction }}
@@ -4642,26 +4633,6 @@
                 {{ publicHomeCopy.marketplaceAction }}
                 <UsersRound :size="16" />
               </button>
-            </div>
-            <div class="home-system-summary" :aria-label="publicHomeCopy.systemSummaryLabel">
-              <article v-for="row in homeSystemSummaryRows" :key="row.title">
-                <span :class="['public-card-icon', row.tone]">
-                  <component :is="row.icon" :size="14" />
-                </span>
-                <span>
-                  <strong>{{ row.title }}</strong>
-                  <small>{{ row.body }}</small>
-                </span>
-              </article>
-            </div>
-            <div class="home-compact-flow" :aria-label="publicHomeCopy.pipelineLabel">
-              <article v-for="row in homePipelineRows" :key="row.title">
-                <component :is="row.icon" :size="14" />
-                <span>
-                  <strong>{{ row.title }}</strong>
-                  <small>{{ row.body }}</small>
-                </span>
-              </article>
             </div>
             <a
               class="home-mergeide-inline-link"
@@ -4717,22 +4688,6 @@
               </article>
             </div>
           </aside>
-        </section>
-
-        <section class="home-system-explainer" :aria-label="publicHomeCopy.workflowLabel">
-          <article v-for="card in localizedHomeWorkflowCards.slice(0, 4)" :key="card.title">
-            <span :class="['public-card-icon', card.tone]">
-              <component :is="card.icon" :size="17" />
-            </span>
-            <div>
-              <strong>{{ card.title }}</strong>
-              <p>{{ card.body }}</p>
-            </div>
-            <button type="button" @click="handlePublicAction(card.action)">
-              {{ card.cta }}
-              <ArrowRight :size="13" />
-            </button>
-          </article>
         </section>
 
       </div>
@@ -9068,8 +9023,8 @@ const publicNavTranslations = {
 const publicHomeTranslations = {
   'en-US': {
     eyebrow: 'MERGEOS DELIVERY OS',
-    title: 'MergeOS turns funded software work into verified delivery.',
-    body: 'One command layer for software delivery: turn briefs, repos, issues, and technical debt into AI-estimated tasks, escrow-backed work, PR review, deployment checks, and public payout proof.',
+    title: 'MergeOS turns funded work into verified delivery.',
+    body: 'Post a brief, fund escrow, route tasks to builders or AI agents, and prove every payout through the live ledger.',
     primaryAction: 'Start a project',
     marketplaceAction: 'View live work',
     ledgerAction: 'Open proof ledger',

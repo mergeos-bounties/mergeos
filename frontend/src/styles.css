@@ -35366,3 +35366,186 @@ canvas {
   }
 }
 
+/* Home executive pass: a short premium decision screen, not a long product manual. */
+.public-home-page {
+  padding-block: clamp(10px, 1.8vw, 22px) clamp(18px, 2.4vw, 30px) !important;
+}
+
+.public-home-page .home-container {
+  max-width: 1040px !important;
+}
+
+.public-home-hero {
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 326px) !important;
+  gap: clamp(20px, 3vw, 38px) !important;
+}
+
+.public-home-copy {
+  max-width: 580px !important;
+}
+
+.public-home-copy h1 {
+  max-width: 560px !important;
+  margin-top: 8px !important;
+  font-size: clamp(40px, 4.25vw, 60px) !important;
+  line-height: 0.98 !important;
+  letter-spacing: 0 !important;
+}
+
+.public-home-copy p {
+  max-width: 540px !important;
+  margin-top: 12px !important;
+  font-size: clamp(16px, 1.05vw, 18px) !important;
+  line-height: 1.42 !important;
+}
+
+.public-home-copy .marketplace-actions {
+  max-width: 520px !important;
+  margin-top: 16px !important;
+}
+
+.home-mergeide-inline-link {
+  display: inline-flex !important;
+  width: fit-content !important;
+  margin-top: 12px !important;
+  border-color: rgba(37, 99, 235, 0.2) !important;
+  background: rgba(239, 246, 255, 0.72) !important;
+  color: #1d4ed8 !important;
+}
+
+.home-command-panel {
+  max-width: 326px !important;
+  padding: 13px !important;
+}
+
+.home-command-panel .public-stat-grid {
+  gap: 8px !important;
+}
+
+.home-command-panel .public-stat-grid article {
+  min-height: 70px !important;
+  padding: 10px !important;
+}
+
+.home-command-panel .public-stat-grid strong {
+  font-size: clamp(19px, 1.5vw, 24px) !important;
+}
+
+.home-system-summary,
+.home-compact-flow,
+.home-system-explainer,
+.home-command-panel .home-feed-preview,
+.home-command-panel .home-pipeline {
+  display: none !important;
+}
+
+@media (max-width: 980px) {
+  .public-home-page .home-container {
+    max-width: 680px !important;
+  }
+
+  .public-home-hero {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 12px !important;
+  }
+
+  .public-home-copy h1 {
+    max-width: 540px !important;
+    font-size: clamp(35px, 8vw, 46px) !important;
+  }
+
+  .public-home-copy p {
+    max-width: 520px !important;
+    font-size: 15px !important;
+  }
+
+  .home-command-panel {
+    display: block !important;
+    max-width: 520px !important;
+    width: 100% !important;
+  }
+}
+
+@media (max-width: 620px) {
+  .home-navbar .nav-inner {
+    grid-template-columns: minmax(0, 1fr) auto auto !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+
+  .home-navbar .hamburger-button {
+    grid-column: 3 !important;
+    grid-row: 1 !important;
+  }
+
+  .home-navbar .public-nav-actions {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    justify-self: end !important;
+    width: auto !important;
+    gap: 6px !important;
+  }
+
+  .home-navbar .brand-link {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+  }
+
+  .home-navbar .public-nav-actions .locale-button {
+    min-width: 38px !important;
+    width: 38px !important;
+    padding: 0 !important;
+    gap: 0 !important;
+    color: #0f172a !important;
+    font-size: 11px !important;
+    font-weight: 930 !important;
+    letter-spacing: 0 !important;
+  }
+
+  .home-navbar .public-nav-actions .locale-button svg,
+  .home-navbar .public-nav-actions .locale-button svg:last-child {
+    display: none !important;
+  }
+
+  .home-navbar .account-icon-button,
+  .home-navbar .hamburger-button {
+    width: 38px !important;
+    min-width: 38px !important;
+    min-height: 38px !important;
+  }
+
+  .public-home-page {
+    padding-block: 10px 16px !important;
+  }
+
+  .public-home-copy h1 {
+    font-size: clamp(30px, 9.5vw, 38px) !important;
+  }
+
+  .public-home-copy p {
+    margin-top: 9px !important;
+    font-size: 14px !important;
+  }
+
+  .public-home-copy .marketplace-actions {
+    margin-top: 12px !important;
+  }
+
+  .home-mergeide-inline-link {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  .home-command-panel {
+    padding: 11px !important;
+  }
+
+  .home-command-panel .public-stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .home-command-panel .public-stat-grid article {
+    min-height: 64px !important;
+  }
+}
+

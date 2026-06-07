@@ -742,26 +742,30 @@ test('public menus and signed-in mobile layout keep reachable compact surfaces',
   assert.match(cssSource, /\.dashboard-shell \.dash-mobile-nav\s*\{[\s\S]*grid-template-columns: repeat\(4, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /\.notification-dropdown,[\s\S]*\.dashboard-shell \.notification-dropdown,[\s\S]*\.dashboard-shell \.account-context-menu,[\s\S]*\.dashboard-shell \.dashboard-project-actions-panel\s*\{[\s\S]*position: fixed !important;/);
   assert.match(cssSource, /max-width: calc\(100vw - \(var\(--dash-mobile-gutter, 14px\) \* 2\)\) !important;/);
+  assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.home-navbar \.nav-inner\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) auto auto !important;/);
+  assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.home-navbar \.public-nav-actions\s*\{[\s\S]*grid-column: 2 !important;[\s\S]*grid-row: 1 !important;/);
+  assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.home-navbar \.hamburger-button\s*\{[\s\S]*grid-column: 3 !important;[\s\S]*grid-row: 1 !important;/);
+  assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.home-navbar \.public-nav-actions \.locale-button\s*\{[\s\S]*font-size: 11px !important;/);
 });
 
 test('public home keeps a short decision-screen rhythm', async () => {
   const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
   const cssSource = await fs.readFile(new URL('./src/styles.css', import.meta.url), 'utf-8');
 
-  assert.match(cssSource, /Home quality pass: one short decision screen/);
+  assert.match(cssSource, /Home executive pass: a short premium decision screen/);
   assert.match(appSource, /class="public-notification-feed home-feed-preview"/);
   assert.match(appSource, /class="home-mergeide-inline-link"/);
-  assert.match(appSource, /class="home-system-summary"/);
   assert.match(appSource, /homeSystemSummaryRows/);
-  assert.match(appSource, /class="home-operating-note"/);
   assert.match(appSource, /homeOperatingRows/);
-  assert.match(appSource, /class="home-compact-flow"/);
   assert.match(appSource, /homePipelineRows/);
-  assert.match(appSource, /class="home-system-explainer"/);
-  assert.match(appSource, /localizedHomeWorkflowCards\.slice\(0, 4\)/);
+  assert.doesNotMatch(appSource, /class="home-operating-note"/);
+  assert.doesNotMatch(appSource, /class="home-system-summary"/);
+  assert.doesNotMatch(appSource, /class="home-compact-flow"/);
+  assert.doesNotMatch(appSource, /class="home-system-explainer"/);
+  assert.doesNotMatch(appSource, /localizedHomeWorkflowCards\.slice\(0, 4\)/);
   assert.match(appSource, /homeLiveStats\.slice\(0, 2\)/);
-  assert.match(appSource, /MergeOS turns funded software work into verified delivery\./);
-  assert.match(appSource, /One command layer for software delivery: turn briefs, repos, issues, and technical debt into AI-estimated tasks, escrow-backed work, PR review, deployment checks, and public payout proof\./);
+  assert.match(appSource, /MergeOS turns funded work into verified delivery\./);
+  assert.match(appSource, /Post a brief, fund escrow, route tasks to builders or AI agents, and prove every payout through the live ledger\./);
   assert.match(appSource, /title: 'Product OS'[\s\S]*Project intake, repo import, AI task graph, escrow, PR monitor, deployment gates, and ledger proof stay in one operating flow\./);
   assert.match(appSource, /title: 'Delivery lanes'[\s\S]*Route funded work to human contributors, AI agents, or hybrid teams with shared scope, acceptance criteria, and payout state\./);
   assert.match(appSource, /title: 'Public proof layer'[\s\S]*Marketplace activity, escrow, token mint, PR evidence, deployment checks, SDK context, and protocol documents are discoverable\./);
@@ -773,22 +777,15 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.match(appSource, /title: 'Proof', body: 'Escrow, PR, deploy, payout ledger'/);
   assert.match(appSource, /title: 'Route', body: 'Human, AI, or hybrid tasks'/);
   assert.match(appSource, /title: 'Prove', body: 'PR, deploy, payout ledger'/);
-  assert.match(cssSource, /\.public-home-page\s*\{[\s\S]*padding-block: clamp\(14px, 2\.4vw, 30px\) clamp\(20px, 3vw, 38px\) !important;/);
-  assert.match(cssSource, /\.public-home-page \.home-container\s*\{[\s\S]*max-width: 1080px !important;/);
-  assert.match(cssSource, /\.public-home-hero\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) minmax\(286px, 332px\) !important;/);
-  assert.match(cssSource, /\.public-home-copy h1\s*\{[\s\S]*font-size: clamp\(42px, 4\.7vw, 66px\) !important;/);
-  assert.match(cssSource, /\.home-command-panel\s*\{[\s\S]*max-width: 332px !important;/);
-  assert.match(cssSource, /\.home-mergeide-inline-link,[\s\S]*\.home-proof-stack,[\s\S]*\.home-mergeide-signal,[\s\S]*\.home-public-graph-proof,[\s\S]*\.home-command-panel \.home-pipeline,[\s\S]*\.home-command-panel \.home-feed-preview\s*\{[\s\S]*display: none !important;/);
+  assert.match(cssSource, /\.public-home-page\s*\{[\s\S]*padding-block: clamp\(10px, 1\.8vw, 22px\) clamp\(18px, 2\.4vw, 30px\) !important;/);
+  assert.match(cssSource, /\.public-home-page \.home-container\s*\{[\s\S]*max-width: 1040px !important;/);
+  assert.match(cssSource, /\.public-home-hero\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) minmax\(280px, 326px\) !important;/);
+  assert.match(cssSource, /\.public-home-copy h1\s*\{[\s\S]*font-size: clamp\(40px, 4\.25vw, 60px\) !important;/);
+  assert.match(cssSource, /\.home-command-panel\s*\{[\s\S]*max-width: 326px !important;/);
+  assert.match(cssSource, /\.home-system-summary,[\s\S]*\.home-compact-flow,[\s\S]*\.home-system-explainer,[\s\S]*\.home-command-panel \.home-feed-preview,[\s\S]*\.home-command-panel \.home-pipeline\s*\{[\s\S]*display: none !important;/);
   assert.match(cssSource, /\.home-command-panel \.public-stat-grid article:nth-child\(n \+ 3\)\s*\{[\s\S]*display: none !important;/);
-  assert.match(cssSource, /@media \(max-width: 980px\)[\s\S]*\.home-command-panel\s*\{[\s\S]*display: block !important;[\s\S]*max-width: 560px !important;/);
-  assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.public-home-copy h1\s*\{[\s\S]*font-size: clamp\(31px, 10vw, 40px\) !important;/);
-  assert.match(cssSource, /\.home-system-explainer\s*\{[\s\S]*grid-template-columns: repeat\(4, minmax\(0, 1fr\)\);/);
-  assert.match(cssSource, /\.home-system-summary\s*\{[\s\S]*grid-template-columns: repeat\(4, minmax\(0, 1fr\)\);/);
-  assert.match(cssSource, /\.home-operating-note\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
-  assert.match(cssSource, /\.home-compact-flow\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
-  assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.home-system-explainer\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\);/);
-  assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.home-system-summary\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\);/);
-  assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.home-operating-note\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\);/);
+  assert.match(cssSource, /@media \(max-width: 980px\)[\s\S]*\.home-command-panel\s*\{[\s\S]*display: block !important;[\s\S]*max-width: 520px !important;/);
+  assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.public-home-copy h1\s*\{[\s\S]*font-size: clamp\(30px, 9\.5vw, 38px\) !important;/);
 });
 
 test('frontend system exposes required public pages and dashboard roles', async () => {
