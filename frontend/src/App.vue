@@ -5155,6 +5155,9 @@
               <span class="marketplace-eyebrow">{{ tokenCeoLaunchBriefCopy.eyebrow }}</span>
               <strong>{{ tokenCeoLaunchBriefCopy.title }}</strong>
               <p>{{ tokenCeoLaunchBriefCopy.body }}</p>
+              <div class="token-ceo-signal-chips" aria-label="CEO research signals attached">
+                <span v-for="signal in tokenCeoResearchSignalRows" :key="signal">{{ toTitleLabel(signal) }}</span>
+              </div>
             </div>
             <div v-if="tokenLaunchBriefAttempted && tokenLaunchBriefValidationRows.length" class="wizard-validation-banner token-workflow-validation" role="alert">
               <strong>Fix CEO brief</strong>
@@ -5227,6 +5230,9 @@
                     <b>{{ gate.label }}</b>
                     <small>{{ toTitleLabel(gate.status) }}</small>
                   </span>
+                </div>
+                <div v-if="tokenLaunchBriefResult.research_signals?.length" class="token-ceo-signal-chips result" aria-label="CEO research signals recorded">
+                  <span v-for="signal in tokenLaunchBriefResult.research_signals" :key="signal">{{ toTitleLabel(signal) }}</span>
                 </div>
               </div>
               <div class="token-proof-result-actions">
@@ -12751,6 +12757,11 @@ const tokenCeoSourcePacketRows = computed(() => {
     { label: 'CEO output', value: `${ceoMemos} memo(s), reserve gate, ledger proof before receipts`, icon: FileCheck2, tone: 'purple' },
   ];
 });
+const tokenCeoResearchSignalRows = computed(() => (
+  publicPage.value === 'presale'
+    ? ['utility_readiness', 'reserve_cap', 'wallet_path', 'contract_proof']
+    : ['mission_demand', 'anti_bot', 'proof_gate', 'repo_context']
+));
 const tokenCeoLaunchBriefCopy = computed(() => {
   if (publicPage.value === 'airdrop') {
     return {
@@ -24607,9 +24618,7 @@ async function submitTokenLaunchBrief() {
         proof_policy: tokenLaunchBriefForm.proof_policy,
         wallet_policy: tokenLaunchBriefForm.wallet_policy || (launchType === 'presale' ? 'Require Solana wallet, funding reference, contract reference, and receipt review.' : 'Require Solana wallet uniqueness and anti-bot review.'),
         risk_notes: tokenLaunchBriefForm.risk_notes || (launchType === 'presale' ? 'Review reserve caps, funding rail risk, and compliance language before opening.' : 'Review bot farming, duplicated wallets, empty signups, and unverifiable proof.'),
-        research_signals: launchType === 'presale'
-          ? ['utility_readiness', 'reserve_cap', 'wallet_path', 'contract_proof']
-          : ['mission_demand', 'anti_bot', 'proof_gate', 'repo_context'],
+        research_signals: tokenCeoResearchSignalRows.value,
       }),
     });
     tokenLaunchBriefResult.value = response;

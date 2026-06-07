@@ -8732,6 +8732,40 @@ svg {
   font-weight: 720;
 }
 
+.token-ceo-signal-chips {
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.token-ceo-signal-chips span {
+  display: inline-flex;
+  min-height: 24px;
+  align-items: center;
+  border: 1px solid rgba(79, 70, 229, 0.14);
+  border-radius: 999px;
+  background: rgba(238, 242, 255, 0.72);
+  color: #3730a3;
+  padding: 0 9px;
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
+.token-ceo-signal-chips.result {
+  grid-column: 1 / -1;
+  margin-top: 8px;
+}
+
+.token-ceo-signal-chips.result span {
+  border-color: rgba(15, 118, 110, 0.18);
+  background: rgba(236, 253, 245, 0.82);
+  color: #0f766e;
+}
+
 .token-ceo-brief-form {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -37081,6 +37115,16 @@ canvas {
     overflow: hidden !important;
     -webkit-box-orient: vertical !important;
     -webkit-line-clamp: 2 !important;
+  }
+
+  .token-ceo-signal-chips {
+    gap: 5px !important;
+  }
+
+  .token-ceo-signal-chips span {
+    min-height: 22px !important;
+    padding-inline: 7px !important;
+    font-size: 9px !important;
   }
 
   .token-ceo-brief-form {

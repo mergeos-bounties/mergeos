@@ -1205,6 +1205,7 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /class="token-ceo-decision-strip"/);
   assert.match(appSource, /class="token-ceo-project-queue"/);
   assert.match(appSource, /class="token-ceo-source-packet"/);
+  assert.match(appSource, /class="token-ceo-signal-chips"/);
   assert.match(appSource, /class="token-ceo-brief-card"/);
   assert.match(appSource, /@submit\.prevent="submitTokenLaunchBrief"/);
   assert.match(appSource, /class="token-ceo-memo-result"/);
@@ -1225,6 +1226,7 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /const tokenCeoDecisionRows = computed/);
   assert.match(appSource, /const tokenCeoProjectResearchRows = computed/);
   assert.match(appSource, /const tokenCeoSourcePacketRows = computed/);
+  assert.match(appSource, /const tokenCeoResearchSignalRows = computed/);
   assert.match(appSource, /const tokenCeoLaunchBriefCopy = computed/);
   assert.match(appSource, /const tokenLaunchBriefProofCount = computed/);
   assert.match(appSource, /entry\?\.type !== 'token_launch_brief'/);
@@ -1275,6 +1277,10 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /Project seeking an MRG presale window/);
   assert.match(appSource, /Research URL, bounty demand, proof depth, wallet risk/);
   assert.match(appSource, /Whitepaper, utility, reserve cap, funding rail, contract proof/);
+  assert.match(appSource, /mission_demand/);
+  assert.match(appSource, /utility_readiness/);
+  assert.match(appSource, /research_signals: tokenCeoResearchSignalRows\.value/);
+  assert.match(appSource, /tokenLaunchBriefResult\.research_signals\?\.length/);
   assert.match(appSource, /Project brief intake/);
   assert.match(appSource, /Project utility intake/);
   assert.match(appSource, /Proof risk review/);
@@ -1345,6 +1351,7 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(cssSource, /\.token-ceo-decision-strip\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /\.token-ceo-project-queue\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /\.token-ceo-source-packet\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
+  assert.match(cssSource, /\.token-ceo-signal-chips\s*\{[\s\S]*flex-wrap: wrap;/);
   assert.match(cssSource, /\.token-ceo-brief-card\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\);/);
   assert.match(cssSource, /\.token-ceo-brief-form\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /\.token-ceo-brief-actions\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) auto auto;/);
