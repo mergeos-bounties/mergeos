@@ -466,6 +466,7 @@ test('validates marketplace protocol documents', () => {
         parent_agent_type: 'ceo-strategy-agent',
         delegation_endpoint: '/api/public/protocol/agent-queue',
         focus: ['test_plan', 'smoke_testing'],
+        supported_actions: ['review', 'test'],
         task_count: 2,
         open_task_count: 2,
         budget_cents: 10000,
@@ -479,12 +480,13 @@ test('validates marketplace protocol documents', () => {
     ...marketplace,
     kind: 'market',
     stats: { ...marketplace.stats, open_task_count: -1 },
-    agents: [{ ...marketplace.agents[0], worker_kind: 'bot' }],
+    agents: [{ ...marketplace.agents[0], worker_kind: 'bot', supported_actions: ['lint'] }],
   });
   assert.equal(invalid.valid, false);
   assert(invalid.errors.some((error) => error.path === 'kind'));
   assert(invalid.errors.some((error) => error.path === 'stats.open_task_count'));
   assert(invalid.errors.some((error) => error.path === 'agents[0].worker_kind'));
+  assert(invalid.errors.some((error) => error.path === 'agents[0].supported_actions[0]'));
 
   const invalidPacket = validateProtocolDocument({
     ...marketplace,

@@ -1078,6 +1078,7 @@ type MarketplaceAgent struct {
 	SubagentTypes      []string   `json:"subagent_types,omitempty"`
 	DelegationEndpoint string     `json:"delegation_endpoint,omitempty"`
 	Focus              []string   `json:"focus,omitempty"`
+	SupportedActions   []string   `json:"supported_actions"`
 	TaskCount          int        `json:"task_count"`
 	OpenTaskCount      int        `json:"open_task_count"`
 	BudgetCents        int64      `json:"budget_cents"`

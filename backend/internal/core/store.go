@@ -1666,6 +1666,7 @@ func ensureAgentHierarchy(agents map[string]*MarketplaceAgent) {
 		if len(agent.Focus) == 0 {
 			agent.Focus = defaultAgentFocus(agent.Type)
 		}
+		agent.SupportedActions = publicAgentSupportedActions(agent)
 		subagents = append(subagents, agent.Type)
 		totalTaskCount += agent.TaskCount
 		totalOpenTaskCount += agent.OpenTaskCount
@@ -1685,6 +1686,7 @@ func ensureAgentHierarchy(agents map[string]*MarketplaceAgent) {
 			"subagent_delegation",
 			"quality_gate",
 		},
+		SupportedActions: []string{"generate", "review", "scan"},
 		TaskCount:     totalTaskCount,
 		OpenTaskCount: totalOpenTaskCount,
 		BudgetCents:   totalBudgetCents,
@@ -1718,6 +1720,7 @@ func ensureCoreMarketplaceAgents(agents map[string]*MarketplaceAgent) {
 		if len(agent.Focus) == 0 {
 			agent.Focus = defaultAgentFocus(agent.Type)
 		}
+		agent.SupportedActions = publicAgentSupportedActions(agent)
 	}
 }
 

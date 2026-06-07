@@ -18320,7 +18320,7 @@ const marketplaceAgentsView = computed(() =>
     currentLoad: Number(agent.current_load) || 0,
     availableSlots: Number(agent.available_slots) || 0,
     lastHeartbeatAt: agent.last_heartbeat_at || '',
-    labels: Array.isArray(agent.labels) ? agent.labels : [],
+    labels: Array.isArray(agent.labels) ? agent.labels : (Array.isArray(agent.supported_actions) ? agent.supported_actions : []),
     status: agent.status || (Number(agent.open_task_count) ? 'active' : 'standby'),
     tone: ['green', 'blue', 'yellow', 'red'][index % 4],
   })),

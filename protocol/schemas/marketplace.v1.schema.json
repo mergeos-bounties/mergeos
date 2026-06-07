@@ -166,7 +166,7 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["type", "title", "worker_kind", "task_count", "open_task_count", "budget_cents"],
+        "required": ["type", "title", "worker_kind", "supported_actions", "task_count", "open_task_count", "budget_cents"],
         "properties": {
             "type": { "type": "string", "minLength": 1, "maxLength": 120 },
             "title": { "type": "string", "minLength": 1, "maxLength": 160 },
@@ -181,6 +181,10 @@
             "focus": {
               "type": "array",
               "items": { "type": "string", "minLength": 1, "maxLength": 120 }
+            },
+            "supported_actions": {
+              "type": "array",
+              "items": { "enum": ["review", "test", "generate", "deploy", "scan"] }
             },
             "task_count": { "type": "integer", "minimum": 0 },
           "open_task_count": { "type": "integer", "minimum": 0 },
