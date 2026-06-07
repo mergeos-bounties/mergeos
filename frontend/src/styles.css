@@ -20152,6 +20152,33 @@ svg {
   margin-top: 14px;
 }
 
+.live-feed-replay-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.live-feed-replay-actions button {
+  min-width: 0;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid rgba(11, 21, 17, 0.1);
+  border-radius: 7px;
+  background: #f8faf9;
+  color: #0f766e;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.live-feed-replay-actions button:disabled {
+  color: #8b9a93;
+  background: #f3f6f5;
+}
+
 .ledger-economy-strip {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -34518,6 +34545,43 @@ canvas {
   line-height: 1.36 !important;
 }
 
+.dashboard-shell .dashboard-role-proof {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 6px !important;
+}
+
+.dashboard-shell .dashboard-role-proof span {
+  min-width: 0 !important;
+  border: 1px solid rgba(11, 21, 17, 0.08) !important;
+  border-radius: 8px !important;
+  background: rgba(255, 255, 255, 0.72) !important;
+  padding: 7px !important;
+}
+
+.dashboard-shell .dashboard-role-proof small,
+.dashboard-shell .dashboard-role-proof strong {
+  display: block !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.dashboard-shell .dashboard-role-proof small {
+  color: #68786f !important;
+  font-size: 9px !important;
+  font-weight: 900 !important;
+  text-transform: uppercase !important;
+}
+
+.dashboard-shell .dashboard-role-proof strong {
+  margin-top: 3px !important;
+  color: #0f1a16 !important;
+  font-size: 11px !important;
+  font-weight: 920 !important;
+}
+
 .dashboard-shell .dashboard-role-stats,
 .dashboard-shell .dashboard-role-lanes {
   display: none !important;
@@ -34583,20 +34647,27 @@ canvas {
 
   .dashboard-shell .dashboard-role-map {
     display: grid !important;
-    grid-template-columns: minmax(0, 1fr) !important;
+    grid-auto-flow: column !important;
+    grid-auto-columns: minmax(238px, 72vw) !important;
+    grid-template-columns: none !important;
     gap: 8px !important;
-    overflow: visible !important;
-    padding: 0 !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    overscroll-behavior-x: contain !important;
+    scroll-snap-type: x proximity !important;
+    padding: 0 2px 6px !important;
+    mask-image: linear-gradient(90deg, #000 88%, transparent) !important;
   }
 
   .dashboard-shell .dashboard-role-map article {
     width: 100% !important;
     min-width: 0 !important;
     flex: none !important;
+    scroll-snap-align: start !important;
   }
 
-  .dashboard-shell .dashboard-role-map article:nth-child(n + 3) {
-    display: none !important;
+  .dashboard-shell .dashboard-role-map::-webkit-scrollbar {
+    display: none;
   }
 
   .dashboard-shell .dash-content {

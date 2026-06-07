@@ -231,6 +231,7 @@ test('worker dashboard renders ledger proof links for accepted work and rewards'
   assert.match(appSource, /workerDashboard\.value\.submitted_proposals/);
   assert.match(appSource, /v-if="task\.ledgerProofURL"[\s\S]{0,120}Proof/);
   assert.match(appSource, /v-if="reward\.ledgerProofURL"[\s\S]{0,120}Proof/);
+  assert.match(appSource, /reputation_audit: payload\.reputation_audit && typeof payload\.reputation_audit === 'object' \? payload\.reputation_audit : \{\}/);
   assert.ok(schema.properties.claimed_tasks.items.properties.ledger_proof_url);
   assert.ok(schema.properties.rewards.items.properties.ledger_proof_url);
 });
@@ -296,6 +297,11 @@ test('live feed page exposes realtime operating lanes', async () => {
 
   assert.match(appSource, /class="live-feed-operating-strip"/);
   assert.match(appSource, /const liveFeedOperatingRows = computed/);
+  assert.match(appSource, /class="live-feed-replay-actions"/);
+  assert.match(appSource, /const liveFeedCursorReplayURL = computed/);
+  assert.match(appSource, /after_id=\$\{encodeURIComponent\(latest\.id\)\}/);
+  assert.match(appSource, /const liveFeedSinceReplayURL = computed/);
+  assert.match(appSource, /copyLiveFeedReplayURL\('cursor'\)/);
   assert.match(appSource, /label: 'Live PRs'/);
   assert.match(appSource, /label: 'Deployments'/);
   assert.match(appSource, /label: 'Active contributors'/);
@@ -307,6 +313,7 @@ test('live feed page exposes realtime operating lanes', async () => {
   assert.match(appSource, /deploymentRealtimeLiveFeedItem\(payload\)/);
   assert.match(appSource, /handleWSAgentAction\(payload\)/);
   assert.match(cssSource, /\.live-feed-operating-strip\s*\{[\s\S]*grid-template-columns: repeat\(4, minmax\(0, 1fr\)\);/);
+  assert.match(cssSource, /\.live-feed-replay-actions\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /@media \(max-width: 760px\)[\s\S]*\.live-feed-operating-strip\s*\{[\s\S]*grid-template-columns: 1fr;/);
 });
 
@@ -425,14 +432,19 @@ test('customer dashboard exposes compact operating lanes after login', async () 
   assert.match(appSource, /api\(`\/api\/projects\/\$\{encodeURIComponent\(targetProjectID\)\}\/ai-workflow`\)/);
   assert.match(appSource, /loadDashboardProjectDashboardData\(selectedDashboardProjectID\.value, \{ silent: true \}\)/);
   assert.match(appSource, /function handleCustomerDashboardOperatingLane/);
+  assert.match(appSource, /class="dashboard-role-proof"/);
+  assert.match(appSource, /nextStep: 'Review delivery'/);
+  assert.match(appSource, /proof: 'AI evidence'/);
   assert.match(cssSource, /\.customer-dashboard-operating-strip\s*\{[\s\S]*grid-template-columns: repeat\(6, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /@media \(max-width: 760px\)[\s\S]*\.dashboard-shell \.customer-dashboard-operating-strip\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\) !important;/);
   assert.match(cssSource, /Signed-in home quality pass: compact command center/);
   assert.match(cssSource, /\.dashboard-shell \.dash-command-strip\s*\{[\s\S]*width: min\(100% - 36px, 1120px\);[\s\S]*grid-template-columns: minmax\(0, 0\.95fr\) minmax\(360px, 1fr\) !important;/);
   assert.match(cssSource, /\.dashboard-shell \.dash-command-copy h1\s*\{[\s\S]*font-size: clamp\(34px, 3\.4vw, 48px\) !important;/);
   assert.match(cssSource, /\.dashboard-shell \.dashboard-role-map\s*\{[\s\S]*grid-template-columns: repeat\(4, minmax\(0, 1fr\)\) !important;/);
+  assert.match(cssSource, /\.dashboard-shell \.dashboard-role-proof\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\) !important;/);
   assert.match(cssSource, /\.dashboard-shell \.dashboard-role-stats,[\s\S]*\.dashboard-shell \.dashboard-role-lanes\s*\{[\s\S]*display: none !important;/);
-  assert.match(cssSource, /@media \(max-width: 760px\)[\s\S]*\.dashboard-shell \.dashboard-role-map article:nth-child\(n \+ 3\)\s*\{[\s\S]*display: none !important;/);
+  assert.match(cssSource, /@media \(max-width: 760px\)[\s\S]*\.dashboard-shell \.dashboard-role-map\s*\{[\s\S]*grid-auto-flow: column !important;[\s\S]*grid-auto-columns: minmax\(238px, 72vw\) !important;/);
+  assert.doesNotMatch(cssSource, /\.dashboard-shell \.dashboard-role-map article:nth-child\(n \+ 3\)\s*\{[\s\S]*display: none !important;/);
 });
 
 test('ledger logs exposes compact proof timeline coverage', async () => {
@@ -761,7 +773,8 @@ test('signed-in mobile dashboard keeps nav, actions, and popovers phone-safe', a
   assert.match(cssSource, /\.dashboard-shell \.dash-top-actions\s*\{[\s\S]*grid-template-columns: 44px 44px minmax\(0, 1fr\) 44px;/);
   assert.match(cssSource, /\.notification-dropdown\s*\{[\s\S]*bottom: calc\(12px \+ var\(--dashboard-mobile-bottom-inset, 0px\) \+ env\(safe-area-inset-bottom\)\) !important;/);
   assert.match(cssSource, /\.account-context-menu,[\s\S]*\.dashboard-account-menu \.account-context-menu\s*\{[\s\S]*bottom: calc\(12px \+ env\(safe-area-inset-bottom\)\);/);
-  assert.match(cssSource, /\.dashboard-shell \.dashboard-role-map\s*\{[\s\S]*display: flex;[\s\S]*overflow-x: auto;/);
+  assert.match(cssSource, /\.dashboard-shell \.dashboard-role-map\s*\{[\s\S]*grid-auto-flow: column !important;[\s\S]*overflow-x: auto !important;/);
+  assert.match(cssSource, /\.dashboard-shell \.dashboard-role-proof\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\) !important;/);
   assert.match(cssSource, /Signed-in mobile overflow guard/);
   assert.match(cssSource, /\.dashboard-shell \.admin-console-grid,[\s\S]*\.dashboard-shell \.payment-summary-grid,[\s\S]*grid-template-columns: minmax\(0, 1fr\);/);
   assert.match(cssSource, /\.dashboard-shell \.admin-ops-row,[\s\S]*\.dashboard-shell \.payment-history-row,[\s\S]*grid-template-columns: minmax\(0, 1fr\);/);
@@ -774,7 +787,7 @@ test('signed-in mobile dashboard keeps nav, actions, and popovers phone-safe', a
   assert.match(cssSource, /\.dashboard-shell \.dashboard-project-actions-panel\s*\{[\s\S]*position: fixed;[\s\S]*bottom: calc\(12px \+ env\(safe-area-inset-bottom\)\);/);
   assert.match(cssSource, /\.notification-dropdown\s*\{[\s\S]*left: clamp\(12px, 4vw, 18px\) !important;[\s\S]*right: clamp\(12px, 4vw, 18px\) !important;/);
   assert.match(cssSource, /\.account-menu\.open \.account-context-menu,[\s\S]*opacity: 1 !important;[\s\S]*visibility: visible !important;/);
-  assert.match(cssSource, /@media \(max-width: 430px\)[\s\S]*\.dashboard-shell \.dashboard-role-map\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\);/);
+  assert.match(cssSource, /@media \(max-width: 430px\)[\s\S]*\.dashboard-shell \.dashboard-role-map\s*\{[\s\S]*grid-auto-flow: column !important;/);
   assert.match(cssSource, /\.mobile-nav-panel\s*\{[\s\S]*height: 100dvh;[\s\S]*max-height: 100dvh;/);
   assert.match(cssSource, /\.auth-modal\s*\{[\s\S]*max-height: calc\(100dvh - 64px\);/);
   assert.match(cssSource, /Signed-in mobile content guard/);

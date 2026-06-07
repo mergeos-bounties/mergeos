@@ -1729,6 +1729,16 @@
             <b>{{ role.status }}</b>
           </header>
           <p>{{ role.body }}</p>
+          <div class="dashboard-role-proof">
+            <span>
+              <small>Next</small>
+              <strong>{{ role.nextStep }}</strong>
+            </span>
+            <span>
+              <small>Proof</small>
+              <strong>{{ role.proof }}</strong>
+            </span>
+          </div>
           <div class="dashboard-role-stats">
             <span v-for="stat in role.stats" :key="stat.label">
               <strong>{{ stat.value }}</strong>
@@ -6735,6 +6745,16 @@
               Refresh live feed
               <ArrowRight :size="14" />
             </button>
+            <div class="live-feed-replay-actions" aria-label="Live feed replay links">
+              <button type="button" :disabled="!liveFeedCursorReplayURL" @click="copyLiveFeedReplayURL('cursor')">
+                <Link2 :size="13" />
+                Copy cursor replay
+              </button>
+              <button type="button" :disabled="!liveFeedSinceReplayURL" @click="copyLiveFeedReplayURL('since')">
+                <Clock3 :size="13" />
+                Copy since replay
+              </button>
+            </div>
           </aside>
         </section>
 
@@ -8641,6 +8661,7 @@ import {
   CheckCircle2,
   ChevronDown,
   CircleDollarSign,
+  Clock3,
   Code2,
   Compass,
   CreditCard,
@@ -13082,6 +13103,16 @@ const liveFeedResultLabel = computed(() => {
   if (!total) return 'Waiting for public realtime events';
   if (activeLiveFeedType.value === 'All activity') return `${total} live event${total === 1 ? '' : 's'} visible`;
   return `${visible} of ${total} events match ${activeLiveFeedType.value}`;
+});
+const liveFeedCursorReplayURL = computed(() => {
+  const latest = liveFeedAllItemsView.value[0];
+  if (!latest?.id) return '';
+  return absolutePublicPath(`/api/public/live-feed?limit=80&after_id=${encodeURIComponent(latest.id)}`);
+});
+const liveFeedSinceReplayURL = computed(() => {
+  const oldest = liveFeedAllItemsView.value[liveFeedAllItemsView.value.length - 1];
+  if (!oldest?.createdAt) return '';
+  return absolutePublicPath(`/api/public/live-feed?limit=80&since=${encodeURIComponent(oldest.createdAt)}`);
 });
 const liveFeedOperatingRows = computed(() => {
   const countRows = (matcher) => liveFeedAllItemsView.value.filter(matcher);
@@ -22100,6 +22131,8 @@ const dashboardRoleCoverageRows = computed(() => {
       active: customerActive,
       locked: false,
       actionLabel: 'Open projects',
+      nextStep: 'Review delivery',
+      proof: 'Escrow + PR',
       primary: { section: 'projects', focus: 'overview' },
       stats: [
         { label: 'Projects', value: String(Number(stats.project_count) || dashboardProjectList.value.length || 0) },
@@ -22125,6 +22158,8 @@ const dashboardRoleCoverageRows = computed(() => {
       active: workerActive,
       locked: false,
       actionLabel: 'Open worker',
+      nextStep: 'Claim or submit',
+      proof: 'Task + payout',
       primary: { section: 'worker' },
       stats: [
         { label: 'Claimed', value: String(Number(workerDashboardStats.value.claimed_task_count) || 0) },
@@ -22149,6 +22184,8 @@ const dashboardRoleCoverageRows = computed(() => {
       active: agentActive,
       locked: false,
       actionLabel: 'Open agents',
+      nextStep: 'Run packet',
+      proof: 'AI evidence',
       primary: { section: 'agents' },
       stats: [
         { label: 'Agent tasks', value: String(agentTaskCount) },
@@ -22173,6 +22210,8 @@ const dashboardRoleCoverageRows = computed(() => {
       active: adminActive,
       locked: !isAdminUser.value,
       actionLabel: isAdminUser.value ? 'Open admin' : 'Admin only',
+      nextStep: isAdminUser.value ? 'Triage queue' : 'Role gated',
+      proof: 'Ledger ops',
       primary: { section: 'admin' },
       stats: [
         { label: 'Treasury', value: formatMRGFromCents(adminSummary.work_pool_cents || 0) },
@@ -23028,6 +23067,16 @@ async function handleLiveFeedReference(item = {}) {
   }
   const copied = await copyTextToClipboard(reference);
   showToast(copied ? 'Live feed reference copied.' : `Live ref ${shortLedgerReference(reference)}`);
+}
+
+async function copyLiveFeedReplayURL(mode = 'cursor') {
+  const url = mode === 'since' ? liveFeedSinceReplayURL.value : liveFeedCursorReplayURL.value;
+  if (!url) {
+    showToast('No replay cursor is available yet.');
+    return;
+  }
+  const copied = await copyTextToClipboard(url);
+  showToast(copied ? 'Live feed replay URL copied.' : `Replay ${shortLedgerReference(url)}`);
 }
 
 function liveEventContractPayload(contract = {}) {
@@ -30015,6 +30064,7 @@ async function loadWorkerDashboardData(options = {}) {
       claimed_tasks: [],
       rewards: [],
       reputation: [],
+      reputation_audit: {},
       proposals: [],
       submitted_proposals: [],
       identity_status: [],
@@ -30034,6 +30084,7 @@ async function loadWorkerDashboardData(options = {}) {
       claimed_tasks: Array.isArray(payload.claimed_tasks) ? payload.claimed_tasks : [],
       rewards: Array.isArray(payload.rewards) ? payload.rewards : [],
       reputation: Array.isArray(payload.reputation) ? payload.reputation : [],
+      reputation_audit: payload.reputation_audit && typeof payload.reputation_audit === 'object' ? payload.reputation_audit : {},
       proposals: Array.isArray(payload.proposals) ? payload.proposals : [],
       submitted_proposals: Array.isArray(payload.submitted_proposals) ? payload.submitted_proposals : [],
       identity_status: Array.isArray(payload.identity_status) ? payload.identity_status : [],
