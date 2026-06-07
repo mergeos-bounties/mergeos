@@ -1027,12 +1027,13 @@ func TestCreateProjectCanDisableAgentRouting(t *testing.T) {
 		}
 	}
 	marketplace := store.Marketplace()
-	if len(marketplace.Agents) != 2 {
+	if len(marketplace.Agents) != 7 {
 		t.Fatalf("human-only project should only expose baseline agent lanes: %#v", marketplace.Agents)
 	}
 	if agent := marketplaceAgentByType(marketplace.Agents, ceoAgentType); agent == nil ||
 		agent.Role != "ceo_planner" ||
 		!containsString(agent.SubagentTypes, designReviewAgentType) ||
+		!containsString(agent.SubagentTypes, "deployment-agent") ||
 		agent.TaskCount != 0 ||
 		agent.OpenTaskCount != 0 ||
 		agent.BudgetCents != 0 {
@@ -1066,6 +1067,11 @@ func TestMarketplaceExposesBaselineAgentHierarchy(t *testing.T) {
 		ceoAgent.Role != "ceo_planner" ||
 		ceoAgent.DelegationEndpoint != agentQueueEndpoint ||
 		!containsString(ceoAgent.SubagentTypes, designReviewAgentType) ||
+		!containsString(ceoAgent.SubagentTypes, "coding-agent") ||
+		!containsString(ceoAgent.SubagentTypes, "qa-agent") ||
+		!containsString(ceoAgent.SubagentTypes, "review-agent") ||
+		!containsString(ceoAgent.SubagentTypes, "deployment-agent") ||
+		!containsString(ceoAgent.SubagentTypes, "repo-scan-agent") ||
 		!containsString(ceoAgent.Focus, "idea_generation") ||
 		ceoAgent.TaskCount != 0 ||
 		ceoAgent.OpenTaskCount != 0 ||
@@ -1089,12 +1095,36 @@ func TestMarketplaceExposesBaselineAgentHierarchy(t *testing.T) {
 		t.Fatalf("unexpected baseline design review agent: %#v", designAgent)
 	}
 
+	for _, expected := range []struct {
+		agentType string
+		focus     string
+	}{
+		{agentType: "coding-agent", focus: "implementation"},
+		{agentType: "qa-agent", focus: "smoke_testing"},
+		{agentType: "review-agent", focus: "task_execution"},
+		{agentType: "deployment-agent", focus: "deployment_health"},
+		{agentType: "repo-scan-agent", focus: "repository_scan"},
+	} {
+		agent := marketplaceAgentByType(marketplace.Agents, expected.agentType)
+		if agent == nil ||
+			agent.WorkerKind != WorkerAgent ||
+			agent.Role != "subagent" ||
+			agent.ParentAgentType != ceoAgentType ||
+			agent.DelegationEndpoint != agentQueueEndpoint ||
+			!containsString(agent.Focus, expected.focus) ||
+			agent.TaskCount != 0 ||
+			agent.OpenTaskCount != 0 ||
+			agent.BudgetCents != 0 {
+			t.Fatalf("unexpected baseline %s: %#v", expected.agentType, agent)
+		}
+	}
+
 	queue := store.PublicAgentQueue(20)
 	if queue.ProtocolVersion != "mergeos.agent-queue.v1" ||
 		queue.Kind != "agent_queue" ||
 		queue.Stats.TotalCount != 0 ||
 		queue.Stats.ReadyCount != 0 ||
-		queue.Stats.AgentCount != 2 ||
+		queue.Stats.AgentCount != 7 ||
 		len(queue.Tasks) != 0 {
 		t.Fatalf("unexpected empty baseline agent queue: %#v", queue)
 	}
@@ -1112,6 +1142,31 @@ func TestMarketplaceExposesBaselineAgentHierarchy(t *testing.T) {
 		designQueueAgent.ParentAgentType != ceoAgentType ||
 		!containsString(designQueueAgent.Focus, "visual_quality") {
 		t.Fatalf("unexpected baseline design queue agent: %#v", designQueueAgent)
+	}
+
+	protocol := store.PublicAgentProtocol(20)
+	if len(protocol.Agents) != 7 {
+		t.Fatalf("unexpected baseline agent protocol size: %#v", protocol.Agents)
+	}
+	for _, expected := range []struct {
+		agentType  string
+		action     string
+		capability string
+	}{
+		{agentType: "coding-agent", action: "generate", capability: "implementation_generation"},
+		{agentType: "qa-agent", action: "test", capability: "qa_validation"},
+		{agentType: "review-agent", action: "review", capability: "code_review"},
+		{agentType: "deployment-agent", action: "deploy", capability: "deployment_validation"},
+		{agentType: "repo-scan-agent", action: "scan", capability: "repository_scan"},
+	} {
+		document := agentProtocolByType(protocol.Agents, expected.agentType)
+		if document == nil ||
+			document.Role != "subagent" ||
+			document.ParentAgentType != ceoAgentType ||
+			!containsString(document.SupportedActions, expected.action) ||
+			!containsString(document.Capabilities, expected.capability) {
+			t.Fatalf("baseline agent protocol missing %s routing metadata: %#v", expected.agentType, document)
+		}
 	}
 }
 
@@ -6867,6 +6922,15 @@ func marketplaceAgentByType(agents []*MarketplaceAgent, agentType string) *Marke
 	for _, agent := range agents {
 		if agent != nil && agent.Type == agentType {
 			return agent
+		}
+	}
+	return nil
+}
+
+func agentProtocolByType(agents []AgentProtocolDocument, agentType string) *AgentProtocolDocument {
+	for i := range agents {
+		if agents[i].Type == agentType {
+			return &agents[i]
 		}
 	}
 	return nil

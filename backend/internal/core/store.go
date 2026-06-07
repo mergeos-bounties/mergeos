@@ -1634,7 +1634,23 @@ func (s *Store) Marketplace() MarketplaceResponse {
 	return response
 }
 
+type coreMarketplaceAgentSpec struct {
+	Type  string
+	Title string
+}
+
+var coreMarketplaceAgentSpecs = []coreMarketplaceAgentSpec{
+	{Type: designReviewAgentType, Title: "Design Review Agent"},
+	{Type: "coding-agent", Title: "Coding Agent"},
+	{Type: "qa-agent", Title: "QA Agent"},
+	{Type: "review-agent", Title: "Review Agent"},
+	{Type: "deployment-agent", Title: "Deployment Agent"},
+	{Type: "repo-scan-agent", Title: "Repo Scan Agent"},
+}
+
 func ensureAgentHierarchy(agents map[string]*MarketplaceAgent) {
+	ensureCoreMarketplaceAgents(agents)
+
 	subagents := []string{}
 	totalTaskCount := 0
 	totalOpenTaskCount := 0
@@ -1653,23 +1669,6 @@ func ensureAgentHierarchy(agents map[string]*MarketplaceAgent) {
 		totalTaskCount += agent.TaskCount
 		totalOpenTaskCount += agent.OpenTaskCount
 		totalBudgetCents += agent.BudgetCents
-	}
-
-	designAgent := agents[designReviewAgentType]
-	if designAgent == nil {
-		designAgent = &MarketplaceAgent{
-			Type:               designReviewAgentType,
-			Title:              "Design Review Agent",
-			WorkerKind:         WorkerAgent,
-			Role:               "subagent",
-			ParentAgentType:    ceoAgentType,
-			DelegationEndpoint: agentQueueEndpoint,
-			Focus:              defaultAgentFocus(designReviewAgentType),
-		}
-		agents[designReviewAgentType] = designAgent
-		subagents = append(subagents, designReviewAgentType)
-	} else if !stringSliceContains(subagents, designReviewAgentType) {
-		subagents = append(subagents, designReviewAgentType)
 	}
 
 	agents[ceoAgentType] = &MarketplaceAgent{
@@ -1691,12 +1690,42 @@ func ensureAgentHierarchy(agents map[string]*MarketplaceAgent) {
 	}
 }
 
+func ensureCoreMarketplaceAgents(agents map[string]*MarketplaceAgent) {
+	for _, spec := range coreMarketplaceAgentSpecs {
+		agent := agents[spec.Type]
+		if agent == nil {
+			agent = &MarketplaceAgent{
+				Type: spec.Type,
+			}
+			agents[spec.Type] = agent
+		}
+		if strings.TrimSpace(agent.Title) == "" {
+			agent.Title = spec.Title
+		}
+		if agent.WorkerKind == "" {
+			agent.WorkerKind = WorkerAgent
+		}
+		if strings.TrimSpace(agent.Role) == "" {
+			agent.Role = "subagent"
+		}
+		if strings.TrimSpace(agent.ParentAgentType) == "" {
+			agent.ParentAgentType = ceoAgentType
+		}
+		if strings.TrimSpace(agent.DelegationEndpoint) == "" {
+			agent.DelegationEndpoint = agentQueueEndpoint
+		}
+		if len(agent.Focus) == 0 {
+			agent.Focus = defaultAgentFocus(agent.Type)
+		}
+	}
+}
+
 func defaultAgentFocus(agentType string) []string {
 	normalized := strings.ToLower(strings.TrimSpace(agentType))
 	if normalized == designReviewAgentType || containsAny(normalized, []string{"design", "ui", "ux"}) {
 		return []string{"ux_review", "responsive_design", "visual_quality"}
 	}
-	if containsAny(normalized, []string{"frontend", "code", "build"}) {
+	if containsAny(normalized, []string{"frontend", "code", "coding", "build"}) {
 		return []string{"implementation", "component_quality", "handoff_evidence"}
 	}
 	if containsAny(normalized, []string{"qa", "test"}) {
