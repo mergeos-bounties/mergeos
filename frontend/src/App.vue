@@ -5115,6 +5115,12 @@
               <strong>{{ row.value }}</strong>
             </article>
           </div>
+          <div class="token-ceo-queue-stats" aria-label="Public CEO research queue stats">
+            <article v-for="row in tokenCeoQueueStatRows" :key="row.label">
+              <small>{{ row.label }}</small>
+              <strong>{{ row.value }}</strong>
+            </article>
+          </div>
           <div class="token-ceo-project-queue" aria-label="CEO project research queue">
             <article v-for="row in tokenCeoProjectResearchRows" :key="row.title">
               <span :class="['ledger-trust-icon', row.tone]">
@@ -12708,6 +12714,16 @@ const tokenCeoDecisionRows = computed(() => {
     { label: 'Research', value: 'Utility + caps' },
     { label: 'Gate', value: 'Wallet + funding' },
     { label: 'Approve', value: 'Reserve receipt' },
+  ];
+});
+const tokenCeoQueueStatRows = computed(() => {
+  const stats = tokenLaunchBriefsData.value?.stats || {};
+  const currentType = publicPage.value === 'presale' ? 'presale' : 'airdrop';
+  const currentCount = Number(currentType === 'presale' ? stats.presale_count : stats.airdrop_count) || tokenLaunchBriefProofCount.value || 0;
+  return [
+    { label: 'Active queue', value: String(Number(stats.brief_count) || tokenLaunchBriefProofCount.value || 0) },
+    { label: currentType === 'presale' ? 'Presale memos' : 'Airdrop memos', value: String(currentCount) },
+    { label: 'Public source', value: 'API + ledger' },
   ];
 });
 const tokenCeoProjectResearchRows = computed(() => {
