@@ -4640,6 +4640,17 @@
             <span class="marketplace-eyebrow">{{ publicHomeCopy.eyebrow }}</span>
             <h1 id="home-title">{{ publicHomeCopy.title }}</h1>
             <p>{{ publicHomeCopy.body }}</p>
+            <div class="home-definition-strip" :aria-label="publicHomeCopy.definitionLabel || 'What MergeOS connects'">
+              <article v-for="row in homeDefinitionRows" :key="row.title">
+                <span :class="['home-definition-icon', row.tone]">
+                  <component :is="row.icon" :size="13" />
+                </span>
+                <div>
+                  <strong>{{ row.title }}</strong>
+                  <small>{{ row.body }}</small>
+                </div>
+              </article>
+            </div>
             <div class="home-explain-strip" :aria-label="publicHomeCopy.operatingLabel">
               <article v-for="row in homeOperatingRows" :key="row.title">
                 <strong>{{ row.title }}</strong>
@@ -9169,6 +9180,7 @@ const publicHomeTranslations = {
     pipelineLabel: 'Project pipeline',
     operatingLabel: 'How MergeOS operates',
     systemSummaryLabel: 'MergeOS system summary',
+    definitionLabel: 'What MergeOS connects',
     recentUpdates: 'Recent updates',
     workflowLabel: 'MergeOS workflows',
     talentLabel: 'Talent matching',
@@ -9182,6 +9194,12 @@ const publicHomeTranslations = {
       tokensMinted: 'Tokens minted',
     },
     statDetails: ['Funded briefs', 'Claimable work', 'Escrow tracked', 'MRG supply'],
+    definitionRows: [
+      { title: 'Input', body: 'Brief, repository, issues, files, budget, and deadline.' },
+      { title: 'Orchestration', body: 'CEO agent plans work and delegates to builders or subagents.' },
+      { title: 'Funding', body: 'Escrow and Solana MRG accounting stay attached to each task.' },
+      { title: 'Proof', body: 'PR, deploy, acceptance, payout, and ledger receipts remain public.' },
+    ],
     operatingRows: [
       { title: '1. Import context', body: 'Brief, repo, issues, files, budget, and acceptance criteria enter one workspace.' },
       { title: '2. CEO routes work', body: 'The CEO agent turns scope into funded tasks for builders, agents, QA, and DevOps.' },
@@ -14515,6 +14533,24 @@ const homeOperatingRows = computed(() => {
   const icons = [FileCheck2, Bot, ShieldCheck];
   return rows.map((row, index) => ({
     icon: icons[index] || CheckCircle2,
+    title: row.title,
+    body: row.body,
+  }));
+});
+const homeDefinitionRows = computed(() => {
+  const viRows = [
+    { title: 'Dau vao', body: 'Brief, repo, issue, file, budget va deadline.' },
+    { title: 'Dieu phoi', body: 'CEO agent lap ke hoach va giao viec cho builder hoac subagent.' },
+    { title: 'Dong tien', body: 'Escrow va Solana MRG gan lien voi tung task.' },
+    { title: 'Bang chung', body: 'PR, deploy, acceptance, payout va ledger receipt duoc cong khai.' },
+  ];
+  const rows = publicHomeCopy.value.definitionRows
+    || (activeLocale.value === 'vi-VN' ? viRows : publicHomeTranslations['en-US'].definitionRows);
+  const icons = [FileCheck2, Bot, CircleDollarSign, ShieldCheck];
+  const tones = ['blue', 'purple', 'green', 'amber'];
+  return rows.map((row, index) => ({
+    icon: icons[index] || CheckCircle2,
+    tone: tones[index] || 'green',
     title: row.title,
     body: row.body,
   }));

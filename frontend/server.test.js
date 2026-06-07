@@ -762,6 +762,8 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.match(cssSource, /Home executive pass: a short premium decision screen/);
   assert.match(appSource, /class="public-notification-feed home-feed-preview"/);
   assert.match(appSource, /class="home-mergeide-inline-link"/);
+  assert.match(appSource, /class="home-definition-strip"/);
+  assert.match(appSource, /const homeDefinitionRows = computed/);
   assert.match(appSource, /class="home-explain-strip"/);
   assert.match(appSource, /v-for="row in homeOperatingRows"/);
   assert.match(appSource, /homeSystemSummaryRows/);
@@ -774,6 +776,11 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.doesNotMatch(appSource, /localizedHomeWorkflowCards\.slice\(0, 4\)/);
   assert.match(appSource, /homeLiveStats\.slice\(0, 2\)/);
   assert.match(appSource, /MergeOS is the delivery OS for funded software work\./);
+  assert.match(appSource, /definitionRows: \[[\s\S]*title: 'Input', body: 'Brief, repository, issues, files, budget, and deadline\.'/);
+  assert.match(appSource, /title: 'Orchestration', body: 'CEO agent plans work and delegates to builders or subagents\.'/);
+  assert.match(appSource, /title: 'Funding', body: 'Escrow and Solana MRG accounting stay attached to each task\.'/);
+  assert.match(appSource, /title: 'Proof', body: 'PR, deploy, acceptance, payout, and ledger receipts remain public\.'/);
+  assert.match(appSource, /title: 'Dau vao', body: 'Brief, repo, issue, file, budget va deadline\.'/);
   assert.match(appSource, /Import a brief or repo, let the CEO agent split tasks, fund escrow, route human builders or AI agents, verify PR and deploy evidence, then record Solana MRG payout proof on the public ledger\./);
   assert.match(appSource, /Import brief hoặc repo, CEO agent chia việc thành task, giữ escrow, route human builder hoặc AI agent, verify PR\/deploy evidence, rồi ghi payout proof bằng Solana MRG lên public ledger\./);
   assert.match(appSource, /title: 'Product OS'[\s\S]*Project intake, repo import, AI task graph, escrow, PR monitor, deployment gates, and ledger proof stay in one operating flow\./);
@@ -795,6 +802,8 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.match(cssSource, /\.public-home-page \.home-container\s*\{[\s\S]*max-width: 1120px !important;/);
   assert.match(cssSource, /\.public-home-hero\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) minmax\(320px, 380px\) !important;/);
   assert.match(cssSource, /\.public-home-copy h1\s*\{[\s\S]*font-size: clamp\(42px, 4\.4vw, 68px\) !important;/);
+  assert.match(cssSource, /\.home-definition-strip\s*\{[\s\S]*grid-template-columns: repeat\(4, minmax\(0, 1fr\)\) !important;/);
+  assert.match(cssSource, /\.home-definition-strip small\s*\{[\s\S]*display: block !important;/);
   assert.match(cssSource, /\.home-command-panel\s*\{[\s\S]*max-width: 380px !important;/);
   assert.match(cssSource, /\.home-explain-strip\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\) !important;/);
   assert.match(cssSource, /@media \(max-width: 980px\)[\s\S]*\.home-explain-strip\s*\{[\s\S]*grid-template-columns: 1fr !important;/);

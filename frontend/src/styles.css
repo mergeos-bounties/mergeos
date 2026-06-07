@@ -36410,6 +36410,79 @@ canvas {
   max-width: 640px !important;
 }
 
+.home-definition-strip {
+  max-width: 650px !important;
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+  margin-top: 14px !important;
+}
+
+.home-definition-strip article {
+  min-width: 0 !important;
+  display: grid !important;
+  grid-template-columns: 28px minmax(0, 1fr) !important;
+  gap: 8px !important;
+  align-items: start !important;
+  border: 1px solid rgba(15, 118, 110, 0.12) !important;
+  border-radius: 8px !important;
+  background: rgba(255, 255, 255, 0.76) !important;
+  padding: 9px !important;
+}
+
+.home-definition-icon {
+  width: 28px !important;
+  height: 28px !important;
+  display: grid !important;
+  place-items: center !important;
+  border-radius: 8px !important;
+}
+
+.home-definition-icon.blue {
+  color: #2563eb !important;
+  background: #eff6ff !important;
+}
+
+.home-definition-icon.purple {
+  color: #7c3aed !important;
+  background: #f5f3ff !important;
+}
+
+.home-definition-icon.green {
+  color: var(--green) !important;
+  background: #ecfdf5 !important;
+}
+
+.home-definition-icon.amber {
+  color: #d97706 !important;
+  background: #fffbeb !important;
+}
+
+.home-definition-strip strong,
+.home-definition-strip small {
+  display: block !important;
+  min-width: 0 !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  overflow-wrap: break-word !important;
+}
+
+.home-definition-strip strong {
+  color: #07130f !important;
+  font-size: 11px !important;
+  line-height: 1.15 !important;
+  font-weight: 930 !important;
+  white-space: normal !important;
+}
+
+.home-definition-strip small {
+  display: block !important;
+  color: #5b6c65 !important;
+  font-size: 10px !important;
+  line-height: 1.28 !important;
+  font-weight: 720 !important;
+}
+
 .home-explain-strip {
   max-width: 650px !important;
   grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
@@ -36598,6 +36671,10 @@ canvas {
 @media (max-width: 620px) {
   .home-explain-strip {
     grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .home-definition-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 }
 
