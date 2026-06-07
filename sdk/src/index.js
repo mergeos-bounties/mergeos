@@ -147,6 +147,14 @@ export class MergeOSClient {
     return this.request('/api/public/protocol', { auth: false });
   }
 
+  publicArchitectureManifest() {
+    return this.request('/system/mergeos-architecture.v1.json', { auth: false });
+  }
+
+  async publicArchitectureDiscovery() {
+    return architectureManifestDiscovery(await this.publicArchitectureManifest());
+  }
+
   async publicProtocolDiscovery() {
     return protocolManifestDiscovery(await this.publicProtocolManifest());
   }
@@ -696,6 +704,66 @@ export class MergeOSClient {
 
 export function createMergeOSClient(options = {}) {
   return new MergeOSClient(options);
+}
+
+export function architectureManifestDiscovery(manifest = {}) {
+  const repositories = architectureManifestRepositories(manifest);
+  const users = architectureManifestUsers(manifest);
+  const publicURLs = architectureManifestPublicURLs(manifest);
+  const aiWorkflow = architectureManifestAIWorkflow(manifest);
+  return {
+    manifest,
+    protocolVersion: manifest.protocol_version || 'mergeos.architecture.v1',
+    product: manifest.product || 'MergeOS',
+    positioning: manifest.positioning || '',
+    thesis: manifest.thesis || '',
+    repositories,
+    repositoryByName: Object.fromEntries(repositories.map((repo) => [repo.name, repo])),
+    users,
+    userByType: Object.fromEntries(users.map((user) => [user.type, user])),
+    frontendSystem: manifest.frontend_system && typeof manifest.frontend_system === 'object' ? manifest.frontend_system : {},
+    backendSystem: manifest.backend_system && typeof manifest.backend_system === 'object' ? manifest.backend_system : {},
+    aiLayer: manifest.ai_layer && typeof manifest.ai_layer === 'object' ? manifest.ai_layer : {},
+    aiWorkflow,
+    marketplaceSystem: manifest.marketplace_system && typeof manifest.marketplace_system === 'object' ? manifest.marketplace_system : {},
+    publicURLs,
+  };
+}
+
+export function architectureManifestRepositories(manifest = {}) {
+  return (Array.isArray(manifest.repository_architecture) ? manifest.repository_architecture : [])
+    .filter((repo) => repo && typeof repo === 'object')
+    .map((repo) => ({
+      name: repo.name || '',
+      role: repo.role || '',
+      contains: normalizeStringList(repo.contains),
+      raw: repo,
+    }));
+}
+
+export function architectureManifestUsers(manifest = {}) {
+  return (Array.isArray(manifest.users) ? manifest.users : [])
+    .filter((user) => user && typeof user === 'object')
+    .map((user) => ({
+      type: user.type || '',
+      examples: normalizeStringList(user.examples),
+      dashboard: user.dashboard || '',
+      surface: user.surface || '',
+      raw: user,
+    }));
+}
+
+export function architectureManifestAIWorkflow(manifest = {}) {
+  return normalizeStringList(manifest.ai_layer?.workflow);
+}
+
+export function architectureManifestPublicURLs(manifest = {}) {
+  const urls = manifest.public_urls;
+  return urls && typeof urls === 'object' ? { ...urls } : {};
+}
+
+export function architectureManifestPublicURL(manifest = {}, key = '') {
+  return architectureManifestPublicURLs(manifest)[key] || '';
 }
 
 export function protocolManifestDiscovery(manifest = {}) {

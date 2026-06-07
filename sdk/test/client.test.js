@@ -12,6 +12,11 @@ import {
   agentActionPayload,
   agentActionEventType,
   agentActionEventTypes,
+  architectureManifestAIWorkflow,
+  architectureManifestDiscovery,
+  architectureManifestPublicURL,
+  architectureManifestRepositories,
+  architectureManifestUsers,
   agentLeaseEndpointFromWorkPacket,
   agentLeaseEventType,
   agentLeasePayload,
@@ -203,6 +208,50 @@ test('creates public feed and ledger verification requests without auth', async 
   assert.equal(fetchImpl.calls[19].options.headers.Authorization, undefined);
   assert.equal(fetchImpl.calls[20].url, 'https://mergeos.shop/api/public/ledger/verify');
   assert.equal(fetchImpl.calls[20].options.headers.Authorization, undefined);
+});
+
+test('loads public architecture manifest and normalizes product system discovery', async () => {
+  const architectureManifest = {
+    protocol_version: 'mergeos.architecture.v1',
+    product: 'MergeOS',
+    positioning: 'AI software delivery operating system',
+    thesis: 'MergeOS turns repositories, issues, PRs, deployments, escrow, contributors, AI agents, and ledger proof into one realtime workflow.',
+    repository_architecture: [
+      { name: 'mergeos-app', role: 'Primary product repository', contains: ['frontend', 'backend', 'dashboards', 'APIs', 'SSR', 'orchestration logic', 'realtime feeds'] },
+      { name: 'mergeos-contracts', role: 'Blockchain and treasury repository', contains: ['MRG token', 'escrow contracts', 'treasury contracts', 'payout contracts'] },
+      { name: 'mergeos-sdk', role: 'Integration repository', contains: ['task APIs', 'workflow APIs', 'event APIs', 'helper libraries', 'agent run helpers'] },
+      { name: 'mergeos-protocol', role: 'Future open protocol layer', contains: ['decentralized execution standards', 'external AI agent contracts', 'public integrations', 'open task manifests'] },
+    ],
+    users: [
+      { type: 'customers', examples: ['startups', 'SaaS companies'], dashboard: 'Customer Dashboard' },
+      { type: 'contributors', examples: ['frontend developers', 'QA engineers'], dashboard: 'Worker Dashboard' },
+      { type: 'ai_agents', examples: ['coding agents', 'review agents'], surface: 'Agent queue' },
+      { type: 'admins', examples: ['treasury operators', 'moderation'], dashboard: 'Admin Console' },
+    ],
+    frontend_system: { stack: ['Vue 3', 'Vite SSR', 'WebSockets'], public_pages: ['Homepage', 'Marketplace'] },
+    backend_system: { proposed_stack: ['Go', 'PostgreSQL', 'Redis'] },
+    ai_layer: { workflow: ['Import Repository', 'Issue Scan', 'Task Generation', 'Reward Estimation', 'Contributor Routing', 'PR Review', 'Deployment Validation'] },
+    marketplace_system: { features: ['Live Projects', 'Public Bounties', 'AI Agents'] },
+    public_urls: { architecture_manifest: '/system/mergeos-architecture.v1.json', protocol: '/protocol' },
+  };
+  const fetchImpl = fakeFetch([{ status: 200, body: architectureManifest }]);
+  const client = new MergeOSClient({ baseURL: 'https://mergeos.shop/', token: 'secret-token', fetchImpl });
+
+  const discovery = await client.publicArchitectureDiscovery();
+
+  assert.equal(fetchImpl.calls[0].url, 'https://mergeos.shop/system/mergeos-architecture.v1.json');
+  assert.equal(fetchImpl.calls[0].options.headers.Authorization, undefined);
+  assert.equal(discovery.protocolVersion, 'mergeos.architecture.v1');
+  assert.equal(discovery.positioning, 'AI software delivery operating system');
+  assert.equal(discovery.repositoryByName['mergeos-app'].contains.includes('orchestration logic'), true);
+  assert.equal(discovery.repositoryByName['mergeos-sdk'].contains.includes('agent run helpers'), true);
+  assert.equal(discovery.userByType.customers.dashboard, 'Customer Dashboard');
+  assert.equal(discovery.userByType.ai_agents.surface, 'Agent queue');
+  assert.deepEqual(architectureManifestRepositories(architectureManifest).map((repo) => repo.name), ['mergeos-app', 'mergeos-contracts', 'mergeos-sdk', 'mergeos-protocol']);
+  assert.deepEqual(architectureManifestUsers(architectureManifest).map((user) => user.type), ['customers', 'contributors', 'ai_agents', 'admins']);
+  assert.deepEqual(architectureManifestAIWorkflow(architectureManifest), ['Import Repository', 'Issue Scan', 'Task Generation', 'Reward Estimation', 'Contributor Routing', 'PR Review', 'Deployment Validation']);
+  assert.equal(architectureManifestPublicURL(architectureManifest, 'architecture_manifest'), '/system/mergeos-architecture.v1.json');
+  assert.deepEqual(architectureManifestDiscovery({}).repositories, []);
 });
 
 test('discovers protocol manifest documents, endpoints, realtime, and agent context URLs', async () => {
