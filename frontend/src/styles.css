@@ -10034,6 +10034,20 @@ svg {
   overflow-wrap: anywhere;
 }
 
+.marketplace-contributor-proof button {
+  min-height: 26px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid rgba(15, 95, 76, 0.14);
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--green-dark);
+  padding: 0 8px;
+  font-size: 10px;
+  font-weight: 900;
+}
+
 .marketplace-agent-section {
   display: grid;
   gap: 16px;

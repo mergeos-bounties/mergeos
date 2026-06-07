@@ -154,6 +154,7 @@
           "reputation_score": { "type": "integer", "minimum": 0, "maximum": 100 },
           "reputation_level": { "type": "string", "minLength": 1, "maxLength": 80 },
           "risk_level": { "enum": ["low", "medium", "high", "unknown"] },
+          "ledger_proof_url": { "type": "string", "maxLength": 512 },
           "flags": {
             "type": "array",
             "items": { "type": "string", "minLength": 1, "maxLength": 160 }

@@ -455,6 +455,7 @@ test('validates marketplace protocol documents', () => {
         reputation_score: 84,
         reputation_level: 'Trusted',
         risk_level: 'low',
+        ledger_proof_url: '/api/public/ledger/proof',
       },
     ],
     agents: [

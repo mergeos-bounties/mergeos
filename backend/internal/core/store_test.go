@@ -6828,6 +6828,9 @@ func TestWorkerReputationAuditSurfacesLinkedWalletRisk(t *testing.T) {
 	if contributor.RiskLevel != "low" || contributor.ReputationScore == 0 {
 		t.Fatalf("marketplace contributor reputation = %#v", contributor)
 	}
+	if contributor.LedgerProofURL != "/api/public/ledger/proof" {
+		t.Fatalf("marketplace contributor proof URL = %q", contributor.LedgerProofURL)
+	}
 
 	adminReputation := store.AdminReputation()
 	if adminReputation.Stats.WorkerCount == 0 || adminReputation.Stats.LowRiskCount == 0 {

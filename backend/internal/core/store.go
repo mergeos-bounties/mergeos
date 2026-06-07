@@ -1611,6 +1611,7 @@ func (s *Store) Marketplace() MarketplaceResponse {
 		contributor.ReputationScore = audit.Score
 		contributor.ReputationLevel = audit.Level
 		contributor.RiskLevel = audit.RiskLevel
+		contributor.LedgerProofURL = "/api/public/ledger/proof"
 		contributor.Flags = audit.Flags
 		response.Contributors = append(response.Contributors, contributor)
 	}
@@ -1687,9 +1688,9 @@ func ensureAgentHierarchy(agents map[string]*MarketplaceAgent) {
 			"quality_gate",
 		},
 		SupportedActions: []string{"generate", "review", "scan"},
-		TaskCount:     totalTaskCount,
-		OpenTaskCount: totalOpenTaskCount,
-		BudgetCents:   totalBudgetCents,
+		TaskCount:        totalTaskCount,
+		OpenTaskCount:    totalOpenTaskCount,
+		BudgetCents:      totalBudgetCents,
 	}
 }
 

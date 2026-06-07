@@ -1066,6 +1066,7 @@ type MarketplaceContributor struct {
 	ReputationScore int        `json:"reputation_score"`
 	ReputationLevel string     `json:"reputation_level"`
 	RiskLevel       string     `json:"risk_level"`
+	LedgerProofURL  string     `json:"ledger_proof_url,omitempty"`
 	Flags           []string   `json:"flags,omitempty"`
 }
 

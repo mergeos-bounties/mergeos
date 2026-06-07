@@ -7909,6 +7909,10 @@
                   <span :class="['notification-dot', contributor.riskTone]" />
                   <small>{{ contributor.riskLabel }}</small>
                   <small>{{ contributor.lastPaidLabel }}</small>
+                  <button v-if="contributor.proofUrl" type="button" @click="openExternalURL(contributor.proofUrl)">
+                    <Link2 :size="12" />
+                    Proof
+                  </button>
                 </div>
               </article>
             </div>
@@ -16791,6 +16795,7 @@ const marketplaceContributorsView = computed(() =>
     role: contributor.agent_type ? toTitleLabel(contributor.agent_type) : toTitleLabel(contributor.kind || 'human contributor'),
     earned: formatPublicMRGFromCents(contributor.earned_cents),
     earnedLabel: `${formatPublicMRGFromCents(contributor.earned_cents)} ${publicMarketplaceCopy.value.earnedSuffix}`,
+    proofUrl: contributor.ledger_proof_url || '',
     tone: marketplaceAvatarTones[index % marketplaceAvatarTones.length],
   })),
 );
@@ -16845,6 +16850,7 @@ const marketplaceContributorBoardRows = computed(() => {
         riskLabel: `${copy.riskLabel}: ${riskLevel}`,
         riskTone: riskText.includes('high') ? 'red' : (riskText.includes('medium') ? 'amber' : 'green'),
         lastPaidLabel: paidDate ? `${copy.lastPaidLabel} ${paidDate}` : copy.waitingForPayout,
+        proofUrl: contributor.ledger_proof_url || '',
         status: taskCount > 0 ? copy.paidStatus : copy.readyStatus,
         statusTone: taskCount > 0 ? 'green' : 'slate',
         tone: marketplaceAvatarTones[index % marketplaceAvatarTones.length],
