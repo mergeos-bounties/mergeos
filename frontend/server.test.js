@@ -1167,6 +1167,14 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /const publicWhitepaperChapterSections = computed\(\(\) => \[/);
   assert.match(appSource, /The paper is structured around executable product proof/);
   assert.match(appSource, /id="token-workflow"/);
+  assert.match(appSource, /class="token-ceo-research-panel"/);
+  assert.match(appSource, /CEO RESEARCH DESK/);
+  assert.match(appSource, /Research whether this project deserves an earned airdrop\./);
+  assert.match(appSource, /Research whether the project is ready to open presale\./);
+  assert.match(appSource, /Mission-market fit/);
+  assert.match(appSource, /Utility and allocation readiness/);
+  assert.match(appSource, /Proof and anti-bot gate/);
+  assert.match(appSource, /Contract and ledger proof/);
   assert.match(appSource, /@submit\.prevent="submitAirdropClaim"/);
   assert.match(appSource, /@submit\.prevent="submitPresaleReservation"/);
   assert.match(appSource, /api\('\/api\/airdrop\/claims'/);
@@ -1196,7 +1204,10 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(whitepaperSource, /## 15\. Security, Privacy, and Compliance/);
   assert.match(whitepaperSource, /## 16\. Roadmap/);
   assert.match(cssSource, /\.token-workflow-proof-board\s*\{[\s\S]*background: rgba\(255, 255, 255, 0\.86\);/);
+  assert.match(cssSource, /\.token-ceo-research-panel\s*\{[\s\S]*border: 1px solid rgba\(79, 70, 229, 0\.15\);/);
+  assert.match(cssSource, /\.token-ceo-research-grid\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-workflow-proof-list article\s*\{[\s\S]*grid-template-columns: 32px minmax\(0, 1fr\);/);
+  assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-research-grid,[\s\S]*\.token-whitepaper-thesis/);
   assert.match(cssSource, /\.token-proof-result small\s*\{[\s\S]*overflow: visible;[\s\S]*white-space: normal;[\s\S]*overflow-wrap: anywhere;/);
   assert.match(cssSource, /\.token-whitepaper-thesis p\s*\{[\s\S]*-webkit-line-clamp: 2;/);
 });

@@ -8412,6 +8412,109 @@ svg {
   overflow-wrap: anywhere;
 }
 
+.token-ceo-research-panel {
+  min-width: 0;
+  display: grid;
+  gap: 14px;
+  border: 1px solid rgba(79, 70, 229, 0.15);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(245, 243, 255, 0.72)),
+    #ffffff;
+  box-shadow: 0 18px 44px rgba(30, 27, 75, 0.07);
+  padding: clamp(16px, 2.4vw, 22px);
+}
+
+.token-ceo-research-head {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+}
+
+.token-ceo-research-head h2 {
+  margin: 4px 0 0;
+  color: var(--ink);
+  font-size: clamp(20px, 2.4vw, 30px);
+  line-height: 1.08;
+  font-weight: 950;
+  letter-spacing: 0;
+}
+
+.token-ceo-research-head p {
+  max-width: 780px;
+  margin: 8px 0 0;
+  color: #40534b;
+  font-size: 13px;
+  line-height: 1.5;
+  font-weight: 700;
+}
+
+.token-ceo-research-head b {
+  width: max-content;
+  max-width: 220px;
+  border: 1px solid rgba(79, 70, 229, 0.16);
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #3730a3;
+  padding: 7px 10px;
+  font-size: 10px;
+  font-weight: 930;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.token-ceo-research-grid {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.token-ceo-research-grid article {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  border: 1px solid rgba(15, 23, 42, 0.09);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.92);
+  padding: 12px;
+}
+
+.token-ceo-research-grid strong,
+.token-ceo-research-grid p,
+.token-ceo-research-grid small {
+  display: block;
+  min-width: 0;
+}
+
+.token-ceo-research-grid strong {
+  color: #111827;
+  font-size: 12px;
+  line-height: 1.2;
+  font-weight: 940;
+}
+
+.token-ceo-research-grid p {
+  margin: 5px 0 0;
+  color: #536273;
+  font-size: 11px;
+  line-height: 1.42;
+  font-weight: 680;
+}
+
+.token-ceo-research-grid small {
+  margin-top: 8px;
+  color: #3730a3;
+  font-size: 10px;
+  line-height: 1.3;
+  font-weight: 860;
+  overflow-wrap: anywhere;
+}
+
 .token-proof-list {
   display: grid;
   gap: 10px;
@@ -9040,6 +9143,7 @@ svg {
 
   .token-metric-grid,
   .token-form-grid,
+  .token-ceo-research-grid,
   .token-whitepaper-thesis,
   .token-chapter-grid {
     grid-template-columns: 1fr;
@@ -9065,12 +9169,14 @@ svg {
   .token-timeline-list li,
   .token-proof-list article,
   .token-proof-result,
+  .token-ceo-research-head,
   .token-workflow-proof-list article {
     grid-template-columns: 32px minmax(0, 1fr);
   }
 
   .token-timeline-list b,
   .token-proof-list b,
+  .token-ceo-research-head b,
   .token-workflow-proof-meta {
     grid-column: 2;
   }
@@ -9085,6 +9191,12 @@ svg {
     text-overflow: clip;
     white-space: normal;
     overflow-wrap: anywhere;
+  }
+
+  .token-ceo-research-head b {
+    width: 100%;
+    max-width: none;
+    text-align: left;
   }
 
   .token-whitepaper-thesis {

@@ -5164,6 +5164,32 @@
           Participation depends on identity, wallet, funding, contract, and ledger checks.
         </p>
 
+        <section v-if="publicPage === 'airdrop' || publicPage === 'presale'" class="token-ceo-research-panel" aria-labelledby="token-ceo-research-title">
+          <div class="token-ceo-research-head">
+            <span class="public-card-icon purple">
+              <Search :size="18" />
+            </span>
+            <div>
+              <span class="marketplace-eyebrow">CEO RESEARCH DESK</span>
+              <h2 id="token-ceo-research-title">{{ tokenCeoResearchCopy.title }}</h2>
+              <p>{{ tokenCeoResearchCopy.body }}</p>
+            </div>
+            <b>{{ tokenCeoResearchCopy.readiness }}</b>
+          </div>
+          <div class="token-ceo-research-grid">
+            <article v-for="row in tokenCeoResearchRows" :key="row.title">
+              <span :class="['ledger-trust-icon', row.tone]">
+                <component :is="row.icon" :size="15" />
+              </span>
+              <div>
+                <strong>{{ row.title }}</strong>
+                <p>{{ row.body }}</p>
+                <small>{{ row.evidence }}</small>
+              </div>
+            </article>
+          </div>
+        </section>
+
         <section v-if="publicPage === 'airdrop' || publicPage === 'presale'" id="token-workflow" class="token-workflow-panel" aria-label="MRG proof workflow">
           <div class="token-workflow-head">
             <div>
@@ -12397,6 +12423,75 @@ const tokenWorkflowProofBoard = computed(() => {
     emptyTitle: 'No presale receipts yet',
     emptyBody: 'Reserve MRG to create the first public presale ledger proof.',
   };
+});
+const tokenCeoResearchCopy = computed(() => {
+  const openTasks = Number(marketplaceStats.value.open_task_count) || (marketplaceData.value.bounties || []).length || 0;
+  const proofRows = Number(ledgerEconomyStats.value.ledger_entry_count) || ledgerRawEntries.value.length || ledgerEventItems.value.length || 0;
+  if (publicPage.value === 'airdrop') {
+    return {
+      title: 'Research whether this project deserves an earned airdrop.',
+      body: 'The CEO orchestrator scores real work demand before opening allocation: missions, bounty depth, proof quality, bot risk, and wallet readiness.',
+      readiness: `${airdropMissionRows.value.length} missions / ${openTasks} tasks / ${proofRows} proofs`,
+    };
+  }
+  return {
+    title: 'Research whether the project is ready to open presale.',
+    body: 'The CEO orchestrator checks token utility, funding rails, verified wallets, vesting clarity, contract proof, and ledger receipts before a reserve window opens.',
+    readiness: `${formatPublicMRGFromCents(publicVerifiedFundingCents.value)} verified / ${proofRows} proofs`,
+  };
+});
+const tokenCeoResearchRows = computed(() => {
+  const openTasks = Number(marketplaceStats.value.open_task_count) || (marketplaceData.value.bounties || []).length || 0;
+  const agentTasks = Number(agentQueueData.value.stats?.total_count) || (agentQueueData.value.tasks || []).length || 0;
+  const proofRows = Number(ledgerEconomyStats.value.ledger_entry_count) || ledgerRawEntries.value.length || ledgerEventItems.value.length || 0;
+  if (publicPage.value === 'airdrop') {
+    return [
+      {
+        title: 'Mission-market fit',
+        body: 'Reward useful software work, not empty social farming.',
+        evidence: `${airdropMissionRows.value.length} mission types, ${openTasks} open bounty tasks`,
+        icon: ListTodo,
+        tone: 'green',
+      },
+      {
+        title: 'Proof and anti-bot gate',
+        body: 'Require task references, PR evidence, QA notes, agent actions, and a Solana wallet before claim review.',
+        evidence: `${proofRows} public proof rows available`,
+        icon: ShieldCheck,
+        tone: 'amber',
+      },
+      {
+        title: 'Agent review capacity',
+        body: 'Route suspicious or high-value claims through review, QA, security, and deployment agents.',
+        evidence: `${agentTasks} agent packets in queue`,
+        icon: Bot,
+        tone: 'purple',
+      },
+    ];
+  }
+  return [
+    {
+      title: 'Utility and allocation readiness',
+      body: 'Open reserve only when MRG utility, tiers, caps, wallet path, and distribution language are visible.',
+      evidence: `${TOKEN_RATE_PER_USD} MRG/USD model with builder, founder, protocol, and strategic tiers`,
+      icon: CircleDollarSign,
+      tone: 'green',
+    },
+    {
+      title: 'Verification and funding rails',
+      body: 'Keep Solana, USDC, card, PayPal, bank, and manual review rails pending until payment and identity checks pass.',
+      evidence: `${formatPublicMRGFromCents(publicVerifiedFundingCents.value)} verified funding tracked`,
+      icon: CreditCard,
+      tone: 'blue',
+    },
+    {
+      title: 'Contract and ledger proof',
+      body: 'Presale acceptance needs token contract references, receipt hashes, reserve accounting, and public proof rows.',
+      evidence: `${proofRows} ledger rows, Solana proof manifest linked`,
+      icon: Lock,
+      tone: 'amber',
+    },
+  ];
 });
 const tokenWorkflowProofRows = computed(() => {
   const targetType = publicPage.value === 'airdrop' ? 'airdrop_claim' : 'presale_reservation';
