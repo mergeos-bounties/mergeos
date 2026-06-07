@@ -4586,43 +4586,16 @@
                 {{ publicHomeCopy.marketplaceAction }}
                 <UsersRound :size="16" />
               </button>
-              <button class="secondary-button large" type="button" @click="openPublicPage('ledger')">
-                {{ publicHomeCopy.ledgerAction }}
-                <Link2 :size="16" />
-              </button>
+              <a
+                class="primary-button large mergeide-download-button"
+                :href="mergeIdeDownloadPath"
+                :download="mergeIdeDownloadFileName"
+                @click="closeNavContextMenu"
+              >
+                MergeIDE
+                <Download :size="16" />
+              </a>
             </div>
-
-            <div class="home-proof-stack" :aria-label="publicHomeCopy.proofLabel">
-              <article v-for="item in homeProofRows" :key="item.label">
-                <component :is="item.icon" :size="17" />
-                <span>{{ item.label }}</span>
-              </article>
-            </div>
-
-            <div class="home-mergeide-signal" aria-labelledby="home-mergeide-signal-title">
-              <span>
-                <Code2 :size="15" />
-                {{ publicMergeIdeCopy.homeEyebrow }}
-              </span>
-              <strong id="home-mergeide-signal-title">{{ publicMergeIdeCopy.homeTitle }}</strong>
-              <small>{{ publicMergeIdeCopy.downloadMeta }}</small>
-              <div>
-                <a
-                  class="primary-button large mergeide-download-button"
-                  :href="mergeIdeDownloadPath"
-                  :download="mergeIdeDownloadFileName"
-                  @click="closeNavContextMenu"
-                >
-                  {{ publicMergeIdeCopy.downloadAction }}
-                  <Download :size="14" />
-                </a>
-                <button type="button" @click="openPublicPage('mergeide')">
-                  {{ publicMergeIdeCopy.openAction }}
-                  <ArrowRight :size="14" />
-                </button>
-              </div>
-            </div>
-
           </div>
 
           <aside class="public-home-panel home-command-panel" :aria-label="publicHomeCopy.commandLabel">
@@ -4648,20 +4621,6 @@
                   <small>{{ stat.detail }}</small>
                 </div>
               </article>
-            </div>
-
-            <div class="home-pipeline" :aria-label="publicHomeCopy.pipelineLabel">
-              <article v-for="step in homePipelineRows" :key="step.title">
-                <span><component :is="step.icon" :size="15" /></span>
-                <strong>{{ step.title }}</strong>
-                <small>{{ step.body }}</small>
-              </article>
-            </div>
-
-            <div class="home-public-graph-proof" aria-label="Public workflow graph endpoint">
-              <span>NEW PUBLIC GRAPH</span>
-              <strong>/api/public/projects/{id}/workflow</strong>
-              <small>Claim-safe workflow nodes linked to tasks, AI workflow, and PR monitor.</small>
             </div>
 
             <div class="public-notification-feed" aria-live="polite">

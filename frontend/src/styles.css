@@ -32845,3 +32845,116 @@ canvas {
   }
 }
 
+/* Ultra-short homepage: one decision screen, deeper content lives in context menus/pages. */
+.public-home-page {
+  padding-block: clamp(8px, 1.1vw, 16px) !important;
+}
+
+.public-home-page .home-container {
+  max-width: min(1010px, calc(100vw - 32px)) !important;
+}
+
+.public-home-hero {
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 316px) !important;
+  gap: clamp(14px, 1.7vw, 20px) !important;
+  padding-block: 0 !important;
+}
+
+.public-home-copy {
+  max-width: 590px !important;
+  align-self: center !important;
+}
+
+.public-home-copy h1 {
+  max-width: 590px !important;
+  margin-top: 6px !important;
+  font-size: clamp(30px, 3.1vw, 42px) !important;
+  line-height: 1.02 !important;
+}
+
+.public-home-copy p {
+  max-width: 500px !important;
+  margin-top: 10px !important;
+  font-size: 14px !important;
+  line-height: 1.42 !important;
+}
+
+.public-home-copy .marketplace-actions {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+  margin-top: 14px !important;
+}
+
+.public-home-copy .primary-button.large,
+.public-home-copy .secondary-button.large {
+  min-height: 40px !important;
+  padding-inline: 14px !important;
+}
+
+.home-command-panel {
+  padding: 12px !important;
+  align-self: center !important;
+}
+
+.home-command-panel .public-stat-grid {
+  grid-template-columns: 1fr !important;
+  gap: 7px !important;
+  margin-top: 10px !important;
+}
+
+.home-command-panel .public-stat-grid article {
+  min-height: 44px !important;
+  padding: 8px !important;
+}
+
+.home-command-panel .public-stat-grid strong {
+  font-size: 20px !important;
+}
+
+.home-command-panel .public-notification-feed {
+  display: none !important;
+}
+
+@media (max-width: 980px) {
+  .public-home-page {
+    padding-block: 8px 14px !important;
+  }
+
+  .public-home-page .home-container {
+    max-width: min(100%, calc(100vw - 20px)) !important;
+  }
+
+  .public-home-hero {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 12px !important;
+  }
+
+  .public-home-copy {
+    align-self: stretch !important;
+  }
+
+  .public-home-copy h1 {
+    font-size: clamp(28px, 8.2vw, 38px) !important;
+  }
+
+  .home-command-panel {
+    align-self: stretch !important;
+  }
+
+  .home-command-panel .public-stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .public-home-copy .marketplace-actions {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .home-command-panel .public-stat-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
