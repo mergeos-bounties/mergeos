@@ -12698,8 +12698,14 @@ const tokenLaunchWizardChecklist = computed(() => {
 });
 const tokenWorkflowProofRows = computed(() => {
   const targetType = publicPage.value === 'airdrop' ? 'airdrop_claim' : 'presale_reservation';
+  const targetLaunchType = publicPage.value === 'presale' ? 'presale' : 'airdrop';
   return ledgerRawEntries.value
-    .filter((entry) => entry?.type === targetType)
+    .filter((entry) => {
+      if (entry?.type === targetType) return true;
+      if (entry?.type !== 'token_launch_brief') return false;
+      const reference = String(entry.reference || '');
+      return reference.includes(`type:${targetLaunchType}`);
+    })
     .slice()
     .reverse()
     .slice(0, 6)
@@ -24480,25 +24486,34 @@ function formatTokenWorkflowResult(result = {}) {
 }
 
 function mapTokenWorkflowProofRow(entry = {}) {
+  const isLaunchBrief = entry.type === 'token_launch_brief';
   const isAirdrop = entry.type === 'airdrop_claim';
   const when = formatLedgerDateTime(entry.created_at);
   const reference = String(entry.reference || '').trim();
-  const idMatch = reference.match(isAirdrop ? /airdrop:([^;]+)/ : /presale:([^;]+)/);
+  let idPattern = /presale:([^;]+)/;
+  if (isLaunchBrief) idPattern = /launch_brief:([^;]+)/;
+  if (isAirdrop) idPattern = /airdrop:([^;]+)/;
+  const idMatch = reference.match(idPattern);
   const id = idMatch?.[1] || `ledger-${entry.sequence || entry.entry_hash || 'proof'}`;
   const missionMatch = reference.match(/mission:([^;]+)/);
   const tierMatch = reference.match(/tier:([^;]+)/);
   const railMatch = reference.match(/rail:([^;]+)/);
   const scoreMatch = reference.match(/score:([^;]+)/);
-  const headline = isAirdrop
+  const launchTypeMatch = reference.match(/type:([^;]+)/);
+  const decisionMatch = reference.match(/decision:([^;]+)/);
+  const gatesMatch = reference.match(/gates:([^;]+)/);
+  const headline = isLaunchBrief
+    ? `${toTitleLabel(decisionMatch?.[1] || 'pending open decision')} / ${gatesMatch?.[1] ? `${gatesMatch[1].split(',').length} CEO gates` : 'CEO gates'}`
+    : isAirdrop
     ? `${toTitleLabel(missionMatch?.[1] || 'Airdrop claim')} / ${scoreMatch?.[1] ? `${scoreMatch[1]} score` : 'pending score'}`
     : `${toTitleLabel(tierMatch?.[1] || 'Presale reserve')} / ${toTitleLabel(railMatch?.[1] || 'review rail')}`;
   return {
     key: `${entry.type}-${entry.sequence || id}`,
-    icon: isAirdrop ? Trophy : CircleDollarSign,
-    tone: isAirdrop ? 'purple' : 'green',
-    title: `${isAirdrop ? 'Airdrop' : 'Presale'} ${id}`,
+    icon: isLaunchBrief ? FileCheck2 : (isAirdrop ? Trophy : CircleDollarSign),
+    tone: isLaunchBrief ? 'blue' : (isAirdrop ? 'purple' : 'green'),
+    title: isLaunchBrief ? `CEO ${toTitleLabel(launchTypeMatch?.[1] || 'launch')} ${id}` : `${isAirdrop ? 'Airdrop' : 'Presale'} ${id}`,
     body: headline,
-    amount: formatLedgerMRGFromCents(entry.amount_cents),
+    amount: isLaunchBrief ? 'CEO memo' : formatLedgerMRGFromCents(entry.amount_cents),
     reference: shortLedgerReference(reference || entry.entry_hash || id),
     rawReference: reference,
     hash: shortLedgerHash(entry.entry_hash),

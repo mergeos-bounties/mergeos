@@ -1245,8 +1245,15 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /class="token-workflow-proof-board"/);
   assert.match(appSource, /const tokenWorkflowProofRows = computed\(\(\) => \{/);
   assert.match(appSource, /const targetType = publicPage\.value === 'airdrop' \? 'airdrop_claim' : 'presale_reservation';/);
+  assert.match(appSource, /const targetLaunchType = publicPage\.value === 'presale' \? 'presale' : 'airdrop';/);
+  assert.match(appSource, /entry\?\.type !== 'token_launch_brief'/);
+  assert.match(appSource, /reference\.includes\(`type:\$\{targetLaunchType\}`\)/);
   assert.match(appSource, /function mapTokenWorkflowProofRow\(entry = \{\}\)/);
-  assert.match(appSource, /reference\.match\(isAirdrop \? \/airdrop:\(\[\^;\]\+\)\/ : \/presale:\(\[\^;\]\+\)\//);
+  assert.match(appSource, /const isLaunchBrief = entry\.type === 'token_launch_brief';/);
+  assert.match(appSource, /let idPattern = \/presale:\(\[\^;\]\+\)\//);
+  assert.match(appSource, /if \(isLaunchBrief\) idPattern = \/launch_brief:\(\[\^;\]\+\)\//);
+  assert.match(appSource, /if \(isAirdrop\) idPattern = \/airdrop:\(\[\^;\]\+\)\//);
+  assert.match(appSource, /amount: isLaunchBrief \? 'CEO memo' : formatLedgerMRGFromCents\(entry\.amount_cents\)/);
   assert.match(appSource, /command: 'airdrop-claim'/);
   assert.match(appSource, /command: 'presale-reserve'/);
   assert.match(appSource, /function refreshTokenPageData\(\)/);
