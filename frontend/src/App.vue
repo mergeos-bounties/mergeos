@@ -5096,7 +5096,7 @@
           </div>
         </section>
 
-        <section class="token-content-grid">
+        <section v-if="publicPage !== 'whitepaper'" class="token-content-grid">
           <div class="token-main-panel">
             <div class="contracts-section-head">
               <div>

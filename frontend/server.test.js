@@ -1160,6 +1160,7 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /class="token-whitepaper-thesis"/);
   assert.match(appSource, /class="token-whitepaper-brief"/);
   assert.match(appSource, /class="token-whitepaper-section-list"/);
+  assert.match(appSource, /v-if="publicPage !== 'whitepaper'" class="token-content-grid"/);
   assert.match(appSource, /const publicWhitepaperThesisRows = computed\(\(\) => \[/);
   assert.match(appSource, /const publicWhitepaperChapterSections = computed\(\(\) => \[/);
   assert.match(appSource, /The paper is structured around executable product proof/);
