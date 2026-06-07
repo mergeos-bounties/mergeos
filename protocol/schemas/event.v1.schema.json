@@ -27,6 +27,7 @@
         "airdrop.claimed",
         "presale.reserved",
         "wallet.migrated",
+        "notification.updated",
         "task.paid",
         "deployment.updated",
         "ledger.recorded",

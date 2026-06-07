@@ -1005,6 +1005,9 @@ func TestWebSocketBroadcastsSanitizedNotificationSignal(t *testing.T) {
 	if event["type"] != "notifications_updated" || event["kind"] != "notification_signal" || event["protocol_version"] != "mergeos.event.v1" {
 		t.Fatalf("unexpected notification websocket event: %#v", event)
 	}
+	if event["protocol_type"] != "notification.updated" {
+		t.Fatalf("notification websocket event missing protocol type: %#v", event)
+	}
 	if event["scope"] != "authenticated" || event["reason"] != "read" {
 		t.Fatalf("notification websocket event missing refresh contract: %#v", event)
 	}

@@ -3213,6 +3213,18 @@ test('validates event protocol documents and assertion helper', () => {
     assert.equal(leaseEvent.valid, true);
     assert.deepEqual(leaseEvent.errors, []);
   }
+  const notificationEvent = validateProtocolDocument({
+    protocol_version: 'mergeos.event.v1',
+    kind: 'event',
+    id: 'evt_notification_updated',
+    type: 'notification.updated',
+    occurred_at: '2026-06-02T00:00:00.000Z',
+    actor: 'mergeos',
+    reference: '/api/notifications',
+    payload: { feed_type: 'notifications_updated', scope: 'authenticated', reason: 'read' },
+  });
+  assert.equal(notificationEvent.valid, true);
+  assert.deepEqual(notificationEvent.errors, []);
 
   const proposalEvent = validateProtocolDocument({
     protocol_version: 'mergeos.event.v1',

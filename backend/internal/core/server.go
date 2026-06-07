@@ -1236,6 +1236,7 @@ func (s *Server) broadcastNotificationsUpdated(reason string) {
 		"protocol_version": "mergeos.event.v1",
 		"kind":             "notification_signal",
 		"type":             "notifications_updated",
+		"protocol_type":    "notification.updated",
 		"scope":            "authenticated",
 		"reason":           reason,
 		"created_at":       time.Now().UTC(),
