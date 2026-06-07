@@ -29736,12 +29736,58 @@ function normalizeDashboardWorkflowPulsePayload(payload = {}, fallbackProjectID 
 }
 
 function normalizeDashboardPullRequestsPayload(payload = {}, fallbackProjectID = '') {
+  const taskRows = Array.isArray(payload.tasks) ? payload.tasks : [];
+  const flattenedPullRequests = Array.isArray(payload.pull_requests)
+    ? payload.pull_requests
+    : taskRows.flatMap((task) => {
+        const pullRows = Array.isArray(task.pull_requests) ? task.pull_requests : [];
+        return pullRows.map((pull) => ({
+          ...pull,
+          task_id: pull.task_id || task.task_id || task.id || '',
+          project_id: pull.project_id || payload.project_id || fallbackProjectID,
+          project_title: pull.project_title || payload.project_title || '',
+          issue_number: pull.issue_number || task.issue_number || 0,
+          title: pull.title || task.title || '',
+          acceptance: pull.acceptance || task.acceptance || '',
+          required_worker_kind: pull.required_worker_kind || task.required_worker_kind || '',
+          suggested_agent_type: pull.suggested_agent_type || task.suggested_agent_type || '',
+        }));
+      });
   return {
     project_id: payload.project_id || fallbackProjectID,
     project_title: payload.project_title || '',
     stats: payload.stats || {},
     updated_at: payload.updated_at,
-    pull_requests: Array.isArray(payload.pull_requests) ? payload.pull_requests : [],
+    tasks: taskRows,
+    pull_requests: flattenedPullRequests,
+  };
+}
+
+function dashboardWorkflowPulseFromProjectDashboard(payload = {}, fallbackProjectID = '') {
+  const project = payload.project || {};
+  const workflow = payload.ai_workflow || {};
+  const graph = payload.task_graph || {};
+  const pullRequests = payload.pull_requests || {};
+  const escrow = payload.escrow || {};
+  const projectID = workflow.project_id || graph.project_id || project.project_id || fallbackProjectID;
+  return {
+    project_id: projectID,
+    project_title: workflow.project_title || graph.project_title || project.title || '',
+    status: workflow.status || graph.status || 'orchestrating',
+    progress: Number(workflow.progress || graph.progress) || 0,
+    current_stage: workflow.current_step || graph.current_stage || '',
+    next_action: workflow.next_action || '',
+    updated_at: workflow.updated_at || graph.updated_at || payload.updated_at || project.updated_at,
+    stats: {
+      task_count: Number(workflow.task_count || graph.stats?.task_count || project.task_count) || 0,
+      pull_request_count: Number(pullRequests.stats?.total_count) || 0,
+      released_cents: Number(escrow.stats?.released_cents || escrow.released_cents) || 0,
+    },
+    stages: Array.isArray(workflow.stages) ? workflow.stages : [],
+    links: {
+      dashboard: `/api/projects/${encodeURIComponent(projectID)}/dashboard`,
+      workflow_protocol: `/api/projects/${encodeURIComponent(projectID)}/protocol/workflow`,
+    },
   };
 }
 
@@ -29770,10 +29816,13 @@ function normalizeDashboardDeliverySnapshotPayload(payload = {}, fallbackProject
 }
 
 function applyDashboardDeliverySnapshotPayload(payload = {}, fallbackProjectID = '') {
-  const projectID = payload.project_id || fallbackProjectID;
+  const projectID = payload.project_id || payload.project?.project_id || fallbackProjectID;
   dashboardDeliverySnapshot.value = normalizeDashboardDeliverySnapshotPayload(payload, projectID);
-  if (payload.workflow_pulse) {
-    dashboardWorkflowPulse.value = normalizeDashboardWorkflowPulsePayload(payload.workflow_pulse, projectID);
+  if (payload.workflow_pulse || payload.ai_workflow || payload.task_graph) {
+    dashboardWorkflowPulse.value = normalizeDashboardWorkflowPulsePayload(
+      payload.workflow_pulse || dashboardWorkflowPulseFromProjectDashboard(payload, projectID),
+      projectID,
+    );
     dashboardWorkflowPulseError.value = '';
   }
   if (payload.ai_workflow) {
@@ -29792,8 +29841,8 @@ function applyDashboardDeliverySnapshotPayload(payload = {}, fallbackProjectID =
     dashboardRouting.value = normalizeDashboardRoutingPayload(payload.routing, projectID);
     dashboardRoutingError.value = '';
   }
-  if (payload.pr_monitor) {
-    dashboardPullRequests.value = normalizeDashboardPullRequestsPayload(payload.pr_monitor, projectID);
+  if (payload.pr_monitor || payload.pull_requests) {
+    dashboardPullRequests.value = normalizeDashboardPullRequestsPayload(payload.pr_monitor || payload.pull_requests, projectID);
     dashboardPullRequestsError.value = '';
   }
   if (payload.deployment) {
@@ -29870,6 +29919,13 @@ function normalizeDashboardProjectDashboardPayload(payload = {}, fallbackProject
     protocol_version: payload.protocol_version || 'mergeos.customer-dashboard.v1',
     kind: payload.kind || 'customer_dashboard',
     project: payload.project || { project_id: fallbackProjectID },
+    escrow: payload.escrow || null,
+    payouts: payload.payouts || null,
+    deployment: payload.deployment || null,
+    ai_workflow: payload.ai_workflow || null,
+    task_graph: payload.task_graph || null,
+    repository_scan: payload.repository_scan || null,
+    pull_requests: payload.pull_requests || null,
     proposals: Array.isArray(payload.proposals) ? payload.proposals : [],
     updated_at: payload.updated_at || '',
   };
@@ -29896,7 +29952,7 @@ async function loadDashboardDeliverySnapshotData(projectID, options = {}) {
   }
   dashboardDeliverySnapshotError.value = '';
   try {
-    const payload = await api(`/api/projects/${encodeURIComponent(targetProjectID)}/delivery-snapshot`);
+    const payload = await api(`/api/projects/${encodeURIComponent(targetProjectID)}/dashboard`);
     if (targetProjectID !== selectedDashboardProjectID.value) return;
     applyDashboardDeliverySnapshotPayload(payload, targetProjectID);
   } catch (error) {
@@ -29994,8 +30050,11 @@ async function loadDashboardWorkflowPulseData(projectID, options = {}) {
   if (!silent) dashboardWorkflowPulseLoading.value = true;
   dashboardWorkflowPulseError.value = '';
   try {
-    const payload = await api(`/api/projects/${encodeURIComponent(targetProjectID)}/workflow-pulse`);
-    dashboardWorkflowPulse.value = normalizeDashboardWorkflowPulsePayload(payload, targetProjectID);
+    const payload = await api(`/api/projects/${encodeURIComponent(targetProjectID)}/dashboard`);
+    dashboardWorkflowPulse.value = normalizeDashboardWorkflowPulsePayload(
+      payload.workflow_pulse || dashboardWorkflowPulseFromProjectDashboard(payload, targetProjectID),
+      targetProjectID,
+    );
   } catch (error) {
     if (targetProjectID === selectedDashboardProjectID.value) {
       dashboardWorkflowPulse.value = null;
@@ -30018,7 +30077,7 @@ async function loadDashboardPullRequestsData(projectID, options = {}) {
   if (!silent) dashboardPullRequestsLoading.value = true;
   dashboardPullRequestsError.value = '';
   try {
-    const payload = await api(`/api/projects/${encodeURIComponent(targetProjectID)}/pulls`);
+    const payload = await api(`/api/projects/${encodeURIComponent(targetProjectID)}/pull-requests`);
     dashboardPullRequests.value = normalizeDashboardPullRequestsPayload(payload, targetProjectID);
   } catch (error) {
     if (targetProjectID === selectedDashboardProjectID.value) {
@@ -30940,13 +30999,12 @@ function handleWSAIReview(payload = {}) {
       void loadDashboardNotifications();
       if (projectID === selectedDashboardProjectID.value) {
         if (prMonitor && typeof prMonitor === 'object') {
-          dashboardPullRequests.value = {
+          dashboardPullRequests.value = normalizeDashboardPullRequestsPayload({
+            ...prMonitor,
             project_id: prMonitor.project_id || projectID,
             project_title: prMonitor.project_title || payload.project_title || '',
-            stats: prMonitor.stats || {},
             updated_at: prMonitor.updated_at || payload.created_at || item.created_at,
-            pull_requests: Array.isArray(prMonitor.pull_requests) ? prMonitor.pull_requests : [],
-          };
+          }, projectID);
           dashboardPullRequestsError.value = '';
           dashboardPullRequestsLoading.value = false;
         } else {

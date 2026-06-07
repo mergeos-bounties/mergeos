@@ -430,6 +430,10 @@ test('customer dashboard exposes compact operating lanes after login', async () 
   assert.match(appSource, /api\('\/api\/customers\/me'\)/);
   assert.match(appSource, /api\(`\/api\/projects\/\$\{encodeURIComponent\(targetProjectID\)\}\/escrow`\)/);
   assert.match(appSource, /api\(`\/api\/projects\/\$\{encodeURIComponent\(targetProjectID\)\}\/ai-workflow`\)/);
+  assert.match(appSource, /api\(`\/api\/projects\/\$\{encodeURIComponent\(targetProjectID\)\}\/dashboard`\)/);
+  assert.match(appSource, /payload\.workflow_pulse \|\| dashboardWorkflowPulseFromProjectDashboard\(payload, targetProjectID\)/);
+  assert.match(appSource, /escrow: payload\.escrow \|\| null/);
+  assert.match(appSource, /pull_requests: payload\.pull_requests \|\| null/);
   assert.match(appSource, /loadDashboardProjectDashboardData\(selectedDashboardProjectID\.value, \{ silent: true \}\)/);
   assert.match(appSource, /function handleCustomerDashboardOperatingLane/);
   assert.match(appSource, /class="dashboard-role-proof"/);
@@ -445,6 +449,18 @@ test('customer dashboard exposes compact operating lanes after login', async () 
   assert.match(cssSource, /\.dashboard-shell \.dashboard-role-stats,[\s\S]*\.dashboard-shell \.dashboard-role-lanes\s*\{[\s\S]*display: none !important;/);
   assert.match(cssSource, /@media \(max-width: 760px\)[\s\S]*\.dashboard-shell \.dashboard-role-map\s*\{[\s\S]*grid-auto-flow: column !important;[\s\S]*grid-auto-columns: minmax\(238px, 72vw\) !important;/);
   assert.doesNotMatch(cssSource, /\.dashboard-shell \.dashboard-role-map article:nth-child\(n \+ 3\)\s*\{[\s\S]*display: none !important;/);
+});
+
+test('customer PR monitor consumes backend pull-request task groups', async () => {
+  const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
+
+  assert.match(appSource, /api\(`\/api\/projects\/\$\{encodeURIComponent\(targetProjectID\)\}\/pull-requests`\)/);
+  assert.doesNotMatch(appSource, /api\(`\/api\/projects\/\$\{encodeURIComponent\(targetProjectID\)\}\/pulls`\)/);
+  assert.match(appSource, /const taskRows = Array\.isArray\(payload\.tasks\) \? payload\.tasks : \[\];/);
+  assert.match(appSource, /taskRows\.flatMap\(\(task\) =>/);
+  assert.match(appSource, /const pullRows = Array\.isArray\(task\.pull_requests\) \? task\.pull_requests : \[\];/);
+  assert.match(appSource, /task_id: pull\.task_id \|\| task\.task_id \|\| task\.id \|\| ''/);
+  assert.match(appSource, /dashboardPullRequests\.value = normalizeDashboardPullRequestsPayload\(\{/);
 });
 
 test('ledger logs exposes compact proof timeline coverage', async () => {
