@@ -406,8 +406,14 @@ test('signed-in mobile dashboard keeps nav, actions, and popovers phone-safe', a
   assert.match(cssSource, /\.dashboard-shell \.dashboard-project-list button,[\s\S]*\.dashboard-shell \.repo-import-publish-steps li\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) !important;/);
   assert.match(cssSource, /@media \(max-width: 430px\)[\s\S]*\.dashboard-shell \.dash-top-actions\s*\{[\s\S]*grid-template-columns: 42px 42px minmax\(58px, 1fr\) 42px !important;/);
   assert.match(cssSource, /Signed-in mobile unified owner/);
+  assert.match(appSource, /class="dash-mobile-menu-backdrop"/);
   assert.match(cssSource, /\.dashboard-shell\s*\{[\s\S]*--dash-mobile-header-height: 92px;[\s\S]*--project-action-bar-height: 86px;/);
   assert.match(cssSource, /\.dashboard-shell \.dash-topbar\s*\{[\s\S]*position: static !important;[\s\S]*backdrop-filter: none !important;/);
+  assert.match(cssSource, /\.dashboard-shell \.dash-mobile-menu-backdrop\s*\{[\s\S]*position: fixed;[\s\S]*backdrop-filter: blur\(2px\);/);
+  assert.match(cssSource, /\.dashboard-shell \.dash-mobile-menu\s*\{[\s\S]*top: calc\(var\(--dash-mobile-header-height\) \+ 8px \+ env\(safe-area-inset-top\)\) !important;[\s\S]*box-shadow: 0 22px 56px rgba\(15, 23, 42, 0\.18\);/);
+  assert.match(cssSource, /\.notification-dropdown,[\s\S]*\.dashboard-shell \.notification-dropdown\s*\{[\s\S]*z-index: var\(--dash-mobile-sheet-z, 980\) !important;/);
+  assert.match(cssSource, /\.notification-dropdown\s*\{[\s\S]*left: var\(--dash-mobile-gutter, clamp\(12px, 4vw, 18px\)\) !important;[\s\S]*width: auto !important;/);
+  assert.match(cssSource, /@media \(max-width: 430px\)[\s\S]*\.notification-dropdown-actions\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) !important;/);
   assert.match(cssSource, /\.dashboard-shell \.admin-dispute-item-actions,[\s\S]*\.dashboard-shell \.admin-ops-row-actions\s*\{[\s\S]*display: flex !important;[\s\S]*flex-wrap: wrap;/);
   assert.match(cssSource, /\.project-flow-main\s*\{[\s\S]*padding-bottom: calc\(var\(--project-action-bar-height\) \+ 34px \+ env\(safe-area-inset-bottom\)\) !important;/);
   assert.match(cssSource, /\.project-step-list\s*\{[\s\S]*grid-template-columns: repeat\(4, minmax\(118px, 1fr\)\);[\s\S]*overflow-x: auto !important;/);

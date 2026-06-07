@@ -30588,11 +30588,39 @@ canvas {
     z-index: var(--dash-mobile-sheet-z);
   }
 
+  .dashboard-shell .dash-mobile-menu-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: calc(var(--dash-mobile-sheet-z) - 1);
+    display: block;
+    border: 0;
+    background: rgba(15, 23, 42, 0.22);
+    backdrop-filter: blur(2px);
+    padding: 0;
+  }
+
+  .dashboard-shell .dash-mobile-menu {
+    top: calc(var(--dash-mobile-header-height) + 8px + env(safe-area-inset-top)) !important;
+    border-radius: 14px;
+    box-shadow: 0 22px 56px rgba(15, 23, 42, 0.18);
+  }
+
   .dashboard-shell .dash-mobile-menu,
-  .dashboard-shell .notification-dropdown,
   .dashboard-shell .account-context-menu,
   .dashboard-shell .dashboard-project-actions-panel {
     z-index: var(--dash-mobile-sheet-z) !important;
+  }
+
+  .notification-dropdown,
+  .dashboard-shell .notification-dropdown {
+    z-index: var(--dash-mobile-sheet-z, 980) !important;
+  }
+
+  .notification-dropdown {
+    left: var(--dash-mobile-gutter, clamp(12px, 4vw, 18px)) !important;
+    right: var(--dash-mobile-gutter, clamp(12px, 4vw, 18px)) !important;
+    width: auto !important;
+    max-width: calc(100vw - (var(--dash-mobile-gutter, clamp(12px, 4vw, 18px)) * 2)) !important;
   }
 
   .dashboard-shell .dash-command-strip,
@@ -30706,6 +30734,14 @@ canvas {
 
   .dashboard-shell .dash-top-actions {
     grid-template-columns: 42px 42px minmax(54px, 1fr) 42px !important;
+  }
+
+  .dashboard-shell .dash-mobile-menu {
+    top: calc(var(--dash-mobile-header-height) + 6px + env(safe-area-inset-top)) !important;
+  }
+
+  .notification-dropdown-actions {
+    grid-template-columns: minmax(0, 1fr) !important;
   }
 
   .dashboard-shell .admin-dispute-lane,

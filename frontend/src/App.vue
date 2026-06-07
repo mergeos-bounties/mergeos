@@ -1492,6 +1492,13 @@
         </button>
       </nav>
 
+      <button
+        v-if="dashboardMobileNavOpen"
+        class="dash-mobile-menu-backdrop"
+        type="button"
+        aria-label="Close dashboard menu"
+        @click="dashboardMobileNavOpen = false"
+      />
       <section v-if="dashboardMobileNavOpen" class="dash-mobile-menu" aria-label="More dashboard sections">
         <button
           v-for="item in dashboardMobileMoreNav"
