@@ -1167,6 +1167,9 @@ func TestMarketplaceExposesBaselineAgentHierarchy(t *testing.T) {
 			!containsString(document.Capabilities, expected.capability) {
 			t.Fatalf("baseline agent protocol missing %s routing metadata: %#v", expected.agentType, document)
 		}
+		if expected.agentType == "deployment-agent" && containsString(document.SupportedActions, "generate") {
+			t.Fatalf("deployment agent should not be routed as a generation agent: %#v", document.SupportedActions)
+		}
 	}
 }
 

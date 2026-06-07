@@ -135,7 +135,7 @@ func publicAgentSupportedActions(agent *MarketplaceAgent) []string {
 	if containsAny(haystack, []string{"qa", "test", "quality", "validation"}) {
 		actions = append(actions, "test")
 	}
-	if containsAny(haystack, []string{"gen", "build", "code", "frontend", "backend", "design", "ui", "ux"}) {
+	if containsAny(haystack, []string{"generate", "generator", "build", "code", "coding", "frontend", "backend", "design", "ui", "ux"}) {
 		actions = append(actions, "generate")
 	}
 	if containsAny(haystack, []string{"deploy", "devops", "release", "pipeline"}) {
