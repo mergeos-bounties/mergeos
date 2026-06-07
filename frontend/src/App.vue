@@ -5484,6 +5484,16 @@
                   <small>{{ step.detail }}</small>
                 </span>
               </div>
+              <div v-if="!ledgerLoading" class="token-workflow-proof-empty-actions">
+                <button type="button" @click="openTokenLaunchBriefFromProofBoard">
+                  Open CEO brief
+                  <ArrowRight :size="12" />
+                </button>
+                <button type="button" @click="loadLedgerData">
+                  Refresh ledger
+                  <RefreshCw :size="12" />
+                </button>
+              </div>
             </article>
           </section>
         </section>
@@ -24425,6 +24435,15 @@ function prefillTokenLaunchBrief() {
   tokenLaunchBriefAttempted.value = false;
   tokenLaunchBriefError.value = '';
   showToast('CEO research template added.');
+}
+
+function openTokenLaunchBriefFromProofBoard() {
+  prefillTokenLaunchBrief();
+  if (!hasWindow) return;
+  window.requestAnimationFrame(() => {
+    const target = document.querySelector('.token-ceo-brief-card');
+    target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  });
 }
 
 function tokenWorkflowIntegerAmount(value = 0) {

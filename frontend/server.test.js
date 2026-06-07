@@ -1268,6 +1268,10 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /function submitPresaleReservation\(\)/);
   assert.match(appSource, /class="token-workflow-proof-board"/);
   assert.match(appSource, /class="token-workflow-proof-empty-steps"/);
+  assert.match(appSource, /class="token-workflow-proof-empty-actions"/);
+  assert.match(appSource, /@click="openTokenLaunchBriefFromProofBoard"/);
+  assert.match(appSource, /function openTokenLaunchBriefFromProofBoard\(\)/);
+  assert.match(appSource, /document\.querySelector\('\.token-ceo-brief-card'\)/);
   assert.match(appSource, /const tokenWorkflowProofEmptySteps = computed/);
   assert.match(appSource, /CEO launch proof appears before claims/);
   assert.match(appSource, /CEO launch proof appears before reserves/);
@@ -1308,7 +1312,10 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(whitepaperSource, /## 16\. Roadmap/);
   assert.match(cssSource, /\.token-workflow-proof-board\s*\{[\s\S]*background: rgba\(255, 255, 255, 0\.86\);/);
   assert.match(cssSource, /\.token-workflow-proof-empty-steps\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
+  assert.match(cssSource, /\.token-workflow-proof-empty-actions\s*\{[\s\S]*display: flex;/);
+  assert.match(cssSource, /\.token-workflow-proof-empty-actions button:first-child\s*\{[\s\S]*background: var\(--green\);/);
   assert.match(cssSource, /\.token-workflow-proof-empty-steps\s*\{[\s\S]*grid-template-columns: 1fr;[\s\S]*gap: 6px;/);
+  assert.match(cssSource, /\.token-workflow-proof-empty-actions\s*\{[\s\S]*display: grid;[\s\S]*grid-template-columns: 1fr;/);
   assert.match(cssSource, /CEO token launch polish: show gates before intake, keep the review surface short/);
   assert.match(cssSource, /\.token-ceo-research-panel\s*\{[\s\S]*border: 1px solid rgba\(79, 70, 229, 0\.15\);/);
   assert.match(cssSource, /\.token-ceo-decision-strip\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);

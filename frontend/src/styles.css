@@ -9175,6 +9175,39 @@ svg {
   font-weight: 740;
 }
 
+.token-workflow-proof-empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 11px;
+}
+
+.token-workflow-proof-empty-actions button {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid rgba(15, 159, 120, 0.18);
+  border-radius: 8px;
+  background: #ffffff;
+  color: #064e3b;
+  padding: 0 11px;
+  font-size: 11px;
+  font-weight: 880;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+}
+
+.token-workflow-proof-empty-actions button:first-child {
+  border-color: rgba(15, 159, 120, 0.34);
+  background: var(--green);
+  color: #ffffff;
+}
+
+.token-workflow-proof-empty-actions button:hover {
+  transform: translateY(-1px);
+}
+
 .token-whitepaper-reader {
   min-width: 0;
   display: grid;
@@ -9648,6 +9681,15 @@ svg {
   .token-workflow-proof-empty-steps {
     grid-template-columns: 1fr;
     gap: 6px;
+  }
+
+  .token-workflow-proof-empty-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .token-workflow-proof-empty-actions button {
+    width: 100%;
   }
 
   .token-workflow-proof-meta {
