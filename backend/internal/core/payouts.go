@@ -391,6 +391,7 @@ func autoReleaseProof(project *Project, task *Task, candidate ProjectAutoRelease
 		ValidationSignals: autoReleaseValidationSignals(candidate.ValidationSignals),
 		Policy:            normalizeAutoReleasePolicy(policy),
 		LedgerReference:   projectPayoutLedgerReference(reference),
+		LedgerProofURL:    "/api/public/ledger/proof",
 		ReleasedAt:        time.Now().UTC(),
 	}
 	if task != nil {

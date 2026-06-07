@@ -1687,6 +1687,7 @@ test('validates payout settlement protocol documents', () => {
       validation_signals: ['evidence: provided', 'deployment: verified'],
       policy: 'mergeos.auto_release.low_risk_pr.v1',
       ledger_reference: 'task:tsk_0001;pr:https://github.com/mergeos-bounties/mergeos/pull/151;deployment_validation:validated;auto_release:mergeos.auto_release.low_risk_pr.v1',
+      ledger_proof_url: '/api/public/ledger/proof',
       released_at: now,
     }],
     output_contracts: [

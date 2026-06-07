@@ -36,7 +36,7 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["task_id", "claim_id", "issue_number", "worker_kind", "worker_id", "pull_request_number", "pull_request_url", "readiness_status", "risk_level", "deployment_status", "policy", "ledger_reference", "released_at"],
+        "required": ["task_id", "claim_id", "issue_number", "worker_kind", "worker_id", "pull_request_number", "pull_request_url", "readiness_status", "risk_level", "deployment_status", "policy", "ledger_reference", "ledger_proof_url", "released_at"],
         "properties": {
           "task_id": { "type": "string", "minLength": 1, "maxLength": 96 },
           "claim_id": { "type": "string", "minLength": 1, "maxLength": 140 },
@@ -55,6 +55,7 @@
           },
           "policy": { "type": "string", "minLength": 1, "maxLength": 160 },
           "ledger_reference": { "type": "string", "minLength": 1, "maxLength": 1000 },
+          "ledger_proof_url": { "type": "string", "minLength": 1, "maxLength": 512 },
           "released_at": { "type": "string", "format": "date-time" }
         }
       }

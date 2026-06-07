@@ -3621,6 +3621,9 @@ func TestProjectAutoReleaseRouteReleasesReadyCandidateAndRecordsPolicy(t *testin
 	if proof.DeploymentStatus != "not_required" || !strings.Contains(proof.LedgerReference, "auto_release:"+defaultAutoReleasePolicy) {
 		t.Fatalf("auto-release proof missing release gate reference: %#v", proof)
 	}
+	if proof.LedgerProofURL != "/api/public/ledger/proof" {
+		t.Fatalf("auto-release proof missing public ledger proof URL: %#v", proof)
+	}
 	if payload.Payouts.ReleaseCount != 1 || payload.Payouts.ReleasedCents != task.RewardCents {
 		t.Fatalf("auto-release did not update payout settlement: %#v", payload.Payouts)
 	}

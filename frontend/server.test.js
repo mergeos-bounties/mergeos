@@ -580,6 +580,8 @@ test('auto-release exposes payout output contracts in schema and dashboard', asy
   assert.ok(releaseSchema.required.includes('output_contracts'));
   assert.equal(releaseSchema.properties.output_contracts.items.$ref, '#/$defs/outputContract');
   assert.ok(releaseSchema.$defs.outputContract.required.includes('output_protocol_url'));
+  assert.ok(releaseSchema.properties.release_proofs.items.required.includes('ledger_proof_url'));
+  assert.equal(releaseSchema.properties.release_proofs.items.properties.ledger_proof_url.maxLength, 512);
   assert.match(appSource, /contractRows: autoReleaseContractRows\(packet\.output_contracts \|\| \[\]\)/);
   assert.match(appSource, /function autoReleaseContractRows\(contracts = \[\]\)/);
   assert.match(appSource, /v-if="dashboardAutoReleaseControl\.contractRows\.length"/);

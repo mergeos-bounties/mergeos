@@ -1605,6 +1605,7 @@ type ProjectAutoReleaseProof struct {
 	ValidationSignals []string   `json:"validation_signals,omitempty"`
 	Policy            string     `json:"policy"`
 	LedgerReference   string     `json:"ledger_reference"`
+	LedgerProofURL    string     `json:"ledger_proof_url"`
 	ReleasedAt        time.Time  `json:"released_at"`
 }
 
