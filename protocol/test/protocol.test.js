@@ -3203,6 +3203,19 @@ test('validates event protocol documents and assertion helper', () => {
   assert.equal(pullOpenedEvent.valid, true);
   assert.deepEqual(pullOpenedEvent.errors, []);
 
+  const pullReadyEvent = validateProtocolDocument({
+    protocol_version: 'mergeos.event.v1',
+    kind: 'event',
+    id: 'evt_pr_ready',
+    type: 'pr.ready_for_release',
+    occurred_at: '2026-06-02T00:00:00.000Z',
+    actor: 'deployment-agent',
+    reference: 'mergeos-bounties/mergeos#151',
+    payload: { deployment_status: 'validated', auto_release: true },
+  });
+  assert.equal(pullReadyEvent.valid, true);
+  assert.deepEqual(pullReadyEvent.errors, []);
+
   const unknownEvent = validateProtocolDocument({
     ...event,
     id: 'evt_unknown',

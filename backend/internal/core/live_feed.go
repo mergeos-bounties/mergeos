@@ -806,6 +806,9 @@ func publicLiveFeedAIType(log *GeminiWebhookLog) string {
 	if publicLiveFeedIsPullRequestOpened(log) {
 		return "pr_opened"
 	}
+	if publicLiveFeedIsPullRequestReleaseReady(log) {
+		return "pr_ready_for_release"
+	}
 	return "ai_review"
 }
 
@@ -813,6 +816,25 @@ func publicLiveFeedIsPullRequestOpened(log *GeminiWebhookLog) bool {
 	return log != nil &&
 		strings.EqualFold(log.EventName, "pull_request") &&
 		strings.EqualFold(strings.TrimSpace(log.Action), "opened")
+}
+
+func publicLiveFeedIsPullRequestReleaseReady(log *GeminiWebhookLog) bool {
+	if log == nil {
+		return false
+	}
+	action := strings.ToLower(strings.TrimSpace(log.Action))
+	summary := strings.ToLower(strings.Join([]string{
+		log.EventName,
+		log.Status,
+		log.Error,
+		strings.Join(log.ContextURLs, " "),
+		strings.Join(log.Evidence, " "),
+		strings.Join(log.Runbook, " "),
+	}, " "))
+	return (strings.EqualFold(log.EventName, "agent_action") && (action == "deploy" || action == "deployment" || action == "release")) ||
+		strings.Contains(summary, "auto_release") ||
+		strings.Contains(summary, "ready for release") ||
+		strings.Contains(summary, "deployment_validation:validated")
 }
 
 func publicLiveFeedAIAction(log *GeminiWebhookLog) string {
@@ -1139,6 +1161,8 @@ func publicEventType(item PublicLiveFeedItem) string {
 		return "pr.opened"
 	case "ai_review":
 		return "pr.reviewed"
+	case "pr_ready_for_release":
+		return "pr.ready_for_release"
 	case "repo_issues_synced":
 		return "repo.issues.synced"
 	case "proposal_submitted":

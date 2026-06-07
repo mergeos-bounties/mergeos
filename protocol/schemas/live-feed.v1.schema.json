@@ -85,7 +85,8 @@
               "repo_issues_synced",
               "agent_action",
               "pr_opened",
-              "ai_review"
+              "ai_review",
+              "pr_ready_for_release"
             ]
           },
           "title": { "type": "string", "minLength": 1, "maxLength": 240 },

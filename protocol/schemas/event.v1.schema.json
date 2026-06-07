@@ -19,6 +19,7 @@
         "task.accepted",
         "pr.opened",
         "pr.reviewed",
+        "pr.ready_for_release",
         "repo.issues.synced",
         "proposal.submitted",
         "proposal.accepted",

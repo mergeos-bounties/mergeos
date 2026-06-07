@@ -20,6 +20,7 @@ export const workflowEventTypes = Object.freeze({
   taskPaid: 'task.paid',
   prOpened: 'pr.opened',
   prReviewed: 'pr.reviewed',
+  prReadyForRelease: 'pr.ready_for_release',
   deploymentUpdated: 'deployment.updated',
   repoIssuesSynced: 'repo.issues.synced',
   proposalSubmitted: 'proposal.submitted',
@@ -1431,6 +1432,7 @@ export function liveFeedTypeToProtocolEventType(type = '', action = '') {
     proposal_declined: workflowEventTypes.proposalDeclined,
     pr_opened: workflowEventTypes.prOpened,
     ai_review: workflowEventTypes.prReviewed,
+    pr_ready_for_release: workflowEventTypes.prReadyForRelease,
     deployment_validation: workflowEventTypes.deploymentUpdated,
     repo_issues_synced: workflowEventTypes.repoIssuesSynced,
   }[normalized] || workflowEventTypes.agentAction;

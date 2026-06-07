@@ -964,6 +964,7 @@ test('maps live feed records to workflow event protocol values', () => {
   };
 
   assert.equal(workflowEventTypes.prOpened, 'pr.opened');
+  assert.equal(workflowEventTypes.prReadyForRelease, 'pr.ready_for_release');
   assert.equal(liveFeedTypeToProtocolEventType('project_funded'), 'project.funded');
   assert.equal(liveFeedTypeToProtocolEventType('task_opened'), 'task.created');
   assert.equal(liveFeedTypeToProtocolEventType('task_claimed'), 'task.claimed');
@@ -972,6 +973,7 @@ test('maps live feed records to workflow event protocol values', () => {
   assert.equal(liveFeedTypeToProtocolEventType('task_accepted'), 'task.accepted');
   assert.equal(liveFeedTypeToProtocolEventType('pr_opened'), 'pr.opened');
   assert.equal(liveFeedTypeToProtocolEventType('ai_review'), 'pr.reviewed');
+  assert.equal(liveFeedTypeToProtocolEventType('pr_ready_for_release'), 'pr.ready_for_release');
   assert.equal(liveFeedTypeToProtocolEventType('deployment_validation'), 'deployment.updated');
   assert.equal(liveFeedTypeToProtocolEventType('repo_issues_synced'), 'repo.issues.synced');
   assert.equal(liveFeedTypeToProtocolEventType('proposal_submitted'), 'proposal.submitted');
@@ -1003,6 +1005,7 @@ test('maps live feed records to workflow event protocol values', () => {
   assert.equal(protocolTypeFromMessage({ type: 'admin_ops_updated' }), '');
   assert.equal(protocolTypeFromMessage({ type: 'notifications_updated', kind: 'notification_signal', scope: 'authenticated' }), 'notification.updated');
   assert.equal(protocolEventGroup('pr.opened'), 'pull_request');
+  assert.equal(protocolEventGroup('pr.ready_for_release'), 'pull_request');
   assert.equal(protocolEventGroup('task.paid'), 'task');
   assert.equal(protocolEventGroup('proposal.accepted'), 'proposal');
   assert.equal(protocolEventGroup('agent.tested'), 'agent');
