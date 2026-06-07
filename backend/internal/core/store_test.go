@@ -1735,7 +1735,7 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 	if launchBrief.LedgerEntry.Type != "token_launch_brief" || launchBrief.LedgerEntry.AmountCents != 0 || len(launchBrief.LedgerEntry.EntryHash) != 64 {
 		t.Fatalf("token launch brief ledger entry invalid: %#v", launchBrief.LedgerEntry)
 	}
-	if !strings.Contains(launchBrief.LedgerEntry.Reference, "decision:pending_open_decision") || !strings.Contains(launchBrief.LedgerEntry.Reference, "gates:repo=ready_for_review") {
+	if !strings.Contains(launchBrief.LedgerEntry.Reference, "decision:pending_open_decision") || !strings.Contains(launchBrief.LedgerEntry.Reference, "gates:repo=ready_for_review") || !strings.Contains(launchBrief.LedgerEntry.Reference, "gate_summary:4/4 gates ready for CEO review") {
 		t.Fatalf("token launch brief ledger reference missing CEO memo contract: %s", launchBrief.LedgerEntry.Reference)
 	}
 	if !stringSliceContains(launchBrief.ResearchSignals, "airdrop_launch") || !stringSliceContains(launchBrief.ResearchSignals, "repository_context") {
@@ -1766,7 +1766,7 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 	feedTypes := map[string]bool{}
 	for _, item := range store.PublicLiveFeed(20).Items {
 		feedTypes[item.Type] = true
-		if item.Type == "ledger_token_launch_brief" && (!strings.Contains(item.Body, "pending open decision") || !strings.Contains(item.Body, "gates:")) {
+		if item.Type == "ledger_token_launch_brief" && (!strings.Contains(item.Body, "pending open decision") || !strings.Contains(item.Body, "4/4 gates ready for CEO review") || !strings.Contains(item.Body, "Gates:")) {
 			t.Fatalf("token launch live feed missing CEO decision context: %#v", item)
 		}
 	}
@@ -1809,7 +1809,7 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 			if item.Status != "pending_review" || strings.Contains(item.Body, wallet) || strings.Contains(item.Reference, wallet) {
 				t.Fatalf("unsafe token workflow admin ops item: %#v", item)
 			}
-			if strings.Contains(item.Title, "CEO token launch") && (!strings.Contains(item.Body, "pending open decision") || !strings.Contains(item.Body, "repo=ready_for_review")) {
+			if strings.Contains(item.Title, "CEO token launch") && (!strings.Contains(item.Body, "pending open decision") || !strings.Contains(item.Body, "4/4 gates ready for CEO review") || !strings.Contains(item.Body, "repo=ready_for_review")) {
 				t.Fatalf("token launch admin ops item missing CEO decision context: %#v", item)
 			}
 		}

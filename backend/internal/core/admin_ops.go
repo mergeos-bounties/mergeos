@@ -615,8 +615,12 @@ func adminOpsTokenWorkflowItem(entry LedgerEntry) AdminOpsQueueItem {
 		if gates == "" {
 			gates = "ceo_memo"
 		}
+		gateSummary := sanitizeLedgerReferenceValue(fields["gate_summary"])
+		if gateSummary == "" {
+			gateSummary = gates
+		}
 		title = "CEO token launch brief needs review"
-		body = fmt.Sprintf("%s launch brief needs CEO research, risk review, and %s before allocation opens. Gates: %s.", marketplaceTitle(launchType), strings.ReplaceAll(decision, "_", " "), gates)
+		body = fmt.Sprintf("%s launch brief needs CEO research, risk review, and %s before allocation opens. Gate summary: %s. Gates: %s.", marketplaceTitle(launchType), strings.ReplaceAll(decision, "_", " "), gateSummary, gates)
 		severity = "medium"
 	}
 	return AdminOpsQueueItem{
@@ -660,6 +664,9 @@ func publicTokenWorkflowReviewReference(entry LedgerEntry) string {
 		}
 		if launchType := sanitizeLedgerReferenceValue(fields["type"]); launchType != "" {
 			parts = append(parts, "type:"+launchType)
+		}
+		if gateSummary := sanitizeLedgerReferenceValue(fields["gate_summary"]); gateSummary != "" {
+			parts = append(parts, "gate_summary:"+gateSummary)
 		}
 	}
 	parts = append(parts, fmt.Sprintf("ledger:%d", entry.Sequence))

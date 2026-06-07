@@ -440,6 +440,7 @@ func (s *Store) RecordTokenLaunchBriefForUser(userID string, req TokenLaunchBrie
 		"type:" + launchType,
 		"decision:" + ceoMemo.Decision,
 		"gates:" + tokenLaunchGateReference(ceoMemo.Gates),
+		"gate_summary:" + tokenLaunchGateSummary(ceoMemo.Gates),
 		"title:" + projectTitle,
 		"repo:" + repositoryURL,
 		"signals:" + strings.Join(researchSignals, ","),
@@ -532,6 +533,31 @@ func tokenLaunchGateReference(gates []CEOMemoGate) string {
 		parts = append(parts, gate.Key+"="+gate.Status)
 	}
 	return strings.Join(parts, ",")
+}
+
+func tokenLaunchGateSummary(gates []CEOMemoGate) string {
+	total := 0
+	ready := 0
+	needsEvidence := 0
+	for _, gate := range gates {
+		if gate.Key == "" {
+			continue
+		}
+		total++
+		switch gate.Status {
+		case "ready_for_review":
+			ready++
+		case "needs_evidence":
+			needsEvidence++
+		}
+	}
+	if total == 0 {
+		return "no gates recorded"
+	}
+	if needsEvidence == 0 {
+		return fmt.Sprintf("%d/%d gates ready for CEO review", ready, total)
+	}
+	return fmt.Sprintf("%d/%d gates ready, %d need evidence", ready, total, needsEvidence)
 }
 
 func (s *Store) RecordPresaleReservationForUser(userID string, req PresaleReservationRequest) (PresaleReservationResponse, error) {

@@ -928,7 +928,11 @@ func publicLiveFeedLedgerBody(entry LedgerEntry, projectTitle string) string {
 		if gates == "" {
 			gates = "CEO memo gates"
 		}
-		return fmt.Sprintf("MergeOS recorded a CEO %s research brief. Decision is %s; gates: %s.", launchType, strings.ReplaceAll(decision, "_", " "), gates)
+		gateSummary := sanitizeLedgerReferenceValue(fields["gate_summary"])
+		if gateSummary == "" {
+			gateSummary = gates
+		}
+		return fmt.Sprintf("MergeOS recorded a CEO %s research brief. Decision is %s; %s. Gates: %s.", launchType, strings.ReplaceAll(decision, "_", " "), gateSummary, gates)
 	}
 	scope := projectTitle
 	if scope == "" {
