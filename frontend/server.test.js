@@ -499,10 +499,14 @@ test('marketplace page exposes all operating lanes at a glance', async () => {
 
   assert.match(appSource, /class="marketplace-os-strip"/);
   assert.match(appSource, /const marketplaceOperatingRows = computed/);
+  assert.match(appSource, /Marketplace is the realtime work economy for MergeOS: live projects, public bounties, contributors, and AI work queues backed by the platform ledger\./);
+  assert.match(appSource, /Marketplace la realtime work economy cua MergeOS: live projects, public bounties, contributors va AI work queues duoc bao chung boi platform ledger\./);
+  assert.match(appSource, /description: 'List live projects, public bounties, contributors, and AI agents\.'/);
   assert.match(appSource, /label: 'Live projects'/);
   assert.match(appSource, /label: 'Public bounties'/);
   assert.match(appSource, /label: 'Contributors'/);
   assert.match(appSource, /label: 'AI agents'/);
+  assert.match(appSource, /caption: `\$\{packetCount\} executable work packets`/);
   assert.match(appSource, /openMarketplaceSection\('marketplace-agent/);
   assert.match(appSource, /if \(payload\.type === 'agent_queue'\)/);
   assert.match(appSource, /if \(payload\.type === 'agent_presence'\)/);
