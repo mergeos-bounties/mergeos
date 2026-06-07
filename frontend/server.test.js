@@ -468,6 +468,10 @@ test('public backend page exposes the proposed runtime stack', async () => {
 
   assert.match(appSource, /class="public-backend-stack-strip"/);
   assert.match(appSource, /const publicBackendRuntimeStackRows = computed/);
+  assert.match(appSource, /const publicBackendSurfaceRows = computed\(\(\) => \{/);
+  assert.match(appSource, /key: 'auth'[\s\S]*key: 'repo'[\s\S]*key: 'ai'[\s\S]*key: 'tasks'[\s\S]*key: 'payments'[\s\S]*key: 'realtime'[\s\S]*key: 'ledger'[\s\S]*key: 'protocol'/);
+  assert.match(appSource, /Auth, repositories, AI orchestration, escrow, realtime, and ledger APIs in one backend loop/);
+  assert.match(appSource, /authentication, repository imports, AI scans, task generation, payment verification, escrow reserves, live notifications, public protocol documents, and ledger proof/);
   for (const label of ['Go / Rust', 'PostgreSQL', 'Redis', 'GitHub API', 'OpenAI API', 'WebSocket gateway']) {
     assert.match(appSource, new RegExp(`label: '${label.replace('/', '\\/')}'`));
   }
