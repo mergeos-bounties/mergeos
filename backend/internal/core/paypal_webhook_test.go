@@ -110,6 +110,17 @@ func TestPayPalWebhookRecordsPaymentOnce(t *testing.T) {
 	if got := countPayPalPaymentVerified(store); got != 1 {
 		t.Fatalf("paypal payment ledger entries after first webhook = %d", got)
 	}
+	paymentEvents := store.PublicEventProtocolQuery(PublicLiveFeedQuery{Limit: 10})
+	foundPaymentEvent := false
+	for _, event := range paymentEvents.Events {
+		if event.Type == "payment.verified" && event.ProjectID == projectID && event.Payload["feed_type"] == "ledger_payment_verified" {
+			foundPaymentEvent = true
+			break
+		}
+	}
+	if !foundPaymentEvent {
+		t.Fatalf("public events missing payment.verified: %#v", paymentEvents.Events)
+	}
 
 	replay := postPayPalWebhook(t, server, body)
 	if replay.Code != http.StatusOK {

@@ -599,6 +599,21 @@ test('validates live feed protocol documents', () => {
         created_at: now,
       },
       {
+        id: 'ledger:10',
+        type: 'ledger_payment_verified',
+        title: 'Escrow payment verified',
+        body: 'Customer portal rebuild recorded verified escrow funding.',
+        project_id: 'prj_0001',
+        project_title: 'Customer portal rebuild',
+        actor: 'payment:paypal',
+        amount_cents: 50000,
+        ledger_sequence: 10,
+        entry_hash: 'e'.repeat(64),
+        reference: 'payment:paypal;order:paypal_order_123;project:prj_0001',
+        status: 'verified',
+        created_at: now,
+      },
+      {
         id: 'ledger:7',
         type: 'ledger_airdrop_claim',
         title: 'Airdrop claim recorded',
@@ -3225,6 +3240,20 @@ test('validates event protocol documents and assertion helper', () => {
   });
   assert.equal(notificationEvent.valid, true);
   assert.deepEqual(notificationEvent.errors, []);
+  const paymentEvent = validateProtocolDocument({
+    protocol_version: 'mergeos.event.v1',
+    kind: 'event',
+    id: 'evt_payment_verified',
+    type: 'payment.verified',
+    occurred_at: '2026-06-02T00:00:00.000Z',
+    actor: 'payment:paypal',
+    project_id: 'prj_0001',
+    reference: 'payment:paypal;order:paypal_order_123;project:prj_0001',
+    amount_mrg: 500,
+    payload: { feed_type: 'ledger_payment_verified', provider: 'paypal', escrow_status: 'verified' },
+  });
+  assert.equal(paymentEvent.valid, true);
+  assert.deepEqual(paymentEvent.errors, []);
 
   const proposalEvent = validateProtocolDocument({
     protocol_version: 'mergeos.event.v1',

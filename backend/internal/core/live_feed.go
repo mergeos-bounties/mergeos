@@ -1175,6 +1175,8 @@ func publicEventType(item PublicLiveFeedItem) string {
 		return publicAgentActionEventType(item.Action)
 	case "agent_lease":
 		return publicAgentLeaseEventType(item.Action)
+	case "ledger_payment_verified":
+		return "payment.verified"
 	case "ledger_airdrop_claim":
 		return "airdrop.claimed"
 	case "ledger_presale_reservation":

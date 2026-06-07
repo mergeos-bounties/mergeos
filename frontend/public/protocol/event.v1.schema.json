@@ -28,6 +28,7 @@
         "presale.reserved",
         "wallet.migrated",
         "notification.updated",
+        "payment.verified",
         "task.paid",
         "deployment.updated",
         "ledger.recorded",

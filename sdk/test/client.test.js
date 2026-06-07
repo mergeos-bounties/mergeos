@@ -979,6 +979,7 @@ test('maps live feed records to workflow event protocol values', () => {
   assert.equal(liveFeedTypeToProtocolEventType('proposal_submitted'), 'proposal.submitted');
   assert.equal(liveFeedTypeToProtocolEventType('proposal_accepted'), 'proposal.accepted');
   assert.equal(liveFeedTypeToProtocolEventType('proposal_declined'), 'proposal.declined');
+  assert.equal(liveFeedTypeToProtocolEventType('ledger_payment_verified'), 'payment.verified');
   assert.equal(liveFeedTypeToProtocolEventType('ledger_task_payment'), 'task.paid');
   assert.equal(liveFeedTypeToProtocolEventType('ledger_airdrop_claim'), 'airdrop.claimed');
   assert.equal(liveFeedTypeToProtocolEventType('ledger_presale_reservation'), 'presale.reserved');
@@ -1015,11 +1016,13 @@ test('maps live feed records to workflow event protocol values', () => {
   assert.equal(protocolEventGroup('presale.reserved'), 'token');
   assert.equal(protocolEventGroup('wallet.migrated'), 'wallet');
   assert.equal(protocolEventGroup('notification.updated'), 'notification');
+  assert.equal(protocolEventGroup('payment.verified'), 'payment');
   assert.equal(isWorkflowEventType('deployment.updated'), true);
   assert.equal(isWorkflowEventType('airdrop.claimed'), true);
   assert.equal(isWorkflowEventType('presale.reserved'), true);
   assert.equal(isWorkflowEventType('wallet.migrated'), true);
   assert.equal(isWorkflowEventType('notification.updated'), true);
+  assert.equal(isWorkflowEventType('payment.verified'), true);
   assert.equal(isWorkflowEventType('agent.scanned'), true);
   assert.equal(isWorkflowEventType('agent.released'), true);
   assert.equal(isWorkflowEventType('unknown.event'), false);
