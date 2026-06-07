@@ -9022,8 +9022,8 @@ const publicNavTranslations = {
 const publicHomeTranslations = {
   'en-US': {
     eyebrow: 'MERGEOS DELIVERY OS',
-    title: 'Fund software work. Route tasks. Prove delivery.',
-    body: 'MergeOS is the operating layer for funded software work: capture the brief, lock escrow, import repo context, route tasks to builders or agents, review PRs, validate deployment, and publish payout proof on the ledger.',
+    title: 'MergeOS turns funded software work into verified delivery.',
+    body: 'One command layer for software projects: capture the brief, import repo context, lock escrow, route tasks to builders or AI agents, review PRs, validate deployment, and publish payout proof.',
     primaryAction: 'Start a project',
     marketplaceAction: 'View live work',
     ledgerAction: 'Open proof ledger',
@@ -9047,15 +9047,15 @@ const publicHomeTranslations = {
     statDetails: ['Funded briefs', 'Claimable work', 'Escrow tracked', 'MRG supply'],
     proofRows: ['Escrow first', 'Repo-aware tasks', 'Ledger proof'],
     pipelineRows: [
-      { title: 'Brief', body: 'Scope and acceptance criteria' },
-      { title: 'Fund', body: 'Escrow and token mint' },
-      { title: 'Verify', body: 'PR review and payout log' },
+      { title: 'Brief', body: 'Scope, repo, acceptance criteria' },
+      { title: 'Route', body: 'Human, AI, or hybrid tasks' },
+      { title: 'Prove', body: 'PR, deploy, payout ledger' },
     ],
     workflowCards: [
-      { title: 'Product', body: 'Run project intake, escrow funding, repo handoff, task splitting, and proof ledger from one flow.', cta: 'View product' },
-      { title: 'Solutions', body: 'Choose human talent, AI agents, or hybrid delivery for SaaS builds, repo fixes, and marketplace tasks.', cta: 'Explore solutions' },
-      { title: 'Marketplace', body: 'Browse live funded projects, open tasks, contributor signals, and AI work queues before signing in.', cta: 'Find talent' },
-      { title: 'How it works', body: 'Post work, fund escrow, mint tokens for the payer, match talent, and release payouts with ledger proof.', cta: 'See workflow' },
+      { title: 'Product OS', body: 'Project intake, repo import, AI task graph, escrow, PR monitor, deployment gates, and ledger proof stay in one operating flow.', cta: 'View product' },
+      { title: 'Delivery lanes', body: 'Route funded work to human contributors, AI agents, or hybrid teams with shared scope, acceptance criteria, and payout state.', cta: 'Explore solutions' },
+      { title: 'Public proof layer', body: 'Marketplace activity, escrow, token mint, PR evidence, deployment checks, SDK context, and protocol documents are discoverable.', cta: 'Find talent' },
+      { title: 'How it works', body: 'Post work, fund escrow, mint payer tokens, match talent, verify delivery, and release payout with public proof.', cta: 'See workflow' },
       { title: 'Protocol Index', body: 'Discover public schemas, endpoints, realtime events, and agent context URLs from one manifest.', cta: 'Open manifest' },
     ],
     talentRows: [
@@ -9096,7 +9096,7 @@ const publicHomeTranslations = {
   'vi-VN': {
     eyebrow: 'MERGEOS DELIVERY OS',
     title: 'MergeOS biến việc phần mềm đã fund thành delivery có proof.',
-    body: 'MergeOS gom brief, escrow, repo context, task routing, builder hoặc AI agent, PR review, deploy check và payout proof vào một workflow ngắn, rõ, có ledger.',
+    body: 'Một command layer cho dự án phần mềm: tạo brief, import repo context, khóa escrow, route task cho builder hoặc AI agent, review PR, kiểm tra deploy và publish payout proof.',
     primaryAction: 'Bắt đầu dự án',
     marketplaceAction: 'Xem việc live',
     ledgerAction: 'Mở proof ledger',
@@ -9120,15 +9120,15 @@ const publicHomeTranslations = {
     statDetails: ['Brief đã fund', 'Việc có thể claim', 'Escrow đang track', 'Nguồn cung MRG'],
     proofRows: ['Escrow trước', 'Task hiểu repo', 'Ledger proof'],
     pipelineRows: [
-      { title: 'Brief', body: 'Scope và tiêu chí nghiệm thu' },
-      { title: 'Fund', body: 'Escrow và token mint' },
-      { title: 'Verify', body: 'Review PR và log payout' },
+      { title: 'Brief', body: 'Scope, repo, tiêu chí nghiệm thu' },
+      { title: 'Route', body: 'Human, AI hoặc hybrid task' },
+      { title: 'Prove', body: 'PR, deploy, payout ledger' },
     ],
     workflowCards: [
-      { title: 'Sản phẩm', body: 'Chạy intake, escrow funding, repo handoff, chia task và proof ledger trong một flow.', cta: 'Xem sản phẩm' },
-      { title: 'Giải pháp', body: 'Chọn human talent, AI agent hoặc hybrid delivery cho SaaS, repo fixes và marketplace tasks.', cta: 'Khám phá' },
-      { title: 'Marketplace', body: 'Xem dự án đã fund, task mở, tín hiệu contributor và hàng đợi AI trước khi đăng nhập.', cta: 'Tìm talent' },
-      { title: 'Cách hoạt động', body: 'Đăng việc, fund escrow, mint token cho payer, match talent và release payout có ledger proof.', cta: 'Xem workflow' },
+      { title: 'Product OS', body: 'Intake dự án, import repo, AI task graph, escrow, PR monitor, deployment gates và ledger proof nằm trong một operating flow.', cta: 'Xem sản phẩm' },
+      { title: 'Delivery lanes', body: 'Route funded work cho human contributor, AI agent hoặc hybrid team với chung scope, acceptance criteria và payout state.', cta: 'Khám phá' },
+      { title: 'Public proof layer', body: 'Marketplace activity, escrow, token mint, PR evidence, deployment checks, SDK context và protocol documents đều discover được.', cta: 'Tìm talent' },
+      { title: 'Cách hoạt động', body: 'Đăng việc, fund escrow, mint token cho payer, match talent, verify delivery và release payout có public proof.', cta: 'Xem workflow' },
       { title: 'Protocol Index', body: 'Khám phá schema, endpoint, realtime event và agent context URL từ một manifest.', cta: 'Mở manifest' },
     ],
     talentRows: [

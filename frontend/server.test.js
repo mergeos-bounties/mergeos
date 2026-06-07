@@ -388,6 +388,13 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.match(appSource, /class="home-system-explainer"/);
   assert.match(appSource, /localizedHomeWorkflowCards\.slice\(0, 4\)/);
   assert.match(appSource, /homeLiveStats\.slice\(0, 2\)/);
+  assert.match(appSource, /MergeOS turns funded software work into verified delivery\./);
+  assert.match(appSource, /One command layer for software projects: capture the brief, import repo context, lock escrow, route tasks to builders or AI agents, review PRs, validate deployment, and publish payout proof\./);
+  assert.match(appSource, /title: 'Product OS'[\s\S]*Project intake, repo import, AI task graph, escrow, PR monitor, deployment gates, and ledger proof stay in one operating flow\./);
+  assert.match(appSource, /title: 'Delivery lanes'[\s\S]*Route funded work to human contributors, AI agents, or hybrid teams with shared scope, acceptance criteria, and payout state\./);
+  assert.match(appSource, /title: 'Public proof layer'[\s\S]*Marketplace activity, escrow, token mint, PR evidence, deployment checks, SDK context, and protocol documents are discoverable\./);
+  assert.match(appSource, /title: 'Route', body: 'Human, AI, or hybrid tasks'/);
+  assert.match(appSource, /title: 'Prove', body: 'PR, deploy, payout ledger'/);
   assert.match(cssSource, /\.public-home-page\s*\{[\s\S]*padding-block: clamp\(14px, 2\.4vw, 30px\) clamp\(20px, 3vw, 38px\) !important;/);
   assert.match(cssSource, /\.public-home-page \.home-container\s*\{[\s\S]*max-width: 1080px !important;/);
   assert.match(cssSource, /\.public-home-hero\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) minmax\(286px, 332px\) !important;/);
