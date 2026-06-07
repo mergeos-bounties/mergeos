@@ -5201,6 +5201,16 @@
               <div v-if="tokenLaunchBriefResult.ceo_memo" class="token-ceo-memo-result">
                 <strong>{{ tokenLaunchBriefResult.ceo_memo.decision_label }}</strong>
                 <small>{{ tokenLaunchBriefResult.ceo_memo.review_owner }} / {{ tokenLaunchBriefResult.ceo_memo.next_action }}</small>
+                <a
+                  v-if="tokenLaunchBriefResult.repository_url"
+                  class="token-ceo-memo-source"
+                  :href="tokenLaunchBriefResult.repository_url"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Research source
+                  <Link2 :size="11" />
+                </a>
                 <div v-if="tokenLaunchBriefResult.ceo_memo.gates?.length" class="token-ceo-memo-gates">
                   <span v-for="gate in tokenLaunchBriefResult.ceo_memo.gates" :key="gate.key">
                     <b>{{ gate.label }}</b>

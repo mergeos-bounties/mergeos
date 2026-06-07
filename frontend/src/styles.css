@@ -8938,6 +8938,24 @@ svg {
   overflow-wrap: anywhere;
 }
 
+.token-ceo-memo-source {
+  width: max-content;
+  max-width: 100%;
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 7px;
+  border: 1px solid rgba(79, 70, 229, 0.16);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.76);
+  color: #3730a3;
+  padding: 0 9px;
+  font-size: 10.5px;
+  font-weight: 860;
+  text-decoration: none;
+}
+
 .token-ceo-memo-gates {
   min-width: 0;
   display: grid;
@@ -36887,6 +36905,11 @@ canvas {
 
   .token-ceo-memo-gates {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .token-ceo-memo-source {
+    width: 100% !important;
+    justify-content: center !important;
   }
 
   .token-ceo-decision-strip {

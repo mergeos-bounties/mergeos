@@ -1203,6 +1203,9 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /class="token-ceo-memo-result"/);
   assert.match(appSource, /tokenLaunchBriefResult\.ceo_memo\.decision_label/);
   assert.match(appSource, /tokenLaunchBriefResult\.ceo_memo\.gates\?\.length/);
+  assert.match(appSource, /class="token-ceo-memo-source"/);
+  assert.match(appSource, /tokenLaunchBriefResult\.repository_url/);
+  assert.match(appSource, /Research source/);
   assert.match(appSource, /Ledger board/);
   assert.match(appSource, /tokenLaunchBriefResult[\s\S]{0,900}openPublicPage\('ledger'\)/);
   assert.match(appSource, /action\.command === 'token-ceo-brief'/);
@@ -1332,6 +1335,7 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(cssSource, /\.token-ceo-brief-actions\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) auto auto;/);
   assert.match(cssSource, /\.token-ceo-research-grid\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /\.token-ceo-memo-result\s*\{[\s\S]*grid-column: 1 \/ -1;/);
+  assert.match(cssSource, /\.token-ceo-memo-source\s*\{[\s\S]*display: inline-flex;/);
   assert.match(cssSource, /\.token-proof-result-actions a,[\s\S]*\.token-proof-result-actions button\s*\{[\s\S]*display: inline-flex;/);
   assert.match(cssSource, /\.token-ceo-memo-gates\s*\{[\s\S]*grid-template-columns: repeat\(4, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /\.token-ceo-project-queue article\s*\{[\s\S]*min-height: 104px !important;/);
@@ -1350,6 +1354,7 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-metric-grid article:nth-child\(n \+ 3\)\s*\{[\s\S]*display: none !important;/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-brief-form\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\) !important;/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-memo-gates\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\) !important;/);
+  assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-memo-source\s*\{[\s\S]*width: 100% !important;/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-project-queue article:nth-child\(n \+ 3\),[\s\S]*\.token-ceo-research-grid article:nth-child\(n \+ 3\)\s*\{[\s\S]*display: none !important;/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-research-grid small\s*\{[\s\S]*display: none !important;/);
   assert.match(cssSource, /\.token-proof-result small\s*\{[\s\S]*overflow: visible;[\s\S]*white-space: normal;[\s\S]*overflow-wrap: anywhere;/);
