@@ -31709,3 +31709,109 @@ canvas {
   }
 }
 
+/* Signed-in post-login mobile owner: collapse the authenticated chrome into one
+   reachable row, keep account/notification sheets anchored, and stop dense
+   dashboard data from hiding below the fold on phones. */
+@media (max-width: 760px) {
+  .dashboard-shell {
+    --dash-mobile-header-height: 62px;
+    --dash-mobile-sheet-z: 1040;
+    --dash-mobile-gutter: clamp(12px, 4vw, 16px);
+  }
+
+  .dashboard-shell .dash-sidebar {
+    display: grid !important;
+    grid-template-columns: 44px minmax(0, 1fr);
+    align-items: center;
+    gap: 8px;
+    min-height: var(--dash-mobile-header-height) !important;
+    height: auto !important;
+    padding: 8px var(--dash-mobile-gutter) !important;
+    z-index: 860 !important;
+  }
+
+  .dashboard-shell .dash-brand {
+    width: 44px;
+    min-height: 44px;
+    justify-content: center;
+    padding: 0 !important;
+  }
+
+  .dashboard-shell .dash-brand strong,
+  .dashboard-shell .mrg-card,
+  .dashboard-shell .dash-side-nav {
+    display: none !important;
+  }
+
+  .dashboard-shell .dash-mobile-nav {
+    display: grid !important;
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    gap: 4px !important;
+  }
+
+  .dashboard-shell .dash-mobile-nav button {
+    min-height: 44px !important;
+    padding: 3px 2px !important;
+  }
+
+  .dashboard-shell .dash-topbar {
+    position: static !important;
+    min-height: auto !important;
+    margin: 0 var(--dash-mobile-gutter) !important;
+    padding: 8px 0 0 !important;
+    border-bottom: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+  }
+
+  .dashboard-shell .dash-search.mobile-open {
+    top: calc(var(--dash-mobile-header-height) + 8px + env(safe-area-inset-top)) !important;
+  }
+
+  .dashboard-shell .dash-mobile-menu {
+    top: calc(var(--dash-mobile-header-height) + 8px + env(safe-area-inset-top)) !important;
+    z-index: var(--dash-mobile-sheet-z) !important;
+  }
+
+  .notification-dropdown,
+  .dashboard-shell .notification-dropdown,
+  .dashboard-shell .account-context-menu,
+  .dashboard-account-menu .account-context-menu {
+    position: fixed !important;
+    top: auto !important;
+    left: var(--dash-mobile-gutter) !important;
+    right: var(--dash-mobile-gutter) !important;
+    bottom: calc(12px + env(safe-area-inset-bottom)) !important;
+    width: auto !important;
+    max-width: calc(100vw - (var(--dash-mobile-gutter) * 2)) !important;
+    max-height: min(60dvh, 460px) !important;
+    overflow-y: auto !important;
+    transform: none !important;
+    overscroll-behavior: contain;
+    z-index: var(--dash-mobile-sheet-z) !important;
+  }
+
+  .dashboard-tool-form label.invalid,
+  .dashboard-shell :is(input, select, textarea):invalid {
+    scroll-margin-top: calc(var(--dash-mobile-header-height) + 16px);
+  }
+}
+
+@media (max-width: 430px) {
+  .dashboard-shell {
+    --dash-mobile-header-height: 60px;
+  }
+
+  .dashboard-shell .dash-command-metrics {
+    grid-auto-flow: row !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-auto-columns: unset !important;
+    mask-image: none !important;
+  }
+
+  .dashboard-shell .dash-mobile-nav button span {
+    font-size: 9px;
+  }
+}
+

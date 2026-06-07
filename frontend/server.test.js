@@ -524,6 +524,12 @@ test('signed-in mobile dashboard keeps nav, actions, and popovers phone-safe', a
   assert.match(cssSource, /\.dashboard-shell :is\([\s\S]*\.escrow-task-list article,[\s\S]*\.routing-lane-strip article,[\s\S]*\.routing-route-list article,[\s\S]*\.routing-proposal-list article,[\s\S]*\.deployment-status-row,[\s\S]*\.deployment-stage-list article,[\s\S]*\.ai-log-list article,[\s\S]*\)\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) !important;/);
   assert.match(cssSource, /\.dashboard-shell :is\([\s\S]*\.delivery-snapshot-actions,[\s\S]*\.escrow-control-actions,[\s\S]*\.routing-board-actions,[\s\S]*\.repo-intel-actions,[\s\S]*\.ai-log-actions,[\s\S]*\.pr-monitor-heading-actions,[\s\S]*\.routing-proposal-buttons[\s\S]*\)\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\) !important;/);
   assert.match(cssSource, /@media \(max-width: 430px\)[\s\S]*\.dashboard-shell :is\([\s\S]*\.escrow-stat-grid,[\s\S]*\.routing-stat-grid,[\s\S]*\.repo-intel-stats,[\s\S]*\.deployment-signal-strip,[\s\S]*\.routing-proposal-buttons[\s\S]*\)\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) !important;/);
+  assert.match(cssSource, /Signed-in post-login mobile owner/);
+  assert.match(cssSource, /\.dashboard-shell \.dash-sidebar\s*\{[\s\S]*grid-template-columns: 44px minmax\(0, 1fr\);[\s\S]*min-height: var\(--dash-mobile-header-height\) !important;/);
+  assert.match(cssSource, /\.dashboard-shell \.dash-brand strong,[\s\S]*\.dashboard-shell \.mrg-card,[\s\S]*\.dashboard-shell \.dash-side-nav\s*\{[\s\S]*display: none !important;/);
+  assert.match(cssSource, /\.notification-dropdown,[\s\S]*\.dashboard-shell \.notification-dropdown,[\s\S]*\.dashboard-shell \.account-context-menu,[\s\S]*\.dashboard-account-menu \.account-context-menu\s*\{[\s\S]*bottom: calc\(12px \+ env\(safe-area-inset-bottom\)\) !important;[\s\S]*max-height: min\(60dvh, 460px\) !important;/);
+  assert.match(cssSource, /\.dashboard-tool-form label\.invalid,[\s\S]*\.dashboard-shell :is\(input, select, textarea\):invalid\s*\{[\s\S]*scroll-margin-top: calc\(var\(--dash-mobile-header-height\) \+ 16px\);/);
+  assert.match(cssSource, /@media \(max-width: 430px\)[\s\S]*\.dashboard-shell \.dash-command-metrics\s*\{[\s\S]*grid-auto-flow: row !important;[\s\S]*mask-image: none !important;/);
 });
 
 test('AI workflow dashboard exposes stage checklists from the protocol contract', async () => {
