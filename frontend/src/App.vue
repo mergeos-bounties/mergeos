@@ -1591,7 +1591,13 @@
               v-if="dashboardNotificationMenuOpen"
               id="dashboard-notification-dropdown"
               ref="dashboardNotificationDropdown"
-              :class="['notification-dropdown', { 'is-above': dashboardNotificationMenuPlacement === 'above' }]"
+              :class="[
+                'notification-dropdown',
+                {
+                  'is-above': dashboardNotificationMenuPlacement === 'above',
+                  'is-mobile-sheet': dashboardNotificationMenuPlacement === 'mobile-sheet',
+                },
+              ]"
               :style="dashboardNotificationDropdownStyle"
               role="dialog"
               aria-label="Notifications"
