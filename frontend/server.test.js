@@ -195,6 +195,22 @@ test('live feed agent packets expose action handoff links', async () => {
   assert.match(appSource, /bountyID: liveFeedAgentBountyID\(item, contextUrls\)/);
 });
 
+test('agent work packets expose authenticated lease action', async () => {
+  const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
+  const cssSource = await fs.readFile(new URL('./src/styles.css', import.meta.url), 'utf-8');
+
+  assert.match(appSource, /const leasingAgentTaskID = ref\(''\);/);
+  assert.match(appSource, /const agentLeaseResponses = reactive\(\{\}\);/);
+  assert.match(appSource, /@click="leaseAgentWorkPacket\(packet\)"/);
+  assert.match(appSource, /@click="leaseAgentWorkPacket\(task\)"/);
+  assert.match(appSource, /Lease packet/);
+  assert.match(appSource, /async function leaseAgentWorkPacket\(task = \{\}\)/);
+  assert.match(appSource, /api\('\/api\/agent-queue\/leases', \{/);
+  assert.match(appSource, /status: existingLease\.lease_id \? 'heartbeat' : 'leased'/);
+  assert.match(appSource, /agentLeaseResponses\[claimID\] = lease;/);
+  assert.match(cssSource, /\.marketplace-agent-lease-row\s*\{[\s\S]*grid-template-columns: minmax\(128px, auto\) minmax\(0, 1fr\);/);
+});
+
 test('repo import exposes publish path to bounties, agents, and live proof', async () => {
   const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
 

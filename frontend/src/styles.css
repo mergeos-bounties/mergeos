@@ -10199,6 +10199,13 @@ svg {
   gap: 7px;
 }
 
+.marketplace-agent-lease-row {
+  display: grid;
+  grid-template-columns: minmax(128px, auto) minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+
 .marketplace-agent-context-row a,
 .marketplace-agent-action-row span {
   min-height: 28px;
@@ -10218,6 +10225,49 @@ svg {
 .marketplace-agent-context-row a {
   border: 1px solid rgba(15, 159, 120, 0.16);
   color: var(--green-dark);
+}
+
+.marketplace-agent-lease-row button {
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid rgba(15, 159, 120, 0.28);
+  border-radius: 8px;
+  background: #eefbf5;
+  color: var(--green-dark);
+  padding: 0 11px;
+  font-size: 11px;
+  font-weight: 920;
+}
+
+.marketplace-agent-lease-row button:disabled {
+  cursor: wait;
+  opacity: 0.68;
+}
+
+.marketplace-agent-lease-row span,
+.marketplace-agent-lease-row strong,
+.marketplace-agent-lease-row small {
+  min-width: 0;
+}
+
+.marketplace-agent-lease-row span {
+  display: grid;
+  gap: 2px;
+  color: #64748b;
+  font-size: 10px;
+  line-height: 1.25;
+  font-weight: 760;
+}
+
+.marketplace-agent-lease-row strong {
+  overflow: hidden;
+  color: #0f172a;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .marketplace-agent-runbook {

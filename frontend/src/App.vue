@@ -2735,7 +2735,16 @@
                       <p>{{ task.summary }}</p>
                       <em>{{ task.evidence }}</em>
                       <em v-if="task.nextAction">{{ task.nextAction }}</em>
+                      <em v-if="task.lease">{{ task.leaseLabel }} - {{ task.heartbeatLabel }}</em>
                       <div v-if="task.actionRows.length" class="agent-task-actions">
+                        <button
+                          type="button"
+                          :disabled="leasingAgentTaskID === task.id"
+                          @click="leaseAgentWorkPacket(task)"
+                        >
+                          <Bot :size="12" />
+                          {{ leasingAgentTaskID === task.id ? 'Leasing' : (task.lease ? 'Refresh lease' : 'Lease') }}
+                        </button>
                         <button
                           v-for="action in task.actionRows"
                           :key="action.key"
@@ -8093,6 +8102,16 @@
                       {{ action.label }}
                     </span>
                   </div>
+                  <div class="marketplace-agent-lease-row">
+                    <button type="button" :disabled="leasingAgentTaskID === packet.id" @click="leaseAgentWorkPacket(packet)">
+                      <Bot :size="13" />
+                      {{ leasingAgentTaskID === packet.id ? 'Leasing' : (packet.lease ? 'Refresh lease' : 'Lease packet') }}
+                    </button>
+                    <span v-if="packet.lease">
+                      <strong>{{ packet.leaseLabel }}</strong>
+                      <small>{{ packet.heartbeatLabel }}</small>
+                    </span>
+                  </div>
                 </article>
               </div>
               <article v-else class="marketplace-empty-state compact">
@@ -11321,6 +11340,8 @@ const expandedReviewTaskID = ref('');
 const reviewSubmittingTaskID = ref('');
 const requestingChangesTaskID = ref('');
 const recordingAgentActionKey = ref('');
+const leasingAgentTaskID = ref('');
+const agentLeaseResponses = reactive({});
 const taskReviewDrafts = reactive({});
 const taskReviewErrors = reactive({});
 const customerDashboardSnapshot = ref(emptyCustomerDashboardSnapshot());
@@ -18384,6 +18405,7 @@ const marketplaceAgentWorkPacketRows = computed(() => {
     const evidence = Array.isArray(packet.evidence_checklist)
       ? packet.evidence_checklist
       : (Array.isArray(task.evidence_required) ? task.evidence_required : []);
+    const lease = agentLeaseResponses[bountyID] || null;
     const contextRows = [
       { label: publicMarketplaceCopy.value.manifest || 'Manifest', href: contextURLs.task_protocol || task.protocol_url || publicTaskProtocolPath(bountyID), icon: Code2 },
       { label: publicMarketplaceCopy.value.workflow || 'Workflow', href: contextURLs.workflow_protocol || publicProjectWorkflowPath(task.project_id), icon: GitBranch },
@@ -18424,6 +18446,10 @@ const marketplaceAgentWorkPacketRows = computed(() => {
       actionCount: actionPayloads.length,
       runbookCount: runbook.length,
       evidenceCount: evidence.length,
+      agentType,
+      lease,
+      leaseLabel: lease ? `${toTitleLabel(lease.status || 'leased')} / ${shortAgentEndpoint(lease.lease_id || '')}` : '',
+      heartbeatLabel: lease?.heartbeat_due_at ? `Heartbeat ${formatDashboardDate(lease.heartbeat_due_at)}` : '',
     };
   });
 });
@@ -21008,8 +21034,10 @@ const dashboardAgentQueueRows = computed(() => {
       });
       const firstAction = actionRows[0] || null;
       const nextRunbookStep = runbook.find((step) => step?.action && step.action !== 'fetch_context') || runbook[0] || null;
+      const lease = agentLeaseResponses[bountyID] || null;
       const packetRows = [
         { label: 'Claim', value: shortAgentEndpoint(workPacket.claim_endpoint || task.claim_endpoint || `/api/tasks/${bountyID}/claim`) },
+        ...(lease ? [{ label: 'Lease', value: shortAgentEndpoint(lease.lease_id || '') }] : []),
         { label: 'Actions', value: `${actionPayloads.length} payload${actionPayloads.length === 1 ? '' : 's'}` },
         { label: 'Submit', value: shortAgentEndpoint(submitEndpoint) },
       ];
@@ -21045,6 +21073,9 @@ const dashboardAgentQueueRows = computed(() => {
         runbookRows,
         runbook,
         workPacket,
+        lease,
+        leaseLabel: lease ? `${toTitleLabel(lease.status || 'leased')} / ${shortAgentEndpoint(lease.lease_id || '')}` : '',
+        heartbeatLabel: lease?.heartbeat_due_at ? `Heartbeat ${formatDashboardDate(lease.heartbeat_due_at)}` : '',
         workflowPulseUrl: task.project_id ? absolutePublicPath(contextUrls.workflow_pulse || `/api/public/projects/${encodeURIComponent(task.project_id)}/workflow-pulse`) : '',
         tone: ['green', 'blue', 'purple', 'amber'][index % 4],
         haystack: [bountyID, task.title, task.project_title, task.summary, agentType, workerKind, task.readiness, firstAction?.label, nextRunbookStep?.label, ...actionRows.map((row) => row.label), ...packetRows.map((row) => `${row.label} ${row.value}`), ...runbookRows.map((row) => `${row.label} ${row.endpoint}`), ...evidence].filter(Boolean).join(' ').toLowerCase(),
@@ -26179,6 +26210,45 @@ async function recordAgentQueueAction(task = {}, actionRow = {}) {
   }
 }
 
+async function leaseAgentWorkPacket(task = {}) {
+  const claimID = task.id || task.bounty_id || task.bountyID || task.claim_id || task.claimID || '';
+  if (!claimID) {
+    showToast('Agent lease needs a task claim ID.');
+    return;
+  }
+  if (!token.value || !user.value) {
+    openAuth('login');
+    showToast('Log in to lease this agent work packet.');
+    return;
+  }
+  if (leasingAgentTaskID.value) return;
+  leasingAgentTaskID.value = claimID;
+  try {
+    const existingLease = agentLeaseResponses[claimID] || task.lease || {};
+    const payload = {
+      lease_id: existingLease.lease_id || '',
+      claim_id: claimID,
+      bounty_id: claimID,
+      agent_type: task.agentType || task.agent_type || '',
+      status: existingLease.lease_id ? 'heartbeat' : 'leased',
+    };
+    const lease = await api('/api/agent-queue/leases', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    agentLeaseResponses[claimID] = lease;
+    await Promise.all([
+      loadMarketplaceData({ silent: true }),
+      loadLiveFeedData({ silent: true }),
+    ]);
+    showToast(`Agent lease ${shortAgentEndpoint(lease.lease_id || claimID)} ${lease.status || 'created'}.`);
+  } catch (error) {
+    showToast(error.message || 'Could not lease agent work packet.');
+  } finally {
+    leasingAgentTaskID.value = '';
+  }
+}
+
 async function openRepositorySuggestedTaskFunding(task = {}) {
   if (!dashboardSelectedProject.value?.id || !task?.id || fundingSuggestedTaskID.value) return;
   if (!token.value) {
@@ -30550,6 +30620,9 @@ function clearSession() {
   dashboardProjects.value = [];
   dashboardTasks.value = [];
   dashboardLedgerEntries.value = [];
+  Object.keys(agentLeaseResponses).forEach((key) => {
+    delete agentLeaseResponses[key];
+  });
   resetDashboardProjectProtocolState();
   adminConsole.value = {
     summary: {},
