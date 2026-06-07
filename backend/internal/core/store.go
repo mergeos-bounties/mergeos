@@ -1091,6 +1091,7 @@ func repositorySuggestedTaskWorkPacket(project *Project, task *Task, suggestion 
 	bountyID := marketplaceBountyID(task.ProjectID, task.IssueNumber)
 	claimEndpoint := "/api/tasks/" + bountyID + "/claim"
 	submitEndpoint := "/api/tasks/" + bountyID + "/submit"
+	runEndpoint := "/api/projects/" + task.ProjectID + "/agent-runs"
 	actionEndpoint := "/api/projects/" + task.ProjectID + "/agent-actions"
 	taskProtocolURL := "/api/public/protocol/tasks?task_id=" + bountyID
 	agentType := strings.TrimSpace(task.SuggestedAgentType)
@@ -1115,6 +1116,7 @@ func repositorySuggestedTaskWorkPacket(project *Project, task *Task, suggestion 
 	}
 	return AgentWorkPacket{
 		ClaimEndpoint:       claimEndpoint,
+		RunEndpoint:         runEndpoint,
 		ActionEndpoint:      actionEndpoint,
 		SubmitEndpoint:      submitEndpoint,
 		LeasePacket:         agentLeasePacket(bountyID, agentType),
@@ -1127,8 +1129,14 @@ func repositorySuggestedTaskWorkPacket(project *Project, task *Task, suggestion 
 			{Step: 1, Action: "fetch_scan", Label: "Fetch repository scan protocol", Method: "GET", Endpoint: contextURLs["repository_scan"]},
 			{Step: 2, Action: "fetch_task", Label: "Fetch funded task protocol", Method: "GET", Endpoint: taskProtocolURL},
 			{Step: 3, Action: "claim_task", Label: "Claim the funded bounty lane", Method: "POST", Endpoint: claimEndpoint},
-			{Step: 4, Action: "run_agent_checks", Label: "Run scan, review, or test evidence actions", Method: "POST", Endpoint: actionEndpoint},
-			{Step: 5, Action: "submit_review", Label: "Submit pull request and proof evidence", Method: "POST", Endpoint: submitEndpoint},
+			{Step: 4, Action: "create_agent_run", Label: "Create branch, PR plan, action payload, and output contracts", Method: "POST", Endpoint: runEndpoint},
+			{Step: 5, Action: "run_agent_checks", Label: "Run scan, review, or test evidence actions", Method: "POST", Endpoint: actionEndpoint},
+			{Step: 6, Action: "submit_review", Label: "Submit pull request and proof evidence", Method: "POST", Endpoint: submitEndpoint},
+		},
+		RunPayloads: []AgentActionPayload{
+			repositorySuggestedTaskRunPayload("scan", "Create repository scan run plan", runEndpoint, task, suggestion, contextURLs),
+			repositorySuggestedTaskRunPayload("review", "Create review run plan", runEndpoint, task, suggestion, contextURLs),
+			repositorySuggestedTaskRunPayload("test", "Create test run plan", runEndpoint, task, suggestion, contextURLs),
 		},
 		ActionPayloads: []AgentActionPayload{
 			repositorySuggestedTaskActionPayload("scan", "Run repository scan check", actionEndpoint, task, suggestion, contextURLs),
@@ -1136,6 +1144,14 @@ func repositorySuggestedTaskWorkPacket(project *Project, task *Task, suggestion 
 			repositorySuggestedTaskActionPayload("test", "Attach test evidence", actionEndpoint, task, suggestion, contextURLs),
 		},
 		OutputContracts: []AgentOutputContract{
+			{
+				Action:            "create_agent_run",
+				ArtifactKind:      "agent_run",
+				OutputEndpoint:    runEndpoint,
+				OutputProtocol:    "mergeos.agent-run.v1",
+				OutputProtocolURL: "/protocol/agent-run.v1.schema.json",
+				PublicURL:         taskProtocolURL,
+			},
 			agentQueueOutputContract("scan", task.ProjectID, actionEndpoint, contextURLs),
 			agentQueueOutputContract("review", task.ProjectID, actionEndpoint, contextURLs),
 			agentQueueOutputContract("test", task.ProjectID, actionEndpoint, contextURLs),
@@ -1148,6 +1164,31 @@ func repositorySuggestedTaskWorkPacket(project *Project, task *Task, suggestion 
 				PublicURL:         taskProtocolURL,
 			},
 		},
+	}
+}
+
+func repositorySuggestedTaskRunPayload(action, label, endpoint string, task *Task, suggestion RepositorySuggestedTask, contextURLs map[string]string) AgentActionPayload {
+	bountyID := marketplaceBountyID(task.ProjectID, task.IssueNumber)
+	body := map[string]any{
+		"action":            action,
+		"claim_id":          bountyID,
+		"bounty_id":         bountyID,
+		"agent_type":        protocolText(task.SuggestedAgentType, 120, "repo-scan-agent"),
+		"base_branch":       "main",
+		"objective":         task.Title,
+		"source_finding_id": suggestion.SourceFindingID,
+		"signal":            suggestion.Signal,
+		"context_urls":      agentRunContextURLList(contextURLs),
+	}
+	if strings.TrimSpace(suggestion.Path) != "" {
+		body["path"] = strings.TrimSpace(suggestion.Path)
+	}
+	return AgentActionPayload{
+		Action:   action,
+		Label:    label,
+		Method:   "POST",
+		Endpoint: endpoint,
+		Body:     body,
 	}
 }
 

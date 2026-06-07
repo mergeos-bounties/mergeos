@@ -2205,15 +2205,30 @@ func TestPublicMarketplaceRouteReturnsSanitizedLiveData(t *testing.T) {
 		firstPacket.LeasePacket.Payload["status"] != "leased" {
 		t.Fatalf("agent work packet lease payload is not claim-safe: %#v", firstPacket.LeasePacket.Payload)
 	}
-	if firstPacket.ClaimEndpoint == "" || firstPacket.ActionEndpoint == "" || len(firstPacket.Runbook) < 4 || len(firstPacket.ActionPayloads) == 0 {
+	if firstPacket.ClaimEndpoint == "" || firstPacket.RunEndpoint == "" || firstPacket.ActionEndpoint == "" || len(firstPacket.Runbook) < 4 || len(firstPacket.RunPayloads) == 0 || len(firstPacket.ActionPayloads) == 0 {
 		t.Fatalf("agent work packet missing executable details: %#v", firstPacket)
+	}
+	if firstPacket.RunEndpoint != "/api/projects/"+queueProtocol.Tasks[0].ProjectID+"/agent-runs" {
+		t.Fatalf("agent work packet missing agent run endpoint: %#v", firstPacket)
+	}
+	firstRunPayload := firstPacket.RunPayloads[0].Body
+	if firstPacket.RunPayloads[0].Endpoint != firstPacket.RunEndpoint ||
+		firstRunPayload["claim_id"] != queueProtocol.Tasks[0].BountyID ||
+		firstRunPayload["bounty_id"] != queueProtocol.Tasks[0].BountyID ||
+		firstRunPayload["agent_type"] == "" ||
+		firstRunPayload["base_branch"] != "main" {
+		t.Fatalf("agent work packet run payload is not executable: %#v", firstPacket.RunPayloads[0])
 	}
 	if len(firstPacket.OutputContracts) == 0 {
 		t.Fatalf("agent work packet missing output contracts: %#v", firstPacket)
 	}
+	foundAgentRunContract := false
 	foundAgentActionContract := false
 	foundSubmissionContract := false
 	for _, contract := range firstPacket.OutputContracts {
+		if contract.OutputProtocol == "mergeos.agent-run.v1" && contract.OutputEndpoint == firstPacket.RunEndpoint {
+			foundAgentRunContract = true
+		}
 		if contract.OutputProtocol == "mergeos.agent-action.v1" && contract.OutputEndpoint == firstPacket.ActionEndpoint && strings.TrimSpace(contract.ArtifactKind) != "" {
 			foundAgentActionContract = true
 		}
@@ -2221,8 +2236,8 @@ func TestPublicMarketplaceRouteReturnsSanitizedLiveData(t *testing.T) {
 			foundSubmissionContract = true
 		}
 	}
-	if !foundAgentActionContract || !foundSubmissionContract {
-		t.Fatalf("agent work packet output contracts missing action/submission protocols: %#v", firstPacket.OutputContracts)
+	if !foundAgentRunContract || !foundAgentActionContract || !foundSubmissionContract {
+		t.Fatalf("agent work packet output contracts missing run/action/submission protocols: %#v", firstPacket.OutputContracts)
 	}
 	firstPayload := firstPacket.ActionPayloads[0].Body
 	if firstPayload["delegated_by"] != ceoAgentType ||
@@ -5315,15 +5330,35 @@ func TestProjectRepositoryScanRouteReturnsStaticFindings(t *testing.T) {
 	if fundedPayload.FundingReference == "" || fundedPayload.TaskProtocolURL != "/api/public/protocol/tasks?task_id="+marketplaceBountyID(project.ID, fundedPayload.Task.IssueNumber) || fundedPayload.WorkflowProtocolURL != "/api/public/projects/"+project.ID+"/workflow" || fundedPayload.ScanProtocolURL != "/api/public/projects/"+project.ID+"/repo-scan" {
 		t.Fatalf("funded suggested task missing proof URLs: %#v", fundedPayload)
 	}
-	if fundedPayload.WorkPacket.ClaimEndpoint != "/api/tasks/"+marketplaceBountyID(project.ID, fundedPayload.Task.IssueNumber)+"/claim" || fundedPayload.WorkPacket.SubmitEndpoint == "" || len(fundedPayload.WorkPacket.Runbook) < 5 || len(fundedPayload.WorkPacket.ActionPayloads) < 3 {
+	if fundedPayload.WorkPacket.ClaimEndpoint != "/api/tasks/"+marketplaceBountyID(project.ID, fundedPayload.Task.IssueNumber)+"/claim" ||
+		fundedPayload.WorkPacket.RunEndpoint != "/api/projects/"+project.ID+"/agent-runs" ||
+		fundedPayload.WorkPacket.SubmitEndpoint == "" ||
+		len(fundedPayload.WorkPacket.Runbook) < 6 ||
+		len(fundedPayload.WorkPacket.RunPayloads) < 3 ||
+		len(fundedPayload.WorkPacket.ActionPayloads) < 3 {
 		t.Fatalf("funded suggested task missing agent work packet: %#v", fundedPayload.WorkPacket)
+	}
+	if fundedPayload.WorkPacket.RunPayloads[0].Endpoint != fundedPayload.WorkPacket.RunEndpoint ||
+		fundedPayload.WorkPacket.RunPayloads[0].Body["claim_id"] != marketplaceBountyID(project.ID, fundedPayload.Task.IssueNumber) ||
+		fundedPayload.WorkPacket.RunPayloads[0].Body["source_finding_id"] != taskToFund.SourceFindingID {
+		t.Fatalf("funded suggested task missing agent run payload: %#v", fundedPayload.WorkPacket.RunPayloads)
 	}
 	if fundedPayload.WorkPacket.LeasePacket.LeaseEndpoint != agentLeaseEndpoint ||
 		fundedPayload.WorkPacket.LeasePacket.Payload["claim_id"] != marketplaceBountyID(project.ID, fundedPayload.Task.IssueNumber) {
 		t.Fatalf("funded suggested task missing agent lease packet: %#v", fundedPayload.WorkPacket.LeasePacket)
 	}
-	if len(fundedPayload.WorkPacket.OutputContracts) < 3 {
+	if len(fundedPayload.WorkPacket.OutputContracts) < 4 {
 		t.Fatalf("funded suggested task missing output contracts: %#v", fundedPayload.WorkPacket)
+	}
+	hasFundedAgentRunContract := false
+	for _, contract := range fundedPayload.WorkPacket.OutputContracts {
+		if contract.OutputProtocol == "mergeos.agent-run.v1" && contract.OutputEndpoint == fundedPayload.WorkPacket.RunEndpoint {
+			hasFundedAgentRunContract = true
+			break
+		}
+	}
+	if !hasFundedAgentRunContract {
+		t.Fatalf("funded suggested task missing agent-run output contract: %#v", fundedPayload.WorkPacket.OutputContracts)
 	}
 	fundedBody := fundResp.Body.String()
 	for _, value := range []string{

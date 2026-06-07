@@ -106,6 +106,7 @@ func agentQueueTaskRow(bounty *MarketplaceBounty) AgentQueueTask {
 	}
 	claimEndpoint := "/api/tasks/" + bountyID + "/claim"
 	submitEndpoint := "/api/tasks/" + bountyID + "/submit"
+	runEndpoint := "/api/projects/" + bounty.ProjectID + "/agent-runs"
 	actionEndpoint := "/api/projects/" + bounty.ProjectID + "/agent-actions"
 	protocolURL := "/api/public/protocol/tasks?task_id=" + bountyID
 	contextURLs := map[string]string{
@@ -125,6 +126,7 @@ func agentQueueTaskRow(bounty *MarketplaceBounty) AgentQueueTask {
 	}
 	workPacket := AgentWorkPacket{
 		ClaimEndpoint:       claimEndpoint,
+		RunEndpoint:         runEndpoint,
 		ActionEndpoint:      actionEndpoint,
 		SubmitEndpoint:      submitEndpoint,
 		LeasePacket:         agentLeasePacket(bountyID, agentType),
@@ -138,12 +140,14 @@ func agentQueueTaskRow(bounty *MarketplaceBounty) AgentQueueTask {
 			{Step: 2, Action: "plan_scope", Label: "CEO agent decomposes work and delegates subagents", Method: "GET", Endpoint: agentQueueEndpoint},
 			{Step: 3, Action: "design_review", Label: "Design Review Agent checks UX, responsive layout, and visual quality", Method: "POST", Endpoint: actionEndpoint},
 			{Step: 4, Action: "claim_task", Label: "Claim bounty lane", Method: "POST", Endpoint: claimEndpoint},
-			{Step: 5, Action: "run_checks", Label: "Run review, test, generation, or deployment checks", Method: "POST", Endpoint: actionEndpoint},
-			{Step: 6, Action: "attach_evidence", Label: "Attach agent check evidence to the live log", Method: "POST", Endpoint: actionEndpoint},
-			{Step: 7, Action: "submit_review", Label: "Submit final PR and review evidence", Method: "POST", Endpoint: submitEndpoint},
+			{Step: 5, Action: "create_agent_run", Label: "Create branch, PR plan, action payload, and output contracts", Method: "POST", Endpoint: runEndpoint},
+			{Step: 6, Action: "run_checks", Label: "Run review, test, generation, or deployment checks", Method: "POST", Endpoint: actionEndpoint},
+			{Step: 7, Action: "attach_evidence", Label: "Attach agent check evidence to the live log", Method: "POST", Endpoint: actionEndpoint},
+			{Step: 8, Action: "submit_review", Label: "Submit final PR and review evidence", Method: "POST", Endpoint: submitEndpoint},
 		},
+		RunPayloads:     agentQueueRunPayloads(bounty, runEndpoint, contextURLs),
 		ActionPayloads:  agentQueueActionPayloads(bounty, actionEndpoint, contextURLs),
-		OutputContracts: agentQueueOutputContracts(bounty, actionEndpoint, submitEndpoint, contextURLs),
+		OutputContracts: agentQueueOutputContracts(bounty, runEndpoint, actionEndpoint, submitEndpoint, contextURLs),
 	}
 	return AgentQueueTask{
 		ID:               bountyID,
@@ -238,6 +242,34 @@ func agentQueueActionPayloads(bounty *MarketplaceBounty, endpoint string, contex
 	return rows
 }
 
+func agentQueueRunPayloads(bounty *MarketplaceBounty, endpoint string, contextURLs map[string]string) []AgentActionPayload {
+	actions := agentQueueActions(bounty)
+	rows := make([]AgentActionPayload, 0, len(actions))
+	bountyID := strings.TrimSpace(bounty.ClaimID)
+	if bountyID == "" {
+		bountyID = strings.TrimSpace(bounty.ID)
+	}
+	for _, action := range actions {
+		agentType := protocolText(bounty.SuggestedAgentType, 120, "general-ai-agent")
+		rows = append(rows, AgentActionPayload{
+			Action:   action,
+			Label:    "Create " + marketplaceTitle(action) + " run plan",
+			Method:   "POST",
+			Endpoint: endpoint,
+			Body: map[string]any{
+				"action":       action,
+				"claim_id":     bountyID,
+				"bounty_id":    bountyID,
+				"agent_type":   agentType,
+				"base_branch":  "main",
+				"objective":    bounty.Title,
+				"context_urls": agentRunContextURLList(contextURLs),
+			},
+		})
+	}
+	return rows
+}
+
 func agentQueueActions(bounty *MarketplaceBounty) []string {
 	haystack := strings.ToLower(strings.Join([]string{
 		bounty.Title,
@@ -282,9 +314,17 @@ func agentActionsForTask(task *Task) []string {
 	return stableStrings(actions)
 }
 
-func agentQueueOutputContracts(bounty *MarketplaceBounty, actionEndpoint, submitEndpoint string, contextURLs map[string]string) []AgentOutputContract {
+func agentQueueOutputContracts(bounty *MarketplaceBounty, runEndpoint, actionEndpoint, submitEndpoint string, contextURLs map[string]string) []AgentOutputContract {
 	actions := agentQueueActions(bounty)
-	rows := make([]AgentOutputContract, 0, len(actions)+1)
+	rows := make([]AgentOutputContract, 0, len(actions)+2)
+	rows = append(rows, AgentOutputContract{
+		Action:            "create_agent_run",
+		ArtifactKind:      "agent_run",
+		OutputEndpoint:    runEndpoint,
+		OutputProtocol:    "mergeos.agent-run.v1",
+		OutputProtocolURL: "/protocol/agent-run.v1.schema.json",
+		PublicURL:         contextURLs["task_protocol"],
+	})
 	for _, action := range actions {
 		rows = append(rows, agentQueueOutputContract(action, bounty.ProjectID, actionEndpoint, contextURLs))
 	}

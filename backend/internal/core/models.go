@@ -1222,6 +1222,7 @@ type AgentQueueTask struct {
 
 type AgentWorkPacket struct {
 	ClaimEndpoint       string                `json:"claim_endpoint"`
+	RunEndpoint         string                `json:"run_endpoint,omitempty"`
 	ActionEndpoint      string                `json:"action_endpoint"`
 	SubmitEndpoint      string                `json:"submit_endpoint"`
 	LeasePacket         AgentLeasePacket      `json:"lease_packet"`
@@ -1231,6 +1232,7 @@ type AgentWorkPacket struct {
 	DelegationChain     []string              `json:"delegation_chain,omitempty"`
 	ContextURLs         map[string]string     `json:"context_urls"`
 	Runbook             []AgentRunbookStep    `json:"runbook"`
+	RunPayloads         []AgentActionPayload  `json:"run_payloads,omitempty"`
 	ActionPayloads      []AgentActionPayload  `json:"action_payloads"`
 	OutputContracts     []AgentOutputContract `json:"output_contracts,omitempty"`
 }
