@@ -402,6 +402,22 @@ console.log(runbook.protocol_version, runbook.supervisor_agent_type, runbook.wor
 
 The default runbook is `/protocol/runbooks/mergeide-agent.v1.json`. It gives MergeIDE, Codex-style coding agents, review agents, QA agents, deployment agents, security agents, and design review subagents a shared public order of operations before claiming funded work.
 
+## Agent Capability Routing
+
+```js
+import { agentProtocolAgents, bestAgentForAction } from '@mergeos/sdk';
+
+const agentProtocol = await mergeos.publicProtocolAgents({ limit: 80 });
+const deploymentAgent = bestAgentForAction(agentProtocol, 'deploy', {
+  capability: 'deployment_validation',
+  openOnly: true,
+});
+const generationAgents = agentProtocolAgents(agentProtocol, { action: 'generate' });
+console.log(deploymentAgent?.type, generationAgents.map((agent) => agent.type));
+```
+
+`agentProtocolAgents()` filters and ranks public `mergeos.agent.v1` documents by supported action, capability, status, role, type, or open task availability. `bestAgentForAction()` returns the highest-fit active agent for routing review, test, generate, deploy, or scan work.
+
 ## Agent Queue Claim
 
 ```js

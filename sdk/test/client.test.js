@@ -13,8 +13,11 @@ import {
   agentLeaseEventType,
   agentLeasePayload,
   agentLeasePacketFromWorkPacket,
+  agentHasCapability,
+  agentProtocolAgents,
   agentQueueClaimPayload,
   agentQueueTaskClaimID,
+  agentSupportsAction,
   agentWorkPacketOutputContracts,
   aiWorkflowCurrentStage,
   aiWorkflowStage,
@@ -23,6 +26,7 @@ import {
   aiWorkflowStages,
   autoReleasePayloadFromPRMonitorTask,
   autoReleaseProofsFromResponse,
+  bestAgentForAction,
   contractReferenceBytes,
   contractReferenceFromLedger,
   createMergeOSClient,
@@ -336,6 +340,52 @@ test('loads public external agent runbook without auth', async () => {
   assert.equal(runbook.protocol_version, 'mergeos.agent-runbook.v1');
   assert.equal(fetchImpl.calls[0].url, 'https://mergeos.shop/protocol/runbooks/mergeide-agent.v1.json');
   assert.equal(fetchImpl.calls[0].options.headers.Authorization, undefined);
+});
+
+test('filters public agent protocol documents by action and capability', () => {
+  const protocol = {
+    agents: [
+      {
+        type: 'review-agent',
+        title: 'Review agent',
+        supported_actions: ['review'],
+        capabilities: ['code_review', 'security_review'],
+        status: 'standby',
+        open_task_count: 0,
+        budget_mrg: 1200,
+      },
+      {
+        type: 'deployment-agent',
+        title: 'Deployment agent',
+        supported_actions: ['deploy', 'test'],
+        capabilities: ['deployment_validation', 'release_handoff'],
+        tags: ['devops'],
+        status: 'active',
+        open_task_count: 2,
+        open_task_ids: ['task_public_1', 'task_public_2'],
+        budget_mrg: 900,
+      },
+      {
+        type: 'ceo-strategy-agent',
+        title: 'CEO strategy agent',
+        supported_actions: ['review', 'generate', 'scan'],
+        capabilities: ['idea_generation', 'task_decomposition', 'subagent_delegation'],
+        status: 'active',
+        open_task_count: 1,
+        budget_mrg: 1500,
+      },
+    ],
+  };
+
+  assert.equal(agentSupportsAction(protocol.agents[1], 'deploy'), true);
+  assert.equal(agentSupportsAction(protocol.agents[1], 'gen'), false);
+  assert.equal(agentHasCapability(protocol.agents[1], 'deployment_validation'), true);
+  assert.equal(agentHasCapability(protocol.agents[1], 'devops'), true);
+  assert.deepEqual(agentProtocolAgents(protocol, { action: 'deploy' }).map((agent) => agent.type), ['deployment-agent']);
+  assert.deepEqual(agentProtocolAgents(protocol, { action: 'generate' }).map((agent) => agent.type), ['ceo-strategy-agent']);
+  assert.deepEqual(agentProtocolAgents(protocol, { capability: 'deployment_validation', openOnly: true }).map((agent) => agent.type), ['deployment-agent']);
+  assert.equal(bestAgentForAction(protocol, 'deploy').type, 'deployment-agent');
+  assert.equal(bestAgentForAction(protocol, 'generate', { capability: 'task_decomposition' }).type, 'ceo-strategy-agent');
 });
 
 test('builds and sends claim-safe agent queue task payloads', async () => {

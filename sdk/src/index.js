@@ -1044,6 +1044,34 @@ export function aiWorkflowStageActionContract(stageOrWorkflow = {}, selector = '
   });
 }
 
+export function agentProtocolAgents(document = {}, filters = {}) {
+  const agents = Array.isArray(document.agents) ? document.agents : Array.isArray(document) ? document : [];
+  return agents
+    .filter((agent) => agent && typeof agent === 'object')
+    .filter((agent) => agentMatchesProtocolFilters(agent, filters))
+    .sort(compareAgentProtocolFit);
+}
+
+export function agentSupportsAction(agent = {}, action = '') {
+  const normalized = normalizeAgentAction(action);
+  const actions = normalizeStringList(agent.supported_actions || agent.supportedActions);
+  if (!actions.length) return false;
+  return actions.map(normalizeAgentAction).includes(normalized);
+}
+
+export function agentHasCapability(agent = {}, capability = '') {
+  const normalized = normalizeSelector(capability);
+  if (!normalized) return true;
+  const capabilities = normalizeStringList(agent.capabilities);
+  const tags = normalizeStringList(agent.tags);
+  return [...capabilities, ...tags].some((value) => normalizeSelector(value) === normalized);
+}
+
+export function bestAgentForAction(document = {}, action = '', filters = {}) {
+  const agents = agentProtocolAgents(document, { ...filters, action });
+  return agents[0] || null;
+}
+
 export function agentActionPayload(action, payload = {}) {
   const normalizedAction = normalizeAgentAction(action);
   const referenceURL = payload.reference_url || payload.referenceURL || payload.deployment_url || payload.deploymentURL || payload.url || '';
@@ -1674,4 +1702,37 @@ function compactPayload(payload = {}) {
     }
   }
   return compacted;
+}
+
+function agentMatchesProtocolFilters(agent = {}, filters = {}) {
+  const action = filters.action || filters.agentAction || '';
+  if (action && !agentSupportsAction(agent, action)) return false;
+  const capability = filters.capability || filters.capabilityKey || '';
+  if (capability && !agentHasCapability(agent, capability)) return false;
+  const status = filters.status || '';
+  if (status && normalizeSelector(agent.status) !== normalizeSelector(status)) return false;
+  const agentType = filters.agent_type || filters.agentType || filters.type || '';
+  if (agentType && normalizeSelector(agent.type) !== normalizeSelector(agentType)) return false;
+  const role = filters.role || '';
+  if (role && normalizeSelector(agent.role) !== normalizeSelector(role)) return false;
+  if (filters.openOnly || filters.hasOpenTasks) {
+    const openCount = Number(agent.open_task_count ?? agent.openTaskCount) || 0;
+    const openIDs = Array.isArray(agent.open_task_ids) ? agent.open_task_ids : [];
+    if (openCount <= 0 && openIDs.length === 0) return false;
+  }
+  return true;
+}
+
+function compareAgentProtocolFit(a = {}, b = {}) {
+  const statusScore = (agent) => (normalizeSelector(agent.status) === 'active' ? 2 : 0);
+  const openScore = (agent) => {
+    const count = Number(agent.open_task_count ?? agent.openTaskCount) || 0;
+    const ids = Array.isArray(agent.open_task_ids) ? agent.open_task_ids.length : 0;
+    return Math.max(count, ids);
+  };
+  const budgetScore = (agent) => Number(agent.budget_mrg ?? agent.budgetMRG) || 0;
+  return (statusScore(b) - statusScore(a))
+    || (openScore(b) - openScore(a))
+    || (budgetScore(b) - budgetScore(a))
+    || String(a.type || a.title || '').localeCompare(String(b.type || b.title || ''));
 }
