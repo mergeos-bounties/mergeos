@@ -18,6 +18,7 @@
     "marketplace_system",
     "live_feed_system",
     "ledger_system",
+    "token_economy_system",
     "public_urls"
   ],
   "properties": {
@@ -286,6 +287,28 @@
       },
       "additionalProperties": false
     },
+    "token_economy_system": {
+      "type": "object",
+      "required": ["role", "features", "protocol_routes"],
+      "properties": {
+        "role": { "type": "string", "minLength": 1 },
+        "features": { "$ref": "#/$defs/stringList" },
+        "protocol_routes": {
+          "type": "object",
+          "required": ["public_supply", "airdrop_claims", "presale_reservations", "wallet_migration", "payout_settlement", "solana_contract"],
+          "properties": {
+            "public_supply": { "$ref": "#/$defs/tokenEconomyRoute" },
+            "airdrop_claims": { "$ref": "#/$defs/tokenEconomyRoute" },
+            "presale_reservations": { "$ref": "#/$defs/tokenEconomyRoute" },
+            "wallet_migration": { "$ref": "#/$defs/tokenEconomyRoute" },
+            "payout_settlement": { "$ref": "#/$defs/tokenEconomyRoute" },
+            "solana_contract": { "$ref": "#/$defs/tokenEconomyRoute" }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
     "public_urls": {
       "type": "object",
       "required": [
@@ -400,6 +423,17 @@
         "api": { "type": "string", "minLength": 1 },
         "event_type": { "type": "string", "minLength": 1 },
         "proof_api": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "tokenEconomyRoute": {
+      "type": "object",
+      "required": ["page", "api", "output_protocol", "proof_surface"],
+      "properties": {
+        "page": { "type": "string", "minLength": 1 },
+        "api": { "type": "string", "minLength": 1 },
+        "output_protocol": { "type": "string", "minLength": 1 },
+        "proof_surface": { "type": "string", "minLength": 1 }
       },
       "additionalProperties": false
     },

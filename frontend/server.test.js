@@ -314,6 +314,44 @@ test('public system vision preserves the product thesis', async () => {
   assert.equal(architectureManifest.public_urls.ledger_events_api, '/api/public/ledger/events');
   assert.equal(architectureManifest.public_urls.ledger_verify_api, '/api/public/ledger/verify');
   assert.equal(architectureManifest.public_urls.ledger_proof_api, '/api/public/ledger/proof');
+  assert.deepEqual(architectureManifest.token_economy_system.protocol_routes, {
+    public_supply: {
+      page: '/ledger',
+      api: '/api/public/token-economy',
+      output_protocol: 'mergeos.token-economy.v1',
+      proof_surface: '/ledger',
+    },
+    airdrop_claims: {
+      page: '/airdrop',
+      api: '/api/airdrop/claims',
+      output_protocol: 'mergeos.airdrop-claim.v1',
+      proof_surface: '/api/public/ledger/proof',
+    },
+    presale_reservations: {
+      page: '/presale',
+      api: '/api/presale/reservations',
+      output_protocol: 'mergeos.presale-reservation.v1',
+      proof_surface: '/api/public/ledger/proof',
+    },
+    wallet_migration: {
+      page: '/contracts',
+      api: '/api/wallet/migration',
+      output_protocol: 'mergeos.wallet-migration.v1',
+      proof_surface: '/contracts/solana/mergeos_mrg.proof-manifest.v1.json',
+    },
+    payout_settlement: {
+      page: '/dashboard',
+      api: '/api/projects/{id}/payouts',
+      output_protocol: 'mergeos.payouts.v1',
+      proof_surface: '/ledger',
+    },
+    solana_contract: {
+      page: '/contracts',
+      api: '/contracts/solana/mergeos_mrg.v1.idl.json',
+      output_protocol: 'mergeos.solana-mrg.v1',
+      proof_surface: '/contracts/solana/mergeos_mrg.proof-manifest.v1.json',
+    },
+  });
   assert.equal(architectureManifest.public_urls.token_economy_api, '/api/public/token-economy');
   assert.equal(architectureManifest.public_urls.airdrop_missions_api, '/api/public/airdrop/missions');
   assert.equal(architectureManifest.public_urls.airdrop_claims_api, '/api/airdrop/claims');
