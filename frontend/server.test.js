@@ -1267,6 +1267,12 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-research-grid,[\s\S]*\.token-ceo-decision-strip,[\s\S]*\.token-ceo-project-queue,[\s\S]*\.token-whitepaper-thesis/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-brief-card\s*\{[\s\S]*grid-template-columns: 1fr;/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-brief-form\s*\{[\s\S]*grid-template-columns: 1fr;/);
+  assert.match(cssSource, /Token mobile rhythm: keep airdrop, presale, and CEO research pages decisive instead of long/);
+  assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-hero-copy h1\s*\{[\s\S]*font-size: clamp\(28px, 8\.4vw, 34px\) !important;/);
+  assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-metric-grid article:nth-child\(n \+ 3\)\s*\{[\s\S]*display: none !important;/);
+  assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-brief-form\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\) !important;/);
+  assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-project-queue article:nth-child\(n \+ 3\),[\s\S]*\.token-ceo-research-grid article:nth-child\(n \+ 3\)\s*\{[\s\S]*display: none !important;/);
+  assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-research-grid small\s*\{[\s\S]*display: none !important;/);
   assert.match(cssSource, /\.token-proof-result small\s*\{[\s\S]*overflow: visible;[\s\S]*white-space: normal;[\s\S]*overflow-wrap: anywhere;/);
   assert.match(cssSource, /\.token-whitepaper-thesis p\s*\{[\s\S]*-webkit-line-clamp: 2;/);
 });

@@ -36359,6 +36359,230 @@ canvas {
   }
 }
 
+/* Token mobile rhythm: keep airdrop, presale, and CEO research pages decisive instead of long. */
+@media (max-width: 620px) {
+  .token-page {
+    padding-top: 8px !important;
+  }
+
+  .token-shell {
+    gap: 12px !important;
+  }
+
+  .token-hero {
+    gap: 10px !important;
+  }
+
+  .token-hero-copy {
+    padding: 8px 0 0 !important;
+  }
+
+  .token-hero-copy .ledger-title-row {
+    gap: 8px !important;
+  }
+
+  .token-hero-copy h1 {
+    margin-top: 8px !important;
+    font-size: clamp(28px, 8.4vw, 34px) !important;
+    line-height: 1.04 !important;
+  }
+
+  .token-hero-copy p {
+    display: -webkit-box !important;
+    margin-top: 10px !important;
+    overflow: hidden !important;
+    font-size: 13.5px !important;
+    line-height: 1.42 !important;
+    -webkit-box-orient: vertical !important;
+    -webkit-line-clamp: 4 !important;
+  }
+
+  .token-page .marketplace-actions {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 8px !important;
+    margin-top: 12px !important;
+  }
+
+  .token-page .marketplace-actions .primary-button,
+  .token-page .marketplace-actions .secondary-button {
+    min-height: 42px !important;
+    width: 100% !important;
+  }
+
+  .token-status-panel {
+    gap: 9px !important;
+    padding: 11px !important;
+  }
+
+  .token-status-panel .ledger-card-head h2 {
+    font-size: 15px !important;
+    line-height: 1.18 !important;
+  }
+
+  .token-status-panel .ledger-card-head button {
+    min-height: 34px !important;
+    padding-inline: 10px !important;
+  }
+
+  .token-metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 7px !important;
+  }
+
+  .token-metric-grid article {
+    min-height: 58px !important;
+    grid-template-columns: 26px minmax(0, 1fr) !important;
+    gap: 7px !important;
+    padding: 8px !important;
+  }
+
+  .token-metric-grid article:nth-child(n + 3) {
+    display: none !important;
+  }
+
+  .token-metric-grid strong {
+    font-size: 14px !important;
+  }
+
+  .token-ceo-research-panel {
+    gap: 10px !important;
+    padding: 12px !important;
+  }
+
+  .token-ceo-research-head {
+    grid-template-columns: 32px minmax(0, 1fr) !important;
+    gap: 9px !important;
+  }
+
+  .token-ceo-research-head h2 {
+    margin-top: 2px !important;
+    font-size: 20px !important;
+    line-height: 1.12 !important;
+  }
+
+  .token-ceo-research-head p {
+    display: -webkit-box !important;
+    margin-top: 6px !important;
+    overflow: hidden !important;
+    font-size: 12px !important;
+    line-height: 1.38 !important;
+    -webkit-box-orient: vertical !important;
+    -webkit-line-clamp: 3 !important;
+  }
+
+  .token-ceo-research-head b {
+    grid-column: 2 !important;
+    padding: 5px 8px !important;
+  }
+
+  .token-ceo-brief-card {
+    gap: 9px !important;
+    padding: 10px !important;
+  }
+
+  .token-ceo-brief-copy p {
+    display: -webkit-box !important;
+    overflow: hidden !important;
+    -webkit-box-orient: vertical !important;
+    -webkit-line-clamp: 2 !important;
+  }
+
+  .token-ceo-brief-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  .token-ceo-brief-form .wizard-field.full,
+  .token-ceo-brief-card .token-workflow-validation,
+  .token-ceo-brief-card .token-workflow-error,
+  .token-launch-brief-result {
+    grid-column: 1 / -1 !important;
+  }
+
+  .token-ceo-brief-form textarea {
+    min-height: 92px !important;
+  }
+
+  .token-ceo-brief-actions {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    gap: 8px !important;
+  }
+
+  .token-ceo-brief-actions .primary-button,
+  .token-ceo-brief-actions .secondary-button {
+    min-height: 38px !important;
+    padding-inline: 10px !important;
+  }
+
+  .token-ceo-brief-actions .secondary-button:last-child {
+    grid-column: 1 / -1 !important;
+  }
+
+  .token-ceo-decision-strip {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+  }
+
+  .token-ceo-decision-strip article {
+    padding: 7px !important;
+  }
+
+  .token-ceo-decision-strip span {
+    font-size: 8.5px !important;
+  }
+
+  .token-ceo-decision-strip strong {
+    font-size: 10.5px !important;
+  }
+
+  .token-ceo-project-queue,
+  .token-ceo-research-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 7px !important;
+  }
+
+  .token-ceo-project-queue article,
+  .token-ceo-research-grid article {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 6px !important;
+    padding: 9px !important;
+  }
+
+  .token-ceo-project-queue article:nth-child(n + 5),
+  .token-ceo-research-grid article:nth-child(n + 5) {
+    display: none !important;
+  }
+
+  .token-ceo-project-queue article:nth-child(n + 3),
+  .token-ceo-research-grid article:nth-child(n + 3) {
+    display: none !important;
+  }
+
+  .token-ceo-project-queue .ledger-trust-icon,
+  .token-ceo-research-grid .ledger-trust-icon {
+    width: 28px !important;
+    height: 28px !important;
+  }
+
+  .token-ceo-project-queue small,
+  .token-ceo-research-grid p,
+  .token-ceo-research-grid small {
+    display: -webkit-box !important;
+    overflow: hidden !important;
+    -webkit-box-orient: vertical !important;
+    -webkit-line-clamp: 2 !important;
+  }
+
+  .token-ceo-research-grid small {
+    display: none !important;
+  }
+
+  .token-ceo-project-queue b {
+    grid-column: auto !important;
+    margin-top: 0 !important;
+  }
+}
+
 /* Signed-in mobile readability owner: no clipped role carousel or truncated
    command copy on the first authenticated screen. */
 @media (max-width: 760px) {
