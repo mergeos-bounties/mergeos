@@ -1027,13 +1027,14 @@ func TestCreateProjectCanDisableAgentRouting(t *testing.T) {
 		}
 	}
 	marketplace := store.Marketplace()
-	if len(marketplace.Agents) != 7 {
+	if len(marketplace.Agents) != 8 {
 		t.Fatalf("human-only project should only expose baseline agent lanes: %#v", marketplace.Agents)
 	}
 	if agent := marketplaceAgentByType(marketplace.Agents, ceoAgentType); agent == nil ||
 		agent.Role != "ceo_planner" ||
 		!containsString(agent.SubagentTypes, designReviewAgentType) ||
 		!containsString(agent.SubagentTypes, "deployment-agent") ||
+		!containsString(agent.SubagentTypes, "security-review-agent") ||
 		agent.TaskCount != 0 ||
 		agent.OpenTaskCount != 0 ||
 		agent.BudgetCents != 0 {
@@ -1072,6 +1073,7 @@ func TestMarketplaceExposesBaselineAgentHierarchy(t *testing.T) {
 		!containsString(ceoAgent.SubagentTypes, "review-agent") ||
 		!containsString(ceoAgent.SubagentTypes, "deployment-agent") ||
 		!containsString(ceoAgent.SubagentTypes, "repo-scan-agent") ||
+		!containsString(ceoAgent.SubagentTypes, "security-review-agent") ||
 		!containsString(ceoAgent.Focus, "idea_generation") ||
 		ceoAgent.TaskCount != 0 ||
 		ceoAgent.OpenTaskCount != 0 ||
@@ -1104,6 +1106,7 @@ func TestMarketplaceExposesBaselineAgentHierarchy(t *testing.T) {
 		{agentType: "review-agent", focus: "task_execution"},
 		{agentType: "deployment-agent", focus: "deployment_health"},
 		{agentType: "repo-scan-agent", focus: "repository_scan"},
+		{agentType: "security-review-agent", focus: "security_review"},
 	} {
 		agent := marketplaceAgentByType(marketplace.Agents, expected.agentType)
 		if agent == nil ||
@@ -1124,7 +1127,7 @@ func TestMarketplaceExposesBaselineAgentHierarchy(t *testing.T) {
 		queue.Kind != "agent_queue" ||
 		queue.Stats.TotalCount != 0 ||
 		queue.Stats.ReadyCount != 0 ||
-		queue.Stats.AgentCount != 7 ||
+		queue.Stats.AgentCount != 8 ||
 		len(queue.Tasks) != 0 {
 		t.Fatalf("unexpected empty baseline agent queue: %#v", queue)
 	}
@@ -1145,7 +1148,7 @@ func TestMarketplaceExposesBaselineAgentHierarchy(t *testing.T) {
 	}
 
 	protocol := store.PublicAgentProtocol(20)
-	if len(protocol.Agents) != 7 {
+	if len(protocol.Agents) != 8 {
 		t.Fatalf("unexpected baseline agent protocol size: %#v", protocol.Agents)
 	}
 	for _, expected := range []struct {
@@ -1158,6 +1161,8 @@ func TestMarketplaceExposesBaselineAgentHierarchy(t *testing.T) {
 		{agentType: "review-agent", action: "review", capability: "code_review"},
 		{agentType: "deployment-agent", action: "deploy", capability: "deployment_validation"},
 		{agentType: "repo-scan-agent", action: "scan", capability: "repository_scan"},
+		{agentType: "security-review-agent", action: "review", capability: "security_review"},
+		{agentType: "security-review-agent", action: "scan", capability: "repository_scan"},
 	} {
 		document := agentProtocolByType(protocol.Agents, expected.agentType)
 		if document == nil ||

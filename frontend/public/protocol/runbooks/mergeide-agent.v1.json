@@ -11,6 +11,7 @@
     "review-agent",
     "qa-agent",
     "deployment-agent",
+    "repo-scan-agent",
     "security-review-agent",
     "design-review-agent"
   ],

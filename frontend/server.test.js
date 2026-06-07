@@ -148,6 +148,9 @@ test('public agent runbook and SDK document PR monitor auto-release plus proposa
   const runbook = JSON.parse(await fs.readFile(new URL('./public/protocol/runbooks/mergeide-agent.v1.json', import.meta.url), 'utf-8'));
   const sdkReadme = await fs.readFile(new URL('../sdk/README.md', import.meta.url), 'utf-8');
 
+  assert.ok(runbook.supported_agent_types.includes('deployment-agent'));
+  assert.ok(runbook.supported_agent_types.includes('repo-scan-agent'));
+  assert.ok(runbook.supported_agent_types.includes('security-review-agent'));
   assert.ok(runbook.context_urls.some((row) => row.protocol === 'mergeos.pr-monitor.v1' && row.auth === 'project'));
   assert.ok(runbook.claim_flow.some((step) => step.endpoint === '/api/projects/{id}/auto-release' && step.method === 'POST'));
   assert.ok(runbook.evidence_contract.optional.includes('PR monitor auto_release_packet payload'));

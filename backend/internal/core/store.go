@@ -1646,6 +1646,7 @@ var coreMarketplaceAgentSpecs = []coreMarketplaceAgentSpec{
 	{Type: "review-agent", Title: "Review Agent"},
 	{Type: "deployment-agent", Title: "Deployment Agent"},
 	{Type: "repo-scan-agent", Title: "Repo Scan Agent"},
+	{Type: "security-review-agent", Title: "Security Review Agent"},
 }
 
 func ensureAgentHierarchy(agents map[string]*MarketplaceAgent) {
