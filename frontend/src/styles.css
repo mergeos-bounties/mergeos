@@ -32710,12 +32710,12 @@ canvas {
 
 /* Short public home: the landing should sell the flow, not the whole manual. */
 .public-home-page {
-  min-height: calc(100svh - 68px) !important;
-  padding-block: clamp(8px, 1.4vw, 18px) clamp(14px, 2vw, 24px) !important;
+  min-height: 0 !important;
+  padding-block: clamp(12px, 1.8vw, 22px) clamp(14px, 2vw, 22px) !important;
 }
 
 .public-home-page .home-container {
-  max-width: min(1120px, calc(100vw - 28px)) !important;
+  max-width: min(1080px, calc(100vw - 28px)) !important;
 }
 
 .public-home-layout {
@@ -32723,23 +32723,23 @@ canvas {
 }
 
 .public-home-hero {
-  min-height: calc(100svh - 104px) !important;
-  grid-template-columns: minmax(0, 1.02fr) minmax(300px, 350px) !important;
-  align-items: center !important;
-  gap: clamp(14px, 2vw, 24px) !important;
+  min-height: 0 !important;
+  grid-template-columns: minmax(0, 1.08fr) minmax(292px, 330px) !important;
+  align-items: start !important;
+  gap: clamp(14px, 1.8vw, 22px) !important;
   padding-block: 0 !important;
 }
 
 .public-home-copy h1 {
-  max-width: 660px !important;
-  font-size: clamp(36px, 4vw, 50px) !important;
-  line-height: 0.99 !important;
+  max-width: 620px !important;
+  font-size: clamp(32px, 3.45vw, 44px) !important;
+  line-height: 1.02 !important;
 }
 
 .public-home-copy p {
-  max-width: 540px !important;
-  font-size: 15px !important;
-  line-height: 1.42 !important;
+  max-width: 520px !important;
+  font-size: 14px !important;
+  line-height: 1.38 !important;
 }
 
 .public-home-copy .marketplace-actions {
@@ -32755,24 +32755,16 @@ canvas {
   padding-inline: 10px !important;
 }
 
-.home-mergeide-signal {
-  width: min(100%, 560px) !important;
-  grid-template-columns: minmax(0, 1fr) auto !important;
-  padding: 9px 10px !important;
-}
-
-.home-mergeide-signal > span,
-.home-mergeide-signal small {
+.home-mergeide-signal,
+.home-command-panel .home-pipeline,
+.home-public-graph-proof,
+.home-command-panel .public-notification-feed {
   display: none !important;
-}
-
-.home-mergeide-signal strong {
-  font-size: 15px !important;
 }
 
 .home-command-panel {
   margin-top: 0 !important;
-  padding: 12px !important;
+  padding: 10px !important;
 }
 
 .home-command-head {
@@ -32790,23 +32782,17 @@ canvas {
 }
 
 .home-command-panel .public-stat-grid {
-  gap: 7px !important;
-  margin-top: 10px !important;
+  gap: 6px !important;
+  margin-top: 8px !important;
 }
 
 .home-command-panel .public-stat-grid article {
-  min-height: 50px !important;
-  padding: 8px !important;
+  min-height: 48px !important;
+  padding: 7px !important;
 }
 
 .home-command-panel .public-stat-grid strong {
-  font-size: clamp(18px, 1.9vw, 23px) !important;
-}
-
-.home-command-panel .home-pipeline,
-.home-public-graph-proof,
-.home-command-panel .public-notification-feed {
-  display: none !important;
+  font-size: clamp(17px, 1.7vw, 21px) !important;
 }
 
 @media (max-width: 980px) {
@@ -32827,7 +32813,7 @@ canvas {
   }
 
   .public-home-copy h1 {
-    font-size: clamp(31px, 9vw, 43px) !important;
+    font-size: clamp(30px, 8.6vw, 40px) !important;
   }
 
   .home-mergeide-signal {
