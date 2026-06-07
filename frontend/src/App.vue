@@ -7680,6 +7680,22 @@
             </aside>
           </section>
 
+          <section class="marketplace-os-strip" aria-label="Marketplace operating system summary">
+            <article v-for="row in marketplaceOperatingRows" :key="row.key">
+              <span :class="['marketplace-os-icon', row.tone]">
+                <component :is="row.icon" :size="16" />
+              </span>
+              <div>
+                <strong>{{ row.value }}</strong>
+                <small>{{ row.label }}</small>
+                <p>{{ row.caption }}</p>
+              </div>
+              <button type="button" @click="row.action()">
+                <ArrowRight :size="12" />
+              </button>
+            </article>
+          </section>
+
           <section class="marketplace-filter-panel" :key="`marketplace-filters-${activeLocale}`" :aria-label="publicMarketplaceCopy.searchLabel">
             <label class="marketplace-search">
               <Search :size="18" />
@@ -16808,6 +16824,52 @@ const marketplaceSummaryLabel = computed(() => {
   const tasks = Number(stats.open_task_count) || 0;
   const labels = publicMarketplaceCopy.value.summarySuffix;
   return `${projects} ${labels.liveProjects} / ${tasks} ${labels.openTasks} / ${formatPublicMRGFromCents(stats.total_budget_cents)} ${labels.verified}`;
+});
+const marketplaceOperatingRows = computed(() => {
+  const stats = marketplaceStats.value;
+  const projectCount = Number(stats.project_count) || marketplaceData.value.projects?.length || marketplaceProjectsView.value.length || 0;
+  const bountyCount = Number(stats.open_task_count) || marketplaceData.value.bounties?.length || marketplaceBountiesView.value.length || 0;
+  const contributorCount = marketplaceData.value.contributors?.length || marketplaceContributorsView.value.length || 0;
+  const agentCount = agentQueueAgentsView.value.length || marketplaceAgentsView.value.length || 0;
+  const packetCount = marketplaceAgentWorkPacketRows.value.length || Number(agentQueueData.value.stats?.total_count) || 0;
+  return [
+    {
+      key: 'projects',
+      label: 'Live projects',
+      value: String(projectCount),
+      caption: `${formatPublicMRGFromCents(stats.total_budget_cents)} verified escrow`,
+      icon: FolderKanban,
+      tone: 'green',
+      action: () => openMarketplaceSection('marketplace-projects'),
+    },
+    {
+      key: 'bounties',
+      label: 'Public bounties',
+      value: String(bountyCount),
+      caption: `${formatPublicMRGFromCents(stats.open_task_reward_cents || stats.total_budget_cents)} reward pool`,
+      icon: ListTodo,
+      tone: 'blue',
+      action: () => openMarketplaceSection('marketplace-bounties'),
+    },
+    {
+      key: 'contributors',
+      label: 'Contributors',
+      value: String(contributorCount),
+      caption: 'Human proof and payout history',
+      icon: UserCheck,
+      tone: 'amber',
+      action: () => openMarketplaceSection('marketplace-contributors'),
+    },
+    {
+      key: 'agents',
+      label: 'AI agents',
+      value: String(agentCount || packetCount),
+      caption: `${packetCount} executable work packets`,
+      icon: Bot,
+      tone: 'purple',
+      action: () => openMarketplaceSection('marketplace-agents'),
+    },
+  ];
 });
 const marketplaceHeroProject = computed(() => marketplaceProjectsView.value[0] || emptyMarketplaceProjectView.value);
 const marketplaceContributorsView = computed(() =>

@@ -329,6 +329,21 @@ test('marketplace proposal packets expose output contracts for contributors', as
   assert.match(appSource, /proposal\.evidenceRows\.length \|\| proposal\.payloadRows\.length \|\| proposal\.contractRows\.length/);
 });
 
+test('marketplace page exposes all operating lanes at a glance', async () => {
+  const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
+  const cssSource = await fs.readFile(new URL('./src/styles.css', import.meta.url), 'utf-8');
+
+  assert.match(appSource, /class="marketplace-os-strip"/);
+  assert.match(appSource, /const marketplaceOperatingRows = computed/);
+  assert.match(appSource, /label: 'Live projects'/);
+  assert.match(appSource, /label: 'Public bounties'/);
+  assert.match(appSource, /label: 'Contributors'/);
+  assert.match(appSource, /label: 'AI agents'/);
+  assert.match(appSource, /openMarketplaceSection\('marketplace-agent/);
+  assert.match(cssSource, /\.marketplace-os-strip\s*\{[\s\S]*grid-template-columns: repeat\(4, minmax\(0, 1fr\)\);/);
+  assert.match(cssSource, /@media \(max-width: 760px\)[\s\S]*\.marketplace-os-strip\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\);/);
+});
+
 test('auto-release exposes payout output contracts in schema and dashboard', async () => {
   const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
   const releaseSchema = JSON.parse(await fs.readFile(new URL('./public/protocol/payout-release.v1.schema.json', import.meta.url), 'utf-8'));
