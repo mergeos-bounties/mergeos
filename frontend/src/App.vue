@@ -30497,6 +30497,10 @@ function handleWSEvent(payload = {}) {
     handleWSNotificationsUpdated(payload);
     return;
   }
+  if (payload.type === 'admin_ops_updated') {
+    handleWSAdminOpsUpdated(payload);
+    return;
+  }
   if (payload.type === 'repo_scan') {
     handleWSRepositoryScan(payload);
     return;
@@ -30715,6 +30719,14 @@ function pushDashboardRealtimeNotification(note = {}) {
 function handleWSNotificationsUpdated(payload = {}) {
   if (payload.kind !== 'notification_signal' || !token.value) return;
   void loadDashboardNotifications({ silent: true });
+}
+
+function handleWSAdminOpsUpdated(payload = {}) {
+  if (payload.kind !== 'admin_ops_signal' || !token.value || !isAdminUser.value) return;
+  void loadAdminConsoleData({ silent: true });
+  if (dashboardSection.value === 'admin') {
+    showToast('Admin ops refreshed.');
+  }
 }
 
 function handleWSProjectCreated(payload = {}) {

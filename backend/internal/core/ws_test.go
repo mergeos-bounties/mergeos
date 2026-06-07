@@ -530,6 +530,15 @@ func TestWebSocketBroadcastsProposalProtocolEvents(t *testing.T) {
 	if err := conn.SetReadDeadline(time.Now().Add(5 * time.Second)); err != nil {
 		t.Fatal(err)
 	}
+	notificationBytes, notification := readWebSocketEventOfType(t, reader, "notifications_updated", 4)
+	for _, value := range []string{"realtime-proposal-client@example.com", defaultDevPaymentCode, tempDir, privateCover, humanTask.ID, created.CustomerNotification.ID, created.WorkerNotification.ID} {
+		if strings.Contains(string(notificationBytes), value) {
+			t.Fatalf("proposal notification websocket leaked private value %q: %s", value, string(notificationBytes))
+		}
+	}
+	if notification["kind"] != "notification_signal" || notification["protocol_type"] != "notification.updated" || notification["reason"] != "created" {
+		t.Fatalf("proposal notification websocket missing refresh contract: %#v", notification)
+	}
 	submittedBytes, submitted := readWebSocketEventOfType(t, reader, "proposal_created", 4)
 	for _, value := range []string{"realtime-proposal-client@example.com", defaultDevPaymentCode, tempDir, privateCover, humanTask.ID} {
 		if strings.Contains(string(submittedBytes), value) {

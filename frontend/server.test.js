@@ -885,6 +885,9 @@ test('signed-in mobile dashboard keeps nav, actions, and popovers phone-safe', a
   assert.match(appSource, /payload\.type === 'notifications_updated'/);
   assert.match(appSource, /function handleWSNotificationsUpdated\(payload = \{\}\)/);
   assert.match(appSource, /loadDashboardNotifications\(\{ silent: true \}\)/);
+  assert.match(appSource, /payload\.type === 'admin_ops_updated'/);
+  assert.match(appSource, /function handleWSAdminOpsUpdated\(payload = \{\}\)/);
+  assert.match(appSource, /loadAdminConsoleData\(\{ silent: true \}\)/);
   assert.match(appSource, /async function loadDashboardNotifications\(options = \{\}\)/);
   assert.match(cssSource, /Signed-in mobile visual QA sweep/);
   assert.match(cssSource, /\.dashboard-shell \.dash-sidebar\s*\{[\s\S]*position: sticky !important;[\s\S]*z-index: 980;/);

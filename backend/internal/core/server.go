@@ -1025,6 +1025,7 @@ func (s *Server) createProposal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.broadcastAdminOpsUpdated()
+	s.broadcastNotificationsUpdated("created")
 	s.broadcastProposalEvent("proposal_created", response)
 	writeJSON(w, http.StatusCreated, response)
 }
@@ -1051,6 +1052,7 @@ func (s *Server) decideProposal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.broadcastAdminOpsUpdated()
+	s.broadcastNotificationsUpdated("updated")
 	if response.Proposal.Status == "accepted" {
 		s.broadcastLiveFeedEvent("task_accepted")
 	}
@@ -1088,6 +1090,7 @@ func (s *Server) createDispute(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.broadcastAdminOpsUpdated()
+	s.broadcastNotificationsUpdated("created")
 	writeJSON(w, http.StatusCreated, response)
 }
 
@@ -1788,6 +1791,7 @@ func (s *Server) submitTaskReview(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.broadcastLiveFeedEvent("task_submitted")
+	s.broadcastNotificationsUpdated("created")
 	writeJSON(w, http.StatusOK, submitted)
 }
 
@@ -1813,6 +1817,7 @@ func (s *Server) requestTaskChanges(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.broadcastLiveFeedEvent("task_changes_requested")
+	s.broadcastNotificationsUpdated("created")
 	writeJSON(w, http.StatusOK, review)
 }
 
