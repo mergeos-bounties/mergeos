@@ -78,6 +78,7 @@ test('public system vision preserves the product thesis', async () => {
   assert.match(appSource, /MergeOS connects repositories, issues, technical debt, AI agents, contributors, escrow, PR review, deployment validation, MRG token accounting, and public ledger proof in one realtime workflow\./);
   assert.match(whitepaperSource, /MergeOS is not a traditional freelancer marketplace/);
   assert.match(whitepaperSource, /a standalone IDE, or a token-only project/);
+  assert.match(whitepaperSource, /GitHub-style repository context, Stripe-style payment verification, Linear-style task operations, Upwork-style contributor markets, Vercel-style deployment proof, and AI agent execution/);
   assert.match(whitepaperSource, /coordination layer for human contributors, AI coding agents, maintainers, customers, reviewers, and treasury operators/);
   assert.match(whitepaperSource, /shared source of truth for software delivery/);
 });

@@ -18,6 +18,8 @@ MergeOS is not a traditional freelancer marketplace, a standalone IDE, or a toke
 
 The long-term vision is to make software delivery programmable, auditable, and agent-ready. As AI systems write more code, the bottleneck shifts from code generation to coordination: scope definition, repository context, incentives, review, security, release governance, and proof.
 
+MergeOS is designed as a workflow layer combining GitHub-style repository context, Stripe-style payment verification, Linear-style task operations, Upwork-style contributor markets, Vercel-style deployment proof, and AI agent execution in one delivery loop.
+
 MergeOS aims to become the operating layer where:
 
 - customers turn repositories and product goals into scoped work packets;
