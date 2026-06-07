@@ -280,6 +280,12 @@ test('live feed page exposes realtime operating lanes', async () => {
   assert.match(appSource, /label: 'Deployments'/);
   assert.match(appSource, /label: 'Active contributors'/);
   assert.match(appSource, /label: 'AI actions'/);
+  assert.match(appSource, /if \(payload\.type === 'contributor_activity'\)/);
+  assert.match(appSource, /if \(payload\.type === 'ai_review'\)/);
+  assert.match(appSource, /if \(realtimeDeploymentEventTypes\.has\(payload\.type\)\)/);
+  assert.match(appSource, /const realtimeDeploymentEventTypes = new Set\(\['deployment_status'\]\)/);
+  assert.match(appSource, /deploymentRealtimeLiveFeedItem\(payload\)/);
+  assert.match(appSource, /handleWSAgentAction\(payload\)/);
   assert.match(cssSource, /\.live-feed-operating-strip\s*\{[\s\S]*grid-template-columns: repeat\(4, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /@media \(max-width: 760px\)[\s\S]*\.live-feed-operating-strip\s*\{[\s\S]*grid-template-columns: 1fr;/);
 });
