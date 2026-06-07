@@ -14292,6 +14292,17 @@ const protocolArtifactBaseRows = [
     contextPaths: [publicProtocolManifestPath],
     artifacts: ['Schemas', 'Endpoint matrix', 'Agent runbook'],
   },
+  {
+    key: 'architecture',
+    name: 'mergeos-architecture.v1',
+    role: 'Machine-readable product architecture',
+    body: 'Product vision, user roles, repository map, frontend/backend stack, AI workflow, marketplace, ledger, and protocol roadmap for builders and agents.',
+    icon: Box,
+    tone: 'green',
+    href: '/system/mergeos-architecture.v1.json',
+    contextPaths: ['/system/mergeos-architecture.v1.json', '/protocol/architecture.v1.schema.json', '/system', publicProtocolManifestPath],
+    artifacts: ['System vision', 'Repository map', 'AI workflow'],
+  },
 ];
 const protocolArtifactRows = computed(() => {
   const localizedRows = publicProtocolCopy.value.repositoryArtifacts || publicProtocolTranslations['en-US'].repositoryArtifacts || [];

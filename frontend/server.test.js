@@ -165,6 +165,10 @@ test('public protocol page exposes repository architecture artifacts', async () 
   assert.match(appSource, /key: 'contracts'[\s\S]*name: 'mergeos-contracts'[\s\S]*artifacts: \['MRG token', 'Escrow', 'Payout roots'\]/);
   assert.match(appSource, /key: 'sdk'[\s\S]*name: 'mergeos-sdk'[\s\S]*artifacts: \['JS client', 'Task APIs', 'WebSocket helpers'\]/);
   assert.match(appSource, /key: 'protocol'[\s\S]*name: 'mergeos-protocol'[\s\S]*artifacts: \['Schemas', 'Endpoint matrix', 'Agent runbook'\]/);
+  assert.match(appSource, /key: 'architecture'[\s\S]*name: 'mergeos-architecture\.v1'[\s\S]*role: 'Machine-readable product architecture'/);
+  assert.match(appSource, /href: '\/system\/mergeos-architecture\.v1\.json'/);
+  assert.match(appSource, /contextPaths: \['\/system\/mergeos-architecture\.v1\.json', '\/protocol\/architecture\.v1\.schema\.json', '\/system', publicProtocolManifestPath\]/);
+  assert.match(appSource, /artifacts: \['System vision', 'Repository map', 'AI workflow'\]/);
   assert.match(appSource, /Repository architecture[\s\S]*mergeos-app, mergeos-contracts, mergeos-sdk, and future mergeos-protocol/);
   assert.match(appSource, /Future protocol layer[\s\S]*decentralized execution, external AI agents, public integrations, task manifests, and open work standards/);
   assert.match(whitepaperSource, /The main application repository contains the frontend, backend, dashboards, SSR public pages, authentication, repository import, task engine, AI orchestration, payment verification, escrow coordination, realtime WebSocket feeds, public ledger pages, protocol discovery, and admin operations\./);
