@@ -16,6 +16,7 @@ const (
 	airdropMissionsProtocolVersion          = "mergeos.airdrop-missions.v1"
 	presaleReservationProtocolVersion       = "mergeos.presale-reservation.v1"
 	tokenLaunchBriefProtocolVersion         = "mergeos.token-launch-brief.v1"
+	tokenLaunchBriefsProtocolVersion        = "mergeos.token-launch-briefs.v1"
 	defaultAirdropAllocationMRG       int64 = 250
 	maxAirdropAllocationMRG           int64 = 100000
 	minPresaleReserveMRG              int64 = 100
@@ -455,7 +456,7 @@ func (s *Store) PublicTokenLaunchBriefs(launchTypeFilter string) PublicTokenLaun
 	defer s.mu.RUnlock()
 
 	response := PublicTokenLaunchBriefsResponse{
-		ProtocolVersion: tokenLaunchBriefProtocolVersion,
+		ProtocolVersion: tokenLaunchBriefsProtocolVersion,
 		Kind:            "token_launch_briefs",
 		Briefs:          []PublicTokenLaunchBriefRecord{},
 	}

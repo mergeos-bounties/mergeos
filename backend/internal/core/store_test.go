@@ -1421,7 +1421,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 	if payload.Status != "active" || payload.GeneratedAt.IsZero() {
 		t.Fatalf("manifest missing status/generated_at: %#v", payload)
 	}
-	if len(payload.Schemas) != 43 {
+	if len(payload.Schemas) != 44 {
 		t.Fatalf("manifest schemas = %d: %#v", len(payload.Schemas), payload.Schemas)
 	}
 	if len(payload.Documents) != len(payload.Schemas) {
@@ -1459,7 +1459,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 	for _, document := range payload.Documents {
 		documents[document.ProtocolVersion] = document
 	}
-	for _, required := range []string{"mergeos.task.v1", "mergeos.task-claim.v1", "mergeos.task-submission.v1", "mergeos.task-review.v1", "mergeos.agent.v1", "mergeos.contributor.v1", "mergeos.agent-action.v1", "mergeos.agent-run.v1", "mergeos.agent-lease.v1", "mergeos.agent-queue.v1", "mergeos.agent-runbook.v1", "mergeos.architecture.v1", "mergeos.marketplace.v1", "mergeos.live-feed.v1", "mergeos.workflow.v1", "mergeos.estimate.v1", "mergeos.payment-order.v1", "mergeos.wallet-migration.v1", "mergeos.release-artifact.v1", "mergeos.repo-import.v1", "mergeos.repo-sync.v1", "mergeos.repo-task-funding.v1", "mergeos.dispute.v1", "mergeos.proposal.v1", "mergeos.ai-workflow.v1", "mergeos.event.v1", "mergeos.ledger.v1", "mergeos.ledger-proof.v1", "mergeos.token-economy.v1", "mergeos.token-launch-brief.v1", "mergeos.airdrop-claim.v1", "mergeos.airdrop-missions.v1", "mergeos.presale-reservation.v1", "mergeos.escrow.v1", "mergeos.payouts.v1", "mergeos.payout-release.v1", "mergeos.deployment.v1", "mergeos.pr-monitor.v1", "mergeos.scan.v1", "mergeos.customer-dashboard.v1", "mergeos.worker-dashboard.v1", "mergeos.routing.v1", "mergeos.admin-ops.v1"} {
+	for _, required := range []string{"mergeos.task.v1", "mergeos.task-claim.v1", "mergeos.task-submission.v1", "mergeos.task-review.v1", "mergeos.agent.v1", "mergeos.contributor.v1", "mergeos.agent-action.v1", "mergeos.agent-run.v1", "mergeos.agent-lease.v1", "mergeos.agent-queue.v1", "mergeos.agent-runbook.v1", "mergeos.architecture.v1", "mergeos.marketplace.v1", "mergeos.live-feed.v1", "mergeos.workflow.v1", "mergeos.estimate.v1", "mergeos.payment-order.v1", "mergeos.wallet-migration.v1", "mergeos.release-artifact.v1", "mergeos.repo-import.v1", "mergeos.repo-sync.v1", "mergeos.repo-task-funding.v1", "mergeos.dispute.v1", "mergeos.proposal.v1", "mergeos.ai-workflow.v1", "mergeos.event.v1", "mergeos.ledger.v1", "mergeos.ledger-proof.v1", "mergeos.token-economy.v1", "mergeos.token-launch-brief.v1", "mergeos.token-launch-briefs.v1", "mergeos.airdrop-claim.v1", "mergeos.airdrop-missions.v1", "mergeos.presale-reservation.v1", "mergeos.escrow.v1", "mergeos.payouts.v1", "mergeos.payout-release.v1", "mergeos.deployment.v1", "mergeos.pr-monitor.v1", "mergeos.scan.v1", "mergeos.customer-dashboard.v1", "mergeos.worker-dashboard.v1", "mergeos.routing.v1", "mergeos.admin-ops.v1"} {
 		if !schemas[required] {
 			t.Fatalf("manifest missing schema %s: %#v", required, payload.Schemas)
 		}
@@ -1775,7 +1775,7 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 	if err := json.Unmarshal(publicLaunchBriefsResp.Body.Bytes(), &publicLaunchBriefs); err != nil {
 		t.Fatal(err)
 	}
-	if publicLaunchBriefs.ProtocolVersion != tokenLaunchBriefProtocolVersion || publicLaunchBriefs.Kind != "token_launch_briefs" || publicLaunchBriefs.Stats.BriefCount != 1 || publicLaunchBriefs.Stats.AirdropCount != 1 {
+	if publicLaunchBriefs.ProtocolVersion != tokenLaunchBriefsProtocolVersion || publicLaunchBriefs.Kind != "token_launch_briefs" || publicLaunchBriefs.Stats.BriefCount != 1 || publicLaunchBriefs.Stats.AirdropCount != 1 {
 		t.Fatalf("public token launch briefs summary invalid: %#v", publicLaunchBriefs)
 	}
 	if len(publicLaunchBriefs.Briefs) != 1 || publicLaunchBriefs.Briefs[0].BriefID != launchBrief.BriefID || publicLaunchBriefs.Briefs[0].LaunchType != "airdrop" {

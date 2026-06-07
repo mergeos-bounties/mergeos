@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mergeos.shop/protocol/token-launch-briefs.v1.schema.json",
+  "title": "MergeOS Token Launch Brief Queue v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["protocol_version", "kind", "stats", "briefs"],
+  "properties": {
+    "protocol_version": { "const": "mergeos.token-launch-briefs.v1" },
+    "kind": { "const": "token_launch_briefs" },
+    "stats": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["brief_count", "airdrop_count", "presale_count"],
+      "properties": {
+        "brief_count": { "type": "integer", "minimum": 0 },
+        "airdrop_count": { "type": "integer", "minimum": 0 },
+        "presale_count": { "type": "integer", "minimum": 0 },
+        "updated_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "briefs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "brief_id",
+          "launch_type",
+          "project_title",
+          "decision",
+          "gate_summary",
+          "gates_reference",
+          "research_source",
+          "research_signals",
+          "ledger_sequence",
+          "entry_hash",
+          "ledger_proof_url",
+          "created_at"
+        ],
+        "properties": {
+          "brief_id": { "type": "string", "maxLength": 80 },
+          "launch_type": { "enum": ["airdrop", "presale", "token_launch"] },
+          "project_title": { "type": "string", "maxLength": 140 },
+          "decision": { "type": "string", "maxLength": 80 },
+          "gate_summary": { "type": "string", "maxLength": 240 },
+          "gates_reference": { "type": "string", "maxLength": 500 },
+          "research_source": { "type": "string", "maxLength": 500 },
+          "research_signals": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1, "maxLength": 80 }
+          },
+          "ledger_sequence": { "type": "integer", "minimum": 1 },
+          "entry_hash": { "type": "string", "minLength": 64, "maxLength": 64 },
+          "ledger_proof_url": { "type": "string", "maxLength": 200 },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      }
+    }
+  }
+}

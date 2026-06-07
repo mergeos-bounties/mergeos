@@ -54,6 +54,7 @@ test('loads stable task, workflow, ledger, and event schemas', () => {
     'mergeos.task.v1',
     'mergeos.token-economy.v1',
     'mergeos.token-launch-brief.v1',
+    'mergeos.token-launch-briefs.v1',
     'mergeos.wallet-migration.v1',
     'mergeos.worker-dashboard.v1',
     'mergeos.workflow.v1',
@@ -197,10 +198,37 @@ test('validates airdrop claim, presale reservation, and token launch brief proto
     live_feed_url: '/api/public/live-feed',
     created_at: now,
   };
+  const tokenLaunchBriefs = {
+    protocol_version: 'mergeos.token-launch-briefs.v1',
+    kind: 'token_launch_briefs',
+    stats: {
+      brief_count: 1,
+      airdrop_count: 1,
+      presale_count: 0,
+      updated_at: now,
+    },
+    briefs: [
+      {
+        brief_id: 'tlb_0003',
+        launch_type: 'airdrop',
+        project_title: 'MergeOS partner airdrop research',
+        decision: 'pending_open_decision',
+        gate_summary: '2/4 ready',
+        gates_reference: 'source:ready_for_review|anti_bot:needs_evidence',
+        research_source: 'https://github.com/mergeos-bounties/mergeos',
+        research_signals: ['airdrop_launch', 'research_source', 'anti_bot', 'repository_context'],
+        ledger_sequence: 3,
+        entry_hash: 'c'.repeat(64),
+        ledger_proof_url: '/api/public/ledger/proof',
+        created_at: now,
+      },
+    ],
+  };
 
   assert.equal(validateProtocolDocument(airdropClaim).valid, true);
   assert.equal(validateProtocolDocument(presaleReservation).valid, true);
   assert.equal(validateProtocolDocument(tokenLaunchBrief).valid, true);
+  assert.equal(validateProtocolDocument(tokenLaunchBriefs).valid, true);
 
   const invalidClaim = validateProtocolDocument({ ...airdropClaim, allocation_mrg: 100001 });
   assert.equal(invalidClaim.valid, false);

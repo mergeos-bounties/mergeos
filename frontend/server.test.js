@@ -492,6 +492,7 @@ test('public protocol links match backend routes', async () => {
   const manifestSource = await fs.readFile(new URL('../backend/internal/core/protocol_manifest.go', import.meta.url), 'utf-8');
   const paymentOrderSchema = JSON.parse(await fs.readFile(new URL('./public/protocol/payment-order.v1.schema.json', import.meta.url), 'utf-8'));
   const tokenLaunchBriefSchema = JSON.parse(await fs.readFile(new URL('./public/protocol/token-launch-brief.v1.schema.json', import.meta.url), 'utf-8'));
+  const tokenLaunchBriefsSchema = JSON.parse(await fs.readFile(new URL('./public/protocol/token-launch-briefs.v1.schema.json', import.meta.url), 'utf-8'));
 
   assert.match(appSource, /const publicProtocolManifestPath = '\/api\/public\/protocol';/);
   assert.equal(paymentOrderSchema.properties.provider.enum.includes('paypal'), true);
@@ -501,11 +502,17 @@ test('public protocol links match backend routes', async () => {
   assert.equal(tokenLaunchBriefSchema.properties.ceo_memo.required.includes('gates'), true);
   assert.equal(tokenLaunchBriefSchema.properties.ceo_memo.properties.gates.items.properties.status.enum.includes('ready_for_review'), true);
   assert.equal(tokenLaunchBriefSchema.properties.ceo_memo.properties.gates.items.properties.status.enum.includes('needs_evidence'), true);
+  assert.equal(tokenLaunchBriefsSchema.properties.protocol_version.const, 'mergeos.token-launch-briefs.v1');
+  assert.equal(tokenLaunchBriefsSchema.required.includes('stats'), true);
+  assert.equal(tokenLaunchBriefsSchema.required.includes('briefs'), true);
+  assert.equal(tokenLaunchBriefsSchema.properties.briefs.items.required.includes('research_source'), true);
   assert.match(manifestSource, /mergeos\.payment-order\.v1/);
   assert.match(manifestSource, /payment-order\.v1\.schema\.json/);
   assert.match(manifestSource, /\/contracts\/solana\/mergeos_mrg\.proof-manifest\.v1\.json/);
   assert.match(manifestSource, /mergeos\.solana-contract-proof\.v1/);
   assert.match(manifestSource, /\/api\/public\/token\/launch-briefs/);
+  assert.match(manifestSource, /mergeos\.token-launch-briefs\.v1/);
+  assert.match(manifestSource, /token-launch-briefs\.v1\.schema\.json/);
   assert.match(manifestSource, /\/system\/mergeos-architecture\.v1\.json/);
   assert.match(manifestSource, /mergeos\.architecture\.v1/);
   assert.match(manifestSource, /architecture\.v1\.schema\.json/);
