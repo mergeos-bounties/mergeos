@@ -532,6 +532,7 @@ test('marketplace AI agent matrix covers all AI agent lanes', async () => {
   assert.match(appSource, /key: 'secure'[\s\S]*title: 'Security validation'[\s\S]*evidence: 'Audit note and findings'/);
   assert.match(appSource, /key: 'deploy'[\s\S]*title: 'Deployment gate'[\s\S]*evidence: 'Deployment proof row'/);
   assert.match(appSource, /Review, test, generate, code, secure, and deploy with proof/);
+  assert.match(appSource, /AI agents can review pull requests, test builds, generate task graphs, code scoped fixes, validate security, and gate deployments with proof\./);
   assert.match(cssSource, /\.marketplace-agent-matrix-grid\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/);
 });
 

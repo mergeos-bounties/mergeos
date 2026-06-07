@@ -9326,7 +9326,7 @@ const publicMarketplaceTranslations = {
     agentCapabilityMatrix: {
       eyebrow: 'AI AGENT CAPABILITY MATRIX',
       title: 'Review, test, generate, code, secure, and deploy with proof',
-      body: 'Each lane starts from repository context and ends with evidence that customers, reviewers, and the public ledger can verify.',
+      body: 'AI agents can review pull requests, test builds, generate task graphs, code scoped fixes, validate security, and gate deployments with proof.',
       inputLabel: 'Input',
       outputLabel: 'Output',
       evidenceLabel: 'Evidence',
@@ -9558,7 +9558,7 @@ const publicMarketplaceTranslations = {
     agentCapabilityMatrix: {
       eyebrow: 'AI AGENT CAPABILITY MATRIX',
       title: 'Review, test, generate, code, secure và deploy có proof',
-      body: 'Mỗi lane bắt đầu từ repo context và kết thúc bằng evidence để customer, reviewer và public ledger có thể kiểm chứng.',
+      body: 'AI agents can review pull requests, test builds, generate task graphs, code scoped fixes, validate security, and gate deployments with proof.',
       inputLabel: 'Input',
       outputLabel: 'Output',
       evidenceLabel: 'Evidence',
