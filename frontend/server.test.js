@@ -396,6 +396,14 @@ test('ledger logs exposes compact proof timeline coverage', async () => {
   assert.match(appSource, /Latest escrow, PR, AI, and release evidence/);
   assert.match(appSource, /const ledgerProofTimelineRows = computed/);
   assert.match(appSource, /ledgerProofLanes\.value/);
+  assert.match(appSource, /key: 'escrow-proof'[\s\S]*title: 'Escrow funding'[\s\S]*Payment verification, project reserve, treasury movement, and escrow lock records/);
+  assert.match(appSource, /key: 'pr-proof'[\s\S]*title: 'PR handoff'[\s\S]*Submitted reviews, accepted PRs, task claims, and repository workflow events/);
+  assert.match(appSource, /key: 'ai-proof'[\s\S]*title: 'AI audit'[\s\S]*AI review webhooks and agent action packets tied to routed software work/);
+  assert.match(appSource, /key: 'release-proof'[\s\S]*title: 'Release proof'[\s\S]*Payout releases, auto-release policy evidence, task payments, and manual credits/);
+  assert.match(appSource, /ledgerTabs = \['All Activity', 'Escrow & Payments', 'Tasks & PRs', 'Milestones', 'AI Actions', 'Token Events'\]/);
+  assert.match(appSource, /if \(normalized === 'ai_review'\)/);
+  assert.match(appSource, /if \(normalized === 'agent_action'\)/);
+  assert.match(appSource, /if \(normalized === 'ledger_task_payment'\) return 'release proof'/);
   assert.match(appSource, /mapLedgerTransparencyEvent\(latest\)/);
   assert.match(appSource, /applyLedgerProofLane\(row\.lane\)/);
   assert.match(cssSource, /\.ledger-proof-timeline-list\s*\{[\s\S]*grid-template-columns: repeat\(4, minmax\(0, 1fr\)\);/);
