@@ -108,6 +108,18 @@ test('public protocol links match backend routes', async () => {
   assert.doesNotMatch(appSource, /\/api\/public\/projects\/[^`'"]*\/workflow\/protocol/);
 });
 
+test('public protocol page exposes repository architecture artifacts', async () => {
+  const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
+
+  assert.match(appSource, /const protocolArtifactBaseRows = \[/);
+  assert.match(appSource, /key: 'app'[\s\S]*name: 'mergeos-app'[\s\S]*artifacts: \['Frontend \+ SSR', 'Dashboards', 'Realtime feeds'\]/);
+  assert.match(appSource, /key: 'contracts'[\s\S]*name: 'mergeos-contracts'[\s\S]*artifacts: \['MRG token', 'Escrow', 'Payout roots'\]/);
+  assert.match(appSource, /key: 'sdk'[\s\S]*name: 'mergeos-sdk'[\s\S]*artifacts: \['JS client', 'Task APIs', 'WebSocket helpers'\]/);
+  assert.match(appSource, /key: 'protocol'[\s\S]*name: 'mergeos-protocol'[\s\S]*artifacts: \['Schemas', 'Endpoint matrix', 'Agent runbook'\]/);
+  assert.match(appSource, /Repository architecture[\s\S]*mergeos-app, mergeos-contracts, mergeos-sdk, and future mergeos-protocol/);
+  assert.match(appSource, /Future protocol layer[\s\S]*decentralized execution, external AI agents, public integrations, task manifests, and open work standards/);
+});
+
 test('MergeIDE release manifest points to pinned GitHub release assets', async () => {
   const manifestURL = new URL('./public/downloads/mergeide-windows-latest.json', import.meta.url);
   const manifest = JSON.parse(await fs.readFile(manifestURL, 'utf-8'));
