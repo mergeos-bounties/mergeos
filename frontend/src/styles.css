@@ -12943,6 +12943,75 @@ svg {
   padding: 14px;
 }
 
+.customer-dashboard-operating-strip {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.customer-dashboard-operating-strip button {
+  min-width: 0;
+  min-height: 78px;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #dfe7ef;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #111827;
+  padding: 9px;
+  text-align: left;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.03);
+  transition: border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+}
+
+.customer-dashboard-operating-strip button:hover {
+  border-color: rgba(15, 159, 120, 0.28);
+  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.06);
+  transform: translateY(-1px);
+}
+
+.customer-dashboard-operating-strip .public-card-icon {
+  width: 30px;
+  height: 30px;
+  margin: 0;
+}
+
+.customer-dashboard-operating-strip button > span:last-child,
+.customer-dashboard-operating-strip small,
+.customer-dashboard-operating-strip strong,
+.customer-dashboard-operating-strip em {
+  min-width: 0;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.customer-dashboard-operating-strip small {
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 820;
+}
+
+.customer-dashboard-operating-strip strong {
+  margin-top: 2px;
+  color: #111827;
+  font-size: 15px;
+  line-height: 1.1;
+  font-weight: 950;
+}
+
+.customer-dashboard-operating-strip em {
+  margin-top: 3px;
+  color: #6b7280;
+  font-style: normal;
+  font-size: 10px;
+  font-weight: 720;
+}
+
 .dash-card h2 {
   margin: 0;
   color: #111827;
@@ -33555,6 +33624,35 @@ canvas {
 
   .home-command-panel {
     display: none !important;
+  }
+}
+
+@media (max-width: 1080px) {
+  .dashboard-shell .customer-dashboard-operating-strip {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .dashboard-shell .customer-dashboard-operating-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 7px;
+    margin-top: 10px;
+  }
+
+  .dashboard-shell .customer-dashboard-operating-strip button {
+    min-height: 64px;
+    grid-template-columns: 26px minmax(0, 1fr);
+    padding: 8px;
+  }
+
+  .dashboard-shell .customer-dashboard-operating-strip .public-card-icon {
+    width: 26px;
+    height: 26px;
+  }
+
+  .dashboard-shell .customer-dashboard-operating-strip strong {
+    font-size: 13px;
   }
 }
 

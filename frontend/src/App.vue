@@ -3173,6 +3173,24 @@
                 </article>
               </section>
 
+              <section class="customer-dashboard-operating-strip" aria-label="Customer dashboard operating lanes">
+                <button
+                  v-for="lane in customerDashboardOperatingRows"
+                  :key="lane.key"
+                  type="button"
+                  @click="handleCustomerDashboardOperatingLane(lane)"
+                >
+                  <span :class="['public-card-icon', lane.tone]">
+                    <component :is="lane.icon" :size="15" />
+                  </span>
+                  <span>
+                    <small>{{ lane.label }}</small>
+                    <strong>{{ lane.value }}</strong>
+                    <em>{{ lane.caption }}</em>
+                  </span>
+                </button>
+              </section>
+
               <section class="dash-card delivery-snapshot-card">
                 <div class="card-title-row">
                   <div>
@@ -21881,6 +21899,79 @@ const dashboardCommandStats = computed(() => {
   ];
 });
 
+const customerDashboardOperatingRows = computed(() => {
+  const stats = customerDashboardStats.value;
+  const prTotal = Number(dashboardPullRequestStats.value.total_count) || dashboardPullRequestRows.value.length || 0;
+  const escrowValue = formatMRGFromCents(stats.remaining_escrow_cents ?? dashboardRemainingCents.value);
+  const paymentTotal = dashboardPaymentRows.value.length;
+  const taskTotal =
+    Number(stats.open_task_count || 0)
+    + Number(stats.claimed_task_count || 0)
+    + Number(stats.submitted_task_count || 0)
+    + Number(stats.accepted_task_count || 0);
+  const aiTotal = dashboardAILogRows.value.length || customerDashboardSignals.value.filter((signal) => signal.isAI).length;
+  return [
+    {
+      key: 'overview',
+      label: 'Project overview',
+      value: String(Number(stats.project_count) || dashboardProjectList.value.length || 0),
+      caption: dashboardProjectView.value.title || 'Selected workflow',
+      icon: LayoutDashboard,
+      tone: 'green',
+      section: 'projects',
+      focus: 'overview',
+    },
+    {
+      key: 'live-prs',
+      label: 'Live PRs',
+      value: String(prTotal),
+      caption: dashboardPullRequestView.value.status || 'Review stream',
+      icon: GitPullRequest,
+      tone: 'blue',
+      section: 'projects',
+      focus: 'activity',
+    },
+    {
+      key: 'escrow',
+      label: 'Escrow',
+      value: escrowValue,
+      caption: `${dashboardEscrowView.value.progress || 0}% released`,
+      icon: LockKeyhole,
+      tone: 'purple',
+      section: 'payments',
+    },
+    {
+      key: 'payments',
+      label: 'Payments',
+      value: String(paymentTotal),
+      caption: dashboardPaymentView.value.status || 'Ledger rows',
+      icon: CreditCard,
+      tone: 'green',
+      section: 'payments',
+    },
+    {
+      key: 'tasks',
+      label: 'Tasks',
+      value: String(taskTotal || dashboardSelectedTasks.value.length || 0),
+      caption: `${dashboardAcceptedTasks.value.length} accepted`,
+      icon: ListTodo,
+      tone: 'amber',
+      section: 'projects',
+      focus: 'tasks',
+    },
+    {
+      key: 'ai-logs',
+      label: 'AI logs',
+      value: String(aiTotal),
+      caption: dashboardAILogView.value.status || 'Agent signals',
+      icon: Bot,
+      tone: 'purple',
+      section: 'projects',
+      focus: 'ai-logs',
+    },
+  ];
+});
+
 const dashboardRoleCoverageRows = computed(() => {
   const stats = customerDashboardStats.value;
   const customerTaskCount =
@@ -24062,6 +24153,14 @@ function handleDashboardProjectTab(tabItem = '') {
   default:
     openDashboardSection('projects', { focus: dashboardProjectTabFocus(tabItem) });
   }
+}
+
+function handleCustomerDashboardOperatingLane(lane = {}) {
+  if (lane.section === 'projects') {
+    openDashboardSection('projects', { focus: lane.focus || 'overview' });
+    return;
+  }
+  if (lane.section) openDashboardSection(lane.section);
 }
 
 function refreshDashboardToolSection() {

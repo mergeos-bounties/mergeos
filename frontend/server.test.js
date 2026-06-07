@@ -284,6 +284,23 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.match(cssSource, /@media \(max-width: 980px\)[\s\S]*\.home-command-panel\s*\{[\s\S]*display: none !important;/);
 });
 
+test('customer dashboard exposes compact operating lanes after login', async () => {
+  const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
+  const cssSource = await fs.readFile(new URL('./src/styles.css', import.meta.url), 'utf-8');
+
+  assert.match(appSource, /class="customer-dashboard-operating-strip"/);
+  assert.match(appSource, /const customerDashboardOperatingRows = computed/);
+  assert.match(appSource, /label: 'Project overview'/);
+  assert.match(appSource, /label: 'Live PRs'/);
+  assert.match(appSource, /label: 'Escrow'/);
+  assert.match(appSource, /label: 'Payments'/);
+  assert.match(appSource, /label: 'Tasks'/);
+  assert.match(appSource, /label: 'AI logs'/);
+  assert.match(appSource, /function handleCustomerDashboardOperatingLane/);
+  assert.match(cssSource, /\.customer-dashboard-operating-strip\s*\{[\s\S]*grid-template-columns: repeat\(6, minmax\(0, 1fr\)\);/);
+  assert.match(cssSource, /@media \(max-width: 760px\)[\s\S]*\.dashboard-shell \.customer-dashboard-operating-strip\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\) !important;/);
+});
+
 test('ledger logs exposes compact proof timeline coverage', async () => {
   const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
   const cssSource = await fs.readFile(new URL('./src/styles.css', import.meta.url), 'utf-8');
