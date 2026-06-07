@@ -755,6 +755,8 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.match(cssSource, /Home executive pass: a short premium decision screen/);
   assert.match(appSource, /class="public-notification-feed home-feed-preview"/);
   assert.match(appSource, /class="home-mergeide-inline-link"/);
+  assert.match(appSource, /class="home-explain-strip"/);
+  assert.match(appSource, /v-for="row in homeOperatingRows"/);
   assert.match(appSource, /homeSystemSummaryRows/);
   assert.match(appSource, /homeOperatingRows/);
   assert.match(appSource, /homePipelineRows/);
@@ -782,6 +784,8 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.match(cssSource, /\.public-home-hero\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) minmax\(280px, 326px\) !important;/);
   assert.match(cssSource, /\.public-home-copy h1\s*\{[\s\S]*font-size: clamp\(40px, 4\.25vw, 60px\) !important;/);
   assert.match(cssSource, /\.home-command-panel\s*\{[\s\S]*max-width: 326px !important;/);
+  assert.match(cssSource, /\.home-explain-strip\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\) !important;/);
+  assert.match(cssSource, /@media \(max-width: 980px\)[\s\S]*\.home-explain-strip\s*\{[\s\S]*grid-template-columns: 1fr !important;/);
   assert.match(cssSource, /\.home-system-summary,[\s\S]*\.home-compact-flow,[\s\S]*\.home-system-explainer,[\s\S]*\.home-command-panel \.home-feed-preview,[\s\S]*\.home-command-panel \.home-pipeline\s*\{[\s\S]*display: none !important;/);
   assert.match(cssSource, /\.home-command-panel \.public-stat-grid article:nth-child\(n \+ 3\)\s*\{[\s\S]*display: none !important;/);
   assert.match(cssSource, /@media \(max-width: 980px\)[\s\S]*\.home-command-panel\s*\{[\s\S]*display: block !important;[\s\S]*max-width: 520px !important;/);

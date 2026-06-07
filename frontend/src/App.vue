@@ -4624,6 +4624,12 @@
             <span class="marketplace-eyebrow">{{ publicHomeCopy.eyebrow }}</span>
             <h1 id="home-title">{{ publicHomeCopy.title }}</h1>
             <p>{{ publicHomeCopy.body }}</p>
+            <div class="home-explain-strip" :aria-label="publicHomeCopy.operatingLabel">
+              <article v-for="row in homeOperatingRows" :key="row.title">
+                <strong>{{ row.title }}</strong>
+                <span>{{ row.body }}</span>
+              </article>
+            </div>
             <div class="marketplace-actions">
               <button class="primary-button large" type="button" @click="openProjectWizard">
                 {{ publicHomeCopy.primaryAction }}

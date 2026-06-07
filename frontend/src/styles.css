@@ -34731,6 +34731,45 @@ canvas {
   line-height: 1.42 !important;
 }
 
+.home-explain-strip {
+  max-width: 610px !important;
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+  margin-top: 16px !important;
+}
+
+.home-explain-strip article {
+  min-width: 0 !important;
+  min-height: 74px !important;
+  display: grid !important;
+  align-content: start !important;
+  gap: 5px !important;
+  border: 1px solid rgba(15, 118, 110, 0.13) !important;
+  border-radius: 8px !important;
+  background: rgba(255, 255, 255, 0.78) !important;
+  padding: 11px 12px !important;
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.04) !important;
+}
+
+.home-explain-strip strong {
+  color: #08130f !important;
+  font-size: 13px !important;
+  line-height: 1.2 !important;
+  font-weight: 900 !important;
+}
+
+.home-explain-strip span {
+  display: -webkit-box !important;
+  overflow: hidden !important;
+  color: #5b6c65 !important;
+  font-size: 11.5px !important;
+  line-height: 1.34 !important;
+  font-weight: 760 !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 2 !important;
+}
+
 .public-home-copy .marketplace-actions {
   max-width: 520px !important;
   margin-top: 18px !important;
@@ -34835,6 +34874,24 @@ canvas {
     font-size: 15px !important;
   }
 
+  .home-explain-strip {
+    max-width: 560px !important;
+    grid-template-columns: 1fr !important;
+    gap: 7px !important;
+    margin-top: 12px !important;
+  }
+
+  .home-explain-strip article {
+    min-height: 0 !important;
+    grid-template-columns: 72px minmax(0, 1fr) !important;
+    align-items: start !important;
+    padding: 10px 11px !important;
+  }
+
+  .home-explain-strip span {
+    -webkit-line-clamp: 2 !important;
+  }
+
   .home-command-panel {
     display: block !important;
     width: 100% !important;
@@ -34867,6 +34924,15 @@ canvas {
   .public-home-copy p {
     margin-top: 10px !important;
     font-size: 14px !important;
+  }
+
+  .home-explain-strip {
+    margin-top: 10px !important;
+  }
+
+  .home-explain-strip article {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 3px !important;
   }
 
   .public-home-copy .marketplace-actions {
