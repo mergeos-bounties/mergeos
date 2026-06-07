@@ -9022,8 +9022,8 @@ const publicNavTranslations = {
 const publicHomeTranslations = {
   'en-US': {
     eyebrow: 'MERGEOS DELIVERY OS',
-    title: 'MergeOS turns funded software work into verified delivery.',
-    body: 'Post a brief, fund escrow, route tasks to builders or agents, and prove every payout through the live ledger.',
+    title: 'Fund software work. Route it. Verify delivery.',
+    body: 'MergeOS turns a project brief into escrow, repo-aware tasks, builder or agent execution, PR review, and ledger-backed payout proof.',
     primaryAction: 'Start a project',
     marketplaceAction: 'View live work',
     ledgerAction: 'Open proof ledger',
