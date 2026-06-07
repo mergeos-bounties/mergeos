@@ -10376,7 +10376,7 @@ const publicMarketplaceTranslations = {
   },
 };
 
-const publicProtocolManifestPath = '/api/public/protocol/index';
+const publicProtocolManifestPath = '/api/public/protocol';
 
 const publicProtocolTranslations = {
   'en-US': {
@@ -14060,7 +14060,7 @@ const protocolRealtimeRows = computed(() => {
 const protocolRunbookRows = computed(() => {
   if (protocolRunbookRaw.value.length) return protocolRunbookRaw.value;
   return [
-    'Fetch /api/public/protocol/index to discover protocol versions and public surfaces.',
+    'Fetch /api/public/protocol to discover protocol versions and public surfaces.',
     'Fetch marketplace, live feed, and agent queue before claiming work.',
     'Fetch task, workflow, pulse, snapshot, and deployment documents before submitting evidence.',
     'Record actions and submit evidence through authenticated endpoints.',
@@ -18385,8 +18385,8 @@ const marketplaceAgentWorkPacketRows = computed(() => {
       ? packet.evidence_checklist
       : (Array.isArray(task.evidence_required) ? task.evidence_required : []);
     const contextRows = [
-      { label: publicMarketplaceCopy.value.manifest || 'Manifest', href: contextURLs.task_protocol || task.protocol_url || `/api/public/bounties/${encodeURIComponent(bountyID)}/protocol`, icon: Code2 },
-      { label: publicMarketplaceCopy.value.workflow || 'Workflow', href: contextURLs.workflow_protocol || (task.project_id ? `/api/public/projects/${encodeURIComponent(task.project_id)}/workflow/protocol` : ''), icon: GitBranch },
+      { label: publicMarketplaceCopy.value.manifest || 'Manifest', href: contextURLs.task_protocol || task.protocol_url || publicTaskProtocolPath(bountyID), icon: Code2 },
+      { label: publicMarketplaceCopy.value.workflow || 'Workflow', href: contextURLs.workflow_protocol || publicProjectWorkflowPath(task.project_id), icon: GitBranch },
       { label: publicMarketplaceCopy.value.pulse || 'Pulse', href: contextURLs.workflow_pulse || (task.project_id ? `/api/public/projects/${encodeURIComponent(task.project_id)}/workflow-pulse` : ''), icon: Zap },
       { label: 'Deploy', href: contextURLs.deployment || (task.project_id ? `/api/public/projects/${encodeURIComponent(task.project_id)}/deployment` : ''), icon: Rocket },
     ]
@@ -19558,7 +19558,7 @@ const publicRepoFactoryPacketRows = computed(() => {
       body: packet.summary,
       meta: `${packet.project} / ${packet.lane} / ${packet.issue}`,
       reward: packet.reward,
-      protocolUrl: packet.contextRows?.[0]?.href || absolutePublicPath(`/api/public/bounties/${encodeURIComponent(packet.id)}/protocol`),
+      protocolUrl: packet.contextRows?.[0]?.href || publicTaskProtocolURL(packet.id),
       icon: packet.icon || Bot,
       tone: packet.tone || 'purple',
       statusTone: 'purple',
@@ -20017,7 +20017,7 @@ const dashboardProjectView = computed(() => {
 const dashboardProjectPublicID = computed(() => dashboardSelectedProject.value?.id || '');
 const dashboardProjectShareURL = computed(() =>
   dashboardProjectPublicID.value
-    ? absolutePublicPath(`/api/public/projects/${encodeURIComponent(dashboardProjectPublicID.value)}/workflow/protocol`)
+    ? publicProjectWorkflowURL(dashboardProjectPublicID.value)
     : '',
 );
 const dashboardProjectActionLinks = computed(() => {
@@ -21033,8 +21033,8 @@ const dashboardAgentQueueRows = computed(() => {
         workerKind,
         agentType,
         readiness: toTitleLabel(task.readiness || 'agent_ready'),
-        protocolUrl: absolutePublicPath(contextUrls.task_protocol || task.protocol_url || `/api/public/bounties/${encodeURIComponent(bountyID)}/protocol`),
-        workflowUrl: task.project_id ? absolutePublicPath(contextUrls.workflow_protocol || `/api/public/projects/${encodeURIComponent(task.project_id)}/workflow/protocol`) : '',
+        protocolUrl: absolutePublicPath(contextUrls.task_protocol || task.protocol_url || publicTaskProtocolPath(bountyID)),
+        workflowUrl: contextUrls.workflow_protocol ? absolutePublicPath(contextUrls.workflow_protocol) : publicProjectWorkflowURL(task.project_id),
         deploymentUrl: task.project_id ? absolutePublicPath(contextUrls.deployment || `/api/public/projects/${encodeURIComponent(task.project_id)}/deployment`) : '',
         claimEndpoint: task.claim_endpoint || `/api/tasks/${bountyID}/claim`,
         actionEndpoint: task.action_endpoint || '/api/agents/actions',
@@ -22406,7 +22406,7 @@ function postPaymentProjectID() {
 function postPaymentProjectShareURL() {
   const projectID = postPaymentProjectID();
   if (!projectID) return publicPathForPage('marketplace');
-  return absolutePublicPath(`/api/public/projects/${encodeURIComponent(projectID)}/workflow/protocol`);
+  return publicProjectWorkflowURL(projectID);
 }
 
 function openFundedProjectDashboard(section = 'projects') {
@@ -25840,7 +25840,7 @@ function mapMarketplaceProject(project = {}, index = 0) {
     urgent: openTasks > 0,
     accent: palette.accent,
     soft: palette.soft,
-    workflowUrl: absolutePublicPath(`/api/public/projects/${encodeURIComponent(project.id || `project-${index}`)}/workflow/protocol`),
+    workflowUrl: publicProjectWorkflowURL(project.id || `project-${index}`),
     workflowPulseUrl: absolutePublicPath(`/api/public/projects/${encodeURIComponent(project.id || `project-${index}`)}/workflow-pulse`),
     source_repo_url: project.source_repo_url || '',
     repo_url: project.repo_url || '',
@@ -25868,9 +25868,28 @@ function mapMarketplaceBounty(bounty = {}, index = 0) {
     agentType,
     issue: issueNumber > 0 ? `#${issueNumber}` : labels.waitingTask,
     url: bounty.issue_url || '',
-    protocolUrl: absolutePublicPath(`/api/public/bounties/${encodeURIComponent(id)}/protocol`),
+    protocolUrl: publicTaskProtocolURL(id),
     tone: ['green', 'blue', 'purple', 'amber'][index % 4],
   };
+}
+
+function publicTaskProtocolPath(taskID = '') {
+  const id = String(taskID || '').trim();
+  return id ? `/api/public/protocol/tasks?task_id=${encodeURIComponent(id)}` : '/api/public/protocol/tasks';
+}
+
+function publicTaskProtocolURL(taskID = '') {
+  return absolutePublicPath(publicTaskProtocolPath(taskID));
+}
+
+function publicProjectWorkflowPath(projectID = '') {
+  const id = String(projectID || '').trim();
+  return id ? `/api/public/projects/${encodeURIComponent(id)}/workflow` : '';
+}
+
+function publicProjectWorkflowURL(projectID = '') {
+  const path = publicProjectWorkflowPath(projectID);
+  return path ? absolutePublicPath(path) : '';
 }
 
 function absolutePublicPath(path = '') {

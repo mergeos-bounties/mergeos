@@ -79,6 +79,19 @@ test('public protocol schemas mirror the protocol package schemas', async () => 
   }
 });
 
+test('public protocol links match backend routes', async () => {
+  const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
+
+  assert.match(appSource, /const publicProtocolManifestPath = '\/api\/public\/protocol';/);
+  assert.match(appSource, /function publicTaskProtocolPath\(taskID = ''\)/);
+  assert.match(appSource, /return id \? `\/api\/public\/protocol\/tasks\?task_id=\$\{encodeURIComponent\(id\)\}` : '\/api\/public\/protocol\/tasks';/);
+  assert.match(appSource, /function publicProjectWorkflowPath\(projectID = ''\)/);
+  assert.match(appSource, /return id \? `\/api\/public\/projects\/\$\{encodeURIComponent\(id\)\}\/workflow` : '';/);
+  assert.doesNotMatch(appSource, /\/api\/public\/protocol\/index/);
+  assert.doesNotMatch(appSource, /\/api\/public\/bounties\/[^`'"]*\/protocol/);
+  assert.doesNotMatch(appSource, /\/api\/public\/projects\/[^`'"]*\/workflow\/protocol/);
+});
+
 test('MergeIDE release manifest points to pinned GitHub release assets', async () => {
   const manifestURL = new URL('./public/downloads/mergeide-windows-latest.json', import.meta.url);
   const manifest = JSON.parse(await fs.readFile(manifestURL, 'utf-8'));
