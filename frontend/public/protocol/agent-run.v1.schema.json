@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mergeos.shop/protocol/agent-run.v1.schema.json",
+  "title": "MergeOS Agent Run",
+  "type": "object",
+  "required": [
+    "protocol_version",
+    "kind",
+    "run_id",
+    "project_id",
+    "claim_id",
+    "action",
+    "agent_type",
+    "branch_name",
+    "pr_title",
+    "pr_body",
+    "action_endpoint",
+    "submit_endpoint",
+    "context_urls",
+    "runbook",
+    "action_payload",
+    "output_contracts",
+    "created_at"
+  ],
+  "properties": {
+    "protocol_version": { "const": "mergeos.agent-run.v1" },
+    "kind": { "const": "agent_run" },
+    "run_id": { "type": "string", "minLength": 1 },
+    "project_id": { "type": "string", "minLength": 1 },
+    "claim_id": { "type": "string", "minLength": 1 },
+    "bounty_id": { "type": "string" },
+    "action": { "enum": ["scan", "generate", "review", "test", "deploy"] },
+    "agent_type": { "type": "string", "minLength": 1 },
+    "repository": { "type": "string" },
+    "base_branch": { "type": "string" },
+    "branch_name": { "type": "string", "minLength": 1 },
+    "pr_title": { "type": "string", "minLength": 1 },
+    "pr_body": { "type": "string", "minLength": 1 },
+    "github_compare_url": { "type": "string" },
+    "action_endpoint": { "type": "string", "minLength": 1 },
+    "submit_endpoint": { "type": "string", "minLength": 1 },
+    "context_urls": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "runbook": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["step", "action", "label", "method", "endpoint"],
+        "properties": {
+          "step": { "type": "integer" },
+          "action": { "type": "string" },
+          "label": { "type": "string" },
+          "method": { "type": "string" },
+          "endpoint": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "action_payload": { "type": "object" },
+    "output_contracts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["action", "artifact_kind", "output_endpoint", "output_protocol", "output_protocol_url"],
+        "properties": {
+          "action": { "type": "string" },
+          "artifact_kind": { "type": "string" },
+          "output_endpoint": { "type": "string" },
+          "output_protocol": { "type": "string" },
+          "output_protocol_url": { "type": "string" },
+          "public_url": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "created_at": { "type": "string", "format": "date-time" }
+  },
+  "additionalProperties": false
+}

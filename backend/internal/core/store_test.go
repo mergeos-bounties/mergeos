@@ -1421,7 +1421,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 	if payload.Status != "active" || payload.GeneratedAt.IsZero() {
 		t.Fatalf("manifest missing status/generated_at: %#v", payload)
 	}
-	if len(payload.Schemas) != 40 {
+	if len(payload.Schemas) != 41 {
 		t.Fatalf("manifest schemas = %d: %#v", len(payload.Schemas), payload.Schemas)
 	}
 	if len(payload.Documents) != len(payload.Schemas) {
@@ -1459,7 +1459,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 	for _, document := range payload.Documents {
 		documents[document.ProtocolVersion] = document
 	}
-	for _, required := range []string{"mergeos.task.v1", "mergeos.task-claim.v1", "mergeos.task-submission.v1", "mergeos.task-review.v1", "mergeos.agent.v1", "mergeos.contributor.v1", "mergeos.agent-action.v1", "mergeos.agent-lease.v1", "mergeos.agent-queue.v1", "mergeos.agent-runbook.v1", "mergeos.marketplace.v1", "mergeos.live-feed.v1", "mergeos.workflow.v1", "mergeos.estimate.v1", "mergeos.payment-order.v1", "mergeos.wallet-migration.v1", "mergeos.release-artifact.v1", "mergeos.repo-import.v1", "mergeos.repo-sync.v1", "mergeos.repo-task-funding.v1", "mergeos.dispute.v1", "mergeos.proposal.v1", "mergeos.ai-workflow.v1", "mergeos.event.v1", "mergeos.ledger.v1", "mergeos.ledger-proof.v1", "mergeos.token-economy.v1", "mergeos.airdrop-claim.v1", "mergeos.airdrop-missions.v1", "mergeos.presale-reservation.v1", "mergeos.escrow.v1", "mergeos.payouts.v1", "mergeos.payout-release.v1", "mergeos.deployment.v1", "mergeos.pr-monitor.v1", "mergeos.scan.v1", "mergeos.customer-dashboard.v1", "mergeos.worker-dashboard.v1", "mergeos.routing.v1", "mergeos.admin-ops.v1"} {
+	for _, required := range []string{"mergeos.task.v1", "mergeos.task-claim.v1", "mergeos.task-submission.v1", "mergeos.task-review.v1", "mergeos.agent.v1", "mergeos.contributor.v1", "mergeos.agent-action.v1", "mergeos.agent-run.v1", "mergeos.agent-lease.v1", "mergeos.agent-queue.v1", "mergeos.agent-runbook.v1", "mergeos.marketplace.v1", "mergeos.live-feed.v1", "mergeos.workflow.v1", "mergeos.estimate.v1", "mergeos.payment-order.v1", "mergeos.wallet-migration.v1", "mergeos.release-artifact.v1", "mergeos.repo-import.v1", "mergeos.repo-sync.v1", "mergeos.repo-task-funding.v1", "mergeos.dispute.v1", "mergeos.proposal.v1", "mergeos.ai-workflow.v1", "mergeos.event.v1", "mergeos.ledger.v1", "mergeos.ledger-proof.v1", "mergeos.token-economy.v1", "mergeos.airdrop-claim.v1", "mergeos.airdrop-missions.v1", "mergeos.presale-reservation.v1", "mergeos.escrow.v1", "mergeos.payouts.v1", "mergeos.payout-release.v1", "mergeos.deployment.v1", "mergeos.pr-monitor.v1", "mergeos.scan.v1", "mergeos.customer-dashboard.v1", "mergeos.worker-dashboard.v1", "mergeos.routing.v1", "mergeos.admin-ops.v1"} {
 		if !schemas[required] {
 			t.Fatalf("manifest missing schema %s: %#v", required, payload.Schemas)
 		}
@@ -1526,6 +1526,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 		"POST /api/projects/{id}/auto-release",
 		"GET /api/projects/{id}/deployment",
 		"GET /api/projects/{id}/ai-workflow",
+		"POST /api/projects/{id}/agent-runs",
 		"POST /api/projects/{id}/agent-actions",
 		"GET /api/projects/{id}/pull-requests",
 		"GET /api/projects/{id}/dashboard",
@@ -4428,6 +4429,63 @@ func TestProjectAgentActionRouteRecordsWorkflowEventAndSanitizesData(t *testing.
 	}
 
 	server := NewServer(cfg, store, payments)
+	runClaimID := marketplaceBountyID(project.ID, project.Tasks[0].IssueNumber)
+	runReq := httptest.NewRequest(http.MethodPost, "/api/projects/"+project.ID+"/agent-runs", strings.NewReader(`{
+		"action":"generate",
+		"claim_id":"`+runClaimID+`",
+		"agent_type":"coding-agent",
+		"base_branch":"main",
+		"objective":"Create a repo-aware fix branch and PR for the funded task.",
+		"context_urls":["file:///D:/agent/private-plan","https://mergeos.shop/api/public/projects/prj_0001/workflow"]
+	}`))
+	runReq.Header.Set("Authorization", "Bearer "+auth.Token)
+	runResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(runResp, runReq)
+	if runResp.Code != http.StatusCreated {
+		t.Fatalf("agent run status = %d, body = %s", runResp.Code, runResp.Body.String())
+	}
+	runBody := runResp.Body.String()
+	for _, value := range []string{
+		"agent-client@example.com",
+		"+1 555 0190",
+		auth.User.ID,
+		defaultDevPaymentCode,
+		tempDir,
+		project.Tasks[0].ID,
+		"file:///D:/agent/private-plan",
+		"D:/agent",
+	} {
+		if strings.Contains(runBody, value) {
+			t.Fatalf("agent run response leaked private value %q: %s", value, runBody)
+		}
+	}
+	var runPlan AgentRunResponse
+	if err := json.Unmarshal(runResp.Body.Bytes(), &runPlan); err != nil {
+		t.Fatal(err)
+	}
+	if runPlan.ProtocolVersion != "mergeos.agent-run.v1" || runPlan.Kind != "agent_run" || runPlan.RunID == "" {
+		t.Fatalf("unexpected agent run protocol header: %#v", runPlan)
+	}
+	if runPlan.ProjectID != project.ID || runPlan.ClaimID != runClaimID || runPlan.BountyID != runClaimID || runPlan.Action != "generate" || runPlan.AgentType != "coding-agent" {
+		t.Fatalf("unexpected agent run identity fields: %#v", runPlan)
+	}
+	runClaimSlug := strings.NewReplacer(":", "-", "_", "-").Replace(strings.ToLower(runClaimID))
+	if runPlan.BranchName == "" || !strings.Contains(runPlan.BranchName, runClaimSlug) || runPlan.PRTitle == "" || !strings.Contains(runPlan.PRBody, runClaimID) {
+		t.Fatalf("agent run missing branch or PR packet: %#v", runPlan)
+	}
+	if runPlan.ContextURLs["task_protocol"] == "" || runPlan.ContextURLs["workflow_protocol"] == "" || runPlan.ContextURLs["agent_action"] != "/api/projects/"+project.ID+"/agent-actions" {
+		t.Fatalf("agent run missing context URLs: %#v", runPlan.ContextURLs)
+	}
+	if runPlan.ActionEndpoint != "/api/projects/"+project.ID+"/agent-actions" || runPlan.SubmitEndpoint != "/api/tasks/"+runClaimID+"/submit" {
+		t.Fatalf("agent run endpoints mismatch: %#v", runPlan)
+	}
+	if len(runPlan.Runbook) < 4 || runPlan.ActionPayload.ClaimID != runClaimID || runPlan.ActionPayload.Status != "running" {
+		t.Fatalf("agent run missing runbook or action payload: %#v", runPlan)
+	}
+	if !containsOutputProtocol(runPlan.OutputContracts, "mergeos.agent-action.v1") || !containsOutputProtocol(runPlan.OutputContracts, "mergeos.pr-monitor.v1") || !containsOutputProtocol(runPlan.OutputContracts, "mergeos.ledger-proof.v1") {
+		t.Fatalf("agent run missing output contracts: %#v", runPlan.OutputContracts)
+	}
+
 	createReq := httptest.NewRequest(http.MethodPost, "/api/projects/"+project.ID+"/agent-actions", strings.NewReader(`{
 		"action":"test",
 		"agent_type":"qa-agent",

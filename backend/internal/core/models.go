@@ -2442,6 +2442,40 @@ type AgentActionRequest struct {
 	DurationMillis  int64              `json:"duration_millis,omitempty"`
 }
 
+type AgentRunRequest struct {
+	Action      string   `json:"action,omitempty"`
+	ClaimID     string   `json:"claim_id,omitempty"`
+	BountyID    string   `json:"bounty_id,omitempty"`
+	AgentType   string   `json:"agent_type,omitempty"`
+	BaseBranch  string   `json:"base_branch,omitempty"`
+	Objective   string   `json:"objective,omitempty"`
+	ContextURLs []string `json:"context_urls,omitempty"`
+}
+
+type AgentRunResponse struct {
+	ProtocolVersion  string                `json:"protocol_version"`
+	Kind             string                `json:"kind"`
+	RunID            string                `json:"run_id"`
+	ProjectID        string                `json:"project_id"`
+	ClaimID          string                `json:"claim_id"`
+	BountyID         string                `json:"bounty_id"`
+	Action           string                `json:"action"`
+	AgentType        string                `json:"agent_type"`
+	Repository       string                `json:"repository"`
+	BaseBranch       string                `json:"base_branch"`
+	BranchName       string                `json:"branch_name"`
+	PRTitle          string                `json:"pr_title"`
+	PRBody           string                `json:"pr_body"`
+	GitHubCompareURL string                `json:"github_compare_url,omitempty"`
+	ActionEndpoint   string                `json:"action_endpoint"`
+	SubmitEndpoint   string                `json:"submit_endpoint"`
+	ContextURLs      map[string]string     `json:"context_urls"`
+	Runbook          []AgentRunbookStep    `json:"runbook"`
+	ActionPayload    AgentActionRequest    `json:"action_payload"`
+	OutputContracts  []AgentOutputContract `json:"output_contracts"`
+	CreatedAt        time.Time             `json:"created_at"`
+}
+
 type AgentActionResponse struct {
 	ProtocolVersion string             `json:"protocol_version"`
 	Kind            string             `json:"kind"`

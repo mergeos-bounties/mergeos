@@ -50,6 +50,12 @@ func ProtocolManifest() ProtocolManifestResponse {
 			Description: "Authenticated AI agent action document for review, test, generate, scan, deployment evidence, CEO delegation, and design-review handoff.",
 		},
 		{
+			Version:     "mergeos.agent-run.v1",
+			Kind:        "agent_run",
+			SchemaURL:   "https://mergeos.shop/protocol/agent-run.v1.schema.json",
+			Description: "Authenticated repo-to-fix agent run plan with branch, pull request, evidence, task submission, and ledger proof contracts.",
+		},
+		{
 			Version:     "mergeos.agent-lease.v1",
 			Kind:        "agent_lease",
 			SchemaURL:   "https://mergeos.shop/protocol/agent-lease.v1.schema.json",
@@ -534,6 +540,13 @@ func ProtocolManifest() ProtocolManifestResponse {
 			Protocol:    "mergeos.ai-workflow.v1",
 			Auth:        "project",
 			Description: "Authenticated AI orchestration timeline for repository import, issue scan, task generation, routing, PR review, and deployment validation.",
+		},
+		{
+			Method:      "POST",
+			Path:        "/api/projects/{id}/agent-runs",
+			Protocol:    "mergeos.agent-run.v1",
+			Auth:        "project_or_assigned_worker",
+			Description: "Authenticated repo-to-fix agent run plan for branch creation, pull request drafting, agent evidence, task submission, and ledger proof output contracts.",
 		},
 		{
 			Method:      "POST",

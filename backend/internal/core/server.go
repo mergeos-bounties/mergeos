@@ -115,6 +115,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("POST /api/projects/{id}/repo-scan/suggested-tasks/{taskID}/paypal-order", s.createRepositorySuggestedTaskPayPalOrder)
 	mux.HandleFunc("POST /api/projects/{id}/repo-scan/suggested-tasks/{taskID}/fund", s.fundRepositorySuggestedTask)
 	mux.HandleFunc("POST /api/projects/{id}/repo-sync", s.syncProjectRepoIssues)
+	mux.HandleFunc("POST /api/projects/{id}/agent-runs", s.createProjectAgentRun)
 	mux.HandleFunc("POST /api/projects/{id}/agent-actions", s.createProjectAgentAction)
 	mux.HandleFunc("POST /api/agent-queue/leases", s.createAgentQueueLease)
 	mux.HandleFunc("POST /api/projects", s.createProject)
@@ -990,6 +991,45 @@ func (s *Server) createProjectAgentAction(w http.ResponseWriter, r *http.Request
 		return
 	}
 	s.broadcastLiveFeedEvent("agent_action")
+	writeJSON(w, http.StatusCreated, response)
+}
+
+func (s *Server) createProjectAgentRun(w http.ResponseWriter, r *http.Request) {
+	user, ok := s.requireUser(w, r)
+	if !ok {
+		return
+	}
+	projectID := strings.TrimSpace(r.PathValue("id"))
+	var req AgentRunRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil && err != io.EOF {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	if !s.store.CanAccessProject(user.ID, user.Role, projectID) {
+		workerReq, err := s.store.AuthorizeAssignedWorkerAgentAction(user.ID, projectID, AgentActionRequest{
+			Action:    req.Action,
+			ClaimID:   req.ClaimID,
+			BountyID:  req.BountyID,
+			AgentType: req.AgentType,
+		})
+		if err != nil {
+			writeError(w, http.StatusForbidden, err.Error())
+			return
+		}
+		req.Action = workerReq.Action
+		req.ClaimID = workerReq.ClaimID
+		req.BountyID = workerReq.BountyID
+		req.AgentType = workerReq.AgentType
+	}
+	response, err := s.store.ProjectAgentRun(projectID, req)
+	if err != nil {
+		status := http.StatusBadRequest
+		if strings.Contains(err.Error(), "not found") {
+			status = http.StatusNotFound
+		}
+		writeError(w, status, err.Error())
+		return
+	}
 	writeJSON(w, http.StatusCreated, response)
 }
 
