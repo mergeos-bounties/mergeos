@@ -545,6 +545,14 @@ test('public backend page exposes the proposed runtime stack', async () => {
   assert.match(appSource, /key: 'auth'[\s\S]*key: 'repo'[\s\S]*key: 'ai'[\s\S]*key: 'tasks'[\s\S]*key: 'payments'[\s\S]*key: 'realtime'[\s\S]*key: 'ledger'[\s\S]*key: 'protocol'/);
   assert.match(appSource, /Auth, repositories, AI orchestration, escrow, realtime, and ledger APIs in one backend loop/);
   assert.match(appSource, /authentication, repository imports, AI scans, task generation, payment verification, escrow reserves, live notifications, public protocol documents, and ledger proof/);
+  assert.match(appSource, /Authentication and sessions[\s\S]*OAuth, wallet, role, password reset, and dashboard access/);
+  assert.match(appSource, /Repository import[\s\S]*GitHub issues, source context, dependencies, and technical debt markers/);
+  assert.match(appSource, /AI orchestration[\s\S]*Issue scans, task graph generation, reward estimates, routing, and agent packets/);
+  assert.match(appSource, /Task engine[\s\S]*Create, claim, submit, review, accept, dispute, auto-release, and payout commands/);
+  assert.match(appSource, /Payment and escrow[\s\S]*Card, PayPal, crypto, project reserve, task reserve, platform fee, and payout release/);
+  assert.match(appSource, /Realtime gateway[\s\S]*WebSocket snapshots stream marketplace, project, PR, deployment, agent, payout, and admin state changes/);
+  assert.match(appSource, /Ledger proof[\s\S]*Sanitized payment, token mint, escrow, PR, deployment, release, and contract references/);
+  assert.match(appSource, /Authenticate actor[\s\S]*Import repository[\s\S]*Run AI analysis[\s\S]*Generate task graph[\s\S]*Verify funding[\s\S]*Route work live[\s\S]*Review and release[\s\S]*Publish proof/);
   for (const label of ['Go / Rust', 'PostgreSQL', 'Redis', 'GitHub API', 'OpenAI API', 'WebSocket gateway']) {
     assert.match(appSource, new RegExp(`label: '${label.replace('/', '\\/')}'`));
   }
