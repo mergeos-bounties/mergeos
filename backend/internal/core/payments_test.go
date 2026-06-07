@@ -198,7 +198,7 @@ func TestCreateCardPaymentIntentPostsStripePaymentIntent(t *testing.T) {
 		return &http.Response{
 			StatusCode: http.StatusOK,
 			Header:     make(http.Header),
-			Body:       io.NopCloser(strings.NewReader(`{"id":"pi_mergeos_123","client_secret":"pi_mergeos_123_secret_abc","status":"requires_payment_method"}`)),
+			Body:       io.NopCloser(strings.NewReader(`{"id":"pi_mergeos_123","client_secret":"dummy","status":"requires_payment_method"}`)),
 		}, nil
 	})}
 
