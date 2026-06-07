@@ -99,7 +99,7 @@
   },
   "backend_system": {
     "role": "Backend coordinates authentication, repositories, AI orchestration, task engine, payment verification, escrow coordination, live notifications, and ledger records.",
-    "proposed_stack": ["Go", "PostgreSQL", "Redis", "GitHub API", "OpenAI API", "WebSocket gateway"]
+    "proposed_stack": ["Go", "Rust-compatible service boundary", "PostgreSQL", "Redis", "GitHub API", "OpenAI API", "WebSocket gateway"]
   },
   "ai_layer": {
     "capabilities": [

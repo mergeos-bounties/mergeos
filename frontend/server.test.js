@@ -95,7 +95,12 @@ test('public system vision preserves the product thesis', async () => {
   assert.ok(architectureManifest.frontend_system.public_pages.includes('Marketplace'));
   assert.ok(architectureManifest.frontend_system.authenticated_dashboards.includes('Customer Dashboard'));
   assert.ok(architectureManifest.backend_system.proposed_stack.includes('Go'));
+  assert.ok(architectureManifest.backend_system.proposed_stack.includes('Rust-compatible service boundary'));
   assert.ok(architectureManifest.backend_system.proposed_stack.includes('PostgreSQL'));
+  assert.ok(architectureManifest.backend_system.proposed_stack.includes('Redis'));
+  assert.ok(architectureManifest.backend_system.proposed_stack.includes('GitHub API'));
+  assert.ok(architectureManifest.backend_system.proposed_stack.includes('OpenAI API'));
+  assert.ok(architectureManifest.backend_system.proposed_stack.includes('WebSocket gateway'));
   assert.deepEqual(architectureManifest.ai_layer.workflow, [
     'Import Repository',
     'Issue Scan',
