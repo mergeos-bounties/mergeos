@@ -65,6 +65,17 @@ test('loads mode env before fallback without overriding real env', async () => {
   assert.equal(env.SSR_PORT, '6000');
 });
 
+test('public system vision preserves the product thesis', async () => {
+  const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
+  const whitepaperSource = await fs.readFile(new URL('./public/whitepaper/mergeos-whitepaper.md', import.meta.url), 'utf-8');
+
+  assert.match(appSource, /Product vision[\s\S]*A workflow layer combining GitHub, Stripe, Linear, Upwork, Vercel, and AI agents\./);
+  assert.match(appSource, /Core system[\s\S]*GitHub, Stripe, Linear, Upwork, Vercel, and AI agents in one delivery workflow/);
+  assert.match(appSource, /MergeOS connects repositories, issues, technical debt, AI agents, contributors, escrow, PR review, deployment validation, MRG token accounting, and public ledger proof in one realtime workflow\./);
+  assert.match(whitepaperSource, /MergeOS is not a traditional freelancer marketplace/);
+  assert.match(whitepaperSource, /coordination layer for human contributors, AI coding agents, maintainers, customers, reviewers, and treasury operators/);
+});
+
 test('public protocol schemas mirror the protocol package schemas', async () => {
   const sourceDir = new URL('../protocol/schemas/', import.meta.url);
   const publicDir = new URL('./public/protocol/', import.meta.url);
