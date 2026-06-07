@@ -26,6 +26,7 @@
         "proposal.declined",
         "airdrop.claimed",
         "presale.reserved",
+        "wallet.migrated",
         "task.paid",
         "deployment.updated",
         "ledger.recorded",

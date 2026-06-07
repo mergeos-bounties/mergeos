@@ -861,6 +861,10 @@ func TestCreateWalletMigrationLinksLegacyTRC20ToSolanaMetadata(t *testing.T) {
 	if !strings.Contains(feed.Items[0].Body, "Solana MRG wallet") || strings.Contains(feed.Items[0].Reference, legacyAddress) {
 		t.Fatalf("wallet migration feed is not product-safe: %#v", feed.Items[0])
 	}
+	eventFeed := store.PublicEventProtocolQuery(PublicLiveFeedQuery{Limit: 5})
+	if len(eventFeed.Events) == 0 || eventFeed.Events[0].Type != "wallet.migrated" {
+		t.Fatalf("wallet migration event protocol type missing: %#v", eventFeed.Events)
+	}
 	notifications := store.ListNotifications(auth.User.ID)
 	foundWalletNotification := false
 	for _, note := range notifications {

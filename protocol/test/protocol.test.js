@@ -625,6 +625,19 @@ test('validates live feed protocol documents', () => {
         created_at: now,
       },
       {
+        id: 'ledger:9',
+        type: 'ledger_wallet_migration',
+        title: 'Wallet migration registered',
+        body: 'MergeOS public ledger recorded a TRC20 to Solana wallet migration.',
+        actor: 'wallet:solana',
+        amount_cents: 0,
+        ledger_sequence: 9,
+        entry_hash: 'd'.repeat(64),
+        reference: 'wallet_migration:wmg_dddddddddddddddd;legacy_chain:trc20;target_chain:solana',
+        status: 'recorded',
+        created_at: now,
+      },
+      {
         id: 'ai:log_0001',
         type: 'agent_action',
         title: 'AI agent tested PR #151',
@@ -3214,6 +3227,16 @@ test('validates event protocol documents and assertion helper', () => {
       reference: 'presale:psr_0001',
       amount_mrg: 25000,
       payload: { feed_type: 'ledger_presale_reservation', tier: 'founder' },
+    }),
+    validateProtocolDocument({
+      protocol_version: 'mergeos.event.v1',
+      kind: 'event',
+      id: 'evt_wallet_migrated',
+      type: 'wallet.migrated',
+      occurred_at: '2026-06-02T00:00:00.000Z',
+      actor: 'wallet:solana',
+      reference: 'wallet_migration:wmg_dddddddddddddddd;legacy_chain:trc20;target_chain:solana',
+      payload: { feed_type: 'ledger_wallet_migration', legacy_chain: 'trc20', target_chain: 'solana' },
     }),
   ];
   for (const tokenEvent of tokenEvents) {

@@ -1179,6 +1179,8 @@ func publicEventType(item PublicLiveFeedItem) string {
 		return "airdrop.claimed"
 	case "ledger_presale_reservation":
 		return "presale.reserved"
+	case "ledger_wallet_migration":
+		return "wallet.migrated"
 	}
 	if strings.HasPrefix(feedType, "ledger_task_payment") {
 		return "task.paid"
