@@ -36351,3 +36351,58 @@ canvas {
   }
 }
 
+/* Signed-in mobile readability owner: no clipped role carousel or truncated
+   command copy on the first authenticated screen. */
+@media (max-width: 760px) {
+  .dashboard-shell .dash-command-copy p {
+    display: block !important;
+    max-width: 100% !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    white-space: normal !important;
+    overflow-wrap: break-word !important;
+    -webkit-line-clamp: unset !important;
+  }
+
+  .dashboard-shell .dashboard-role-map {
+    width: min(100% - 24px, 680px) !important;
+    display: grid !important;
+    grid-auto-flow: row !important;
+    grid-auto-columns: unset !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 9px !important;
+    overflow: visible !important;
+    overflow-x: visible !important;
+    overflow-y: visible !important;
+    padding: 0 !important;
+    mask-image: none !important;
+    scroll-snap-type: none !important;
+  }
+
+  .dashboard-shell .dashboard-role-map article {
+    width: 100% !important;
+    min-width: 0 !important;
+    scroll-snap-align: none !important;
+  }
+
+  .dashboard-shell .dashboard-role-map p {
+    display: block !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    white-space: normal !important;
+    overflow-wrap: break-word !important;
+    -webkit-line-clamp: unset !important;
+  }
+
+  .dashboard-shell .dashboard-role-primary {
+    width: 100% !important;
+  }
+}
+
+@media (max-width: 430px) {
+  .dashboard-shell .dashboard-role-map {
+    grid-auto-flow: row !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+

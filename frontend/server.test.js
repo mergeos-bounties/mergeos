@@ -873,7 +873,8 @@ test('customer dashboard exposes compact operating lanes after login', async () 
   assert.match(cssSource, /\.dashboard-shell \.dashboard-role-map\s*\{[\s\S]*grid-template-columns: repeat\(4, minmax\(0, 1fr\)\) !important;/);
   assert.match(cssSource, /\.dashboard-shell \.dashboard-role-proof\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\) !important;/);
   assert.match(cssSource, /\.dashboard-shell \.dashboard-role-stats,[\s\S]*\.dashboard-shell \.dashboard-role-lanes\s*\{[\s\S]*display: none !important;/);
-  assert.match(cssSource, /@media \(max-width: 760px\)[\s\S]*\.dashboard-shell \.dashboard-role-map\s*\{[\s\S]*grid-auto-flow: column !important;[\s\S]*grid-auto-columns: minmax\(238px, 72vw\) !important;/);
+  assert.match(cssSource, /Signed-in mobile readability owner/);
+  assert.match(cssSource, /@media \(max-width: 760px\)[\s\S]*\.dashboard-shell \.dashboard-role-map\s*\{[\s\S]*grid-auto-flow: row !important;[\s\S]*grid-template-columns: minmax\(0, 1fr\) !important;[\s\S]*mask-image: none !important;/);
   assert.doesNotMatch(cssSource, /\.dashboard-shell \.dashboard-role-map article:nth-child\(n \+ 3\)\s*\{[\s\S]*display: none !important;/);
 });
 
@@ -1287,7 +1288,8 @@ test('signed-in mobile dashboard keeps nav, actions, and popovers phone-safe', a
   assert.match(cssSource, /\.dashboard-shell \.dash-top-actions\s*\{[\s\S]*grid-template-columns: 44px 44px minmax\(0, 1fr\) 44px;/);
   assert.match(cssSource, /\.notification-dropdown\s*\{[\s\S]*bottom: calc\(12px \+ var\(--dashboard-mobile-bottom-inset, 0px\) \+ env\(safe-area-inset-bottom\)\) !important;/);
   assert.match(cssSource, /\.account-context-menu,[\s\S]*\.dashboard-account-menu \.account-context-menu\s*\{[\s\S]*bottom: calc\(12px \+ env\(safe-area-inset-bottom\)\);/);
-  assert.match(cssSource, /\.dashboard-shell \.dashboard-role-map\s*\{[\s\S]*grid-auto-flow: column !important;[\s\S]*overflow-x: auto !important;/);
+  assert.match(cssSource, /Signed-in mobile readability owner/);
+  assert.match(cssSource, /\.dashboard-shell \.dashboard-role-map\s*\{[\s\S]*grid-auto-flow: row !important;[\s\S]*overflow-x: visible !important;[\s\S]*mask-image: none !important;/);
   assert.match(cssSource, /\.dashboard-shell \.dashboard-role-proof\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\) !important;/);
   assert.match(cssSource, /Signed-in mobile overflow guard/);
   assert.match(cssSource, /\.dashboard-shell \.admin-console-grid,[\s\S]*\.dashboard-shell \.payment-summary-grid,[\s\S]*grid-template-columns: minmax\(0, 1fr\);/);
@@ -1301,7 +1303,7 @@ test('signed-in mobile dashboard keeps nav, actions, and popovers phone-safe', a
   assert.match(cssSource, /\.dashboard-shell \.dashboard-project-actions-panel\s*\{[\s\S]*position: fixed;[\s\S]*bottom: calc\(12px \+ env\(safe-area-inset-bottom\)\);/);
   assert.match(cssSource, /\.notification-dropdown\s*\{[\s\S]*left: clamp\(12px, 4vw, 18px\) !important;[\s\S]*right: clamp\(12px, 4vw, 18px\) !important;/);
   assert.match(cssSource, /\.account-menu\.open \.account-context-menu,[\s\S]*opacity: 1 !important;[\s\S]*visibility: visible !important;/);
-  assert.match(cssSource, /@media \(max-width: 430px\)[\s\S]*\.dashboard-shell \.dashboard-role-map\s*\{[\s\S]*grid-auto-flow: column !important;/);
+  assert.match(cssSource, /@media \(max-width: 430px\)[\s\S]*\.dashboard-shell \.dashboard-role-map\s*\{[\s\S]*grid-auto-flow: row !important;/);
   assert.match(cssSource, /\.mobile-nav-panel\s*\{[\s\S]*height: 100dvh;[\s\S]*max-height: 100dvh;/);
   assert.match(cssSource, /\.auth-modal\s*\{[\s\S]*max-height: calc\(100dvh - 64px\);/);
   assert.match(cssSource, /Signed-in mobile content guard/);
@@ -1346,8 +1348,8 @@ test('signed-in mobile dashboard keeps nav, actions, and popovers phone-safe', a
   assert.match(cssSource, /\.dashboard-shell\s*\{[\s\S]*--dash-touch-target: 44px;/);
   assert.match(cssSource, /\.dashboard-shell \.dash-mobile-nav\s*\{[\s\S]*grid-template-columns: repeat\(5, minmax\(0, 1fr\)\) !important;/);
   assert.match(cssSource, /\.dashboard-shell \.dash-top-actions\s*\{[\s\S]*grid-template-columns: var\(--dash-touch-target\) var\(--dash-touch-target\) minmax\(88px, 1fr\) var\(--dash-touch-target\) !important;/);
-  assert.match(cssSource, /\.dashboard-shell \.dash-command-copy p\s*\{[\s\S]*-webkit-line-clamp: 2;/);
-  assert.match(cssSource, /\.dashboard-shell \.dash-command-metrics,[\s\S]*\.dashboard-shell \.dashboard-role-map\s*\{[\s\S]*mask-image: linear-gradient/);
+  assert.match(cssSource, /\.dashboard-shell \.dash-command-copy p\s*\{[\s\S]*-webkit-line-clamp: unset !important;/);
+  assert.match(cssSource, /\.dashboard-shell \.dashboard-role-map\s*\{[\s\S]*mask-image: none !important;/);
   assert.match(cssSource, /\.notification-dropdown,[\s\S]*\.dashboard-shell \.notification-dropdown,[\s\S]*\.dashboard-shell \.account-context-menu,/);
   assert.match(cssSource, /\.dashboard-shell :is\(input, select, textarea\)\s*\{[\s\S]*font-size: 16px;/);
   assert.match(cssSource, /\.project-flow-shell \.project-flow-main\s*\{[\s\S]*padding-bottom: calc\(86px \+ env\(safe-area-inset-bottom\)\);/);
