@@ -7966,6 +7966,7 @@
                   <div>
                     <strong>{{ contributor.name }}</strong>
                     <small>{{ contributor.role }}</small>
+                    <span v-if="contributor.disciplineLabel" class="marketplace-contributor-disciplines">{{ contributor.disciplineLabel }}</span>
                   </div>
                   <b :class="contributor.statusTone">{{ contributor.status }}</b>
                 </div>
@@ -16976,18 +16977,33 @@ const marketplaceOperatingRows = computed(() => {
   ];
 });
 const marketplaceHeroProject = computed(() => marketplaceProjectsView.value[0] || emptyMarketplaceProjectView.value);
+function marketplaceContributorDisciplineLabels(contributor = {}) {
+  const rawDisciplines = Array.isArray(contributor.disciplines) ? contributor.disciplines : [];
+  const values = [
+    contributor.primary_discipline,
+    ...rawDisciplines,
+    ...(Array.isArray(contributor.flags) ? contributor.flags : []),
+  ]
+    .filter(Boolean)
+    .map((value) => toTitleLabel(value))
+    .filter((value, index, list) => list.indexOf(value) === index);
+  return values.slice(0, 3);
+}
 const marketplaceContributorsView = computed(() =>
-  (marketplaceData.value.contributors || []).map((contributor, index) => ({
-    rank: index + 1,
-    workerId: contributor.worker_id || contributor.name || `contributor-${index}`,
-    initials: initialsFor(contributor.name || contributor.worker_id || 'FW'),
-    name: contributor.name || contributor.worker_id || 'Contributor',
-    role: contributor.agent_type ? toTitleLabel(contributor.agent_type) : toTitleLabel(contributor.kind || 'human contributor'),
-    earned: formatPublicMRGFromCents(contributor.earned_cents),
-    earnedLabel: `${formatPublicMRGFromCents(contributor.earned_cents)} ${publicMarketplaceCopy.value.earnedSuffix}`,
-    proofUrl: contributor.ledger_proof_url || '',
-    tone: marketplaceAvatarTones[index % marketplaceAvatarTones.length],
-  })),
+  (marketplaceData.value.contributors || []).map((contributor, index) => {
+    const disciplineLabels = marketplaceContributorDisciplineLabels(contributor);
+    return {
+      rank: index + 1,
+      workerId: contributor.worker_id || contributor.name || `contributor-${index}`,
+      initials: initialsFor(contributor.name || contributor.worker_id || 'FW'),
+      name: contributor.name || contributor.worker_id || 'Contributor',
+      role: disciplineLabels[0] || (contributor.agent_type ? toTitleLabel(contributor.agent_type) : toTitleLabel(contributor.kind || 'human contributor')),
+      earned: formatPublicMRGFromCents(contributor.earned_cents),
+      earnedLabel: `${formatPublicMRGFromCents(contributor.earned_cents)} ${publicMarketplaceCopy.value.earnedSuffix}`,
+      proofUrl: contributor.ledger_proof_url || '',
+      tone: marketplaceAvatarTones[index % marketplaceAvatarTones.length],
+    };
+  }),
 );
 const marketplaceHasContributorRows = computed(() => (marketplaceData.value.contributors || []).length > 0);
 const marketplaceContributorBoardRows = computed(() => {
@@ -17028,11 +17044,13 @@ const marketplaceContributorBoardRows = computed(() => {
       const lastPaidAt = contributor.last_paid_at ? new Date(contributor.last_paid_at) : null;
       const hasPaidDate = Boolean(lastPaidAt && !Number.isNaN(lastPaidAt.getTime()) && lastPaidAt.getUTCFullYear() > 2001);
       const paidDate = hasPaidDate ? formatLedgerDateTime(lastPaidAt).date : '';
+      const disciplineLabels = marketplaceContributorDisciplineLabels(contributor);
       return {
         workerId,
         initials: initialsFor(displayName || 'FW'),
         name: displayName,
-        role: contributor.agent_type ? toTitleLabel(contributor.agent_type) : toTitleLabel(contributor.kind || 'human contributor'),
+        role: disciplineLabels[0] || (contributor.agent_type ? toTitleLabel(contributor.agent_type) : toTitleLabel(contributor.kind || 'human contributor')),
+        disciplineLabel: disciplineLabels.join(' / '),
         taskCount,
         earnedCents,
         earned: formatPublicMRGFromCents(earnedCents),

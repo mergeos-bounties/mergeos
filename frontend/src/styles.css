@@ -10145,6 +10145,19 @@ svg {
   font-weight: 820;
 }
 
+.marketplace-contributor-disciplines {
+  display: block;
+  min-width: 0;
+  margin-top: 4px;
+  color: var(--green-dark);
+  font-size: 9px;
+  line-height: 1.2;
+  font-weight: 900;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .marketplace-contributor-top b {
   border-radius: 999px;
   padding: 5px 8px;

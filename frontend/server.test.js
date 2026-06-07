@@ -543,6 +543,23 @@ test('marketplace page exposes all operating lanes at a glance', async () => {
   assert.match(cssSource, /@media \(max-width: 760px\)[\s\S]*\.marketplace-os-strip\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\);/);
 });
 
+test('marketplace contributors expose routeable delivery disciplines', async () => {
+  const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
+  const cssSource = await fs.readFile(new URL('./src/styles.css', import.meta.url), 'utf-8');
+  const marketplaceSchema = JSON.parse(await fs.readFile(new URL('./public/protocol/marketplace.v1.schema.json', import.meta.url), 'utf-8'));
+  const contributorProperties = marketplaceSchema.properties.contributors.items.properties;
+
+  assert.deepEqual(contributorProperties.disciplines.items.enum, ['frontend', 'backend', 'design', 'qa', 'devops', 'security']);
+  assert.equal(contributorProperties.primary_discipline.type, 'string');
+  assert.match(appSource, /function marketplaceContributorDisciplineLabels\(contributor = \{\}\)/);
+  assert.match(appSource, /contributor\.primary_discipline/);
+  assert.match(appSource, /Array\.isArray\(contributor\.disciplines\)/);
+  assert.match(appSource, /disciplineLabel: disciplineLabels\.join\(' \/ '\)/);
+  assert.match(appSource, /class="marketplace-contributor-disciplines"/);
+  assert.match(appSource, /Frontend, backend, design, QA, DevOps, and security contributors/);
+  assert.match(cssSource, /\.marketplace-contributor-disciplines\s*\{[\s\S]*text-overflow: ellipsis;[\s\S]*white-space: nowrap;/);
+});
+
 test('marketplace AI agent matrix covers all AI agent lanes', async () => {
   const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
   const cssSource = await fs.readFile(new URL('./src/styles.css', import.meta.url), 'utf-8');

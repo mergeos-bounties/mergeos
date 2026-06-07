@@ -148,6 +148,11 @@
           "name": { "type": "string", "minLength": 1, "maxLength": 160 },
           "kind": { "enum": ["human", "agent", "hybrid"] },
           "agent_type": { "type": "string", "maxLength": 120 },
+          "primary_discipline": { "type": "string", "maxLength": 120 },
+          "disciplines": {
+            "type": "array",
+            "items": { "enum": ["frontend", "backend", "design", "qa", "devops", "security"] }
+          },
           "task_count": { "type": "integer", "minimum": 0 },
           "earned_cents": { "type": "integer", "minimum": 0 },
           "last_paid_at": { "type": "string", "format": "date-time" },
