@@ -1344,6 +1344,13 @@ export function adminOpsActionOutputContracts(actionOrItem = {}, action = '') {
   return contracts.filter((contract) => contract && typeof contract === 'object');
 }
 
+export function adminOpsQueueOutputContracts(queue = {}, action = '') {
+  const contracts = Array.isArray(queue?.output_contracts) ? queue.output_contracts : [];
+  const normalized = String(action || '').trim().toLowerCase();
+  if (!normalized) return contracts.filter((contract) => contract && typeof contract === 'object');
+  return contracts.filter((contract) => String(contract?.action || '').trim().toLowerCase() === normalized);
+}
+
 export function autoReleasePayloadFromPRMonitorTask(task = {}, overrides = {}) {
   const packet = task.auto_release_packet && typeof task.auto_release_packet === 'object' ? task.auto_release_packet : {};
   const packetPayload = packet.payload && typeof packet.payload === 'object' ? packet.payload : {};

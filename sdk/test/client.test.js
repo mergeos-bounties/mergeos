@@ -3,6 +3,7 @@ import test from 'node:test';
 import {
   MergeOSClient,
   adminOpsActionOutputContracts,
+  adminOpsQueueOutputContracts,
   airdropClaimPayload,
   agentActionPayloadFromWorkPacket,
   agentReviewPayloadFromPRMonitorTask,
@@ -1279,6 +1280,24 @@ test('reads admin ops action output contracts for operator agents', () => {
   assert.equal(adminOpsActionOutputContracts(item).length, 2);
   assert.equal(adminOpsActionOutputContracts(item, 'refresh_admin_ops')[0].output_protocol, 'mergeos.admin-ops.v1');
   assert.equal(adminOpsActionOutputContracts(item.actions[0])[0].artifact_kind, 'admin_pr_review_context');
+
+  const queue = {
+    output_contracts: [
+      {
+        action: 'refresh_admin_ops',
+        artifact_kind: 'admin_ops_queue',
+        output_protocol: 'mergeos.admin-ops.v1',
+      },
+      {
+        action: 'prove_ledger',
+        artifact_kind: 'ledger_proof',
+        output_protocol: 'mergeos.ledger-proof.v1',
+      },
+    ],
+  };
+  assert.equal(adminOpsQueueOutputContracts(queue).length, 2);
+  assert.equal(adminOpsQueueOutputContracts(queue, 'prove_ledger')[0].output_protocol, 'mergeos.ledger-proof.v1');
+  assert.deepEqual(adminOpsQueueOutputContracts({}, 'refresh_admin_ops'), []);
 });
 
 test('supports wallet, payment, and raw upload helper routes', async () => {

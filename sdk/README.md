@@ -14,6 +14,7 @@ npm test
 ```js
 import {
   adminOpsActionOutputContracts,
+  adminOpsQueueOutputContracts,
   airdropClaimPayload,
   agentActionPayloadFromWorkPacket,
   agentActionPayload,
@@ -530,13 +531,14 @@ await mergeos.updateAdminTestSettings({
 await mergeos.adminTestSettingsEntries();
 ```
 
-Admin ops queue actions expose `output_contracts` so treasury operators, moderation tooling, and admin subagents can see which protocol artifact each action refreshes or opens. Use `adminOpsActionOutputContracts(actionOrItem, action?)` to inspect a single action or every action attached to a queue item.
+Admin ops queue responses and actions expose `output_contracts` so treasury operators, moderation tooling, and admin subagents can see which protocol artifact each action refreshes or opens. Use `adminOpsQueueOutputContracts(queue, action?)` for the queue-level admin/ledger proof contracts, and `adminOpsActionOutputContracts(actionOrItem, action?)` to inspect a single action or every action attached to a queue item.
 
 ```js
 const queue = await mergeos.adminOpsQueue();
+const queueContracts = adminOpsQueueOutputContracts(queue, 'prove_ledger');
 const item = queue.items.find((row) => row.actions?.length);
 const contracts = adminOpsActionOutputContracts(item, 'run_ssl_review');
-console.log(contracts.map((row) => row.output_protocol));
+console.log(queueContracts.concat(contracts).map((row) => row.output_protocol));
 ```
 
 ## Event API
