@@ -89,6 +89,12 @@ test('public system vision preserves the product thesis', async () => {
   assert.equal(architectureManifest.protocol_version, 'mergeos.architecture.v1');
   assert.equal(architectureManifest.positioning, 'AI software delivery operating system');
   assert.deepEqual(architectureManifest.repository_architecture.map((repo) => repo.name), ['mergeos-app', 'mergeos-contracts', 'mergeos-sdk', 'mergeos-protocol']);
+  assert.deepEqual(architectureManifest.repository_architecture.map((repo) => repo.artifact_urls), [
+    { primary: '/', protocol: '/system/mergeos-architecture.v1.json', public_reference: '/protocol' },
+    { primary: '/contracts', protocol: '/contracts/solana/mergeos_mrg.v1.idl.json', public_reference: '/contracts/solana/mergeos_mrg.proof-manifest.v1.json' },
+    { primary: '/sdk', protocol: '/protocol', public_reference: '/api/public/protocol/manifest' },
+    { primary: '/protocol', protocol: '/protocol/architecture.v1.schema.json', public_reference: '/system/mergeos-architecture.v1.json' },
+  ]);
   assert.deepEqual(architectureManifest.users.map((row) => row.type), ['customers', 'contributors', 'ai_agents', 'admins']);
   assert.ok(architectureManifest.frontend_system.stack.includes('Vue 3'));
   assert.ok(architectureManifest.frontend_system.stack.includes('Vite SSR'));

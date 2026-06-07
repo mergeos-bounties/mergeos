@@ -48,7 +48,7 @@
       "minItems": 4,
       "items": {
         "type": "object",
-        "required": ["name", "role", "contains"],
+        "required": ["name", "role", "contains", "artifact_urls"],
         "properties": {
           "name": { "enum": ["mergeos-app", "mergeos-contracts", "mergeos-sdk", "mergeos-protocol"] },
           "role": { "type": "string", "minLength": 1 },
@@ -56,6 +56,16 @@
             "type": "array",
             "minItems": 1,
             "items": { "type": "string", "minLength": 1 }
+          },
+          "artifact_urls": {
+            "type": "object",
+            "required": ["primary", "protocol", "public_reference"],
+            "properties": {
+              "primary": { "type": "string", "minLength": 1 },
+              "protocol": { "type": "string", "minLength": 1 },
+              "public_reference": { "type": "string", "minLength": 1 }
+            },
+            "additionalProperties": false
           }
         },
         "additionalProperties": false

@@ -36,7 +36,12 @@
         "SSR",
         "orchestration logic",
         "realtime feeds"
-      ]
+      ],
+      "artifact_urls": {
+        "primary": "/",
+        "protocol": "/system/mergeos-architecture.v1.json",
+        "public_reference": "/protocol"
+      }
     },
     {
       "name": "mergeos-contracts",
@@ -46,7 +51,12 @@
         "escrow contracts",
         "treasury contracts",
         "payout contracts"
-      ]
+      ],
+      "artifact_urls": {
+        "primary": "/contracts",
+        "protocol": "/contracts/solana/mergeos_mrg.v1.idl.json",
+        "public_reference": "/contracts/solana/mergeos_mrg.proof-manifest.v1.json"
+      }
     },
     {
       "name": "mergeos-sdk",
@@ -57,7 +67,12 @@
         "event APIs",
         "helper libraries",
         "agent run helpers"
-      ]
+      ],
+      "artifact_urls": {
+        "primary": "/sdk",
+        "protocol": "/protocol",
+        "public_reference": "/api/public/protocol/manifest"
+      }
     },
     {
       "name": "mergeos-protocol",
@@ -67,7 +82,12 @@
         "external AI agent contracts",
         "public integrations",
         "open task manifests"
-      ]
+      ],
+      "artifact_urls": {
+        "primary": "/protocol",
+        "protocol": "/protocol/architecture.v1.schema.json",
+        "public_reference": "/system/mergeos-architecture.v1.json"
+      }
     }
   ],
   "users": [
