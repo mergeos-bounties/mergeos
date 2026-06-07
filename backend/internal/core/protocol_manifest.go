@@ -212,6 +212,12 @@ func ProtocolManifest() ProtocolManifestResponse {
 			Description: "Public CEO token launch research queue for airdrop and presale candidates, with memo decisions, gate summaries, research sources, ledger hashes, and proof URLs.",
 		},
 		{
+			Version:     "mergeos.token-launch-candidates.v1",
+			Kind:        "token_launch_candidates",
+			SchemaURL:   "https://mergeos.shop/protocol/token-launch-candidates.v1.schema.json",
+			Description: "Public CEO token launch candidate queue derived from funded marketplace projects, open bounties, proof requirements, and research source URLs.",
+		},
+		{
 			Version:     "mergeos.escrow.v1",
 			Kind:        "escrow",
 			SchemaURL:   "https://mergeos.shop/protocol/escrow.v1.schema.json",
@@ -411,6 +417,13 @@ func ProtocolManifest() ProtocolManifestResponse {
 			Protocol:    "mergeos.token-launch-briefs.v1",
 			Auth:        "none",
 			Description: "Public CEO token launch research queue for projects requesting an earned airdrop or presale window, filterable by launch_type and derived from ledger-backed launch memos.",
+		},
+		{
+			Method:      "GET",
+			Path:        "/api/public/token/launch-candidates",
+			Protocol:    "mergeos.token-launch-candidates.v1",
+			Auth:        "none",
+			Description: "Public CEO token launch candidate queue derived from funded marketplace projects and filterable by launch_type before a CEO memo is submitted.",
 		},
 		{
 			Method:      "GET",

@@ -5109,6 +5109,10 @@
             </div>
             <div class="token-ceo-head-actions">
               <b>{{ tokenCeoResearchCopy.readiness }}</b>
+              <a :href="tokenCeoCandidatesURL" target="_blank" rel="noreferrer">
+                Candidates API
+                <Link2 :size="11" />
+              </a>
               <a :href="tokenCeoQueueURL" target="_blank" rel="noreferrer">
                 Queue API
                 <Link2 :size="11" />
@@ -12708,6 +12712,9 @@ const tokenCeoResearchCopy = computed(() => {
 });
 const tokenCeoQueueURL = computed(() =>
   `/api/public/token/launch-briefs?launch_type=${publicPage.value === 'presale' ? 'presale' : 'airdrop'}`,
+);
+const tokenCeoCandidatesURL = computed(() =>
+  `/api/public/token/launch-candidates?launch_type=${publicPage.value === 'presale' ? 'presale' : 'airdrop'}`,
 );
 const tokenCeoResearchRows = computed(() => {
   const openTasks = Number(marketplaceStats.value.open_task_count) || (marketplaceData.value.bounties || []).length || 0;

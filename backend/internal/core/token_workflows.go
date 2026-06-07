@@ -12,15 +12,16 @@ import (
 )
 
 const (
-	airdropClaimProtocolVersion             = "mergeos.airdrop-claim.v1"
-	airdropMissionsProtocolVersion          = "mergeos.airdrop-missions.v1"
-	presaleReservationProtocolVersion       = "mergeos.presale-reservation.v1"
-	tokenLaunchBriefProtocolVersion         = "mergeos.token-launch-brief.v1"
-	tokenLaunchBriefsProtocolVersion        = "mergeos.token-launch-briefs.v1"
-	defaultAirdropAllocationMRG       int64 = 250
-	maxAirdropAllocationMRG           int64 = 100000
-	minPresaleReserveMRG              int64 = 100
-	maxPresaleReserveMRG              int64 = 1000000
+	airdropClaimProtocolVersion                = "mergeos.airdrop-claim.v1"
+	airdropMissionsProtocolVersion             = "mergeos.airdrop-missions.v1"
+	presaleReservationProtocolVersion          = "mergeos.presale-reservation.v1"
+	tokenLaunchBriefProtocolVersion            = "mergeos.token-launch-brief.v1"
+	tokenLaunchBriefsProtocolVersion           = "mergeos.token-launch-briefs.v1"
+	tokenLaunchCandidatesProtocolVersion       = "mergeos.token-launch-candidates.v1"
+	defaultAirdropAllocationMRG          int64 = 250
+	maxAirdropAllocationMRG              int64 = 100000
+	minPresaleReserveMRG                 int64 = 100
+	maxPresaleReserveMRG                 int64 = 1000000
 )
 
 type AirdropMission struct {
@@ -165,6 +166,37 @@ type PublicTokenLaunchBriefRecord struct {
 	CreatedAt       time.Time `json:"created_at"`
 }
 
+type PublicTokenLaunchCandidatesResponse struct {
+	ProtocolVersion string                           `json:"protocol_version"`
+	Kind            string                           `json:"kind"`
+	Stats           PublicTokenLaunchCandidatesStats `json:"stats"`
+	Candidates      []PublicTokenLaunchCandidate     `json:"candidates"`
+}
+
+type PublicTokenLaunchCandidatesStats struct {
+	CandidateCount int        `json:"candidate_count"`
+	AirdropCount   int        `json:"airdrop_count"`
+	PresaleCount   int        `json:"presale_count"`
+	UpdatedAt      *time.Time `json:"updated_at,omitempty"`
+}
+
+type PublicTokenLaunchCandidate struct {
+	CandidateID            string    `json:"candidate_id"`
+	ProjectID              string    `json:"project_id"`
+	ProjectTitle           string    `json:"project_title"`
+	RecommendedLaunchTypes []string  `json:"recommended_launch_types"`
+	ResearchSource         string    `json:"research_source"`
+	Brief                  string    `json:"brief"`
+	WorkPoolMRG            int64     `json:"work_pool_mrg"`
+	OpenTaskCount          int       `json:"open_task_count"`
+	AcceptedTaskCount      int       `json:"accepted_task_count"`
+	ProofSignals           []string  `json:"proof_signals"`
+	GateSummary            string    `json:"gate_summary"`
+	ProofPolicy            string    `json:"proof_policy"`
+	MarketplaceURL         string    `json:"marketplace_url"`
+	CreatedAt              time.Time `json:"created_at"`
+}
+
 type CEOMemoGate struct {
 	Key      string `json:"key"`
 	Label    string `json:"label"`
@@ -265,6 +297,19 @@ func (s *Server) publicTokenLaunchBriefs(w http.ResponseWriter, r *http.Request)
 		launchType = normalized
 	}
 	writeJSON(w, http.StatusOK, s.store.PublicTokenLaunchBriefs(launchType))
+}
+
+func (s *Server) publicTokenLaunchCandidates(w http.ResponseWriter, r *http.Request) {
+	launchType := strings.TrimSpace(r.URL.Query().Get("launch_type"))
+	if launchType != "" {
+		normalized, err := normalizeTokenLaunchType(launchType)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		launchType = normalized
+	}
+	writeJSON(w, http.StatusOK, s.store.PublicTokenLaunchCandidates(launchType))
 }
 
 func PublicAirdropMissions() AirdropMissionsResponse {
@@ -507,6 +552,62 @@ func (s *Store) PublicTokenLaunchBriefs(launchTypeFilter string) PublicTokenLaun
 		response.Briefs[i], response.Briefs[j] = response.Briefs[j], response.Briefs[i]
 	}
 	response.Stats.BriefCount = len(response.Briefs)
+	return response
+}
+
+func (s *Store) PublicTokenLaunchCandidates(launchTypeFilter string) PublicTokenLaunchCandidatesResponse {
+	marketplace := s.Marketplace()
+	response := PublicTokenLaunchCandidatesResponse{
+		ProtocolVersion: tokenLaunchCandidatesProtocolVersion,
+		Kind:            "token_launch_candidates",
+		Stats: PublicTokenLaunchCandidatesStats{
+			UpdatedAt: marketplace.Stats.UpdatedAt,
+		},
+		Candidates: []PublicTokenLaunchCandidate{},
+	}
+	bountiesByProject := map[string][]*MarketplaceBounty{}
+	for _, bounty := range marketplace.Bounties {
+		bountiesByProject[bounty.ProjectID] = append(bountiesByProject[bounty.ProjectID], bounty)
+	}
+	for _, project := range marketplace.Projects {
+		recommendedTypes := tokenLaunchCandidateTypes(project)
+		if launchTypeFilter != "" && !stringSliceContains(recommendedTypes, launchTypeFilter) {
+			continue
+		}
+		projectBounties := bountiesByProject[project.ID]
+		source := project.RepoURL
+		if source == "" && len(projectBounties) > 0 {
+			source = projectBounties[0].SourceRepository
+			if source == "" {
+				source = projectBounties[0].IssueURL
+			}
+		}
+		proofSignals := tokenLaunchCandidateSignals(project, projectBounties)
+		candidate := PublicTokenLaunchCandidate{
+			CandidateID:            "tlc_" + project.ID,
+			ProjectID:              project.ID,
+			ProjectTitle:           project.Title,
+			RecommendedLaunchTypes: recommendedTypes,
+			ResearchSource:         source,
+			Brief:                  project.Brief,
+			WorkPoolMRG:            project.WorkPoolCents,
+			OpenTaskCount:          project.OpenTaskCount,
+			AcceptedTaskCount:      project.AcceptedTaskCount,
+			ProofSignals:           proofSignals,
+			GateSummary:            fmt.Sprintf("%d open tasks, %d accepted tasks, %d proof signals", project.OpenTaskCount, project.AcceptedTaskCount, len(proofSignals)),
+			ProofPolicy:            tokenLaunchCandidateProofPolicy(projectBounties),
+			MarketplaceURL:         "/marketplace",
+			CreatedAt:              project.CreatedAt,
+		}
+		response.Candidates = append(response.Candidates, candidate)
+		if stringSliceContains(recommendedTypes, "airdrop") {
+			response.Stats.AirdropCount++
+		}
+		if stringSliceContains(recommendedTypes, "presale") {
+			response.Stats.PresaleCount++
+		}
+	}
+	response.Stats.CandidateCount = len(response.Candidates)
 	return response
 }
 
@@ -991,4 +1092,63 @@ func tokenWorkflowReferenceList(value string) []string {
 		}
 	}
 	return items
+}
+
+func tokenLaunchCandidateTypes(project *MarketplaceProject) []string {
+	if project == nil {
+		return []string{"airdrop"}
+	}
+	types := []string{"airdrop"}
+	if project.WorkPoolCents >= minPresaleReserveMRG || project.AcceptedTaskCount > 0 {
+		types = append(types, "presale")
+	}
+	return types
+}
+
+func tokenLaunchCandidateSignals(project *MarketplaceProject, bounties []*MarketplaceBounty) []string {
+	signals := []string{"marketplace_project", "ceo_research_candidate"}
+	if project != nil {
+		if project.OpenTaskCount > 0 {
+			signals = append(signals, "open_bounty_demand")
+		}
+		if project.AcceptedTaskCount > 0 {
+			signals = append(signals, "accepted_delivery")
+		}
+		if strings.TrimSpace(project.RepoURL) != "" {
+			signals = append(signals, "repository_context")
+		}
+	}
+	seen := map[string]bool{}
+	for _, bounty := range bounties {
+		if strings.TrimSpace(bounty.SourceRepository) != "" && !seen["repository_context"] && !stringSliceContains(signals, "repository_context") {
+			seen["repository_context"] = true
+			signals = append(signals, "repository_context")
+		}
+		for _, evidence := range bounty.EvidenceRequired {
+			normalized := normalizeTokenWorkflowID(evidence)
+			if normalized != "" && !seen[normalized] {
+				seen[normalized] = true
+				signals = append(signals, normalized)
+			}
+		}
+	}
+	return signals
+}
+
+func tokenLaunchCandidateProofPolicy(bounties []*MarketplaceBounty) string {
+	evidence := []string{}
+	seen := map[string]bool{}
+	for _, bounty := range bounties {
+		for _, item := range bounty.EvidenceRequired {
+			normalized := strings.TrimSpace(item)
+			if normalized != "" && !seen[normalized] {
+				seen[normalized] = true
+				evidence = append(evidence, normalized)
+			}
+		}
+	}
+	if len(evidence) == 0 {
+		return "Require task evidence, repository context, review notes, and public ledger proof before opening token workflows."
+	}
+	return "Require " + strings.Join(evidence, ", ") + " plus public ledger proof before opening token workflows."
 }

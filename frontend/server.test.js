@@ -493,6 +493,7 @@ test('public protocol links match backend routes', async () => {
   const paymentOrderSchema = JSON.parse(await fs.readFile(new URL('./public/protocol/payment-order.v1.schema.json', import.meta.url), 'utf-8'));
   const tokenLaunchBriefSchema = JSON.parse(await fs.readFile(new URL('./public/protocol/token-launch-brief.v1.schema.json', import.meta.url), 'utf-8'));
   const tokenLaunchBriefsSchema = JSON.parse(await fs.readFile(new URL('./public/protocol/token-launch-briefs.v1.schema.json', import.meta.url), 'utf-8'));
+  const tokenLaunchCandidatesSchema = JSON.parse(await fs.readFile(new URL('./public/protocol/token-launch-candidates.v1.schema.json', import.meta.url), 'utf-8'));
 
   assert.match(appSource, /const publicProtocolManifestPath = '\/api\/public\/protocol';/);
   assert.equal(paymentOrderSchema.properties.provider.enum.includes('paypal'), true);
@@ -506,6 +507,9 @@ test('public protocol links match backend routes', async () => {
   assert.equal(tokenLaunchBriefsSchema.required.includes('stats'), true);
   assert.equal(tokenLaunchBriefsSchema.required.includes('briefs'), true);
   assert.equal(tokenLaunchBriefsSchema.properties.briefs.items.required.includes('research_source'), true);
+  assert.equal(tokenLaunchCandidatesSchema.properties.protocol_version.const, 'mergeos.token-launch-candidates.v1');
+  assert.equal(tokenLaunchCandidatesSchema.required.includes('candidates'), true);
+  assert.equal(tokenLaunchCandidatesSchema.properties.candidates.items.required.includes('proof_policy'), true);
   assert.match(manifestSource, /mergeos\.payment-order\.v1/);
   assert.match(manifestSource, /payment-order\.v1\.schema\.json/);
   assert.match(manifestSource, /\/contracts\/solana\/mergeos_mrg\.proof-manifest\.v1\.json/);
@@ -513,6 +517,9 @@ test('public protocol links match backend routes', async () => {
   assert.match(manifestSource, /\/api\/public\/token\/launch-briefs/);
   assert.match(manifestSource, /mergeos\.token-launch-briefs\.v1/);
   assert.match(manifestSource, /token-launch-briefs\.v1\.schema\.json/);
+  assert.match(manifestSource, /\/api\/public\/token\/launch-candidates/);
+  assert.match(manifestSource, /mergeos\.token-launch-candidates\.v1/);
+  assert.match(manifestSource, /token-launch-candidates\.v1\.schema\.json/);
   assert.match(manifestSource, /\/system\/mergeos-architecture\.v1\.json/);
   assert.match(manifestSource, /mergeos\.architecture\.v1/);
   assert.match(manifestSource, /architecture\.v1\.schema\.json/);
@@ -1239,6 +1246,8 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /CEO presale readiness review\./);
   assert.match(appSource, /const tokenCeoQueueURL = computed/);
   assert.match(appSource, /\/api\/public\/token\/launch-briefs\?launch_type=\$\{publicPage\.value === 'presale' \? 'presale' : 'airdrop'\}/);
+  assert.match(appSource, /const tokenCeoCandidatesURL = computed/);
+  assert.match(appSource, /Candidates API[\s\S]*\/api\/public\/token\/launch-candidates\?launch_type=\$\{publicPage\.value === 'presale' \? 'presale' : 'airdrop'\}/);
   assert.match(appSource, /const tokenCeoDecisionRows = computed/);
   assert.match(appSource, /const tokenCeoQueueStatRows = computed/);
   assert.match(appSource, /const tokenCeoLiveQueueRows = computed/);

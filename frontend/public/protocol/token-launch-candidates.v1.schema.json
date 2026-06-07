@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mergeos.shop/protocol/token-launch-candidates.v1.schema.json",
+  "title": "MergeOS Token Launch Candidates v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["protocol_version", "kind", "stats", "candidates"],
+  "properties": {
+    "protocol_version": { "const": "mergeos.token-launch-candidates.v1" },
+    "kind": { "const": "token_launch_candidates" },
+    "stats": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["candidate_count", "airdrop_count", "presale_count"],
+      "properties": {
+        "candidate_count": { "type": "integer", "minimum": 0 },
+        "airdrop_count": { "type": "integer", "minimum": 0 },
+        "presale_count": { "type": "integer", "minimum": 0 },
+        "updated_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "candidates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "candidate_id",
+          "project_id",
+          "project_title",
+          "recommended_launch_types",
+          "research_source",
+          "brief",
+          "work_pool_mrg",
+          "open_task_count",
+          "accepted_task_count",
+          "proof_signals",
+          "gate_summary",
+          "proof_policy",
+          "marketplace_url",
+          "created_at"
+        ],
+        "properties": {
+          "candidate_id": { "type": "string", "maxLength": 80 },
+          "project_id": { "type": "string", "maxLength": 80 },
+          "project_title": { "type": "string", "maxLength": 160 },
+          "recommended_launch_types": {
+            "type": "array",
+            "items": { "enum": ["airdrop", "presale"] }
+          },
+          "research_source": { "type": "string", "maxLength": 500 },
+          "brief": { "type": "string", "maxLength": 1000 },
+          "work_pool_mrg": { "type": "integer", "minimum": 0 },
+          "open_task_count": { "type": "integer", "minimum": 0 },
+          "accepted_task_count": { "type": "integer", "minimum": 0 },
+          "proof_signals": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1, "maxLength": 80 }
+          },
+          "gate_summary": { "type": "string", "maxLength": 240 },
+          "proof_policy": { "type": "string", "maxLength": 500 },
+          "marketplace_url": { "type": "string", "maxLength": 200 },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      }
+    }
+  }
+}

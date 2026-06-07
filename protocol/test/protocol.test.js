@@ -55,6 +55,7 @@ test('loads stable task, workflow, ledger, and event schemas', () => {
     'mergeos.token-economy.v1',
     'mergeos.token-launch-brief.v1',
     'mergeos.token-launch-briefs.v1',
+    'mergeos.token-launch-candidates.v1',
     'mergeos.wallet-migration.v1',
     'mergeos.worker-dashboard.v1',
     'mergeos.workflow.v1',
@@ -224,11 +225,40 @@ test('validates airdrop claim, presale reservation, and token launch brief proto
       },
     ],
   };
+  const tokenLaunchCandidates = {
+    protocol_version: 'mergeos.token-launch-candidates.v1',
+    kind: 'token_launch_candidates',
+    stats: {
+      candidate_count: 1,
+      airdrop_count: 1,
+      presale_count: 1,
+      updated_at: now,
+    },
+    candidates: [
+      {
+        candidate_id: 'tlc_prj_0001',
+        project_id: 'prj_0001',
+        project_title: 'MergeOS funded repo sprint',
+        recommended_launch_types: ['airdrop', 'presale'],
+        research_source: 'https://github.com/mergeos-bounties/mergeos',
+        brief: 'Funded marketplace project with open bounties and accepted proof.',
+        work_pool_mrg: 90000,
+        open_task_count: 4,
+        accepted_task_count: 14,
+        proof_signals: ['marketplace_project', 'open_bounty_demand', 'repository_context'],
+        gate_summary: '4 open tasks, 14 accepted tasks, 3 proof signals',
+        proof_policy: 'Require tests, screenshot plus public ledger proof before opening token workflows.',
+        marketplace_url: '/marketplace',
+        created_at: now,
+      },
+    ],
+  };
 
   assert.equal(validateProtocolDocument(airdropClaim).valid, true);
   assert.equal(validateProtocolDocument(presaleReservation).valid, true);
   assert.equal(validateProtocolDocument(tokenLaunchBrief).valid, true);
   assert.equal(validateProtocolDocument(tokenLaunchBriefs).valid, true);
+  assert.equal(validateProtocolDocument(tokenLaunchCandidates).valid, true);
 
   const invalidClaim = validateProtocolDocument({ ...airdropClaim, allocation_mrg: 100001 });
   assert.equal(invalidClaim.valid, false);

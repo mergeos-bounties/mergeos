@@ -1421,7 +1421,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 	if payload.Status != "active" || payload.GeneratedAt.IsZero() {
 		t.Fatalf("manifest missing status/generated_at: %#v", payload)
 	}
-	if len(payload.Schemas) != 44 {
+	if len(payload.Schemas) != 45 {
 		t.Fatalf("manifest schemas = %d: %#v", len(payload.Schemas), payload.Schemas)
 	}
 	if len(payload.Documents) != len(payload.Schemas) {
@@ -1459,7 +1459,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 	for _, document := range payload.Documents {
 		documents[document.ProtocolVersion] = document
 	}
-	for _, required := range []string{"mergeos.task.v1", "mergeos.task-claim.v1", "mergeos.task-submission.v1", "mergeos.task-review.v1", "mergeos.agent.v1", "mergeos.contributor.v1", "mergeos.agent-action.v1", "mergeos.agent-run.v1", "mergeos.agent-lease.v1", "mergeos.agent-queue.v1", "mergeos.agent-runbook.v1", "mergeos.architecture.v1", "mergeos.marketplace.v1", "mergeos.live-feed.v1", "mergeos.workflow.v1", "mergeos.estimate.v1", "mergeos.payment-order.v1", "mergeos.wallet-migration.v1", "mergeos.release-artifact.v1", "mergeos.repo-import.v1", "mergeos.repo-sync.v1", "mergeos.repo-task-funding.v1", "mergeos.dispute.v1", "mergeos.proposal.v1", "mergeos.ai-workflow.v1", "mergeos.event.v1", "mergeos.ledger.v1", "mergeos.ledger-proof.v1", "mergeos.token-economy.v1", "mergeos.token-launch-brief.v1", "mergeos.token-launch-briefs.v1", "mergeos.airdrop-claim.v1", "mergeos.airdrop-missions.v1", "mergeos.presale-reservation.v1", "mergeos.escrow.v1", "mergeos.payouts.v1", "mergeos.payout-release.v1", "mergeos.deployment.v1", "mergeos.pr-monitor.v1", "mergeos.scan.v1", "mergeos.customer-dashboard.v1", "mergeos.worker-dashboard.v1", "mergeos.routing.v1", "mergeos.admin-ops.v1"} {
+	for _, required := range []string{"mergeos.task.v1", "mergeos.task-claim.v1", "mergeos.task-submission.v1", "mergeos.task-review.v1", "mergeos.agent.v1", "mergeos.contributor.v1", "mergeos.agent-action.v1", "mergeos.agent-run.v1", "mergeos.agent-lease.v1", "mergeos.agent-queue.v1", "mergeos.agent-runbook.v1", "mergeos.architecture.v1", "mergeos.marketplace.v1", "mergeos.live-feed.v1", "mergeos.workflow.v1", "mergeos.estimate.v1", "mergeos.payment-order.v1", "mergeos.wallet-migration.v1", "mergeos.release-artifact.v1", "mergeos.repo-import.v1", "mergeos.repo-sync.v1", "mergeos.repo-task-funding.v1", "mergeos.dispute.v1", "mergeos.proposal.v1", "mergeos.ai-workflow.v1", "mergeos.event.v1", "mergeos.ledger.v1", "mergeos.ledger-proof.v1", "mergeos.token-economy.v1", "mergeos.token-launch-brief.v1", "mergeos.token-launch-briefs.v1", "mergeos.token-launch-candidates.v1", "mergeos.airdrop-claim.v1", "mergeos.airdrop-missions.v1", "mergeos.presale-reservation.v1", "mergeos.escrow.v1", "mergeos.payouts.v1", "mergeos.payout-release.v1", "mergeos.deployment.v1", "mergeos.pr-monitor.v1", "mergeos.scan.v1", "mergeos.customer-dashboard.v1", "mergeos.worker-dashboard.v1", "mergeos.routing.v1", "mergeos.admin-ops.v1"} {
 		if !schemas[required] {
 			t.Fatalf("manifest missing schema %s: %#v", required, payload.Schemas)
 		}
@@ -1517,6 +1517,7 @@ func TestPublicProtocolManifestRouteReturnsDiscoveryMetadata(t *testing.T) {
 		"GET /api/public/token-economy",
 		"GET /api/public/airdrop/missions",
 		"GET /api/public/token/launch-briefs",
+		"GET /api/public/token/launch-candidates",
 		"POST /api/airdrop/claims",
 		"POST /api/presale/reservations",
 		"POST /api/token/launch-briefs",
@@ -1586,6 +1587,19 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 		t.Fatal(err)
 	}
 	wallet := base58Encode(bytes.Repeat([]byte{7}, walletAddressBytes))
+	project, err := store.CreateProject(context.Background(), auth.User.ID, CreateProjectRequest{
+		Title:            "MergeOS funded repo sprint",
+		ClientName:       "Token Builder",
+		ClientEmail:      "token-builder@example.com",
+		Brief:            "Funded marketplace project with open bounties and accepted proof.",
+		BudgetCents:      100000,
+		PaymentMethod:    PaymentPayPal,
+		PaymentReference: defaultDevPaymentCode,
+		SourceRepoURL:    "https://github.com/mergeos-bounties/mergeos",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
 	server := NewServer(cfg, store, payments)
 
 	missionReq := httptest.NewRequest(http.MethodGet, "/api/public/airdrop/missions", nil)
@@ -1800,6 +1814,31 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 	server.Routes().ServeHTTP(invalidFilteredLaunchBriefsResp, httptest.NewRequest(http.MethodGet, "/api/public/token/launch-briefs?launch_type=ico", nil))
 	if invalidFilteredLaunchBriefsResp.Code != http.StatusBadRequest || !strings.Contains(invalidFilteredLaunchBriefsResp.Body.String(), "launch_type must be airdrop or presale") {
 		t.Fatalf("invalid filtered public token launch briefs status = %d, body = %s", invalidFilteredLaunchBriefsResp.Code, invalidFilteredLaunchBriefsResp.Body.String())
+	}
+	candidatesResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(candidatesResp, httptest.NewRequest(http.MethodGet, "/api/public/token/launch-candidates?launch_type=airdrop", nil))
+	if candidatesResp.Code != http.StatusOK {
+		t.Fatalf("public token launch candidates status = %d, body = %s", candidatesResp.Code, candidatesResp.Body.String())
+	}
+	var candidates PublicTokenLaunchCandidatesResponse
+	if err := json.Unmarshal(candidatesResp.Body.Bytes(), &candidates); err != nil {
+		t.Fatal(err)
+	}
+	if candidates.ProtocolVersion != tokenLaunchCandidatesProtocolVersion || candidates.Kind != "token_launch_candidates" || candidates.Stats.CandidateCount < 1 || candidates.Stats.AirdropCount < 1 {
+		t.Fatalf("public token launch candidates summary invalid: %#v", candidates)
+	}
+	if len(candidates.Candidates) < 1 ||
+		candidates.Candidates[0].ProjectID != project.ID ||
+		candidates.Candidates[0].ResearchSource != "https://github.com/mergeos-bounties/mergeos" ||
+		!stringSliceContains(candidates.Candidates[0].RecommendedLaunchTypes, "airdrop") ||
+		!stringSliceContains(candidates.Candidates[0].ProofSignals, "repository_context") ||
+		candidates.Candidates[0].ProofPolicy == "" {
+		t.Fatalf("public token launch candidates rows invalid: %#v", candidates.Candidates)
+	}
+	invalidCandidatesResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(invalidCandidatesResp, httptest.NewRequest(http.MethodGet, "/api/public/token/launch-candidates?launch_type=ico", nil))
+	if invalidCandidatesResp.Code != http.StatusBadRequest || !strings.Contains(invalidCandidatesResp.Body.String(), "launch_type must be airdrop or presale") {
+		t.Fatalf("invalid public token launch candidates status = %d, body = %s", invalidCandidatesResp.Code, invalidCandidatesResp.Body.String())
 	}
 	tokenWorkflowNotifications := 0
 	for _, note := range store.ListNotifications(auth.User.ID) {

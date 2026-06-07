@@ -39,6 +39,7 @@ const schemaFiles = {
   'mergeos.task-submission.v1': '../schemas/task-submission.v1.schema.json',
   'mergeos.task.v1': '../schemas/task.v1.schema.json',
   'mergeos.token-economy.v1': '../schemas/token-economy.v1.schema.json',
+  'mergeos.token-launch-candidates.v1': '../schemas/token-launch-candidates.v1.schema.json',
   'mergeos.token-launch-brief.v1': '../schemas/token-launch-brief.v1.schema.json',
   'mergeos.token-launch-briefs.v1': '../schemas/token-launch-briefs.v1.schema.json',
   'mergeos.wallet-migration.v1': '../schemas/wallet-migration.v1.schema.json',
