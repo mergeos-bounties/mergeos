@@ -32,13 +32,41 @@
     },
     "product_vision": {
       "type": "object",
-      "required": ["summary", "core_loop"],
+      "required": ["summary", "core_loop", "workflow_routes"],
       "properties": {
         "summary": { "type": "string", "minLength": 1 },
         "core_loop": {
           "type": "array",
           "minItems": 1,
           "items": { "type": "string", "minLength": 1 }
+        },
+        "workflow_routes": {
+          "type": "object",
+          "required": [
+            "import_repository",
+            "scan_issues_with_ai",
+            "generate_task_graph",
+            "estimate_rewards",
+            "fund_escrow",
+            "route_contributors_or_agents",
+            "review_pull_requests",
+            "validate_deployment",
+            "release_payment",
+            "publish_ledger_proof"
+          ],
+          "properties": {
+            "import_repository": { "$ref": "#/$defs/workflowRoute" },
+            "scan_issues_with_ai": { "$ref": "#/$defs/workflowRoute" },
+            "generate_task_graph": { "$ref": "#/$defs/workflowRoute" },
+            "estimate_rewards": { "$ref": "#/$defs/workflowRoute" },
+            "fund_escrow": { "$ref": "#/$defs/workflowRoute" },
+            "route_contributors_or_agents": { "$ref": "#/$defs/workflowRoute" },
+            "review_pull_requests": { "$ref": "#/$defs/workflowRoute" },
+            "validate_deployment": { "$ref": "#/$defs/workflowRoute" },
+            "release_payment": { "$ref": "#/$defs/workflowRoute" },
+            "publish_ledger_proof": { "$ref": "#/$defs/workflowRoute" }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false
@@ -299,6 +327,16 @@
     }
   },
   "$defs": {
+    "workflowRoute": {
+      "type": "object",
+      "required": ["page", "api", "proof_surface"],
+      "properties": {
+        "page": { "type": "string", "minLength": 1 },
+        "api": { "type": "string", "minLength": 1 },
+        "proof_surface": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
     "marketplaceFeatureRoute": {
       "type": "object",
       "required": ["page", "api", "event_type"],

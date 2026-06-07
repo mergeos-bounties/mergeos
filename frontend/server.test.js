@@ -88,6 +88,19 @@ test('public system vision preserves the product thesis', async () => {
   assert.match(whitepaperSource, /shared source of truth for software delivery/);
   assert.equal(architectureManifest.protocol_version, 'mergeos.architecture.v1');
   assert.equal(architectureManifest.positioning, 'AI software delivery operating system');
+  assert.deepEqual(Object.keys(architectureManifest.product_vision.workflow_routes), architectureManifest.product_vision.core_loop);
+  assert.deepEqual(architectureManifest.product_vision.workflow_routes, {
+    import_repository: { page: '/project/new', api: '/api/repos/import', proof_surface: '/live-feed' },
+    scan_issues_with_ai: { page: '/repo-import', api: '/api/public/projects/{id}/repo-scan', proof_surface: '/live-feed' },
+    generate_task_graph: { page: '/dashboard', api: '/api/projects/{id}/task-graph', proof_surface: '/marketplace#marketplace-bounties' },
+    estimate_rewards: { page: '/project/new/budget', api: '/api/projects/{id}/estimate', proof_surface: '/ledger' },
+    fund_escrow: { page: '/project/new/review', api: '/api/projects/{id}/escrow', proof_surface: '/contracts' },
+    route_contributors_or_agents: { page: '/marketplace', api: '/api/public/protocol/routing', proof_surface: '/marketplace' },
+    review_pull_requests: { page: '/dashboard', api: '/api/public/projects/{id}/pull-requests', proof_surface: '/ledger' },
+    validate_deployment: { page: '/live-feed', api: '/api/public/protocol/deployment', proof_surface: '/ledger' },
+    release_payment: { page: '/dashboard?section=admin', api: '/api/public/protocol/payout-settlement', proof_surface: '/ledger' },
+    publish_ledger_proof: { page: '/ledger', api: '/api/public/ledger', proof_surface: '/ledger' },
+  });
   assert.deepEqual(architectureManifest.repository_architecture.map((repo) => repo.name), ['mergeos-app', 'mergeos-contracts', 'mergeos-sdk', 'mergeos-protocol']);
   assert.deepEqual(architectureManifest.repository_architecture.map((repo) => repo.artifact_urls), [
     { primary: '/', protocol: '/system/mergeos-architecture.v1.json', public_reference: '/protocol' },
