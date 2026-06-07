@@ -171,7 +171,8 @@ test('MergeIDE public page exposes the Windows exe download contract', async () 
   const downloadButtonBindings = appSource.match(
     /class="primary-button large mergeide-download-button"[\s\S]{0,260}:href="mergeIdeDownloadPath"[\s\S]{0,160}:download="mergeIdeDownloadFileName"/g,
   ) || [];
-  assert.ok(downloadButtonBindings.length >= 2);
+  assert.ok(downloadButtonBindings.length >= 1);
+  assert.match(appSource, /class="home-mergeide-inline-link"[\s\S]{0,180}:href="mergeIdeDownloadPath"[\s\S]{0,120}:download="mergeIdeDownloadFileName"/);
   assert.ok(appSource.includes("['Pinned release',"));
   assert.ok(appSource.includes("['Release manifest',"));
 });
@@ -328,6 +329,8 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.match(cssSource, /Home micro-screen pass/);
   assert.match(cssSource, /Home refined compact pass/);
   assert.match(appSource, /class="public-notification-feed home-feed-preview"/);
+  assert.match(appSource, /class="home-mergeide-inline-link"/);
+  assert.match(appSource, /homeLiveStats\.slice\(0, 2\)/);
   assert.match(cssSource, /\.public-home-page\s*\{[\s\S]*padding-block: 4px 8px !important;/);
   assert.match(cssSource, /\.public-home-page\s*\{[\s\S]*padding-block: 0 6px !important;/);
   assert.match(cssSource, /\.public-home-page \.home-container\s*\{[\s\S]*max-width: min\(900px, calc\(100vw - 32px\)\) !important;/);
@@ -342,6 +345,7 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.match(cssSource, /\.public-home-hero\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) minmax\(300px, 340px\) !important;/);
   assert.match(cssSource, /\.public-home-copy h1\s*\{[\s\S]*font-size: clamp\(38px, 4\.1vw, 56px\) !important;/);
   assert.match(cssSource, /\.home-command-panel\s*\{[\s\S]*max-width: 340px !important;/);
+  assert.match(cssSource, /\.home-mergeide-inline-link\s*\{[\s\S]*font-size: 13px !important;/);
   assert.match(cssSource, /\.home-feed-preview,[\s\S]*\.home-public-graph-proof,[\s\S]*\.home-command-panel \.home-pipeline\s*\{[\s\S]*display: none !important;/);
   assert.match(cssSource, /\.home-command-panel \.public-stat-grid article:nth-child\(n \+ 3\)\s*\{[\s\S]*display: none !important;/);
   assert.match(cssSource, /@media \(max-width: 980px\)[\s\S]*\.home-command-panel\s*\{[\s\S]*display: none !important;/);

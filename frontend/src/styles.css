@@ -33984,6 +33984,22 @@ canvas {
   margin-top: 18px !important;
 }
 
+.home-mergeide-inline-link {
+  width: fit-content !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+  margin-top: 12px !important;
+  color: #2563eb !important;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  text-decoration: none !important;
+}
+
+.home-mergeide-inline-link:hover {
+  color: #0f766e !important;
+}
+
 .public-home-copy .primary-button.large,
 .public-home-copy .secondary-button.large {
   min-height: 44px !important;

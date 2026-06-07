@@ -4622,16 +4622,16 @@
                 {{ publicHomeCopy.marketplaceAction }}
                 <UsersRound :size="16" />
               </button>
-              <a
-                class="primary-button large mergeide-download-button"
-                :href="mergeIdeDownloadPath"
-                :download="mergeIdeDownloadFileName"
-                @click="closeNavContextMenu"
-              >
-                MergeIDE
-                <Download :size="16" />
-              </a>
             </div>
+            <a
+              class="home-mergeide-inline-link"
+              :href="mergeIdeDownloadPath"
+              :download="mergeIdeDownloadFileName"
+              @click="closeNavContextMenu"
+            >
+              <Code2 :size="14" />
+              MergeIDE download
+            </a>
           </div>
 
           <aside class="public-home-panel home-command-panel" :aria-label="publicHomeCopy.commandLabel">
@@ -4647,7 +4647,7 @@
             </div>
 
             <div class="public-stat-grid">
-              <article v-for="stat in homeLiveStats" :key="stat.label">
+              <article v-for="stat in homeLiveStats.slice(0, 2)" :key="stat.label">
                 <span :class="['home-stat-icon', stat.tone]">
                   <component :is="stat.icon" :size="15" />
                 </span>
