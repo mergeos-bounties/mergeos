@@ -12541,26 +12541,35 @@ const tokenWorkflowProofEmptySteps = computed(() => {
     { label: 'Ledger proof', detail: 'memo hash before reservations' },
   ];
 });
+const tokenLaunchBriefProofCount = computed(() => {
+  const targetLaunchType = publicPage.value === 'presale' ? 'presale' : 'airdrop';
+  return ledgerRawEntries.value.filter((entry) => {
+    if (entry?.type !== 'token_launch_brief') return false;
+    return String(entry.reference || '').includes(`type:${targetLaunchType}`);
+  }).length;
+});
 const tokenCeoResearchCopy = computed(() => {
   const openTasks = Number(marketplaceStats.value.open_task_count) || (marketplaceData.value.bounties || []).length || 0;
   const proofRows = Number(ledgerEconomyStats.value.ledger_entry_count) || ledgerRawEntries.value.length || ledgerEventItems.value.length || 0;
+  const ceoMemos = tokenLaunchBriefProofCount.value;
   if (publicPage.value === 'airdrop') {
     return {
       title: 'CEO airdrop readiness review.',
       body: 'Score mission demand, bounty depth, proof quality, bot risk, and wallet readiness before allocation opens.',
-      readiness: `${airdropMissionRows.value.length} missions / ${openTasks} tasks / ${proofRows} proofs`,
+      readiness: `${airdropMissionRows.value.length} missions / ${openTasks} tasks / ${ceoMemos} CEO memos / ${proofRows} proofs`,
     };
   }
   return {
     title: 'CEO presale readiness review.',
     body: 'Check utility, funding rails, verified wallets, vesting clarity, contract proof, and ledger receipts before reserve opens.',
-    readiness: `${formatPublicMRGFromCents(publicVerifiedFundingCents.value)} verified / ${proofRows} proofs`,
+    readiness: `${formatPublicMRGFromCents(publicVerifiedFundingCents.value)} verified / ${ceoMemos} CEO memos / ${proofRows} proofs`,
   };
 });
 const tokenCeoResearchRows = computed(() => {
   const openTasks = Number(marketplaceStats.value.open_task_count) || (marketplaceData.value.bounties || []).length || 0;
   const agentTasks = Number(agentQueueData.value.stats?.total_count) || (agentQueueData.value.tasks || []).length || 0;
   const proofRows = Number(ledgerEconomyStats.value.ledger_entry_count) || ledgerRawEntries.value.length || ledgerEventItems.value.length || 0;
+  const ceoMemos = tokenLaunchBriefProofCount.value;
   if (publicPage.value === 'airdrop') {
     return [
       {
@@ -12573,7 +12582,7 @@ const tokenCeoResearchRows = computed(() => {
       {
         title: 'Proof and anti-bot gate',
         body: 'Require task references, PR evidence, QA notes, agent actions, and a Solana wallet before claim review.',
-        evidence: `${proofRows} public proof rows available`,
+        evidence: `${ceoMemos} CEO memos, ${proofRows} public proof rows available`,
         icon: ShieldCheck,
         tone: 'amber',
       },
@@ -12604,7 +12613,7 @@ const tokenCeoResearchRows = computed(() => {
     {
       title: 'Contract and ledger proof',
       body: 'Presale acceptance needs token contract references, receipt hashes, reserve accounting, and public proof rows.',
-      evidence: `${proofRows} ledger rows, Solana proof manifest linked`,
+      evidence: `${ceoMemos} CEO memos, ${proofRows} ledger rows, Solana proof manifest linked`,
       icon: Lock,
       tone: 'amber',
     },

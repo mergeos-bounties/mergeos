@@ -1204,6 +1204,12 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /const tokenCeoDecisionRows = computed/);
   assert.match(appSource, /const tokenCeoProjectResearchRows = computed/);
   assert.match(appSource, /const tokenCeoLaunchBriefCopy = computed/);
+  assert.match(appSource, /const tokenLaunchBriefProofCount = computed/);
+  assert.match(appSource, /entry\?\.type !== 'token_launch_brief'/);
+  assert.match(appSource, /return String\(entry\.reference \|\| ''\)\.includes\(`type:\$\{targetLaunchType\}`\);/);
+  assert.match(appSource, /\$\{ceoMemos\} CEO memos/);
+  assert.match(appSource, /\$\{ceoMemos\} CEO memos, \$\{proofRows\} public proof rows available/);
+  assert.match(appSource, /\$\{ceoMemos\} CEO memos, \$\{proofRows\} ledger rows, Solana proof manifest linked/);
   assert.match(appSource, /Send a CEO airdrop brief\./);
   assert.match(appSource, /Send a CEO presale brief\./);
   assert.match(appSource, /CEO template/);
