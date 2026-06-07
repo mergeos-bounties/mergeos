@@ -5210,6 +5210,7 @@
               <div class="token-proof-result-actions">
                 <a :href="tokenLaunchBriefResult.ledger_proof_url || '/api/public/ledger/proof'" target="_blank" rel="noreferrer">Proof</a>
                 <button type="button" @click="copyTokenWorkflowHash(tokenLaunchBriefResult)">Copy hash</button>
+                <button type="button" @click="openPublicPage('ledger')">Ledger board</button>
               </div>
             </article>
             <div class="token-ceo-brief-actions">

@@ -1203,6 +1203,8 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /class="token-ceo-memo-result"/);
   assert.match(appSource, /tokenLaunchBriefResult\.ceo_memo\.decision_label/);
   assert.match(appSource, /tokenLaunchBriefResult\.ceo_memo\.gates\?\.length/);
+  assert.match(appSource, /Ledger board/);
+  assert.match(appSource, /tokenLaunchBriefResult[\s\S]{0,900}openPublicPage\('ledger'\)/);
   assert.match(appSource, /action\.command === 'token-ceo-brief'/);
   assert.ok(appSource.indexOf('class="token-ceo-research-panel"') < appSource.indexOf('class="token-content-grid"'));
   assert.ok(appSource.indexOf('class="token-ceo-decision-strip"') < appSource.indexOf('class="token-ceo-brief-card"'));
@@ -1325,6 +1327,7 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(cssSource, /\.token-ceo-brief-actions\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) auto auto;/);
   assert.match(cssSource, /\.token-ceo-research-grid\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /\.token-ceo-memo-result\s*\{[\s\S]*grid-column: 1 \/ -1;/);
+  assert.match(cssSource, /\.token-proof-result-actions a,[\s\S]*\.token-proof-result-actions button\s*\{[\s\S]*display: inline-flex;/);
   assert.match(cssSource, /\.token-ceo-memo-gates\s*\{[\s\S]*grid-template-columns: repeat\(4, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /\.token-ceo-project-queue article\s*\{[\s\S]*min-height: 104px !important;/);
   assert.match(cssSource, /\.token-ceo-research-grid article\s*\{[\s\S]*min-height: 118px !important;/);

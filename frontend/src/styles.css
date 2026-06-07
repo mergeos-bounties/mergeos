@@ -8979,8 +8979,12 @@ svg {
   flex-wrap: wrap;
 }
 
+.token-proof-result-actions a,
 .token-proof-result-actions button {
   min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid rgba(15, 159, 120, 0.22);
   border-radius: 8px;
   background: #ffffff;
@@ -8988,6 +8992,7 @@ svg {
   padding: 0 11px;
   font-size: 11px;
   font-weight: 900;
+  text-decoration: none;
 }
 
 .token-workflow-actions {
@@ -9670,6 +9675,7 @@ svg {
     grid-template-columns: 1fr;
   }
 
+  .token-proof-result-actions a,
   .token-proof-result-actions button {
     flex: 1 1 120px;
   }
