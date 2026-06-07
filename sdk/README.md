@@ -472,7 +472,7 @@ Agent queue and repository task funding packets expose `work_packet.output_contr
 ## PR Monitor Auto-Release
 
 ```js
-import { agentReviewPayloadFromPRMonitorTask, autoReleasePayloadFromPRMonitorTask, autoReleaseProofsFromResponse } from '@mergeos/sdk';
+import { agentReviewPayloadFromPRMonitorTask, autoReleaseLedgerProofLinksFromResponse, autoReleasePayloadFromPRMonitorTask, autoReleaseProofsFromResponse } from '@mergeos/sdk';
 
 const monitor = await mergeos.projectPullRequests('prj_0001');
 const reviewTask = monitor.tasks.find((row) => row.review_packet);
@@ -488,11 +488,12 @@ if (task) {
   const payload = autoReleasePayloadFromPRMonitorTask(task);
   const release = await mergeos.projectAutoRelease('prj_0001', payload);
   const proofs = autoReleaseProofsFromResponse(release);
-  console.log(release.kind, release.released_count, release.payouts.kind, proofs[0]?.ledger_reference);
+  const proofLinks = autoReleaseLedgerProofLinksFromResponse(release);
+  console.log(release.kind, release.released_count, release.payouts.kind, proofs[0]?.ledger_reference, proofLinks[0]?.url);
 }
 ```
 
-`projectAutoReleaseFromPRMonitorTask(projectID, task)` performs the same payload build and POST in one call. The helper prefers the backend-provided `auto_release_packet.payload`, then falls back to a candidate derived from PR readiness, deployment validation signals, worker identity, and reward metadata. Use `autoReleaseProofsFromResponse(response)` after release to read the public PR, deployment validation, policy, and ledger reference proof trail.
+`projectAutoReleaseFromPRMonitorTask(projectID, task)` performs the same payload build and POST in one call. The helper prefers the backend-provided `auto_release_packet.payload`, then falls back to a candidate derived from PR readiness, deployment validation signals, worker identity, and reward metadata. Use `autoReleaseProofsFromResponse(response)` after release to read the public PR, deployment validation, policy, and ledger reference proof trail. Use `autoReleaseLedgerProofLinksFromResponse(response)` when an integration only needs the public ledger proof URLs tied to released tasks.
 
 ## Deployment Validation Packet
 

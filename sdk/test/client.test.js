@@ -26,6 +26,7 @@ import {
   aiWorkflowStageContextURLs,
   aiWorkflowStages,
   autoReleasePayloadFromPRMonitorTask,
+  autoReleaseLedgerProofLinksFromResponse,
   autoReleaseProofsFromResponse,
   bestAgentForAction,
   contractReferenceBytes,
@@ -1767,6 +1768,7 @@ test('builds auto-release payloads from PR monitor task packets', () => {
           pull_request_url: 'https://github.com/mergeos-bounties/mergeos/pull/151',
           deployment_status: 'validated',
           ledger_reference: 'task:tsk_1;deployment_validation:validated',
+          ledger_proof_url: '/api/public/ledger/proof',
         }],
       },
     },
@@ -1777,6 +1779,15 @@ test('builds auto-release payloads from PR monitor task packets', () => {
     assert.equal(autoReleaseProofsFromResponse(response)[0].deployment_status, 'validated');
     assert.deepEqual(autoReleaseProofsFromResponse({ release_proofs: [null, response.release_proofs[0]] }), [response.release_proofs[0]]);
     assert.deepEqual(autoReleaseProofsFromResponse({}), []);
+    assert.deepEqual(autoReleaseLedgerProofLinksFromResponse(response), [{
+      kind: 'auto_release',
+      task_id: 'tsk_1',
+      claim_id: 'prj_1:1',
+      pull_request_url: 'https://github.com/mergeos-bounties/mergeos/pull/151',
+      ledger_reference: 'task:tsk_1;deployment_validation:validated',
+      url: '/api/public/ledger/proof',
+    }]);
+    assert.deepEqual(autoReleaseLedgerProofLinksFromResponse({ release_proofs: [{ ledger_proof_url: '' }] }), []);
     assert.equal(fetchImpl.calls[0].url, '/api/projects/prj_1/auto-release');
     assert.equal(fetchImpl.calls[0].options.method, 'POST');
     assert.equal(fetchImpl.calls[0].options.headers.Authorization, 'Bearer agent-token');

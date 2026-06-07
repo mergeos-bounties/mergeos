@@ -1401,6 +1401,23 @@ export function autoReleaseProofsFromResponse(response = {}) {
   return Array.isArray(response.release_proofs) ? response.release_proofs.filter((proof) => proof && typeof proof === 'object') : [];
 }
 
+export function autoReleaseLedgerProofLinksFromResponse(response = {}) {
+  return autoReleaseProofsFromResponse(response)
+    .map((proof) => {
+      const url = String(proof.ledger_proof_url || '').trim();
+      if (!url) return null;
+      return {
+        kind: 'auto_release',
+        task_id: proof.task_id || '',
+        claim_id: proof.claim_id || '',
+        pull_request_url: proof.pull_request_url || '',
+        ledger_reference: proof.ledger_reference || '',
+        url,
+      };
+    })
+    .filter(Boolean);
+}
+
 export function workerDashboardProofLinks(dashboard = {}, kind = '') {
   const normalized = String(kind || '').trim().toLowerCase();
   const links = [];
