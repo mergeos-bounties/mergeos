@@ -144,6 +144,10 @@ export class MergeOSClient {
     return this.request('/api/public/protocol', { auth: false });
   }
 
+  async publicProtocolDiscovery() {
+    return protocolManifestDiscovery(await this.publicProtocolManifest());
+  }
+
   publicProtocolTasks(options = {}) {
     const query = queryString({
       limit: Number(options.limit) > 0 ? Number(options.limit) : '',
@@ -670,6 +674,111 @@ export class MergeOSClient {
 
 export function createMergeOSClient(options = {}) {
   return new MergeOSClient(options);
+}
+
+export function protocolManifestDiscovery(manifest = {}) {
+  const documents = protocolManifestDocuments(manifest);
+  const endpoints = protocolManifestEndpoints(manifest);
+  const contextURLs = protocolManifestContextURLs(manifest);
+  const realtime = protocolManifestRealtime(manifest);
+  return {
+    manifest,
+    protocolVersion: manifest.protocol_version || 'mergeos.protocol.manifest.v1',
+    status: manifest.status || '',
+    generatedAt: manifest.generated_at || '',
+    stats: {
+      schemaCount: Number(manifest.stats?.schema_count) || documents.length,
+      publicEndpointCount: Number(manifest.stats?.public_endpoint_count) || endpoints.length,
+      agentContextURLCount: Number(manifest.stats?.agent_context_url_count) || Object.keys(contextURLs).length,
+      realtimeStreamCount: Number(manifest.stats?.realtime_stream_count) || (realtime.websocketPath ? 1 : 0),
+    },
+    documents,
+    endpoints,
+    contextURLs,
+    realtime,
+    documentByVersion: Object.fromEntries(documents.map((document) => [document.protocolVersion, document])),
+    endpointByID: Object.fromEntries(endpoints.map((endpoint) => [endpoint.id, endpoint])),
+  };
+}
+
+export function protocolManifestDocuments(manifest = {}) {
+  const docs = Array.isArray(manifest.documents) ? manifest.documents : [];
+  const schemas = Array.isArray(manifest.schemas) ? manifest.schemas : [];
+  const source = docs.length ? docs : schemas;
+  return source
+    .filter((item) => item && typeof item === 'object')
+    .map((item, index) => ({
+      protocolVersion: item.protocol_version || item.version || '',
+      kind: item.kind || '',
+      title: item.title || titleFromProtocolKind(item.kind || item.version || `document_${index + 1}`),
+      schemaURL: item.schema_url || '',
+      publicEndpoint: item.public_endpoint || '',
+      description: item.description || '',
+      raw: item,
+    }));
+}
+
+export function protocolManifestEndpoints(manifest = {}) {
+  return (Array.isArray(manifest.endpoints) ? manifest.endpoints : [])
+    .filter((item) => item && typeof item === 'object')
+    .map((item) => ({
+      id: item.id || endpointID(item),
+      method: item.method || 'GET',
+      path: item.path || '/',
+      protocolVersion: item.protocol_version || item.protocol || '',
+      protocol: item.protocol || item.protocol_version || '',
+      auth: item.auth || '',
+      access: item.access || accessFromEndpointAuth(item.auth),
+      category: item.category || categoryFromEndpoint(item),
+      description: item.description || '',
+      raw: item,
+    }));
+}
+
+export function protocolManifestContextURLs(manifest = {}) {
+  const urls = manifest.agent_context?.context_urls;
+  return urls && typeof urls === 'object' ? { ...urls } : {};
+}
+
+export function protocolManifestRealtime(manifest = {}) {
+  const realtime = manifest.realtime && typeof manifest.realtime === 'object' ? manifest.realtime : {};
+  return {
+    protocolVersion: realtime.protocol_version || 'mergeos.event.v1',
+    websocketPath: realtime.websocket_path || '/api/ws',
+    readyEvent: realtime.ready_event || 'realtime_ready',
+    snapshotEvent: realtime.snapshot_event || 'realtime_snapshot',
+    heartbeatEvent: realtime.heartbeat_event || 'realtime_heartbeat',
+    topics: Array.isArray(realtime.topics) ? realtime.topics.filter(Boolean) : [],
+    raw: realtime,
+  };
+}
+
+export function protocolManifestDocument(manifest = {}, selector = '') {
+  const normalized = normalizeSelector(selector);
+  return protocolManifestDocuments(manifest).find((document) => (
+    normalizeSelector(document.protocolVersion) === normalized
+    || normalizeSelector(document.kind) === normalized
+    || normalizeSelector(document.title) === normalized
+  )) || null;
+}
+
+export function protocolManifestEndpoint(manifest = {}, selector = '') {
+  const normalized = normalizeSelector(selector);
+  return protocolManifestEndpoints(manifest).find((endpoint) => (
+    normalizeSelector(endpoint.id) === normalized
+    || normalizeSelector(endpoint.protocolVersion) === normalized
+    || normalizeSelector(endpoint.protocol) === normalized
+    || normalizeSelector(endpoint.path) === normalized
+    || normalizeSelector(endpoint.category) === normalized
+  )) || null;
+}
+
+export function protocolManifestContextURL(manifest = {}, key = '', params = {}) {
+  const normalized = normalizeSelector(key);
+  const urls = protocolManifestContextURLs(manifest);
+  const entry = Object.entries(urls).find(([candidate]) => normalizeSelector(candidate) === normalized);
+  if (!entry) return '';
+  return fillPathTemplate(entry[1], params);
 }
 
 export function contractReferenceFromLedger(entry, options = {}) {
@@ -1349,6 +1458,59 @@ function firstPayloadValue(source = {}, keys = [], fallback = '') {
     }
   }
   return fallback;
+}
+
+function normalizeSelector(value = '') {
+  return String(value || '').trim().toLowerCase().replace(/[\s_]+/g, '-');
+}
+
+function titleFromProtocolKind(value = '') {
+  const raw = String(value || '').replace(/^mergeos\./, '').replace(/\.v\d+$/, '');
+  return raw
+    .split(/[-_.\s]+/)
+    .filter(Boolean)
+    .map((part) => `${part.slice(0, 1).toUpperCase()}${part.slice(1)}`)
+    .join(' ') || 'Protocol Document';
+}
+
+function endpointID(endpoint = {}) {
+  return `${String(endpoint.method || 'GET').toLowerCase()}:${String(endpoint.path || '/')
+    .replace(/^\/+|\/+$/g, '')
+    .replace(/[{}]/g, '')
+    .replace(/[/?=&]+/g, '-')}`;
+}
+
+function accessFromEndpointAuth(auth = '') {
+  const value = String(auth || '').trim();
+  if (!value || value === 'none') return 'public';
+  if (value === 'project') return 'project';
+  return 'authenticated';
+}
+
+function categoryFromEndpoint(endpoint = {}) {
+  const haystack = `${endpoint.path || ''} ${endpoint.protocol || endpoint.protocol_version || ''} ${endpoint.description || ''}`.toLowerCase();
+  if (haystack.includes('agent')) return 'agents';
+  if (haystack.includes('marketplace') || haystack.includes('task')) return 'tasks';
+  if (haystack.includes('workflow') || haystack.includes('routing')) return 'workflow';
+  if (haystack.includes('repo')) return 'repository';
+  if (haystack.includes('deployment') || haystack.includes('pull-request')) return 'deployment';
+  if (haystack.includes('ledger') || haystack.includes('escrow') || haystack.includes('payout') || haystack.includes('token')) return 'ledger';
+  if (haystack.includes('live-feed') || haystack.includes('events') || String(endpoint.method || '').toUpperCase() === 'WS') return 'realtime';
+  if (haystack.includes('admin') || haystack.includes('dispute')) return 'admin';
+  return 'discovery';
+}
+
+function fillPathTemplate(path = '', params = {}) {
+  return String(path || '').replace(/\{([^}]+)\}/g, (match, key) => {
+    const camelKey = toCamelCase(key);
+    const acronymKey = camelKey.replace(/Id$/, 'ID');
+    const value = params[key] ?? params[camelKey] ?? params[acronymKey] ?? params[normalizeSelector(key)];
+    return value === undefined || value === null || String(value) === '' ? match : encodeURIComponent(String(value));
+  });
+}
+
+function toCamelCase(value = '') {
+  return String(value || '').replace(/[_-]([a-z0-9])/gi, (_, part) => part.toUpperCase());
 }
 
 function integerPayloadValue(value, fallback) {

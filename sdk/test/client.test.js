@@ -38,6 +38,11 @@ import {
   protocolEventFromMessage,
   protocolEventsFromMessage,
   protocolEventGroup,
+  protocolManifestContextURL,
+  protocolManifestDiscovery,
+  protocolManifestDocument,
+  protocolManifestEndpoint,
+  protocolManifestRealtime,
   protocolTypeFromMessage,
   repoPlanningOutputContracts,
   repoPlanningPacket,
@@ -182,6 +187,95 @@ test('creates public feed and ledger verification requests without auth', async 
   assert.equal(fetchImpl.calls[19].options.headers.Authorization, undefined);
   assert.equal(fetchImpl.calls[20].url, 'https://mergeos.shop/api/public/ledger/verify');
   assert.equal(fetchImpl.calls[20].options.headers.Authorization, undefined);
+});
+
+test('discovers protocol manifest documents, endpoints, realtime, and agent context URLs', async () => {
+  const manifest = {
+    protocol_version: 'mergeos.protocol.manifest.v1',
+    status: 'active',
+    generated_at: '2026-06-07T01:42:00Z',
+    stats: {
+      schema_count: 2,
+      public_endpoint_count: 3,
+      agent_context_url_count: 3,
+      realtime_stream_count: 1,
+    },
+    documents: [
+      {
+        protocol_version: 'mergeos.agent-queue.v1',
+        kind: 'agent_queue',
+        title: 'Agent Queue',
+        schema_url: 'https://mergeos.shop/protocol/agent-queue.v1.schema.json',
+        public_endpoint: '/api/public/protocol/agent-queue',
+        description: 'Agent work packets',
+      },
+      {
+        protocol_version: 'mergeos.workflow.v1',
+        kind: 'workflow',
+        schema_url: 'https://mergeos.shop/protocol/workflow.v1.schema.json',
+        public_endpoint: '/api/public/projects/{project_id}/workflow',
+      },
+    ],
+    endpoints: [
+      {
+        id: 'get:api-public-protocol-agent-queue',
+        method: 'GET',
+        path: '/api/public/protocol/agent-queue',
+        protocol: 'mergeos.agent-queue.v1',
+        protocol_version: 'mergeos.agent-queue.v1',
+        auth: 'none',
+        access: 'public',
+        category: 'agents',
+      },
+      {
+        method: 'GET',
+        path: '/api/public/projects/{project_id}/workflow',
+        protocol: 'mergeos.workflow.v1',
+        auth: 'none',
+      },
+      {
+        method: 'WS',
+        path: '/api/ws',
+        protocol: 'mergeos.event.v1',
+        auth: 'none',
+      },
+    ],
+    realtime: {
+      protocol_version: 'mergeos.event.v1',
+      websocket_path: '/api/ws',
+      ready_event: 'realtime_ready',
+      snapshot_event: 'realtime_snapshot',
+      heartbeat_event: 'realtime_heartbeat',
+      topics: ['marketplace', 'agent-actions', 'ledger'],
+    },
+    agent_context: {
+      context_urls: {
+        agent_queue: '/api/public/protocol/agent-queue',
+        project_workflow: '/api/public/projects/{project_id}/workflow',
+        task_protocol: '/api/public/protocol/tasks?task_id={bounty_id}',
+      },
+      runbook: ['Fetch manifest', 'Claim work'],
+    },
+  };
+  const fetchImpl = fakeFetch([{ status: 200, body: manifest }]);
+  const client = createMergeOSClient({ baseURL: 'https://mergeos.shop', fetchImpl });
+
+  const discovery = await client.publicProtocolDiscovery();
+
+  assert.equal(fetchImpl.calls[0].url, 'https://mergeos.shop/api/public/protocol');
+  assert.equal(discovery.protocolVersion, 'mergeos.protocol.manifest.v1');
+  assert.equal(discovery.stats.schemaCount, 2);
+  assert.equal(discovery.stats.publicEndpointCount, 3);
+  assert.equal(discovery.stats.agentContextURLCount, 3);
+  assert.equal(discovery.stats.realtimeStreamCount, 1);
+  assert.equal(discovery.documentByVersion['mergeos.agent-queue.v1'].publicEndpoint, '/api/public/protocol/agent-queue');
+  assert.equal(protocolManifestDiscovery(manifest).contextURLs.agent_queue, '/api/public/protocol/agent-queue');
+  assert.equal(protocolManifestDocument(manifest, 'agent_queue').schemaURL, 'https://mergeos.shop/protocol/agent-queue.v1.schema.json');
+  assert.equal(protocolManifestEndpoint(manifest, 'mergeos.workflow.v1').path, '/api/public/projects/{project_id}/workflow');
+  assert.equal(protocolManifestContextURL(manifest, 'project_workflow', { projectID: 'prj_1' }), '/api/public/projects/prj_1/workflow');
+  assert.equal(protocolManifestContextURL(manifest, 'task_protocol', { bounty_id: 'prj_1:12' }), '/api/public/protocol/tasks?task_id=prj_1%3A12');
+  assert.equal(protocolManifestRealtime(manifest).websocketPath, '/api/ws');
+  assert.deepEqual(protocolManifestRealtime(manifest).topics, ['marketplace', 'agent-actions', 'ledger']);
 });
 
 test('derives Solana ledger references and legacy wallet hashes for operators', () => {

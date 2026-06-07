@@ -188,6 +188,37 @@ await mergeos.publicTestSettingsEntries('shared-password');
 await mergeos.publicRevealTestSettingsEntry('tse_0001', 'shared-password');
 ```
 
+## Protocol Discovery Helpers
+
+```js
+import {
+  protocolManifestContextURL,
+  protocolManifestDocument,
+  protocolManifestEndpoint,
+  protocolManifestRealtime,
+} from '@mergeos/sdk';
+
+const discovery = await mergeos.publicProtocolDiscovery();
+
+console.log(discovery.stats.schemaCount, discovery.stats.publicEndpointCount);
+console.log(discovery.realtime.websocketPath, discovery.realtime.topics);
+console.log(discovery.documentByVersion['mergeos.agent-queue.v1'].publicEndpoint);
+
+const workflowURL = protocolManifestContextURL(discovery.manifest, 'project_workflow', {
+  projectID: 'prj_public_0001',
+});
+const taskURL = protocolManifestContextURL(discovery.manifest, 'task_protocol', {
+  bounty_id: 'prj_public_0001:12',
+});
+const workflowEndpoint = protocolManifestEndpoint(discovery.manifest, 'mergeos.workflow.v1');
+const agentQueueDoc = protocolManifestDocument(discovery.manifest, 'agent_queue');
+const realtime = protocolManifestRealtime(discovery.manifest);
+
+console.log(workflowURL, taskURL, workflowEndpoint.path, agentQueueDoc.schemaURL, realtime.readyEvent);
+```
+
+`publicProtocolDiscovery()` normalizes the enriched `/api/public/protocol` manifest into documents, endpoints, realtime stream metadata, and agent context URLs. External agents, IDE extensions, and integration clients should start here before fetching task manifests, workflow graphs, repository scans, deployment status, or ledger proof.
+
 ## Task and workflow APIs
 
 ```js
