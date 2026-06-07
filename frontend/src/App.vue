@@ -5158,8 +5158,9 @@
                 <p v-if="tokenLaunchBriefFieldError('project_title')" class="wizard-field-error">{{ tokenLaunchBriefFieldError('project_title') }}</p>
               </label>
               <label class="wizard-field" :class="{ invalid: tokenLaunchBriefFieldError('repository_url') }">
-                <span>Repository URL</span>
-                <input v-model.trim="tokenLaunchBriefForm.repository_url" :disabled="tokenLaunchBriefBusy" autocomplete="off" placeholder="https://github.com/org/repo" />
+                <span>Research URL</span>
+                <input v-model.trim="tokenLaunchBriefForm.repository_url" :disabled="tokenLaunchBriefBusy" autocomplete="off" :placeholder="tokenCeoLaunchBriefCopy.urlPlaceholder" />
+                <small class="wizard-field-hint">{{ tokenCeoLaunchBriefCopy.urlHint }}</small>
                 <p v-if="tokenLaunchBriefFieldError('repository_url')" class="wizard-field-error">{{ tokenLaunchBriefFieldError('repository_url') }}</p>
               </label>
               <label class="wizard-field full" :class="{ invalid: tokenLaunchBriefFieldError('project_summary') }">
@@ -12725,6 +12726,8 @@ const tokenCeoLaunchBriefCopy = computed(() => {
       summaryPlaceholder: 'Why should this project open earned MRG airdrop missions? Include repo, community, mission demand, and useful contribution evidence.',
       proofPlaceholder: 'Require PR URL, task reference, QA evidence, deployment proof, or agent action.',
       allocationPlaceholder: 'Cap claims by mission score, proof quality, and wallet uniqueness.',
+      urlPlaceholder: 'https://github.com/org/repo or public proof page',
+      urlHint: 'Use a repo, task board, docs, website, or public proof URL for CEO research.',
       walletPlaceholder: 'Require Solana wallet uniqueness, duplicate review, and anti-bot checks.',
       riskPlaceholder: 'Flag bot farming, empty signups, weak proof, and duplicate wallets.',
     };
@@ -12738,6 +12741,8 @@ const tokenCeoLaunchBriefCopy = computed(() => {
     summaryPlaceholder: 'Why is this project ready for an MRG presale window? Include utility, reserve cap, wallet path, funding rail, and contract proof.',
     proofPlaceholder: 'Require wallet, funding reference, contract reference, receipt, and ledger proof.',
     allocationPlaceholder: 'Cap reserve by tier, funding rail, review state, and compliance risk.',
+    urlPlaceholder: 'https://project.site/whitepaper or Solana contract proof',
+    urlHint: 'Use a whitepaper, website, contract proof, deck, or public due-diligence URL.',
     walletPlaceholder: 'Require Solana wallet ownership, funding reference, and receipt reconciliation.',
     riskPlaceholder: 'Flag reserve caps, reversal risk, contract mismatch, and compliance language.',
   };
@@ -12840,7 +12845,7 @@ const tokenLaunchBriefValidationMap = computed(() => {
   if (!user.value) errors.session = 'Log in before sending a CEO launch brief.';
   if (title.length < 6) errors.project_title = 'Project title must be at least 6 characters.';
   if (summary.length < 24) errors.project_summary = 'CEO research brief must be at least 24 characters.';
-  if (repoURL && !tokenWorkflowURLIsValid(repoURL)) errors.repository_url = 'Repository URL must start with http:// or https://.';
+  if (repoURL && !tokenWorkflowURLIsValid(repoURL)) errors.repository_url = 'Research URL must start with http:// or https://.';
   if (proofPolicy.length < 12) errors.proof_policy = 'Proof policy must explain the required evidence.';
   if (walletPolicy.length < 12) errors.wallet_policy = 'Wallet policy must explain wallet ownership or uniqueness checks.';
   if (riskNotes.length < 12) errors.risk_notes = 'CEO risk notes must explain the launch risk review.';

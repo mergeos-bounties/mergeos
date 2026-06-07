@@ -1226,6 +1226,11 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /CEO template/);
   assert.match(appSource, /Wallet policy <b>\*<\/b>/);
   assert.match(appSource, /CEO risk notes <b>\*<\/b>/);
+  assert.match(appSource, /Research URL/);
+  assert.match(appSource, /urlPlaceholder: 'https:\/\/github\.com\/org\/repo or public proof page'/);
+  assert.match(appSource, /urlPlaceholder: 'https:\/\/project\.site\/whitepaper or Solana contract proof'/);
+  assert.match(appSource, /Use a repo, task board, docs, website, or public proof URL for CEO research\./);
+  assert.match(appSource, /Research URL must start with http:\/\/ or https:\/\/\./);
   assert.match(appSource, /tokenLaunchBriefFieldError\('wallet_policy'\)/);
   assert.match(appSource, /tokenLaunchBriefFieldError\('risk_notes'\)/);
   assert.match(appSource, /walletPlaceholder: 'Require Solana wallet uniqueness, duplicate review, and anti-bot checks\.'/);
