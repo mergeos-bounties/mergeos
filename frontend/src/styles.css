@@ -39029,6 +39029,67 @@ canvas {
   }
 }
 
+/* Token workflow mobile forms: compact enough to complete without feeling like a long questionnaire. */
+@media (max-width: 620px) {
+  .token-workflow-panel {
+    gap: 10px !important;
+    padding: 12px !important;
+  }
+
+  .token-workflow-head h2 {
+    font-size: 22px !important;
+    line-height: 1.08 !important;
+  }
+
+  .token-workflow-head p {
+    display: -webkit-box !important;
+    margin-top: 7px !important;
+    overflow: hidden !important;
+    font-size: 12px !important;
+    line-height: 1.36 !important;
+    -webkit-box-orient: vertical !important;
+    -webkit-line-clamp: 3 !important;
+  }
+
+  .token-workflow-card {
+    gap: 9px !important;
+    padding: 10px !important;
+  }
+
+  .token-form-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 8px !important;
+  }
+
+  .token-form-grid .wizard-field {
+    gap: 5px !important;
+  }
+
+  .token-form-grid input,
+  .token-form-grid textarea,
+  .token-form-grid select {
+    min-height: 40px !important;
+    padding: 10px 12px !important;
+    font-size: 13px !important;
+  }
+
+  .token-form-grid textarea {
+    min-height: 78px !important;
+  }
+
+  .token-workflow-actions {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 8px !important;
+  }
+
+  .token-workflow-actions .primary-button,
+  .token-workflow-actions .secondary-button {
+    min-height: 40px !important;
+    width: 100% !important;
+  }
+}
+
 /* Token CEO mobile cockpit: lead with candidate decision and brief, keep secondary research off the first pass. */
 @media (max-width: 620px) {
   .token-ceo-research-panel {

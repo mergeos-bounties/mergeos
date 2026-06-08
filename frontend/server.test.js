@@ -1496,6 +1496,9 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-candidate-policy\s*\{[\s\S]*background: rgba\(255, 255, 255, 0\.82\) !important;/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-brief-form\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) !important;/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-signal-chips\s*\{[\s\S]*display: none !important;/);
+  assert.match(cssSource, /Token workflow mobile forms: compact enough to complete/);
+  assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-form-grid\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) !important;/);
+  assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-form-grid input,[\s\S]*\.token-form-grid textarea,[\s\S]*\.token-form-grid select\s*\{[\s\S]*min-height: 40px !important;/);
   assert.match(cssSource, /\.token-proof-result small\s*\{[\s\S]*overflow: visible;[\s\S]*white-space: normal;[\s\S]*overflow-wrap: anywhere;/);
   assert.match(cssSource, /\.token-whitepaper-thesis p\s*\{[\s\S]*-webkit-line-clamp: 2;/);
 });
