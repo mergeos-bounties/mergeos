@@ -1842,6 +1842,10 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(cssSource, /\.token-whitepaper-thesis p\s*\{[\s\S]*-webkit-line-clamp: 2;/);
   assert.match(cssSource, /Whitepaper mobile skim: keep the route decisive before the full reader begins/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-whitepaper-thesis article:nth-child\(n \+ 3\),[\s\S]*\.token-whitepaper-index article:nth-child\(n \+ 3\)\s*\{[\s\S]*display: none !important;/);
+  assert.match(cssSource, /Whitepaper mobile paper cut: no duplicate cover, just summary, proof, and chapters/);
+  assert.match(cssSource, /@media \(max-width: 760px\)[\s\S]*\.token-page-whitepaper \.token-whitepaper-copy > \.marketplace-eyebrow,[\s\S]*\.token-page-whitepaper \.token-whitepaper-copy h2\s*\{[\s\S]*display: none !important;/);
+  assert.match(cssSource, /@media \(max-width: 760px\)[\s\S]*\.token-page-whitepaper \.token-hero \.marketplace-actions\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\) !important;/);
+  assert.match(cssSource, /@media \(max-width: 760px\)[\s\S]*\.token-page-whitepaper \.token-whitepaper-section-list article:nth-child\(n \+ 4\)\s*\{[\s\S]*display: none !important;/);
   assert.match(cssSource, /Token workflow mobile skim: show the decision path, then get users to the form faster/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-timeline-list li:nth-child\(n \+ 4\)\s*\{[\s\S]*display: none !important;/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-timeline-list li\s*\{[\s\S]*grid-template-columns: 28px minmax\(0, 1fr\) !important;/);

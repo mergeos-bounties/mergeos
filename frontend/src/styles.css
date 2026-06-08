@@ -44610,3 +44610,186 @@ canvas {
     display: none !important;
   }
 }
+
+/* Whitepaper mobile paper cut: no duplicate cover, just summary, proof, and chapters. */
+@media (max-width: 760px) {
+  .token-page-whitepaper .token-shell {
+    gap: 10px !important;
+  }
+
+  .token-page-whitepaper .token-hero {
+    padding-block: 10px 6px !important;
+  }
+
+  .token-page-whitepaper .token-hero-copy h1 {
+    font-size: clamp(30px, 8.2vw, 40px) !important;
+    line-height: 1 !important;
+  }
+
+  .token-page-whitepaper .token-hero-copy p {
+    -webkit-line-clamp: 3 !important;
+    font-size: 12.5px !important;
+    line-height: 1.4 !important;
+  }
+
+  .token-page-whitepaper .token-hero .marketplace-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 7px !important;
+    margin-top: 10px !important;
+  }
+
+  .token-page-whitepaper .token-hero .marketplace-actions .large {
+    min-height: 38px !important;
+    padding-inline: 8px !important;
+    font-size: 11.5px !important;
+  }
+
+  .token-page-whitepaper .token-status-panel {
+    gap: 8px !important;
+    padding: 9px !important;
+  }
+
+  .token-page-whitepaper .token-status-panel > p {
+    display: none !important;
+  }
+
+  .token-page-whitepaper .token-status-panel h2 {
+    font-size: 12px !important;
+    line-height: 1.15 !important;
+  }
+
+  .token-page-whitepaper .token-metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 7px !important;
+  }
+
+  .token-page-whitepaper .token-metric-grid article {
+    min-height: 48px !important;
+    padding: 8px !important;
+  }
+
+  .token-page-whitepaper .token-whitepaper-reader {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 9px !important;
+    padding: 11px !important;
+  }
+
+  .token-page-whitepaper .token-whitepaper-copy {
+    gap: 8px !important;
+  }
+
+  .token-page-whitepaper .token-whitepaper-copy > .marketplace-eyebrow,
+  .token-page-whitepaper .token-whitepaper-copy h2 {
+    display: none !important;
+  }
+
+  .token-page-whitepaper .token-whitepaper-cover-meta {
+    gap: 5px !important;
+  }
+
+  .token-page-whitepaper .token-whitepaper-cover-meta span {
+    min-height: 22px !important;
+    padding-inline: 7px !important;
+    font-size: 8px !important;
+  }
+
+  .token-page-whitepaper .token-whitepaper-copy > p {
+    display: -webkit-box !important;
+    overflow: hidden !important;
+    -webkit-box-orient: vertical !important;
+    -webkit-line-clamp: 3 !important;
+    max-width: 100% !important;
+    font-size: 12px !important;
+    line-height: 1.4 !important;
+  }
+
+  .token-page-whitepaper .token-whitepaper-thesis {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 7px !important;
+  }
+
+  .token-page-whitepaper .token-whitepaper-thesis article {
+    min-height: 72px !important;
+    padding: 9px !important;
+  }
+
+  .token-page-whitepaper .token-whitepaper-thesis article:nth-child(n + 3) {
+    display: none !important;
+  }
+
+  .token-page-whitepaper .token-whitepaper-thesis strong {
+    font-size: 12px !important;
+    line-height: 1.15 !important;
+  }
+
+  .token-page-whitepaper .token-whitepaper-thesis p {
+    -webkit-line-clamp: 2 !important;
+    font-size: 10.5px !important;
+  }
+
+  .token-page-whitepaper .token-whitepaper-actions {
+    display: none !important;
+  }
+
+  .token-page-whitepaper .token-whitepaper-proof-links {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 7px !important;
+  }
+
+  .token-page-whitepaper .token-whitepaper-proof-links article {
+    min-height: 56px !important;
+    grid-template-columns: 28px minmax(0, 1fr) auto !important;
+    padding: 8px !important;
+  }
+
+  .token-page-whitepaper .token-whitepaper-proof-links article:nth-child(n + 3) {
+    display: none !important;
+  }
+
+  .token-page-whitepaper .token-whitepaper-proof-links small {
+    display: none !important;
+  }
+
+  .token-page-whitepaper .token-whitepaper-brief {
+    padding: 11px !important;
+  }
+
+  .token-page-whitepaper .token-whitepaper-brief .contracts-section-head {
+    gap: 8px !important;
+  }
+
+  .token-page-whitepaper .token-whitepaper-brief .contracts-section-head h2 {
+    font-size: clamp(21px, 6vw, 28px) !important;
+    line-height: 1.05 !important;
+  }
+
+  .token-page-whitepaper .token-whitepaper-brief .contracts-section-head p {
+    -webkit-line-clamp: 2 !important;
+    font-size: 12px !important;
+  }
+
+  .token-page-whitepaper .token-whitepaper-chapter-drawer .token-whitepaper-section-list {
+    display: grid !important;
+    gap: 7px !important;
+    margin: 0 8px 8px !important;
+  }
+
+  .token-page-whitepaper .token-whitepaper-section-list article {
+    min-height: auto !important;
+    padding: 9px !important;
+  }
+
+  .token-page-whitepaper .token-whitepaper-section-list article:nth-child(n + 4) {
+    display: none !important;
+  }
+
+  .token-page-whitepaper .token-whitepaper-section-list h3 {
+    font-size: 12.5px !important;
+    line-height: 1.15 !important;
+  }
+
+  .token-page-whitepaper .token-whitepaper-section-list p,
+  .token-page-whitepaper .token-whitepaper-section-list ul {
+    display: none !important;
+  }
+}
