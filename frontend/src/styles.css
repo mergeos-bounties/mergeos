@@ -8887,6 +8887,7 @@ svg {
 
 .token-ceo-candidate-policy b,
 .token-ceo-candidate-policy span,
+.token-ceo-candidate-policy em,
 .token-ceo-candidate-policy small {
   min-width: 0;
   overflow-wrap: anywhere;
@@ -8901,6 +8902,7 @@ svg {
 }
 
 .token-ceo-candidate-policy span,
+.token-ceo-candidate-policy em,
 .token-ceo-candidate-policy small {
   display: -webkit-box;
   overflow: hidden;
@@ -8910,6 +8912,12 @@ svg {
   font-weight: 760;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
+}
+
+.token-ceo-candidate-policy em {
+  color: #0f766e;
+  font-style: normal;
+  font-weight: 900;
 }
 
 .token-ceo-candidate-policy small {
@@ -39647,6 +39655,7 @@ canvas {
   }
 
   .token-ceo-candidate-policy span,
+  .token-ceo-candidate-policy em,
   .token-ceo-candidate-policy small {
     -webkit-line-clamp: 1 !important;
   }

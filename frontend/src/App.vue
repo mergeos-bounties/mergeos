@@ -5166,6 +5166,7 @@
                 <div v-if="row.decisionPreview" class="token-ceo-candidate-policy">
                   <b>{{ row.decisionPreview.label }}</b>
                   <span>{{ row.decisionPreview.proofPolicy }}</span>
+                  <em v-if="row.decisionPreview.nextAction">{{ row.decisionPreview.nextAction }}</em>
                   <small>{{ row.decisionPreview.riskNotes }}</small>
                 </div>
               </div>
@@ -12968,13 +12969,14 @@ function tokenLaunchCandidateDecisionRowsFromAPI(rows = [], launchType = 'airdro
     .filter((row) => row.key && row.label);
   return normalized.length ? normalized : fallbackRows;
 }
-function tokenLaunchCandidateDecisionPreview(rows = []) {
+function tokenLaunchCandidateDecisionPreview(rows = [], nextAction = '') {
   const list = Array.isArray(rows) ? rows : [];
   const preferred = list.find((row) => row?.key === 'approve') || list[0] || {};
   if (!preferred.proofPolicy && !preferred.riskNotes) return null;
   return {
     label: preferred.label || 'CEO decision preview',
     proofPolicy: preferred.proofPolicy || 'Review proof policy before opening the token workflow.',
+    nextAction: String(nextAction || '').trim(),
     riskNotes: preferred.riskNotes || 'Risk note pending CEO review.',
   };
 }
@@ -13000,7 +13002,7 @@ const tokenCeoCandidateRows = computed(() => {
         label: launchType === 'presale' ? 'CEO presale candidate' : 'CEO airdrop candidate',
         scoreLabel: `${score}% fit`,
         decisionRows,
-        decisionPreview: tokenLaunchCandidateDecisionPreview(decisionRows),
+        decisionPreview: tokenLaunchCandidateDecisionPreview(decisionRows, candidate.next_action),
         title: candidate.project_title || 'Funded MergeOS project',
         body: candidate.gate_summary || `${formatCompactNumber(candidate.work_pool_mrg || 0)} MRG work pool / ${Number(candidate.open_task_count) || 0} open tasks`,
         sourceUrl: /^https?:\/\//i.test(sourceUrl) ? sourceUrl : '',
@@ -13038,7 +13040,12 @@ const tokenCeoCandidateRows = computed(() => {
       label: launchType === 'presale' ? 'CEO presale candidate' : 'CEO airdrop candidate',
       scoreLabel: `${score}% fit`,
       decisionRows,
-      decisionPreview: tokenLaunchCandidateDecisionPreview(decisionRows),
+      decisionPreview: tokenLaunchCandidateDecisionPreview(
+        decisionRows,
+        launchType === 'presale'
+          ? 'Open presale after utility, funding, wallet, contract, and receipt gates are attached.'
+          : 'Open earned missions after repo demand, useful work proof, anti-bot, wallet, and ledger gates are attached.',
+      ),
       title: project.title || 'Funded MergeOS project',
       body: `${budget} work pool / ${openTasks} open tasks / ${acceptedTasks} accepted`,
       sourceUrl,

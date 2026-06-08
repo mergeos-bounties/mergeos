@@ -510,6 +510,7 @@ test('public protocol links match backend routes', async () => {
   assert.equal(tokenLaunchCandidatesSchema.properties.protocol_version.const, 'mergeos.token-launch-candidates.v1');
   assert.equal(tokenLaunchCandidatesSchema.required.includes('candidates'), true);
   assert.equal(tokenLaunchCandidatesSchema.properties.candidates.items.required.includes('proof_policy'), true);
+  assert.equal(tokenLaunchCandidatesSchema.properties.candidates.items.required.includes('next_action'), true);
   assert.equal(tokenLaunchCandidatesSchema.properties.candidates.items.required.includes('research_score'), true);
   assert.equal(tokenLaunchCandidatesSchema.properties.candidates.items.required.includes('decision_options'), true);
   assert.equal(tokenLaunchCandidatesSchema.properties.candidates.items.properties.decision_options.items.properties.key.enum.includes('needs_evidence'), true);
@@ -1211,6 +1212,7 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   const cssSource = await fs.readFile(new URL('./src/styles.css', import.meta.url), 'utf-8');
   const seoSource = await fs.readFile(new URL('./src/seo.js', import.meta.url), 'utf-8');
   const whitepaperSource = await fs.readFile(new URL('./public/whitepaper/mergeos-whitepaper.md', import.meta.url), 'utf-8');
+  const tokenLaunchCandidatesSchema = JSON.parse(await fs.readFile(new URL('./public/protocol/token-launch-candidates.v1.schema.json', import.meta.url), 'utf-8'));
 
   for (const page of ['airdrop', 'presale', 'whitepaper']) {
     assert.match(appSource, new RegExp(`${page}: '/${page}'`));
@@ -1255,6 +1257,9 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /class="token-ceo-live-empty"/);
   assert.match(appSource, /class="token-ceo-candidate-lane"/);
   assert.match(appSource, /class="token-ceo-candidate-policy"/);
+  assert.match(appSource, /row\.decisionPreview\.nextAction/);
+  assert.match(appSource, /nextAction: String\(nextAction \|\| ''\)\.trim\(\)/);
+  assert.match(appSource, /candidate\.next_action/);
   assert.match(appSource, /class="token-ceo-project-queue"/);
   assert.match(appSource, /class="token-ceo-source-packet"/);
   assert.match(appSource, /class="token-ceo-signal-chips"/);
@@ -1310,10 +1315,10 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /contradictsLaunch/);
   assert.match(appSource, /proofPolicy: contradictsLaunch \? fallback\.proofPolicy/);
   assert.match(appSource, /label: fallback\.label \|\| row\.label/);
-  assert.match(appSource, /function tokenLaunchCandidateDecisionPreview\(rows = \[\]\)/);
+  assert.match(appSource, /function tokenLaunchCandidateDecisionPreview\(rows = \[\], nextAction = ''\)/);
   assert.match(appSource, /Number\(candidate\.research_score\) \|\| tokenLaunchCandidateScore/);
   assert.match(appSource, /tokenLaunchCandidateDecisionRowsFromAPI\(candidate\.decision_options, launchType, score\)/);
-  assert.match(appSource, /decisionPreview: tokenLaunchCandidateDecisionPreview\(decisionRows\)/);
+  assert.match(appSource, /decisionPreview: tokenLaunchCandidateDecisionPreview\(decisionRows, candidate\.next_action\)/);
   assert.match(appSource, /function applyTokenLaunchCandidateDecision\(candidate = \{\}, decision = \{\}\)/);
   assert.match(appSource, /row\.scoreLabel/);
   assert.match(appSource, /scoreLabel: `\$\{score\}% fit`/);
@@ -1458,6 +1463,8 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /function mapTokenWorkflowProofRow\(entry = \{\}\)/);
   assert.match(appSource, /const isLaunchBrief = entry\.type === 'token_launch_brief';/);
   assert.match(appSource, /let idPattern = \/presale:\(\[\^;\]\+\)\//);
+  assert.ok(tokenLaunchCandidatesSchema.properties.candidates.items.required.includes('next_action'));
+  assert.equal(tokenLaunchCandidatesSchema.properties.candidates.items.properties.next_action.maxLength, 260);
   assert.match(appSource, /if \(isLaunchBrief\) idPattern = \/launch_brief:\(\[\^;\]\+\)\//);
   assert.match(appSource, /if \(isAirdrop\) idPattern = \/airdrop:\(\[\^;\]\+\)\//);
   assert.match(appSource, /const gateSummaryMatch = reference\.match\(\/gate_summary:\(\[\^;\]\+\)\/\);/);
@@ -1503,6 +1510,7 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(cssSource, /\.token-ceo-candidate-actions a,[\s\S]*\.token-ceo-candidate-actions button\s*\{[\s\S]*text-decoration: none;/);
   assert.match(cssSource, /\.token-ceo-candidate-lane small b\s*\{[\s\S]*border-radius: 999px;/);
   assert.match(cssSource, /\.token-ceo-candidate-policy\s*\{[\s\S]*background: rgba\(240, 253, 250, 0\.72\);/);
+  assert.match(cssSource, /\.token-ceo-candidate-policy em\s*\{[\s\S]*font-style: normal;[\s\S]*font-weight: 900;/);
   assert.match(cssSource, /\.token-ceo-candidate-decisions\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /\.token-ceo-candidate-decisions button\.approve\s*\{[\s\S]*background: #ecfdf5;/);
   assert.match(cssSource, /\.token-ceo-project-queue\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);

@@ -193,6 +193,7 @@ type PublicTokenLaunchCandidate struct {
 	ResearchScore          int                                  `json:"research_score"`
 	ProofSignals           []string                             `json:"proof_signals"`
 	DecisionOptions        []TokenLaunchCandidateDecisionOption `json:"decision_options"`
+	NextAction             string                               `json:"next_action"`
 	GateSummary            string                               `json:"gate_summary"`
 	ProofPolicy            string                               `json:"proof_policy"`
 	MarketplaceURL         string                               `json:"marketplace_url"`
@@ -595,6 +596,7 @@ func (s *Store) PublicTokenLaunchCandidates(launchTypeFilter string) PublicToken
 		proofSignals := tokenLaunchCandidateSignals(project, projectBounties)
 		researchScore := tokenLaunchCandidateResearchScore(project, proofSignals)
 		decisionLaunchType := tokenLaunchCandidateDecisionLaunchType(recommendedTypes, launchTypeFilter)
+		nextAction := tokenLaunchCandidateNextAction(decisionLaunchType, researchScore)
 		candidate := PublicTokenLaunchCandidate{
 			CandidateID:            "tlc_" + project.ID,
 			ProjectID:              project.ID,
@@ -608,6 +610,7 @@ func (s *Store) PublicTokenLaunchCandidates(launchTypeFilter string) PublicToken
 			ResearchScore:          researchScore,
 			ProofSignals:           proofSignals,
 			DecisionOptions:        tokenLaunchCandidateDecisionOptions(decisionLaunchType, researchScore),
+			NextAction:             nextAction,
 			GateSummary:            fmt.Sprintf("%d open tasks, %d accepted tasks, %d proof signals", project.OpenTaskCount, project.AcceptedTaskCount, len(proofSignals)),
 			ProofPolicy:            tokenLaunchCandidateProofPolicy(projectBounties),
 			MarketplaceURL:         "/marketplace",
@@ -1188,6 +1191,19 @@ func tokenLaunchCandidateDecisionLaunchType(recommendedTypes []string, launchTyp
 		launchType = "presale"
 	}
 	return launchType
+}
+
+func tokenLaunchCandidateNextAction(launchType string, score int) string {
+	if launchType == "presale" {
+		if score >= 82 {
+			return "Open presale after CEO confirms utility, wallet, funding, contract, and receipt gates."
+		}
+		return "Collect utility, reserve cap, wallet, funding, and Solana contract evidence before presale opens."
+	}
+	if score >= 82 {
+		return "Open earned missions after CEO confirms repo demand, anti-bot checks, wallet uniqueness, and proof gates."
+	}
+	return "Collect repo demand, useful work proof, anti-bot policy, wallet uniqueness, and ledger evidence before missions open."
 }
 
 func tokenLaunchCandidateDecisionOptions(launchType string, score int) []TokenLaunchCandidateDecisionOption {

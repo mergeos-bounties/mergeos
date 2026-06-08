@@ -37,6 +37,7 @@
           "research_score",
           "proof_signals",
           "decision_options",
+          "next_action",
           "gate_summary",
           "proof_policy",
           "marketplace_url",
@@ -76,6 +77,7 @@
               }
             }
           },
+          "next_action": { "type": "string", "minLength": 12, "maxLength": 260 },
           "gate_summary": { "type": "string", "maxLength": 240 },
           "proof_policy": { "type": "string", "maxLength": 500 },
           "marketplace_url": { "type": "string", "maxLength": 200 },
