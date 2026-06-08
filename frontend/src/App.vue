@@ -9322,8 +9322,8 @@ const publicNavTranslations = {
 const publicHomeTranslations = {
   'en-US': {
     eyebrow: 'MERGEOS DELIVERY OS',
-    title: 'Fund software work. Route it. Prove it.',
-    body: 'MergeOS turns a brief or repo into funded tasks with CEO-agent planning, builder or AI routing, escrow, PR/deploy checks, Solana MRG accounting, and public ledger proof.',
+    title: 'Operating system for funded software delivery.',
+    body: 'MergeOS connects MergeIDE, marketplace tasks, CEO agents, escrow, PR/deploy gates, Solana MRG, and public ledger proof from one project brief or repo.',
     primaryAction: 'Start a project',
     marketplaceAction: 'View live work',
     ledgerAction: 'Open proof ledger',
@@ -9349,10 +9349,9 @@ const publicHomeTranslations = {
     },
     statDetails: ['Funded briefs', 'Claimable work', 'Escrow tracked', 'MRG supply'],
     definitionRows: [
-      { title: 'Input', body: 'Brief, repository, issues, files, budget, and deadline.' },
-      { title: 'Orchestration', body: 'CEO agent plans work and delegates to builders or subagents.' },
-      { title: 'Funding', body: 'Escrow and Solana MRG accounting stay attached to each task.' },
-      { title: 'Proof', body: 'PR, deploy, acceptance, payout, and ledger receipts remain public.' },
+      { title: 'Plan', body: 'Briefs, repos, files, issues, budget, and acceptance criteria.' },
+      { title: 'Route', body: 'CEO agents split work for builders, AI agents, QA, and DevOps.' },
+      { title: 'Prove', body: 'Escrow, Solana MRG, PRs, deploys, payouts, and ledger receipts.' },
     ],
     operatingRows: [
       { title: '1. Import context', body: 'Brief, repo, issues, files, budget, and acceptance criteria enter one workspace.' },
@@ -24864,14 +24863,15 @@ function prefillTokenLaunchBrief() {
 
 function scrollTokenLaunchBriefCardIntoView() {
   if (!hasWindow) return;
-  const run = () => {
+  const run = (behavior = 'smooth') => {
     const target = document.querySelector('.token-ceo-brief-card');
     if (!target) return;
     const top = Math.max(0, window.scrollY + target.getBoundingClientRect().top - 76);
-    window.scrollTo({ top, behavior: 'smooth' });
+    window.scrollTo({ top, behavior });
   };
   window.requestAnimationFrame(run);
   window.setTimeout(run, 140);
+  window.setTimeout(() => run('auto'), 360);
 }
 
 function prefillTokenLaunchBriefFromCandidate(candidate = {}) {
