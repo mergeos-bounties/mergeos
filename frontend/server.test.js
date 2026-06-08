@@ -1298,6 +1298,9 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /class="token-ceo-decision-strip"/);
   assert.match(appSource, /class="token-ceo-queue-stats"/);
   assert.match(appSource, /class="token-ceo-live-queue"/);
+  assert.match(appSource, /class="token-ceo-live-context" role="group"/);
+  assert.match(appSource, /function tokenCeoLiveContextRows\(brief = \{\}, launchType = 'airdrop'\)/);
+  assert.match(appSource, /brief\.project_summary \|\| gate/);
   assert.match(appSource, /class="token-ceo-live-empty"/);
   assert.match(appSource, /class="token-ceo-candidate-lane"/);
   assert.match(appSource, /class="token-ceo-candidate-empty"/);
@@ -1590,6 +1593,7 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(cssSource, /\.token-ceo-decision-strip\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /\.token-ceo-queue-stats\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /\.token-ceo-live-queue\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
+  assert.match(cssSource, /\.token-ceo-live-context\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /\.token-ceo-live-actions\s*\{[\s\S]*display: flex;/);
   assert.match(cssSource, /\.token-ceo-live-empty\s*\{[\s\S]*grid-template-columns: 30px minmax\(0, 1fr\) auto;/);
   assert.match(cssSource, /\.token-ceo-candidate-lane\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
@@ -1646,6 +1650,7 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-memo-gates\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\) !important;/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-memo-source\s*\{[\s\S]*width: 100% !important;/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-live-queue article:nth-child\(n \+ 3\),[\s\S]*display: none !important;/);
+  assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-live-context span:nth-child\(n \+ 3\)\s*\{[\s\S]*display: none !important;/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-live-empty\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) !important;/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-candidate-lane article:nth-child\(n \+ 3\),[\s\S]*display: none !important;/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-project-queue article:nth-child\(n \+ 3\),[\s\S]*\.token-ceo-research-grid article:nth-child\(n \+ 3\)\s*\{[\s\S]*display: none !important;/);

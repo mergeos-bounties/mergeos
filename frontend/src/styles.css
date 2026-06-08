@@ -8708,6 +8708,49 @@ svg {
   -webkit-line-clamp: 2;
 }
 
+.token-ceo-live-context {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.token-ceo-live-context span {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+  border: 1px solid rgba(15, 118, 110, 0.11);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.66);
+  padding: 5px 6px;
+}
+
+.token-ceo-live-context b,
+.token-ceo-live-context small {
+  min-width: 0;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  line-height: 1.15;
+}
+
+.token-ceo-live-context b {
+  -webkit-line-clamp: 1;
+  color: #047857;
+  font-size: 7.8px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.token-ceo-live-context small {
+  -webkit-line-clamp: 1;
+  color: #334155;
+  font-size: 8.6px;
+  font-weight: 760;
+  text-transform: none;
+}
+
 .token-ceo-live-actions {
   grid-column: 2;
   display: flex;
@@ -38047,6 +38090,20 @@ canvas {
   .token-ceo-source-packet article:nth-child(n + 4),
   .token-ceo-research-grid article:nth-child(n + 5) {
     display: none !important;
+  }
+
+  .token-ceo-live-context {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 4px !important;
+    margin-top: 5px !important;
+  }
+
+  .token-ceo-live-context span:nth-child(n + 3) {
+    display: none !important;
+  }
+
+  .token-ceo-live-context small {
+    font-size: 9px !important;
   }
 
   .token-ceo-project-queue article:nth-child(n + 3),

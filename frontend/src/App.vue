@@ -5266,6 +5266,12 @@
                 <small>{{ row.label }}</small>
                 <strong>{{ row.title }}</strong>
                 <p>{{ row.summary }}</p>
+                <div v-if="row.contextRows?.length" class="token-ceo-live-context" role="group" aria-label="CEO memo policy context">
+                  <span v-for="item in row.contextRows" :key="item.label">
+                    <b>{{ item.label }}</b>
+                    <small>{{ item.value }}</small>
+                  </span>
+                </div>
               </div>
               <div class="token-ceo-live-actions">
                 <a :href="row.proofUrl" target="_blank" rel="noreferrer">
@@ -12977,17 +12983,39 @@ const tokenCeoLiveQueueRows = computed(() => {
       const decision = toTitleLabel(brief.decision || 'CEO memo');
       const gate = brief.gate_summary || 'CEO gates pending';
       const source = String(brief.research_source || '').trim();
+      const contextRows = tokenCeoLiveContextRows(brief, currentType);
       return {
         key: `${brief.brief_id || brief.ledger_sequence}-${brief.entry_hash || ''}`,
         label: `${decision} / #${brief.ledger_sequence || 'ledger'}`,
         title: brief.project_title || `${toTitleLabel(currentType)} launch memo`,
-        summary: gate,
+        summary: brief.project_summary || gate,
+        contextRows,
         sourceUrl: /^https?:\/\//i.test(source) ? source : '',
         proofUrl: brief.ledger_proof_url || '/api/public/ledger/proof',
         tone: currentType === 'presale' ? 'green' : 'purple',
       };
     });
 });
+function tokenCeoLiveContextRows(brief = {}, launchType = 'airdrop') {
+  const rows = launchType === 'presale'
+    ? [
+        { label: 'Reserve', value: brief.allocation_policy || brief.gate_summary },
+        { label: 'Wallet', value: brief.wallet_policy },
+        { label: 'Risk', value: brief.risk_notes || brief.proof_policy },
+      ]
+    : [
+        { label: 'Claims', value: brief.allocation_policy || brief.gate_summary },
+        { label: 'Proof', value: brief.proof_policy },
+        { label: 'Wallet', value: brief.wallet_policy || brief.risk_notes },
+      ];
+  return rows
+    .map((row) => ({
+      label: row.label,
+      value: String(row.value || '').replace(/\s+/g, ' ').trim(),
+    }))
+    .filter((row) => row.value)
+    .slice(0, 3);
+}
 const tokenCeoLiveEmptyCopy = computed(() => (
   publicPage.value === 'presale'
     ? {
