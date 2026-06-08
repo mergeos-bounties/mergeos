@@ -42563,3 +42563,159 @@ canvas {
     white-space: nowrap !important;
   }
 }
+
+/* Home product-grade compression: keep the homepage descriptive, but make it a tight decision screen. */
+.public-home-page {
+  min-height: calc(100dvh - 74px) !important;
+  display: grid !important;
+  align-items: center !important;
+  padding-block: clamp(10px, 1.6vw, 22px) clamp(14px, 2vw, 26px) !important;
+}
+
+.public-home-page .home-container {
+  width: min(100%, 1040px) !important;
+  max-width: 1040px !important;
+}
+
+.public-home-copy {
+  width: min(100%, 800px) !important;
+  max-width: 800px !important;
+  margin-inline: auto !important;
+}
+
+.public-home-copy h1 {
+  max-width: 760px !important;
+  font-size: clamp(38px, 4.2vw, 60px) !important;
+  line-height: 0.99 !important;
+}
+
+.public-home-copy > p {
+  max-width: 720px !important;
+  margin-top: 12px !important;
+  color: #273a33 !important;
+  font-size: clamp(14px, 1.02vw, 16px) !important;
+  line-height: 1.42 !important;
+}
+
+.home-value-strip,
+.home-explain-strip,
+.home-command-panel {
+  display: none !important;
+}
+
+.home-definition-strip {
+  width: min(100%, 800px) !important;
+  max-width: 800px !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+  margin-top: 14px !important;
+}
+
+.home-definition-strip article {
+  min-height: 86px !important;
+  padding: 10px !important;
+  border-radius: 8px !important;
+  background: rgba(255, 255, 255, 0.94) !important;
+}
+
+.home-definition-strip small {
+  display: -webkit-box !important;
+  font-size: 9.8px !important;
+  line-height: 1.28 !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 3 !important;
+  overflow: hidden !important;
+}
+
+.home-ceo-token-desk {
+  width: min(100%, 800px) !important;
+  max-width: 800px !important;
+  margin-top: 10px !important;
+  padding: 12px 14px !important;
+  border-radius: 8px !important;
+}
+
+.public-home-copy .marketplace-actions {
+  margin-top: 12px !important;
+}
+
+.home-mergeide-inline-link {
+  width: fit-content !important;
+  margin-top: 9px !important;
+}
+
+@media (max-width: 760px) {
+  .public-home-page {
+    display: block !important;
+    min-height: auto !important;
+    padding: 12px 0 18px !important;
+  }
+
+  .public-home-page .home-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding-inline: 14px !important;
+  }
+
+  .public-home-copy,
+  .home-definition-strip,
+  .home-ceo-token-desk,
+  .public-home-copy .marketplace-actions,
+  .home-mergeide-inline-link {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-inline: 0 !important;
+  }
+
+  .public-home-copy h1,
+  .public-home-copy > p {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .public-home-copy h1 {
+    font-size: clamp(30px, 8.7vw, 42px) !important;
+  }
+
+  .public-home-copy > p {
+    font-size: 12.8px !important;
+    line-height: 1.38 !important;
+  }
+
+  .home-definition-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 7px !important;
+    margin-top: 11px !important;
+  }
+
+  .home-definition-strip article {
+    min-height: 96px !important;
+    overflow: hidden !important;
+  }
+
+  .home-ceo-token-desk {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 7px !important;
+  }
+}
+
+@media (max-width: 430px) {
+  .public-home-page .home-container {
+    padding-inline: 12px !important;
+  }
+
+  .home-definition-strip {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .home-definition-strip article {
+    grid-template-columns: 28px minmax(0, 1fr) !important;
+    min-height: auto !important;
+  }
+
+  .home-definition-strip small {
+    display: block !important;
+    -webkit-line-clamp: unset !important;
+    overflow: visible !important;
+  }
+}

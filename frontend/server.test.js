@@ -900,6 +900,9 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.match(cssSource, /\/\* Home CEO-grade cut:[\s\S]*@media \(max-width: 520px\)[\s\S]*\.home-definition-strip article\s*\{[\s\S]*min-height: auto !important;[\s\S]*overflow: visible !important;/);
   assert.match(cssSource, /\/\* Home CEO-grade cut:[\s\S]*@media \(max-width: 520px\)[\s\S]*\.home-definition-strip small\s*\{[\s\S]*-webkit-line-clamp: unset !important;[\s\S]*overflow: visible !important;/);
   assert.match(cssSource, /\/\* Home CEO-grade cut:[\s\S]*@media \(max-width: 520px\)[\s\S]*\.public-home-copy \.marketplace-actions\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) !important;/);
+  assert.match(cssSource, /Home product-grade compression: keep the homepage descriptive, but make it a tight decision screen/);
+  assert.match(cssSource, /\/\* Home product-grade compression:[\s\S]*\.home-value-strip,[\s\S]*\.home-explain-strip,[\s\S]*\.home-command-panel\s*\{[\s\S]*display: none !important;/);
+  assert.match(cssSource, /\/\* Home product-grade compression:[\s\S]*@media \(max-width: 760px\)[\s\S]*\.public-home-page \.home-container\s*\{[\s\S]*width: 100% !important;[\s\S]*padding-inline: 14px !important;/);
 });
 
 test('frontend system exposes required public pages and dashboard roles', async () => {
