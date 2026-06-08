@@ -1558,6 +1558,8 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /Contract and ledger proof/);
   assert.match(appSource, /@submit\.prevent="submitAirdropClaim"/);
   assert.match(appSource, /@submit\.prevent="submitPresaleReservation"/);
+  assert.match(appSource, /id="token-workflow" class="token-workflow-panel token-workflow-drawer"/);
+  assert.match(appSource, /if \('open' in section\) section\.open = true;/);
   assert.match(appSource, /api\('\/api\/airdrop\/claims'/);
   assert.match(appSource, /api\('\/api\/presale\/reservations'/);
   assert.match(appSource, /function submitAirdropClaim\(\)/);
@@ -1622,6 +1624,8 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(cssSource, /\.token-workflow-proof-empty-actions button:first-child\s*\{[\s\S]*background: var\(--green\);/);
   assert.match(cssSource, /\.token-workflow-proof-empty-steps\s*\{[\s\S]*grid-template-columns: 1fr;[\s\S]*gap: 6px;/);
   assert.match(cssSource, /\.token-workflow-proof-empty-actions\s*\{[\s\S]*display: grid;[\s\S]*grid-template-columns: 1fr;/);
+  assert.match(cssSource, /\.token-workflow-drawer\s*\{/);
+  assert.match(cssSource, /\.token-workflow-drawer > summary\s*\{/);
   assert.match(cssSource, /CEO token launch polish: show gates before intake, keep the review surface short/);
   assert.match(cssSource, /\.token-ceo-research-panel\s*\{[\s\S]*border: 1px solid rgba\(79, 70, 229, 0\.15\);/);
   assert.match(cssSource, /\.token-ceo-head-actions\s*\{[\s\S]*justify-items: end;/);

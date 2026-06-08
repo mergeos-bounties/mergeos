@@ -43231,3 +43231,78 @@ canvas {
     display: none;
   }
 }
+
+/* Token workflow drawer: claim/reserve forms stay available without stretching the CEO decision page. */
+.token-workflow-drawer {
+  scroll-margin-top: 86px;
+  padding: 0 !important;
+}
+
+.token-workflow-drawer > summary {
+  min-height: 52px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 18px;
+  align-items: center;
+  gap: 10px;
+  list-style: none;
+  border-bottom: 0;
+  color: #111827;
+  padding: 0 16px;
+  cursor: pointer;
+}
+
+.token-workflow-drawer > summary::-webkit-details-marker {
+  display: none;
+}
+
+.token-workflow-drawer > summary span {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 940;
+}
+
+.token-workflow-drawer > summary b {
+  border: 1px solid rgba(15, 118, 110, 0.12);
+  border-radius: 999px;
+  background: rgba(236, 253, 245, 0.76);
+  color: #0f766e;
+  padding: 5px 8px;
+  font-size: 9px;
+  line-height: 1;
+  font-weight: 930;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.token-workflow-drawer[open] {
+  padding: 14px !important;
+}
+
+.token-workflow-drawer[open] > summary {
+  min-height: 34px;
+  margin: -8px -8px 10px;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.token-workflow-drawer[open] > summary svg:last-child {
+  transform: rotate(180deg);
+}
+
+@media (max-width: 620px) {
+  .token-workflow-drawer > summary {
+    min-height: 44px;
+    grid-template-columns: minmax(0, 1fr) 18px;
+    padding-inline: 10px;
+  }
+
+  .token-workflow-drawer > summary b {
+    display: none;
+  }
+
+  .token-workflow-drawer[open] {
+    padding: 10px !important;
+  }
+}

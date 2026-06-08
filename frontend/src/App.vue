@@ -5485,7 +5485,15 @@
           Participation depends on identity, wallet, funding, contract, and ledger checks.
         </p>
 
-        <section v-if="publicPage === 'airdrop' || publicPage === 'presale'" id="token-workflow" class="token-workflow-panel" aria-label="MRG proof workflow">
+        <details v-if="publicPage === 'airdrop' || publicPage === 'presale'" id="token-workflow" class="token-workflow-panel token-workflow-drawer" aria-label="MRG proof workflow">
+          <summary>
+            <span>
+              <UserCheck :size="14" />
+              {{ publicPage === 'airdrop' ? 'Claim workflow' : 'Reserve workflow' }}
+            </span>
+            <b>{{ user ? 'Session ready' : 'Login required' }}</b>
+            <ChevronDown :size="13" />
+          </summary>
           <div class="token-workflow-head">
             <div>
               <span class="marketplace-eyebrow">{{ publicTokenWorkflowCopy.eyebrow }}</span>
@@ -5710,7 +5718,7 @@
               </div>
             </article>
           </section>
-        </section>
+        </details>
 
         <section v-if="publicPage === 'whitepaper'" class="token-whitepaper-reader" aria-labelledby="whitepaper-reader-title">
           <div class="token-whitepaper-copy">
@@ -24861,6 +24869,7 @@ function scrollToSection(id) {
   if (!hasWindow) return;
   const section = document.getElementById(id);
   if (section) {
+    if ('open' in section) section.open = true;
     section.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 }
