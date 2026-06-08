@@ -1852,6 +1852,9 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(cssSource, /Token workflow mobile field pairs: keep optional metadata compact while preserving full-width proof fields/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-form-grid\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\) !important;/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-form-grid \.token-compact-half\s*\{[\s\S]*grid-column: span 1 !important;/);
+  assert.match(cssSource, /Token launch mobile skim: keep airdrop and presale focused on the CEO decision and primary action/);
+  assert.match(cssSource, /@media \(max-width: 760px\)[\s\S]*\.token-page-airdrop \.token-timeline-list li:nth-child\(n \+ 4\),[\s\S]*\.token-page-presale \.token-timeline-list li:nth-child\(n \+ 4\),[\s\S]*\.token-page-airdrop \.token-proof-list article:nth-child\(n \+ 3\),[\s\S]*\.token-page-presale \.token-proof-list article:nth-child\(n \+ 3\)\s*\{[\s\S]*display: none !important;/);
+  assert.match(cssSource, /@media \(max-width: 760px\)[\s\S]*\.token-page-airdrop \.token-chapter-grid,[\s\S]*\.token-page-presale \.token-chapter-grid\s*\{[\s\S]*display: none !important;/);
 });
 
 test('contracts page exposes Solana proof manifest alongside the public IDL', async () => {

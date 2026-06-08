@@ -44793,3 +44793,117 @@ canvas {
     display: none !important;
   }
 }
+
+/* Token launch mobile skim: keep airdrop and presale focused on the CEO decision and primary action. */
+@media (max-width: 760px) {
+  .token-page-airdrop .token-content-grid,
+  .token-page-presale .token-content-grid {
+    gap: 9px !important;
+  }
+
+  .token-page-airdrop .token-content-grid > *,
+  .token-page-presale .token-content-grid > * {
+    min-height: 0 !important;
+    padding: 11px !important;
+  }
+
+  .token-page-airdrop .token-content-grid h2,
+  .token-page-presale .token-content-grid h2,
+  .token-page-airdrop .token-content-grid h3,
+  .token-page-presale .token-content-grid h3 {
+    font-size: clamp(18px, 5.5vw, 24px) !important;
+    line-height: 1.08 !important;
+  }
+
+  .token-page-airdrop .token-content-grid p,
+  .token-page-presale .token-content-grid p {
+    display: -webkit-box !important;
+    overflow: hidden !important;
+    -webkit-box-orient: vertical !important;
+    -webkit-line-clamp: 2 !important;
+    font-size: 12px !important;
+    line-height: 1.35 !important;
+  }
+
+  .token-page-airdrop .token-content-grid article,
+  .token-page-presale .token-content-grid article,
+  .token-page-airdrop .token-content-grid li,
+  .token-page-presale .token-content-grid li {
+    min-height: 0 !important;
+    padding: 9px !important;
+  }
+
+  .token-page-airdrop .token-content-grid article:nth-child(n + 4),
+  .token-page-presale .token-content-grid article:nth-child(n + 4),
+  .token-page-airdrop .token-content-grid li:nth-child(n + 4),
+  .token-page-presale .token-content-grid li:nth-child(n + 4) {
+    display: none !important;
+  }
+
+  .token-page-airdrop .token-content-grid :is(.token-step-grid, .token-mission-list, .token-roadmap-list, .token-proof-grid),
+  .token-page-presale .token-content-grid :is(.token-step-grid, .token-mission-list, .token-roadmap-list, .token-proof-grid) {
+    gap: 7px !important;
+  }
+
+  .token-page-airdrop .token-timeline-list,
+  .token-page-presale .token-timeline-list,
+  .token-page-airdrop .token-proof-list,
+  .token-page-presale .token-proof-list {
+    gap: 7px !important;
+  }
+
+  .token-page-airdrop .token-timeline-list li,
+  .token-page-presale .token-timeline-list li {
+    min-height: 0 !important;
+    grid-template-columns: 28px minmax(0, 1fr) !important;
+    padding: 8px !important;
+  }
+
+  .token-page-airdrop .token-timeline-list li:nth-child(n + 4),
+  .token-page-presale .token-timeline-list li:nth-child(n + 4),
+  .token-page-airdrop .token-proof-list article:nth-child(n + 3),
+  .token-page-presale .token-proof-list article:nth-child(n + 3) {
+    display: none !important;
+  }
+
+  .token-page-airdrop .token-proof-list article,
+  .token-page-presale .token-proof-list article {
+    min-height: 0 !important;
+    grid-template-columns: 28px minmax(0, 1fr) !important;
+    gap: 8px !important;
+    padding: 8px !important;
+  }
+
+  .token-page-airdrop .token-proof-list p,
+  .token-page-presale .token-proof-list p {
+    display: none !important;
+  }
+
+  .token-page-airdrop .token-content-grid :is(strong, b),
+  .token-page-presale .token-content-grid :is(strong, b) {
+    font-size: 12px !important;
+    line-height: 1.15 !important;
+  }
+
+  .token-page-airdrop .token-content-grid :is(small, em),
+  .token-page-presale .token-content-grid :is(small, em) {
+    font-size: 9.5px !important;
+    line-height: 1.2 !important;
+  }
+
+  .token-page-presale .token-compliance-note {
+    display: -webkit-box !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    -webkit-box-orient: vertical !important;
+    -webkit-line-clamp: 3 !important;
+    padding: 10px 11px !important;
+    font-size: 11px !important;
+    line-height: 1.35 !important;
+  }
+
+  .token-page-airdrop .token-chapter-grid,
+  .token-page-presale .token-chapter-grid {
+    display: none !important;
+  }
+}
