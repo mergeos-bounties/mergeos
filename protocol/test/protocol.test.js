@@ -228,10 +228,11 @@ test('validates airdrop claim, presale reservation, and token launch brief proto
   const tokenLaunchCandidates = {
     protocol_version: 'mergeos.token-launch-candidates.v1',
     kind: 'token_launch_candidates',
+    launch_type_filter: 'airdrop',
     stats: {
       candidate_count: 1,
       airdrop_count: 1,
-      presale_count: 1,
+      presale_count: 0,
       ready_count: 1,
       review_count: 0,
       hold_count: 0,
