@@ -9319,8 +9319,8 @@ const publicNavTranslations = {
 const publicHomeTranslations = {
   'en-US': {
     eyebrow: 'MERGEOS DELIVERY OS',
-    title: 'MergeOS is the delivery OS for funded software work.',
-    body: 'MergeOS connects repo context, AI task planning, escrow funding, marketplace routing, PR/deploy verification, and Solana MRG ledger proof. Import a brief or repo, let the CEO agent split work, route builders or agents, then release payouts with public evidence.',
+    title: 'Fund software work. Route it. Prove it.',
+    body: 'MergeOS turns a brief or repo into funded tasks with CEO-agent planning, builder or AI routing, escrow, PR/deploy checks, Solana MRG accounting, and public ledger proof.',
     primaryAction: 'Start a project',
     marketplaceAction: 'View live work',
     ledgerAction: 'Open proof ledger',
@@ -9412,8 +9412,8 @@ const publicHomeTranslations = {
   },
   'vi-VN': {
     eyebrow: 'MERGEOS DELIVERY OS',
-    title: 'MergeOS là delivery OS cho phần mềm đã fund.',
-    body: 'MergeOS nối repo context, AI task planning, escrow funding, marketplace routing, PR/deploy verification và Solana MRG ledger proof. Import brief hoặc repo, CEO agent chia việc, route builder hoặc agent, rồi release payout với public evidence.',
+    title: 'Fund việc phần mềm. Route việc. Prove delivery.',
+    body: 'MergeOS biến brief hoặc repo thành funded tasks có CEO-agent planning, builder/AI routing, escrow, PR/deploy checks, Solana MRG accounting và public ledger proof.',
     primaryAction: 'Bắt đầu dự án',
     marketplaceAction: 'Xem việc live',
     ledgerAction: 'Mở proof ledger',
@@ -14926,10 +14926,10 @@ const homeOperatingRows = computed(() => {
 });
 const homeDefinitionRows = computed(() => {
   const viRows = [
-    { title: 'Dau vao', body: 'Brief, repo, issue, file, budget va deadline.' },
-    { title: 'Dieu phoi', body: 'CEO agent lap ke hoach va giao viec cho builder hoac subagent.' },
-    { title: 'Dong tien', body: 'Escrow va Solana MRG gan lien voi tung task.' },
-    { title: 'Bang chung', body: 'PR, deploy, acceptance, payout va ledger receipt duoc cong khai.' },
+    { title: 'Đầu vào', body: 'Brief, repo, issue, file, budget và deadline.' },
+    { title: 'Điều phối', body: 'CEO agent chia việc cho builder, AI agent hoặc subagent.' },
+    { title: 'Dòng tiền', body: 'Escrow và Solana MRG bám theo từng task.' },
+    { title: 'Bằng chứng', body: 'PR, deploy, payout và ledger receipt công khai.' },
   ];
   const rows = publicHomeCopy.value.definitionRows
     || (activeLocale.value === 'vi-VN' ? viRows : publicHomeTranslations['en-US'].definitionRows);
