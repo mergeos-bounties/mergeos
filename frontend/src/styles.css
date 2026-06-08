@@ -9128,6 +9128,39 @@ svg {
   font-weight: 720;
 }
 
+.token-ceo-launch-context {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, max-content));
+  justify-content: start;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.token-ceo-launch-context span {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 26px;
+  border: 1px solid rgba(15, 118, 110, 0.15);
+  border-radius: 999px;
+  background: rgba(240, 253, 250, 0.84);
+  color: #0f766e;
+  padding: 0 9px;
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
+.token-ceo-launch-context b {
+  color: #0f172a;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
 .token-ceo-signal-chips {
   min-width: 0;
   display: flex;

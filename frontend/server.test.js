@@ -1254,6 +1254,10 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /class="token-ceo-project-queue"/);
   assert.match(appSource, /class="token-ceo-source-packet"/);
   assert.match(appSource, /class="token-ceo-signal-chips"/);
+  assert.match(appSource, /class="token-ceo-launch-context"/);
+  assert.match(appSource, /CEO launch brief context/);
+  assert.match(appSource, /tokenCeoLaunchBriefCopy\.launchTypeLabel/);
+  assert.match(appSource, /tokenCeoLaunchBriefCopy\.ledgerMemo/);
   assert.match(appSource, /class="token-ceo-decision-context"/);
   assert.match(appSource, /id="token-ceo-brief" class="token-ceo-brief-card"/);
   assert.match(appSource, /@submit\.prevent="submitTokenLaunchBrief"/);
@@ -1355,6 +1359,10 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /\$\{ceoMemos\} CEO memos, \$\{proofRows\} ledger rows, Solana proof manifest linked/);
   assert.match(appSource, /Send a CEO airdrop brief\./);
   assert.match(appSource, /Send a CEO presale brief\./);
+  assert.match(appSource, /launchTypeLabel: 'Earned airdrop'/);
+  assert.match(appSource, /ledgerMemo: 'type:airdrop'/);
+  assert.match(appSource, /launchTypeLabel: 'MRG presale'/);
+  assert.match(appSource, /ledgerMemo: 'type:presale'/);
   assert.match(appSource, /CEO template/);
   assert.match(appSource, /Wallet policy <b>\*<\/b>/);
   assert.match(appSource, /CEO risk notes <b>\*<\/b>/);
@@ -1499,6 +1507,9 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(cssSource, /\.token-ceo-decision-context\s*\{[\s\S]*grid-template-columns: auto minmax\(0, 1fr\) auto;/);
   assert.match(cssSource, /\.token-ceo-brief-card\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\);/);
   assert.match(cssSource, /\.token-ceo-brief-card\s*\{[\s\S]*scroll-margin-top: 86px;/);
+  assert.match(cssSource, /\.token-ceo-launch-context\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, max-content\)\);/);
+  assert.match(cssSource, /\.token-ceo-launch-context span\s*\{[\s\S]*border-radius: 999px;/);
+  assert.match(cssSource, /\.token-ceo-launch-context b\s*\{[\s\S]*text-transform: uppercase;/);
   assert.match(cssSource, /\.token-ceo-brief-form\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /\.token-ceo-brief-actions\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) auto auto;/);
   assert.match(cssSource, /\.token-ceo-research-grid\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);

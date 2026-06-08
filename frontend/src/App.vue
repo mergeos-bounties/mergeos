@@ -5262,6 +5262,16 @@
               <span class="marketplace-eyebrow">{{ tokenCeoLaunchBriefCopy.eyebrow }}</span>
               <strong>{{ tokenCeoLaunchBriefCopy.title }}</strong>
               <p>{{ tokenCeoLaunchBriefCopy.body }}</p>
+              <div class="token-ceo-launch-context" aria-label="CEO launch brief context">
+                <span>
+                  <b>Launch type</b>
+                  {{ tokenCeoLaunchBriefCopy.launchTypeLabel }}
+                </span>
+                <span>
+                  <b>Ledger memo</b>
+                  {{ tokenCeoLaunchBriefCopy.ledgerMemo }}
+                </span>
+              </div>
               <div class="token-ceo-signal-chips" aria-label="CEO research signals attached">
                 <span v-for="signal in tokenCeoResearchSignalRows" :key="signal">{{ toTitleLabel(signal) }}</span>
               </div>
@@ -13114,6 +13124,8 @@ const tokenCeoLaunchBriefCopy = computed(() => {
       eyebrow: 'CEO BRIEF INTAKE',
       title: 'Send a CEO airdrop brief.',
       body: 'Record repo context, mission goals, anti-bot policy, allocation cap, and proof rules.',
+      launchTypeLabel: 'Earned airdrop',
+      ledgerMemo: 'type:airdrop',
       primary: 'Send CEO brief',
       secondary: 'View CEO agent',
       summaryPlaceholder: 'Why should this project open earned MRG airdrop missions? Include repo, community, mission demand, and useful contribution evidence.',
@@ -13129,6 +13141,8 @@ const tokenCeoLaunchBriefCopy = computed(() => {
     eyebrow: 'CEO BRIEF INTAKE',
     title: 'Send a CEO presale brief.',
     body: 'Record utility, reserve cap, wallet path, funding rail, contract proof, and compliance notes.',
+    launchTypeLabel: 'MRG presale',
+    ledgerMemo: 'type:presale',
     primary: 'Send CEO brief',
     secondary: 'View CEO agent',
     summaryPlaceholder: 'Why is this project ready for an MRG presale window? Include utility, reserve cap, wallet path, funding rail, and contract proof.',
