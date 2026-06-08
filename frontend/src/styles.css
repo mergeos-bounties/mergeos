@@ -47637,3 +47637,207 @@ canvas {
     gap: 8px !important;
   }
 }
+
+/* Homepage release pass: short, readable first screen and hover menus that do not stick. */
+@media (min-width: 981px) {
+  .home-navbar .nav-menu.open::after,
+  .project-flow-navbar .nav-menu.open::after {
+    height: 4px !important;
+    bottom: -4px !important;
+  }
+
+  .home-navbar .nav-context-menu::before,
+  .project-flow-navbar .nav-context-menu::before {
+    top: -6px !important;
+    height: 6px !important;
+  }
+
+  .public-home-page {
+    padding-block: clamp(16px, 2.6dvh, 28px) 22px !important;
+  }
+
+  .public-home-page .home-container.public-home-layout {
+    width: min(1040px, calc(100vw - 72px)) !important;
+    max-width: 1040px !important;
+    min-height: auto !important;
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 360px) !important;
+    align-items: center !important;
+    gap: clamp(24px, 3vw, 36px) !important;
+    padding-block: 0 !important;
+  }
+
+  .public-home-page .public-home-copy {
+    max-width: 620px !important;
+    gap: 10px !important;
+  }
+
+  .public-home-page .public-home-copy h1 {
+    max-width: 13.2ch !important;
+    font-size: clamp(42px, 4.1vw, 58px) !important;
+    line-height: 1.01 !important;
+  }
+
+  .public-home-page .public-home-copy > p {
+    max-width: 58ch !important;
+    font-size: clamp(13.5px, 1vw, 15.5px) !important;
+    line-height: 1.42 !important;
+    font-weight: 680 !important;
+  }
+
+  .public-home-page .public-home-copy .marketplace-actions,
+  .public-home-page .home-definition-strip,
+  .public-home-page .home-ceo-token-desk,
+  .public-home-page .home-mergeide-inline-link {
+    max-width: 580px !important;
+  }
+
+  .public-home-page .home-definition-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  .public-home-page .home-definition-strip article {
+    min-height: 62px !important;
+    padding: 9px !important;
+  }
+
+  .public-home-page .home-executive-panel {
+    max-width: 360px !important;
+    padding: 13px !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .public-home-page {
+    padding-block: 8px 12px !important;
+  }
+
+  .public-home-page .home-container.public-home-layout,
+  .public-home-page .public-home-hero,
+  .public-home-page .public-home-copy,
+  .public-home-page .home-definition-strip,
+  .public-home-page .public-home-copy .marketplace-actions,
+  .public-home-page .home-mergeide-inline-link {
+    width: calc(100vw - 24px) !important;
+    max-width: calc(100vw - 24px) !important;
+  }
+
+  .public-home-page .home-container.public-home-layout {
+    gap: 9px !important;
+    margin-inline: auto !important;
+    padding-block: 0 10px !important;
+  }
+
+  .public-home-page .public-home-copy {
+    gap: 8px !important;
+  }
+
+  .public-home-page .public-home-copy h1 {
+    width: 100% !important;
+    max-width: 100% !important;
+    font-size: clamp(32px, 9.4vw, 40px) !important;
+    line-height: 1.02 !important;
+    text-wrap: balance !important;
+    overflow-wrap: normal !important;
+  }
+
+  .public-home-page .public-home-copy > p {
+    max-width: 100% !important;
+    font-size: 12.8px !important;
+    line-height: 1.36 !important;
+    font-weight: 680 !important;
+  }
+
+  .public-home-page .public-home-copy .marketplace-actions {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 7px !important;
+  }
+
+  .public-home-page .public-home-copy .marketplace-actions .large {
+    min-height: 38px !important;
+    border-radius: 9px !important;
+    font-size: 12px !important;
+  }
+
+  .public-home-page .home-definition-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 7px !important;
+  }
+
+  .public-home-page .home-definition-strip article,
+  .public-home-page .home-definition-strip article:nth-child(n + 4) {
+    display: grid !important;
+    min-height: 62px !important;
+    grid-template-columns: 26px minmax(0, 1fr) !important;
+    padding: 8px !important;
+  }
+
+  .public-home-page .home-definition-strip small {
+    -webkit-line-clamp: 2 !important;
+    font-size: 8.8px !important;
+    line-height: 1.23 !important;
+  }
+}
+
+/* Homepage mobile nav release: one language, one account, one menu button. */
+@media (max-width: 760px) {
+  .home-navbar .nav-inner {
+    display: grid !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    align-items: center !important;
+    gap: 10px !important;
+    padding-inline: 12px !important;
+    padding-right: 12px !important;
+  }
+
+  .home-navbar .brand-link {
+    width: auto !important;
+    max-width: 220px !important;
+  }
+
+  .home-navbar .public-nav-actions {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    display: grid !important;
+    grid-template-columns: 34px 40px 40px !important;
+    align-items: center !important;
+    gap: 6px !important;
+    width: auto !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    justify-self: end !important;
+  }
+
+  .home-navbar > .hamburger-button,
+  .home-navbar .nav-inner > .hamburger-button {
+    display: none !important;
+  }
+
+  .home-navbar .mobile-inline-locale-button,
+  .home-navbar .account-icon-button,
+  .home-navbar .mobile-inline-menu-button {
+    width: 40px !important;
+    min-width: 40px !important;
+    height: 40px !important;
+    min-height: 40px !important;
+    border-radius: 10px !important;
+  }
+
+  .home-navbar .mobile-inline-locale-button {
+    width: 34px !important;
+    min-width: 34px !important;
+    border-color: transparent !important;
+    background: transparent !important;
+  }
+
+  .home-navbar .mobile-inline-menu-button {
+    display: inline-flex !important;
+  }
+
+  .public-home-page .public-home-copy h1 {
+    font-size: clamp(30px, 8.3vw, 34px) !important;
+    line-height: 1.04 !important;
+  }
+}

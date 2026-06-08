@@ -813,6 +813,13 @@ test('public menus and signed-in mobile layout keep reachable compact surfaces',
   assert.doesNotMatch(appSource, /if \(pinnedNavMenu\.value && pinnedNavMenu\.value === activeNavMenu\.value\) return;/);
   assert.match(appSource, /function scheduleNavContextClose\(delay = 110\)/);
   assert.match(appSource, /activeNavMenu\.value = '';[\s\S]*pinnedNavMenu\.value = '';[\s\S]*}, delay\);/);
+  assert.match(appSource, /triggerLeft: rect\.left/);
+  assert.match(appSource, /target[\s\S]*closest[\s\S]*'\.nav-menu, \.nav-context-menu, \.locale-menu, \.account-menu'/);
+  assert.match(appSource, /const activeMenuElement = document[\s\S]*querySelector[\s\S]*\.nav-menu\.open \.nav-context-menu[\s\S]*\.locale-menu\.open \.locale-context-menu[\s\S]*\.account-menu\.open \.account-context-menu/);
+  assert.match(appSource, /const isInsideRenderedMenu = menuRect/);
+  assert.match(appSource, /const isInsideTrigger = hasMenuGeometry/);
+  assert.match(appSource, /const isInsideBridge = hasMenuGeometry/);
+  assert.match(appSource, /if \(isInsideRenderedMenu \|\| isInsideTrigger \|\| isInsideBridge\) return;[\s\S]*closeNavContextMenu\(\);/);
   assert.match(appSource, /<header class="home-navbar" @pointerleave="scheduleNavContextClose">/);
   assert.match(appSource, /document\.addEventListener\('mouseleave', handleNavContextViewportLeave\)/);
   assert.match(appSource, /window\.addEventListener\('blur', handleNavContextViewportLeave\)/);
@@ -989,6 +996,15 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.match(cssSource, /Home\/menu correction: tighter first screen and hover menus that release cleanly/);
   assert.match(cssSource, /\/\* Home\/menu correction:[\s\S]*\.public-home-page \.home-container\.public-home-layout\s*\{[\s\S]*width: min\(1120px, calc\(100vw - 72px\)\) !important;[\s\S]*min-height: auto !important;/);
   assert.match(cssSource, /\/\* Home\/menu correction:[\s\S]*\.public-home-page \.home-executive-flow article:nth-child\(n \+ 3\),[\s\S]*display: none !important;/);
+  assert.match(cssSource, /Homepage release pass: short, readable first screen and hover menus that do not stick/);
+  assert.match(cssSource, /\/\* Homepage release pass:[\s\S]*\.public-home-page \.home-container\.public-home-layout\s*\{[\s\S]*width: min\(1040px, calc\(100vw - 72px\)\) !important;[\s\S]*grid-template-columns: minmax\(0, 1fr\) minmax\(320px, 360px\) !important;/);
+  assert.match(cssSource, /\/\* Homepage release pass:[\s\S]*\.public-home-page \.public-home-copy h1\s*\{[\s\S]*max-width: 13\.2ch !important;[\s\S]*font-size: clamp\(42px, 4\.1vw, 58px\) !important;/);
+  assert.match(cssSource, /\/\* Homepage release pass:[\s\S]*@media \(max-width: 760px\)[\s\S]*\.public-home-page \.public-home-copy h1\s*\{[\s\S]*max-width: 100% !important;[\s\S]*text-wrap: balance !important;/);
+  assert.match(cssSource, /Homepage mobile nav release: one language, one account, one menu button/);
+  assert.match(cssSource, /\/\* Homepage mobile nav release:[\s\S]*\.home-navbar \.nav-inner\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) auto !important;/);
+  assert.match(cssSource, /\/\* Homepage mobile nav release:[\s\S]*\.home-navbar \.public-nav-actions\s*\{[\s\S]*grid-template-columns: 34px 40px 40px !important;/);
+  assert.match(cssSource, /\/\* Homepage mobile nav release:[\s\S]*\.home-navbar > \.hamburger-button,[\s\S]*\.home-navbar \.nav-inner > \.hamburger-button\s*\{[\s\S]*display: none !important;/);
+  assert.match(cssSource, /\/\* Homepage mobile nav release:[\s\S]*\.home-navbar \.mobile-inline-menu-button\s*\{[\s\S]*display: inline-flex !important;/);
 });
 
 test('frontend system exposes required public pages and dashboard roles', async () => {

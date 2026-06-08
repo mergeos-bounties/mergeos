@@ -11993,7 +11993,17 @@ const authNotice = ref('');
 const mobileMenuOpen = ref(false);
 const activeNavMenu = ref('');
 const pinnedNavMenu = ref('');
-const navContextGeometry = ref({ menu: '', left: 16, top: 64, width: 920, anchorLeft: 160 });
+const navContextGeometry = ref({
+  menu: '',
+  left: 16,
+  top: 64,
+  width: 920,
+  anchorLeft: 160,
+  triggerLeft: 0,
+  triggerTop: 0,
+  triggerRight: 0,
+  triggerBottom: 0,
+});
 let navContextCloseTimer = 0;
 const activeLocale = ref(readStoredLocale());
 const showPassword = ref(false);
@@ -26032,6 +26042,10 @@ function measureNavContextMenu(menu, event = {}) {
     top,
     width,
     anchorLeft,
+    triggerLeft: rect.left,
+    triggerTop: rect.top,
+    triggerRight: rect.right,
+    triggerBottom: rect.bottom,
   };
 }
 
@@ -26083,7 +26097,7 @@ function cancelNavContextClose() {
 function handleNavContextPointerMove(event) {
   if (!activeNavMenu.value || !hasWindow) return;
   const target = event.target;
-  if (target?.closest?.('.nav-menu, .locale-menu, .account-menu')) {
+  if (target?.closest?.('.nav-menu, .nav-context-menu, .locale-menu, .account-menu')) {
     return;
   }
   const pointerX = Number(event.clientX);
@@ -26091,13 +26105,25 @@ function handleNavContextPointerMove(event) {
   const menu = activeNavMenu.value;
   const geometry = navContextGeometry.value;
   const hasMenuGeometry = geometry.menu === menu && geometry.width > 0;
-  const isNearActiveMegaMenu = hasMenuGeometry
+  const activeMenuElement = document.querySelector?.(`.nav-menu.open .nav-context-menu, .locale-menu.open .locale-context-menu, .account-menu.open .account-context-menu`);
+  const menuRect = activeMenuElement?.getBoundingClientRect?.();
+  const isInsideRenderedMenu = menuRect
+    && pointerX >= menuRect.left - 6
+    && pointerX <= menuRect.right + 6
+    && pointerY >= menuRect.top - 8
+    && pointerY <= menuRect.bottom + 8;
+  const isInsideTrigger = hasMenuGeometry
+    && pointerX >= geometry.triggerLeft - 10
+    && pointerX <= geometry.triggerRight + 10
+    && pointerY >= geometry.triggerTop - 8
+    && pointerY <= geometry.triggerBottom + 10;
+  const isInsideBridge = hasMenuGeometry
     && pointerX >= geometry.left - 8
     && pointerX <= geometry.left + geometry.width + 8
-    && pointerY >= geometry.top - 10
-    && pointerY <= geometry.top + 12;
-  if (isNearActiveMegaMenu) return;
-  scheduleNavContextClose(70);
+    && pointerY >= geometry.triggerBottom - 2
+    && pointerY <= geometry.top + 10;
+  if (isInsideRenderedMenu || isInsideTrigger || isInsideBridge) return;
+  closeNavContextMenu();
 }
 
 function handleNavContextViewportLeave() {
