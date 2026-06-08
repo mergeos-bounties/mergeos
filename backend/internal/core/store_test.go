@@ -1595,10 +1595,19 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 		BudgetCents:      100000,
 		PaymentMethod:    PaymentPayPal,
 		PaymentReference: defaultDevPaymentCode,
-		SourceRepoURL:    "https://github.com/mergeos-bounties/mergeos",
 	})
 	if err != nil {
 		t.Fatal(err)
+	}
+	if _, err := store.SyncProjectImportedIssuesReport(project.ID, "https://github.com/mergeos-bounties/mergeos", []*ImportedRepoIssue{{
+		Number:             101,
+		Title:              "Fund MergeOS token launch readiness",
+		State:              "open",
+		URL:                "https://github.com/mergeos-bounties/mergeos/issues/101",
+		EstimatedCents:     100000,
+		RequiredWorkerKind: WorkerHuman,
+	}}); err != nil {
+		t.Fatalf("mock github issue sync failed: %v", err)
 	}
 	server := NewServer(cfg, store, payments)
 
