@@ -511,9 +511,11 @@ test('public protocol links match backend routes', async () => {
   assert.equal(tokenLaunchCandidatesSchema.required.includes('candidates'), true);
   assert.equal(tokenLaunchCandidatesSchema.properties.candidates.items.required.includes('proof_policy'), true);
   assert.equal(tokenLaunchCandidatesSchema.properties.candidates.items.required.includes('next_action'), true);
+  assert.equal(tokenLaunchCandidatesSchema.properties.candidates.items.required.includes('readiness_gates'), true);
   assert.equal(tokenLaunchCandidatesSchema.properties.candidates.items.required.includes('research_score'), true);
   assert.equal(tokenLaunchCandidatesSchema.properties.candidates.items.required.includes('decision_options'), true);
   assert.equal(tokenLaunchCandidatesSchema.properties.candidates.items.properties.decision_options.items.properties.key.enum.includes('needs_evidence'), true);
+  assert.equal(tokenLaunchCandidatesSchema.properties.candidates.items.properties.readiness_gates.items.properties.state.enum.includes('ready'), true);
   assert.match(manifestSource, /mergeos\.payment-order\.v1/);
   assert.match(manifestSource, /payment-order\.v1\.schema\.json/);
   assert.match(manifestSource, /\/contracts\/solana\/mergeos_mrg\.proof-manifest\.v1\.json/);
@@ -1269,6 +1271,7 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /row\.decisionPreview\.nextAction/);
   assert.match(appSource, /nextAction: String\(nextAction \|\| ''\)\.trim\(\)/);
   assert.match(appSource, /candidate\.next_action/);
+  assert.match(appSource, /candidate\.readiness_gates/);
   assert.match(appSource, /class="token-ceo-project-queue"/);
   assert.match(appSource, /class="token-ceo-source-packet"/);
   assert.match(appSource, /class="token-ceo-signal-chips"/);
@@ -1326,6 +1329,8 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /label: fallback\.label \|\| row\.label/);
   assert.match(appSource, /function tokenLaunchCandidateDecisionPreview\(rows = \[\], nextAction = ''\)/);
   assert.match(appSource, /function tokenLaunchCandidateReadinessRows/);
+  assert.match(appSource, /function tokenLaunchCandidateReadinessRowsFromAPI\(rows = \[\], fallback = \[\]\)/);
+  assert.match(appSource, /tokenLaunchCandidateReadinessRowsFromAPI\(candidate\.readiness_gates, fallbackReadinessRows\)/);
   assert.match(appSource, /label: 'Demand', value: `\$\{openCount\} open \/ \$\{acceptedCount\} accepted`/);
   assert.match(appSource, /label: 'Reserve', value: `\$\{formatCompactNumber\(pool\)\} MRG pool`/);
   assert.match(appSource, /readinessRows: tokenLaunchCandidateReadinessRows/);

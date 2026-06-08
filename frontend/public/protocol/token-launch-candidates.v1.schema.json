@@ -37,6 +37,7 @@
           "research_score",
           "proof_signals",
           "decision_options",
+          "readiness_gates",
           "next_action",
           "gate_summary",
           "proof_policy",
@@ -74,6 +75,22 @@
                 "tone": { "enum": ["approve", "evidence", "reject"] },
                 "proof_policy": { "type": "string", "minLength": 1, "maxLength": 500 },
                 "risk_notes": { "type": "string", "minLength": 1, "maxLength": 500 }
+              }
+            }
+          },
+          "readiness_gates": {
+            "type": "array",
+            "minItems": 3,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["key", "label", "state", "value", "evidence"],
+              "properties": {
+                "key": { "type": "string", "minLength": 1, "maxLength": 40 },
+                "label": { "type": "string", "minLength": 1, "maxLength": 40 },
+                "state": { "enum": ["ready", "review", "hold"] },
+                "value": { "type": "string", "minLength": 1, "maxLength": 120 },
+                "evidence": { "type": "string", "minLength": 1, "maxLength": 260 }
               }
             }
           },

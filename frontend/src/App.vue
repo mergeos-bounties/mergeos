@@ -13031,6 +13031,21 @@ function tokenLaunchCandidateReadinessRows({
     { label: 'Anti-bot', value: strong ? 'Wallet gate ready' : 'Needs policy', state: strong ? 'ready' : 'hold' },
   ];
 }
+function tokenLaunchCandidateReadinessRowsFromAPI(rows = [], fallback = []) {
+  if (!Array.isArray(rows) || !rows.length) return fallback;
+  const normalized = rows
+    .filter((row) => row && typeof row === 'object')
+    .map((row) => {
+      const state = ['ready', 'review', 'hold'].includes(row.state) ? row.state : 'review';
+      return {
+        label: row.label || toTitleLabel(row.key || 'Gate'),
+        value: row.value || row.evidence || 'CEO review',
+        state,
+      };
+    })
+    .filter((row) => row.label && row.value);
+  return normalized.length ? normalized.slice(0, 3) : fallback;
+}
 const tokenCeoCandidateRows = computed(() => {
   const apiCandidates = Array.isArray(tokenLaunchCandidatesData.value?.candidates)
     ? tokenLaunchCandidatesData.value.candidates
@@ -13051,6 +13066,14 @@ const tokenCeoCandidateRows = computed(() => {
       const openTasks = Number(candidate.open_task_count) || 0;
       const acceptedTasks = Number(candidate.accepted_task_count) || 0;
       const workPoolMRG = Number(candidate.work_pool_mrg) || 0;
+      const fallbackReadinessRows = tokenLaunchCandidateReadinessRows({
+        launchType,
+        score,
+        openTasks,
+        acceptedTasks,
+        workPoolMRG,
+        signalCount: signals.length,
+      });
       return {
         key: candidate.candidate_id || candidate.project_id || candidate.project_title,
         label: launchType === 'presale' ? 'CEO presale candidate' : 'CEO airdrop candidate',
@@ -13064,14 +13087,7 @@ const tokenCeoCandidateRows = computed(() => {
         proofPolicy: candidate.proof_policy || 'Require task evidence, review notes, repository context, and ledger proof before approval.',
         proofSignalRows,
         proofSignalExtra: Math.max(0, signals.length - proofSignalRows.length),
-        readinessRows: tokenLaunchCandidateReadinessRows({
-          launchType,
-          score,
-          openTasks,
-          acceptedTasks,
-          workPoolMRG,
-          signalCount: signals.length,
-        }),
+        readinessRows: tokenLaunchCandidateReadinessRowsFromAPI(candidate.readiness_gates, fallbackReadinessRows),
         tone: launchType === 'presale' ? 'green' : 'purple',
       };
     });

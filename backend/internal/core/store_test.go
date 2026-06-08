@@ -1838,6 +1838,10 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 		candidates.Candidates[0].DecisionOptions[0].Label != "Open missions" ||
 		candidates.Candidates[0].DecisionOptions[1].Key != "needs_evidence" ||
 		candidates.Candidates[0].DecisionOptions[2].Key != "reject" ||
+		len(candidates.Candidates[0].ReadinessGates) != 3 ||
+		candidates.Candidates[0].ReadinessGates[0].Key != "demand" ||
+		candidates.Candidates[0].ReadinessGates[0].State != "ready" ||
+		!strings.Contains(candidates.Candidates[0].ReadinessGates[2].Evidence, "wallet uniqueness") ||
 		!strings.Contains(candidates.Candidates[0].DecisionOptions[0].ProofPolicy, "repo task evidence") ||
 		strings.Contains(candidates.Candidates[0].DecisionOptions[0].ProofPolicy, "utility proof") ||
 		!strings.Contains(candidates.Candidates[0].NextAction, "Open earned missions") ||
@@ -1856,6 +1860,9 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 	if len(presaleCandidates.Candidates) < 1 ||
 		len(presaleCandidates.Candidates[0].DecisionOptions) != 3 ||
 		presaleCandidates.Candidates[0].DecisionOptions[0].Label != "Open presale" ||
+		len(presaleCandidates.Candidates[0].ReadinessGates) != 3 ||
+		presaleCandidates.Candidates[0].ReadinessGates[0].Key != "utility" ||
+		presaleCandidates.Candidates[0].ReadinessGates[2].Key != "contract" ||
 		!strings.Contains(presaleCandidates.Candidates[0].NextAction, "Open presale") ||
 		!strings.Contains(presaleCandidates.Candidates[0].DecisionOptions[0].ProofPolicy, "utility proof") {
 		t.Fatalf("public presale launch candidates rows invalid: %#v", presaleCandidates.Candidates)

@@ -193,11 +193,20 @@ type PublicTokenLaunchCandidate struct {
 	ResearchScore          int                                  `json:"research_score"`
 	ProofSignals           []string                             `json:"proof_signals"`
 	DecisionOptions        []TokenLaunchCandidateDecisionOption `json:"decision_options"`
+	ReadinessGates         []TokenLaunchCandidateReadinessGate  `json:"readiness_gates"`
 	NextAction             string                               `json:"next_action"`
 	GateSummary            string                               `json:"gate_summary"`
 	ProofPolicy            string                               `json:"proof_policy"`
 	MarketplaceURL         string                               `json:"marketplace_url"`
 	CreatedAt              time.Time                            `json:"created_at"`
+}
+
+type TokenLaunchCandidateReadinessGate struct {
+	Key      string `json:"key"`
+	Label    string `json:"label"`
+	State    string `json:"state"`
+	Value    string `json:"value"`
+	Evidence string `json:"evidence"`
 }
 
 type TokenLaunchCandidateDecisionOption struct {
@@ -610,6 +619,7 @@ func (s *Store) PublicTokenLaunchCandidates(launchTypeFilter string) PublicToken
 			ResearchScore:          researchScore,
 			ProofSignals:           proofSignals,
 			DecisionOptions:        tokenLaunchCandidateDecisionOptions(decisionLaunchType, researchScore),
+			ReadinessGates:         tokenLaunchCandidateReadinessGates(decisionLaunchType, researchScore, project, proofSignals),
 			NextAction:             nextAction,
 			GateSummary:            fmt.Sprintf("%d open tasks, %d accepted tasks, %d proof signals", project.OpenTaskCount, project.AcceptedTaskCount, len(proofSignals)),
 			ProofPolicy:            tokenLaunchCandidateProofPolicy(projectBounties),
@@ -1206,6 +1216,80 @@ func tokenLaunchCandidateNextAction(launchType string, score int) string {
 	return "Collect repo demand, useful work proof, anti-bot policy, wallet uniqueness, and ledger evidence before missions open."
 }
 
+func tokenLaunchCandidateReadinessGates(launchType string, score int, project *MarketplaceProject, proofSignals []string) []TokenLaunchCandidateReadinessGate {
+	openTasks := 0
+	acceptedTasks := 0
+	workPoolMRG := int64(0)
+	if project != nil {
+		openTasks = project.OpenTaskCount
+		acceptedTasks = project.AcceptedTaskCount
+		workPoolMRG = project.WorkPoolCents
+	}
+	signalCount := len(proofSignals)
+	strong := score >= 82
+	stateFrom := func(ok bool, review bool) string {
+		if ok {
+			return "ready"
+		}
+		if review {
+			return "review"
+		}
+		return "hold"
+	}
+	signalEvidence := strings.Join(proofSignals[:minInt(len(proofSignals), 3)], ", ")
+	if signalEvidence == "" {
+		signalEvidence = "No public proof signal attached yet."
+	}
+	if launchType == "presale" {
+		return []TokenLaunchCandidateReadinessGate{
+			{
+				Key:      "utility",
+				Label:    "Utility",
+				State:    stateFrom(signalCount >= 3, signalCount > 0),
+				Value:    fmt.Sprintf("%d proof signals", signalCount),
+				Evidence: signalEvidence,
+			},
+			{
+				Key:      "reserve",
+				Label:    "Reserve",
+				State:    stateFrom(workPoolMRG >= 50000, workPoolMRG > 0),
+				Value:    fmt.Sprintf("%s MRG pool", compactInt64(workPoolMRG)),
+				Evidence: fmt.Sprintf("%d open tasks and %d accepted tasks", openTasks, acceptedTasks),
+			},
+			{
+				Key:      "contract",
+				Label:    "Contract",
+				State:    stateFrom(strong, signalCount >= 3),
+				Value:    ternaryString(strong, "Solana gates ready", "Needs CEO proof"),
+				Evidence: "CEO must confirm Solana wallet, funding receipt, and contract reference before opening.",
+			},
+		}
+	}
+	return []TokenLaunchCandidateReadinessGate{
+		{
+			Key:      "demand",
+			Label:    "Demand",
+			State:    stateFrom(openTasks > 0 || acceptedTasks > 0, signalCount > 0),
+			Value:    fmt.Sprintf("%d open / %d accepted", openTasks, acceptedTasks),
+			Evidence: fmt.Sprintf("%d proof signals attached", signalCount),
+		},
+		{
+			Key:      "proof",
+			Label:    "Proof",
+			State:    stateFrom(signalCount >= 3, signalCount > 0),
+			Value:    fmt.Sprintf("%d signals attached", signalCount),
+			Evidence: signalEvidence,
+		},
+		{
+			Key:      "anti_bot",
+			Label:    "Anti-bot",
+			State:    stateFrom(strong, signalCount >= 3),
+			Value:    ternaryString(strong, "Wallet gate ready", "Needs policy"),
+			Evidence: "CEO must confirm wallet uniqueness, claim limits, and proof review before opening.",
+		},
+	}
+}
+
 func tokenLaunchCandidateDecisionOptions(launchType string, score int) []TokenLaunchCandidateDecisionOption {
 	if launchType != "presale" {
 		launchType = "airdrop"
@@ -1267,4 +1351,21 @@ func tokenLaunchCandidateProofPolicy(bounties []*MarketplaceBounty) string {
 		return "Require task evidence, repository context, review notes, and public ledger proof before opening token workflows."
 	}
 	return "Require " + strings.Join(evidence, ", ") + " plus public ledger proof before opening token workflows."
+}
+
+func compactInt64(value int64) string {
+	if value >= 1000000 {
+		return fmt.Sprintf("%dM", value/1000000)
+	}
+	if value >= 1000 {
+		return fmt.Sprintf("%dK", value/1000)
+	}
+	return fmt.Sprintf("%d", value)
+}
+
+func ternaryString(condition bool, yes string, no string) string {
+	if condition {
+		return yes
+	}
+	return no
 }
