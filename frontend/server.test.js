@@ -2161,6 +2161,10 @@ test('signed-in mobile dashboard keeps nav, actions, and popovers phone-safe', a
   assert.match(cssSource, /\.token-page-airdrop \.token-hero-copy p,[\s\S]*\.token-page-presale \.token-ceo-launch-queue p\s*\{[\s\S]*-webkit-line-clamp: unset !important;/);
   assert.match(cssSource, /\.token-page-airdrop \.token-hero-copy,[\s\S]*\.token-page-presale \.token-hero-copy\s*\{[\s\S]*max-height: none !important;[\s\S]*overflow: visible !important;/);
   assert.match(cssSource, /\.token-page-airdrop \.token-ceo-candidate-loading,[\s\S]*\.token-page-presale \.token-ceo-candidate-loading\s*\{/);
+  assert.match(cssSource, /Token launch mobile CEO polish: make airdrop\/presale feel like one focused decision screen/);
+  assert.match(cssSource, /\/\* Token launch mobile CEO polish:[\s\S]*\.token-page-airdrop \.token-hero,[\s\S]*\.token-page-presale \.token-hero\s*\{[\s\S]*padding-block: 18px 8px !important;/);
+  assert.match(cssSource, /\/\* Token launch mobile CEO polish:[\s\S]*\.token-page-airdrop \.token-hero \.marketplace-actions \.large,[\s\S]*\.token-page-presale \.token-hero \.marketplace-actions \.large\s*\{[\s\S]*min-height: 38px !important;/);
+  assert.match(cssSource, /\/\* Token launch mobile CEO polish:[\s\S]*\.token-page-airdrop \.token-ceo-research-panel,[\s\S]*\.token-page-presale \.token-ceo-research-panel\s*\{[\s\S]*margin-top: 12px !important;/);
   assert.match(cssSource, /Token CEO mobile shortlist: show all candidate projects as chips, then keep only the lead decision card expanded/);
   assert.match(cssSource, /\/\* Token CEO mobile shortlist:[\s\S]*\.token-page-airdrop \.token-ceo-mobile-shortlist,[\s\S]*\.token-page-presale \.token-ceo-mobile-shortlist\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\) !important;/);
   assert.match(cssSource, /\/\* Token CEO mobile shortlist:[\s\S]*@media \(max-width: 620px\)[\s\S]*\.token-page-airdrop \.token-ceo-candidate-lane article:nth-child\(n \+ 2\),[\s\S]*\.token-page-presale \.token-ceo-candidate-lane article:nth-child\(n \+ 2\)\s*\{[\s\S]*display: none !important;/);
