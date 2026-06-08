@@ -787,6 +787,7 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.match(cssSource, /Home executive pass: a short premium decision screen/);
   assert.match(appSource, /class="public-notification-feed home-feed-preview"/);
   assert.match(appSource, /class="home-mergeide-inline-link"/);
+  assert.match(appSource, /class="home-value-strip"/);
   assert.match(appSource, /class="home-definition-strip"/);
   assert.match(appSource, /const homeDefinitionRows = computed/);
   assert.match(appSource, /class="home-explain-strip"/);
@@ -878,6 +879,12 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.match(cssSource, /\/\* Home CEO-grade cut:[\s\S]*\.public-home-page\s*\{[\s\S]*min-height: calc\(100dvh - 74px\) !important;[\s\S]*align-items: center !important;/);
   assert.match(cssSource, /\/\* Home CEO-grade cut:[\s\S]*\.public-home-page \.home-container\s*\{[\s\S]*max-width: 980px !important;/);
   assert.match(cssSource, /\/\* Home CEO-grade cut:[\s\S]*\.public-home-copy\s*\{[\s\S]*width: min\(100%, 760px\) !important;[\s\S]*margin-inline: auto !important;/);
+  assert.match(cssSource, /Home narrative restore: enough product context without returning to a long landing page/);
+  assert.match(cssSource, /\.home-value-strip\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\) !important;/);
+  assert.match(cssSource, /@media \(max-width: 760px\)[\s\S]*\.home-value-strip\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) !important;/);
+  assert.match(cssSource, /Home phone viewport lock: complete copy must fit inside the visible phone width/);
+  assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.public-home-page \.home-container,[\s\S]*\.public-home-copy,[\s\S]*\.home-value-strip,[\s\S]*\.home-definition-strip,[\s\S]*\.home-ceo-token-desk/);
+  assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*width: min\(366px, calc\(100vw - 24px\)\) !important;/);
   assert.match(cssSource, /\/\* Home CEO-grade cut:[\s\S]*\.home-explain-strip,[\s\S]*\.home-command-panel\s*\{[\s\S]*display: none !important;/);
   assert.match(cssSource, /\/\* Home CEO-grade cut:[\s\S]*@media \(max-width: 760px\)[\s\S]*\.public-home-page \.home-container\s*\{[\s\S]*width: calc\(100vw - 20px\) !important;[\s\S]*max-width: calc\(100vw - 20px\) !important;/);
   assert.match(cssSource, /\/\* Home CEO-grade cut:[\s\S]*@media \(max-width: 520px\)[\s\S]*\.home-definition-strip\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) !important;/);

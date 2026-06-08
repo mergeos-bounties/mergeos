@@ -4640,6 +4640,17 @@
             <span class="marketplace-eyebrow">{{ publicHomeCopy.eyebrow }}</span>
             <h1 id="home-title">{{ publicHomeCopy.title }}</h1>
             <p>{{ publicHomeCopy.body }}</p>
+            <div class="home-value-strip" :aria-label="publicHomeCopy.operatingLabel">
+              <article v-for="row in homeOperatingRows" :key="row.title">
+                <span>
+                  <component :is="row.icon" :size="13" />
+                </span>
+                <div>
+                  <strong>{{ row.title }}</strong>
+                  <small>{{ row.body }}</small>
+                </div>
+              </article>
+            </div>
             <div class="home-definition-strip" :aria-label="publicHomeCopy.definitionLabel || 'What MergeOS connects'">
               <article v-for="row in homeDefinitionRows" :key="row.title">
                 <span :class="['home-definition-icon', row.tone]">

@@ -41848,3 +41848,208 @@ canvas {
     width: 100% !important;
   }
 }
+
+/* Home narrative restore: enough product context without returning to a long landing page. */
+.home-value-strip {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+  width: min(100%, 760px) !important;
+  max-width: 760px !important;
+  margin-top: 14px !important;
+}
+
+.home-value-strip article {
+  min-width: 0 !important;
+  display: grid !important;
+  grid-template-columns: 26px minmax(0, 1fr) !important;
+  align-items: start !important;
+  gap: 8px !important;
+  border: 1px solid rgba(0, 131, 105, 0.13) !important;
+  border-radius: 8px !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+  padding: 9px !important;
+  box-shadow: 0 12px 28px rgba(5, 35, 28, 0.045) !important;
+}
+
+.home-value-strip article > span {
+  width: 26px !important;
+  height: 26px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 7px !important;
+  background: #ecfdf5 !important;
+  color: var(--green-dark) !important;
+}
+
+.home-value-strip div {
+  min-width: 0 !important;
+}
+
+.home-value-strip strong,
+.home-value-strip small {
+  display: block !important;
+  min-width: 0 !important;
+  overflow-wrap: anywhere !important;
+}
+
+.home-value-strip strong {
+  color: var(--ink) !important;
+  font-size: 11.5px !important;
+  line-height: 1.18 !important;
+  font-weight: 930 !important;
+}
+
+.home-value-strip small {
+  margin-top: 3px !important;
+  color: #52635e !important;
+  font-size: 10px !important;
+  line-height: 1.32 !important;
+  font-weight: 760 !important;
+}
+
+.home-definition-strip {
+  margin-top: 8px !important;
+}
+
+.home-definition-strip article {
+  min-height: 94px !important;
+}
+
+.home-definition-strip small {
+  -webkit-line-clamp: unset !important;
+}
+
+@media (max-width: 760px) {
+  .home-value-strip {
+    width: 100% !important;
+    max-width: 100% !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 7px !important;
+    margin-top: 12px !important;
+  }
+
+  .home-value-strip article {
+    min-height: auto !important;
+    padding: 8px !important;
+  }
+
+  .home-value-strip small {
+    font-size: 9.8px !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .home-value-strip {
+    margin-top: 10px !important;
+  }
+
+  .home-value-strip article:nth-child(n + 3) {
+    display: none !important;
+  }
+
+  .home-definition-strip {
+    margin-top: 8px !important;
+  }
+
+  .home-definition-strip article {
+    padding: 9px !important;
+  }
+
+  .home-definition-strip small {
+    font-size: 9.7px !important;
+    line-height: 1.3 !important;
+  }
+}
+
+/* Home phone viewport lock: complete copy must fit inside the visible phone width. */
+@media (max-width: 620px) {
+  body:has(.public-home-page) {
+    overflow-x: clip !important;
+  }
+
+  .public-home-page,
+  .public-home-page * {
+    box-sizing: border-box !important;
+  }
+
+  .public-home-page {
+    width: 100% !important;
+    max-width: 100vw !important;
+    padding-inline: 0 !important;
+    overflow-x: hidden !important;
+  }
+
+  .public-home-page .home-container,
+  .public-home-copy,
+  .home-value-strip,
+  .home-definition-strip,
+  .home-ceo-token-desk,
+  .public-home-copy .marketplace-actions {
+    width: min(366px, calc(100vw - 24px)) !important;
+    max-width: min(366px, calc(100vw - 24px)) !important;
+    min-width: 0 !important;
+    margin-inline: auto !important;
+    overflow-x: hidden !important;
+  }
+
+  .public-home-page .home-container {
+    padding-inline: 0 !important;
+  }
+
+  .public-home-copy,
+  .home-value-strip,
+  .home-definition-strip,
+  .home-ceo-token-desk,
+  .public-home-copy .marketplace-actions {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .public-home-copy {
+    position: static !important;
+  }
+
+  .home-value-strip,
+  .home-definition-strip,
+  .home-ceo-token-desk,
+  .public-home-copy .marketplace-actions {
+    width: calc(100% - 42px) !important;
+    max-width: calc(100% - 42px) !important;
+    margin-left: 0 !important;
+    margin-right: auto !important;
+  }
+
+  .public-home-copy h1,
+  .public-home-copy > p {
+    width: calc(100% - 42px) !important;
+    max-width: calc(100% - 42px) !important;
+  }
+
+  .public-home-copy h1,
+  .public-home-copy > p,
+  .home-value-strip :is(strong, small),
+  .home-definition-strip :is(strong, small),
+  .home-ceo-token-desk :is(strong, p, button) {
+    max-width: 100% !important;
+    white-space: normal !important;
+    overflow-wrap: anywhere !important;
+    word-break: normal !important;
+  }
+
+  .public-home-copy > p {
+    display: block !important;
+    overflow: visible !important;
+    font-size: 12.2px !important;
+    line-height: 1.36 !important;
+    -webkit-line-clamp: unset !important;
+  }
+
+  .home-value-strip article,
+  .home-definition-strip article,
+  .home-ceo-token-desk {
+    max-width: 100% !important;
+    overflow: hidden !important;
+  }
+}
