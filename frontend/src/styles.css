@@ -39569,3 +39569,88 @@ canvas {
   }
 }
 
+/* Project wizard mobile action bar polish: keep form actions compact and usable while typing. */
+@media (max-width: 620px) {
+  .project-flow-shell {
+    --project-mobile-action-height: 64px;
+  }
+
+  .project-flow-shell .project-flow-main {
+    padding-bottom: calc(var(--project-mobile-action-height) + 22px + env(safe-area-inset-bottom)) !important;
+  }
+
+  .project-flow-shell .project-step-actions {
+    position: sticky !important;
+    bottom: 0 !important;
+    z-index: 120 !important;
+    display: grid !important;
+    grid-template-columns: 42px minmax(0, 1fr) !important;
+    align-items: center !important;
+    gap: 8px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: var(--project-mobile-action-height) !important;
+    margin: 12px 0 -14px !important;
+    border: 1px solid rgba(226, 232, 240, 0.94) !important;
+    border-radius: 10px 10px 0 0 !important;
+    background: rgba(255, 255, 255, 0.97) !important;
+    backdrop-filter: blur(16px) !important;
+    padding: 8px !important;
+    overflow: hidden !important;
+    box-shadow: 0 -14px 34px rgba(15, 23, 42, 0.08) !important;
+  }
+
+  .project-flow-shell .project-step-actions > .secondary-button {
+    width: 42px !important;
+    min-width: 42px !important;
+    min-height: 42px !important;
+    padding: 0 !important;
+    border-radius: 8px !important;
+    font-size: 0 !important;
+  }
+
+  .project-flow-shell .project-step-actions > .secondary-button svg {
+    width: 17px !important;
+    height: 17px !important;
+  }
+
+  .project-flow-shell .project-step-actions > div {
+    display: grid !important;
+    grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr) !important;
+    gap: 8px !important;
+    min-width: 0 !important;
+  }
+
+  .project-flow-shell .project-step-actions button {
+    min-width: 0 !important;
+    min-height: 42px !important;
+    padding-inline: 10px !important;
+    border-radius: 8px !important;
+    font-size: 12px !important;
+    line-height: 1.1 !important;
+    white-space: nowrap !important;
+  }
+}
+
+@media (max-width: 360px) {
+  .project-flow-shell .project-step-actions {
+    grid-template-columns: 40px minmax(0, 1fr) !important;
+    gap: 6px !important;
+    padding: 7px !important;
+  }
+
+  .project-flow-shell .project-step-actions > .secondary-button {
+    width: 40px !important;
+    min-width: 40px !important;
+  }
+
+  .project-flow-shell .project-step-actions > div {
+    gap: 6px !important;
+  }
+
+  .project-flow-shell .project-step-actions button {
+    padding-inline: 7px !important;
+    font-size: 11px !important;
+  }
+}
+

@@ -1628,6 +1628,11 @@ test('signed-in mobile dashboard keeps nav, actions, and popovers phone-safe', a
   assert.match(cssSource, /\.project-flow-shell \.project-flow-main\s*\{[\s\S]*padding-bottom: calc\(86px \+ env\(safe-area-inset-bottom\)\);/);
   assert.match(cssSource, /\.project-account-menu \.account-context-menu,[\s\S]*\.project-flow-actions \.locale-context-menu\s*\{[\s\S]*top: auto !important;[\s\S]*bottom: calc\(12px \+ env\(safe-area-inset-bottom\)\) !important;/);
   assert.match(cssSource, /\.project-flow-shell \.project-step-actions,[\s\S]*\.project-flow-shell \.funding-actions\s*\{[\s\S]*backdrop-filter: blur\(16px\);/);
+  assert.match(cssSource, /Project wizard mobile action bar polish/);
+  assert.match(cssSource, /\.project-flow-shell\s*\{[\s\S]*--project-mobile-action-height: 64px;/);
+  assert.match(cssSource, /\.project-flow-shell \.project-step-actions\s*\{[\s\S]*grid-template-columns: 42px minmax\(0, 1fr\) !important;[\s\S]*min-height: var\(--project-mobile-action-height\) !important;/);
+  assert.match(cssSource, /\.project-flow-shell \.project-step-actions > \.secondary-button\s*\{[\s\S]*font-size: 0 !important;/);
+  assert.match(cssSource, /\.project-flow-shell \.project-step-actions > div\s*\{[\s\S]*grid-template-columns: minmax\(0, 0\.92fr\) minmax\(0, 1\.08fr\) !important;/);
   assert.match(cssSource, /@media \(max-width: 380px\)[\s\S]*\.dashboard-shell \.dash-mobile-nav button span\s*\{[\s\S]*display: none;/);
   assert.match(cssSource, /@media \(max-width: 380px\)[\s\S]*\.dashboard-shell \.dash-top-actions \.primary-button\.compact span\s*\{[\s\S]*display: none;/);
   assert.match(cssSource, /@media \(max-width: 380px\)[\s\S]*\.notification-dropdown-actions\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) !important;/);
