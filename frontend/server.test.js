@@ -2134,6 +2134,11 @@ test('signed-in mobile dashboard keeps nav, actions, and popovers phone-safe', a
   assert.match(cssSource, /\/\* Signed-in mobile role switcher pass:[\s\S]*\.dashboard-shell \.dashboard-role-map article.active\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) auto !important;[\s\S]*min-height: 78px !important;/);
   assert.match(cssSource, /\/\* Signed-in mobile role switcher pass:[\s\S]*\.dashboard-shell \.dashboard-role-map article.active p,[\s\S]*\.dashboard-shell \.dashboard-role-map article.active \.dashboard-role-proof,/);
   assert.match(cssSource, /\/\* Signed-in mobile role switcher pass:[\s\S]*\.dashboard-shell \.dashboard-role-map article.active \.dashboard-role-primary\s*\{[\s\S]*min-height: 34px !important;/);
+  assert.match(cssSource, /Signed-in mobile executive compact pass: keep the first screen useful without turning role coverage into another hero/);
+  assert.match(cssSource, /\/\* Signed-in mobile executive compact pass:[\s\S]*\.dashboard-shell \.dash-command-strip\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) minmax\(86px, 0\.34fr\) !important;/);
+  assert.match(cssSource, /\/\* Signed-in mobile executive compact pass:[\s\S]*\.dashboard-shell \.dash-command-metrics article:nth-child\(n \+ 3\)\s*\{[\s\S]*display: none !important;/);
+  assert.match(cssSource, /\/\* Signed-in mobile executive compact pass:[\s\S]*\.dashboard-shell \.dashboard-role-map article:not\(\.active\) \.dashboard-role-proof,/);
+  assert.match(cssSource, /\/\* Signed-in mobile executive compact pass:[\s\S]*\.dashboard-shell \.dashboard-role-map article.active \.dashboard-role-primary\s*\{[\s\S]*font-size: 0 !important;/);
   assert.match(cssSource, /Signed-in mobile product cut: one compact cockpit first, secondary proof later/);
   assert.match(cssSource, /\.dashboard-shell \.dash-rail,[\s\S]*\.dashboard-shell \.dash-breadcrumb\s*\{[\s\S]*display: none !important;/);
   assert.match(cssSource, /\.dashboard-shell\.dashboard-no-project \.dash-metrics,[\s\S]*\.dashboard-shell\.dashboard-no-project \.project-pr-monitor,[\s\S]*\.dashboard-shell\.dashboard-no-project \.dashboard-focus-target\s*\{[\s\S]*display: none !important;/);
