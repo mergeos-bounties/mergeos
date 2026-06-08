@@ -13758,11 +13758,39 @@ const publicTokenChapterRows = computed(() => {
     { title: '6. Economy and ledger', body: 'MRG, escrow reserves, payout release, Solana contracts, treasury state, and public proof.', icon: CircleDollarSign, tone: 'blue' },
   ];
 });
-const homeTokenSignalRows = computed(() => [
-  { title: 'Airdrop', detail: 'mission review', icon: Trophy, action: { page: 'airdrop' } },
-  { title: 'Presale', detail: 'reserve gates', icon: CircleDollarSign, action: { page: 'presale' } },
-  { title: 'Whitepaper', detail: 'exec paper', icon: FileCheck2, action: { page: 'whitepaper' } },
-]);
+function formatHomeTokenSignalCount(count = 0, singular = 'item', fallback = '') {
+  const numeric = Number(count) || 0;
+  if (!numeric) return fallback;
+  return `${numeric} ${singular}${numeric === 1 ? '' : 's'}`;
+}
+const homeTokenSignalRows = computed(() => {
+  const candidateStats = tokenLaunchCandidatesData.value?.stats || {};
+  const briefStats = tokenLaunchBriefsData.value?.stats || {};
+  const airdropCandidates = Number(candidateStats.airdrop_count) || 0;
+  const presaleCandidates = Number(candidateStats.presale_count) || 0;
+  const airdropMemos = Number(briefStats.airdrop_count) || 0;
+  const presaleMemos = Number(briefStats.presale_count) || 0;
+  return [
+    {
+      title: 'Airdrop',
+      detail: formatHomeTokenSignalCount(airdropCandidates, 'candidate', airdropMemos ? `${airdropMemos} memo${airdropMemos === 1 ? '' : 's'}` : 'mission review'),
+      icon: Trophy,
+      action: { page: 'airdrop' },
+    },
+    {
+      title: 'Presale',
+      detail: formatHomeTokenSignalCount(presaleCandidates, 'candidate', presaleMemos ? `${presaleMemos} memo${presaleMemos === 1 ? '' : 's'}` : 'reserve gates'),
+      icon: CircleDollarSign,
+      action: { page: 'presale' },
+    },
+    {
+      title: 'Whitepaper',
+      detail: `${publicWhitepaperArtifactRows.value.length} proof links`,
+      icon: FileCheck2,
+      action: { page: 'whitepaper' },
+    },
+  ];
+});
 const publicWhitepaperThesisRows = computed(() => [
   {
     label: 'Thesis',
