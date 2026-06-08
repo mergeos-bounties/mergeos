@@ -1871,6 +1871,8 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 		!strings.Contains(candidates.Candidates[0].ReadinessGates[2].Evidence, "write the airdrop memo") ||
 		!strings.Contains(candidates.Candidates[0].DecisionOptions[0].ProofPolicy, "repo task evidence") ||
 		strings.Contains(candidates.Candidates[0].DecisionOptions[0].ProofPolicy, "utility proof") ||
+		!strings.Contains(candidates.Candidates[0].DecisionOptions[0].RiskNotes, "draft memo first") ||
+		strings.Contains(candidates.Candidates[0].DecisionOptions[0].RiskNotes, "ready to open") ||
 		!strings.Contains(candidates.Candidates[0].NextAction, "Draft a CEO airdrop memo") ||
 		candidates.Candidates[0].ProofPolicy == "" {
 		t.Fatalf("public token launch candidates rows invalid: %#v", candidates.Candidates)
@@ -1893,6 +1895,8 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 		presaleCandidates.Candidates[0].ReadinessGates[2].Label != "CEO memo" ||
 		presaleCandidates.Candidates[0].ReadinessGates[2].State != "review" ||
 		!strings.Contains(presaleCandidates.Candidates[0].NextAction, "Draft a CEO presale memo") ||
+		!strings.Contains(presaleCandidates.Candidates[0].DecisionOptions[0].RiskNotes, "draft memo first") ||
+		strings.Contains(presaleCandidates.Candidates[0].DecisionOptions[0].RiskNotes, "ready to open") ||
 		!strings.Contains(presaleCandidates.Candidates[0].DecisionOptions[0].ProofPolicy, "utility proof") {
 		t.Fatalf("public presale launch candidates rows invalid: %#v", presaleCandidates.Candidates)
 	}

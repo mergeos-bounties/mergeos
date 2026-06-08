@@ -1534,13 +1534,17 @@ func tokenLaunchCandidateDecisionOptions(launchType string, score int, readyToOp
 			approveLabel = "Open missions"
 		}
 	}
+	approveRisk := fmt.Sprintf("CEO %s decision: draft memo first; score %d%% fit but launch is not open until CEO memo and ledger proof are attached.", launchLabel, score)
+	if readyToOpen {
+		approveRisk = fmt.Sprintf("CEO %s decision: ready to open after final proof review; score %d%% fit.", launchLabel, score)
+	}
 	return []TokenLaunchCandidateDecisionOption{
 		{
 			Key:         "approve",
 			Label:       approveLabel,
 			Tone:        "approve",
 			ProofPolicy: approveProof,
-			RiskNotes:   fmt.Sprintf("CEO %s decision: ready to open after final proof review; score %d%% fit.", launchLabel, score),
+			RiskNotes:   approveRisk,
 		},
 		{
 			Key:         "needs_evidence",
