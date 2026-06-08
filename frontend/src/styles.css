@@ -45324,6 +45324,11 @@ canvas {
   white-space: nowrap !important;
 }
 
+.token-page-airdrop .token-ceo-candidate-mobile-proof,
+.token-page-presale .token-ceo-candidate-mobile-proof {
+  display: none !important;
+}
+
 .token-page-airdrop .token-ceo-candidate-verdict,
 .token-page-presale .token-ceo-candidate-verdict {
   grid-template-columns: auto minmax(0, 1fr) !important;
@@ -45549,5 +45554,26 @@ canvas {
   .project-flow-shell .ai-pricing-inputs label small,
   .project-flow-shell .ai-evaluation-results-box .extra-meta {
     display: none !important;
+  }
+}
+
+/* Token CEO mobile proof summary: surface the research checks even when the full proof packet stays collapsed. */
+@media (max-width: 760px) {
+  .token-page-airdrop .token-ceo-candidate-mobile-proof,
+  .token-page-presale .token-ceo-candidate-mobile-proof {
+    display: block !important;
+    margin-top: 4px !important;
+    overflow: hidden !important;
+    border: 1px solid rgba(15, 118, 110, 0.12) !important;
+    border-radius: 8px !important;
+    background: rgba(240, 253, 250, 0.72) !important;
+    color: #0f766e !important;
+    font-size: 9.5px !important;
+    font-style: normal !important;
+    font-weight: 860 !important;
+    line-height: 1.1 !important;
+    padding: 5px 6px !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
   }
 }

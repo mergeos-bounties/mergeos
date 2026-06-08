@@ -5190,6 +5190,9 @@
                 <em v-if="row.evidenceSummary" class="token-ceo-candidate-evidence">
                   {{ row.evidenceSummary }}
                 </em>
+                <em v-if="row.proofSummary" class="token-ceo-candidate-mobile-proof">
+                  {{ row.proofSummary }}
+                </em>
                 <div v-if="row.verdict" :class="['token-ceo-candidate-verdict', row.verdict.tone]" aria-label="CEO launch verdict">
                   <b>{{ row.verdict.label }}</b>
                   <span>{{ row.verdict.reason }}</span>
@@ -13302,6 +13305,14 @@ function tokenLaunchCandidateEvidenceSummary({ signals = [], readinessRows = [],
   const workCount = (Number(openTasks) || 0) + (Number(acceptedTasks) || 0);
   return `Evidence: ${workCount} tasks / ${signalCount} signals / ${readyCount}/${gateCount} gates`;
 }
+function tokenLaunchCandidateProofSummary({ proofSignalRows = [], readinessRows = [] } = {}) {
+  const signals = Array.isArray(proofSignalRows) ? proofSignalRows.filter(Boolean).slice(0, 2) : [];
+  const gates = Array.isArray(readinessRows) ? readinessRows : [];
+  const readyCount = gates.filter((gate) => String(gate.state || '').toLowerCase() === 'ready').length;
+  const gateCount = gates.length || 3;
+  const prefix = signals.length ? `${signals.join(' / ')} / ` : '';
+  return `CEO checks: ${prefix}${readyCount}/${gateCount} gates`;
+}
 function tokenLaunchCandidateVerdict({ launchType = 'airdrop', score = 0, readinessRows = [], signalCount = 0, openTasks = 0, acceptedTasks = 0, decisionState = '' } = {}) {
   const numericScore = Number(score) || 0;
   const gates = Array.isArray(readinessRows) ? readinessRows : [];
@@ -13397,6 +13408,7 @@ const tokenCeoCandidateRows = computed(() => {
         label: launchType === 'presale' ? 'CEO presale candidate' : 'CEO airdrop candidate',
         scoreLabel: `${score}% fit`,
         evidenceSummary: tokenLaunchCandidateEvidenceSummary({ signals, readinessRows, openTasks, acceptedTasks, launchType }),
+        proofSummary: tokenLaunchCandidateProofSummary({ proofSignalRows, readinessRows }),
         decisionRows,
         decisionPreview: tokenLaunchCandidateDecisionPreview(decisionRows, candidate.next_action),
         title: candidate.project_title || 'Funded MergeOS project',
@@ -13463,6 +13475,7 @@ const tokenCeoCandidateRows = computed(() => {
       label: launchType === 'presale' ? 'CEO presale candidate' : 'CEO airdrop candidate',
       scoreLabel: `${score}% fit`,
       evidenceSummary: tokenLaunchCandidateEvidenceSummary({ signals: fallbackSignals, readinessRows, openTasks, acceptedTasks, launchType }),
+      proofSummary: tokenLaunchCandidateProofSummary({ proofSignalRows, readinessRows }),
       decisionRows,
       decisionPreview: tokenLaunchCandidateDecisionPreview(
         decisionRows,
