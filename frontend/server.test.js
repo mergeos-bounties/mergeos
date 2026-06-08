@@ -1546,6 +1546,10 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(cssSource, /Token CEO candidate decision polish: turn raw research signals into scan-friendly evidence chips/);
   assert.match(cssSource, /\.token-ceo-candidate-signals\s*\{[\s\S]*display: flex;[\s\S]*flex-wrap: wrap;/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-candidate-signals\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\) !important;/);
+  assert.match(cssSource, /Token CEO mobile action hierarchy: make candidate review feel like one clear CEO decision/);
+  assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-candidate-actions\s*\{[\s\S]*grid-template-columns: minmax\(0, 0\.78fr\) minmax\(0, 1\.22fr\) !important;/);
+  assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-candidate-actions button\s*\{[\s\S]*background: #0f9f78 !important;[\s\S]*color: #ffffff !important;/);
+  assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-candidate-decisions button\s*\{[\s\S]*border-radius: 8px !important;/);
   assert.match(cssSource, /Token CEO mobile first decision: put candidate actions inside the first viewport/);
   assert.match(cssSource, /\/\* Token CEO mobile first decision:[\s\S]*\.token-hero\s*\{[\s\S]*gap: 4px !important;/);
   assert.match(cssSource, /\/\* Token CEO mobile first decision:[\s\S]*\.token-ceo-decision-strip\s*\{[\s\S]*display: none !important;/);

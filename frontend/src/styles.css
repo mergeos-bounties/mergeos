@@ -39737,3 +39737,46 @@ canvas {
     font-size: 9.2px !important;
   }
 }
+
+/* Token CEO mobile action hierarchy: make candidate review feel like one clear CEO decision. */
+@media (max-width: 620px) {
+  .token-ceo-candidate-actions {
+    display: grid !important;
+    grid-template-columns: minmax(0, 0.78fr) minmax(0, 1.22fr) !important;
+    gap: 5px !important;
+  }
+
+  .token-ceo-candidate-actions a,
+  .token-ceo-candidate-actions button {
+    width: 100% !important;
+    min-height: 30px !important;
+    justify-content: center !important;
+    border-radius: 8px !important;
+    padding: 0 8px !important;
+    font-size: 9px !important;
+  }
+
+  .token-ceo-candidate-actions a {
+    border-color: rgba(100, 116, 139, 0.16) !important;
+    background: rgba(248, 250, 252, 0.9) !important;
+    color: #475569 !important;
+  }
+
+  .token-ceo-candidate-actions button {
+    border-color: rgba(15, 118, 110, 0.24) !important;
+    background: #0f9f78 !important;
+    color: #ffffff !important;
+    box-shadow: 0 10px 20px rgba(15, 159, 120, 0.18) !important;
+  }
+
+  .token-ceo-candidate-decisions {
+    gap: 4px !important;
+  }
+
+  .token-ceo-candidate-decisions button {
+    min-height: 28px !important;
+    border-radius: 8px !important;
+    padding-inline: 4px !important;
+    font-size: 8.4px !important;
+  }
+}
