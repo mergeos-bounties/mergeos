@@ -778,6 +778,10 @@ test('public menus and signed-in mobile layout keep reachable compact surfaces',
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.home-navbar \.public-nav-actions\s*\{[\s\S]*grid-column: 2 !important;[\s\S]*grid-row: 1 !important;/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.home-navbar \.hamburger-button\s*\{[\s\S]*grid-column: 3 !important;[\s\S]*grid-row: 1 !important;/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.home-navbar \.public-nav-actions \.locale-button\s*\{[\s\S]*font-size: 11px !important;/);
+  assert.match(cssSource, /Public mobile nav fit: language, account, and menu must never clip on token pages/);
+  assert.match(cssSource, /\/\* Public mobile nav fit:[\s\S]*\.home-navbar \.nav-inner\s*\{[\s\S]*display: grid !important;[\s\S]*grid-template-columns: minmax\(0, 1fr\) auto auto !important;/);
+  assert.match(cssSource, /\/\* Public mobile nav fit:[\s\S]*\.home-navbar \.public-nav-actions\s*\{[\s\S]*grid-template-columns: 38px 38px !important;[\s\S]*margin-right: 42px !important;/);
+  assert.match(cssSource, /\/\* Public mobile nav fit:[\s\S]*\.home-navbar \.account-icon-button > svg \+ svg,[\s\S]*\.home-navbar \.account-icon-button > \.profile-avatar \+ svg\s*\{[\s\S]*display: none !important;/);
 });
 
 test('public home keeps a short decision-screen rhythm', async () => {
