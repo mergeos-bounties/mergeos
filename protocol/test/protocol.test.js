@@ -270,6 +270,7 @@ test('validates airdrop claim, presale reservation, and token launch brief proto
             risk_notes: 'Reject if source proof, delivery activity, or payout history is missing.',
           },
         ],
+        next_action: 'Open earned missions after CEO confirms repo demand, anti-bot checks, wallet uniqueness, and proof gates.',
         gate_summary: '4 open tasks, 14 accepted tasks, 3 proof signals',
         proof_policy: 'Require tests, screenshot plus public ledger proof before opening token workflows.',
         marketplace_url: '/marketplace',
