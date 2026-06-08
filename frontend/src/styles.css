@@ -9090,6 +9090,48 @@ svg {
   font-weight: 900;
 }
 
+.token-hero-ceo-strip {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+  max-width: 520px;
+}
+
+.token-hero-ceo-strip article {
+  min-width: 0;
+  border: 1px solid rgba(15, 118, 110, 0.13);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.82);
+  padding: 8px 9px;
+}
+
+.token-hero-ceo-strip small,
+.token-hero-ceo-strip strong {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.token-hero-ceo-strip small {
+  color: #64748b;
+  font-size: 9px;
+  line-height: 1.1;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.token-hero-ceo-strip strong {
+  margin-top: 3px;
+  color: #0f172a;
+  font-size: 14px;
+  line-height: 1.05;
+  font-weight: 950;
+}
+
 .token-ceo-brief-card {
   scroll-margin-top: 86px;
   min-width: 0;
@@ -39630,6 +39672,25 @@ canvas {
   .token-ceo-candidate-lane article {
     padding-bottom: 7px !important;
     min-height: 0 !important;
+  }
+
+  .token-hero-ceo-strip {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 5px !important;
+    margin-top: 8px !important;
+  }
+
+  .token-hero-ceo-strip article {
+    padding: 6px !important;
+    border-radius: 8px !important;
+  }
+
+  .token-hero-ceo-strip small {
+    font-size: 7.8px !important;
+  }
+
+  .token-hero-ceo-strip strong {
+    font-size: 12px !important;
   }
 }
 

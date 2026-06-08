@@ -5079,6 +5079,12 @@
                 </button>
               </template>
             </div>
+            <div v-if="publicPage === 'airdrop' || publicPage === 'presale'" class="token-hero-ceo-strip" aria-label="CEO launch research summary">
+              <article v-for="row in tokenCeoQueueStatRows" :key="row.label">
+                <small>{{ row.label }}</small>
+                <strong>{{ row.value }}</strong>
+              </article>
+            </div>
           </div>
 
           <aside class="token-status-panel" :aria-label="publicTokenPage.panelTitle">
