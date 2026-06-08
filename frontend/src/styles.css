@@ -45672,3 +45672,89 @@ canvas {
     font-size: 8.8px !important;
   }
 }
+
+/* Token proof map: keep the hidden long sections represented by one compact CEO-readable row. */
+.token-page-airdrop .token-proof-map,
+.token-page-presale .token-proof-map {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+  margin-top: -2px !important;
+}
+
+.token-page-airdrop .token-proof-map article,
+.token-page-presale .token-proof-map article {
+  display: grid !important;
+  grid-template-columns: 30px minmax(0, 1fr) !important;
+  gap: 8px !important;
+  min-height: 76px !important;
+  border: 1px solid rgba(203, 213, 225, 0.82) !important;
+  border-radius: 8px !important;
+  background: rgba(255, 255, 255, 0.86) !important;
+  padding: 10px !important;
+}
+
+.token-page-airdrop .token-proof-map small,
+.token-page-presale .token-proof-map small,
+.token-page-airdrop .token-proof-map strong,
+.token-page-presale .token-proof-map strong,
+.token-page-airdrop .token-proof-map p,
+.token-page-presale .token-proof-map p {
+  display: block !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.token-page-airdrop .token-proof-map small,
+.token-page-presale .token-proof-map small {
+  color: #0f766e !important;
+  font-family: var(--mono-font) !important;
+  font-size: 9px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.06em !important;
+  line-height: 1 !important;
+  text-transform: uppercase !important;
+  white-space: nowrap !important;
+}
+
+.token-page-airdrop .token-proof-map strong,
+.token-page-presale .token-proof-map strong {
+  margin-top: 4px !important;
+  color: #0f172a !important;
+  font-size: 12px !important;
+  font-weight: 920 !important;
+  line-height: 1.12 !important;
+  white-space: nowrap !important;
+}
+
+.token-page-airdrop .token-proof-map p,
+.token-page-presale .token-proof-map p {
+  display: -webkit-box !important;
+  margin: 4px 0 0 !important;
+  color: #64748b !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 2 !important;
+  font-size: 10px !important;
+  line-height: 1.18 !important;
+}
+
+@media (max-width: 620px) {
+  .token-page-airdrop .token-proof-map,
+  .token-page-presale .token-proof-map {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 6px !important;
+  }
+
+  .token-page-airdrop .token-proof-map article,
+  .token-page-presale .token-proof-map article {
+    min-height: 56px !important;
+    grid-template-columns: 26px minmax(0, 1fr) !important;
+    padding: 7px !important;
+  }
+
+  .token-page-airdrop .token-proof-map p,
+  .token-page-presale .token-proof-map p {
+    -webkit-line-clamp: 1 !important;
+  }
+}

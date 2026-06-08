@@ -5517,6 +5517,19 @@
           </details>
         </section>
 
+        <section v-if="publicPage === 'airdrop' || publicPage === 'presale'" class="token-proof-map" aria-label="Compact token proof map">
+          <article v-for="row in publicTokenProofMapRows" :key="row.title">
+            <span :class="['ledger-trust-icon', row.tone]">
+              <component :is="row.icon" :size="14" />
+            </span>
+            <div>
+              <small>{{ row.kicker }}</small>
+              <strong>{{ row.title }}</strong>
+              <p>{{ row.body }}</p>
+            </div>
+          </article>
+        </section>
+
         <section v-if="publicPage !== 'whitepaper'" class="token-content-grid">
           <div class="token-main-panel">
             <div class="contracts-section-head">
@@ -13901,6 +13914,23 @@ const publicTokenDetailRows = computed(() => {
       { title: 'Repository architecture', body: 'mergeos-app, mergeos-contracts, mergeos-sdk, and future mergeos-protocol are separated by responsibility.', meta: '4 repos', icon: GitBranch, tone: 'green' },
       { title: 'AI orchestration', body: 'Agents scan repos, analyze issues, generate task graphs, review PRs, validate deployments, and attach evidence.', meta: 'AI layer', icon: Bot, tone: 'purple' },
       { title: 'Public proof', body: 'Ledger logs, protocol manifests, live feed events, and contract references form the trust layer.', meta: 'Proof', icon: Link2, tone: 'blue' },
+    ];
+  }
+  return [];
+});
+const publicTokenProofMapRows = computed(() => {
+  if (publicPage.value === 'airdrop') {
+    return [
+      { kicker: 'CEO gate', title: 'Research useful work', body: 'Repo demand, task proof, wallet uniqueness.', icon: Search, tone: 'purple' },
+      { kicker: 'Mission gate', title: 'Reward real delivery', body: 'Bounties, PRs, QA, and accepted work count.', icon: Trophy, tone: 'green' },
+      { kicker: 'Ledger gate', title: 'Publish claim proof', body: 'Allocation opens only after auditable proof.', icon: ShieldCheck, tone: 'amber' },
+    ];
+  }
+  if (publicPage.value === 'presale') {
+    return [
+      { kicker: 'CEO gate', title: 'Research utility first', body: 'Utility, reserve cap, wallet path, and risk.', icon: Search, tone: 'purple' },
+      { kicker: 'Funding gate', title: 'Verify reserve rails', body: 'Payment reference and Solana wallet checks.', icon: CreditCard, tone: 'blue' },
+      { kicker: 'Ledger gate', title: 'Publish receipt proof', body: 'Accepted reserve needs public proof rows.', icon: ShieldCheck, tone: 'green' },
     ];
   }
   return [];
