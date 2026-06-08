@@ -4,7 +4,7 @@
       {{ toastMessage }}
     </div>
 
-    <header class="project-flow-navbar">
+    <header class="project-flow-navbar" @pointerleave="scheduleNavContextClose">
       <a class="brand-link" href="/" @click.prevent="closeProjectWizard(); openPublicPage('home')">
         <span class="brand-mark" aria-hidden="true">
           <img src="/favicon.svg" alt="" />
@@ -4424,7 +4424,7 @@
       {{ toastMessage }}
     </div>
 
-    <header class="home-navbar">
+    <header class="home-navbar" @pointerleave="scheduleNavContextClose">
       <div class="home-container nav-inner">
         <a class="brand-link" href="/" @click.prevent="openPublicPage('home')">
           <span class="brand-mark" aria-hidden="true">
@@ -4602,6 +4602,14 @@
               </button>
             </div>
           </div>
+          <button
+            class="mobile-inline-locale-button"
+            type="button"
+            :aria-label="publicNavCopy.language"
+            @click="cycleLocalePreference"
+          >
+            {{ activeLocaleLabel }}
+          </button>
 
           <div class="account-menu" :class="{ open: activeNavMenu === 'account' }" @mouseleave="scheduleNavContextClose" @keydown.escape.stop="closeNavContextMenu">
             <button
@@ -4643,6 +4651,17 @@
               </template>
             </div>
           </div>
+          <button
+            class="mobile-inline-menu-button"
+            type="button"
+            :aria-label="mobileMenuOpen ? 'Close navigation' : 'Open navigation'"
+            :aria-expanded="mobileMenuOpen"
+            aria-controls="mobile-nav-panel"
+            @click="mobileMenuOpen = !mobileMenuOpen"
+          >
+            <Menu v-if="!mobileMenuOpen" :size="18" />
+            <X v-else :size="18" />
+          </button>
         </div>
       </div>
     </header>
@@ -24559,6 +24578,12 @@ function setLocalePreference(localeCode = 'en-US') {
   showToast(option.toast || `Language preference set to ${localeDisplayLabel(option)}.`);
 }
 
+function cycleLocalePreference() {
+  const currentIndex = Math.max(0, localeOptions.findIndex((item) => item.code === activeLocale.value));
+  const nextOption = localeOptions[(currentIndex + 1) % localeOptions.length] || localeOptions[0];
+  setLocalePreference(nextOption.code);
+}
+
 function upsertSeoElement(selector, createElement) {
   let element = document.head.querySelector(selector);
   if (!element) {
@@ -26036,7 +26061,7 @@ function closeNavContextMenu() {
   pinnedNavMenu.value = '';
 }
 
-function scheduleNavContextClose() {
+function scheduleNavContextClose(delay = 110) {
   cancelNavContextClose();
   if (!hasWindow) {
     closeNavContextMenu();
@@ -26046,7 +26071,7 @@ function scheduleNavContextClose() {
     navContextCloseTimer = 0;
     activeNavMenu.value = '';
     pinnedNavMenu.value = '';
-  }, 180);
+  }, delay);
 }
 
 function cancelNavContextClose() {
@@ -26061,7 +26086,23 @@ function handleNavContextPointerMove(event) {
   if (target?.closest?.('.nav-menu, .locale-menu, .account-menu')) {
     return;
   }
-  scheduleNavContextClose();
+  const pointerX = Number(event.clientX);
+  const pointerY = Number(event.clientY);
+  const menu = activeNavMenu.value;
+  const geometry = navContextGeometry.value;
+  const hasMenuGeometry = geometry.menu === menu && geometry.width > 0;
+  const isNearActiveMegaMenu = hasMenuGeometry
+    && pointerX >= geometry.left - 8
+    && pointerX <= geometry.left + geometry.width + 8
+    && pointerY >= geometry.top - 10
+    && pointerY <= geometry.top + 12;
+  if (isNearActiveMegaMenu) return;
+  scheduleNavContextClose(70);
+}
+
+function handleNavContextViewportLeave() {
+  if (!activeNavMenu.value) return;
+  closeNavContextMenu();
 }
 
 function handleNavContextOutsideClick(event) {
@@ -33586,6 +33627,8 @@ onMounted(async () => {
     window.visualViewport?.addEventListener('scroll', updateDashboardNotificationMenuPosition);
     document.addEventListener('click', handleNavContextOutsideClick);
     document.addEventListener('pointermove', handleNavContextPointerMove, { passive: true });
+    document.addEventListener('mouseleave', handleNavContextViewportLeave);
+    window.addEventListener('blur', handleNavContextViewportLeave);
     document.addEventListener('click', handleDashboardNotificationOutsideClick);
     if (!handledGitHubCallback && !handledPasswordResetToken && !paypalCheckoutPath) {
       if (projectWizardVisible.value) {
@@ -33623,6 +33666,8 @@ onUnmounted(() => {
     window.visualViewport?.removeEventListener('scroll', updateDashboardNotificationMenuPosition);
     document.removeEventListener('click', handleNavContextOutsideClick);
     document.removeEventListener('pointermove', handleNavContextPointerMove);
+    document.removeEventListener('mouseleave', handleNavContextViewportLeave);
+    window.removeEventListener('blur', handleNavContextViewportLeave);
     document.removeEventListener('click', handleDashboardNotificationOutsideClick);
   }
   stopDashboardRealtime();

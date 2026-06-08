@@ -811,7 +811,13 @@ test('public menus and signed-in mobile layout keep reachable compact surfaces',
   assert.match(cssSource, /\/\* Public mobile nav fit:[\s\S]*\.home-navbar \.public-nav-actions\s*\{[\s\S]*grid-template-columns: 38px 38px !important;[\s\S]*margin-right: 42px !important;/);
   assert.match(cssSource, /\/\* Public mobile nav fit:[\s\S]*\.home-navbar \.account-icon-button > svg \+ svg,[\s\S]*\.home-navbar \.account-icon-button > \.profile-avatar \+ svg\s*\{[\s\S]*display: none !important;/);
   assert.doesNotMatch(appSource, /if \(pinnedNavMenu\.value && pinnedNavMenu\.value === activeNavMenu\.value\) return;/);
-  assert.match(appSource, /activeNavMenu\.value = '';[\s\S]*pinnedNavMenu\.value = '';[\s\S]*}, 180\);/);
+  assert.match(appSource, /function scheduleNavContextClose\(delay = 110\)/);
+  assert.match(appSource, /activeNavMenu\.value = '';[\s\S]*pinnedNavMenu\.value = '';[\s\S]*}, delay\);/);
+  assert.match(appSource, /<header class="home-navbar" @pointerleave="scheduleNavContextClose">/);
+  assert.match(appSource, /document\.addEventListener\('mouseleave', handleNavContextViewportLeave\)/);
+  assert.match(appSource, /window\.addEventListener\('blur', handleNavContextViewportLeave\)/);
+  assert.match(cssSource, /Home\/menu correction: tighter first screen and hover menus that release cleanly/);
+  assert.match(cssSource, /\/\* Home\/menu correction:[\s\S]*\.home-navbar \.nav-menu\.open::after,[\s\S]*height: 6px !important;/);
 });
 
 test('public home keeps a short decision-screen rhythm', async () => {
@@ -980,6 +986,9 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.match(cssSource, /Home product polish: make the first screen feel like a product cockpit/);
   assert.match(cssSource, /\.public-home-page \.home-container\.public-home-layout\s*\{[\s\S]*width: min\(1180px, calc\(100vw - 48px\)\) !important;[\s\S]*grid-template-columns: minmax\(0, 0\.96fr\) minmax\(340px, 420px\) !important;/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.public-home-page \.home-container\.public-home-layout,[\s\S]*\.public-home-hero,[\s\S]*\.public-home-copy,[\s\S]*\.home-definition-strip,[\s\S]*\.public-home-copy \.marketplace-actions,[\s\S]*\.home-mergeide-inline-link\s*\{[\s\S]*width: calc\(100vw - 24px\) !important;/);
+  assert.match(cssSource, /Home\/menu correction: tighter first screen and hover menus that release cleanly/);
+  assert.match(cssSource, /\/\* Home\/menu correction:[\s\S]*\.public-home-page \.home-container\.public-home-layout\s*\{[\s\S]*width: min\(1120px, calc\(100vw - 72px\)\) !important;[\s\S]*min-height: auto !important;/);
+  assert.match(cssSource, /\/\* Home\/menu correction:[\s\S]*\.public-home-page \.home-executive-flow article:nth-child\(n \+ 3\),[\s\S]*display: none !important;/);
 });
 
 test('frontend system exposes required public pages and dashboard roles', async () => {
