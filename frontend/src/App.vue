@@ -13317,9 +13317,13 @@ const tokenCeoCandidateRows = computed(() => {
     : [];
   if (apiCandidates.length) {
     return apiCandidates.slice(0, 3).map((candidate) => {
-      const launchType = candidate.decision_launch_type === 'presale' || candidate.decision_launch_type === 'airdrop'
-        ? candidate.decision_launch_type
-        : tokenCeoCandidateLaunchType.value;
+      const pageLaunchType = publicPage.value === 'presale' || publicPage.value === 'airdrop'
+        ? publicPage.value
+        : '';
+      const launchType = pageLaunchType
+        || (candidate.decision_launch_type === 'presale' || candidate.decision_launch_type === 'airdrop'
+          ? candidate.decision_launch_type
+          : tokenCeoCandidateLaunchType.value);
       const sourceUrl = String(candidate.research_source || '').trim();
       const signals = Array.isArray(candidate.proof_signals) ? candidate.proof_signals : [];
       const proofSignalRows = signals.slice(0, 3).map((signal) => toTitleLabel(signal));
