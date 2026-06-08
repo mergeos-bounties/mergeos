@@ -1338,6 +1338,8 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /checks: \['Mission demand', 'Anti-bot gate', 'Ledger proof'\]/);
   assert.match(appSource, /checks: \['Utility score', 'Funding proof', 'Wallet gate'\]/);
   assert.match(appSource, /class="token-ceo-candidate-proof"/);
+  assert.match(appSource, /class="token-ceo-candidate-gate-strip"/);
+  assert.match(appSource, /class="token-ceo-candidate-next-action"/);
   assert.match(appSource, /class="token-ceo-proof-drawer"/);
   assert.match(appSource, /class="token-ceo-candidate-policy"/);
   assert.match(appSource, /class="token-ceo-candidate-readiness"/);
@@ -1739,9 +1741,14 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-candidate-signals\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\) !important;/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-candidate-readiness\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\) !important;/);
   assert.match(cssSource, /Token CEO mobile action hierarchy: make candidate review feel like one clear CEO decision/);
-  assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-candidate-actions\s*\{[\s\S]*grid-template-columns: minmax\(0, 0\.78fr\) minmax\(0, 1\.22fr\) !important;/);
-  assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-candidate-actions button\s*\{[\s\S]*background: #0f9f78 !important;[\s\S]*color: #ffffff !important;/);
-  assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-candidate-decisions button\s*\{[\s\S]*border-radius: 8px !important;/);
+  assert.match(cssSource, /\.token-ceo-candidate-gate-strip\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
+  assert.match(cssSource, /\.token-ceo-candidate-gate-strip span\.ready\s*\{[\s\S]*background: rgba\(236, 253, 245, 0\.9\);/);
+  assert.match(cssSource, /\.token-ceo-candidate-next-action\s*\{[\s\S]*border-left: 3px solid rgba\(15, 118, 110, 0\.34\);/);
+  assert.match(cssSource, /@media \(min-width: 980px\)[\s\S]*\.token-page-airdrop \.token-ceo-candidate-lane article,[\s\S]*\.token-page-presale \.token-ceo-candidate-lane article\s*\{[\s\S]*grid-template-columns: 34px minmax\(0, 1fr\) 172px !important;/);
+  assert.match(cssSource, /@media \(max-width: 760px\)[\s\S]*\.token-ceo-candidate-proof\s*\{[\s\S]*display: none !important;/);
+  assert.match(cssSource, /@media \(max-width: 430px\)[\s\S]*\.token-page-airdrop \.token-ceo-candidate-decisions,[\s\S]*\.token-page-presale \.token-ceo-candidate-decisions\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) !important;/);
+  assert.match(appSource, /Funding reference <b>\*<\/b>/);
+  assert.match(appSource, /Funding reference is required before reserve review\./);
   assert.match(cssSource, /Token CEO empty candidate polish: make the fallback feel like a decision gate, not an API state/);
   assert.match(cssSource, /\.token-ceo-empty-gates\s*\{[\s\S]*display: flex !important;[\s\S]*flex-wrap: wrap !important;/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-empty-gates\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\) !important;/);

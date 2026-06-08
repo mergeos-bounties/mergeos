@@ -1076,7 +1076,7 @@ func (s *Store) RecordPresaleReservationForUser(userID string, req PresaleReserv
 	tier := normalizePresaleTier(req.Tier)
 	fundingReference := sanitizeLedgerReferenceValue(req.FundingReference)
 	if fundingReference == "" {
-		fundingReference = "pending_review"
+		return PresaleReservationResponse{}, errors.New("funding_reference is required before presale reserve review")
 	}
 	notes := sanitizeLedgerReferenceValue(req.Notes)
 	reservationID := s.newID("psr")

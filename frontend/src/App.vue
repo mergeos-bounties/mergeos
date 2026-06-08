@@ -5127,6 +5127,15 @@
                   <b>{{ row.verdict.label }}</b>
                   <span>{{ row.verdict.reason }}</span>
                 </div>
+                <div v-if="row.readinessRows?.length" class="token-ceo-candidate-gate-strip" aria-label="CEO launch gate summary">
+                  <span v-for="gate in row.readinessRows" :key="gate.label" :class="gate.state">
+                    <b>{{ gate.label }}</b>
+                    <small>{{ gate.state }}</small>
+                  </span>
+                </div>
+                <em v-if="row.decisionPreview?.nextAction" class="token-ceo-candidate-next-action">
+                  {{ row.decisionPreview.nextAction }}
+                </em>
                 <details
                   v-if="row.contextRows?.length || row.proofSignalRows?.length || row.readinessRows?.length || row.decisionPreview"
                   class="token-ceo-candidate-proof"
@@ -5621,7 +5630,7 @@
                 <p v-if="presaleReservationFieldError('funding_rail')" class="wizard-field-error">{{ presaleReservationFieldError('funding_rail') }}</p>
               </label>
               <label class="wizard-field token-compact-half" :class="{ invalid: presaleReservationFieldError('funding_reference') }">
-                <span>Funding reference</span>
+                <span>Funding reference <b>*</b></span>
                 <input v-model.trim="presaleReservationForm.funding_reference" :disabled="presaleReservationBusy" autocomplete="off" placeholder="Solana signature, invoice, or pending_review" />
                 <p v-if="presaleReservationFieldError('funding_reference')" class="wizard-field-error">{{ presaleReservationFieldError('funding_reference') }}</p>
               </label>
@@ -13592,7 +13601,9 @@ const presaleReservationValidationMap = computed(() => {
   if (reserveMRG < 100 || reserveMRG > 1000000) errors.reserve_mrg = 'Reserve must be between 100 and 1,000,000 MRG.';
   if (!['solana', 'usdc', 'paypal', 'card', 'bank', 'manual_review'].includes(rail)) errors.funding_rail = 'Choose a supported funding rail.';
   if (!['builder', 'founder', 'protocol', 'strategic'].includes(tier)) errors.tier = 'Choose a supported reserve tier.';
-  if (String(presaleReservationForm.funding_reference || '').trim().length > 220) errors.funding_reference = 'Funding reference is too long.';
+  const fundingReference = String(presaleReservationForm.funding_reference || '').trim();
+  if (!fundingReference) errors.funding_reference = 'Funding reference is required before reserve review.';
+  else if (fundingReference.length > 220) errors.funding_reference = 'Funding reference is too long.';
   return errors;
 });
 const presaleReservationValidationRows = computed(() =>

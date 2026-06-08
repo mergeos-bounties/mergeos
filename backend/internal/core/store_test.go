@@ -1687,6 +1687,20 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 		t.Fatalf("airdrop mission proof fields invalid: %#v", claim)
 	}
 
+	missingFundingReq := httptest.NewRequest(http.MethodPost, "/api/presale/reservations", strings.NewReader(fmt.Sprintf(`{
+		"wallet_address":"%s",
+		"reserve_mrg":25000,
+		"funding_rail":"solana",
+		"tier":"founder"
+	}`, wallet)))
+	missingFundingReq.Header.Set("Authorization", "Bearer "+auth.Token)
+	missingFundingReq.Header.Set("Content-Type", "application/json")
+	missingFundingResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(missingFundingResp, missingFundingReq)
+	if missingFundingResp.Code != http.StatusBadRequest || !strings.Contains(missingFundingResp.Body.String(), "funding_reference is required") {
+		t.Fatalf("missing funding reference presale status = %d, body = %s", missingFundingResp.Code, missingFundingResp.Body.String())
+	}
+
 	presaleReq := httptest.NewRequest(http.MethodPost, "/api/presale/reservations", strings.NewReader(fmt.Sprintf(`{
 		"wallet_address":"%s",
 		"reserve_mrg":25000,

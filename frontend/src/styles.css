@@ -43417,3 +43417,148 @@ canvas {
     grid-template-columns: 34px minmax(0, 1fr) !important;
   }
 }
+
+/* Token CEO mobile action hierarchy: make candidate review feel like one clear CEO decision. */
+.token-page-airdrop .token-ceo-candidate-lane,
+.token-page-presale .token-ceo-candidate-lane {
+  gap: 10px !important;
+}
+
+.token-page-airdrop .token-ceo-candidate-lane article,
+.token-page-presale .token-ceo-candidate-lane article {
+  border-color: rgba(15, 118, 110, 0.14) !important;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(240, 253, 250, 0.68)),
+    #ffffff !important;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.055) !important;
+}
+
+.token-ceo-candidate-gate-strip {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.token-ceo-candidate-gate-strip span {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+  border: 1px solid rgba(100, 116, 139, 0.12);
+  border-radius: 8px;
+  background: rgba(248, 250, 252, 0.82);
+  padding: 6px 7px;
+}
+
+.token-ceo-candidate-gate-strip b,
+.token-ceo-candidate-gate-strip small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.08;
+}
+
+.token-ceo-candidate-gate-strip b {
+  color: #334155;
+  font-size: 8.8px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.token-ceo-candidate-gate-strip small {
+  color: #64748b;
+  font-size: 8.6px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.token-ceo-candidate-gate-strip span.ready {
+  border-color: rgba(15, 118, 110, 0.18);
+  background: rgba(236, 253, 245, 0.9);
+}
+
+.token-ceo-candidate-gate-strip span.ready b,
+.token-ceo-candidate-gate-strip span.ready small {
+  color: #0f766e;
+}
+
+.token-ceo-candidate-gate-strip span.review {
+  border-color: rgba(217, 119, 6, 0.2);
+  background: rgba(255, 251, 235, 0.86);
+}
+
+.token-ceo-candidate-gate-strip span.review b,
+.token-ceo-candidate-gate-strip span.review small {
+  color: #92400e;
+}
+
+.token-ceo-candidate-gate-strip span.hold {
+  border-color: rgba(220, 38, 38, 0.16);
+  background: rgba(254, 242, 242, 0.82);
+}
+
+.token-ceo-candidate-gate-strip span.hold b,
+.token-ceo-candidate-gate-strip span.hold small {
+  color: #991b1b;
+}
+
+.token-ceo-candidate-next-action {
+  display: block !important;
+  min-width: 0;
+  margin-top: 1px !important;
+  border-left: 3px solid rgba(15, 118, 110, 0.34);
+  color: #0f766e !important;
+  padding-left: 8px;
+  font-size: 10.5px !important;
+  line-height: 1.28 !important;
+  font-style: normal !important;
+  font-weight: 880 !important;
+}
+
+@media (min-width: 980px) {
+  .token-page-airdrop .token-ceo-candidate-lane article,
+  .token-page-presale .token-ceo-candidate-lane article {
+    grid-template-columns: 34px minmax(0, 1fr) 172px !important;
+    align-items: start !important;
+  }
+
+  .token-page-airdrop .token-ceo-candidate-actions,
+  .token-page-presale .token-ceo-candidate-actions {
+    align-self: start !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .token-page-airdrop .token-ceo-candidate-lane article,
+  .token-page-presale .token-ceo-candidate-lane article {
+    min-height: auto !important;
+  }
+
+  .token-ceo-candidate-gate-strip {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  .token-ceo-candidate-proof {
+    display: none !important;
+  }
+
+  .token-ceo-candidate-next-action {
+    display: -webkit-box !important;
+    overflow: hidden !important;
+    -webkit-box-orient: vertical !important;
+    -webkit-line-clamp: 2 !important;
+  }
+
+  .token-page-airdrop .token-ceo-candidate-decisions,
+  .token-page-presale .token-ceo-candidate-decisions {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 430px) {
+  .token-page-airdrop .token-ceo-candidate-decisions,
+  .token-page-presale .token-ceo-candidate-decisions {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
