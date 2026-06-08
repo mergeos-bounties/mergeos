@@ -1380,6 +1380,9 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.doesNotMatch(appSource, /Queue API/);
   assert.match(appSource, /class="token-ceo-decision-strip"/);
   assert.match(appSource, /class="token-ceo-queue-stats"/);
+  assert.match(appSource, /class="token-ceo-mobile-summary"/);
+  assert.match(appSource, /v-for="row in tokenCeoMobileSummaryRows"/);
+  assert.match(appSource, /const tokenCeoMobileSummaryRows = computed\(\(\) => tokenCeoQueueStatRows\.value\.slice\(0, 3\)\)/);
   assert.match(appSource, /class="token-ceo-live-queue"/);
   assert.match(appSource, /class="token-ceo-live-context" role="group"/);
   assert.match(appSource, /function tokenCeoLiveContextRows\(brief = \{\}, launchType = 'airdrop'\)/);
@@ -2087,6 +2090,9 @@ test('signed-in mobile dashboard keeps nav, actions, and popovers phone-safe', a
   assert.match(cssSource, /\/\* Token proof map:[\s\S]*\.token-page-airdrop \.token-proof-map,[\s\S]*\.token-page-presale \.token-proof-map\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\) !important;/);
   assert.match(cssSource, /\/\* Token proof map:[\s\S]*@media \(max-width: 620px\)[\s\S]*\.token-page-airdrop \.token-proof-map,[\s\S]*\.token-page-presale \.token-proof-map\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\) !important;/);
   assert.match(cssSource, /\/\* Token proof map:[\s\S]*@media \(max-width: 620px\)[\s\S]*\.token-page-airdrop \.token-proof-map p,[\s\S]*\.token-page-presale \.token-proof-map p\s*\{[\s\S]*display: none !important;/);
+  assert.match(cssSource, /Token CEO mobile summary: keep candidate, ready, and memo counts visible after hiding the full queue grid/);
+  assert.match(cssSource, /\/\* Token CEO mobile summary:[\s\S]*@media \(max-width: 760px\)[\s\S]*\.token-page-airdrop \.token-ceo-mobile-summary,[\s\S]*\.token-page-presale \.token-ceo-mobile-summary\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\) !important;/);
+  assert.match(cssSource, /\/\* Token CEO mobile summary:[\s\S]*\.token-page-airdrop \.token-ceo-mobile-summary small,[\s\S]*\.token-page-presale \.token-ceo-mobile-summary small\s*\{[\s\S]*font-size: 8\.5px !important;/);
   assert.match(cssSource, /@media \(max-width: 430px\)[\s\S]*\.dashboard-shell \.admin-dispute-lane,[\s\S]*\.dashboard-shell \.admin-ops-row\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\);/);
   assert.match(appSource, /dashboardNotificationMenuPlacement\.value = 'mobile-sheet';/);
   assert.match(appSource, /window\.visualViewport\?\.addEventListener\('resize', updateDashboardNotificationMenuPosition\);/);

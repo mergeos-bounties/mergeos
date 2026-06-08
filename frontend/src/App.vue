@@ -5173,6 +5173,12 @@
               <strong>{{ row.value }}</strong>
             </article>
           </div>
+          <div class="token-ceo-mobile-summary" aria-label="Compact CEO research summary">
+            <span v-for="row in tokenCeoMobileSummaryRows" :key="row.label">
+              <b>{{ row.value }}</b>
+              <small>{{ row.label }}</small>
+            </span>
+          </div>
           <div class="token-ceo-queue-stats" aria-label="Public CEO research queue stats">
             <article v-for="row in tokenCeoQueueStatRows" :key="row.label">
               <small>{{ row.label }}</small>
@@ -13072,6 +13078,7 @@ const tokenCeoQueueStatRows = computed(() => {
     { label: 'Public source', value: 'API + ledger' },
   ];
 });
+const tokenCeoMobileSummaryRows = computed(() => tokenCeoQueueStatRows.value.slice(0, 3));
 const tokenCeoLiveQueueRows = computed(() => {
   const currentType = publicPage.value === 'presale' ? 'presale' : 'airdrop';
   const briefs = Array.isArray(tokenLaunchBriefsData.value?.briefs) ? tokenLaunchBriefsData.value.briefs : [];
