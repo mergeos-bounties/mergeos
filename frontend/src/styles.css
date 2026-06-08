@@ -47841,3 +47841,57 @@ canvas {
     line-height: 1.04 !important;
   }
 }
+
+.token-hero-title-mobile {
+  display: none;
+}
+
+/* Token mobile title release: short CEO launch headlines keep actions near the first viewport. */
+@media (max-width: 760px) {
+  .token-page-airdrop .token-hero,
+  .token-page-presale .token-hero {
+    min-height: auto !important;
+    padding-block: 14px 8px !important;
+  }
+
+  .token-page-airdrop .token-hero-copy,
+  .token-page-presale .token-hero-copy {
+    gap: 8px !important;
+  }
+
+  .token-page-airdrop .token-hero-copy h1.token-hero-title-full,
+  .token-page-presale .token-hero-copy h1.token-hero-title-full {
+    display: none !important;
+  }
+
+  .token-page-airdrop .token-hero-copy h1.token-hero-title-mobile,
+  .token-page-presale .token-hero-copy h1.token-hero-title-mobile {
+    display: block !important;
+    width: min(100%, 330px) !important;
+    max-width: min(100%, 330px) !important;
+    font-size: clamp(32px, 8.8vw, 38px) !important;
+    line-height: 1.02 !important;
+    letter-spacing: 0 !important;
+    white-space: normal !important;
+    overflow-wrap: normal !important;
+    word-break: normal !important;
+    text-wrap: balance !important;
+  }
+
+  .token-page-airdrop .token-hero-copy p,
+  .token-page-presale .token-hero-copy p {
+    -webkit-line-clamp: 2 !important;
+    font-size: 12.5px !important;
+    line-height: 1.32 !important;
+  }
+
+  .token-page-airdrop .token-hero .marketplace-actions,
+  .token-page-presale .token-hero .marketplace-actions {
+    gap: 7px !important;
+  }
+
+  .token-page-airdrop .token-ceo-research-panel,
+  .token-page-presale .token-ceo-research-panel {
+    margin-top: 10px !important;
+  }
+}

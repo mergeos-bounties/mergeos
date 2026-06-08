@@ -5087,7 +5087,8 @@
           <div class="token-hero-copy">
             <span class="marketplace-eyebrow">{{ publicTokenPage.eyebrow }}</span>
             <div class="ledger-title-row">
-              <h1>{{ publicTokenPage.title }}</h1>
+              <h1 class="token-hero-title-full">{{ publicTokenPage.title }}</h1>
+              <h1 class="token-hero-title-mobile">{{ publicTokenPage.mobileTitle || publicTokenPage.title }}</h1>
               <span :class="['ledger-public-badge', publicTokenPage.badgeTone]">
                 <component :is="publicTokenPage.badgeIcon" :size="14" />
                 {{ publicTokenPage.badge }}
@@ -12894,6 +12895,7 @@ const publicTokenPageDefinitions = {
   airdrop: {
     eyebrow: 'MRG AIRDROP',
     title: 'A task-based airdrop for verified software delivery.',
+    mobileTitle: 'Verified MRG airdrop.',
     body: 'Earn MRG through useful work: repo imports, bounty tasks, PR evidence, QA notes, agent reviews, and public ledger proof.',
     badge: 'Proof gated',
     badgeTone: 'green',
@@ -12918,6 +12920,7 @@ const publicTokenPageDefinitions = {
   presale: {
     eyebrow: 'MRG PRESALE',
     title: 'Reserve MRG through a transparent presale workflow.',
+    mobileTitle: 'MRG presale reserve.',
     body: 'Reserve MRG only after wallet readiness, payment review, Solana contract checkpoints, and public ledger receipts are clear.',
     badge: 'Solana ready',
     badgeTone: 'blue',
