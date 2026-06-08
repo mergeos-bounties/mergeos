@@ -1662,6 +1662,15 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(cssSource, /\/\* Token mobile viewport lock:[\s\S]*\.token-page-airdrop \.token-ceo-candidate-empty-actions,[\s\S]*\.token-page-presale \.token-ceo-candidate-empty-actions\s*\{[\s\S]*grid-column: 1 \/ -1 !important;[\s\S]*grid-template-columns: minmax\(0, 1fr\) minmax\(0, 1fr\) !important;/);
   assert.match(cssSource, /@media \(max-width: 430px\)[\s\S]*\.token-page-airdrop \.home-container,[\s\S]*\.token-page-presale \.home-container\s*\{[\s\S]*width: min\(360px, calc\(100vw - 24px\)\) !important;/);
   assert.match(cssSource, /@media \(max-width: 430px\)[\s\S]*\.token-page-airdrop \.token-hero-copy p,[\s\S]*\.token-page-presale \.token-hero-copy p,[\s\S]*max-width: 330px !important;/);
+  assert.match(cssSource, /Token universal phone lock: whitepaper, presale, and airdrop share one safe viewport/);
+  assert.match(cssSource, /\/\* Token universal phone lock:[\s\S]*@media \(max-width: 620px\)[\s\S]*\.token-page \.home-container,[\s\S]*\.token-page \.token-shell\s*\{[\s\S]*width: min\(360px, calc\(100vw - 24px\)\) !important;/);
+  assert.match(cssSource, /\/\* Token universal phone lock:[\s\S]*@media \(max-width: 620px\)[\s\S]*\.token-page \.ledger-title-row\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) !important;/);
+  assert.match(cssSource, /\/\* Token universal phone lock:[\s\S]*@media \(max-width: 620px\)[\s\S]*\.token-page \.token-hero-copy h1,[\s\S]*\.token-page \.token-whitepaper-copy h2\s*\{[\s\S]*font-size: clamp\(24px, 7\.4vw, 30px\) !important;/);
+  assert.match(cssSource, /\/\* Token universal phone lock:[\s\S]*@media \(max-width: 620px\)[\s\S]*\.token-page-whitepaper \.token-status-panel \.ledger-card-head button\s*\{[\s\S]*display: none !important;/);
+  assert.match(cssSource, /\/\* Token universal phone lock:[\s\S]*\.token-page \.home-container,[\s\S]*\.token-page \.token-shell\s*\{[\s\S]*width: min\(360px, calc\(100vw - 24px\)\) !important;/);
+  assert.match(cssSource, /\/\* Token universal phone lock:[\s\S]*\.token-page \.token-whitepaper-reader,[\s\S]*\.token-page \.token-whitepaper-copy,[\s\S]*\.token-page \.token-whitepaper-brief/);
+  assert.match(cssSource, /\/\* Token universal phone lock:[\s\S]*\.token-page \.token-whitepaper-copy h2,[\s\S]*\.token-page \.token-whitepaper-copy p,[\s\S]*max-width: 330px !important;/);
+  assert.match(cssSource, /\/\* Token universal phone lock:[\s\S]*\.token-page \.marketplace-actions,[\s\S]*\.token-page \.token-whitepaper-actions\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) !important;/);
   assert.match(cssSource, /\.token-proof-result small\s*\{[\s\S]*overflow: visible;[\s\S]*white-space: normal;[\s\S]*overflow-wrap: anywhere;/);
   assert.match(cssSource, /\.token-whitepaper-thesis p\s*\{[\s\S]*-webkit-line-clamp: 2;/);
   assert.match(cssSource, /Whitepaper mobile skim: keep the route decisive before the full reader begins/);
