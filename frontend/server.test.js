@@ -786,6 +786,9 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.match(appSource, /const homeDefinitionRows = computed/);
   assert.match(appSource, /class="home-explain-strip"/);
   assert.match(appSource, /v-for="row in homeOperatingRows"/);
+  assert.match(appSource, /class="home-ceo-token-desk"/);
+  assert.match(appSource, /tokenDeskTitle: 'Research airdrop and presale candidates before opening MRG\.'/);
+  assert.match(appSource, /const homeTokenSignalRows = computed/);
   assert.match(appSource, /homeSystemSummaryRows/);
   assert.match(appSource, /homeOperatingRows/);
   assert.match(appSource, /homePipelineRows/);
@@ -856,6 +859,11 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.match(cssSource, /\/\* Home full-description restore:[\s\S]*\.home-definition-strip small\s*\{[\s\S]*-webkit-line-clamp: unset !important;/);
   assert.match(cssSource, /\/\* Home full-description restore:[\s\S]*@media \(max-width: 620px\)[\s\S]*\.home-definition-strip\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) !important;/);
   assert.match(cssSource, /\/\* Home full-description restore:[\s\S]*@media \(max-width: 620px\)[\s\S]*\.home-explain-strip\s*\{[\s\S]*display: none !important;/);
+  assert.match(cssSource, /Home CEO token desk final pass: one short premium decision screen, not a long brochure/);
+  assert.match(cssSource, /\/\* Home CEO token desk final pass:[\s\S]*\.public-home-page\s*\{[\s\S]*min-height: calc\(100dvh - 74px\) !important;/);
+  assert.match(cssSource, /\.home-ceo-token-desk\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) auto;/);
+  assert.match(cssSource, /\.home-ceo-token-desk > div\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(74px, 1fr\)\);/);
+  assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.home-ceo-token-desk > div\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\) !important;/);
 });
 
 test('frontend system exposes required public pages and dashboard roles', async () => {

@@ -40160,3 +40160,275 @@ canvas {
     padding: 7px !important;
   }
 }
+
+/* Home CEO token desk final pass: one short premium decision screen, not a long brochure. */
+.public-home-page {
+  min-height: calc(100dvh - 74px) !important;
+  display: grid !important;
+  align-items: center !important;
+  padding-block: clamp(14px, 2.2vw, 30px) !important;
+}
+
+.public-home-page .home-container {
+  width: min(100%, 1120px) !important;
+  max-width: 1120px !important;
+}
+
+.public-home-hero {
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 360px) !important;
+  align-items: center !important;
+  gap: clamp(16px, 2.4vw, 30px) !important;
+  padding: 0 !important;
+}
+
+.public-home-copy {
+  display: grid !important;
+  align-content: center !important;
+  gap: 12px !important;
+  padding: 0 !important;
+}
+
+.public-home-copy h1 {
+  max-width: 720px !important;
+  margin: 0 !important;
+  font-size: clamp(40px, 4.6vw, 64px) !important;
+  line-height: 0.98 !important;
+}
+
+.public-home-copy > p {
+  max-width: 64ch !important;
+  margin: 0 !important;
+  font-size: clamp(14px, 1.1vw, 16px) !important;
+  line-height: 1.48 !important;
+}
+
+.home-definition-strip {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+  margin-top: 0 !important;
+}
+
+.home-definition-strip article {
+  min-height: 86px !important;
+  gap: 8px !important;
+  padding: 10px !important;
+}
+
+.home-definition-strip strong {
+  font-size: 11px !important;
+  line-height: 1.14 !important;
+}
+
+.home-definition-strip small {
+  display: -webkit-box !important;
+  overflow: hidden !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 2 !important;
+  font-size: 10px !important;
+  line-height: 1.24 !important;
+}
+
+.home-explain-strip {
+  display: none !important;
+}
+
+.home-ceo-token-desk {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 7px 14px;
+  border: 1px solid rgba(217, 119, 6, 0.18);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(255, 251, 235, 0.95), rgba(255, 255, 255, 0.92)),
+    #ffffff;
+  box-shadow: 0 14px 34px rgba(217, 119, 6, 0.07);
+  padding: 12px;
+}
+
+.home-ceo-token-desk > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  width: max-content;
+  max-width: 100%;
+  color: #b45309;
+  font-family: var(--mono-font);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.home-ceo-token-desk > strong {
+  min-width: 0;
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 1.18;
+  font-weight: 930;
+}
+
+.home-ceo-token-desk > p {
+  grid-column: 1;
+  display: -webkit-box;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: #5f5141;
+  font-size: 11.5px;
+  line-height: 1.35;
+  font-weight: 760;
+}
+
+.home-ceo-token-desk > div {
+  grid-column: 2;
+  grid-row: 1 / 4;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(74px, 1fr));
+  gap: 6px;
+}
+
+.home-ceo-token-desk button {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid rgba(217, 119, 6, 0.18);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.86);
+  color: #92400e;
+  padding: 0 9px;
+  font-size: 10.5px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.home-ceo-token-desk button:hover {
+  border-color: rgba(217, 119, 6, 0.32);
+  background: #ffffff;
+  transform: translateY(-1px);
+}
+
+.public-home-copy .marketplace-actions {
+  margin-top: 0 !important;
+}
+
+.home-mergeide-inline-link {
+  width: fit-content !important;
+  margin-top: 0 !important;
+}
+
+.home-command-panel {
+  width: 100% !important;
+  max-width: 360px !important;
+  margin-top: 0 !important;
+  padding: 14px !important;
+}
+
+.home-command-head {
+  grid-template-columns: 38px minmax(0, 1fr) auto !important;
+}
+
+.home-command-mark {
+  width: 38px !important;
+  height: 38px !important;
+}
+
+.home-command-panel .public-stat-grid {
+  margin-top: 10px !important;
+}
+
+.home-command-panel .public-stat-grid article {
+  min-height: 58px !important;
+}
+
+.home-command-panel .public-stat-grid strong {
+  font-size: clamp(18px, 1.8vw, 22px) !important;
+}
+
+.home-command-panel .home-feed-preview,
+.home-command-panel .home-pipeline,
+.home-public-graph-proof {
+  display: none !important;
+}
+
+@media (max-width: 980px) {
+  .public-home-page {
+    display: block !important;
+    min-height: auto !important;
+  }
+
+  .public-home-hero {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .home-command-panel {
+    display: none !important;
+  }
+}
+
+@media (max-width: 620px) {
+  .public-home-page {
+    padding-block: 10px 16px !important;
+  }
+
+  .public-home-copy {
+    gap: 9px !important;
+  }
+
+  .public-home-copy h1 {
+    font-size: clamp(29px, 8.5vw, 36px) !important;
+    line-height: 1.02 !important;
+  }
+
+  .public-home-copy > p {
+    -webkit-line-clamp: 3 !important;
+    font-size: 12.5px !important;
+    line-height: 1.38 !important;
+  }
+
+  .home-definition-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .home-definition-strip article {
+    min-height: 72px !important;
+    padding: 8px !important;
+  }
+
+  .home-definition-strip small {
+    -webkit-line-clamp: 2 !important;
+    font-size: 9.4px !important;
+  }
+
+  .home-ceo-token-desk {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 6px !important;
+    padding: 10px !important;
+  }
+
+  .home-ceo-token-desk > p,
+  .home-ceo-token-desk > div {
+    grid-column: 1 !important;
+    grid-row: auto !important;
+  }
+
+  .home-ceo-token-desk > p {
+    -webkit-line-clamp: 2 !important;
+    font-size: 10.5px !important;
+  }
+
+  .home-ceo-token-desk > div {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  .home-ceo-token-desk button {
+    min-width: 0 !important;
+    min-height: 31px !important;
+    padding: 0 5px !important;
+    font-size: 9px !important;
+  }
+}

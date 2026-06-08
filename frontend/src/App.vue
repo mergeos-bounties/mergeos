@@ -4657,6 +4657,20 @@
                 <span>{{ row.body }}</span>
               </article>
             </div>
+            <section class="home-ceo-token-desk" :aria-label="publicHomeCopy.tokenDeskLabel">
+              <span>
+                <Bot :size="14" />
+                {{ publicHomeCopy.tokenDeskEyebrow }}
+              </span>
+              <strong>{{ publicHomeCopy.tokenDeskTitle }}</strong>
+              <p>{{ publicHomeCopy.tokenDeskBody }}</p>
+              <div>
+                <button v-for="row in homeTokenSignalRows" :key="row.title" type="button" @click="handlePublicAction(row.action)">
+                  <component :is="row.icon" :size="13" />
+                  {{ row.title }}
+                </button>
+              </div>
+            </section>
             <div class="marketplace-actions">
               <button class="primary-button large" type="button" @click="openProjectWizard">
                 {{ publicHomeCopy.primaryAction }}
@@ -9362,6 +9376,10 @@ const publicHomeTranslations = {
     operatingLabel: 'How MergeOS operates',
     systemSummaryLabel: 'MergeOS system summary',
     definitionLabel: 'What MergeOS connects',
+    tokenDeskLabel: 'CEO token research desk',
+    tokenDeskEyebrow: 'CEO token desk',
+    tokenDeskTitle: 'Research airdrop and presale candidates before opening MRG.',
+    tokenDeskBody: 'The CEO agent checks repo demand, utility, wallet uniqueness, Solana contract proof, funding receipts, anti-bot policy, and ledger gates first.',
     recentUpdates: 'Recent updates',
     workflowLabel: 'MergeOS workflows',
     talentLabel: 'Talent matching',
