@@ -44197,3 +44197,111 @@ canvas {
     grid-template-columns: minmax(0, 1fr) !important;
   }
 }
+
+/* Token CEO above-fold final cascade: put the live candidate decision closer to the first screen. */
+.token-page.token-page-airdrop .token-shell,
+.token-page.token-page-presale .token-shell {
+  gap: 12px !important;
+}
+
+.token-page.token-page-airdrop .token-hero,
+.token-page.token-page-presale .token-hero {
+  min-height: 0 !important;
+  padding-block: clamp(16px, 2.2vw, 28px) 8px !important;
+}
+
+.token-page.token-page-airdrop .token-hero-copy,
+.token-page.token-page-presale .token-hero-copy {
+  padding-block: 10px 6px !important;
+}
+
+.token-page.token-page-airdrop .token-hero-copy h1,
+.token-page.token-page-presale .token-hero-copy h1 {
+  max-width: 760px !important;
+  font-size: clamp(34px, 3.1vw, 46px) !important;
+  line-height: 1.03 !important;
+}
+
+.token-page.token-page-airdrop .token-hero-copy p,
+.token-page.token-page-presale .token-hero-copy p {
+  display: -webkit-box !important;
+  max-width: 66ch !important;
+  overflow: hidden !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 2 !important;
+}
+
+.token-page.token-page-airdrop .token-status-panel,
+.token-page.token-page-presale .token-status-panel {
+  gap: 9px !important;
+  padding: 12px !important;
+}
+
+.token-page.token-page-airdrop .token-status-panel > p,
+.token-page.token-page-presale .token-status-panel > p {
+  display: -webkit-box !important;
+  overflow: hidden !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 2 !important;
+}
+
+.token-page.token-page-airdrop .token-hero-ceo-strip,
+.token-page.token-page-presale .token-hero-ceo-strip {
+  display: none !important;
+}
+
+.token-page.token-page-airdrop .token-metric-grid article,
+.token-page.token-page-presale .token-metric-grid article {
+  min-height: 58px !important;
+  padding: 8px !important;
+}
+
+.token-page.token-page-airdrop .token-ceo-research-panel,
+.token-page.token-page-presale .token-ceo-research-panel {
+  gap: 8px !important;
+  padding: 12px 14px !important;
+}
+
+.token-page.token-page-airdrop .token-ceo-research-head,
+.token-page.token-page-presale .token-ceo-research-head {
+  grid-template-columns: 38px minmax(0, 1fr) auto !important;
+  gap: 10px !important;
+  padding-bottom: 0 !important;
+}
+
+.token-page.token-page-airdrop .token-ceo-research-head h2,
+.token-page.token-page-presale .token-ceo-research-head h2 {
+  font-size: clamp(24px, 2.25vw, 32px) !important;
+  line-height: 1.06 !important;
+}
+
+.token-page.token-page-airdrop .token-ceo-research-head p,
+.token-page.token-page-presale .token-ceo-research-head p {
+  display: -webkit-box !important;
+  overflow: hidden !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 2 !important;
+}
+
+.token-page.token-page-airdrop .token-ceo-queue-stats,
+.token-page.token-page-presale .token-ceo-queue-stats {
+  display: none !important;
+}
+
+.token-page.token-page-airdrop .token-ceo-decision-strip article,
+.token-page.token-page-presale .token-ceo-decision-strip article {
+  min-height: 46px !important;
+  padding: 8px !important;
+}
+
+@media (max-width: 760px) {
+  .token-page.token-page-airdrop .token-hero,
+  .token-page.token-page-presale .token-hero {
+    padding-block: 8px 6px !important;
+  }
+
+  .token-page.token-page-airdrop .token-ceo-research-head,
+  .token-page.token-page-presale .token-ceo-research-head {
+    grid-template-columns: 34px minmax(0, 1fr) !important;
+  }
+}

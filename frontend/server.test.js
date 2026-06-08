@@ -1788,6 +1788,11 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(cssSource, /\.token-ceo-candidate-actions button\s*\{[\s\S]*background: #0f9f78 !important;/);
   assert.match(cssSource, /\.token-ceo-candidate-decisions button\s*\{[\s\S]*min-height: 38px !important;[\s\S]*text-transform: uppercase !important;/);
   assert.match(cssSource, /Token CEO decision-card final cascade: keep the lead candidate readable after legacy token overrides/);
+  assert.match(cssSource, /Token CEO above-fold final cascade: put the live candidate decision closer to the first screen/);
+  assert.match(cssSource, /\.token-page\.token-page-airdrop \.token-hero,[\s\S]*\.token-page\.token-page-presale \.token-hero\s*\{[\s\S]*padding-block: clamp\(16px, 2\.2vw, 28px\) 8px !important;/);
+  assert.match(cssSource, /\.token-page\.token-page-airdrop \.token-ceo-queue-stats,[\s\S]*\.token-page\.token-page-presale \.token-ceo-queue-stats\s*\{[\s\S]*display: none !important;/);
+  assert.match(cssSource, /\.token-page\.token-page-airdrop \.token-ceo-research-panel,[\s\S]*\.token-page\.token-page-presale \.token-ceo-research-panel\s*\{[\s\S]*padding: 12px 14px !important;/);
+  assert.match(cssSource, /\.token-page\.token-page-airdrop \.token-hero-ceo-strip,[\s\S]*\.token-page\.token-page-presale \.token-hero-ceo-strip\s*\{[\s\S]*display: none !important;/);
   assert.match(appSource, /Funding reference <b>\*<\/b>/);
   assert.match(appSource, /Funding reference is required before reserve review\./);
   assert.match(cssSource, /Token CEO empty candidate polish: make the fallback feel like a decision gate, not an API state/);
