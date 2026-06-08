@@ -5336,6 +5336,9 @@
               <div class="token-ceo-signal-chips" aria-label="CEO research signals attached">
                 <span v-for="signal in tokenCeoResearchSignalRows" :key="signal">{{ toTitleLabel(signal) }}</span>
               </div>
+              <div class="token-ceo-brief-gates" aria-label="CEO brief required gates">
+                <span v-for="gate in tokenCeoLaunchBriefCopy.quickGates" :key="gate">{{ gate }}</span>
+              </div>
               <div v-if="tokenLaunchBriefDecisionContext.label" class="token-ceo-decision-context" aria-label="Loaded CEO decision">
                 <b>{{ tokenLaunchBriefDecisionContext.label }}</b>
                 <span>{{ tokenLaunchBriefDecisionContext.candidate }}</span>
@@ -5437,7 +5440,7 @@
               </button>
               <button class="secondary-button compact" type="button" @click="prefillTokenLaunchBrief" :disabled="tokenLaunchBriefBusy">
                 <Sparkles :size="14" />
-                <span>CEO template</span>
+                <span>Fill CEO template</span>
               </button>
               <button class="secondary-button compact" type="button" @click="handlePublicAction({ page: 'agents' })" :disabled="tokenLaunchBriefBusy">
                 {{ tokenCeoLaunchBriefCopy.secondary }}
@@ -13312,6 +13315,7 @@ const tokenCeoLaunchBriefCopy = computed(() => {
       urlHint: 'Use a repo, task board, docs, website, or public proof URL for CEO research.',
       walletPlaceholder: 'Require Solana wallet uniqueness, duplicate review, and anti-bot checks.',
       riskPlaceholder: 'Flag bot farming, empty signups, weak proof, and duplicate wallets.',
+      quickGates: ['Source', 'Wallet', 'Proof', 'Risk'],
     };
   }
   return {
@@ -13329,6 +13333,7 @@ const tokenCeoLaunchBriefCopy = computed(() => {
     urlHint: 'Use a whitepaper, website, contract proof, deck, or public due-diligence URL.',
     walletPlaceholder: 'Require Solana wallet ownership, funding reference, and receipt reconciliation.',
     riskPlaceholder: 'Flag reserve caps, reversal risk, contract mismatch, and compliance language.',
+    quickGates: ['Utility', 'Wallet', 'Funding', 'Risk'],
   };
 });
 const tokenLaunchWizardBriefCopy = computed(() => {

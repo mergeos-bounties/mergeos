@@ -1314,6 +1314,8 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /class="token-ceo-project-queue"/);
   assert.match(appSource, /class="token-ceo-source-packet"/);
   assert.match(appSource, /class="token-ceo-signal-chips"/);
+  assert.match(appSource, /class="token-ceo-brief-gates"/);
+  assert.match(appSource, /tokenCeoLaunchBriefCopy\.quickGates/);
   assert.match(appSource, /class="token-ceo-launch-context"/);
   assert.match(appSource, /CEO launch brief context/);
   assert.match(appSource, /tokenCeoLaunchBriefCopy\.launchTypeLabel/);
@@ -1439,7 +1441,9 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /ledgerMemo: 'type:airdrop'/);
   assert.match(appSource, /launchTypeLabel: 'MRG presale'/);
   assert.match(appSource, /ledgerMemo: 'type:presale'/);
-  assert.match(appSource, /CEO template/);
+  assert.match(appSource, /Fill CEO template/);
+  assert.match(appSource, /quickGates: \['Source', 'Wallet', 'Proof', 'Risk'\]/);
+  assert.match(appSource, /quickGates: \['Utility', 'Wallet', 'Funding', 'Risk'\]/);
   assert.match(appSource, /Wallet policy <b>\*<\/b>/);
   assert.match(appSource, /CEO risk notes <b>\*<\/b>/);
   assert.match(appSource, /Research URL <b>\*<\/b>/);
@@ -1585,6 +1589,7 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(cssSource, /\.token-ceo-project-queue\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /\.token-ceo-source-packet\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /\.token-ceo-signal-chips\s*\{[\s\S]*flex-wrap: wrap;/);
+  assert.match(cssSource, /\.token-ceo-brief-gates\s*\{[\s\S]*grid-template-columns: repeat\(4, minmax\(0, max-content\)\);/);
   assert.match(cssSource, /\.token-ceo-decision-context\s*\{[\s\S]*grid-template-columns: auto minmax\(0, 1fr\) auto;/);
   assert.match(cssSource, /\.token-ceo-brief-card\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\);/);
   assert.match(cssSource, /\.token-ceo-brief-card\s*\{[\s\S]*scroll-margin-top: 86px;/);
@@ -1662,6 +1667,8 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(cssSource, /Token CEO empty candidate polish: make the fallback feel like a decision gate, not an API state/);
   assert.match(cssSource, /\.token-ceo-empty-gates\s*\{[\s\S]*display: flex !important;[\s\S]*flex-wrap: wrap !important;/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-empty-gates\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\) !important;/);
+  assert.match(cssSource, /Token CEO brief intake polish: show the required decision gates before the fields/);
+  assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-brief-gates\s*\{[\s\S]*grid-template-columns: repeat\(4, minmax\(0, 1fr\)\) !important;/);
   assert.match(cssSource, /Token CEO mobile first decision: put candidate actions inside the first viewport/);
   assert.match(cssSource, /\/\* Token CEO mobile first decision:[\s\S]*\.token-hero\s*\{[\s\S]*gap: 4px !important;/);
   assert.match(cssSource, /\/\* Token CEO mobile first decision:[\s\S]*\.token-ceo-decision-strip\s*\{[\s\S]*display: none !important;/);

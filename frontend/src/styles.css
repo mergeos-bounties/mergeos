@@ -9326,6 +9326,28 @@ svg {
   color: #0f766e;
 }
 
+.token-ceo-brief-gates {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, max-content));
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.token-ceo-brief-gates span {
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid rgba(15, 159, 120, 0.15);
+  border-radius: 999px;
+  background: rgba(236, 253, 245, 0.72);
+  color: #0f766e;
+  padding: 0 8px;
+  font-size: 9px;
+  line-height: 1;
+  font-weight: 940;
+  text-transform: uppercase;
+}
+
 .token-ceo-decision-context {
   width: 100%;
   display: grid;
@@ -42158,5 +42180,25 @@ canvas {
     overflow: hidden !important;
     padding-inline: 5px !important;
     text-overflow: ellipsis !important;
+  }
+}
+
+/* Token CEO brief intake polish: show the required decision gates before the fields. */
+@media (max-width: 620px) {
+  .token-ceo-brief-gates {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 5px !important;
+    margin-top: 7px !important;
+  }
+
+  .token-ceo-brief-gates span {
+    min-width: 0 !important;
+    justify-content: center !important;
+    overflow: hidden !important;
+    padding-inline: 4px !important;
+    font-size: 8.5px !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
   }
 }
