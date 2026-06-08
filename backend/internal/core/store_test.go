@@ -1815,6 +1815,20 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 	if invalidFilteredLaunchBriefsResp.Code != http.StatusBadRequest || !strings.Contains(invalidFilteredLaunchBriefsResp.Body.String(), "launch_type must be airdrop or presale") {
 		t.Fatalf("invalid filtered public token launch briefs status = %d, body = %s", invalidFilteredLaunchBriefsResp.Code, invalidFilteredLaunchBriefsResp.Body.String())
 	}
+	standalonePresaleBrief, err := store.RecordTokenLaunchBrief(TokenLaunchBriefRequest{
+		LaunchType:       "presale",
+		ProjectTitle:     "Standalone partner presale research",
+		ProjectSummary:   "Research whether this standalone partner should open an MRG presale window with utility and contract proof.",
+		RepositoryURL:    "https://example.com/standalone-presale-whitepaper",
+		AllocationPolicy: "Cap reserve by tier, review state, and utility depth.",
+		ProofPolicy:      "Require utility proof, Solana contract reference, funding receipt, and ledger proof.",
+		WalletPolicy:     "Require Solana wallet ownership and duplicate review.",
+		RiskNotes:        "Watch reserve cap, reversal risk, and compliance language.",
+		ResearchSignals:  []string{"utility-proof", "contract-proof", "funding-receipt"},
+	})
+	if err != nil {
+		t.Fatalf("standalone presale launch brief failed: %v", err)
+	}
 	candidatesResp := httptest.NewRecorder()
 	server.Routes().ServeHTTP(candidatesResp, httptest.NewRequest(http.MethodGet, "/api/public/token/launch-candidates?launch_type=airdrop", nil))
 	if candidatesResp.Code != http.StatusOK {
@@ -1869,6 +1883,22 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 		!strings.Contains(presaleCandidates.Candidates[0].NextAction, "Open presale") ||
 		!strings.Contains(presaleCandidates.Candidates[0].DecisionOptions[0].ProofPolicy, "utility proof") {
 		t.Fatalf("public presale launch candidates rows invalid: %#v", presaleCandidates.Candidates)
+	}
+	var standaloneCandidate *PublicTokenLaunchCandidate
+	for i := range presaleCandidates.Candidates {
+		if presaleCandidates.Candidates[i].CandidateID == "tlb_"+standalonePresaleBrief.BriefID {
+			standaloneCandidate = &presaleCandidates.Candidates[i]
+			break
+		}
+	}
+	if standaloneCandidate == nil ||
+		standaloneCandidate.ProjectID != "launch_brief:"+standalonePresaleBrief.BriefID ||
+		standaloneCandidate.ResearchSource != "https://example.com/standalone-presale-whitepaper" ||
+		standaloneCandidate.ReadinessGates[0].State != "review" ||
+		!stringSliceContains(standaloneCandidate.ProofSignals, "ceo_submitted_brief") ||
+		!strings.Contains(standaloneCandidate.ProofPolicy, "Solana contract proof") ||
+		!strings.Contains(standaloneCandidate.NextAction, "Review the submitted presale brief") {
+		t.Fatalf("standalone presale brief candidate invalid: %#v", standaloneCandidate)
 	}
 	invalidCandidatesResp := httptest.NewRecorder()
 	server.Routes().ServeHTTP(invalidCandidatesResp, httptest.NewRequest(http.MethodGet, "/api/public/token/launch-candidates?launch_type=ico", nil))
@@ -1934,13 +1964,22 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 			if item.Status != "pending_review" || strings.Contains(item.Body, wallet) || strings.Contains(item.Reference, wallet) {
 				t.Fatalf("unsafe token workflow admin ops item: %#v", item)
 			}
-			if strings.Contains(item.Title, "CEO token launch") && (!strings.Contains(item.Body, "pending open decision") || !strings.Contains(item.Body, "4/4 gates ready for CEO review") || !strings.Contains(item.Body, "source=ready_for_review")) {
-				t.Fatalf("token launch admin ops item missing CEO decision context: %#v", item)
+			if strings.Contains(item.Title, "CEO token launch") {
+				if !strings.Contains(item.Body, "pending open decision") || !strings.Contains(item.Body, "4/4 gates ready for CEO review") {
+					t.Fatalf("token launch admin ops item missing CEO decision context: %#v", item)
+				}
+				if strings.Contains(item.Reference, "type:presale") {
+					if !strings.Contains(item.Body, "utility=ready_for_review") || !strings.Contains(item.Body, "contract=ready_for_review") {
+						t.Fatalf("presale token launch admin ops item missing utility or contract gates: %#v", item)
+					}
+				} else if !strings.Contains(item.Body, "source=ready_for_review") {
+					t.Fatalf("airdrop token launch admin ops item missing source gate: %#v", item)
+				}
 			}
 		}
 	}
-	if tokenReviewCount != 3 {
-		t.Fatalf("admin ops token workflow review items = %d, want 3: %#v", tokenReviewCount, adminOps.Items)
+	if tokenReviewCount != 4 {
+		t.Fatalf("admin ops token workflow review items = %d, want 4: %#v", tokenReviewCount, adminOps.Items)
 	}
 	adminOpsBytes, err := json.Marshal(adminOps)
 	if err != nil {

@@ -588,6 +588,33 @@ func (s *Store) PublicTokenLaunchCandidates(launchTypeFilter string) PublicToken
 		},
 		Candidates: []PublicTokenLaunchCandidate{},
 	}
+	seenSources := map[string]bool{}
+	addCandidate := func(candidate PublicTokenLaunchCandidate) {
+		if strings.TrimSpace(candidate.CandidateID) == "" {
+			return
+		}
+		response.Candidates = append(response.Candidates, candidate)
+		for _, launchType := range candidate.RecommendedLaunchTypes {
+			switch launchType {
+			case "airdrop":
+				response.Stats.AirdropCount++
+			case "presale":
+				response.Stats.PresaleCount++
+			}
+		}
+		switch tokenLaunchCandidateReadinessState(candidate.ReadinessGates) {
+		case "ready":
+			response.Stats.ReadyCount++
+		case "hold":
+			response.Stats.HoldCount++
+		default:
+			response.Stats.ReviewCount++
+		}
+		if candidate.CreatedAt.After(time.Time{}) && (response.Stats.UpdatedAt == nil || candidate.CreatedAt.After(*response.Stats.UpdatedAt)) {
+			updatedAt := candidate.CreatedAt
+			response.Stats.UpdatedAt = &updatedAt
+		}
+	}
 	bountiesByProject := map[string][]*MarketplaceBounty{}
 	for _, bounty := range marketplace.Bounties {
 		bountiesByProject[bounty.ProjectID] = append(bountiesByProject[bounty.ProjectID], bounty)
@@ -604,6 +631,9 @@ func (s *Store) PublicTokenLaunchCandidates(launchTypeFilter string) PublicToken
 			if source == "" {
 				source = projectBounties[0].IssueURL
 			}
+		}
+		if source != "" {
+			seenSources[strings.ToLower(strings.TrimSpace(source))] = true
 		}
 		proofSignals := tokenLaunchCandidateSignals(project, projectBounties)
 		researchScore := tokenLaunchCandidateResearchScore(project, proofSignals)
@@ -630,24 +660,122 @@ func (s *Store) PublicTokenLaunchCandidates(launchTypeFilter string) PublicToken
 			MarketplaceURL:         "/marketplace",
 			CreatedAt:              project.CreatedAt,
 		}
-		response.Candidates = append(response.Candidates, candidate)
-		if stringSliceContains(recommendedTypes, "airdrop") {
-			response.Stats.AirdropCount++
+		addCandidate(candidate)
+	}
+	for _, brief := range s.PublicTokenLaunchBriefs(launchTypeFilter).Briefs {
+		sourceKey := strings.ToLower(strings.TrimSpace(brief.ResearchSource))
+		if sourceKey != "" && seenSources[sourceKey] {
+			continue
 		}
-		if stringSliceContains(recommendedTypes, "presale") {
-			response.Stats.PresaleCount++
+		if sourceKey != "" {
+			seenSources[sourceKey] = true
 		}
-		switch tokenLaunchCandidateReadinessState(readinessGates) {
-		case "ready":
-			response.Stats.ReadyCount++
-		case "hold":
-			response.Stats.HoldCount++
-		default:
-			response.Stats.ReviewCount++
+		launchType := brief.LaunchType
+		if launchType != "presale" {
+			launchType = "airdrop"
 		}
+		proofSignals := tokenLaunchBriefCandidateSignals(brief)
+		researchScore := tokenLaunchBriefCandidateScore(brief, proofSignals)
+		readinessGates := tokenLaunchBriefCandidateReadinessGates(launchType, brief, proofSignals)
+		addCandidate(PublicTokenLaunchCandidate{
+			CandidateID:            "tlb_" + brief.BriefID,
+			ProjectID:              "launch_brief:" + brief.BriefID,
+			ProjectTitle:           brief.ProjectTitle,
+			RecommendedLaunchTypes: []string{launchType},
+			ResearchSource:         brief.ResearchSource,
+			Brief:                  "CEO-submitted launch brief waiting for candidate review.",
+			ResearchScore:          researchScore,
+			ProofSignals:           proofSignals,
+			DecisionOptions:        tokenLaunchCandidateDecisionOptions(launchType, researchScore),
+			ReadinessGates:         readinessGates,
+			NextAction:             tokenLaunchCandidateBriefNextAction(launchType),
+			GateSummary:            brief.GateSummary,
+			ProofPolicy:            tokenLaunchBriefCandidateProofPolicy(launchType, brief),
+			MarketplaceURL:         "/marketplace",
+			CreatedAt:              brief.CreatedAt,
+		})
 	}
 	response.Stats.CandidateCount = len(response.Candidates)
 	return response
+}
+
+func tokenLaunchBriefCandidateSignals(brief PublicTokenLaunchBriefRecord) []string {
+	signals := []string{"ceo_submitted_brief", "ceo_research_candidate"}
+	if strings.TrimSpace(brief.ResearchSource) != "" {
+		signals = append(signals, "research_source")
+		if strings.Contains(strings.ToLower(brief.ResearchSource), "github.com") {
+			signals = append(signals, "repository_context")
+		}
+	}
+	for _, signal := range brief.ResearchSignals {
+		normalized := normalizeTokenWorkflowID(signal)
+		if normalized != "" && !stringSliceContains(signals, normalized) {
+			signals = append(signals, normalized)
+		}
+	}
+	return signals
+}
+
+func tokenLaunchBriefCandidateScore(brief PublicTokenLaunchBriefRecord, proofSignals []string) int {
+	score := 50 + (minInt(len(proofSignals), 8) * 5)
+	if strings.Contains(brief.GateSummary, "4/4") || strings.Contains(brief.GateSummary, "3/3") {
+		score += 14
+	}
+	if strings.TrimSpace(brief.ResearchSource) != "" {
+		score += 6
+	}
+	if score > 88 {
+		return 88
+	}
+	if score < 50 {
+		return 50
+	}
+	return score
+}
+
+func tokenLaunchBriefCandidateReadinessGates(launchType string, brief PublicTokenLaunchBriefRecord, proofSignals []string) []TokenLaunchCandidateReadinessGate {
+	sourceEvidence := strings.TrimSpace(brief.ResearchSource)
+	if sourceEvidence == "" {
+		sourceEvidence = "Research source missing from CEO brief."
+	}
+	gateSummary := strings.TrimSpace(brief.GateSummary)
+	if gateSummary == "" {
+		gateSummary = "CEO gate summary pending."
+	}
+	signalEvidence := strings.Join(proofSignals[:minInt(len(proofSignals), 3)], ", ")
+	if signalEvidence == "" {
+		signalEvidence = "No proof signals attached yet."
+	}
+	if launchType == "presale" {
+		return []TokenLaunchCandidateReadinessGate{
+			{Key: "utility", Label: "Utility", State: "review", Value: gateSummary, Evidence: signalEvidence},
+			{Key: "funding", Label: "Funding", State: "review", Value: "CEO brief queued", Evidence: sourceEvidence},
+			{Key: "contract", Label: "Contract", State: "review", Value: "Needs signoff", Evidence: "CEO must confirm Solana contract, receipt, wallet, and reserve policy."},
+		}
+	}
+	return []TokenLaunchCandidateReadinessGate{
+		{Key: "demand", Label: "Demand", State: "review", Value: gateSummary, Evidence: sourceEvidence},
+		{Key: "proof", Label: "Proof", State: "review", Value: fmt.Sprintf("%d signals attached", len(proofSignals)), Evidence: signalEvidence},
+		{Key: "anti_bot", Label: "Anti-bot", State: "review", Value: "Needs signoff", Evidence: "CEO must confirm wallet uniqueness, claim limits, and proof review before opening."},
+	}
+}
+
+func tokenLaunchCandidateBriefNextAction(launchType string) string {
+	if launchType == "presale" {
+		return "Review the submitted presale brief, utility proof, wallet path, funding rail, and Solana contract receipt before opening."
+	}
+	return "Review the submitted airdrop brief, mission demand, anti-bot policy, wallet uniqueness, and proof gates before opening missions."
+}
+
+func tokenLaunchBriefCandidateProofPolicy(launchType string, brief PublicTokenLaunchBriefRecord) string {
+	source := strings.TrimSpace(brief.ResearchSource)
+	if source == "" {
+		source = "the submitted research source"
+	}
+	if launchType == "presale" {
+		return "CEO must verify utility, reserve cap, wallet ownership, funding reference, Solana contract proof, and public ledger receipt from " + source + "."
+	}
+	return "CEO must verify mission demand, useful work proof, anti-bot checks, wallet uniqueness, and public ledger receipt from " + source + "."
 }
 
 func (s *Store) RecordTokenLaunchBriefForUser(userID string, req TokenLaunchBriefRequest) (TokenLaunchBriefResponse, error) {
