@@ -45133,3 +45133,148 @@ canvas {
     display: none !important;
   }
 }
+
+/* Token CEO candidate final cut: one compact decision row for real airdrop/presale candidates. */
+.token-page-airdrop .token-ceo-candidate-lane article,
+.token-page-presale .token-ceo-candidate-lane article {
+  grid-template-columns: 32px minmax(0, 1fr) minmax(150px, 178px) !important;
+  gap: 9px !important;
+  padding: 9px 10px !important;
+}
+
+.token-page-airdrop .token-ceo-candidate-lane small,
+.token-page-presale .token-ceo-candidate-lane small {
+  font-size: 9px !important;
+  line-height: 1 !important;
+}
+
+.token-page-airdrop .token-ceo-candidate-lane strong,
+.token-page-presale .token-ceo-candidate-lane strong {
+  font-size: 13.5px !important;
+  line-height: 1.14 !important;
+}
+
+.token-page-airdrop .token-ceo-candidate-lane p,
+.token-page-presale .token-ceo-candidate-lane p {
+  -webkit-line-clamp: 1 !important;
+  font-size: 11px !important;
+  line-height: 1.25 !important;
+}
+
+.token-page-airdrop .token-ceo-candidate-verdict,
+.token-page-presale .token-ceo-candidate-verdict {
+  grid-template-columns: auto minmax(0, 1fr) !important;
+  gap: 6px !important;
+  padding: 6px 7px !important;
+}
+
+.token-page-airdrop .token-ceo-candidate-verdict b,
+.token-page-presale .token-ceo-candidate-verdict b {
+  font-size: 9px !important;
+  line-height: 1 !important;
+}
+
+.token-page-airdrop .token-ceo-candidate-verdict span,
+.token-page-presale .token-ceo-candidate-verdict span {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  font-size: 9.5px !important;
+  line-height: 1 !important;
+}
+
+.token-page-airdrop .token-ceo-candidate-gate-strip,
+.token-page-presale .token-ceo-candidate-gate-strip {
+  gap: 4px !important;
+}
+
+.token-page-airdrop .token-ceo-candidate-gate-strip span,
+.token-page-presale .token-ceo-candidate-gate-strip span {
+  min-height: 30px !important;
+  padding: 5px 6px !important;
+}
+
+.token-page-airdrop .token-ceo-candidate-actions,
+.token-page-presale .token-ceo-candidate-actions {
+  grid-column: 3 !important;
+  gap: 6px !important;
+}
+
+.token-page-airdrop .token-ceo-candidate-actions a,
+.token-page-airdrop .token-ceo-candidate-actions button,
+.token-page-presale .token-ceo-candidate-actions a,
+.token-page-presale .token-ceo-candidate-actions button {
+  min-height: 31px !important;
+  font-size: 10px !important;
+}
+
+.token-page-airdrop .token-ceo-candidate-decisions,
+.token-page-presale .token-ceo-candidate-decisions {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 6px !important;
+}
+
+.token-page-airdrop .token-ceo-candidate-decisions button,
+.token-page-presale .token-ceo-candidate-decisions button {
+  min-height: 32px !important;
+  padding-inline: 5px !important;
+  font-size: 9px !important;
+  line-height: 1.08 !important;
+}
+
+@media (max-width: 760px) {
+  .token-page-airdrop .token-ceo-candidate-lane article,
+  .token-page-presale .token-ceo-candidate-lane article {
+    grid-template-columns: 28px minmax(0, 1fr) !important;
+    gap: 7px !important;
+    padding: 8px !important;
+  }
+
+  .token-page-airdrop .token-ceo-candidate-lane p,
+  .token-page-presale .token-ceo-candidate-lane p {
+    -webkit-line-clamp: 2 !important;
+  }
+
+  .token-page-airdrop .token-ceo-candidate-next-action,
+  .token-page-presale .token-ceo-candidate-next-action,
+  .token-page-airdrop .token-ceo-candidate-proof,
+  .token-page-presale .token-ceo-candidate-proof {
+    display: none !important;
+  }
+
+  .token-page-airdrop .token-ceo-candidate-actions,
+  .token-page-presale .token-ceo-candidate-actions,
+  .token-page-airdrop .token-ceo-candidate-decisions,
+  .token-page-presale .token-ceo-candidate-decisions {
+    grid-column: 1 / -1 !important;
+  }
+
+  .token-page-airdrop .token-ceo-candidate-actions,
+  .token-page-presale .token-ceo-candidate-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .token-page-airdrop .token-ceo-candidate-decisions,
+  .token-page-presale .token-ceo-candidate-decisions {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  .token-page-airdrop .token-ceo-candidate-decisions button,
+  .token-page-presale .token-ceo-candidate-decisions button {
+    min-height: 31px !important;
+    white-space: normal !important;
+  }
+}
+
+@media (max-width: 430px) {
+  .token-page-airdrop .token-ceo-candidate-decisions,
+  .token-page-presale .token-ceo-candidate-decisions {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  .token-page-airdrop .token-ceo-candidate-decisions button,
+  .token-page-presale .token-ceo-candidate-decisions button {
+    font-size: 8.4px !important;
+    letter-spacing: 0 !important;
+  }
+}
