@@ -1408,6 +1408,7 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /tokenCeoLaunchBriefCopy\.launchTypeLabel/);
   assert.match(appSource, /tokenCeoLaunchBriefCopy\.ledgerMemo/);
   assert.match(appSource, /class="token-ceo-decision-context"/);
+  assert.match(appSource, /aria-label="CEO expected research checks"/);
   assert.match(appSource, /id="token-ceo-brief" class="token-ceo-brief-drawer"/);
   assert.match(appSource, /class="token-ceo-brief-card"/);
   assert.match(appSource, /@submit\.prevent="submitTokenLaunchBrief"/);
@@ -1588,6 +1589,8 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /const tokenLaunchBriefForm = reactive/);
   assert.match(appSource, /launch_type: ''/);
   assert.match(appSource, /const tokenLaunchBriefDecisionContext = reactive/);
+  assert.match(appSource, /<span>\{\{ decision\.label \}\}<\/span>/);
+  assert.match(appSource, /<small v-if="decision\.detail">\{\{ decision\.detail \}\}<\/small>/);
   assert.match(appSource, /const tokenLaunchBriefValidationMap = computed/);
   assert.match(appSource, /errors\.allocation_policy = 'Allocation policy must explain caps or reserve rules\.'/);
   assert.match(appSource, /Presale proof policy must mention funding rail or receipt evidence\./);
@@ -1599,6 +1602,8 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /errors\.risk_notes = 'CEO risk notes must explain the launch risk review\.'/);
   assert.match(appSource, /api\('\/api\/token\/launch-briefs'/);
   assert.match(appSource, /function submitTokenLaunchBrief\(\)/);
+  assert.match(appSource, /detail: launchType === 'presale' \? 'Utility \+ contract' : 'Mission \+ anti-bot'/);
+  assert.match(appSource, /function tokenLaunchCandidateDecisionDetail/);
   assert.match(appSource, /const launchType = tokenLaunchBriefForm\.launch_type === 'presale' \|\| tokenLaunchBriefForm\.launch_type === 'airdrop'[\s\S]*\? tokenLaunchBriefForm\.launch_type[\s\S]*: \(publicPage\.value === 'presale' \? 'presale' : 'airdrop'\);/);
   assert.match(appSource, /ceo_memo/);
   assert.match(appSource, /class="wizard-token-brief-card"/);
@@ -1839,6 +1844,10 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(cssSource, /\/\* Token CEO mobile launch desk pass:[\s\S]*\.token-page-airdrop \.token-status-panel,[\s\S]*\.token-page-presale \.token-status-panel\s*\{[\s\S]*display: none !important;/);
   assert.match(cssSource, /\/\* Token CEO mobile launch desk pass:[\s\S]*\.token-page-airdrop \.token-hero-copy p,[\s\S]*\.token-page-presale \.token-hero-copy p\s*\{[\s\S]*-webkit-line-clamp: 2 !important;/);
   assert.match(cssSource, /\/\* Token CEO mobile launch desk pass:[\s\S]*\.token-page-airdrop \.token-ceo-launch-context,[\s\S]*\.token-page-presale \.token-ceo-launch-context,/);
+  assert.match(cssSource, /Token CEO mobile context restore: keep launch type, ledger memo, and loaded decision visible/);
+  assert.match(cssSource, /\/\* Token CEO mobile context restore:[\s\S]*\.token-page-airdrop \.token-ceo-launch-context,[\s\S]*\.token-page-presale \.token-ceo-launch-context\s*\{[\s\S]*display: grid !important;[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\) !important;/);
+  assert.match(cssSource, /\/\* Token CEO mobile context restore:[\s\S]*\.token-page-airdrop \.token-ceo-decision-context,[\s\S]*\.token-page-presale \.token-ceo-decision-context\s*\{[\s\S]*display: grid !important;[\s\S]*grid-template-columns: minmax\(0, 1fr\) auto !important;/);
+  assert.match(cssSource, /\.token-ceo-candidate-decisions button span,[\s\S]*\.token-ceo-candidate-decisions button small\s*\{[\s\S]*text-overflow: ellipsis !important;/);
   assert.match(cssSource, /Token mobile viewport lock: CEO launch pages must never crop copy or actions/);
   assert.match(cssSource, /\/\* Token mobile viewport lock:[\s\S]*\.token-page-airdrop,[\s\S]*\.token-page-presale\s*\{[\s\S]*max-width: 100vw !important;[\s\S]*overflow-x: hidden !important;/);
   assert.match(cssSource, /\/\* Token mobile viewport lock:[\s\S]*\.token-page-airdrop \.home-container,[\s\S]*\.token-page-presale \.home-container\s*\{[\s\S]*width: calc\(100vw - 24px\) !important;[\s\S]*max-width: calc\(100vw - 24px\) !important;/);

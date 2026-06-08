@@ -5239,7 +5239,8 @@
                   type="button"
                   @click="applyTokenLaunchCandidateDecision(row, decision)"
                 >
-                  {{ decision.label }}
+                  <span>{{ decision.label }}</span>
+                  <small v-if="decision.detail">{{ decision.detail }}</small>
                 </button>
               </div>
             </article>
@@ -5374,7 +5375,7 @@
                   {{ tokenCeoLaunchBriefCopy.ledgerMemo }}
                 </span>
               </div>
-              <div class="token-ceo-signal-chips" aria-label="CEO research signals attached">
+              <div class="token-ceo-signal-chips" aria-label="CEO expected research checks">
                 <span v-for="signal in tokenCeoResearchSignalRows" :key="signal">{{ toTitleLabel(signal) }}</span>
               </div>
               <div class="token-ceo-brief-gates" aria-label="CEO brief required gates">
@@ -13134,6 +13135,7 @@ function tokenLaunchCandidateDecisionRows(launchType = 'airdrop', score = 0) {
     {
       key: 'approve',
       label: approveLabel,
+      detail: launchType === 'presale' ? 'Utility + contract' : 'Mission + anti-bot',
       tone: 'approve',
       proofPolicy: launchType === 'presale'
         ? 'Approve only with utility proof, reserve cap, Solana wallet path, funding reference, contract proof, and public ledger receipt.'
@@ -13143,6 +13145,7 @@ function tokenLaunchCandidateDecisionRows(launchType = 'airdrop', score = 0) {
     {
       key: 'needs_evidence',
       label: 'Need proof',
+      detail: 'Request proof',
       tone: 'evidence',
       proofPolicy: launchType === 'presale'
         ? 'Hold presale until utility, funding, wallet, contract, and receipt evidence are attached.'
@@ -13152,6 +13155,7 @@ function tokenLaunchCandidateDecisionRows(launchType = 'airdrop', score = 0) {
     {
       key: 'reject',
       label: 'Hold launch',
+      detail: 'Do not open',
       tone: 'reject',
       proofPolicy: 'Do not open token workflow until source, demand, proof quality, wallet policy, and ledger evidence are remediated.',
       riskNotes: `CEO ${launchLabel} decision: reject for now; score ${score}% fit and proof is not launch-ready.`,
@@ -13174,6 +13178,7 @@ function tokenLaunchCandidateDecisionRowsFromAPI(rows = [], launchType = 'airdro
       return {
         key,
         label: fallback.label || row.label || toTitleLabel(row.key || 'CEO decision'),
+        detail: row.detail || fallback.detail || tokenLaunchCandidateDecisionDetail(key, launchType),
         tone: row.tone || row.key || fallback.tone || 'evidence',
         proofPolicy: contradictsLaunch ? fallback.proofPolicy : (proofPolicy || fallback.proofPolicy || ''),
         riskNotes: contradictsLaunch ? fallback.riskNotes : (riskNotes || fallback.riskNotes || ''),
@@ -13181,6 +13186,13 @@ function tokenLaunchCandidateDecisionRowsFromAPI(rows = [], launchType = 'airdro
     })
     .filter((row) => row.key && row.label);
   return normalized.length ? normalized : fallbackRows;
+}
+function tokenLaunchCandidateDecisionDetail(key = '', launchType = 'airdrop') {
+  const normalized = String(key || '').toLowerCase();
+  if (normalized === 'approve') return launchType === 'presale' ? 'Utility + contract' : 'Mission + anti-bot';
+  if (normalized === 'needs_evidence' || normalized === 'evidence') return 'Request proof';
+  if (normalized === 'reject' || normalized === 'hold') return 'Do not open';
+  return launchType === 'presale' ? 'Presale gate' : 'Airdrop gate';
 }
 function tokenLaunchCandidateDecisionPreview(rows = [], nextAction = '') {
   const list = Array.isArray(rows) ? rows : [];
