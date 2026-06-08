@@ -1854,7 +1854,7 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 	if err := json.Unmarshal(candidatesResp.Body.Bytes(), &candidates); err != nil {
 		t.Fatal(err)
 	}
-	if candidates.ProtocolVersion != tokenLaunchCandidatesProtocolVersion || candidates.Kind != "token_launch_candidates" || candidates.Stats.CandidateCount < 1 || candidates.Stats.AirdropCount < 1 {
+	if candidates.ProtocolVersion != tokenLaunchCandidatesProtocolVersion || candidates.Kind != "token_launch_candidates" || candidates.LaunchTypeFilter != "airdrop" || candidates.Stats.CandidateCount < 1 || candidates.Stats.AirdropCount < 1 {
 		t.Fatalf("public token launch candidates summary invalid: %#v", candidates)
 	}
 	if candidates.Stats.ReadyCount != 0 || candidates.Stats.ReviewCount < 1 || candidates.Stats.HoldCount != 0 {
@@ -1897,6 +1897,9 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 	var presaleCandidates PublicTokenLaunchCandidatesResponse
 	if err := json.Unmarshal(presaleCandidatesResp.Body.Bytes(), &presaleCandidates); err != nil {
 		t.Fatal(err)
+	}
+	if presaleCandidates.LaunchTypeFilter != "presale" {
+		t.Fatalf("public presale launch candidates filter invalid: %#v", presaleCandidates)
 	}
 	if presaleCandidates.Stats.PresaleCount != presaleCandidates.Stats.CandidateCount || presaleCandidates.Stats.AirdropCount != 0 {
 		t.Fatalf("filtered presale candidate stats should stay scoped to presale: %#v", presaleCandidates.Stats)

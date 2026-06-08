@@ -513,6 +513,9 @@ test('public protocol links match backend routes', async () => {
   assert.equal(Boolean(tokenLaunchBriefsSchema.properties.briefs.items.properties.wallet_policy), true);
   assert.equal(Boolean(tokenLaunchBriefsSchema.properties.briefs.items.properties.risk_notes), true);
   assert.equal(tokenLaunchCandidatesSchema.properties.protocol_version.const, 'mergeos.token-launch-candidates.v1');
+  assert.equal(tokenLaunchCandidatesSchema.required.includes('launch_type_filter'), true);
+  assert.equal(tokenLaunchCandidatesSchema.properties.launch_type_filter.enum.includes('airdrop'), true);
+  assert.equal(tokenLaunchCandidatesSchema.properties.launch_type_filter.enum.includes('presale'), true);
   assert.equal(tokenLaunchCandidatesSchema.required.includes('candidates'), true);
   assert.equal(tokenLaunchCandidatesSchema.properties.stats.required.includes('ready_count'), true);
   assert.equal(tokenLaunchCandidatesSchema.properties.stats.required.includes('review_count'), true);

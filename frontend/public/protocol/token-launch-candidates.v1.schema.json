@@ -4,10 +4,14 @@
   "title": "MergeOS Token Launch Candidates v1",
   "type": "object",
   "additionalProperties": false,
-  "required": ["protocol_version", "kind", "stats", "candidates"],
+  "required": ["protocol_version", "kind", "launch_type_filter", "stats", "candidates"],
   "properties": {
     "protocol_version": { "const": "mergeos.token-launch-candidates.v1" },
     "kind": { "const": "token_launch_candidates" },
+    "launch_type_filter": {
+      "enum": ["all", "airdrop", "presale"],
+      "description": "The launch lane applied to this response. Counts are scoped to this lane when filtered."
+    },
     "stats": {
       "type": "object",
       "additionalProperties": false,

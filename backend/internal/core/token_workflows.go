@@ -172,10 +172,11 @@ type PublicTokenLaunchBriefRecord struct {
 }
 
 type PublicTokenLaunchCandidatesResponse struct {
-	ProtocolVersion string                           `json:"protocol_version"`
-	Kind            string                           `json:"kind"`
-	Stats           PublicTokenLaunchCandidatesStats `json:"stats"`
-	Candidates      []PublicTokenLaunchCandidate     `json:"candidates"`
+	ProtocolVersion  string                           `json:"protocol_version"`
+	Kind             string                           `json:"kind"`
+	LaunchTypeFilter string                           `json:"launch_type_filter"`
+	Stats            PublicTokenLaunchCandidatesStats `json:"stats"`
+	Candidates       []PublicTokenLaunchCandidate     `json:"candidates"`
 }
 
 type PublicTokenLaunchCandidatesStats struct {
@@ -590,9 +591,14 @@ func (s *Store) PublicTokenLaunchBriefs(launchTypeFilter string) PublicTokenLaun
 
 func (s *Store) PublicTokenLaunchCandidates(launchTypeFilter string) PublicTokenLaunchCandidatesResponse {
 	marketplace := s.Marketplace()
+	appliedFilter := launchTypeFilter
+	if appliedFilter == "" {
+		appliedFilter = "all"
+	}
 	response := PublicTokenLaunchCandidatesResponse{
-		ProtocolVersion: tokenLaunchCandidatesProtocolVersion,
-		Kind:            "token_launch_candidates",
+		ProtocolVersion:  tokenLaunchCandidatesProtocolVersion,
+		Kind:             "token_launch_candidates",
+		LaunchTypeFilter: appliedFilter,
 		Stats: PublicTokenLaunchCandidatesStats{
 			UpdatedAt: marketplace.Stats.UpdatedAt,
 		},
