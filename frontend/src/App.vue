@@ -11849,6 +11849,7 @@ const presaleReservationAttempted = ref(false);
 const presaleReservationError = ref('');
 const presaleReservationResult = ref(null);
 const tokenLaunchBriefForm = reactive({
+  launch_type: '',
   project_title: '',
   repository_url: '',
   project_summary: '',
@@ -25332,6 +25333,7 @@ function tokenLaunchBriefFieldError(field) {
 }
 
 function resetTokenLaunchBriefForm() {
+  tokenLaunchBriefForm.launch_type = '';
   tokenLaunchBriefForm.project_title = '';
   tokenLaunchBriefForm.repository_url = '';
   tokenLaunchBriefForm.project_summary = '';
@@ -25345,6 +25347,7 @@ function resetTokenLaunchBriefForm() {
 function prefillTokenLaunchBrief() {
   const launchType = publicPage.value === 'presale' ? 'presale' : 'airdrop';
   resetTokenLaunchBriefForm();
+  tokenLaunchBriefForm.launch_type = launchType;
   tokenLaunchBriefForm.project_title = launchType === 'presale'
     ? 'MRG presale readiness review'
     : 'Earned MRG airdrop mission review';
@@ -25397,6 +25400,7 @@ function prefillTokenLaunchBriefFromCandidate(candidate = {}) {
   const launchType = candidate.launchType === 'presale' || candidate.launchType === 'airdrop'
     ? candidate.launchType
     : (publicPage.value === 'presale' ? 'presale' : 'airdrop');
+  tokenLaunchBriefForm.launch_type = launchType;
   tokenLaunchBriefForm.project_title = candidate.title || tokenLaunchBriefForm.project_title;
   tokenLaunchBriefForm.repository_url = candidate.sourceUrl || tokenLaunchBriefForm.repository_url;
   tokenLaunchBriefForm.project_summary = launchType === 'presale'
@@ -25543,7 +25547,9 @@ async function submitTokenLaunchBrief() {
   }
   tokenLaunchBriefBusy.value = true;
   try {
-    const launchType = publicPage.value === 'presale' ? 'presale' : 'airdrop';
+    const launchType = tokenLaunchBriefForm.launch_type === 'presale' || tokenLaunchBriefForm.launch_type === 'airdrop'
+      ? tokenLaunchBriefForm.launch_type
+      : (publicPage.value === 'presale' ? 'presale' : 'airdrop');
     const response = await api('/api/token/launch-briefs', {
       method: 'POST',
       body: JSON.stringify({

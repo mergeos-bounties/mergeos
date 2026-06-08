@@ -1580,12 +1580,14 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /nextIntent === 'token-launch'/);
   assert.match(appSource, /const tokenLaunchBriefMode = ref\(''\)/);
   assert.match(appSource, /const tokenLaunchBriefForm = reactive/);
+  assert.match(appSource, /launch_type: ''/);
   assert.match(appSource, /const tokenLaunchBriefDecisionContext = reactive/);
   assert.match(appSource, /const tokenLaunchBriefValidationMap = computed/);
   assert.match(appSource, /errors\.wallet_policy = 'Wallet policy must explain wallet ownership or uniqueness checks\.'/);
   assert.match(appSource, /errors\.risk_notes = 'CEO risk notes must explain the launch risk review\.'/);
   assert.match(appSource, /api\('\/api\/token\/launch-briefs'/);
   assert.match(appSource, /function submitTokenLaunchBrief\(\)/);
+  assert.match(appSource, /const launchType = tokenLaunchBriefForm\.launch_type === 'presale' \|\| tokenLaunchBriefForm\.launch_type === 'airdrop'[\s\S]*\? tokenLaunchBriefForm\.launch_type[\s\S]*: \(publicPage\.value === 'presale' \? 'presale' : 'airdrop'\);/);
   assert.match(appSource, /ceo_memo/);
   assert.match(appSource, /class="wizard-token-brief-card"/);
   assert.match(appSource, /const tokenLaunchWizardBriefCopy = computed/);
@@ -1593,6 +1595,7 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /CEO presale research mode/);
   assert.match(appSource, /CEO airdrop research mode/);
   assert.match(appSource, /tokenLaunchBriefMode\.value = isPresale \? 'presale' : 'airdrop'/);
+  assert.match(appSource, /tokenLaunchBriefForm\.launch_type = launchType;/);
   assert.match(appSource, /CEO research brief for earned MRG airdrop/);
   assert.match(appSource, /CEO research brief for MRG presale window/);
   assert.match(appSource, /Mission demand/);
