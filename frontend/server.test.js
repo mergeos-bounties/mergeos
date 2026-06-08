@@ -940,6 +940,10 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.match(cssSource, /\.home-executive-panel\s*\{[\s\S]*box-shadow: 0 22px 58px rgba\(15, 23, 42, 0\.1\);/);
   assert.match(cssSource, /\.home-executive-stat-grid\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /\.home-executive-memo p\s*\{[\s\S]*-webkit-line-clamp: 3;/);
+  assert.match(cssSource, /Home mobile executive cut: keep the homepage as a tight product decision screen on phones/);
+  assert.match(cssSource, /@media \(min-width: 761px\)[\s\S]*\.public-home-copy > \.home-ceo-token-desk\s*\{[\s\S]*display: none !important;/);
+  assert.match(cssSource, /@media \(max-width: 760px\)[\s\S]*\.home-ceo-token-desk > div\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\) !important;/);
+  assert.match(cssSource, /@media \(max-width: 760px\)[\s\S]*\.home-executive-panel\s*\{[\s\S]*display: none !important;/);
 });
 
 test('frontend system exposes required public pages and dashboard roles', async () => {

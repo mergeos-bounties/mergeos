@@ -44305,3 +44305,130 @@ canvas {
     grid-template-columns: 34px minmax(0, 1fr) !important;
   }
 }
+
+/* Home mobile executive cut: keep the homepage as a tight product decision screen on phones. */
+@media (min-width: 761px) {
+  .public-home-copy > .home-ceo-token-desk {
+    display: none !important;
+  }
+
+  .public-home-copy .home-definition-strip {
+    margin-top: 18px !important;
+  }
+
+  .public-home-copy .marketplace-actions {
+    margin-top: 14px !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .public-home-page {
+    padding-block: 8px 14px !important;
+  }
+
+  .public-home-page .home-container {
+    padding-inline: 12px !important;
+  }
+
+  .public-home-copy h1 {
+    max-width: 100% !important;
+    font-size: clamp(31px, 8vw, 38px) !important;
+    line-height: 0.98 !important;
+  }
+
+  .public-home-copy > p {
+    margin-top: 8px !important;
+    font-size: 13px !important;
+    line-height: 1.4 !important;
+  }
+
+  .home-ceo-token-desk {
+    gap: 7px !important;
+    margin-top: 10px !important;
+    padding: 10px !important;
+  }
+
+  .home-ceo-token-desk > p {
+    -webkit-line-clamp: 3 !important;
+    font-size: 12px !important;
+    line-height: 1.35 !important;
+  }
+
+  .home-ceo-token-desk > div {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+  }
+
+  .home-ceo-token-desk button {
+    min-height: 58px !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    place-items: center !important;
+    gap: 4px !important;
+    padding: 7px 5px !important;
+    text-align: center !important;
+  }
+
+  .home-ceo-token-desk button svg {
+    width: 13px !important;
+    height: 13px !important;
+  }
+
+  .home-ceo-token-desk button b {
+    font-size: 10.5px !important;
+    line-height: 1.05 !important;
+  }
+
+  .home-ceo-token-desk button small {
+    font-size: 7.5px !important;
+    line-height: 1.05 !important;
+  }
+
+  .home-definition-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 7px !important;
+    margin-top: 8px !important;
+  }
+
+  .home-definition-strip article {
+    min-height: 76px !important;
+    grid-template-columns: 26px minmax(0, 1fr) !important;
+    gap: 7px !important;
+    padding: 8px !important;
+  }
+
+  .home-definition-icon {
+    width: 26px !important;
+    height: 26px !important;
+    border-radius: 8px !important;
+  }
+
+  .home-definition-strip strong {
+    font-size: 11px !important;
+    line-height: 1.1 !important;
+  }
+
+  .home-definition-strip small {
+    -webkit-line-clamp: 2 !important;
+    font-size: 9.5px !important;
+    line-height: 1.2 !important;
+  }
+
+  .public-home-copy .marketplace-actions {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 8px !important;
+    margin-top: 10px !important;
+  }
+
+  .public-home-copy .marketplace-actions .large {
+    min-height: 44px !important;
+  }
+
+  .home-mergeide-inline-link {
+    min-height: 36px !important;
+    margin-top: 7px !important;
+  }
+
+  .home-executive-panel {
+    display: none !important;
+  }
+}
