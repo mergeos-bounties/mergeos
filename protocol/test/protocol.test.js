@@ -245,6 +245,7 @@ test('validates airdrop claim, presale reservation, and token launch brief proto
         project_title: 'MergeOS funded repo sprint',
         recommended_launch_types: ['airdrop', 'presale'],
         decision_launch_type: 'airdrop',
+        decision_state: 'ready',
         research_source: 'https://github.com/mergeos-bounties/mergeos',
         brief: 'Funded marketplace project with open bounties and accepted proof.',
         work_pool_mrg: 90000,

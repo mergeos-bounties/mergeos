@@ -37,6 +37,7 @@
           "project_title",
           "recommended_launch_types",
           "decision_launch_type",
+          "decision_state",
           "research_source",
           "brief",
           "work_pool_mrg",
@@ -63,6 +64,10 @@
           "decision_launch_type": {
             "enum": ["airdrop", "presale"],
             "description": "The launch lane used for readiness gates, decision options, and next_action."
+          },
+          "decision_state": {
+            "enum": ["ready", "review", "hold"],
+            "description": "The overall candidate decision state derived from readiness gates."
           },
           "research_source": { "type": "string", "maxLength": 500 },
           "brief": { "type": "string", "maxLength": 1000 },

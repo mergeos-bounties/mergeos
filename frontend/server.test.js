@@ -524,6 +524,8 @@ test('public protocol links match backend routes', async () => {
   assert.equal(tokenLaunchCandidatesSchema.properties.candidates.items.required.includes('decision_launch_type'), true);
   assert.equal(tokenLaunchCandidatesSchema.properties.candidates.items.properties.decision_launch_type.enum.includes('airdrop'), true);
   assert.equal(tokenLaunchCandidatesSchema.properties.candidates.items.properties.decision_launch_type.enum.includes('presale'), true);
+  assert.equal(tokenLaunchCandidatesSchema.properties.candidates.items.required.includes('decision_state'), true);
+  assert.equal(tokenLaunchCandidatesSchema.properties.candidates.items.properties.decision_state.enum.includes('review'), true);
   assert.equal(tokenLaunchCandidatesSchema.properties.candidates.items.required.includes('next_action'), true);
   assert.equal(tokenLaunchCandidatesSchema.properties.candidates.items.required.includes('readiness_gates'), true);
   assert.equal(tokenLaunchCandidatesSchema.properties.candidates.items.required.includes('research_score'), true);
@@ -1395,6 +1397,9 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /publicApi\(candidatePath\)/);
   assert.match(appSource, /tokenLaunchCandidatesData\.value\?\.candidates/);
   assert.match(appSource, /candidate\.decision_launch_type === 'presale' \|\| candidate\.decision_launch_type === 'airdrop'/);
+  assert.match(appSource, /decisionState = ''/);
+  assert.match(appSource, /apiState === 'review'/);
+  assert.match(appSource, /decisionState: candidate\.decision_state/);
   assert.match(appSource, /candidate\.research_source/);
   assert.match(appSource, /candidate\.proof_policy/);
   assert.match(appSource, /class="token-ceo-candidate-context" role="group"/);

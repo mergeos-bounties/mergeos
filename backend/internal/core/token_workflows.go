@@ -195,6 +195,7 @@ type PublicTokenLaunchCandidate struct {
 	ProjectTitle           string                               `json:"project_title"`
 	RecommendedLaunchTypes []string                             `json:"recommended_launch_types"`
 	DecisionLaunchType     string                               `json:"decision_launch_type"`
+	DecisionState          string                               `json:"decision_state"`
 	ResearchSource         string                               `json:"research_source"`
 	Brief                  string                               `json:"brief"`
 	WorkPoolMRG            int64                                `json:"work_pool_mrg"`
@@ -660,7 +661,8 @@ func (s *Store) PublicTokenLaunchCandidates(launchTypeFilter string) PublicToken
 		researchScore := tokenLaunchCandidateResearchScore(project, proofSignals)
 		decisionLaunchType := tokenLaunchCandidateDecisionLaunchType(recommendedTypes, launchTypeFilter)
 		readinessGates := tokenLaunchCandidateReadinessGates(decisionLaunchType, researchScore, project, proofSignals)
-		readyToOpen := tokenLaunchCandidateReadinessState(readinessGates) == "ready"
+		decisionState := tokenLaunchCandidateReadinessState(readinessGates)
+		readyToOpen := decisionState == "ready"
 		nextAction := tokenLaunchCandidateNextAction(decisionLaunchType, researchScore, readyToOpen)
 		candidate := PublicTokenLaunchCandidate{
 			CandidateID:            "tlc_" + project.ID,
@@ -668,6 +670,7 @@ func (s *Store) PublicTokenLaunchCandidates(launchTypeFilter string) PublicToken
 			ProjectTitle:           project.Title,
 			RecommendedLaunchTypes: recommendedTypes,
 			DecisionLaunchType:     decisionLaunchType,
+			DecisionState:          decisionState,
 			ResearchSource:         source,
 			Brief:                  project.Brief,
 			WorkPoolMRG:            project.WorkPoolCents,
@@ -700,13 +703,15 @@ func (s *Store) PublicTokenLaunchCandidates(launchTypeFilter string) PublicToken
 		proofSignals := tokenLaunchBriefCandidateSignals(brief)
 		researchScore := tokenLaunchBriefCandidateScore(brief, proofSignals)
 		readinessGates := tokenLaunchBriefCandidateReadinessGates(launchType, brief, proofSignals)
-		readyToOpen := tokenLaunchCandidateReadinessState(readinessGates) == "ready"
+		decisionState := tokenLaunchCandidateReadinessState(readinessGates)
+		readyToOpen := decisionState == "ready"
 		addCandidate(PublicTokenLaunchCandidate{
 			CandidateID:            "tlb_" + brief.BriefID,
 			ProjectID:              "launch_brief:" + brief.BriefID,
 			ProjectTitle:           brief.ProjectTitle,
 			RecommendedLaunchTypes: []string{launchType},
 			DecisionLaunchType:     launchType,
+			DecisionState:          decisionState,
 			ResearchSource:         brief.ResearchSource,
 			Brief:                  tokenLaunchBriefCandidateSummary(brief),
 			ResearchScore:          researchScore,

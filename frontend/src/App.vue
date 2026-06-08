@@ -13206,7 +13206,7 @@ function tokenLaunchCandidateContextRows(candidate = {}, readinessRows = [], lau
     .filter((row) => row.value)
     .slice(0, 3);
 }
-function tokenLaunchCandidateVerdict({ launchType = 'airdrop', score = 0, readinessRows = [], signalCount = 0, openTasks = 0, acceptedTasks = 0 } = {}) {
+function tokenLaunchCandidateVerdict({ launchType = 'airdrop', score = 0, readinessRows = [], signalCount = 0, openTasks = 0, acceptedTasks = 0, decisionState = '' } = {}) {
   const numericScore = Number(score) || 0;
   const gates = Array.isArray(readinessRows) ? readinessRows : [];
   const holdCount = gates.filter((gate) => String(gate.state || '').toLowerCase() === 'hold').length;
@@ -13215,6 +13215,28 @@ function tokenLaunchCandidateVerdict({ launchType = 'airdrop', score = 0, readin
   const signalTotal = Number(signalCount) || 0;
   const demandTotal = (Number(openTasks) || 0) + (Number(acceptedTasks) || 0);
   const launchLabel = launchType === 'presale' ? 'presale' : 'airdrop';
+  const apiState = ['ready', 'review', 'hold'].includes(decisionState) ? decisionState : '';
+  if (apiState === 'hold') {
+    return {
+      tone: 'hold',
+      label: `Hold ${launchLabel}`,
+      reason: 'API decision state is hold; collect stronger source and proof.',
+    };
+  }
+  if (apiState === 'review') {
+    return {
+      tone: 'review',
+      label: `Review ${launchLabel}`,
+      reason: `${readyCount}/${Math.max(gates.length, 3)} gates ready; attach final proof before opening.`,
+    };
+  }
+  if (apiState === 'ready') {
+    return {
+      tone: 'ready',
+      label: `Ready ${launchLabel}`,
+      reason: `${readyCount}/${Math.max(gates.length, 3)} gates ready with ${signalTotal} proof signals.`,
+    };
+  }
   if (holdCount || numericScore < 68) {
     return {
       tone: 'hold',
@@ -13291,6 +13313,7 @@ const tokenCeoCandidateRows = computed(() => {
           signalCount: signals.length,
           openTasks,
           acceptedTasks,
+          decisionState: candidate.decision_state,
         }),
         tone: launchType === 'presale' ? 'green' : 'purple',
       };
