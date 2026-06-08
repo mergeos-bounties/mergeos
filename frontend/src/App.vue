@@ -5058,16 +5058,26 @@
             </div>
             <p>{{ publicTokenPage.body }}</p>
             <div class="marketplace-actions">
-              <button
-                v-for="action in publicTokenPage.actions"
-                :key="action.label"
-                :class="[action.primary ? 'primary-button' : 'secondary-button', 'large']"
-                type="button"
-                @click="handlePublicAction(action)"
-              >
-                {{ action.label }}
-                <component :is="action.icon" :size="16" />
-              </button>
+              <template v-for="action in publicTokenPage.actions" :key="action.label">
+                <a
+                  v-if="action.command === 'token-launch-brief'"
+                  :class="[action.primary ? 'primary-button' : 'secondary-button', 'large']"
+                  href="#token-ceo-brief"
+                  @click="handlePublicAction(action)"
+                >
+                  {{ action.label }}
+                  <component :is="action.icon" :size="16" />
+                </a>
+                <button
+                  v-else
+                  :class="[action.primary ? 'primary-button' : 'secondary-button', 'large']"
+                  type="button"
+                  @click="handlePublicAction(action)"
+                >
+                  {{ action.label }}
+                  <component :is="action.icon" :size="16" />
+                </button>
+              </template>
             </div>
           </div>
 
@@ -5247,7 +5257,7 @@
               </div>
             </article>
           </div>
-          <form class="token-ceo-brief-card" @submit.prevent="submitTokenLaunchBrief">
+          <form id="token-ceo-brief" class="token-ceo-brief-card" @submit.prevent="submitTokenLaunchBrief">
             <div class="token-ceo-brief-copy">
               <span class="marketplace-eyebrow">{{ tokenCeoLaunchBriefCopy.eyebrow }}</span>
               <strong>{{ tokenCeoLaunchBriefCopy.title }}</strong>
@@ -24871,19 +24881,22 @@ function prefillTokenLaunchBrief() {
 function scrollTokenLaunchBriefCardIntoView() {
   if (!hasWindow) return;
   const run = (behavior = 'smooth') => {
-    const target = document.querySelector('.token-ceo-brief-card');
+    const target = document.getElementById('token-ceo-brief') || document.querySelector('.token-ceo-brief-card');
     if (!target) return;
-    target.scrollIntoView({ block: 'start', behavior });
-    const top = Math.max(0, window.scrollY + target.getBoundingClientRect().top - 76);
+    const navHeight = Math.round(document.querySelector('.home-navbar')?.getBoundingClientRect().height || 64);
+    const top = Math.max(0, window.scrollY + target.getBoundingClientRect().top - navHeight - 14);
     window.scrollTo({ top, behavior });
     if (behavior === 'auto') window.scrollTo(0, top);
   };
   window.requestAnimationFrame(run);
+  window.setTimeout(run, 60);
   window.setTimeout(run, 140);
+  window.setTimeout(() => run('auto'), 260);
   window.setTimeout(() => run('auto'), 360);
   window.setTimeout(() => run('auto'), 760);
   window.setTimeout(() => run('auto'), 1600);
   window.setTimeout(() => run('auto'), 2600);
+  window.setTimeout(() => run('auto'), 4200);
 }
 
 function prefillTokenLaunchBriefFromCandidate(candidate = {}) {

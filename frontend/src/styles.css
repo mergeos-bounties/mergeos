@@ -9091,6 +9091,7 @@ svg {
 }
 
 .token-ceo-brief-card {
+  scroll-margin-top: 86px;
   min-width: 0;
   display: grid;
   grid-template-columns: minmax(0, 1fr);

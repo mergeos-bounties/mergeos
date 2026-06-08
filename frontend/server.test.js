@@ -1233,6 +1233,9 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /id="token-workflow"/);
   assert.match(appSource, /class="token-ceo-research-panel"/);
   assert.match(appSource, /CEO LAUNCH DECISION/);
+  assert.match(appSource, /v-if="action\.command === 'token-launch-brief'"/);
+  assert.match(appSource, /href="#token-ceo-brief"/);
+  assert.match(appSource, /@click="handlePublicAction\(action\)"/);
   assert.match(appSource, /label: 'Send CEO brief', primary: true, icon: ArrowRight, command: 'token-launch-brief'/);
   assert.match(appSource, /label: 'Send CEO brief', primary: true, icon: UserCheck, command: 'token-launch-brief'/);
   assert.match(appSource, /Queue API/);
@@ -1246,7 +1249,7 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /class="token-ceo-source-packet"/);
   assert.match(appSource, /class="token-ceo-signal-chips"/);
   assert.match(appSource, /class="token-ceo-decision-context"/);
-  assert.match(appSource, /class="token-ceo-brief-card"/);
+  assert.match(appSource, /id="token-ceo-brief" class="token-ceo-brief-card"/);
   assert.match(appSource, /@submit\.prevent="submitTokenLaunchBrief"/);
   assert.match(appSource, /class="token-ceo-memo-result"/);
   assert.match(appSource, /tokenLaunchBriefResult\.ceo_memo\.decision_label/);
@@ -1315,14 +1318,18 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /Use for CEO brief/);
   assert.match(appSource, /function prefillTokenLaunchBriefFromCandidate\(candidate = \{\}\)/);
   assert.match(appSource, /function scrollTokenLaunchBriefCardIntoView\(\)/);
-  assert.match(appSource, /target\.scrollIntoView\(\{ block: 'start', behavior \}\)/);
+  assert.match(appSource, /document\.getElementById\('token-ceo-brief'\) \|\| document\.querySelector\('\.token-ceo-brief-card'\)/);
+  assert.match(appSource, /const navHeight = Math\.round\(document\.querySelector\('\.home-navbar'\)\?\.getBoundingClientRect\(\)\.height \|\| 64\)/);
   assert.match(appSource, /window\.scrollTo\(\{ top, behavior \}\)/);
   assert.match(appSource, /if \(behavior === 'auto'\) window\.scrollTo\(0, top\)/);
+  assert.match(appSource, /window\.setTimeout\(run, 60\)/);
   assert.match(appSource, /window\.setTimeout\(run, 140\)/);
+  assert.match(appSource, /window\.setTimeout\(\(\) => run\('auto'\), 260\)/);
   assert.match(appSource, /window\.setTimeout\(\(\) => run\('auto'\), 360\)/);
   assert.match(appSource, /window\.setTimeout\(\(\) => run\('auto'\), 760\)/);
   assert.match(appSource, /window\.setTimeout\(\(\) => run\('auto'\), 1600\)/);
   assert.match(appSource, /window\.setTimeout\(\(\) => run\('auto'\), 2600\)/);
+  assert.match(appSource, /window\.setTimeout\(\(\) => run\('auto'\), 4200\)/);
   assert.match(appSource, /CEO candidate loaded\./);
   assert.match(appSource, /tokenLaunchBriefDecisionContext\.label = label/);
   assert.match(appSource, /tokenLaunchBriefDecisionContext\.candidate = candidate\.title/);
@@ -1485,6 +1492,7 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(cssSource, /\.token-ceo-signal-chips\s*\{[\s\S]*flex-wrap: wrap;/);
   assert.match(cssSource, /\.token-ceo-decision-context\s*\{[\s\S]*grid-template-columns: auto minmax\(0, 1fr\) auto;/);
   assert.match(cssSource, /\.token-ceo-brief-card\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\);/);
+  assert.match(cssSource, /\.token-ceo-brief-card\s*\{[\s\S]*scroll-margin-top: 86px;/);
   assert.match(cssSource, /\.token-ceo-brief-form\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /\.token-ceo-brief-actions\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) auto auto;/);
   assert.match(cssSource, /\.token-ceo-research-grid\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
