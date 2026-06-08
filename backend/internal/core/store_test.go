@@ -1795,7 +1795,7 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 	if len(publicLaunchBriefs.Briefs) != 1 || publicLaunchBriefs.Briefs[0].BriefID != launchBrief.BriefID || publicLaunchBriefs.Briefs[0].LaunchType != "airdrop" {
 		t.Fatalf("public token launch briefs rows invalid: %#v", publicLaunchBriefs.Briefs)
 	}
-	if publicLaunchBriefs.Briefs[0].ResearchSource != "https://github.com/mergeos-bounties/mergeos" || publicLaunchBriefs.Briefs[0].GateSummary != "4/4 gates ready for CEO review" || !stringSliceContains(publicLaunchBriefs.Briefs[0].ResearchSignals, "research_source") {
+	if publicLaunchBriefs.Briefs[0].ResearchSource != "https://github.com/mergeos-bounties/mergeos" || publicLaunchBriefs.Briefs[0].GateSummary != "4/4 gates ready for CEO review" || !stringSliceContains(publicLaunchBriefs.Briefs[0].ResearchSignals, "research_source") || !strings.Contains(publicLaunchBriefs.Briefs[0].ProjectSummary, "open earned MRG airdrop missions") {
 		t.Fatalf("public token launch brief missing CEO research fields: %#v", publicLaunchBriefs.Briefs[0])
 	}
 	filteredLaunchBriefsResp := httptest.NewRecorder()
@@ -1894,6 +1894,7 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 	if standaloneCandidate == nil ||
 		standaloneCandidate.ProjectID != "launch_brief:"+standalonePresaleBrief.BriefID ||
 		standaloneCandidate.ResearchSource != "https://example.com/standalone-presale-whitepaper" ||
+		!strings.Contains(standaloneCandidate.Brief, "open an MRG presale window") ||
 		standaloneCandidate.ReadinessGates[0].State != "review" ||
 		!stringSliceContains(standaloneCandidate.ProofSignals, "ceo_submitted_brief") ||
 		!strings.Contains(standaloneCandidate.ProofPolicy, "Solana contract proof") ||

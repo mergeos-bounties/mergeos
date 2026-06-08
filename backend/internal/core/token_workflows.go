@@ -155,6 +155,7 @@ type PublicTokenLaunchBriefRecord struct {
 	BriefID         string    `json:"brief_id"`
 	LaunchType      string    `json:"launch_type"`
 	ProjectTitle    string    `json:"project_title"`
+	ProjectSummary  string    `json:"project_summary,omitempty"`
 	Decision        string    `json:"decision"`
 	GateSummary     string    `json:"gate_summary"`
 	GatesReference  string    `json:"gates_reference"`
@@ -556,6 +557,7 @@ func (s *Store) PublicTokenLaunchBriefs(launchTypeFilter string) PublicTokenLaun
 			BriefID:         fields["launch_brief"],
 			LaunchType:      launchType,
 			ProjectTitle:    fields["title"],
+			ProjectSummary:  fields["summary"],
 			Decision:        fields["decision"],
 			GateSummary:     fields["gate_summary"],
 			GatesReference:  fields["gates"],
@@ -683,7 +685,7 @@ func (s *Store) PublicTokenLaunchCandidates(launchTypeFilter string) PublicToken
 			ProjectTitle:           brief.ProjectTitle,
 			RecommendedLaunchTypes: []string{launchType},
 			ResearchSource:         brief.ResearchSource,
-			Brief:                  "CEO-submitted launch brief waiting for candidate review.",
+			Brief:                  tokenLaunchBriefCandidateSummary(brief),
 			ResearchScore:          researchScore,
 			ProofSignals:           proofSignals,
 			DecisionOptions:        tokenLaunchCandidateDecisionOptions(launchType, researchScore),
@@ -714,6 +716,13 @@ func tokenLaunchBriefCandidateSignals(brief PublicTokenLaunchBriefRecord) []stri
 		}
 	}
 	return signals
+}
+
+func tokenLaunchBriefCandidateSummary(brief PublicTokenLaunchBriefRecord) string {
+	if summary := strings.TrimSpace(brief.ProjectSummary); summary != "" {
+		return summary
+	}
+	return "CEO-submitted launch brief waiting for candidate review."
 }
 
 func tokenLaunchBriefCandidateScore(brief PublicTokenLaunchBriefRecord, proofSignals []string) int {
@@ -816,6 +825,7 @@ func (s *Store) RecordTokenLaunchBriefForUser(userID string, req TokenLaunchBrie
 		"gates:" + tokenLaunchGateReference(ceoMemo.Gates),
 		"gate_summary:" + tokenLaunchGateSummary(ceoMemo.Gates),
 		"title:" + projectTitle,
+		"summary:" + projectSummary,
 		"source:" + repositoryURL,
 		"repo:" + repositoryURL,
 		"signals:" + strings.Join(researchSignals, ","),
