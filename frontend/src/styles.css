@@ -46029,3 +46029,85 @@ canvas {
     grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
   }
 }
+
+/* Token CEO mobile shortlist: show all candidate projects as chips, then keep only the lead decision card expanded. */
+.token-page-airdrop .token-ceo-mobile-shortlist,
+.token-page-presale .token-ceo-mobile-shortlist {
+  display: none !important;
+}
+
+@media (max-width: 760px) {
+  .token-page-airdrop .token-ceo-mobile-shortlist,
+  .token-page-presale .token-ceo-mobile-shortlist {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+  }
+
+  .token-page-airdrop .token-ceo-mobile-shortlist span,
+  .token-page-presale .token-ceo-mobile-shortlist span {
+    display: grid !important;
+    align-content: center !important;
+    min-height: 48px !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    border: 1px solid rgba(15, 118, 110, 0.13) !important;
+    border-radius: 8px !important;
+    background: rgba(255, 255, 255, 0.88) !important;
+    padding: 6px !important;
+  }
+
+  .token-page-airdrop .token-ceo-mobile-shortlist b,
+  .token-page-airdrop .token-ceo-mobile-shortlist strong,
+  .token-page-airdrop .token-ceo-mobile-shortlist small,
+  .token-page-presale .token-ceo-mobile-shortlist b,
+  .token-page-presale .token-ceo-mobile-shortlist strong,
+  .token-page-presale .token-ceo-mobile-shortlist small {
+    display: block !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .token-page-airdrop .token-ceo-mobile-shortlist b,
+  .token-page-presale .token-ceo-mobile-shortlist b {
+    color: #0f766e !important;
+    font-family: var(--mono-font) !important;
+    font-size: 8.5px !important;
+    font-weight: 900 !important;
+    letter-spacing: 0.05em !important;
+    line-height: 1 !important;
+    text-transform: uppercase !important;
+  }
+
+  .token-page-airdrop .token-ceo-mobile-shortlist strong,
+  .token-page-presale .token-ceo-mobile-shortlist strong {
+    margin-top: 4px !important;
+    color: #0f172a !important;
+    font-size: 10px !important;
+    font-weight: 920 !important;
+    line-height: 1 !important;
+  }
+
+  .token-page-airdrop .token-ceo-mobile-shortlist small,
+  .token-page-presale .token-ceo-mobile-shortlist small {
+    margin-top: 4px !important;
+    color: #64748b !important;
+    font-size: 8.5px !important;
+    font-weight: 820 !important;
+    line-height: 1 !important;
+  }
+}
+
+@media (max-width: 620px) {
+  .token-page-airdrop .token-ceo-candidate-lane article:nth-child(n + 2),
+  .token-page-presale .token-ceo-candidate-lane article:nth-child(n + 2) {
+    display: none !important;
+  }
+
+  .token-page-airdrop .token-ceo-candidate-lane article:first-child,
+  .token-page-presale .token-ceo-candidate-lane article:first-child {
+    margin-top: 0 !important;
+  }
+}

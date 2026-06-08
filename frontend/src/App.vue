@@ -5185,6 +5185,13 @@
               <strong>{{ row.value }}</strong>
             </article>
           </div>
+          <div v-if="tokenCeoMobileShortlistRows.length" class="token-ceo-mobile-shortlist" aria-label="Mobile CEO candidate shortlist">
+            <span v-for="(row, index) in tokenCeoMobileShortlistRows" :key="row.key || row.title">
+              <b>{{ index === 0 ? 'Lead' : row.scoreLabel || `#${index + 1}` }}</b>
+              <strong>{{ row.title }}</strong>
+              <small>{{ row.verdict?.label || row.label }}</small>
+            </span>
+          </div>
           <div v-if="tokenCeoCandidateRows.length" class="token-ceo-candidate-lane" aria-label="CEO candidate projects">
             <article v-for="row in tokenCeoCandidateRows" :key="row.key">
               <span :class="['ledger-trust-icon', row.tone]">
@@ -13528,6 +13535,7 @@ const tokenCeoCandidateRows = computed(() => {
     };
   });
 });
+const tokenCeoMobileShortlistRows = computed(() => tokenCeoCandidateRows.value.slice(0, 3));
 const tokenCeoProjectResearchRows = computed(() => {
   const openTasks = Number(marketplaceStats.value.open_task_count) || (marketplaceData.value.bounties || []).length || 0;
   const proofRows = Number(ledgerEconomyStats.value.ledger_entry_count) || ledgerRawEntries.value.length || ledgerEventItems.value.length || 0;
