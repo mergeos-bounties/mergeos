@@ -27711,6 +27711,10 @@ svg {
   margin-top: 14px;
 }
 
+.project-mobile-optional-summary {
+  display: none;
+}
+
 .ai-pricing-card {
   border: 1px solid #e1e8f0;
   border-radius: 12px;
@@ -45470,5 +45474,80 @@ canvas {
 
   .project-flow-shell .project-step-actions button {
     min-height: 44px !important;
+  }
+}
+
+/* Project wizard mobile budget trim: keep AI pricing available without making step 3 a long control wall. */
+@media (max-width: 620px) {
+  .project-flow-shell .ai-pricing-section.project-mobile-optional-panel {
+    display: block !important;
+    margin-top: 4px !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+  }
+
+  .project-flow-shell .project-mobile-optional-summary {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 26px !important;
+    align-items: center !important;
+    gap: 8px !important;
+    min-height: 48px !important;
+    border: 1px solid rgba(221, 214, 254, 0.82) !important;
+    border-radius: 10px !important;
+    background: linear-gradient(135deg, rgba(245, 243, 255, 0.94), rgba(255, 255, 255, 0.94)) !important;
+    color: #312e81 !important;
+    cursor: pointer !important;
+    list-style: none !important;
+    padding: 8px 9px !important;
+  }
+
+  .project-flow-shell .project-mobile-optional-summary::-webkit-details-marker {
+    display: none !important;
+  }
+
+  .project-flow-shell .project-mobile-optional-summary strong,
+  .project-flow-shell .project-mobile-optional-summary small {
+    display: block !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .project-flow-shell .project-mobile-optional-summary strong {
+    font-size: 12px !important;
+    font-weight: 900 !important;
+    line-height: 1.1 !important;
+  }
+
+  .project-flow-shell .project-mobile-optional-summary small {
+    margin-top: 3px !important;
+    color: #5b21b6 !important;
+    font-size: 10px !important;
+    font-weight: 760 !important;
+    line-height: 1.1 !important;
+  }
+
+  .project-flow-shell .project-mobile-optional-summary svg {
+    justify-self: center !important;
+    color: #6d28d9 !important;
+    transition: transform 0.18s ease !important;
+  }
+
+  .project-flow-shell .project-mobile-optional-panel[open] .project-mobile-optional-summary svg {
+    transform: rotate(180deg) !important;
+  }
+
+  .project-flow-shell .ai-pricing-card {
+    margin-top: 6px !important;
+    border-radius: 10px !important;
+    padding: 9px !important;
+  }
+
+  .project-flow-shell .ai-pricing-header small,
+  .project-flow-shell .ai-pricing-inputs label small,
+  .project-flow-shell .ai-evaluation-results-box .extra-meta {
+    display: none !important;
   }
 }

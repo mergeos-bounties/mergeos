@@ -2055,6 +2055,13 @@ test('signed-in mobile dashboard keeps nav, actions, and popovers phone-safe', a
   assert.match(cssSource, /\/\* Project wizard mobile command rail:[\s\S]*\.project-flow-shell \.project-flow-main\s*\{[\s\S]*padding-bottom: calc\(var\(--project-mobile-action-height\) \+ 28px \+ env\(safe-area-inset-bottom\)\) !important;/);
   assert.match(cssSource, /\/\* Project wizard mobile command rail:[\s\S]*\.project-flow-shell \.project-step-actions\s*\{[\s\S]*position: fixed !important;[\s\S]*bottom: max\(8px, env\(safe-area-inset-bottom\)\) !important;[\s\S]*z-index: 980 !important;/);
   assert.match(cssSource, /\/\* Project wizard mobile command rail:[\s\S]*\.project-flow-shell \.project-step-actions > div\s*\{[\s\S]*grid-template-columns: minmax\(0, 0\.84fr\) minmax\(0, 1\.16fr\) !important;/);
+  assert.match(appSource, /class="wizard-section full ai-pricing-section project-mobile-optional-panel"/);
+  assert.match(appSource, /:open="projectAiPricingPanelOpen"/);
+  assert.match(appSource, /function updateProjectMobileOptionalPanels\(\)/);
+  assert.match(appSource, /window\.addEventListener\('resize', updateProjectMobileOptionalPanels\)/);
+  assert.match(cssSource, /Project wizard mobile budget trim: keep AI pricing available without making step 3 a long control wall/);
+  assert.match(cssSource, /\/\* Project wizard mobile budget trim:[\s\S]*\.project-flow-shell \.project-mobile-optional-summary\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) 26px !important;[\s\S]*min-height: 48px !important;/);
+  assert.match(cssSource, /\/\* Project wizard mobile budget trim:[\s\S]*\.project-flow-shell \.project-mobile-optional-panel\[open\] \.project-mobile-optional-summary svg\s*\{[\s\S]*transform: rotate\(180deg\) !important;/);
   assert.match(cssSource, /@media \(max-width: 430px\)[\s\S]*\.dashboard-shell \.admin-dispute-lane,[\s\S]*\.dashboard-shell \.admin-ops-row\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\);/);
   assert.match(appSource, /dashboardNotificationMenuPlacement\.value = 'mobile-sheet';/);
   assert.match(appSource, /window\.visualViewport\?\.addEventListener\('resize', updateDashboardNotificationMenuPosition\);/);

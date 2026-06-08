@@ -591,7 +591,18 @@
               </div>
             </section>
 
-            <section class="wizard-section full ai-pricing-section">
+            <details
+              class="wizard-section full ai-pricing-section project-mobile-optional-panel"
+              :open="projectAiPricingPanelOpen"
+              @toggle="projectAiPricingPanelOpen = $event.currentTarget.open"
+            >
+              <summary class="project-mobile-optional-summary">
+                <span>
+                  <strong>AI price recommendation</strong>
+                  <small>Optional: evaluate complexity, constraints, and fair budget.</small>
+                </span>
+                <ChevronDown :size="15" />
+              </summary>
               <div class="ai-pricing-card">
                 <div class="ai-pricing-header">
                   <Sparkles class="sparkle-icon animated-sparkle" :size="18" />
@@ -701,7 +712,7 @@
                   </div>
                 </div>
               </div>
-            </section>
+            </details>
 
             <section v-if="priceEvaluation" class="wizard-section full price-estimate-card">
               <div class="wizard-section-title row">
@@ -11905,6 +11916,7 @@ const projectWizardVisible = ref(Boolean(initialProjectWizardRoute));
 const projectWizardStage = ref(initialProjectWizardRoute?.stage || 'setup');
 const projectWizardStep = ref(initialProjectWizardRoute?.step || 1);
 const tokenLaunchBriefMode = ref('');
+const projectAiPricingPanelOpen = ref(true);
 const projectPreviewVisible = ref(false);
 const projectPreviewDialog = ref(null);
 const projectFundingAmount = ref('');
@@ -33304,6 +33316,11 @@ async function logout() {
   await req;
 }
 
+function updateProjectMobileOptionalPanels() {
+  if (!hasWindow) return;
+  projectAiPricingPanelOpen.value = (window.innerWidth || document.documentElement.clientWidth || 1024) > 620;
+}
+
 onMounted(async () => {
   clientHydrated.value = true;
   applyLocaleToDocument();
@@ -33325,8 +33342,10 @@ onMounted(async () => {
   const handledPasswordResetToken = handlePasswordResetToken();
   const handledGitHubCallback = await handleGitHubCallback();
   if (hasWindow) {
+    updateProjectMobileOptionalPanels();
     window.addEventListener('popstate', syncPublicPageFromBrowserPath);
     window.addEventListener('resize', updateDashboardNotificationMenuPosition);
+    window.addEventListener('resize', updateProjectMobileOptionalPanels);
     window.addEventListener('scroll', updateDashboardNotificationMenuPosition, true);
     window.visualViewport?.addEventListener('resize', updateDashboardNotificationMenuPosition);
     window.visualViewport?.addEventListener('scroll', updateDashboardNotificationMenuPosition);
@@ -33362,6 +33381,7 @@ onUnmounted(() => {
   if (hasWindow) {
     window.removeEventListener('popstate', syncPublicPageFromBrowserPath);
     window.removeEventListener('resize', updateDashboardNotificationMenuPosition);
+    window.removeEventListener('resize', updateProjectMobileOptionalPanels);
     window.removeEventListener('scroll', updateDashboardNotificationMenuPosition, true);
     window.visualViewport?.removeEventListener('resize', updateDashboardNotificationMenuPosition);
     window.visualViewport?.removeEventListener('scroll', updateDashboardNotificationMenuPosition);
