@@ -9473,8 +9473,8 @@ const publicNavTranslations = {
 const publicHomeTranslations = {
   'en-US': {
     eyebrow: 'MERGEOS DELIVERY OS',
-    title: 'Fund software work, route tasks, prove delivery.',
-    body: 'MergeOS turns a brief or repo into funded work: CEO agents scope it, builders and AI agents execute it, escrow and Solana MRG track money, and every PR, deploy, payout, and receipt lands on a public proof ledger.',
+    title: 'Operating system for funded software delivery.',
+    body: 'MergeOS turns a product brief or repo into funded software work: CEO agents plan the scope, builders and AI agents execute tasks, escrow and Solana MRG track money, and every PR, deploy, payout, and receipt lands on a public proof ledger.',
     primaryAction: 'Start a project',
     marketplaceAction: 'View live work',
     ledgerAction: 'Open proof ledger',
@@ -9504,10 +9504,10 @@ const publicHomeTranslations = {
     },
     statDetails: ['Funded briefs', 'Claimable work', 'Escrow tracked', 'MRG supply'],
     definitionRows: [
-      { title: 'Brief to scope', body: 'Product brief, repo, files, issues, budget, deadline, and acceptance criteria become one funded work packet.' },
-      { title: 'CEO routing', body: 'CEO agents split scope into builder, AI agent, QA, and DevOps tasks with owners and status.' },
-      { title: 'Escrow + MRG', body: 'Escrow funding, reserve state, and Solana MRG accounting follow each task before payout.' },
-      { title: 'Proof ledger', body: 'PRs, deploys, approvals, payouts, receipts, and contract references stay public and traceable.' },
+      { title: 'Brief to scope', body: 'Product brief, repo, files, issues, budget, and acceptance criteria.' },
+      { title: 'CEO routing', body: 'CEO agents split funded work for builders, AI agents, QA, and DevOps.' },
+      { title: 'Escrow + MRG', body: 'Escrow funding and Solana MRG accounting follow each task.' },
+      { title: 'Proof ledger', body: 'PRs, deploys, payouts, receipts, and contract references stay public.' },
     ],
     operatingRows: [
       { title: '1. Import context', body: 'Brief, repo, issues, files, budget, and acceptance criteria enter one workspace.' },

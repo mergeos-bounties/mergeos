@@ -836,12 +836,12 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.doesNotMatch(appSource, /class="home-compact-flow"/);
   assert.doesNotMatch(appSource, /class="home-system-explainer"/);
   assert.doesNotMatch(appSource, /localizedHomeWorkflowCards\.slice\(0, 4\)/);
-  assert.match(appSource, /Fund software work, route tasks, prove delivery\./);
-  assert.match(appSource, /MergeOS turns a brief or repo into funded work: CEO agents scope it, builders and AI agents execute it, escrow and Solana MRG track money, and every PR, deploy, payout, and receipt lands on a public proof ledger\./);
-  assert.match(appSource, /definitionRows: \[[\s\S]*title: 'Brief to scope', body: 'Product brief, repo, files, issues, budget, deadline, and acceptance criteria become one funded work packet\.'/);
-  assert.match(appSource, /title: 'CEO routing', body: 'CEO agents split scope into builder, AI agent, QA, and DevOps tasks with owners and status\.'/);
-  assert.match(appSource, /title: 'Escrow \+ MRG', body: 'Escrow funding, reserve state, and Solana MRG accounting follow each task before payout\.'/);
-  assert.match(appSource, /title: 'Proof ledger', body: 'PRs, deploys, approvals, payouts, receipts, and contract references stay public and traceable\.'/);
+  assert.match(appSource, /Operating system for funded software delivery\./);
+  assert.match(appSource, /MergeOS turns a product brief or repo into funded software work: CEO agents plan the scope, builders and AI agents execute tasks, escrow and Solana MRG track money, and every PR, deploy, payout, and receipt lands on a public proof ledger\./);
+  assert.match(appSource, /definitionRows: \[[\s\S]*title: 'Brief to scope', body: 'Product brief, repo, files, issues, budget, and acceptance criteria\.'/);
+  assert.match(appSource, /title: 'CEO routing', body: 'CEO agents split funded work for builders, AI agents, QA, and DevOps\.'/);
+  assert.match(appSource, /title: 'Escrow \+ MRG', body: 'Escrow funding and Solana MRG accounting follow each task\.'/);
+  assert.match(appSource, /title: 'Proof ledger', body: 'PRs, deploys, payouts, receipts, and contract references stay public\.'/);
   assert.match(appSource, /title: 'Đầu vào', body: 'Brief, repo, issue, file, budget và deadline\.'/);
   assert.match(appSource, /MergeOS biến brief hoặc repo thành funded tasks có CEO-agent planning, builder\/AI routing, escrow, PR\/deploy checks, Solana MRG accounting và public ledger proof\./);
   assert.match(appSource, /title: 'Product OS'[\s\S]*Project intake, repo import, AI task graph, escrow, PR monitor, deployment gates, and ledger proof stay in one operating flow\./);
@@ -944,6 +944,11 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.match(cssSource, /@media \(min-width: 761px\)[\s\S]*\.public-home-copy > \.home-ceo-token-desk\s*\{[\s\S]*display: none !important;/);
   assert.match(cssSource, /@media \(max-width: 760px\)[\s\S]*\.home-ceo-token-desk > div\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\) !important;/);
   assert.match(cssSource, /@media \(max-width: 760px\)[\s\S]*\.home-executive-panel\s*\{[\s\S]*display: none !important;/);
+  assert.match(cssSource, /Home final product brief: enough description, shorter spacing, cleaner cockpit/);
+  assert.match(cssSource, /\/\* Home final product brief:[\s\S]*\.public-home-copy h1\s*\{[\s\S]*max-width: 11ch !important;[\s\S]*font-size: clamp\(48px, 5\.2vw, 72px\) !important;/);
+  assert.match(cssSource, /\/\* Home final product brief:[\s\S]*\.home-definition-strip small\s*\{[\s\S]*-webkit-line-clamp: 3 !important;/);
+  assert.match(cssSource, /\/\* Home final product brief:[\s\S]*@media \(max-width: 760px\)[\s\S]*\.home-ceo-token-desk\s*\{[\s\S]*display: none !important;/);
+  assert.match(cssSource, /\/\* Home final product brief:[\s\S]*@media \(max-width: 430px\)[\s\S]*\.home-definition-strip article:nth-child\(n \+ 4\)\s*\{[\s\S]*display: none !important;/);
 });
 
 test('frontend system exposes required public pages and dashboard roles', async () => {
