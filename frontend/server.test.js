@@ -816,15 +816,21 @@ test('public menus and signed-in mobile layout keep reachable compact surfaces',
   assert.match(appSource, /triggerLeft: rect\.left/);
   assert.match(appSource, /target[\s\S]*closest[\s\S]*'\.nav-menu, \.nav-context-menu, \.locale-menu, \.account-menu'/);
   assert.match(appSource, /const activeMenuElement = document[\s\S]*querySelector[\s\S]*\.nav-menu\.open \.nav-context-menu[\s\S]*\.locale-menu\.open \.locale-context-menu[\s\S]*\.account-menu\.open \.account-context-menu/);
+  assert.match(appSource, /function navContextBridgeLimit\(geometry = \{\}\)/);
+  assert.match(appSource, /anchorLeft - 86/);
+  assert.match(appSource, /anchorLeft \+ 86/);
   assert.match(appSource, /const isInsideRenderedMenu = menuRect/);
   assert.match(appSource, /const isInsideTrigger = hasMenuGeometry/);
   assert.match(appSource, /const isInsideBridge = hasMenuGeometry/);
+  assert.match(appSource, /pointerX >= bridge\.left/);
+  assert.match(appSource, /pointerX <= bridge\.right/);
   assert.match(appSource, /if \(isInsideRenderedMenu \|\| isInsideTrigger \|\| isInsideBridge\) return;[\s\S]*closeNavContextMenu\(\);/);
   assert.match(appSource, /<header class="home-navbar" @pointerleave="scheduleNavContextClose">/);
   assert.match(appSource, /document\.addEventListener\('mouseleave', handleNavContextViewportLeave\)/);
   assert.match(appSource, /window\.addEventListener\('blur', handleNavContextViewportLeave\)/);
   assert.match(cssSource, /Home\/menu correction: tighter first screen and hover menus that release cleanly/);
   assert.match(cssSource, /\/\* Home\/menu correction:[\s\S]*\.home-navbar \.nav-menu\.open::after,[\s\S]*height: 6px !important;/);
+  assert.match(cssSource, /\/\* Home\/menu correction:[\s\S]*\.home-navbar \.nav-context-menu::before,[\s\S]*width: 172px !important;/);
 });
 
 test('public home keeps a short decision-screen rhythm', async () => {
@@ -842,6 +848,7 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.match(appSource, /class="home-executive-memo"/);
   assert.match(appSource, /v-for="row in homePipelineRows"/);
   assert.match(appSource, /v-for="row in homeSystemSummaryRows"/);
+  assert.match(appSource, /tokenDeskEyebrow: 'CEO launch desk'/);
   assert.match(appSource, /tokenDeskTitle: 'Research airdrop and presale candidates before opening MRG\.'/);
   assert.match(appSource, /\{\{ homeTokenDeskBody \}\}/);
   assert.match(appSource, /const homeTokenDeskBody = computed/);
@@ -850,6 +857,11 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.match(appSource, /const homeTokenSignalRows = computed/);
   assert.match(appSource, /candidateStats\.airdrop_count/);
   assert.match(appSource, /candidateStats\.presale_count/);
+  assert.match(appSource, /const candidateSupportsLaunchType = \(candidate = \{\}, launchType = 'airdrop'\) =>/);
+  assert.match(appSource, /candidate\.decision_launch_type === launchType/);
+  assert.match(appSource, /candidate\.recommended_launch_types\.includes\(launchType\)/);
+  assert.match(appSource, /candidates\.filter\(\(candidate\) => candidateSupportsLaunchType\(candidate, 'airdrop'\)\)\.length/);
+  assert.match(appSource, /candidates\.filter\(\(candidate\) => candidateSupportsLaunchType\(candidate, 'presale'\)\)\.length/);
   assert.match(appSource, /publicWhitepaperArtifactRows\.value\.length/);
   assert.match(appSource, /homeSystemSummaryRows/);
   assert.match(appSource, /homeOperatingRows/);
@@ -1005,6 +1017,10 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.match(cssSource, /\/\* Homepage mobile nav release:[\s\S]*\.home-navbar \.public-nav-actions\s*\{[\s\S]*grid-template-columns: 34px 40px 40px !important;/);
   assert.match(cssSource, /\/\* Homepage mobile nav release:[\s\S]*\.home-navbar > \.hamburger-button,[\s\S]*\.home-navbar \.nav-inner > \.hamburger-button\s*\{[\s\S]*display: none !important;/);
   assert.match(cssSource, /\/\* Homepage mobile nav release:[\s\S]*\.home-navbar \.mobile-inline-menu-button\s*\{[\s\S]*display: inline-flex !important;/);
+  assert.match(cssSource, /Home mobile CEO inbox: surface airdrop\/presale research without making the homepage long/);
+  assert.match(cssSource, /\/\* Home mobile CEO inbox:[\s\S]*\.public-home-page \.public-home-copy > \.home-ceo-token-desk\s*\{[\s\S]*display: grid !important;/);
+  assert.match(cssSource, /\/\* Home mobile CEO inbox:[\s\S]*\.public-home-page \.home-ceo-token-desk > p\s*\{[\s\S]*-webkit-line-clamp: 1 !important;/);
+  assert.match(cssSource, /\/\* Home mobile CEO inbox:[\s\S]*\.public-home-page \.home-ceo-token-desk > div\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\) !important;/);
 });
 
 test('frontend system exposes required public pages and dashboard roles', async () => {

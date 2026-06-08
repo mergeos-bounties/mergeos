@@ -47210,14 +47210,17 @@ canvas {
 @media (min-width: 981px) {
   .home-navbar .nav-menu.open::after,
   .project-flow-navbar .nav-menu.open::after {
-    left: -6px !important;
-    right: -6px !important;
+    left: -2px !important;
+    right: -2px !important;
     bottom: -6px !important;
     height: 6px !important;
   }
 
   .home-navbar .nav-context-menu::before,
   .project-flow-navbar .nav-context-menu::before {
+    left: max(-6px, calc(var(--nav-context-anchor-left, 160px) - 86px)) !important;
+    right: auto !important;
+    width: 172px !important;
     top: -8px !important;
     height: 8px !important;
   }
@@ -47648,6 +47651,8 @@ canvas {
 
   .home-navbar .nav-context-menu::before,
   .project-flow-navbar .nav-context-menu::before {
+    left: max(-4px, calc(var(--nav-context-anchor-left, 160px) - 78px)) !important;
+    width: 156px !important;
     top: -6px !important;
     height: 6px !important;
   }
@@ -47944,5 +47949,91 @@ canvas {
   .token-page-airdrop .token-hero-gate-note,
   .token-page-presale .token-hero-gate-note {
     margin-top: 1px !important;
+  }
+}
+
+/* Home mobile CEO inbox: surface airdrop/presale research without making the homepage long. */
+@media (max-width: 760px) {
+  .public-home-page .public-home-copy > .home-ceo-token-desk {
+    display: grid !important;
+    width: calc(100vw - 24px) !important;
+    max-width: calc(100vw - 24px) !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 6px !important;
+    margin: 2px 0 0 !important;
+    padding: 9px !important;
+    border: 1px solid rgba(20, 184, 166, 0.24) !important;
+    border-radius: 10px !important;
+    background:
+      linear-gradient(135deg, rgba(236, 253, 245, 0.92), rgba(239, 246, 255, 0.9)),
+      #ffffff !important;
+    box-shadow: 0 14px 34px rgba(15, 23, 42, 0.06) !important;
+  }
+
+  .public-home-page .home-ceo-token-desk > span {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    color: #047857 !important;
+    font-size: 9px !important;
+    font-weight: 950 !important;
+    letter-spacing: 0.08em !important;
+    text-transform: uppercase !important;
+  }
+
+  .public-home-page .home-ceo-token-desk > strong {
+    display: block !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    color: #0f172a !important;
+    font-size: 13px !important;
+    line-height: 1.12 !important;
+  }
+
+  .public-home-page .home-ceo-token-desk > p {
+    display: -webkit-box !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    -webkit-box-orient: vertical !important;
+    -webkit-line-clamp: 1 !important;
+    color: #475569 !important;
+    font-size: 10.5px !important;
+    line-height: 1.22 !important;
+    font-weight: 760 !important;
+  }
+
+  .public-home-page .home-ceo-token-desk > div {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 5px !important;
+  }
+
+  .public-home-page .home-ceo-token-desk button {
+    min-width: 0 !important;
+    min-height: 34px !important;
+    grid-template-columns: 16px minmax(0, 1fr) !important;
+    gap: 5px !important;
+    padding: 6px !important;
+    border-radius: 8px !important;
+    background: rgba(255, 255, 255, 0.78) !important;
+  }
+
+  .public-home-page .home-ceo-token-desk button b,
+  .public-home-page .home-ceo-token-desk button small {
+    display: block !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .public-home-page .home-ceo-token-desk button b {
+    font-size: 10px !important;
+  }
+
+  .public-home-page .home-ceo-token-desk button small {
+    font-size: 8px !important;
   }
 }

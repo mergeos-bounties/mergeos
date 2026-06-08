@@ -9605,7 +9605,7 @@ const publicHomeTranslations = {
     systemSummaryLabel: 'MergeOS system summary',
     definitionLabel: 'What MergeOS connects',
     tokenDeskLabel: 'CEO token research desk',
-    tokenDeskEyebrow: 'CEO token desk',
+    tokenDeskEyebrow: 'CEO launch desk',
     tokenDeskTitle: 'Research airdrop and presale candidates before opening MRG.',
     tokenDeskBody: 'The CEO agent checks repo demand, utility, wallet uniqueness, Solana contract proof, funding receipts, anti-bot policy, and ledger gates first.',
     recentUpdates: 'Recent updates',
@@ -9702,7 +9702,7 @@ const publicHomeTranslations = {
     systemSummaryLabel: 'Tóm tắt hệ thống MergeOS',
     definitionLabel: 'MergeOS kết nối những gì',
     tokenDeskLabel: 'Bàn nghiên cứu token của CEO',
-    tokenDeskEyebrow: 'CEO token desk',
+    tokenDeskEyebrow: 'CEO launch desk',
     tokenDeskTitle: 'Nghiên cứu airdrop và presale trước khi mở MRG.',
     tokenDeskBody: 'CEO agent kiểm tra nhu cầu repo, utility, ví hợp lệ, proof smart contract Solana, funding receipt, anti-bot policy và ledger gate trước.',
     recentUpdates: 'Cập nhật mới',
@@ -14181,9 +14181,20 @@ const homeTokenDeskBody = computed(() => {
 });
 const homeTokenSignalRows = computed(() => {
   const candidateStats = tokenLaunchCandidatesData.value?.stats || {};
+  const candidates = Array.isArray(tokenLaunchCandidatesData.value?.candidates)
+    ? tokenLaunchCandidatesData.value.candidates
+    : [];
   const briefStats = tokenLaunchBriefsData.value?.stats || {};
-  const airdropCandidates = Number(candidateStats.airdrop_count) || 0;
-  const presaleCandidates = Number(candidateStats.presale_count) || 0;
+  const candidateSupportsLaunchType = (candidate = {}, launchType = 'airdrop') => {
+    if (candidate.decision_launch_type === launchType) return true;
+    return Array.isArray(candidate.recommended_launch_types) && candidate.recommended_launch_types.includes(launchType);
+  };
+  const airdropCandidates = candidates.filter((candidate) => candidateSupportsLaunchType(candidate, 'airdrop')).length
+    || Number(candidateStats.airdrop_count)
+    || 0;
+  const presaleCandidates = candidates.filter((candidate) => candidateSupportsLaunchType(candidate, 'presale')).length
+    || Number(candidateStats.presale_count)
+    || 0;
   const airdropMemos = Number(briefStats.airdrop_count) || 0;
   const presaleMemos = Number(briefStats.presale_count) || 0;
   return [
@@ -26093,6 +26104,14 @@ function scheduleNavContextClose(delay = 110) {
   }, delay);
 }
 
+function navContextBridgeLimit(geometry = {}) {
+  const anchorLeft = Number(geometry.left || 0) + Number(geometry.anchorLeft || 0);
+  return {
+    left: anchorLeft - 86,
+    right: anchorLeft + 86,
+  };
+}
+
 function cancelNavContextClose() {
   if (!navContextCloseTimer || !hasWindow) return;
   window.clearTimeout(navContextCloseTimer);
@@ -26112,6 +26131,7 @@ function handleNavContextPointerMove(event) {
   const hasMenuGeometry = geometry.menu === menu && geometry.width > 0;
   const activeMenuElement = document.querySelector?.(`.nav-menu.open .nav-context-menu, .locale-menu.open .locale-context-menu, .account-menu.open .account-context-menu`);
   const menuRect = activeMenuElement?.getBoundingClientRect?.();
+  const bridge = hasMenuGeometry ? navContextBridgeLimit(geometry) : null;
   const isInsideRenderedMenu = menuRect
     && pointerX >= menuRect.left - 6
     && pointerX <= menuRect.right + 6
@@ -26123,10 +26143,10 @@ function handleNavContextPointerMove(event) {
     && pointerY >= geometry.triggerTop - 8
     && pointerY <= geometry.triggerBottom + 10;
   const isInsideBridge = hasMenuGeometry
-    && pointerX >= geometry.left - 8
-    && pointerX <= geometry.left + geometry.width + 8
+    && pointerX >= bridge.left
+    && pointerX <= bridge.right
     && pointerY >= geometry.triggerBottom - 2
-    && pointerY <= geometry.top + 10;
+    && pointerY <= geometry.top + 8;
   if (isInsideRenderedMenu || isInsideTrigger || isInsideBridge) return;
   closeNavContextMenu();
 }
