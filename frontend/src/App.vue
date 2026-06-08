@@ -5144,6 +5144,11 @@
                 <strong>{{ row.title }}</strong>
                 <p>{{ row.body }}</p>
                 <em v-if="row.proofSignals">{{ row.proofSignals }}</em>
+                <div v-if="row.decisionPreview" class="token-ceo-candidate-policy">
+                  <b>{{ row.decisionPreview.label }}</b>
+                  <span>{{ row.decisionPreview.proofPolicy }}</span>
+                  <small>{{ row.decisionPreview.riskNotes }}</small>
+                </div>
               </div>
               <div class="token-ceo-candidate-actions">
                 <a v-if="row.sourceUrl" :href="row.sourceUrl" target="_blank" rel="noreferrer">
@@ -12907,6 +12912,16 @@ function tokenLaunchCandidateDecisionRowsFromAPI(rows = [], launchType = 'airdro
     .filter((row) => row.key && row.label);
   return normalized.length ? normalized : tokenLaunchCandidateDecisionRows(launchType, score);
 }
+function tokenLaunchCandidateDecisionPreview(rows = []) {
+  const list = Array.isArray(rows) ? rows : [];
+  const preferred = list.find((row) => row?.key === 'approve') || list[0] || {};
+  if (!preferred.proofPolicy && !preferred.riskNotes) return null;
+  return {
+    label: preferred.label || 'CEO decision preview',
+    proofPolicy: preferred.proofPolicy || 'Review proof policy before opening the token workflow.',
+    riskNotes: preferred.riskNotes || 'Risk note pending CEO review.',
+  };
+}
 const tokenCeoCandidateRows = computed(() => {
   const apiCandidates = Array.isArray(tokenLaunchCandidatesData.value?.candidates)
     ? tokenLaunchCandidatesData.value.candidates
@@ -12922,11 +12937,13 @@ const tokenCeoCandidateRows = computed(() => {
         signalCount: signals.length,
         workPoolMRG: Number(candidate.work_pool_mrg) || 0,
       });
+      const decisionRows = tokenLaunchCandidateDecisionRowsFromAPI(candidate.decision_options, launchType, score);
       return {
         key: candidate.candidate_id || candidate.project_id || candidate.project_title,
         label: launchType === 'presale' ? 'CEO presale candidate' : 'CEO airdrop candidate',
         scoreLabel: `${score}% fit`,
-        decisionRows: tokenLaunchCandidateDecisionRowsFromAPI(candidate.decision_options, launchType, score),
+        decisionRows,
+        decisionPreview: tokenLaunchCandidateDecisionPreview(decisionRows),
         title: candidate.project_title || 'Funded MergeOS project',
         body: candidate.gate_summary || `${formatCompactNumber(candidate.work_pool_mrg || 0)} MRG work pool / ${Number(candidate.open_task_count) || 0} open tasks`,
         sourceUrl: /^https?:\/\//i.test(sourceUrl) ? sourceUrl : '',
@@ -12953,11 +12970,13 @@ const tokenCeoCandidateRows = computed(() => {
       signalCount: Number(project.proof_signal_count) || projectBounties.length || 0,
       workPoolMRG: Math.floor((Number(project.work_pool_cents || project.budget_cents) || 0) / 100),
     });
+    const decisionRows = tokenLaunchCandidateDecisionRows(launchType, score);
     return {
       key: project.id || project.title,
       label: launchType === 'presale' ? 'CEO presale candidate' : 'CEO airdrop candidate',
       scoreLabel: `${score}% fit`,
-      decisionRows: tokenLaunchCandidateDecisionRows(launchType, score),
+      decisionRows,
+      decisionPreview: tokenLaunchCandidateDecisionPreview(decisionRows),
       title: project.title || 'Funded MergeOS project',
       body: `${budget} work pool / ${openTasks} open tasks / ${acceptedTasks} accepted`,
       sourceUrl,
