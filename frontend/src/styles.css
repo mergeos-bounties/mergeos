@@ -40751,3 +40751,201 @@ canvas {
     justify-content: center !important;
   }
 }
+
+/* Signed-in mobile cockpit pass: get users into the actual workspace faster. */
+@media (max-width: 760px) {
+  .dashboard-shell .dash-command-strip {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(92px, 0.36fr) !important;
+    align-items: stretch !important;
+    gap: 9px !important;
+    margin-top: 7px !important;
+    margin-bottom: 8px !important;
+    padding: 10px !important;
+  }
+
+  .dashboard-shell .dash-command-copy .marketplace-eyebrow {
+    display: none !important;
+  }
+
+  .dashboard-shell .dash-command-copy h1 {
+    max-width: 100% !important;
+    font-size: clamp(20px, 6.2vw, 27px) !important;
+    line-height: 1.03 !important;
+    -webkit-line-clamp: 2 !important;
+  }
+
+  .dashboard-shell .dash-command-copy p {
+    display: -webkit-box !important;
+    max-width: 34ch !important;
+    margin-top: 5px !important;
+    overflow: hidden !important;
+    font-size: 11.5px !important;
+    line-height: 1.32 !important;
+    -webkit-box-orient: vertical !important;
+    -webkit-line-clamp: 2 !important;
+  }
+
+  .dashboard-shell .dash-command-metrics {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    align-content: stretch !important;
+    gap: 6px !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+
+  .dashboard-shell .dash-command-metrics article {
+    min-height: 44px !important;
+    flex: none !important;
+    grid-template-columns: 24px minmax(0, 1fr) !important;
+    gap: 7px !important;
+    padding: 7px !important;
+  }
+
+  .dashboard-shell .dash-command-metrics article:nth-child(n + 3) {
+    display: none !important;
+  }
+
+  .dashboard-shell .dash-command-metrics .public-card-icon {
+    width: 24px !important;
+    height: 24px !important;
+    border-radius: 7px !important;
+  }
+
+  .dashboard-shell .dash-command-metrics strong {
+    font-size: 17px !important;
+  }
+
+  .dashboard-shell .dash-command-metrics small {
+    font-size: 9px !important;
+  }
+
+  .dashboard-shell .dashboard-role-map {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+    margin: 0 var(--dash-mobile-gutter, 14px) 10px !important;
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+
+  .dashboard-shell .dashboard-role-map article {
+    min-height: 58px !important;
+    padding: 8px !important;
+  }
+
+  .dashboard-shell .dashboard-role-map article:not(.active) {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .dashboard-shell .dashboard-role-map article:not(.active) header {
+    display: grid !important;
+    place-items: center !important;
+    gap: 4px !important;
+  }
+
+  .dashboard-shell .dashboard-role-map article:not(.active) header div,
+  .dashboard-shell .dashboard-role-map article:not(.active) p,
+  .dashboard-shell .dashboard-role-map article:not(.active) .dashboard-role-proof,
+  .dashboard-shell .dashboard-role-map article:not(.active) .dashboard-role-stats,
+  .dashboard-shell .dashboard-role-map article:not(.active) .dashboard-role-lanes,
+  .dashboard-shell .dashboard-role-map article:not(.active) .dashboard-role-primary {
+    display: none !important;
+  }
+
+  .dashboard-shell .dashboard-role-map article.active {
+    grid-column: 1 / -1 !important;
+    min-height: 112px !important;
+    gap: 7px !important;
+  }
+
+  .dashboard-shell .dashboard-role-map article.active header {
+    grid-template-columns: 32px minmax(0, 1fr) auto !important;
+    gap: 8px !important;
+  }
+
+  .dashboard-shell .dashboard-role-map article.active p {
+    display: -webkit-box !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+    font-size: 11px !important;
+    line-height: 1.3 !important;
+    -webkit-box-orient: vertical !important;
+    -webkit-line-clamp: 2 !important;
+  }
+
+  .dashboard-shell .dashboard-role-map article.active .dashboard-role-proof {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+  }
+
+  .dashboard-shell .dashboard-role-map article.active .dashboard-role-stats,
+  .dashboard-shell .dashboard-role-map article.active .dashboard-role-lanes {
+    display: none !important;
+  }
+
+  .dashboard-shell .dashboard-role-map article.active .dashboard-role-primary {
+    min-height: 32px !important;
+  }
+}
+
+@media (max-width: 430px) {
+  .dashboard-shell .dash-command-copy p {
+    -webkit-line-clamp: 1 !important;
+  }
+
+  .dashboard-shell .dashboard-role-map article.active {
+    min-height: 104px !important;
+  }
+}
+
+/* Signed-in mobile role switcher pass: keep the role map as navigation, not a second hero. */
+@media (max-width: 760px) {
+  .dashboard-shell .dashboard-role-map article.active {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    align-items: center !important;
+    min-height: 78px !important;
+    column-gap: 8px !important;
+  }
+
+  .dashboard-shell .dashboard-role-map article.active header {
+    grid-template-columns: 30px minmax(0, 1fr) auto !important;
+    min-width: 0 !important;
+  }
+
+  .dashboard-shell .dashboard-role-map article.active header b {
+    display: inline-flex !important;
+    max-width: 74px !important;
+    font-size: 9px !important;
+  }
+
+  .dashboard-shell .dashboard-role-map article.active p,
+  .dashboard-shell .dashboard-role-map article.active .dashboard-role-proof,
+  .dashboard-shell .dashboard-role-map article.active .dashboard-role-stats,
+  .dashboard-shell .dashboard-role-map article.active .dashboard-role-lanes {
+    display: none !important;
+  }
+
+  .dashboard-shell .dashboard-role-map article.active .dashboard-role-primary {
+    min-height: 34px !important;
+    width: auto !important;
+    padding-inline: 10px !important;
+    white-space: nowrap !important;
+  }
+}
+
+@media (max-width: 430px) {
+  .dashboard-shell .dashboard-role-map article.active {
+    min-height: 74px !important;
+  }
+
+  .dashboard-shell .dashboard-role-map article.active header b {
+    display: none !important;
+  }
+}

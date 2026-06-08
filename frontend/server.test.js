@@ -1795,6 +1795,17 @@ test('signed-in mobile dashboard keeps nav, actions, and popovers phone-safe', a
   assert.match(cssSource, /\.dashboard-shell \.dash-brand strong,[\s\S]*\.dashboard-shell \.mrg-card,[\s\S]*\.dashboard-shell \.dash-side-nav\s*\{[\s\S]*display: none !important;/);
   assert.match(cssSource, /\.notification-dropdown,[\s\S]*\.dashboard-shell \.notification-dropdown,[\s\S]*\.dashboard-shell \.account-context-menu,[\s\S]*\.dashboard-account-menu \.account-context-menu\s*\{[\s\S]*bottom: calc\(12px \+ env\(safe-area-inset-bottom\)\) !important;[\s\S]*max-height: min\(60dvh, 460px\) !important;/);
   assert.match(cssSource, /\.dashboard-tool-form label\.invalid,[\s\S]*\.dashboard-shell :is\(input, select, textarea\):invalid\s*\{[\s\S]*scroll-margin-top: calc\(var\(--dash-mobile-header-height\) \+ 16px\);/);
+  assert.match(cssSource, /Signed-in mobile cockpit pass: get users into the actual workspace faster/);
+  assert.match(cssSource, /\/\* Signed-in mobile cockpit pass:[\s\S]*\.dashboard-shell \.dash-command-strip\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) minmax\(92px, 0\.36fr\) !important;/);
+  assert.match(cssSource, /\/\* Signed-in mobile cockpit pass:[\s\S]*\.dashboard-shell \.dash-command-metrics article:nth-child\(n \+ 3\)\s*\{[\s\S]*display: none !important;/);
+  assert.match(cssSource, /\/\* Signed-in mobile cockpit pass:[\s\S]*\.dashboard-shell \.dashboard-role-map\s*\{[\s\S]*grid-template-columns: repeat\(4, minmax\(0, 1fr\)\) !important;/);
+  assert.match(cssSource, /\/\* Signed-in mobile cockpit pass:[\s\S]*\.dashboard-shell \.dashboard-role-map article:not\(\.active\) \.dashboard-role-proof,/);
+  assert.match(cssSource, /\/\* Signed-in mobile cockpit pass:[\s\S]*\.dashboard-shell \.dashboard-role-map article.active\s*\{[\s\S]*min-height: 112px !important;/);
+  assert.match(cssSource, /\/\* Signed-in mobile cockpit pass:[\s\S]*\.dashboard-shell \.dashboard-role-map article.active \.dashboard-role-stats,[\s\S]*\.dashboard-shell \.dashboard-role-map article.active \.dashboard-role-lanes\s*\{[\s\S]*display: none !important;/);
+  assert.match(cssSource, /Signed-in mobile role switcher pass: keep the role map as navigation, not a second hero/);
+  assert.match(cssSource, /\/\* Signed-in mobile role switcher pass:[\s\S]*\.dashboard-shell \.dashboard-role-map article.active\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) auto !important;[\s\S]*min-height: 78px !important;/);
+  assert.match(cssSource, /\/\* Signed-in mobile role switcher pass:[\s\S]*\.dashboard-shell \.dashboard-role-map article.active p,[\s\S]*\.dashboard-shell \.dashboard-role-map article.active \.dashboard-role-proof,/);
+  assert.match(cssSource, /\/\* Signed-in mobile role switcher pass:[\s\S]*\.dashboard-shell \.dashboard-role-map article.active \.dashboard-role-primary\s*\{[\s\S]*min-height: 34px !important;/);
   assert.match(cssSource, /@media \(max-width: 430px\)[\s\S]*\.dashboard-shell \.dash-command-metrics\s*\{[\s\S]*grid-auto-flow: row !important;[\s\S]*mask-image: none !important;/);
 });
 
