@@ -5257,6 +5257,16 @@
                       <small>{{ item.value }}</small>
                     </span>
                   </div>
+                  <div v-if="row.ceoReviewQuestions?.length || row.openBlockers?.length" class="token-ceo-candidate-review-packet" role="group" aria-label="CEO review questions and blockers">
+                    <span v-for="question in row.ceoReviewQuestions?.slice(0, 2)" :key="question">
+                      <b>CEO asks</b>
+                      <small>{{ question }}</small>
+                    </span>
+                    <span v-for="blocker in row.openBlockers?.slice(0, 2)" :key="blocker" class="blocker">
+                      <b>Blocker</b>
+                      <small>{{ blocker }}</small>
+                    </span>
+                  </div>
                   <div v-if="row.proofSignalRows?.length" class="token-ceo-candidate-signals" aria-label="CEO proof signals">
                     <span v-for="signal in row.proofSignalRows" :key="signal">{{ signal }}</span>
                     <b v-if="row.proofSignalExtra">+{{ row.proofSignalExtra }}</b>
@@ -13111,12 +13121,13 @@ const tokenCeoLaunchQueueRows = computed(() => {
   const launchLabel = launchType === 'presale' ? 'presale' : 'airdrop';
   const candidateRows = tokenCeoCandidateRows.value.slice(0, 2).map((candidate, index) => ({
     key: `candidate-${candidate.key || candidate.title || index}`,
-    tag: `${candidate.priorityLabel || candidate.scoreLabel || 'CEO review'} / ${candidate.requestedBy || 'Marketplace'}`,
+    tag: `${candidate.launchWindowLabel || candidate.priorityLabel || candidate.scoreLabel || 'CEO review'} / ${candidate.requestedBy || 'Marketplace'}`,
     title: candidate.title || `${toTitleLabel(launchLabel)} candidate`,
-    researchAsk: candidate.ceoResearchMemo || candidate.body || `CEO should research this ${launchLabel} candidate before opening.`,
+    researchAsk: candidate.ceoReviewQuestions?.[0] || candidate.ceoResearchMemo || candidate.body || `CEO should research this ${launchLabel} candidate before opening.`,
     status: candidate.verdict?.label || (launchType === 'presale' ? 'Review presale' : 'Review airdrop'),
     statusTone: candidate.verdict?.tone || 'review',
-    decision: candidate.decisionPreview?.nextAction
+    decision: candidate.openBlockers?.[0]
+      || candidate.decisionPreview?.nextAction
       || (launchType === 'presale'
         ? 'Draft the presale memo before reserve receipts open.'
         : 'Draft the airdrop memo before earned claims open.'),
@@ -13462,6 +13473,43 @@ function tokenLaunchCandidateVerdict({ launchType = 'airdrop', score = 0, readin
     reason: `${readyCount}/${Math.max(gates.length, 3)} gates ready with ${signalTotal} proof signals.`,
   };
 }
+
+function tokenCeoCandidateQuestionsFallback(launchType = 'airdrop', title = '', signals = []) {
+  const projectTitle = String(title || 'this project').trim();
+  const signalCount = Array.isArray(signals) ? signals.length : 0;
+  if (launchType === 'presale') {
+    return [
+      `What utility does ${projectTitle} unlock for funded work, escrow, agents, or protocol access?`,
+      'Is the reserve cap backed by funding receipts, wallet ownership, and Solana contract proof?',
+      `Are ${signalCount} proof signals enough to open reserve, or should CEO request another memo?`,
+    ];
+  }
+  return [
+    `What useful software work makes ${projectTitle} eligible for an earned airdrop?`,
+    'Do the proof gates block farming with task evidence, PR or QA proof, and wallet uniqueness?',
+    `Are ${signalCount} proof signals enough to open claims, or should CEO request more evidence?`,
+  ];
+}
+
+function tokenCeoCandidateOpenBlockersFallback(readinessRows = []) {
+  const blockers = readinessRows
+    .filter((row) => row?.state !== 'ready')
+    .slice(0, 4)
+    .map((row) => {
+      const label = String(row?.label || 'CEO gate').trim();
+      const value = String(row?.value || '').trim();
+      return value ? `${label}: ${value}` : `${label} gate needs CEO evidence.`;
+    });
+  return blockers.length ? blockers : ['All CEO gates are ready; confirm final memo and ledger proof before opening.'];
+}
+
+function tokenCeoLaunchWindowFallback(launchType = 'airdrop', decisionState = '') {
+  const label = launchType === 'presale' ? 'presale' : 'airdrop';
+  if (decisionState === 'ready') return launchType === 'presale' ? 'Open reserve window' : 'Open earned claims';
+  if (decisionState === 'hold') return `Hold ${label} until blockers clear`;
+  return `CEO review before ${label} opens`;
+}
+
 const tokenCeoCandidateRows = computed(() => {
   const apiCandidates = Array.isArray(tokenLaunchCandidatesData.value?.candidates)
     ? tokenLaunchCandidatesData.value.candidates
@@ -13498,6 +13546,12 @@ const tokenCeoCandidateRows = computed(() => {
       });
       const readinessRows = tokenLaunchCandidateReadinessRowsFromAPI(candidate.readiness_gates, fallbackReadinessRows);
       const contextRows = tokenLaunchCandidateContextRows(candidate, readinessRows, launchType);
+      const ceoReviewQuestions = Array.isArray(candidate.ceo_review_questions)
+        ? candidate.ceo_review_questions.slice(0, 3)
+        : tokenCeoCandidateQuestionsFallback(launchType, candidate.project_title, signals);
+      const openBlockers = Array.isArray(candidate.open_blockers)
+        ? candidate.open_blockers.slice(0, 4)
+        : tokenCeoCandidateOpenBlockersFallback(readinessRows);
       return {
         key: candidate.candidate_id || candidate.project_id || candidate.project_title,
         launchType,
@@ -13506,6 +13560,9 @@ const tokenCeoCandidateRows = computed(() => {
         intentSource: candidate.intent_source || 'marketplace_project',
         requestedBy: candidate.requested_by || 'Marketplace',
         priorityLabel: candidate.priority_label || tokenCeoCandidatePriorityLabel(candidate.decision_state, score),
+        launchWindowLabel: candidate.launch_window_label || tokenCeoLaunchWindowFallback(launchType, candidate.decision_state),
+        ceoReviewQuestions,
+        openBlockers,
         ceoResearchMemo: candidate.ceo_research_memo || tokenCeoCandidateResearchMemo({
           launchType,
           title: candidate.project_title,
@@ -13577,13 +13634,25 @@ const tokenCeoCandidateRows = computed(() => {
       proof_policy: proofPolicy,
       research_source: sourceUrl,
     }, readinessRows, launchType);
+    const fallbackVerdict = tokenLaunchCandidateVerdict({
+      launchType,
+      score,
+      openTasks,
+      acceptedTasks,
+      readinessRows,
+      signalCount: fallbackSignals.length,
+    });
     return {
       key: project.id || project.title,
+      launchType,
       label: launchType === 'presale' ? 'CEO presale candidate' : 'CEO airdrop candidate',
       scoreLabel: `${score}% fit`,
       intentSource: 'marketplace_project',
       requestedBy: project.client_display_name || 'Marketplace',
       priorityLabel: tokenCeoCandidatePriorityLabel(undefined, score),
+      launchWindowLabel: tokenCeoLaunchWindowFallback(launchType, fallbackVerdict.tone),
+      ceoReviewQuestions: tokenCeoCandidateQuestionsFallback(launchType, project.title, fallbackSignals),
+      openBlockers: tokenCeoCandidateOpenBlockersFallback(readinessRows),
       ceoResearchMemo: tokenCeoCandidateResearchMemo({
         launchType,
         title: project.title,
@@ -13610,14 +13679,7 @@ const tokenCeoCandidateRows = computed(() => {
       proofSignalRows,
       proofSignalExtra: Math.max(0, fallbackSignals.length - proofSignalRows.length),
       readinessRows,
-      verdict: tokenLaunchCandidateVerdict({
-        launchType,
-        score,
-        openTasks,
-        acceptedTasks,
-        readinessRows,
-        signalCount: fallbackSignals.length,
-      }),
+      verdict: fallbackVerdict,
       tone: launchType === 'presale' ? 'green' : 'purple',
     };
   });
@@ -25978,6 +26040,15 @@ function cancelNavContextClose() {
   navContextCloseTimer = 0;
 }
 
+function handleNavContextPointerMove(event) {
+  if (!activeNavMenu.value || !hasWindow) return;
+  const target = event.target;
+  if (target?.closest?.('.nav-menu, .locale-menu, .account-menu')) {
+    return;
+  }
+  scheduleNavContextClose();
+}
+
 function handleNavContextOutsideClick(event) {
   if (!activeNavMenu.value) return;
   const target = event.target;
@@ -33499,6 +33570,7 @@ onMounted(async () => {
     window.visualViewport?.addEventListener('resize', updateDashboardNotificationMenuPosition);
     window.visualViewport?.addEventListener('scroll', updateDashboardNotificationMenuPosition);
     document.addEventListener('click', handleNavContextOutsideClick);
+    document.addEventListener('pointermove', handleNavContextPointerMove, { passive: true });
     document.addEventListener('click', handleDashboardNotificationOutsideClick);
     if (!handledGitHubCallback && !handledPasswordResetToken && !paypalCheckoutPath) {
       if (projectWizardVisible.value) {
@@ -33535,6 +33607,7 @@ onUnmounted(() => {
     window.visualViewport?.removeEventListener('resize', updateDashboardNotificationMenuPosition);
     window.visualViewport?.removeEventListener('scroll', updateDashboardNotificationMenuPosition);
     document.removeEventListener('click', handleNavContextOutsideClick);
+    document.removeEventListener('pointermove', handleNavContextPointerMove);
     document.removeEventListener('click', handleDashboardNotificationOutsideClick);
   }
   stopDashboardRealtime();

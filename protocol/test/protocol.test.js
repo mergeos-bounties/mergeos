@@ -247,6 +247,13 @@ test('validates airdrop claim, presale reservation, and token launch brief proto
         requested_by: 'Demo customer',
         priority_label: 'Open-ready',
         ceo_research_memo: 'CEO should research MergeOS funded repo sprint for airdrop: 86% fit, 4 open tasks, 14 accepted tasks, 3 proof signals.',
+        ceo_review_questions: [
+          'What useful software work makes MergeOS funded repo sprint eligible for an earned airdrop?',
+          'Do the proof gates block farming with task evidence, PR or QA proof, and wallet uniqueness?',
+          'Are 3 proof signals enough to open claims, or should CEO request more evidence?',
+        ],
+        open_blockers: ['CEO memo: CEO must write the airdrop memo before missions open.'],
+        launch_window_label: 'CEO review before airdrop opens',
         recommended_launch_types: ['airdrop', 'presale'],
         decision_launch_type: 'airdrop',
         decision_state: 'ready',

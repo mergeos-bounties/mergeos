@@ -46817,3 +46817,257 @@ canvas {
     font-size: 10px !important;
   }
 }
+
+/* Home final owner: compact premium first screen and hover menus that release cleanly. */
+@media (min-width: 981px) {
+  .home-navbar .nav-menu.open::after {
+    left: -10px !important;
+    right: -10px !important;
+    height: 14px !important;
+  }
+
+  .home-navbar .nav-context-menu::before {
+    top: -16px !important;
+    height: 16px !important;
+  }
+
+  .public-home-page {
+    padding-block: 0 !important;
+  }
+
+  .public-home-page .home-container.public-home-layout {
+    width: min(1180px, calc(100vw - 64px)) !important;
+    max-width: 1180px !important;
+    min-height: calc(100dvh - 58px) !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 0.92fr) minmax(340px, 390px) !important;
+    align-items: center !important;
+    gap: clamp(28px, 4vw, 52px) !important;
+    padding-block: clamp(26px, 4.5dvh, 48px) !important;
+  }
+
+  .public-home-page .public-home-copy {
+    width: 100% !important;
+    max-width: 680px !important;
+    margin: 0 !important;
+    gap: 12px !important;
+  }
+
+  .public-home-page .public-home-copy h1 {
+    width: 100% !important;
+    max-width: 11.7ch !important;
+    font-size: clamp(50px, 5.7vw, 78px) !important;
+    line-height: 0.97 !important;
+  }
+
+  .public-home-page .public-home-copy > p {
+    width: 100% !important;
+    max-width: 61ch !important;
+    font-size: clamp(14.5px, 1.12vw, 16.5px) !important;
+    line-height: 1.45 !important;
+    font-weight: 700 !important;
+  }
+
+  .public-home-page .home-ceo-token-desk,
+  .public-home-page .home-definition-strip,
+  .public-home-page .public-home-copy .marketplace-actions,
+  .public-home-page .home-mergeide-inline-link {
+    width: min(100%, 640px) !important;
+    max-width: 640px !important;
+    margin-inline: 0 !important;
+  }
+
+  .public-home-page .home-ceo-token-desk {
+    margin-top: 4px !important;
+    padding: 12px !important;
+    border-radius: 10px !important;
+  }
+
+  .public-home-page .home-ceo-token-desk > p {
+    -webkit-line-clamp: 2 !important;
+    font-size: 11px !important;
+    line-height: 1.35 !important;
+  }
+
+  .public-home-page .home-definition-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    margin-top: 4px !important;
+  }
+
+  .public-home-page .home-definition-strip article {
+    min-height: 72px !important;
+    grid-template-columns: 30px minmax(0, 1fr) !important;
+    padding: 10px !important;
+  }
+
+  .public-home-page .home-definition-strip small {
+    display: -webkit-box !important;
+    overflow: hidden !important;
+    -webkit-box-orient: vertical !important;
+    -webkit-line-clamp: 2 !important;
+    font-size: 10px !important;
+    line-height: 1.28 !important;
+  }
+
+  .public-home-page .public-home-copy .marketplace-actions {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    gap: 9px !important;
+  }
+
+  .public-home-page .public-home-copy .marketplace-actions .large {
+    min-height: 44px !important;
+    border-radius: 9px !important;
+    font-size: 13px !important;
+  }
+
+  .public-home-page .home-executive-panel {
+    display: grid !important;
+    align-self: center !important;
+    max-height: calc(100dvh - 112px) !important;
+    overflow: hidden !important;
+    transform: none !important;
+    padding: 16px !important;
+  }
+}
+
+.token-page-airdrop .token-ceo-candidate-review-packet,
+.token-page-presale .token-ceo-candidate-review-packet {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 6px !important;
+  margin-top: 6px !important;
+}
+
+.token-page-airdrop .token-ceo-candidate-review-packet span,
+.token-page-presale .token-ceo-candidate-review-packet span {
+  min-width: 0 !important;
+  border: 1px solid rgba(37, 99, 235, 0.12) !important;
+  border-radius: 8px !important;
+  background: rgba(239, 246, 255, 0.72) !important;
+  padding: 6px !important;
+}
+
+.token-page-airdrop .token-ceo-candidate-review-packet span.blocker,
+.token-page-presale .token-ceo-candidate-review-packet span.blocker {
+  border-color: rgba(217, 119, 6, 0.18) !important;
+  background: rgba(255, 251, 235, 0.82) !important;
+}
+
+.token-page-airdrop .token-ceo-candidate-review-packet b,
+.token-page-airdrop .token-ceo-candidate-review-packet small,
+.token-page-presale .token-ceo-candidate-review-packet b,
+.token-page-presale .token-ceo-candidate-review-packet small {
+  display: block !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.token-page-airdrop .token-ceo-candidate-review-packet b,
+.token-page-presale .token-ceo-candidate-review-packet b {
+  color: #1d4ed8 !important;
+  font-size: 8.5px !important;
+  font-weight: 950 !important;
+  text-transform: uppercase !important;
+}
+
+.token-page-airdrop .token-ceo-candidate-review-packet .blocker b,
+.token-page-presale .token-ceo-candidate-review-packet .blocker b {
+  color: #92400e !important;
+}
+
+.token-page-airdrop .token-ceo-candidate-review-packet small,
+.token-page-presale .token-ceo-candidate-review-packet small {
+  margin-top: 2px !important;
+  color: #334155 !important;
+  font-size: 9px !important;
+  font-weight: 760 !important;
+}
+
+@media (max-width: 760px) {
+  .public-home-page {
+    padding-block: 10px 16px !important;
+  }
+
+  .public-home-page .home-container.public-home-layout {
+    width: min(362px, calc(100vw - 28px)) !important;
+    max-width: min(362px, calc(100vw - 28px)) !important;
+    min-height: auto !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 12px !important;
+    margin-left: 14px !important;
+    margin-right: auto !important;
+    padding-inline: 0 !important;
+    padding-block: 8px 16px !important;
+    overflow: hidden !important;
+  }
+
+  .public-home-page .public-home-copy,
+  .public-home-page .public-home-hero,
+  .public-home-page .home-ceo-token-desk,
+  .public-home-page .home-definition-strip,
+  .public-home-page .public-home-copy .marketplace-actions,
+  .public-home-page .home-mergeide-inline-link {
+    width: min(362px, calc(100vw - 28px)) !important;
+    max-width: min(362px, calc(100vw - 28px)) !important;
+    margin-inline: 0 !important;
+  }
+
+  .public-home-page .public-home-copy {
+    gap: 9px !important;
+  }
+
+  .public-home-page .public-home-copy h1 {
+    width: min(362px, calc(100vw - 28px)) !important;
+    max-width: 10.7ch !important;
+    font-size: clamp(32px, 9.8vw, 41px) !important;
+    line-height: 1 !important;
+  }
+
+  .public-home-page .public-home-copy > p {
+    display: block !important;
+    width: min(362px, calc(100vw - 28px)) !important;
+    max-width: min(362px, calc(100vw - 28px)) !important;
+    min-width: 0 !important;
+    overflow: visible !important;
+    white-space: normal !important;
+    overflow-wrap: anywhere !important;
+    word-break: normal !important;
+    font-size: 13px !important;
+    line-height: 1.36 !important;
+  }
+
+  .public-home-page .home-ceo-token-desk {
+    padding: 10px !important;
+  }
+
+  .public-home-page .home-definition-strip {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 7px !important;
+  }
+
+  .public-home-page .home-definition-strip article {
+    min-height: auto !important;
+    grid-template-columns: 30px minmax(0, 1fr) !important;
+    padding: 9px !important;
+  }
+
+  .public-home-page .home-definition-strip small {
+    display: -webkit-box !important;
+    overflow: hidden !important;
+    -webkit-box-orient: vertical !important;
+    -webkit-line-clamp: 2 !important;
+  }
+
+  .public-home-page .home-executive-panel {
+    display: none !important;
+  }
+
+  .token-page-airdrop .token-ceo-candidate-review-packet,
+  .token-page-presale .token-ceo-candidate-review-packet {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}

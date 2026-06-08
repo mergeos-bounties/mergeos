@@ -198,6 +198,9 @@ type PublicTokenLaunchCandidate struct {
 	RequestedBy            string                               `json:"requested_by"`
 	PriorityLabel          string                               `json:"priority_label"`
 	CEOResearchMemo        string                               `json:"ceo_research_memo"`
+	CEOReviewQuestions     []string                             `json:"ceo_review_questions"`
+	OpenBlockers           []string                             `json:"open_blockers"`
+	LaunchWindowLabel      string                               `json:"launch_window_label"`
 	RecommendedLaunchTypes []string                             `json:"recommended_launch_types"`
 	DecisionLaunchType     string                               `json:"decision_launch_type"`
 	DecisionState          string                               `json:"decision_state"`
@@ -679,6 +682,9 @@ func (s *Store) PublicTokenLaunchCandidates(launchTypeFilter string) PublicToken
 			RequestedBy:            tokenLaunchCandidateRequestedBy(project),
 			PriorityLabel:          tokenLaunchCandidatePriorityLabel(decisionState, researchScore),
 			CEOResearchMemo:        tokenLaunchCandidateResearchMemo(decisionLaunchType, project.Title, researchScore, project.OpenTaskCount, project.AcceptedTaskCount, len(proofSignals)),
+			CEOReviewQuestions:     tokenLaunchCandidateCEOQuestions(decisionLaunchType, project.Title, proofSignals),
+			OpenBlockers:           tokenLaunchCandidateOpenBlockers(readinessGates),
+			LaunchWindowLabel:      tokenLaunchCandidateLaunchWindowLabel(decisionLaunchType, decisionState),
 			RecommendedLaunchTypes: recommendedTypes,
 			DecisionLaunchType:     decisionLaunchType,
 			DecisionState:          decisionState,
@@ -726,6 +732,9 @@ func (s *Store) PublicTokenLaunchCandidates(launchTypeFilter string) PublicToken
 			RequestedBy:            "CEO brief",
 			PriorityLabel:          tokenLaunchCandidatePriorityLabel(decisionState, researchScore),
 			CEOResearchMemo:        tokenLaunchBriefCandidateResearchMemo(launchType, brief, researchScore, proofSignals),
+			CEOReviewQuestions:     tokenLaunchCandidateCEOQuestions(launchType, brief.ProjectTitle, proofSignals),
+			OpenBlockers:           tokenLaunchCandidateOpenBlockers(readinessGates),
+			LaunchWindowLabel:      tokenLaunchCandidateLaunchWindowLabel(launchType, decisionState),
 			RecommendedLaunchTypes: []string{launchType},
 			DecisionLaunchType:     launchType,
 			DecisionState:          decisionState,
@@ -835,6 +844,69 @@ func tokenLaunchBriefCandidateResearchMemo(launchType string, brief PublicTokenL
 		source = "research source attached"
 	}
 	return fmt.Sprintf("CEO-submitted %s candidate: %s, %d%% fit, %d proof signals, %s.", launchLabel, title, score, tokenLaunchEvidenceSignalCount(proofSignals), source)
+}
+
+func tokenLaunchCandidateCEOQuestions(launchType, projectTitle string, proofSignals []string) []string {
+	title := strings.TrimSpace(projectTitle)
+	if title == "" {
+		title = "this project"
+	}
+	signalCount := tokenLaunchEvidenceSignalCount(proofSignals)
+	if launchType == "presale" {
+		return []string{
+			fmt.Sprintf("What utility does %s unlock for funded work, escrow, agents, or protocol access?", title),
+			"Is the reserve cap backed by funding receipts, wallet ownership, and Solana contract proof?",
+			fmt.Sprintf("Are %d proof signals enough to open reserve, or should CEO request another memo?", signalCount),
+		}
+	}
+	return []string{
+		fmt.Sprintf("What useful software work makes %s eligible for an earned airdrop?", title),
+		"Do the proof gates block farming with task evidence, PR or QA proof, and wallet uniqueness?",
+		fmt.Sprintf("Are %d proof signals enough to open claims, or should CEO request more evidence?", signalCount),
+	}
+}
+
+func tokenLaunchCandidateOpenBlockers(gates []TokenLaunchCandidateReadinessGate) []string {
+	blockers := []string{}
+	for _, gate := range gates {
+		if gate.State == "ready" {
+			continue
+		}
+		label := strings.TrimSpace(gate.Label)
+		if label == "" {
+			label = strings.TrimSpace(gate.Key)
+		}
+		evidence := strings.TrimSpace(gate.Evidence)
+		if evidence == "" {
+			evidence = strings.TrimSpace(gate.Value)
+		}
+		if evidence != "" {
+			blockers = append(blockers, fmt.Sprintf("%s: %s", label, evidence))
+		} else if label != "" {
+			blockers = append(blockers, label+" gate needs CEO evidence.")
+		}
+	}
+	if len(blockers) == 0 {
+		return []string{"All CEO gates are ready; confirm final memo and ledger proof before opening."}
+	}
+	return blockers[:minInt(len(blockers), 4)]
+}
+
+func tokenLaunchCandidateLaunchWindowLabel(launchType, decisionState string) string {
+	launchLabel := "airdrop"
+	openLabel := "Open earned claims"
+	if launchType == "presale" {
+		launchLabel = "presale"
+		openLabel = "Open reserve window"
+	}
+	switch decisionState {
+	case "ready":
+		return openLabel
+	case "hold":
+		return fmt.Sprintf("Hold %s until blockers clear", launchLabel)
+	default:
+		return fmt.Sprintf("CEO review before %s opens", launchLabel)
+	}
 }
 
 func tokenLaunchBriefCandidateSignals(brief PublicTokenLaunchBriefRecord) []string {

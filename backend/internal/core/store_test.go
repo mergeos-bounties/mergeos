@@ -1901,6 +1901,11 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 		candidates.Candidates[0].PriorityLabel == "" ||
 		!strings.Contains(candidates.Candidates[0].CEOResearchMemo, "CEO should research") ||
 		!strings.Contains(candidates.Candidates[0].CEOResearchMemo, "airdrop") ||
+		len(candidates.Candidates[0].CEOReviewQuestions) != 3 ||
+		len(candidates.Candidates[0].OpenBlockers) < 1 ||
+		!strings.Contains(candidates.Candidates[0].OpenBlockers[0], "CEO memo") ||
+		candidates.Candidates[0].LaunchWindowLabel == "" ||
+		!strings.Contains(candidates.Candidates[0].LaunchWindowLabel, "airdrop") ||
 		candidates.Candidates[0].DecisionState != "review" ||
 		!strings.Contains(candidates.Candidates[0].DecisionSummary, "Review airdrop candidate") ||
 		!strings.Contains(candidates.Candidates[0].DecisionSummary, "draft CEO memo") ||
@@ -1953,6 +1958,10 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 		presaleCandidates.Candidates[0].RequestedBy == "" ||
 		presaleCandidates.Candidates[0].PriorityLabel == "" ||
 		!strings.Contains(presaleCandidates.Candidates[0].CEOResearchMemo, "presale") ||
+		len(presaleCandidates.Candidates[0].CEOReviewQuestions) != 3 ||
+		len(presaleCandidates.Candidates[0].OpenBlockers) < 1 ||
+		presaleCandidates.Candidates[0].LaunchWindowLabel == "" ||
+		!strings.Contains(presaleCandidates.Candidates[0].LaunchWindowLabel, "presale") ||
 		presaleCandidates.Candidates[0].DecisionState != "review" ||
 		!strings.Contains(presaleCandidates.Candidates[0].DecisionSummary, "Review presale candidate") ||
 		!strings.Contains(presaleCandidates.Candidates[0].DecisionSummary, "reserve opens") ||
@@ -1981,6 +1990,9 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 		standaloneCandidate.RequestedBy != "CEO brief" ||
 		standaloneCandidate.PriorityLabel == "" ||
 		!strings.Contains(standaloneCandidate.CEOResearchMemo, "CEO-submitted presale candidate") ||
+		len(standaloneCandidate.CEOReviewQuestions) != 3 ||
+		len(standaloneCandidate.OpenBlockers) < 1 ||
+		standaloneCandidate.LaunchWindowLabel == "" ||
 		standaloneCandidate.ResearchSource != "https://example.com/standalone-presale-whitepaper" ||
 		!strings.Contains(standaloneCandidate.DecisionSummary, "Review presale candidate") ||
 		!strings.Contains(standaloneCandidate.Brief, "open an MRG presale window") ||
