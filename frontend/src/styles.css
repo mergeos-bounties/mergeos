@@ -39801,3 +39801,23 @@ canvas {
     margin: 0 !important;
   }
 }
+
+/* Whitepaper mobile skim: keep the route decisive before the full reader begins. */
+@media (max-width: 620px) {
+  .token-whitepaper-thesis article:nth-child(n + 3),
+  .token-whitepaper-index article:nth-child(n + 3) {
+    display: none !important;
+  }
+
+  .token-whitepaper-reader {
+    gap: 10px !important;
+  }
+
+  .token-whitepaper-copy {
+    gap: 10px !important;
+  }
+
+  .token-whitepaper-index {
+    gap: 8px !important;
+  }
+}

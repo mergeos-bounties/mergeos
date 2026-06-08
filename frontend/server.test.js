@@ -1558,6 +1558,8 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(cssSource, /\/\* Token CEO mobile first decision:[\s\S]*\.token-ceo-decision-strip\s*\{[\s\S]*display: none !important;/);
   assert.match(cssSource, /\.token-proof-result small\s*\{[\s\S]*overflow: visible;[\s\S]*white-space: normal;[\s\S]*overflow-wrap: anywhere;/);
   assert.match(cssSource, /\.token-whitepaper-thesis p\s*\{[\s\S]*-webkit-line-clamp: 2;/);
+  assert.match(cssSource, /Whitepaper mobile skim: keep the route decisive before the full reader begins/);
+  assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-whitepaper-thesis article:nth-child\(n \+ 3\),[\s\S]*\.token-whitepaper-index article:nth-child\(n \+ 3\)\s*\{[\s\S]*display: none !important;/);
 });
 
 test('contracts page exposes Solana proof manifest alongside the public IDL', async () => {
