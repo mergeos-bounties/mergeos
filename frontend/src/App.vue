@@ -13068,10 +13068,9 @@ function tokenLaunchCandidateScore({ openTasks = 0, acceptedTasks = 0, signalCou
 }
 function tokenLaunchCandidateDecisionRows(launchType = 'airdrop', score = 0) {
   const launchLabel = launchType === 'presale' ? 'presale' : 'airdrop';
-  const strongFit = Number(score) >= 82;
   const approveLabel = launchType === 'presale'
-    ? (strongFit ? 'Open presale' : 'Draft presale')
-    : (strongFit ? 'Open missions' : 'Draft missions');
+    ? 'Draft presale'
+    : 'Draft missions';
   return [
     {
       key: 'approve',
@@ -13080,7 +13079,7 @@ function tokenLaunchCandidateDecisionRows(launchType = 'airdrop', score = 0) {
       proofPolicy: launchType === 'presale'
         ? 'Approve only with utility proof, reserve cap, Solana wallet path, funding reference, contract proof, and public ledger receipt.'
         : 'Approve only with repo task evidence, useful work proof, anti-bot review, wallet uniqueness, and public ledger receipt.',
-      riskNotes: `CEO ${launchLabel} decision: ready to open after final proof review; score ${score}% fit.`,
+      riskNotes: `CEO ${launchLabel} decision: draft memo first; score ${score}% fit but launch is not open until CEO memo and ledger proof are attached.`,
     },
     {
       key: 'needs_evidence',
@@ -13335,8 +13334,8 @@ const tokenCeoCandidateRows = computed(() => {
       decisionPreview: tokenLaunchCandidateDecisionPreview(
         decisionRows,
         launchType === 'presale'
-          ? 'Open presale after utility, funding, wallet, contract, and receipt gates are attached.'
-          : 'Open earned missions after repo demand, useful work proof, anti-bot, wallet, and ledger gates are attached.',
+          ? 'Draft a CEO presale memo before utility, funding, wallet, contract, and receipt gates open reserve.'
+          : 'Draft a CEO airdrop memo before repo demand, useful work proof, anti-bot, wallet, and ledger gates open missions.',
       ),
       title: project.title || 'Funded MergeOS project',
       body: `${budget} work pool / ${openTasks} open tasks / ${acceptedTasks} accepted`,
