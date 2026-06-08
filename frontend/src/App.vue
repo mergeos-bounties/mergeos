@@ -24679,7 +24679,8 @@ function handlePublicAction(action = {}) {
   }
   if (action.command === 'token-launch-brief') {
     prefillTokenLaunchBrief();
-    scrollTokenLaunchBriefCardIntoView();
+    void nextTick().then(() => scrollTokenLaunchBriefCardIntoView());
+    if (hasWindow) window.setTimeout(scrollTokenLaunchBriefCardIntoView, 220);
     return;
   }
   if (action.command === 'copy-whitepaper') {
@@ -24871,12 +24872,15 @@ function scrollTokenLaunchBriefCardIntoView() {
   const run = (behavior = 'smooth') => {
     const target = document.querySelector('.token-ceo-brief-card');
     if (!target) return;
+    target.scrollIntoView({ block: 'start', behavior });
     const top = Math.max(0, window.scrollY + target.getBoundingClientRect().top - 76);
     window.scrollTo({ top, behavior });
+    if (behavior === 'auto') window.scrollTo(0, top);
   };
   window.requestAnimationFrame(run);
   window.setTimeout(run, 140);
   window.setTimeout(() => run('auto'), 360);
+  window.setTimeout(() => run('auto'), 760);
 }
 
 function prefillTokenLaunchBriefFromCandidate(candidate = {}) {

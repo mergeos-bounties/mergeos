@@ -1253,7 +1253,7 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /tokenLaunchBriefResult[\s\S]{0,900}openPublicPage\('ledger'\)/);
   assert.match(appSource, /action\.command === 'token-ceo-brief'/);
   assert.match(appSource, /action\.command === 'token-launch-brief'/);
-  assert.match(appSource, /if \(action\.command === 'token-launch-brief'\) \{[\s\S]*prefillTokenLaunchBrief\(\);[\s\S]*scrollTokenLaunchBriefCardIntoView\(\);[\s\S]*return;/);
+  assert.match(appSource, /if \(action\.command === 'token-launch-brief'\) \{[\s\S]*prefillTokenLaunchBrief\(\);[\s\S]*nextTick\(\)\.then\(\(\) => scrollTokenLaunchBriefCardIntoView\(\)\);[\s\S]*window\.setTimeout\(scrollTokenLaunchBriefCardIntoView, 220\);[\s\S]*return;/);
   assert.ok(appSource.indexOf('class="token-ceo-research-panel"') < appSource.indexOf('class="token-content-grid"'));
   assert.ok(appSource.indexOf('class="token-ceo-decision-strip"') < appSource.indexOf('class="token-ceo-brief-card"'));
   assert.ok(appSource.indexOf('class="token-ceo-candidate-lane"') < appSource.indexOf('class="token-ceo-live-queue"'));
@@ -1310,9 +1310,12 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /Use for CEO brief/);
   assert.match(appSource, /function prefillTokenLaunchBriefFromCandidate\(candidate = \{\}\)/);
   assert.match(appSource, /function scrollTokenLaunchBriefCardIntoView\(\)/);
+  assert.match(appSource, /target\.scrollIntoView\(\{ block: 'start', behavior \}\)/);
   assert.match(appSource, /window\.scrollTo\(\{ top, behavior \}\)/);
+  assert.match(appSource, /if \(behavior === 'auto'\) window\.scrollTo\(0, top\)/);
   assert.match(appSource, /window\.setTimeout\(run, 140\)/);
   assert.match(appSource, /window\.setTimeout\(\(\) => run\('auto'\), 360\)/);
+  assert.match(appSource, /window\.setTimeout\(\(\) => run\('auto'\), 760\)/);
   assert.match(appSource, /CEO candidate loaded\./);
   assert.match(appSource, /tokenLaunchBriefDecisionContext\.label = label/);
   assert.match(appSource, /tokenLaunchBriefDecisionContext\.candidate = candidate\.title/);
