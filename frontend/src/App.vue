@@ -12612,7 +12612,7 @@ const publicTokenPageDefinitions = {
     detailBody: 'Claiming should only open after wallet, account, work proof, and anti-abuse checks are all satisfied.',
     chapterTitle: 'Airdrop mission types',
     actions: [
-      { label: 'Record claim', primary: true, icon: ArrowRight, command: 'airdrop-claim' },
+      { label: 'Send CEO brief', primary: true, icon: ArrowRight, command: 'token-launch-brief' },
       { label: 'Open bounties', icon: ListTodo, command: 'bounties' },
       { label: 'Live proof', icon: Zap, page: 'live' },
     ],
@@ -12635,7 +12635,7 @@ const publicTokenPageDefinitions = {
     detailBody: 'The page is built around KYC-ready account state, wallet readiness, escrow reserve, and ledger-visible receipts.',
     chapterTitle: 'Presale checkpoints',
     actions: [
-      { label: 'Reserve MRG', primary: true, icon: UserCheck, command: 'presale-reserve' },
+      { label: 'Send CEO brief', primary: true, icon: UserCheck, command: 'token-launch-brief' },
       { label: 'Contracts', icon: Lock, page: 'contracts' },
       { label: 'Ledger proof', icon: ShieldCheck, page: 'ledger' },
     ],
@@ -24675,6 +24675,11 @@ function handlePublicAction(action = {}) {
   }
   if (action.command === 'token-ceo-brief') {
     openProjectWizard({ intent: 'token-launch' });
+    return;
+  }
+  if (action.command === 'token-launch-brief') {
+    prefillTokenLaunchBrief();
+    scrollTokenLaunchBriefCardIntoView();
     return;
   }
   if (action.command === 'copy-whitepaper') {

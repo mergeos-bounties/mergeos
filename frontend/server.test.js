@@ -1228,6 +1228,8 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /id="token-workflow"/);
   assert.match(appSource, /class="token-ceo-research-panel"/);
   assert.match(appSource, /CEO LAUNCH DECISION/);
+  assert.match(appSource, /label: 'Send CEO brief', primary: true, icon: ArrowRight, command: 'token-launch-brief'/);
+  assert.match(appSource, /label: 'Send CEO brief', primary: true, icon: UserCheck, command: 'token-launch-brief'/);
   assert.match(appSource, /Queue API/);
   assert.match(appSource, /class="token-ceo-decision-strip"/);
   assert.match(appSource, /class="token-ceo-queue-stats"/);
@@ -1250,6 +1252,8 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /Ledger board/);
   assert.match(appSource, /tokenLaunchBriefResult[\s\S]{0,900}openPublicPage\('ledger'\)/);
   assert.match(appSource, /action\.command === 'token-ceo-brief'/);
+  assert.match(appSource, /action\.command === 'token-launch-brief'/);
+  assert.match(appSource, /if \(action\.command === 'token-launch-brief'\) \{[\s\S]*prefillTokenLaunchBrief\(\);[\s\S]*scrollTokenLaunchBriefCardIntoView\(\);[\s\S]*return;/);
   assert.ok(appSource.indexOf('class="token-ceo-research-panel"') < appSource.indexOf('class="token-content-grid"'));
   assert.ok(appSource.indexOf('class="token-ceo-decision-strip"') < appSource.indexOf('class="token-ceo-brief-card"'));
   assert.ok(appSource.indexOf('class="token-ceo-candidate-lane"') < appSource.indexOf('class="token-ceo-live-queue"'));
@@ -1425,8 +1429,8 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /const gateSummary = gateSummaryMatch\?\.\[1\]/);
   assert.match(appSource, /\$\{toTitleLabel\(decisionMatch\?\.\[1\] \|\| 'pending open decision'\)\} \/ \$\{gateSummary\}\$\{sourceMatch\?\.\[1\] \? ' \/ source linked' : ''\}/);
   assert.match(appSource, /amount: isLaunchBrief \? 'CEO memo' : formatLedgerMRGFromCents\(entry\.amount_cents\)/);
-  assert.match(appSource, /command: 'airdrop-claim'/);
-  assert.match(appSource, /command: 'presale-reserve'/);
+  assert.match(appSource, /command: 'token-launch-brief'/);
+  assert.match(appSource, /action\.command === 'airdrop-claim' \|\| action\.command === 'presale-reserve'/);
   assert.match(appSource, /function refreshTokenPageData\(\)/);
   assert.match(appSource, /async function copyWhitepaperOutline\(\)/);
   assert.match(seoSource, /MergeOS Airdrop \| Task-based MRG rewards with public proof/);
