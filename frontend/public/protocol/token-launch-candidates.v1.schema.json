@@ -34,7 +34,9 @@
           "work_pool_mrg",
           "open_task_count",
           "accepted_task_count",
+          "research_score",
           "proof_signals",
+          "decision_options",
           "gate_summary",
           "proof_policy",
           "marketplace_url",
@@ -53,9 +55,26 @@
           "work_pool_mrg": { "type": "integer", "minimum": 0 },
           "open_task_count": { "type": "integer", "minimum": 0 },
           "accepted_task_count": { "type": "integer", "minimum": 0 },
+          "research_score": { "type": "integer", "minimum": 0, "maximum": 100 },
           "proof_signals": {
             "type": "array",
             "items": { "type": "string", "minLength": 1, "maxLength": 80 }
+          },
+          "decision_options": {
+            "type": "array",
+            "minItems": 3,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["key", "label", "tone", "proof_policy", "risk_notes"],
+              "properties": {
+                "key": { "enum": ["approve", "needs_evidence", "reject"] },
+                "label": { "type": "string", "minLength": 1, "maxLength": 40 },
+                "tone": { "enum": ["approve", "evidence", "reject"] },
+                "proof_policy": { "type": "string", "minLength": 1, "maxLength": 500 },
+                "risk_notes": { "type": "string", "minLength": 1, "maxLength": 500 }
+              }
+            }
           },
           "gate_summary": { "type": "string", "maxLength": 240 },
           "proof_policy": { "type": "string", "maxLength": 500 },

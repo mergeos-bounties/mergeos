@@ -510,6 +510,9 @@ test('public protocol links match backend routes', async () => {
   assert.equal(tokenLaunchCandidatesSchema.properties.protocol_version.const, 'mergeos.token-launch-candidates.v1');
   assert.equal(tokenLaunchCandidatesSchema.required.includes('candidates'), true);
   assert.equal(tokenLaunchCandidatesSchema.properties.candidates.items.required.includes('proof_policy'), true);
+  assert.equal(tokenLaunchCandidatesSchema.properties.candidates.items.required.includes('research_score'), true);
+  assert.equal(tokenLaunchCandidatesSchema.properties.candidates.items.required.includes('decision_options'), true);
+  assert.equal(tokenLaunchCandidatesSchema.properties.candidates.items.properties.decision_options.items.properties.key.enum.includes('needs_evidence'), true);
   assert.match(manifestSource, /mergeos\.payment-order\.v1/);
   assert.match(manifestSource, /payment-order\.v1\.schema\.json/);
   assert.match(manifestSource, /\/contracts\/solana\/mergeos_mrg\.proof-manifest\.v1\.json/);
@@ -1265,6 +1268,9 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /row\.proofSignals/);
   assert.match(appSource, /function tokenLaunchCandidateScore/);
   assert.match(appSource, /function tokenLaunchCandidateDecisionRows/);
+  assert.match(appSource, /function tokenLaunchCandidateDecisionRowsFromAPI\(rows = \[\], launchType = 'airdrop', score = 0\)/);
+  assert.match(appSource, /Number\(candidate\.research_score\) \|\| tokenLaunchCandidateScore/);
+  assert.match(appSource, /tokenLaunchCandidateDecisionRowsFromAPI\(candidate\.decision_options, launchType, score\)/);
   assert.match(appSource, /function applyTokenLaunchCandidateDecision\(candidate = \{\}, decision = \{\}\)/);
   assert.match(appSource, /row\.scoreLabel/);
   assert.match(appSource, /scoreLabel: `\$\{score\}% fit`/);

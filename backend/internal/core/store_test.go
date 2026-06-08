@@ -1831,7 +1831,12 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 		candidates.Candidates[0].ProjectID != project.ID ||
 		candidates.Candidates[0].ResearchSource != "https://github.com/mergeos-bounties/mergeos" ||
 		!stringSliceContains(candidates.Candidates[0].RecommendedLaunchTypes, "airdrop") ||
+		candidates.Candidates[0].ResearchScore < 42 ||
 		!stringSliceContains(candidates.Candidates[0].ProofSignals, "repository_context") ||
+		len(candidates.Candidates[0].DecisionOptions) != 3 ||
+		candidates.Candidates[0].DecisionOptions[0].Key != "approve" ||
+		candidates.Candidates[0].DecisionOptions[1].Key != "needs_evidence" ||
+		candidates.Candidates[0].DecisionOptions[2].Key != "reject" ||
 		candidates.Candidates[0].ProofPolicy == "" {
 		t.Fatalf("public token launch candidates rows invalid: %#v", candidates.Candidates)
 	}

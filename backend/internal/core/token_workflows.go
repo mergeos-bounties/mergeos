@@ -181,20 +181,30 @@ type PublicTokenLaunchCandidatesStats struct {
 }
 
 type PublicTokenLaunchCandidate struct {
-	CandidateID            string    `json:"candidate_id"`
-	ProjectID              string    `json:"project_id"`
-	ProjectTitle           string    `json:"project_title"`
-	RecommendedLaunchTypes []string  `json:"recommended_launch_types"`
-	ResearchSource         string    `json:"research_source"`
-	Brief                  string    `json:"brief"`
-	WorkPoolMRG            int64     `json:"work_pool_mrg"`
-	OpenTaskCount          int       `json:"open_task_count"`
-	AcceptedTaskCount      int       `json:"accepted_task_count"`
-	ProofSignals           []string  `json:"proof_signals"`
-	GateSummary            string    `json:"gate_summary"`
-	ProofPolicy            string    `json:"proof_policy"`
-	MarketplaceURL         string    `json:"marketplace_url"`
-	CreatedAt              time.Time `json:"created_at"`
+	CandidateID            string                               `json:"candidate_id"`
+	ProjectID              string                               `json:"project_id"`
+	ProjectTitle           string                               `json:"project_title"`
+	RecommendedLaunchTypes []string                             `json:"recommended_launch_types"`
+	ResearchSource         string                               `json:"research_source"`
+	Brief                  string                               `json:"brief"`
+	WorkPoolMRG            int64                                `json:"work_pool_mrg"`
+	OpenTaskCount          int                                  `json:"open_task_count"`
+	AcceptedTaskCount      int                                  `json:"accepted_task_count"`
+	ResearchScore          int                                  `json:"research_score"`
+	ProofSignals           []string                             `json:"proof_signals"`
+	DecisionOptions        []TokenLaunchCandidateDecisionOption `json:"decision_options"`
+	GateSummary            string                               `json:"gate_summary"`
+	ProofPolicy            string                               `json:"proof_policy"`
+	MarketplaceURL         string                               `json:"marketplace_url"`
+	CreatedAt              time.Time                            `json:"created_at"`
+}
+
+type TokenLaunchCandidateDecisionOption struct {
+	Key         string `json:"key"`
+	Label       string `json:"label"`
+	Tone        string `json:"tone"`
+	ProofPolicy string `json:"proof_policy"`
+	RiskNotes   string `json:"risk_notes"`
 }
 
 type CEOMemoGate struct {
@@ -583,6 +593,7 @@ func (s *Store) PublicTokenLaunchCandidates(launchTypeFilter string) PublicToken
 			}
 		}
 		proofSignals := tokenLaunchCandidateSignals(project, projectBounties)
+		researchScore := tokenLaunchCandidateResearchScore(project, proofSignals)
 		candidate := PublicTokenLaunchCandidate{
 			CandidateID:            "tlc_" + project.ID,
 			ProjectID:              project.ID,
@@ -593,7 +604,9 @@ func (s *Store) PublicTokenLaunchCandidates(launchTypeFilter string) PublicToken
 			WorkPoolMRG:            project.WorkPoolCents,
 			OpenTaskCount:          project.OpenTaskCount,
 			AcceptedTaskCount:      project.AcceptedTaskCount,
+			ResearchScore:          researchScore,
 			ProofSignals:           proofSignals,
+			DecisionOptions:        tokenLaunchCandidateDecisionOptions(recommendedTypes, researchScore),
 			GateSummary:            fmt.Sprintf("%d open tasks, %d accepted tasks, %d proof signals", project.OpenTaskCount, project.AcceptedTaskCount, len(proofSignals)),
 			ProofPolicy:            tokenLaunchCandidateProofPolicy(projectBounties),
 			MarketplaceURL:         "/marketplace",
@@ -1133,6 +1146,77 @@ func tokenLaunchCandidateSignals(project *MarketplaceProject, bounties []*Market
 		}
 	}
 	return signals
+}
+
+func tokenLaunchCandidateResearchScore(project *MarketplaceProject, proofSignals []string) int {
+	if project == nil {
+		return 42
+	}
+	openTaskCount := project.OpenTaskCount
+	if openTaskCount > 8 {
+		openTaskCount = 8
+	}
+	acceptedTaskCount := project.AcceptedTaskCount
+	if acceptedTaskCount > 12 {
+		acceptedTaskCount = 12
+	}
+	signalCount := len(proofSignals)
+	if signalCount > 8 {
+		signalCount = 8
+	}
+	poolScore := int(project.WorkPoolCents / 10000)
+	if poolScore > 8 {
+		poolScore = 8
+	}
+	score := 42 + (openTaskCount * 6) + (acceptedTaskCount * 3) + (signalCount * 5) + (poolScore * 2)
+	if score > 98 {
+		return 98
+	}
+	if score < 42 {
+		return 42
+	}
+	return score
+}
+
+func tokenLaunchCandidateDecisionOptions(recommendedTypes []string, score int) []TokenLaunchCandidateDecisionOption {
+	launchType := "airdrop"
+	if stringSliceContains(recommendedTypes, "presale") {
+		launchType = "presale"
+	}
+	launchLabel := launchType
+	approveLabel := "Draft approve"
+	if score >= 82 {
+		approveLabel = "Approve memo"
+	}
+	approveProof := "Approve only with repo task evidence, useful work proof, anti-bot review, wallet uniqueness, and public ledger receipt."
+	needsEvidenceProof := "Hold airdrop until repo task, PR/deploy proof, QA evidence, and wallet uniqueness are attached."
+	if launchType == "presale" {
+		approveProof = "Approve only with utility proof, reserve cap, Solana wallet path, funding reference, contract proof, and public ledger receipt."
+		needsEvidenceProof = "Hold presale until utility, funding, wallet, contract, and receipt evidence are attached."
+	}
+	return []TokenLaunchCandidateDecisionOption{
+		{
+			Key:         "approve",
+			Label:       approveLabel,
+			Tone:        "approve",
+			ProofPolicy: approveProof,
+			RiskNotes:   fmt.Sprintf("CEO %s decision: ready to open after final proof review; score %d%% fit.", launchLabel, score),
+		},
+		{
+			Key:         "needs_evidence",
+			Label:       "Needs evidence",
+			Tone:        "evidence",
+			ProofPolicy: needsEvidenceProof,
+			RiskNotes:   fmt.Sprintf("CEO %s decision: request more evidence before opening; score %d%% fit.", launchLabel, score),
+		},
+		{
+			Key:         "reject",
+			Label:       "Reject",
+			Tone:        "reject",
+			ProofPolicy: "Do not open token workflow until source, demand, proof quality, wallet policy, and ledger evidence are remediated.",
+			RiskNotes:   fmt.Sprintf("CEO %s decision: reject for now; score %d%% fit and proof is not launch-ready.", launchLabel, score),
+		},
+	}
 }
 
 func tokenLaunchCandidateProofPolicy(bounties []*MarketplaceBounty) string {

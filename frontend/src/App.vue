@@ -12893,6 +12893,20 @@ function tokenLaunchCandidateDecisionRows(launchType = 'airdrop', score = 0) {
     },
   ];
 }
+function tokenLaunchCandidateDecisionRowsFromAPI(rows = [], launchType = 'airdrop', score = 0) {
+  if (!Array.isArray(rows) || !rows.length) return tokenLaunchCandidateDecisionRows(launchType, score);
+  const normalized = rows
+    .filter((row) => row && typeof row === 'object')
+    .map((row) => ({
+      key: row.key || row.tone || row.label,
+      label: row.label || toTitleLabel(row.key || 'CEO decision'),
+      tone: row.tone || row.key || 'evidence',
+      proofPolicy: row.proof_policy || row.proofPolicy || '',
+      riskNotes: row.risk_notes || row.riskNotes || '',
+    }))
+    .filter((row) => row.key && row.label);
+  return normalized.length ? normalized : tokenLaunchCandidateDecisionRows(launchType, score);
+}
 const tokenCeoCandidateRows = computed(() => {
   const apiCandidates = Array.isArray(tokenLaunchCandidatesData.value?.candidates)
     ? tokenLaunchCandidatesData.value.candidates
@@ -12902,7 +12916,7 @@ const tokenCeoCandidateRows = computed(() => {
     return apiCandidates.slice(0, 3).map((candidate) => {
       const sourceUrl = String(candidate.research_source || '').trim();
       const signals = Array.isArray(candidate.proof_signals) ? candidate.proof_signals : [];
-      const score = tokenLaunchCandidateScore({
+      const score = Number(candidate.research_score) || tokenLaunchCandidateScore({
         openTasks: Number(candidate.open_task_count) || 0,
         acceptedTasks: Number(candidate.accepted_task_count) || 0,
         signalCount: signals.length,
@@ -12912,7 +12926,7 @@ const tokenCeoCandidateRows = computed(() => {
         key: candidate.candidate_id || candidate.project_id || candidate.project_title,
         label: launchType === 'presale' ? 'CEO presale candidate' : 'CEO airdrop candidate',
         scoreLabel: `${score}% fit`,
-        decisionRows: tokenLaunchCandidateDecisionRows(launchType, score),
+        decisionRows: tokenLaunchCandidateDecisionRowsFromAPI(candidate.decision_options, launchType, score),
         title: candidate.project_title || 'Funded MergeOS project',
         body: candidate.gate_summary || `${formatCompactNumber(candidate.work_pool_mrg || 0)} MRG work pool / ${Number(candidate.open_task_count) || 0} open tasks`,
         sourceUrl: /^https?:\/\//i.test(sourceUrl) ? sourceUrl : '',
