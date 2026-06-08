@@ -1195,15 +1195,20 @@ func tokenLaunchCandidateDecisionOptions(launchType string, score int) []TokenLa
 		launchType = "airdrop"
 	}
 	launchLabel := launchType
-	approveLabel := "Draft approve"
-	if score >= 82 {
-		approveLabel = "Approve memo"
-	}
+	approveLabel := "Draft missions"
 	approveProof := "Approve only with repo task evidence, useful work proof, anti-bot review, wallet uniqueness, and public ledger receipt."
 	needsEvidenceProof := "Hold airdrop until repo task, PR/deploy proof, QA evidence, and wallet uniqueness are attached."
 	if launchType == "presale" {
+		approveLabel = "Draft presale"
 		approveProof = "Approve only with utility proof, reserve cap, Solana wallet path, funding reference, contract proof, and public ledger receipt."
 		needsEvidenceProof = "Hold presale until utility, funding, wallet, contract, and receipt evidence are attached."
+	}
+	if score >= 82 {
+		if launchType == "presale" {
+			approveLabel = "Open presale"
+		} else {
+			approveLabel = "Open missions"
+		}
 	}
 	return []TokenLaunchCandidateDecisionOption{
 		{

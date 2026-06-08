@@ -1835,6 +1835,7 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 		!stringSliceContains(candidates.Candidates[0].ProofSignals, "repository_context") ||
 		len(candidates.Candidates[0].DecisionOptions) != 3 ||
 		candidates.Candidates[0].DecisionOptions[0].Key != "approve" ||
+		candidates.Candidates[0].DecisionOptions[0].Label != "Open missions" ||
 		candidates.Candidates[0].DecisionOptions[1].Key != "needs_evidence" ||
 		candidates.Candidates[0].DecisionOptions[2].Key != "reject" ||
 		!strings.Contains(candidates.Candidates[0].DecisionOptions[0].ProofPolicy, "repo task evidence") ||
@@ -1853,6 +1854,7 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 	}
 	if len(presaleCandidates.Candidates) < 1 ||
 		len(presaleCandidates.Candidates[0].DecisionOptions) != 3 ||
+		presaleCandidates.Candidates[0].DecisionOptions[0].Label != "Open presale" ||
 		!strings.Contains(presaleCandidates.Candidates[0].DecisionOptions[0].ProofPolicy, "utility proof") {
 		t.Fatalf("public presale launch candidates rows invalid: %#v", presaleCandidates.Candidates)
 	}
