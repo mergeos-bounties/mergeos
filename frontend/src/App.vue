@@ -12788,6 +12788,7 @@ const publicTokenPageDefinitions = {
     chapterTitle: 'Airdrop mission types',
     actions: [
       { label: 'Send CEO brief', primary: true, icon: ArrowRight, command: 'token-launch-brief' },
+      { label: 'Open claim workflow', icon: Trophy, command: 'airdrop-claim' },
       { label: 'Open bounties', icon: ListTodo, command: 'bounties' },
       { label: 'Live proof', icon: Zap, page: 'live' },
     ],
@@ -12811,6 +12812,7 @@ const publicTokenPageDefinitions = {
     chapterTitle: 'Presale checkpoints',
     actions: [
       { label: 'Send CEO brief', primary: true, icon: UserCheck, command: 'token-launch-brief' },
+      { label: 'Open reserve workflow', icon: CircleDollarSign, command: 'presale-reserve' },
       { label: 'Contracts', icon: Lock, page: 'contracts' },
       { label: 'Ledger proof', icon: ShieldCheck, page: 'ledger' },
     ],
@@ -13137,7 +13139,7 @@ function tokenLaunchCandidateDecisionRows(launchType = 'airdrop', score = 0) {
     {
       key: 'approve',
       label: approveLabel,
-      detail: launchType === 'presale' ? 'Utility + contract' : 'Mission + anti-bot',
+      detail: 'Load into brief',
       tone: 'approve',
       proofPolicy: launchType === 'presale'
         ? 'Approve only with utility proof, reserve cap, Solana wallet path, funding reference, contract proof, and public ledger receipt.'
@@ -13147,7 +13149,7 @@ function tokenLaunchCandidateDecisionRows(launchType = 'airdrop', score = 0) {
     {
       key: 'needs_evidence',
       label: 'Need proof',
-      detail: 'Request proof',
+      detail: 'Brief request',
       tone: 'evidence',
       proofPolicy: launchType === 'presale'
         ? 'Hold presale until utility, funding, wallet, contract, and receipt evidence are attached.'
@@ -13157,7 +13159,7 @@ function tokenLaunchCandidateDecisionRows(launchType = 'airdrop', score = 0) {
     {
       key: 'reject',
       label: 'Hold launch',
-      detail: 'Do not open',
+      detail: 'Brief hold',
       tone: 'reject',
       proofPolicy: 'Do not open token workflow until source, demand, proof quality, wallet policy, and ledger evidence are remediated.',
       riskNotes: `CEO ${launchLabel} decision: reject for now; score ${score}% fit and proof is not launch-ready.`,
@@ -13191,9 +13193,9 @@ function tokenLaunchCandidateDecisionRowsFromAPI(rows = [], launchType = 'airdro
 }
 function tokenLaunchCandidateDecisionDetail(key = '', launchType = 'airdrop') {
   const normalized = String(key || '').toLowerCase();
-  if (normalized === 'approve') return launchType === 'presale' ? 'Utility + contract' : 'Mission + anti-bot';
-  if (normalized === 'needs_evidence' || normalized === 'evidence') return 'Request proof';
-  if (normalized === 'reject' || normalized === 'hold') return 'Do not open';
+  if (normalized === 'approve') return 'Load into brief';
+  if (normalized === 'needs_evidence' || normalized === 'evidence') return 'Brief request';
+  if (normalized === 'reject' || normalized === 'hold') return 'Brief hold';
   return launchType === 'presale' ? 'Presale gate' : 'Airdrop gate';
 }
 function tokenLaunchCandidateDecisionPreview(rows = [], nextAction = '') {

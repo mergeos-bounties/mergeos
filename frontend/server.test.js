@@ -1361,7 +1361,9 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /href="#token-ceo-brief"/);
   assert.match(appSource, /@click="handlePublicAction\(action\)"/);
   assert.match(appSource, /label: 'Send CEO brief', primary: true, icon: ArrowRight, command: 'token-launch-brief'/);
+  assert.match(appSource, /label: 'Open claim workflow', icon: Trophy, command: 'airdrop-claim'/);
   assert.match(appSource, /label: 'Send CEO brief', primary: true, icon: UserCheck, command: 'token-launch-brief'/);
+  assert.match(appSource, /label: 'Open reserve workflow', icon: CircleDollarSign, command: 'presale-reserve'/);
   assert.match(appSource, /Candidate source/);
   assert.match(appSource, /Memo ledger/);
   assert.doesNotMatch(appSource, /Queue API/);
@@ -1602,7 +1604,9 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /errors\.risk_notes = 'CEO risk notes must explain the launch risk review\.'/);
   assert.match(appSource, /api\('\/api\/token\/launch-briefs'/);
   assert.match(appSource, /function submitTokenLaunchBrief\(\)/);
-  assert.match(appSource, /detail: launchType === 'presale' \? 'Utility \+ contract' : 'Mission \+ anti-bot'/);
+  assert.match(appSource, /detail: 'Load into brief'/);
+  assert.match(appSource, /return 'Brief request'/);
+  assert.match(appSource, /return 'Brief hold'/);
   assert.match(appSource, /function tokenLaunchCandidateDecisionDetail/);
   assert.match(appSource, /const launchType = tokenLaunchBriefForm\.launch_type === 'presale' \|\| tokenLaunchBriefForm\.launch_type === 'airdrop'[\s\S]*\? tokenLaunchBriefForm\.launch_type[\s\S]*: \(publicPage\.value === 'presale' \? 'presale' : 'airdrop'\);/);
   assert.match(appSource, /ceo_memo/);
