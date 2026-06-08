@@ -39976,3 +39976,117 @@ canvas {
     grid-column: 1 / -1 !important;
   }
 }
+
+/* Project wizard mobile final compact pass: make the logged-in creation flow feel like an app, not stacked desktop panels. */
+@media (max-width: 620px) {
+  .project-flow-shell {
+    --project-mobile-action-height: 62px !important;
+    --project-mobile-gutter: 10px !important;
+  }
+
+  .project-flow-shell .project-flow-main {
+    gap: 8px !important;
+    padding: 8px var(--project-mobile-gutter) calc(var(--project-mobile-action-height) + 18px + env(safe-area-inset-bottom)) !important;
+  }
+
+  .project-flow-shell .project-flow-sidebar {
+    gap: 8px !important;
+  }
+
+  .project-flow-shell .project-flow-title {
+    display: none !important;
+  }
+
+  .project-flow-shell .project-step-list {
+    display: grid !important;
+    grid-auto-flow: column !important;
+    grid-auto-columns: minmax(84px, 1fr) !important;
+    grid-template-columns: none !important;
+    gap: 6px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    overscroll-behavior-inline: contain !important;
+    scrollbar-width: none !important;
+    padding-bottom: 2px !important;
+  }
+
+  .project-flow-shell .project-step-list::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .project-flow-shell .project-step-list button {
+    min-height: 52px !important;
+    grid-template-columns: 24px minmax(0, 1fr) !important;
+    gap: 6px !important;
+    padding: 7px !important;
+    border-radius: 8px !important;
+  }
+
+  .project-flow-shell .project-step-list button > span {
+    width: 24px !important;
+    height: 24px !important;
+    font-size: 10px !important;
+  }
+
+  .project-flow-shell .project-step-list strong {
+    font-size: 10.5px !important;
+    line-height: 1.12 !important;
+    -webkit-line-clamp: 2 !important;
+  }
+
+  .project-flow-shell .project-step-list small {
+    display: none !important;
+  }
+
+  .project-flow-shell .wizard-card {
+    padding: 10px !important;
+    border-radius: 8px !important;
+  }
+
+  .project-flow-shell .wizard-card-heading {
+    gap: 8px !important;
+  }
+
+  .project-flow-shell .wizard-card-heading h2 {
+    font-size: clamp(21px, 6vw, 25px) !important;
+    line-height: 1.05 !important;
+  }
+
+  .project-flow-shell .wizard-card-heading p {
+    display: -webkit-box !important;
+    overflow: hidden !important;
+    -webkit-box-orient: vertical !important;
+    -webkit-line-clamp: 2 !important;
+    font-size: 12px !important;
+    line-height: 1.28 !important;
+  }
+
+  .project-flow-shell .wizard-validation-banner {
+    max-height: 132px !important;
+    padding: 8px 9px !important;
+    border-radius: 8px !important;
+  }
+
+  .project-flow-shell .wizard-validation-banner li {
+    font-size: 11px !important;
+    line-height: 1.25 !important;
+  }
+
+  .project-flow-shell .wizard-quality-card {
+    padding: 9px !important;
+  }
+
+  .project-flow-shell .quality-check-list {
+    display: none !important;
+  }
+
+  .project-flow-shell .project-step-actions {
+    position: sticky !important;
+    bottom: 0 !important;
+    min-height: var(--project-mobile-action-height) !important;
+    margin: 8px 0 calc(-8px - env(safe-area-inset-bottom)) !important;
+    border-radius: 10px 10px 0 0 !important;
+    padding: 7px !important;
+  }
+}

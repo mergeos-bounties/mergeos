@@ -1712,6 +1712,12 @@ test('signed-in mobile dashboard keeps nav, actions, and popovers phone-safe', a
   assert.match(cssSource, /\.dashboard-shell \.admin-dispute-item-actions,[\s\S]*\.dashboard-shell \.admin-ops-row-actions\s*\{[\s\S]*display: flex !important;[\s\S]*flex-wrap: wrap;/);
   assert.match(cssSource, /\.project-flow-main\s*\{[\s\S]*padding-bottom: calc\(var\(--project-action-bar-height\) \+ 34px \+ env\(safe-area-inset-bottom\)\) !important;/);
   assert.match(cssSource, /\.project-step-list\s*\{[\s\S]*grid-template-columns: repeat\(4, minmax\(118px, 1fr\)\);[\s\S]*overflow-x: auto !important;/);
+  assert.match(cssSource, /Project wizard mobile final compact pass: make the logged-in creation flow feel like an app, not stacked desktop panels/);
+  assert.match(cssSource, /\/\* Project wizard mobile final compact pass:[\s\S]*\.project-flow-shell \.project-flow-title\s*\{[\s\S]*display: none !important;/);
+  assert.match(cssSource, /\/\* Project wizard mobile final compact pass:[\s\S]*\.project-flow-shell \.project-step-list\s*\{[\s\S]*grid-auto-flow: column !important;[\s\S]*overflow-x: auto !important;/);
+  assert.match(cssSource, /\/\* Project wizard mobile final compact pass:[\s\S]*\.project-flow-shell \.wizard-validation-banner\s*\{[\s\S]*max-height: 132px !important;/);
+  assert.match(cssSource, /\/\* Project wizard mobile final compact pass:[\s\S]*\.project-flow-shell \.quality-check-list\s*\{[\s\S]*display: none !important;/);
+  assert.match(cssSource, /\/\* Project wizard mobile final compact pass:[\s\S]*\.project-flow-shell \.project-step-actions\s*\{[\s\S]*min-height: var\(--project-mobile-action-height\) !important;/);
   assert.match(cssSource, /@media \(max-width: 430px\)[\s\S]*\.dashboard-shell \.admin-dispute-lane,[\s\S]*\.dashboard-shell \.admin-ops-row\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\);/);
   assert.match(appSource, /dashboardNotificationMenuPlacement\.value = 'mobile-sheet';/);
   assert.match(appSource, /window\.visualViewport\?\.addEventListener\('resize', updateDashboardNotificationMenuPosition\);/);
