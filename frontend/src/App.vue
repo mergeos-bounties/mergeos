@@ -27494,7 +27494,7 @@ function toTitleLabel(value = '') {
     .filter(Boolean)
     .map((word) => {
       const lower = word.toLowerCase();
-      if (['ai', 'api', 'qa', 'ui', 'ux', 'go'].includes(lower)) return lower.toUpperCase();
+      if (['ai', 'api', 'ceo', 'dao', 'idl', 'mrg', 'pr', 'qa', 'sdk', 'ui', 'url', 'ux', 'go'].includes(lower)) return lower.toUpperCase();
       if (lower === 'devops') return 'DevOps';
       return `${lower.charAt(0).toUpperCase()}${lower.slice(1)}`;
     })

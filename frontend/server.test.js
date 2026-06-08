@@ -1295,6 +1295,7 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /class="token-ceo-candidate-signals"/);
   assert.match(appSource, /proofSignalRows = signals\.slice\(0, 3\)\.map/);
   assert.match(appSource, /proofSignalExtra: Math\.max\(0, signals\.length - proofSignalRows\.length\)/);
+  assert.match(appSource, /\['ai', 'api', 'ceo', 'dao', 'idl', 'mrg', 'pr', 'qa', 'sdk', 'ui', 'url', 'ux', 'go'\]\.includes\(lower\)/);
   assert.match(appSource, /Approve memo/);
   assert.match(appSource, /Needs evidence/);
   assert.match(appSource, /Reject/);
