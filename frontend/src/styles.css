@@ -41476,6 +41476,53 @@ canvas {
   }
 }
 
+/* Token desktop CEO runway: get from launch thesis to CEO decision faster. */
+@media (min-width: 981px) {
+  .token-page .token-shell {
+    gap: 18px !important;
+  }
+
+  .token-page .token-hero {
+    align-items: center !important;
+    min-height: 0 !important;
+    padding-block: clamp(34px, 4.2vw, 58px) clamp(18px, 2vw, 28px) !important;
+  }
+
+  .token-page .token-hero-copy h1 {
+    max-width: 820px !important;
+    font-size: clamp(38px, 3.35vw, 50px) !important;
+    line-height: 1.04 !important;
+  }
+
+  .token-page .token-hero-copy p {
+    max-width: 700px !important;
+    margin-top: 14px !important;
+  }
+
+  .token-page .token-status-panel {
+    max-width: 430px !important;
+    padding: 20px !important;
+  }
+
+  .token-page .token-status-panel .token-stat-grid,
+  .token-page .token-status-panel .public-stat-grid {
+    gap: 10px !important;
+  }
+
+  .token-page .token-ceo-research-panel {
+    padding: 18px 20px !important;
+  }
+
+  .token-page .token-ceo-research-head h2 {
+    font-size: clamp(24px, 2.2vw, 32px) !important;
+  }
+
+  .token-page .token-ceo-decision-strip,
+  .token-page .token-ceo-queue-stats {
+    gap: 7px !important;
+  }
+}
+
 @media (max-width: 430px) {
   .token-page {
     width: 100% !important;

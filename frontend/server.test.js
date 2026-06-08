@@ -1671,6 +1671,11 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(cssSource, /\/\* Token universal phone lock:[\s\S]*\.token-page \.token-whitepaper-reader,[\s\S]*\.token-page \.token-whitepaper-copy,[\s\S]*\.token-page \.token-whitepaper-brief/);
   assert.match(cssSource, /\/\* Token universal phone lock:[\s\S]*\.token-page \.token-whitepaper-copy h2,[\s\S]*\.token-page \.token-whitepaper-copy p,[\s\S]*max-width: 330px !important;/);
   assert.match(cssSource, /\/\* Token universal phone lock:[\s\S]*\.token-page \.marketplace-actions,[\s\S]*\.token-page \.token-whitepaper-actions\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) !important;/);
+  assert.match(cssSource, /Token desktop CEO runway: get from launch thesis to CEO decision faster/);
+  assert.match(cssSource, /\/\* Token desktop CEO runway:[\s\S]*@media \(min-width: 981px\)[\s\S]*\.token-page \.token-shell\s*\{[\s\S]*gap: 18px !important;/);
+  assert.match(cssSource, /\/\* Token desktop CEO runway:[\s\S]*\.token-page \.token-hero\s*\{[\s\S]*padding-block: clamp\(34px, 4\.2vw, 58px\) clamp\(18px, 2vw, 28px\) !important;/);
+  assert.match(cssSource, /\/\* Token desktop CEO runway:[\s\S]*\.token-page \.token-hero-copy h1\s*\{[\s\S]*max-width: 820px !important;[\s\S]*font-size: clamp\(38px, 3\.35vw, 50px\) !important;/);
+  assert.match(cssSource, /\/\* Token desktop CEO runway:[\s\S]*\.token-page \.token-ceo-research-panel\s*\{[\s\S]*padding: 18px 20px !important;/);
   assert.match(cssSource, /\.token-proof-result small\s*\{[\s\S]*overflow: visible;[\s\S]*white-space: normal;[\s\S]*overflow-wrap: anywhere;/);
   assert.match(cssSource, /\.token-whitepaper-thesis p\s*\{[\s\S]*-webkit-line-clamp: 2;/);
   assert.match(cssSource, /Whitepaper mobile skim: keep the route decisive before the full reader begins/);
