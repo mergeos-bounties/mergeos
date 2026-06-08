@@ -45577,3 +45577,61 @@ canvas {
     white-space: nowrap !important;
   }
 }
+
+/* Home mobile product proof grid: keep all four MergeOS primitives visible without making the page feel long. */
+@media (max-width: 760px) {
+  .public-home-copy {
+    gap: 8px !important;
+  }
+
+  .public-home-copy > p {
+    display: block !important;
+    margin-top: 4px !important;
+    max-width: 35rem !important;
+    overflow: visible !important;
+    font-size: 12px !important;
+    line-height: 1.31 !important;
+  }
+
+  .home-definition-strip {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+    margin-top: 8px !important;
+  }
+
+  .home-definition-strip article,
+  .home-definition-strip article:nth-child(n + 4) {
+    display: grid !important;
+    min-height: 66px !important;
+    grid-template-columns: 22px minmax(0, 1fr) !important;
+    gap: 6px !important;
+    overflow: hidden !important;
+    padding: 7px !important;
+  }
+
+  .home-definition-icon {
+    width: 22px !important;
+    height: 22px !important;
+    border-radius: 7px !important;
+  }
+
+  .home-definition-strip strong,
+  .home-definition-strip small {
+    display: -webkit-box !important;
+    overflow: hidden !important;
+    -webkit-box-orient: vertical !important;
+  }
+
+  .home-definition-strip strong {
+    -webkit-line-clamp: 1 !important;
+    font-size: 10.5px !important;
+    line-height: 1.08 !important;
+  }
+
+  .home-definition-strip small {
+    -webkit-line-clamp: 2 !important;
+    font-size: 9px !important;
+    line-height: 1.13 !important;
+  }
+}

@@ -954,6 +954,10 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.match(cssSource, /\/\* Home description fit pass:[\s\S]*\.public-home-copy > p\s*\{[\s\S]*max-width: 60ch !important;[\s\S]*font-weight: 680 !important;/);
   assert.match(cssSource, /\/\* Home description fit pass:[\s\S]*@media \(max-width: 760px\)[\s\S]*\.public-home-copy > p\s*\{[\s\S]*-webkit-line-clamp: unset !important;/);
   assert.match(cssSource, /\/\* Home description fit pass:[\s\S]*@media \(max-width: 430px\)[\s\S]*\.home-definition-strip article:nth-child\(n \+ 4\)\s*\{[\s\S]*display: grid !important;/);
+  assert.match(cssSource, /Home mobile product proof grid: keep all four MergeOS primitives visible without making the page feel long/);
+  assert.match(cssSource, /\/\* Home mobile product proof grid:[\s\S]*\.home-definition-strip\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\) !important;/);
+  assert.match(cssSource, /\/\* Home mobile product proof grid:[\s\S]*\.home-definition-strip article,[\s\S]*\.home-definition-strip article:nth-child\(n \+ 4\)\s*\{[\s\S]*display: grid !important;[\s\S]*min-height: 66px !important;/);
+  assert.match(cssSource, /\/\* Home mobile product proof grid:[\s\S]*\.home-definition-strip small\s*\{[\s\S]*-webkit-line-clamp: 2 !important;[\s\S]*font-size: 9px !important;/);
 });
 
 test('frontend system exposes required public pages and dashboard roles', async () => {
