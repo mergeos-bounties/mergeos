@@ -1619,6 +1619,11 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(cssSource, /Token CEO mobile first decision: put candidate actions inside the first viewport/);
   assert.match(cssSource, /\/\* Token CEO mobile first decision:[\s\S]*\.token-hero\s*\{[\s\S]*gap: 4px !important;/);
   assert.match(cssSource, /\/\* Token CEO mobile first decision:[\s\S]*\.token-ceo-decision-strip\s*\{[\s\S]*display: none !important;/);
+  assert.match(cssSource, /Token CEO mobile launch desk pass: make airdrop\/presale feel like a short CEO decision/);
+  assert.match(cssSource, /\/\* Token CEO mobile launch desk pass:[\s\S]*\.token-page-airdrop \.token-hero,[\s\S]*\.token-page-presale \.token-hero\s*\{[\s\S]*display: block !important;[\s\S]*padding: 10px !important;/);
+  assert.match(cssSource, /\/\* Token CEO mobile launch desk pass:[\s\S]*\.token-page-airdrop \.token-status-panel,[\s\S]*\.token-page-presale \.token-status-panel\s*\{[\s\S]*display: none !important;/);
+  assert.match(cssSource, /\/\* Token CEO mobile launch desk pass:[\s\S]*\.token-page-airdrop \.token-hero-copy p,[\s\S]*\.token-page-presale \.token-hero-copy p\s*\{[\s\S]*-webkit-line-clamp: 2 !important;/);
+  assert.match(cssSource, /\/\* Token CEO mobile launch desk pass:[\s\S]*\.token-page-airdrop \.token-ceo-launch-context,[\s\S]*\.token-page-presale \.token-ceo-launch-context,/);
   assert.match(cssSource, /\.token-proof-result small\s*\{[\s\S]*overflow: visible;[\s\S]*white-space: normal;[\s\S]*overflow-wrap: anywhere;/);
   assert.match(cssSource, /\.token-whitepaper-thesis p\s*\{[\s\S]*-webkit-line-clamp: 2;/);
   assert.match(cssSource, /Whitepaper mobile skim: keep the route decisive before the full reader begins/);

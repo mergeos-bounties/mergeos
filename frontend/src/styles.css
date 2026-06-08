@@ -40949,3 +40949,93 @@ canvas {
     display: none !important;
   }
 }
+
+/* Token CEO mobile launch desk pass: make airdrop/presale feel like a short CEO decision, not a long token brochure. */
+@media (max-width: 620px) {
+  .token-page-airdrop .token-hero,
+  .token-page-presale .token-hero {
+    display: block !important;
+    min-height: 0 !important;
+    margin-top: 4px !important;
+    padding: 10px !important;
+  }
+
+  .token-page-airdrop .token-hero-copy,
+  .token-page-presale .token-hero-copy {
+    gap: 8px !important;
+  }
+
+  .token-page-airdrop .token-hero-copy .marketplace-eyebrow,
+  .token-page-presale .token-hero-copy .marketplace-eyebrow {
+    display: none !important;
+  }
+
+  .token-page-airdrop .token-hero-copy .ledger-title-row,
+  .token-page-presale .token-hero-copy .ledger-title-row {
+    gap: 8px !important;
+  }
+
+  .token-page-airdrop .token-hero-copy h1,
+  .token-page-presale .token-hero-copy h1 {
+    font-size: clamp(24px, 7.4vw, 31px) !important;
+    line-height: 1.02 !important;
+  }
+
+  .token-page-airdrop .token-hero-copy p,
+  .token-page-presale .token-hero-copy p {
+    display: -webkit-box !important;
+    margin-top: 0 !important;
+    overflow: hidden !important;
+    font-size: 12px !important;
+    line-height: 1.34 !important;
+    -webkit-box-orient: vertical !important;
+    -webkit-line-clamp: 2 !important;
+  }
+
+  .token-page-airdrop .token-hero .marketplace-actions,
+  .token-page-presale .token-hero .marketplace-actions {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    gap: 7px !important;
+    margin-top: 0 !important;
+  }
+
+  .token-page-airdrop .token-hero .marketplace-actions .large,
+  .token-page-presale .token-hero .marketplace-actions .large {
+    min-height: 38px !important;
+    border-radius: 8px !important;
+    padding-inline: 9px !important;
+    font-size: 11px !important;
+  }
+
+  .token-page-airdrop .token-status-panel,
+  .token-page-presale .token-status-panel {
+    display: none !important;
+  }
+
+  .token-page-airdrop .token-hero-ceo-strip,
+  .token-page-presale .token-hero-ceo-strip {
+    margin-top: 0 !important;
+  }
+
+  .token-page-airdrop .token-ceo-research-panel,
+  .token-page-presale .token-ceo-research-panel {
+    margin-top: 8px !important;
+  }
+
+  .token-page-airdrop .token-ceo-brief-card,
+  .token-page-presale .token-ceo-brief-card {
+    padding: 8px !important;
+  }
+
+  .token-page-airdrop .token-ceo-brief-copy,
+  .token-page-presale .token-ceo-brief-copy {
+    gap: 5px !important;
+  }
+
+  .token-page-airdrop .token-ceo-launch-context,
+  .token-page-presale .token-ceo-launch-context,
+  .token-page-airdrop .token-ceo-decision-context,
+  .token-page-presale .token-ceo-decision-context {
+    display: none !important;
+  }
+}
