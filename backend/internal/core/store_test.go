@@ -1837,8 +1837,24 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 		candidates.Candidates[0].DecisionOptions[0].Key != "approve" ||
 		candidates.Candidates[0].DecisionOptions[1].Key != "needs_evidence" ||
 		candidates.Candidates[0].DecisionOptions[2].Key != "reject" ||
+		!strings.Contains(candidates.Candidates[0].DecisionOptions[0].ProofPolicy, "repo task evidence") ||
+		strings.Contains(candidates.Candidates[0].DecisionOptions[0].ProofPolicy, "utility proof") ||
 		candidates.Candidates[0].ProofPolicy == "" {
 		t.Fatalf("public token launch candidates rows invalid: %#v", candidates.Candidates)
+	}
+	presaleCandidatesResp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(presaleCandidatesResp, httptest.NewRequest(http.MethodGet, "/api/public/token/launch-candidates?launch_type=presale", nil))
+	if presaleCandidatesResp.Code != http.StatusOK {
+		t.Fatalf("public presale launch candidates status = %d, body = %s", presaleCandidatesResp.Code, presaleCandidatesResp.Body.String())
+	}
+	var presaleCandidates PublicTokenLaunchCandidatesResponse
+	if err := json.Unmarshal(presaleCandidatesResp.Body.Bytes(), &presaleCandidates); err != nil {
+		t.Fatal(err)
+	}
+	if len(presaleCandidates.Candidates) < 1 ||
+		len(presaleCandidates.Candidates[0].DecisionOptions) != 3 ||
+		!strings.Contains(presaleCandidates.Candidates[0].DecisionOptions[0].ProofPolicy, "utility proof") {
+		t.Fatalf("public presale launch candidates rows invalid: %#v", presaleCandidates.Candidates)
 	}
 	invalidCandidatesResp := httptest.NewRecorder()
 	server.Routes().ServeHTTP(invalidCandidatesResp, httptest.NewRequest(http.MethodGet, "/api/public/token/launch-candidates?launch_type=ico", nil))

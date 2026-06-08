@@ -594,6 +594,7 @@ func (s *Store) PublicTokenLaunchCandidates(launchTypeFilter string) PublicToken
 		}
 		proofSignals := tokenLaunchCandidateSignals(project, projectBounties)
 		researchScore := tokenLaunchCandidateResearchScore(project, proofSignals)
+		decisionLaunchType := tokenLaunchCandidateDecisionLaunchType(recommendedTypes, launchTypeFilter)
 		candidate := PublicTokenLaunchCandidate{
 			CandidateID:            "tlc_" + project.ID,
 			ProjectID:              project.ID,
@@ -606,7 +607,7 @@ func (s *Store) PublicTokenLaunchCandidates(launchTypeFilter string) PublicToken
 			AcceptedTaskCount:      project.AcceptedTaskCount,
 			ResearchScore:          researchScore,
 			ProofSignals:           proofSignals,
-			DecisionOptions:        tokenLaunchCandidateDecisionOptions(recommendedTypes, researchScore),
+			DecisionOptions:        tokenLaunchCandidateDecisionOptions(decisionLaunchType, researchScore),
 			GateSummary:            fmt.Sprintf("%d open tasks, %d accepted tasks, %d proof signals", project.OpenTaskCount, project.AcceptedTaskCount, len(proofSignals)),
 			ProofPolicy:            tokenLaunchCandidateProofPolicy(projectBounties),
 			MarketplaceURL:         "/marketplace",
@@ -1178,10 +1179,20 @@ func tokenLaunchCandidateResearchScore(project *MarketplaceProject, proofSignals
 	return score
 }
 
-func tokenLaunchCandidateDecisionOptions(recommendedTypes []string, score int) []TokenLaunchCandidateDecisionOption {
+func tokenLaunchCandidateDecisionLaunchType(recommendedTypes []string, launchTypeFilter string) string {
+	if launchTypeFilter == "airdrop" || launchTypeFilter == "presale" {
+		return launchTypeFilter
+	}
 	launchType := "airdrop"
 	if stringSliceContains(recommendedTypes, "presale") {
 		launchType = "presale"
+	}
+	return launchType
+}
+
+func tokenLaunchCandidateDecisionOptions(launchType string, score int) []TokenLaunchCandidateDecisionOption {
+	if launchType != "presale" {
+		launchType = "airdrop"
 	}
 	launchLabel := launchType
 	approveLabel := "Draft approve"
