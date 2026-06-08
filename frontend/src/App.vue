@@ -12955,10 +12955,15 @@ const tokenCeoDecisionRows = computed(() => {
     { label: 'Approve', value: 'Reserve receipt' },
   ];
 });
+const tokenCeoCandidateLaunchType = computed(() => {
+  const filter = tokenLaunchCandidatesData.value?.launch_type_filter;
+  if (filter === 'airdrop' || filter === 'presale') return filter;
+  return publicPage.value === 'presale' ? 'presale' : 'airdrop';
+});
 const tokenCeoQueueStatRows = computed(() => {
   const stats = tokenLaunchBriefsData.value?.stats || {};
   const candidateStats = tokenLaunchCandidatesData.value?.stats || {};
-  const currentType = publicPage.value === 'presale' ? 'presale' : 'airdrop';
+  const currentType = tokenCeoCandidateLaunchType.value;
   const currentCount = Number(currentType === 'presale' ? stats.presale_count : stats.airdrop_count) || tokenLaunchBriefProofCount.value || 0;
   const candidateCount = Number(currentType === 'presale' ? candidateStats.presale_count : candidateStats.airdrop_count)
     || tokenCeoCandidateRows.value.length
@@ -13237,7 +13242,7 @@ const tokenCeoCandidateRows = computed(() => {
     ? tokenLaunchCandidatesData.value.candidates
     : [];
   if (apiCandidates.length) {
-    const launchType = publicPage.value === 'presale' ? 'presale' : 'airdrop';
+    const launchType = tokenCeoCandidateLaunchType.value;
     return apiCandidates.slice(0, 3).map((candidate) => {
       const sourceUrl = String(candidate.research_source || '').trim();
       const signals = Array.isArray(candidate.proof_signals) ? candidate.proof_signals : [];
@@ -13291,7 +13296,7 @@ const tokenCeoCandidateRows = computed(() => {
   }
   const projects = Array.isArray(marketplaceData.value.projects) ? marketplaceData.value.projects : [];
   const bounties = Array.isArray(marketplaceData.value.bounties) ? marketplaceData.value.bounties : [];
-  const launchType = publicPage.value === 'presale' ? 'presale' : 'airdrop';
+  const launchType = tokenCeoCandidateLaunchType.value;
   return projects.slice(0, 3).map((project) => {
     const projectBounties = bounties.filter((bounty) => bounty.project_id === project.id);
     const firstBounty = projectBounties[0] || {};

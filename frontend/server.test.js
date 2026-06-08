@@ -1377,12 +1377,16 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /if \(page === 'airdrop' \|\| page === 'presale'\) void loadTokenLaunchCandidates\(page\)/);
   assert.match(appSource, /const candidatePath = publicPage\.value === 'airdrop' \|\| publicPage\.value === 'presale'/);
   assert.match(appSource, /const tokenCeoDecisionRows = computed/);
+  assert.match(appSource, /const tokenCeoCandidateLaunchType = computed/);
+  assert.match(appSource, /tokenLaunchCandidatesData\.value\?\.launch_type_filter/);
+  assert.match(appSource, /if \(filter === 'airdrop' \|\| filter === 'presale'\) return filter/);
   assert.match(appSource, /const tokenCeoQueueStatRows = computed/);
   assert.match(appSource, /Ready to open/);
   assert.match(appSource, /candidateStats\.ready_count/);
   assert.match(appSource, /const tokenCeoLiveQueueRows = computed/);
   assert.match(appSource, /const tokenCeoLiveEmptyCopy = computed/);
   assert.match(appSource, /const tokenCeoCandidateRows = computed/);
+  assert.match(appSource, /const launchType = tokenCeoCandidateLaunchType\.value/);
   assert.match(appSource, /const tokenLaunchCandidatesData = ref/);
   assert.match(appSource, /publicApi\(tokenLaunchCandidateAPIPath\(launchType\)\)/);
   assert.match(appSource, /publicApi\(candidatePath\)/);
