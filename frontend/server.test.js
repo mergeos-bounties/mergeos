@@ -784,9 +784,10 @@ test('live feed exposes the full AI workflow trace', async () => {
 
 test('public menus and signed-in mobile layout keep reachable compact surfaces', async () => {
   const cssSource = await fs.readFile(new URL('./src/styles.css', import.meta.url), 'utf-8');
+  const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
 
   assert.match(cssSource, /Public menu \+ signed-in mobile stabilization owner/);
-  assert.match(cssSource, /\.nav-menu\.open::after\s*\{[\s\S]*height: 132px;/);
+  assert.match(cssSource, /\.nav-menu\.open::after\s*\{[\s\S]*height: 34px;/);
   assert.match(cssSource, /\.nav-context-menu\s*\{[\s\S]*z-index: 430;[\s\S]*overflow: hidden;/);
   assert.match(cssSource, /\.product-menu\s*\{[\s\S]*width: min\(1180px, calc\(100vw - 32px\)\);/);
   assert.match(cssSource, /\.hero-section\s*\{[\s\S]*min-height: calc\(100dvh - 82px\);/);
@@ -803,6 +804,8 @@ test('public menus and signed-in mobile layout keep reachable compact surfaces',
   assert.match(cssSource, /\/\* Public mobile nav fit:[\s\S]*\.home-navbar \.nav-inner\s*\{[\s\S]*display: grid !important;[\s\S]*grid-template-columns: minmax\(0, 1fr\) auto auto !important;/);
   assert.match(cssSource, /\/\* Public mobile nav fit:[\s\S]*\.home-navbar \.public-nav-actions\s*\{[\s\S]*grid-template-columns: 38px 38px !important;[\s\S]*margin-right: 42px !important;/);
   assert.match(cssSource, /\/\* Public mobile nav fit:[\s\S]*\.home-navbar \.account-icon-button > svg \+ svg,[\s\S]*\.home-navbar \.account-icon-button > \.profile-avatar \+ svg\s*\{[\s\S]*display: none !important;/);
+  assert.doesNotMatch(appSource, /if \(pinnedNavMenu\.value && pinnedNavMenu\.value === activeNavMenu\.value\) return;/);
+  assert.match(appSource, /activeNavMenu\.value = '';[\s\S]*pinnedNavMenu\.value = '';[\s\S]*}, 180\);/);
 });
 
 test('public home keeps a short decision-screen rhythm', async () => {
@@ -968,6 +971,9 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.match(cssSource, /@media \(max-width: 760px\)[\s\S]*html,[\s\S]*body,[\s\S]*#app\s*\{[\s\S]*overflow-x: clip !important;/);
   assert.match(cssSource, /@media \(max-width: 760px\)[\s\S]*\.public-home-hero,[\s\S]*\.public-home-copy\s*\{[\s\S]*width: calc\(100vw - 24px\) !important;/);
   assert.match(cssSource, /@media \(max-width: 760px\)[\s\S]*\.project-flow-shell \.project-step-actions,[\s\S]*\.project-flow-shell \.funding-actions\s*\{[\s\S]*position: fixed !important;/);
+  assert.match(cssSource, /Home product polish: make the first screen feel like a product cockpit/);
+  assert.match(cssSource, /\.public-home-page \.home-container\.public-home-layout\s*\{[\s\S]*width: min\(1180px, calc\(100vw - 48px\)\) !important;[\s\S]*grid-template-columns: minmax\(0, 0\.96fr\) minmax\(340px, 420px\) !important;/);
+  assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.public-home-page \.home-container\.public-home-layout,[\s\S]*\.public-home-hero,[\s\S]*\.public-home-copy,[\s\S]*\.home-definition-strip,[\s\S]*\.public-home-copy \.marketplace-actions,[\s\S]*\.home-mergeide-inline-link\s*\{[\s\S]*width: calc\(100vw - 24px\) !important;/);
 });
 
 test('frontend system exposes required public pages and dashboard roles', async () => {
@@ -1231,11 +1237,13 @@ test('auto-release exposes payout output contracts in schema and dashboard', asy
   assert.match(appSource, /v-if="dashboardAutoReleaseControl\.contractRows\.length"/);
 });
 
-test('public mega menu keeps a large hover bridge to its fixed panel', async () => {
+test('public mega menu closes after a bounded hover bridge', async () => {
   const cssSource = await fs.readFile(new URL('./src/styles.css', import.meta.url), 'utf-8');
 
-  assert.match(cssSource, /\.nav-menu\.open::after\s*\{[\s\S]*left: -72px;[\s\S]*right: -72px;[\s\S]*height: 108px;/);
-  assert.match(cssSource, /\.nav-context-menu::before\s*\{[\s\S]*left: -36px;[\s\S]*right: -36px;[\s\S]*top: -108px;[\s\S]*height: 108px;/);
+  assert.match(cssSource, /\.nav-menu\.open::after\s*\{[\s\S]*left: -18px;[\s\S]*right: -18px;[\s\S]*height: 32px;/);
+  assert.match(cssSource, /@media \(min-width: 981px\)[\s\S]*\.nav-menu\.open::after\s*\{[\s\S]*height: 34px;[\s\S]*left: -22px;[\s\S]*right: -22px;/);
+  assert.match(cssSource, /\.nav-context-menu::before\s*\{[\s\S]*left: -16px;[\s\S]*right: -16px;[\s\S]*top: -34px;[\s\S]*height: 34px;/);
+  assert.match(cssSource, /@media \(min-width: 981px\)[\s\S]*\.nav-context-menu::before\s*\{[\s\S]*top: -36px;[\s\S]*height: 36px;[\s\S]*left: -18px;[\s\S]*right: -18px;/);
   assert.match(cssSource, /@media \(max-width: 700px\)[\s\S]*\.nav-context-menu\s*\{[\s\S]*overflow-y: auto;[\s\S]*overscroll-behavior: contain;/);
   assert.match(cssSource, /\.public-nav-actions \.locale-context-menu,[\s\S]*\.project-flow-actions \.locale-context-menu\s*\{[\s\S]*position: fixed;[\s\S]*max-height: min\(72dvh, 420px\);[\s\S]*overflow-y: auto;/);
 });

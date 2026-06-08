@@ -218,11 +218,11 @@ svg {
 .nav-menu.open::after {
   content: "";
   position: absolute;
-  left: -72px;
-  right: -72px;
+  left: -18px;
+  right: -18px;
   top: 100%;
   z-index: 255;
-  height: 108px;
+  height: 32px;
   pointer-events: auto;
 }
 
@@ -265,10 +265,10 @@ svg {
 .nav-context-menu::before {
   content: "";
   position: absolute;
-  left: -36px;
-  right: -36px;
-  top: -108px;
-  height: 108px;
+  left: -16px;
+  right: -16px;
+  top: -34px;
+  height: 34px;
   pointer-events: auto;
 }
 
@@ -33741,9 +33741,9 @@ canvas {
 
   .nav-menu.open::after {
     top: 100%;
-    height: 132px;
-    left: -96px;
-    right: -96px;
+    height: 34px;
+    left: -22px;
+    right: -22px;
   }
 
   .nav-context-menu {
@@ -33754,10 +33754,10 @@ canvas {
   }
 
   .nav-context-menu::before {
-    top: -132px;
-    height: 132px;
-    left: -64px;
-    right: -64px;
+    top: -36px;
+    height: 36px;
+    left: -18px;
+    right: -18px;
   }
 
   .nav-context-panel,
@@ -46427,5 +46427,210 @@ canvas {
   .project-flow-shell .project-step-actions > div,
   .project-flow-shell .funding-actions > div {
     grid-template-columns: minmax(0, 0.86fr) minmax(0, 1.14fr) !important;
+  }
+}
+
+/* Home product polish: make the first screen feel like a product cockpit,
+   with bounded text, compact proof, and no stuck mega menu overlay. */
+.public-home-page .home-container.public-home-layout {
+  width: min(1180px, calc(100vw - 48px)) !important;
+  max-width: 1180px !important;
+  min-height: calc(100dvh - 76px) !important;
+  grid-template-columns: minmax(0, 0.96fr) minmax(340px, 420px) !important;
+  align-items: center !important;
+  gap: clamp(28px, 4vw, 56px) !important;
+  padding-block: clamp(34px, 5dvh, 58px) clamp(26px, 4dvh, 46px) !important;
+}
+
+.public-home-hero,
+.public-home-copy {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+}
+
+.public-home-copy {
+  gap: 14px !important;
+}
+
+.public-home-copy h1 {
+  max-width: 10.6ch !important;
+  font-size: clamp(54px, 6.1vw, 86px) !important;
+  line-height: 0.97 !important;
+}
+
+.public-home-copy > p {
+  display: block !important;
+  max-width: 63ch !important;
+  color: #26362f !important;
+  font-size: clamp(15px, 1.35vw, 18px) !important;
+  line-height: 1.42 !important;
+  font-weight: 720 !important;
+  white-space: normal !important;
+  overflow-wrap: break-word !important;
+}
+
+.home-definition-strip {
+  width: 100% !important;
+  max-width: 760px !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+  margin-top: 4px !important;
+}
+
+.home-definition-strip article {
+  min-height: 78px !important;
+  grid-template-columns: 34px minmax(0, 1fr) !important;
+  align-items: start !important;
+  border-color: rgba(15, 118, 110, 0.13) !important;
+  background: rgba(255, 255, 255, 0.86) !important;
+  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.045) !important;
+  padding: 12px !important;
+}
+
+.home-definition-strip strong {
+  color: #07130f !important;
+  font-size: 13px !important;
+  line-height: 1.12 !important;
+  font-weight: 930 !important;
+}
+
+.home-definition-strip small {
+  display: -webkit-box !important;
+  margin-top: 4px !important;
+  overflow: hidden !important;
+  color: #465b53 !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 2 !important;
+  font-size: 11px !important;
+  line-height: 1.28 !important;
+  font-weight: 760 !important;
+}
+
+.public-home-copy .marketplace-actions {
+  width: min(100%, 610px) !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  gap: 10px !important;
+  margin-top: 2px !important;
+}
+
+.public-home-copy .marketplace-actions .large {
+  min-width: 0 !important;
+  min-height: 48px !important;
+  border-radius: 9px !important;
+}
+
+.home-mergeide-inline-link {
+  width: min(100%, 610px) !important;
+  min-height: 40px !important;
+  border: 1px solid rgba(37, 99, 235, 0.12) !important;
+  border-radius: 9px !important;
+  background: rgba(255, 255, 255, 0.82) !important;
+}
+
+.home-executive-panel {
+  align-self: center !important;
+  border-color: rgba(15, 118, 110, 0.14) !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(246, 253, 250, 0.92)),
+    #ffffff !important;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.11) !important;
+  padding: 18px !important;
+}
+
+.home-executive-panel-head {
+  grid-template-columns: 40px minmax(0, 1fr) !important;
+  align-items: center !important;
+}
+
+.home-executive-panel-head strong {
+  font-size: 17px !important;
+  line-height: 1.15 !important;
+}
+
+.home-executive-stat-grid {
+  gap: 9px !important;
+}
+
+.home-executive-stat-grid article {
+  min-height: 72px !important;
+  padding: 10px !important;
+}
+
+.home-executive-flow,
+.home-executive-system {
+  gap: 8px !important;
+}
+
+@media (max-width: 980px) {
+  .public-home-page .home-container.public-home-layout {
+    width: min(720px, calc(100vw - 28px)) !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    min-height: auto !important;
+    padding-block: 24px 28px !important;
+  }
+
+  .home-executive-panel {
+    display: none !important;
+  }
+}
+
+@media (max-width: 620px) {
+  .public-home-page .home-container.public-home-layout,
+  .public-home-hero,
+  .public-home-copy,
+  .home-definition-strip,
+  .public-home-copy .marketplace-actions,
+  .home-mergeide-inline-link {
+    width: calc(100vw - 24px) !important;
+    max-width: calc(100vw - 24px) !important;
+  }
+
+  .public-home-page .home-container.public-home-layout {
+    padding-block: 14px 18px !important;
+  }
+
+  .public-home-copy {
+    gap: 10px !important;
+  }
+
+  .public-home-copy h1 {
+    max-width: 10.2ch !important;
+    font-size: clamp(38px, 12.6vw, 50px) !important;
+    line-height: 0.95 !important;
+  }
+
+  .public-home-copy > p {
+    display: block !important;
+    max-width: 100% !important;
+    overflow: visible !important;
+    font-size: 12px !important;
+    line-height: 1.28 !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  .home-definition-strip {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 7px !important;
+  }
+
+  .home-definition-strip article {
+    min-height: 58px !important;
+    grid-template-columns: 26px minmax(0, 1fr) !important;
+    padding: 8px !important;
+  }
+
+  .home-definition-strip strong {
+    font-size: 11px !important;
+  }
+
+  .home-definition-strip small {
+    -webkit-line-clamp: 2 !important;
+    font-size: 9.5px !important;
+  }
+
+  .public-home-copy .marketplace-actions {
+    grid-template-columns: minmax(0, 1fr) !important;
   }
 }

@@ -25912,7 +25912,6 @@ function closeNavContextMenu() {
 
 function scheduleNavContextClose() {
   cancelNavContextClose();
-  if (pinnedNavMenu.value && pinnedNavMenu.value === activeNavMenu.value) return;
   if (!hasWindow) {
     closeNavContextMenu();
     return;
@@ -25920,7 +25919,8 @@ function scheduleNavContextClose() {
   navContextCloseTimer = window.setTimeout(() => {
     navContextCloseTimer = 0;
     activeNavMenu.value = '';
-  }, 900);
+    pinnedNavMenu.value = '';
+  }, 180);
 }
 
 function cancelNavContextClose() {
