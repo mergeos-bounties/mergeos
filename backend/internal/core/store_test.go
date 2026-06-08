@@ -1795,7 +1795,14 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 	if len(publicLaunchBriefs.Briefs) != 1 || publicLaunchBriefs.Briefs[0].BriefID != launchBrief.BriefID || publicLaunchBriefs.Briefs[0].LaunchType != "airdrop" {
 		t.Fatalf("public token launch briefs rows invalid: %#v", publicLaunchBriefs.Briefs)
 	}
-	if publicLaunchBriefs.Briefs[0].ResearchSource != "https://github.com/mergeos-bounties/mergeos" || publicLaunchBriefs.Briefs[0].GateSummary != "4/4 gates ready for CEO review" || !stringSliceContains(publicLaunchBriefs.Briefs[0].ResearchSignals, "research_source") || !strings.Contains(publicLaunchBriefs.Briefs[0].ProjectSummary, "open earned MRG airdrop missions") {
+	if publicLaunchBriefs.Briefs[0].ResearchSource != "https://github.com/mergeos-bounties/mergeos" ||
+		publicLaunchBriefs.Briefs[0].GateSummary != "4/4 gates ready for CEO review" ||
+		!stringSliceContains(publicLaunchBriefs.Briefs[0].ResearchSignals, "research_source") ||
+		!strings.Contains(publicLaunchBriefs.Briefs[0].ProjectSummary, "open earned MRG airdrop missions") ||
+		!strings.Contains(publicLaunchBriefs.Briefs[0].AllocationPolicy, "Cap earned claims") ||
+		!strings.Contains(publicLaunchBriefs.Briefs[0].ProofPolicy, "Require PR") ||
+		!strings.Contains(publicLaunchBriefs.Briefs[0].WalletPolicy, "Solana wallet uniqueness") ||
+		!strings.Contains(publicLaunchBriefs.Briefs[0].RiskNotes, "bot farming") {
 		t.Fatalf("public token launch brief missing CEO research fields: %#v", publicLaunchBriefs.Briefs[0])
 	}
 	filteredLaunchBriefsResp := httptest.NewRecorder()
@@ -1897,6 +1904,11 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 		!strings.Contains(standaloneCandidate.Brief, "open an MRG presale window") ||
 		standaloneCandidate.ReadinessGates[0].State != "review" ||
 		!stringSliceContains(standaloneCandidate.ProofSignals, "ceo_submitted_brief") ||
+		!strings.Contains(standaloneCandidate.ReadinessGates[0].Evidence, "Cap reserve by tier") ||
+		!strings.Contains(standaloneCandidate.ReadinessGates[1].Evidence, "Solana wallet ownership") ||
+		!strings.Contains(standaloneCandidate.ReadinessGates[2].Evidence, "funding receipt") ||
+		!strings.Contains(standaloneCandidate.ReadinessGates[2].Evidence, "reversal risk") ||
+		!strings.Contains(standaloneCandidate.ProofPolicy, "Require utility proof") ||
 		!strings.Contains(standaloneCandidate.ProofPolicy, "Solana contract proof") ||
 		!strings.Contains(standaloneCandidate.NextAction, "Review the submitted presale brief") {
 		t.Fatalf("standalone presale brief candidate invalid: %#v", standaloneCandidate)

@@ -152,19 +152,23 @@ type PublicTokenLaunchBriefsStats struct {
 }
 
 type PublicTokenLaunchBriefRecord struct {
-	BriefID         string    `json:"brief_id"`
-	LaunchType      string    `json:"launch_type"`
-	ProjectTitle    string    `json:"project_title"`
-	ProjectSummary  string    `json:"project_summary,omitempty"`
-	Decision        string    `json:"decision"`
-	GateSummary     string    `json:"gate_summary"`
-	GatesReference  string    `json:"gates_reference"`
-	ResearchSource  string    `json:"research_source"`
-	ResearchSignals []string  `json:"research_signals"`
-	LedgerSequence  int       `json:"ledger_sequence"`
-	EntryHash       string    `json:"entry_hash"`
-	LedgerProofURL  string    `json:"ledger_proof_url"`
-	CreatedAt       time.Time `json:"created_at"`
+	BriefID          string    `json:"brief_id"`
+	LaunchType       string    `json:"launch_type"`
+	ProjectTitle     string    `json:"project_title"`
+	ProjectSummary   string    `json:"project_summary,omitempty"`
+	AllocationPolicy string    `json:"allocation_policy,omitempty"`
+	ProofPolicy      string    `json:"proof_policy,omitempty"`
+	WalletPolicy     string    `json:"wallet_policy,omitempty"`
+	RiskNotes        string    `json:"risk_notes,omitempty"`
+	Decision         string    `json:"decision"`
+	GateSummary      string    `json:"gate_summary"`
+	GatesReference   string    `json:"gates_reference"`
+	ResearchSource   string    `json:"research_source"`
+	ResearchSignals  []string  `json:"research_signals"`
+	LedgerSequence   int       `json:"ledger_sequence"`
+	EntryHash        string    `json:"entry_hash"`
+	LedgerProofURL   string    `json:"ledger_proof_url"`
+	CreatedAt        time.Time `json:"created_at"`
 }
 
 type PublicTokenLaunchCandidatesResponse struct {
@@ -554,19 +558,23 @@ func (s *Store) PublicTokenLaunchBriefs(launchTypeFilter string) PublicTokenLaun
 			response.Stats.UpdatedAt = &updatedAt
 		}
 		record := PublicTokenLaunchBriefRecord{
-			BriefID:         fields["launch_brief"],
-			LaunchType:      launchType,
-			ProjectTitle:    fields["title"],
-			ProjectSummary:  fields["summary"],
-			Decision:        fields["decision"],
-			GateSummary:     fields["gate_summary"],
-			GatesReference:  fields["gates"],
-			ResearchSource:  fields["source"],
-			ResearchSignals: tokenWorkflowReferenceList(fields["signals"]),
-			LedgerSequence:  entry.Sequence,
-			EntryHash:       entry.EntryHash,
-			LedgerProofURL:  "/api/public/ledger/proof",
-			CreatedAt:       entry.CreatedAt,
+			BriefID:          fields["launch_brief"],
+			LaunchType:       launchType,
+			ProjectTitle:     fields["title"],
+			ProjectSummary:   fields["summary"],
+			AllocationPolicy: fields["allocation_policy"],
+			ProofPolicy:      fields["proof_policy"],
+			WalletPolicy:     fields["wallet_policy"],
+			RiskNotes:        fields["risk_notes"],
+			Decision:         fields["decision"],
+			GateSummary:      fields["gate_summary"],
+			GatesReference:   fields["gates"],
+			ResearchSource:   fields["source"],
+			ResearchSignals:  tokenWorkflowReferenceList(fields["signals"]),
+			LedgerSequence:   entry.Sequence,
+			EntryHash:        entry.EntryHash,
+			LedgerProofURL:   "/api/public/ledger/proof",
+			CreatedAt:        entry.CreatedAt,
 		}
 		if record.ResearchSource == "" {
 			record.ResearchSource = fields["repo"]
@@ -755,18 +763,46 @@ func tokenLaunchBriefCandidateReadinessGates(launchType string, brief PublicToke
 	if signalEvidence == "" {
 		signalEvidence = "No proof signals attached yet."
 	}
+	allocationEvidence := tokenLaunchBriefPolicyEvidence(brief.AllocationPolicy, gateSummary)
+	proofEvidence := tokenLaunchBriefPolicyEvidence(brief.ProofPolicy, signalEvidence)
+	walletEvidence := tokenLaunchBriefPolicyEvidence(brief.WalletPolicy, sourceEvidence)
+	riskEvidence := tokenLaunchBriefPolicyEvidence(brief.RiskNotes, "")
 	if launchType == "presale" {
+		contractEvidence := tokenLaunchBriefJoinEvidence(proofEvidence, riskEvidence)
 		return []TokenLaunchCandidateReadinessGate{
-			{Key: "utility", Label: "Utility", State: "review", Value: gateSummary, Evidence: signalEvidence},
-			{Key: "funding", Label: "Funding", State: "review", Value: "CEO brief queued", Evidence: sourceEvidence},
-			{Key: "contract", Label: "Contract", State: "review", Value: "Needs signoff", Evidence: "CEO must confirm Solana contract, receipt, wallet, and reserve policy."},
+			{Key: "utility", Label: "Utility", State: "review", Value: gateSummary, Evidence: allocationEvidence},
+			{Key: "funding", Label: "Funding", State: "review", Value: "CEO brief queued", Evidence: walletEvidence},
+			{Key: "contract", Label: "Contract", State: "review", Value: "Needs signoff", Evidence: contractEvidence},
 		}
 	}
+	antiBotEvidence := tokenLaunchBriefJoinEvidence(walletEvidence, riskEvidence)
 	return []TokenLaunchCandidateReadinessGate{
 		{Key: "demand", Label: "Demand", State: "review", Value: gateSummary, Evidence: sourceEvidence},
-		{Key: "proof", Label: "Proof", State: "review", Value: fmt.Sprintf("%d signals attached", len(proofSignals)), Evidence: signalEvidence},
-		{Key: "anti_bot", Label: "Anti-bot", State: "review", Value: "Needs signoff", Evidence: "CEO must confirm wallet uniqueness, claim limits, and proof review before opening."},
+		{Key: "proof", Label: "Proof", State: "review", Value: fmt.Sprintf("%d signals attached", len(proofSignals)), Evidence: proofEvidence},
+		{Key: "anti_bot", Label: "Anti-bot", State: "review", Value: "Needs signoff", Evidence: antiBotEvidence},
 	}
+}
+
+func tokenLaunchBriefPolicyEvidence(primary, fallback string) string {
+	if trimmed := strings.TrimSpace(primary); trimmed != "" {
+		return trimmed
+	}
+	if trimmed := strings.TrimSpace(fallback); trimmed != "" {
+		return trimmed
+	}
+	return "CEO policy evidence pending."
+}
+
+func tokenLaunchBriefJoinEvidence(first, second string) string {
+	first = strings.TrimSpace(first)
+	second = strings.TrimSpace(second)
+	if first == "" {
+		return tokenLaunchBriefPolicyEvidence(second, "")
+	}
+	if second == "" || second == first {
+		return first
+	}
+	return first + " " + second
 }
 
 func tokenLaunchCandidateBriefNextAction(launchType string) string {
@@ -781,8 +817,15 @@ func tokenLaunchBriefCandidateProofPolicy(launchType string, brief PublicTokenLa
 	if source == "" {
 		source = "the submitted research source"
 	}
+	policyEvidence := tokenLaunchBriefJoinEvidence(brief.ProofPolicy, tokenLaunchBriefJoinEvidence(brief.WalletPolicy, tokenLaunchBriefJoinEvidence(brief.AllocationPolicy, brief.RiskNotes)))
 	if launchType == "presale" {
+		if policyEvidence != "" {
+			return policyEvidence + " CEO must verify Solana contract proof and public ledger receipt from " + source + "."
+		}
 		return "CEO must verify utility, reserve cap, wallet ownership, funding reference, Solana contract proof, and public ledger receipt from " + source + "."
+	}
+	if policyEvidence != "" {
+		return policyEvidence + " CEO must verify mission demand, anti-bot checks, wallet uniqueness, and public ledger receipt from " + source + "."
 	}
 	return "CEO must verify mission demand, useful work proof, anti-bot checks, wallet uniqueness, and public ledger receipt from " + source + "."
 }
@@ -826,6 +869,10 @@ func (s *Store) RecordTokenLaunchBriefForUser(userID string, req TokenLaunchBrie
 		"gate_summary:" + tokenLaunchGateSummary(ceoMemo.Gates),
 		"title:" + projectTitle,
 		"summary:" + projectSummary,
+		"allocation_policy:" + allocationPolicy,
+		"proof_policy:" + proofPolicy,
+		"wallet_policy:" + walletPolicy,
+		"risk_notes:" + riskNotes,
 		"source:" + repositoryURL,
 		"repo:" + repositoryURL,
 		"signals:" + strings.Join(researchSignals, ","),
