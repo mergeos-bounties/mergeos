@@ -5213,6 +5213,26 @@
               </div>
             </article>
           </div>
+          <article v-else class="token-ceo-candidate-empty" aria-label="CEO candidate queue status">
+            <span class="ledger-trust-icon purple">
+              <Compass :size="14" />
+            </span>
+            <div>
+              <small>{{ tokenCeoCandidateEmptyCopy.eyebrow }}</small>
+              <strong>{{ tokenCeoCandidateEmptyCopy.title }}</strong>
+              <p>{{ tokenCeoCandidateEmptyCopy.body }}</p>
+            </div>
+            <div class="token-ceo-candidate-empty-actions">
+              <button type="button" @click="openTokenLaunchBriefFromProofBoard">
+                Open CEO brief
+                <ArrowRight :size="11" />
+              </button>
+              <a :href="tokenCeoCandidatesURL" target="_blank" rel="noreferrer">
+                Candidates API
+                <Link2 :size="10" />
+              </a>
+            </div>
+          </article>
           <div v-if="tokenCeoLiveQueueRows.length" class="token-ceo-live-queue" aria-label="Live CEO memo queue">
             <article v-for="row in tokenCeoLiveQueueRows" :key="row.key">
               <span :class="['ledger-trust-icon', row.tone]">
@@ -11812,6 +11832,8 @@ const tokenLaunchCandidatesData = ref({
   stats: {},
   candidates: [],
 });
+const tokenLaunchCandidatesLoading = ref(false);
+const tokenLaunchCandidatesError = ref('');
 const airdropMissionsData = ref({
   stats: {},
   missions: [],
@@ -12932,6 +12954,34 @@ const tokenCeoLiveEmptyCopy = computed(() => (
         body: 'Send the CEO repo, mission demand, anti-bot, wallet, and proof gate brief before earned claims open.',
       }
 ));
+const tokenCeoCandidateEmptyCopy = computed(() => {
+  const typeLabel = publicPage.value === 'presale' ? 'presale' : 'airdrop';
+  if (tokenLaunchCandidatesLoading.value) {
+    return {
+      eyebrow: 'CEO queue syncing',
+      title: `Loading ${typeLabel} candidates.`,
+      body: 'MergeOS is checking live marketplace demand, proof signals, readiness gates, and ledger context.',
+    };
+  }
+  if (tokenLaunchCandidatesError.value) {
+    return {
+      eyebrow: 'Candidate API unavailable',
+      title: `Use the CEO ${typeLabel} brief while the queue retries.`,
+      body: tokenLaunchCandidatesError.value,
+    };
+  }
+  return publicPage.value === 'presale'
+    ? {
+        eyebrow: 'No presale candidate yet',
+        title: 'Open a CEO research brief to qualify utility, reserve, wallet, funding, and contract proof.',
+        body: 'Candidates appear when a funded project has enough work demand, source context, proof signals, and Solana-ready gates.',
+      }
+    : {
+        eyebrow: 'No airdrop candidate yet',
+        title: 'Open a CEO research brief to qualify mission demand, anti-bot policy, wallet uniqueness, and proof.',
+        body: 'Candidates appear when a funded project has enough repository work, accepted delivery, proof signals, and public ledger context.',
+      };
+});
 function tokenLaunchCandidateScore({ openTasks = 0, acceptedTasks = 0, signalCount = 0, workPoolMRG = 0 } = {}) {
   const demandScore = Math.min(Number(openTasks) || 0, 8) * 6;
   const deliveryScore = Math.min(Number(acceptedTasks) || 0, 12) * 3;
@@ -24629,6 +24679,8 @@ function scheduleScrollToSection(id) {
 }
 
 async function loadTokenLaunchCandidates(launchType = '') {
+  tokenLaunchCandidatesLoading.value = true;
+  tokenLaunchCandidatesError.value = '';
   try {
     const launchCandidates = await publicApi(tokenLaunchCandidateAPIPath(launchType));
     tokenLaunchCandidatesData.value = launchCandidates && typeof launchCandidates === 'object'
@@ -24637,8 +24689,11 @@ async function loadTokenLaunchCandidates(launchType = '') {
           candidates: Array.isArray(launchCandidates.candidates) ? launchCandidates.candidates : [],
         }
       : { stats: {}, candidates: [] };
-  } catch {
+  } catch (error) {
     tokenLaunchCandidatesData.value = { stats: {}, candidates: [] };
+    tokenLaunchCandidatesError.value = error?.message || 'CEO candidate queue is temporarily unavailable.';
+  } finally {
+    tokenLaunchCandidatesLoading.value = false;
   }
 }
 

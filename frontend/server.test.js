@@ -1274,6 +1274,12 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /class="token-ceo-live-queue"/);
   assert.match(appSource, /class="token-ceo-live-empty"/);
   assert.match(appSource, /class="token-ceo-candidate-lane"/);
+  assert.match(appSource, /class="token-ceo-candidate-empty"/);
+  assert.match(appSource, /const tokenCeoCandidateEmptyCopy = computed/);
+  assert.match(appSource, /const tokenLaunchCandidatesLoading = ref\(false\)/);
+  assert.match(appSource, /const tokenLaunchCandidatesError = ref\(''\)/);
+  assert.match(appSource, /Candidate API unavailable/);
+  assert.match(appSource, /Open CEO brief/);
   assert.match(appSource, /class="token-ceo-candidate-policy"/);
   assert.match(appSource, /class="token-ceo-candidate-readiness"/);
   assert.match(appSource, /row\.decisionPreview\.nextAction/);
@@ -1314,6 +1320,9 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /function tokenLaunchCandidateAPIPath\(launchType = ''\)/);
   assert.match(appSource, /\/api\/public\/token\/launch-candidates\?launch_type=\$\{type === 'presale' \? 'presale' : 'airdrop'\}/);
   assert.match(appSource, /async function loadTokenLaunchCandidates\(launchType = ''\)/);
+  assert.match(appSource, /tokenLaunchCandidatesLoading\.value = true/);
+  assert.match(appSource, /tokenLaunchCandidatesError\.value = error\?\.message \|\| 'CEO candidate queue is temporarily unavailable\.'/);
+  assert.match(appSource, /tokenLaunchCandidatesLoading\.value = false/);
   assert.match(appSource, /if \(page === 'airdrop' \|\| page === 'presale'\) void loadTokenLaunchCandidates\(page\)/);
   assert.match(appSource, /const candidatePath = publicPage\.value === 'airdrop' \|\| publicPage\.value === 'presale'/);
   assert.match(appSource, /const tokenCeoDecisionRows = computed/);
@@ -1534,6 +1543,8 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(cssSource, /\.token-ceo-live-actions\s*\{[\s\S]*display: flex;/);
   assert.match(cssSource, /\.token-ceo-live-empty\s*\{[\s\S]*grid-template-columns: 30px minmax\(0, 1fr\) auto;/);
   assert.match(cssSource, /\.token-ceo-candidate-lane\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
+  assert.match(cssSource, /\.token-ceo-candidate-empty\s*\{[\s\S]*grid-template-columns: 34px minmax\(0, 1fr\) auto;/);
+  assert.match(cssSource, /\.token-ceo-candidate-empty-actions button\s*\{[\s\S]*background: #0f9f78;/);
   assert.match(cssSource, /\.token-ceo-candidate-actions\s*\{[\s\S]*grid-column: 2;/);
   assert.match(cssSource, /\.token-ceo-candidate-actions a,[\s\S]*\.token-ceo-candidate-actions button\s*\{[\s\S]*text-decoration: none;/);
   assert.match(cssSource, /\.token-ceo-candidate-lane small b\s*\{[\s\S]*border-radius: 999px;/);

@@ -8810,6 +8810,87 @@ svg {
   padding: 9px;
 }
 
+.token-ceo-candidate-empty {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid rgba(124, 58, 237, 0.14);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(245, 243, 255, 0.78), rgba(255, 255, 255, 0.92)),
+    #ffffff;
+  box-shadow: 0 16px 34px rgba(17, 24, 39, 0.06);
+  padding: 12px;
+}
+
+.token-ceo-candidate-empty small,
+.token-ceo-candidate-empty strong,
+.token-ceo-candidate-empty p {
+  min-width: 0;
+  margin: 0;
+}
+
+.token-ceo-candidate-empty small {
+  color: #6d28d9;
+  font-family: var(--mono-font);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.token-ceo-candidate-empty strong {
+  display: block;
+  margin-top: 3px;
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.2;
+  font-weight: 930;
+}
+
+.token-ceo-candidate-empty p {
+  display: -webkit-box;
+  margin-top: 4px;
+  overflow: hidden;
+  color: #64748b;
+  font-size: 11px;
+  line-height: 1.32;
+  font-weight: 760;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.token-ceo-candidate-empty-actions {
+  display: grid;
+  grid-template-columns: repeat(2, max-content);
+  gap: 6px;
+}
+
+.token-ceo-candidate-empty-actions a,
+.token-ceo-candidate-empty-actions button {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid rgba(124, 58, 237, 0.14);
+  border-radius: 8px;
+  background: #ffffff;
+  color: #5b21b6;
+  padding: 0 10px;
+  font-size: 10px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.token-ceo-candidate-empty-actions button {
+  border-color: rgba(15, 159, 120, 0.2);
+  background: #0f9f78;
+  color: #ffffff;
+}
+
 .token-ceo-candidate-lane small,
 .token-ceo-candidate-lane strong,
 .token-ceo-candidate-lane p,
@@ -39769,6 +39850,28 @@ canvas {
   .token-ceo-candidate-lane article {
     padding-bottom: 7px !important;
     min-height: 0 !important;
+  }
+
+  .token-ceo-candidate-empty {
+    grid-template-columns: 28px minmax(0, 1fr) !important;
+    gap: 8px !important;
+    padding: 9px !important;
+  }
+
+  .token-ceo-candidate-empty p {
+    -webkit-line-clamp: 2 !important;
+  }
+
+  .token-ceo-candidate-empty-actions {
+    grid-column: 1 / -1 !important;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  }
+
+  .token-ceo-candidate-empty-actions a,
+  .token-ceo-candidate-empty-actions button {
+    min-height: 31px !important;
+    padding-inline: 8px !important;
+    font-size: 9.5px !important;
   }
 
   .token-hero-ceo-strip {
