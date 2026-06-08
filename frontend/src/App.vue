@@ -12753,8 +12753,12 @@ const tokenCeoResearchCopy = computed(() => {
 const tokenCeoQueueURL = computed(() =>
   `/api/public/token/launch-briefs?launch_type=${publicPage.value === 'presale' ? 'presale' : 'airdrop'}`,
 );
+function tokenLaunchCandidateAPIPath(launchType = '') {
+  const type = launchType || (publicPage.value === 'presale' ? 'presale' : 'airdrop');
+  return `/api/public/token/launch-candidates?launch_type=${type === 'presale' ? 'presale' : 'airdrop'}`;
+}
 const tokenCeoCandidatesURL = computed(() =>
-  `/api/public/token/launch-candidates?launch_type=${publicPage.value === 'presale' ? 'presale' : 'airdrop'}`,
+  tokenLaunchCandidateAPIPath(),
 );
 const tokenCeoResearchRows = computed(() => {
   const openTasks = Number(marketplaceStats.value.open_task_count) || (marketplaceData.value.bounties || []).length || 0;
@@ -12910,17 +12914,27 @@ function tokenLaunchCandidateDecisionRows(launchType = 'airdrop', score = 0) {
 }
 function tokenLaunchCandidateDecisionRowsFromAPI(rows = [], launchType = 'airdrop', score = 0) {
   if (!Array.isArray(rows) || !rows.length) return tokenLaunchCandidateDecisionRows(launchType, score);
+  const fallbackRows = tokenLaunchCandidateDecisionRows(launchType, score);
   const normalized = rows
     .filter((row) => row && typeof row === 'object')
-    .map((row) => ({
-      key: row.key || row.tone || row.label,
-      label: row.label || toTitleLabel(row.key || 'CEO decision'),
-      tone: row.tone || row.key || 'evidence',
-      proofPolicy: row.proof_policy || row.proofPolicy || '',
-      riskNotes: row.risk_notes || row.riskNotes || '',
-    }))
+    .map((row) => {
+      const key = row.key || row.tone || row.label;
+      const fallback = fallbackRows.find((item) => item.key === key) || {};
+      const riskNotes = row.risk_notes || row.riskNotes || '';
+      const proofPolicy = row.proof_policy || row.proofPolicy || '';
+      const expectedLabel = launchType === 'presale' ? 'presale' : 'airdrop';
+      const contradictsLaunch = riskNotes && /CEO\s+(airdrop|presale)\s+decision/i.test(riskNotes)
+        && !new RegExp(`CEO\\s+${expectedLabel}\\s+decision`, 'i').test(riskNotes);
+      return {
+        key,
+        label: row.label || fallback.label || toTitleLabel(row.key || 'CEO decision'),
+        tone: row.tone || row.key || fallback.tone || 'evidence',
+        proofPolicy: contradictsLaunch ? fallback.proofPolicy : (proofPolicy || fallback.proofPolicy || ''),
+        riskNotes: contradictsLaunch ? fallback.riskNotes : (riskNotes || fallback.riskNotes || ''),
+      };
+    })
     .filter((row) => row.key && row.label);
-  return normalized.length ? normalized : tokenLaunchCandidateDecisionRows(launchType, score);
+  return normalized.length ? normalized : fallbackRows;
 }
 function tokenLaunchCandidateDecisionPreview(rows = []) {
   const list = Array.isArray(rows) ? rows : [];
@@ -24473,6 +24487,20 @@ function scheduleScrollToSection(id) {
   });
 }
 
+async function loadTokenLaunchCandidates(launchType = '') {
+  try {
+    const launchCandidates = await publicApi(tokenLaunchCandidateAPIPath(launchType));
+    tokenLaunchCandidatesData.value = launchCandidates && typeof launchCandidates === 'object'
+      ? {
+          stats: launchCandidates.stats || {},
+          candidates: Array.isArray(launchCandidates.candidates) ? launchCandidates.candidates : [],
+        }
+      : { stats: {}, candidates: [] };
+  } catch {
+    tokenLaunchCandidatesData.value = { stats: {}, candidates: [] };
+  }
+}
+
 function loadPublicPageData(page) {
   if (page === 'ledger') {
     void loadLedgerData();
@@ -24497,6 +24525,7 @@ function loadPublicPageData(page) {
     void loadLedgerData({ silent: true });
     void loadLiveFeedData({ silent: true });
     void loadProtocolManifest({ silent: true });
+    if (page === 'airdrop' || page === 'presale') void loadTokenLaunchCandidates(page);
     if (page === 'airdrop') void loadAirdropMissions();
     if (page === 'presale') void loadRuntimeConfig().catch(() => {});
     return;
@@ -24780,34 +24809,36 @@ function tokenLaunchBriefFieldError(field) {
   return tokenLaunchBriefValidationMap.value[field] || '';
 }
 
+function resetTokenLaunchBriefForm() {
+  tokenLaunchBriefForm.project_title = '';
+  tokenLaunchBriefForm.repository_url = '';
+  tokenLaunchBriefForm.project_summary = '';
+  tokenLaunchBriefForm.allocation_policy = '';
+  tokenLaunchBriefForm.proof_policy = '';
+  tokenLaunchBriefForm.wallet_policy = '';
+  tokenLaunchBriefForm.risk_notes = '';
+  tokenLaunchBriefResult.value = null;
+}
+
 function prefillTokenLaunchBrief() {
   const launchType = publicPage.value === 'presale' ? 'presale' : 'airdrop';
-  tokenLaunchBriefForm.project_title = tokenLaunchBriefForm.project_title || (launchType === 'presale'
+  resetTokenLaunchBriefForm();
+  tokenLaunchBriefForm.project_title = launchType === 'presale'
     ? 'MRG presale readiness review'
-    : 'Earned MRG airdrop mission review');
+    : 'Earned MRG airdrop mission review';
   if (launchType === 'presale') {
-    tokenLaunchBriefForm.project_summary = tokenLaunchBriefForm.project_summary
-      || 'CEO should research whether this project has enough utility, wallet readiness, reserve discipline, funding rail evidence, and Solana contract proof to open an MRG presale window.';
-    tokenLaunchBriefForm.proof_policy = tokenLaunchBriefForm.proof_policy
-      || 'Require verified wallet, funding reference, reserve tier, contract reference, receipt review, and public ledger proof before allocation.';
-    tokenLaunchBriefForm.allocation_policy = tokenLaunchBriefForm.allocation_policy
-      || 'Cap reserve by tier, funding rail, review state, treasury risk, and compliance language.';
-    tokenLaunchBriefForm.wallet_policy = tokenLaunchBriefForm.wallet_policy
-      || 'Require Solana wallet ownership, funding reference, duplicate-wallet review, and receipt reconciliation.';
-    tokenLaunchBriefForm.risk_notes = tokenLaunchBriefForm.risk_notes
-      || 'CEO must flag reserve caps, payment reversals, unclear utility, contract mismatch, and compliance language before opening.';
+    tokenLaunchBriefForm.project_summary = 'CEO should research whether this project has enough utility, wallet readiness, reserve discipline, funding rail evidence, and Solana contract proof to open an MRG presale window.';
+    tokenLaunchBriefForm.proof_policy = 'Require verified wallet, funding reference, reserve tier, contract reference, receipt review, and public ledger proof before allocation.';
+    tokenLaunchBriefForm.allocation_policy = 'Cap reserve by tier, funding rail, review state, treasury risk, and compliance language.';
+    tokenLaunchBriefForm.wallet_policy = 'Require Solana wallet ownership, funding reference, duplicate-wallet review, and receipt reconciliation.';
+    tokenLaunchBriefForm.risk_notes = 'CEO must flag reserve caps, payment reversals, unclear utility, contract mismatch, and compliance language before opening.';
   } else {
     const missionCount = Number(airdropMissionsData.value?.stats?.mission_count) || airdropMissionRows.value.length || 0;
-    tokenLaunchBriefForm.project_summary = tokenLaunchBriefForm.project_summary
-      || `CEO should research whether this project deserves earned MRG airdrop missions based on repo demand, bounty depth, contributor usefulness, proof quality, wallet uniqueness, and ${missionCount} available mission types.`;
-    tokenLaunchBriefForm.proof_policy = tokenLaunchBriefForm.proof_policy
-      || 'Require repo import, task reference, PR URL or deployment proof, QA evidence, agent review, and ledger receipt before claim approval.';
-    tokenLaunchBriefForm.allocation_policy = tokenLaunchBriefForm.allocation_policy
-      || 'Cap claims by mission score, useful work evidence, proof quality, anti-bot review, and wallet uniqueness.';
-    tokenLaunchBriefForm.wallet_policy = tokenLaunchBriefForm.wallet_policy
-      || 'Require Solana wallet uniqueness, duplicate claim review, and anti-bot checks before allocation.';
-    tokenLaunchBriefForm.risk_notes = tokenLaunchBriefForm.risk_notes
-      || 'CEO must flag empty signups, bot farming, weak repo evidence, duplicate wallets, and unverifiable proof.';
+    tokenLaunchBriefForm.project_summary = `CEO should research whether this project deserves earned MRG airdrop missions based on repo demand, bounty depth, contributor usefulness, proof quality, wallet uniqueness, and ${missionCount} available mission types.`;
+    tokenLaunchBriefForm.proof_policy = 'Require repo import, task reference, PR URL or deployment proof, QA evidence, agent review, and ledger receipt before claim approval.';
+    tokenLaunchBriefForm.allocation_policy = 'Cap claims by mission score, useful work evidence, proof quality, anti-bot review, and wallet uniqueness.';
+    tokenLaunchBriefForm.wallet_policy = 'Require Solana wallet uniqueness, duplicate claim review, and anti-bot checks before allocation.';
+    tokenLaunchBriefForm.risk_notes = 'CEO must flag empty signups, bot farming, weak repo evidence, duplicate wallets, and unverifiable proof.';
   }
   tokenLaunchBriefAttempted.value = false;
   tokenLaunchBriefError.value = '';
@@ -30682,6 +30713,9 @@ async function loadLedgerData(options = {}) {
     ledgerLoading.value = true;
   }
   try {
+    const candidatePath = publicPage.value === 'airdrop' || publicPage.value === 'presale'
+      ? tokenLaunchCandidateAPIPath(publicPage.value)
+      : '/api/public/token/launch-candidates';
     const [entries, marketplace, proof, verification, events, economy, launchBriefs, launchCandidates] = await Promise.all([
       publicApi('/api/public/ledger'),
       publicApi('/api/public/marketplace'),
@@ -30690,7 +30724,7 @@ async function loadLedgerData(options = {}) {
       publicApi('/api/public/ledger/events?limit=100'),
       publicApi('/api/public/token-economy'),
       publicApi('/api/public/token/launch-briefs'),
-      publicApi('/api/public/token/launch-candidates'),
+      publicApi(candidatePath),
     ]);
     ledgerRawEntries.value = Array.isArray(entries) ? entries : [];
     ledgerProjects.value = Array.isArray(marketplace.projects) ? marketplace.projects : [];
