@@ -1316,6 +1316,8 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /window\.setTimeout\(run, 140\)/);
   assert.match(appSource, /window\.setTimeout\(\(\) => run\('auto'\), 360\)/);
   assert.match(appSource, /window\.setTimeout\(\(\) => run\('auto'\), 760\)/);
+  assert.match(appSource, /window\.setTimeout\(\(\) => run\('auto'\), 1600\)/);
+  assert.match(appSource, /window\.setTimeout\(\(\) => run\('auto'\), 2600\)/);
   assert.match(appSource, /CEO candidate loaded\./);
   assert.match(appSource, /tokenLaunchBriefDecisionContext\.label = label/);
   assert.match(appSource, /tokenLaunchBriefDecisionContext\.candidate = candidate\.title/);

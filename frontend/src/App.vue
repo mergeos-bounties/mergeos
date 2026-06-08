@@ -24881,6 +24881,8 @@ function scrollTokenLaunchBriefCardIntoView() {
   window.setTimeout(run, 140);
   window.setTimeout(() => run('auto'), 360);
   window.setTimeout(() => run('auto'), 760);
+  window.setTimeout(() => run('auto'), 1600);
+  window.setTimeout(() => run('auto'), 2600);
 }
 
 function prefillTokenLaunchBriefFromCandidate(candidate = {}) {
