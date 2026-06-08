@@ -5252,6 +5252,11 @@
               <div class="token-ceo-signal-chips" aria-label="CEO research signals attached">
                 <span v-for="signal in tokenCeoResearchSignalRows" :key="signal">{{ toTitleLabel(signal) }}</span>
               </div>
+              <div v-if="tokenLaunchBriefDecisionContext.label" class="token-ceo-decision-context" aria-label="Loaded CEO decision">
+                <b>{{ tokenLaunchBriefDecisionContext.label }}</b>
+                <span>{{ tokenLaunchBriefDecisionContext.candidate }}</span>
+                <small>{{ tokenLaunchBriefDecisionContext.score }}</small>
+              </div>
             </div>
             <div v-if="tokenLaunchBriefAttempted && tokenLaunchBriefValidationRows.length" class="wizard-validation-banner token-workflow-validation" role="alert">
               <strong>Fix CEO brief</strong>
@@ -11686,6 +11691,11 @@ const tokenLaunchBriefBusy = ref(false);
 const tokenLaunchBriefAttempted = ref(false);
 const tokenLaunchBriefError = ref('');
 const tokenLaunchBriefResult = ref(null);
+const tokenLaunchBriefDecisionContext = reactive({
+  label: '',
+  candidate: '',
+  score: '',
+});
 const authVisible = ref(false);
 const authDialog = ref(null);
 const authMode = ref('login');
@@ -24801,6 +24811,9 @@ function prefillTokenLaunchBrief() {
   }
   tokenLaunchBriefAttempted.value = false;
   tokenLaunchBriefError.value = '';
+  tokenLaunchBriefDecisionContext.label = '';
+  tokenLaunchBriefDecisionContext.candidate = '';
+  tokenLaunchBriefDecisionContext.score = '';
   showToast('CEO research template added.');
 }
 
@@ -24813,6 +24826,9 @@ function prefillTokenLaunchBriefFromCandidate(candidate = {}) {
     ? `CEO should research whether ${candidate.title || 'this project'} is ready for an MRG presale window. ${candidate.projectSummary || candidate.body || ''}`.trim()
     : `CEO should research whether ${candidate.title || 'this project'} deserves earned MRG airdrop missions. ${candidate.projectSummary || candidate.body || ''}`.trim();
   tokenLaunchBriefForm.proof_policy = candidate.proofPolicy || tokenLaunchBriefForm.proof_policy;
+  tokenLaunchBriefDecisionContext.label = 'Candidate loaded';
+  tokenLaunchBriefDecisionContext.candidate = candidate.title || tokenLaunchBriefForm.project_title;
+  tokenLaunchBriefDecisionContext.score = candidate.scoreLabel || '';
   tokenLaunchBriefAttempted.value = false;
   tokenLaunchBriefError.value = '';
   showToast('CEO candidate loaded.');
@@ -24832,6 +24848,9 @@ function applyTokenLaunchCandidateDecision(candidate = {}, decision = {}) {
   tokenLaunchBriefForm.allocation_policy = launchType === 'presale'
     ? `${label}: reserve window remains gated by tier cap, funding rail, receipt policy, and Solana contract proof.`
     : `${label}: earned missions remain gated by useful work, anti-bot review, proof quality, and wallet uniqueness.`;
+  tokenLaunchBriefDecisionContext.label = label;
+  tokenLaunchBriefDecisionContext.candidate = candidate.title || tokenLaunchBriefForm.project_title;
+  tokenLaunchBriefDecisionContext.score = candidate.scoreLabel || tokenLaunchBriefDecisionContext.score;
   tokenLaunchBriefAttempted.value = false;
   tokenLaunchBriefError.value = '';
   showToast(`${label} loaded into CEO brief.`);

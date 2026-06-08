@@ -9161,6 +9161,54 @@ svg {
   color: #0f766e;
 }
 
+.token-ceo-decision-context {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  border: 1px solid rgba(15, 118, 110, 0.14);
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(236, 253, 245, 0.88), rgba(255, 255, 255, 0.92));
+  padding: 8px 9px;
+}
+
+.token-ceo-decision-context b,
+.token-ceo-decision-context span,
+.token-ceo-decision-context small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.token-ceo-decision-context b {
+  color: #0f766e;
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.token-ceo-decision-context span {
+  color: #111827;
+  font-size: 11px;
+  line-height: 1.1;
+  font-weight: 900;
+}
+
+.token-ceo-decision-context small {
+  border-radius: 999px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  padding: 4px 6px;
+  font-size: 9px;
+  line-height: 1;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
 .token-ceo-brief-form {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -37611,6 +37659,21 @@ canvas {
     min-height: 22px !important;
     padding-inline: 7px !important;
     font-size: 9px !important;
+  }
+
+  .token-ceo-decision-context {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    gap: 5px !important;
+    padding: 7px !important;
+  }
+
+  .token-ceo-decision-context b {
+    grid-column: 1 / -1 !important;
+    font-size: 9px !important;
+  }
+
+  .token-ceo-decision-context span {
+    font-size: 10.5px !important;
   }
 
   .token-ceo-brief-form {

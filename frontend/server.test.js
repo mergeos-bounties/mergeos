@@ -1235,6 +1235,7 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /class="token-ceo-project-queue"/);
   assert.match(appSource, /class="token-ceo-source-packet"/);
   assert.match(appSource, /class="token-ceo-signal-chips"/);
+  assert.match(appSource, /class="token-ceo-decision-context"/);
   assert.match(appSource, /class="token-ceo-brief-card"/);
   assert.match(appSource, /@submit\.prevent="submitTokenLaunchBrief"/);
   assert.match(appSource, /class="token-ceo-memo-result"/);
@@ -1288,6 +1289,8 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /Use for CEO brief/);
   assert.match(appSource, /function prefillTokenLaunchBriefFromCandidate\(candidate = \{\}\)/);
   assert.match(appSource, /CEO candidate loaded\./);
+  assert.match(appSource, /tokenLaunchBriefDecisionContext\.label = label/);
+  assert.match(appSource, /tokenLaunchBriefDecisionContext\.candidate = candidate\.title/);
   assert.match(appSource, /\.filter\(\(brief\) => brief\.launch_type === currentType\)[\s\S]*\.slice\(0, 3\)/);
   assert.match(appSource, /Source[\s\S]*<Link2 :size="10"/);
   assert.match(appSource, /No airdrop memo recorded yet\./);
@@ -1325,6 +1328,7 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /nextIntent === 'token-launch'/);
   assert.match(appSource, /const tokenLaunchBriefMode = ref\(''\)/);
   assert.match(appSource, /const tokenLaunchBriefForm = reactive/);
+  assert.match(appSource, /const tokenLaunchBriefDecisionContext = reactive/);
   assert.match(appSource, /const tokenLaunchBriefValidationMap = computed/);
   assert.match(appSource, /errors\.wallet_policy = 'Wallet policy must explain wallet ownership or uniqueness checks\.'/);
   assert.match(appSource, /errors\.risk_notes = 'CEO risk notes must explain the launch risk review\.'/);
@@ -1441,6 +1445,7 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(cssSource, /\.token-ceo-project-queue\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /\.token-ceo-source-packet\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /\.token-ceo-signal-chips\s*\{[\s\S]*flex-wrap: wrap;/);
+  assert.match(cssSource, /\.token-ceo-decision-context\s*\{[\s\S]*grid-template-columns: auto minmax\(0, 1fr\) auto;/);
   assert.match(cssSource, /\.token-ceo-brief-card\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\);/);
   assert.match(cssSource, /\.token-ceo-brief-form\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /\.token-ceo-brief-actions\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) auto auto;/);
