@@ -1489,6 +1489,8 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-source-packet,[\s\S]*\.token-ceo-research-grid\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\) !important;/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-research-grid small\s*\{[\s\S]*display: none !important;/);
   assert.match(cssSource, /Token CEO mobile cockpit: lead with candidate decision and brief/);
+  assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-head-actions\s*\{[\s\S]*display: none !important;/);
+  assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-queue-stats\s*\{[\s\S]*display: none !important;/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-project-queue,[\s\S]*\.token-ceo-source-packet,[\s\S]*\.token-ceo-research-grid,[\s\S]*\.token-ceo-live-queue,[\s\S]*\.token-ceo-live-empty\s*\{[\s\S]*display: none !important;/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-brief-form\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) !important;/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-signal-chips\s*\{[\s\S]*display: none !important;/);

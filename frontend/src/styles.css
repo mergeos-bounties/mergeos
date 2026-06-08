@@ -39062,38 +39062,28 @@ canvas {
   }
 
   .token-ceo-head-actions {
-    grid-column: 1 / -1 !important;
-    display: grid !important;
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 6px !important;
+    display: none !important;
   }
 
-  .token-ceo-head-actions a {
-    min-height: 28px !important;
-    justify-content: center !important;
-    padding-inline: 8px !important;
-    font-size: 9.5px !important;
-  }
-
-  .token-ceo-decision-strip,
-  .token-ceo-queue-stats {
+  .token-ceo-decision-strip {
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
     gap: 5px !important;
   }
 
-  .token-ceo-decision-strip article,
-  .token-ceo-queue-stats article {
+  .token-ceo-queue-stats {
+    display: none !important;
+  }
+
+  .token-ceo-decision-strip article {
     min-height: 44px !important;
     padding: 6px !important;
   }
 
-  .token-ceo-decision-strip span,
-  .token-ceo-queue-stats small {
+  .token-ceo-decision-strip span {
     font-size: 7.6px !important;
   }
 
-  .token-ceo-decision-strip strong,
-  .token-ceo-queue-stats strong {
+  .token-ceo-decision-strip strong {
     margin-top: 2px !important;
     font-size: 9.5px !important;
     line-height: 1.1 !important;
