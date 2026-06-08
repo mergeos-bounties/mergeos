@@ -5309,6 +5309,21 @@
               </div>
             </article>
           </div>
+          <article v-else-if="tokenLaunchCandidatesLoading" class="token-ceo-candidate-empty token-ceo-candidate-loading" aria-label="CEO candidate queue loading">
+            <span class="ledger-trust-icon purple">
+              <RefreshCw class="loading-spin" :size="14" />
+            </span>
+            <div>
+              <small>Loading candidate queue</small>
+              <strong>Reading funded projects that may open {{ tokenCeoCandidateLaunchType }}.</strong>
+              <p>MergeOS is loading CEO questions, blockers, proof gates, and source references before showing the launch queue.</p>
+              <div class="token-ceo-empty-gates" aria-label="CEO candidate loading gates">
+                <span>Source context</span>
+                <span>Proof gates</span>
+                <span>Launch blockers</span>
+              </div>
+            </div>
+          </article>
           <article v-else class="token-ceo-candidate-empty" aria-label="CEO candidate queue status">
             <span class="ledger-trust-icon purple">
               <Compass :size="14" />
@@ -12850,7 +12865,7 @@ const publicTokenPageDefinitions = {
   airdrop: {
     eyebrow: 'MRG AIRDROP',
     title: 'A task-based airdrop for verified software delivery.',
-    body: 'The MergeOS airdrop is earned through useful work: repo imports, scoped bounty tasks, PR evidence, QA notes, agent reviews, and public ledger proof. It is not a random claim page.',
+    body: 'Earn MRG through useful work: repo imports, bounty tasks, PR evidence, QA notes, agent reviews, and public ledger proof.',
     badge: 'Proof gated',
     badgeTone: 'green',
     badgeIcon: Trophy,
@@ -12874,7 +12889,7 @@ const publicTokenPageDefinitions = {
   presale: {
     eyebrow: 'MRG PRESALE',
     title: 'Reserve MRG through a transparent presale workflow.',
-    body: 'The presale page explains allocation stages, wallet readiness, payment review, Solana contract checkpoints, and public ledger receipts before token distribution.',
+    body: 'Reserve MRG only after wallet readiness, payment review, Solana contract checkpoints, and public ledger receipts are clear.',
     badge: 'Solana ready',
     badgeTone: 'blue',
     badgeIcon: CircleDollarSign,

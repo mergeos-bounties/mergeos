@@ -1416,6 +1416,9 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /brief\.project_summary \|\| gate/);
   assert.match(appSource, /class="token-ceo-live-empty"/);
   assert.match(appSource, /class="token-ceo-candidate-lane"/);
+  assert.match(appSource, /v-else-if="tokenLaunchCandidatesLoading"/);
+  assert.match(appSource, /class="token-ceo-candidate-empty token-ceo-candidate-loading"/);
+  assert.match(appSource, /Reading funded projects that may open/);
   assert.match(appSource, /class="token-ceo-candidate-empty"/);
   assert.match(appSource, /class="token-ceo-empty-gates"/);
   assert.match(appSource, /const tokenCeoCandidateEmptyCopy = computed/);
@@ -1702,6 +1705,8 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /Project utility intake/);
   assert.match(appSource, /Proof risk review/);
   assert.match(appSource, /Open-window memo/);
+  assert.match(appSource, /Earn MRG through useful work: repo imports, bounty tasks, PR evidence, QA notes, agent reviews, and public ledger proof\./);
+  assert.match(appSource, /Reserve MRG only after wallet readiness, payment review, Solana contract checkpoints, and public ledger receipts are clear\./);
   assert.match(appSource, /Mission-market fit/);
   assert.match(appSource, /Utility and allocation readiness/);
   assert.match(appSource, /Proof and anti-bot gate/);
@@ -2143,6 +2148,10 @@ test('signed-in mobile dashboard keeps nav, actions, and popovers phone-safe', a
   assert.match(cssSource, /\.home-navbar \.nav-menu\.open::after\s*\{[\s\S]*height: 14px !important;/);
   assert.match(cssSource, /\.public-home-page \.home-container\.public-home-layout\s*\{[\s\S]*grid-template-columns: minmax\(0, 0\.92fr\) minmax\(340px, 390px\) !important;/);
   assert.match(cssSource, /\.token-page-airdrop \.token-ceo-candidate-review-packet,[\s\S]*\.token-page-presale \.token-ceo-candidate-review-packet\s*\{/);
+  assert.match(cssSource, /Token launch mobile final owner: compact by layout, never by cutting the decision copy/);
+  assert.match(cssSource, /\.token-page-airdrop \.token-hero-copy p,[\s\S]*\.token-page-presale \.token-ceo-launch-queue p\s*\{[\s\S]*-webkit-line-clamp: unset !important;/);
+  assert.match(cssSource, /\.token-page-airdrop \.token-hero-copy,[\s\S]*\.token-page-presale \.token-hero-copy\s*\{[\s\S]*max-height: none !important;[\s\S]*overflow: visible !important;/);
+  assert.match(cssSource, /\.token-page-airdrop \.token-ceo-candidate-loading,[\s\S]*\.token-page-presale \.token-ceo-candidate-loading\s*\{/);
   assert.match(cssSource, /Token CEO mobile shortlist: show all candidate projects as chips, then keep only the lead decision card expanded/);
   assert.match(cssSource, /\/\* Token CEO mobile shortlist:[\s\S]*\.token-page-airdrop \.token-ceo-mobile-shortlist,[\s\S]*\.token-page-presale \.token-ceo-mobile-shortlist\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\) !important;/);
   assert.match(cssSource, /\/\* Token CEO mobile shortlist:[\s\S]*@media \(max-width: 620px\)[\s\S]*\.token-page-airdrop \.token-ceo-candidate-lane article:nth-child\(n \+ 2\),[\s\S]*\.token-page-presale \.token-ceo-candidate-lane article:nth-child\(n \+ 2\)\s*\{[\s\S]*display: none !important;/);
