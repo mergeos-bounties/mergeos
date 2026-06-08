@@ -5176,11 +5176,18 @@
                 <small>{{ row.label }}</small>
                 <strong>{{ row.title }}</strong>
                 <p>{{ row.body }}</p>
+                <em v-if="row.proofSignals">{{ row.proofSignals }}</em>
               </div>
-              <button type="button" @click="prefillTokenLaunchBriefFromCandidate(row)">
-                Use for CEO brief
-                <ArrowRight :size="10" />
-              </button>
+              <div class="token-ceo-candidate-actions">
+                <a v-if="row.sourceUrl" :href="row.sourceUrl" target="_blank" rel="noreferrer">
+                  Source
+                  <Link2 :size="10" />
+                </a>
+                <button type="button" @click="prefillTokenLaunchBriefFromCandidate(row)">
+                  Use for CEO brief
+                  <ArrowRight :size="10" />
+                </button>
+              </div>
             </article>
           </div>
           <div class="token-ceo-project-queue" aria-label="CEO project research queue">

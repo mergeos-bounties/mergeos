@@ -8812,7 +8812,8 @@ svg {
 
 .token-ceo-candidate-lane small,
 .token-ceo-candidate-lane strong,
-.token-ceo-candidate-lane p {
+.token-ceo-candidate-lane p,
+.token-ceo-candidate-lane em {
   display: block;
   min-width: 0;
   overflow-wrap: anywhere;
@@ -8846,8 +8847,28 @@ svg {
   -webkit-line-clamp: 2;
 }
 
-.token-ceo-candidate-lane button {
+.token-ceo-candidate-lane em {
+  display: -webkit-box;
+  overflow: hidden;
+  margin-top: 5px;
+  color: #1d4ed8;
+  font-size: 9.5px;
+  line-height: 1.22;
+  font-style: normal;
+  font-weight: 820;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+}
+
+.token-ceo-candidate-actions {
   grid-column: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.token-ceo-candidate-actions a,
+.token-ceo-candidate-actions button {
   width: max-content;
   max-width: 100%;
   display: inline-flex;
@@ -8861,6 +8882,7 @@ svg {
   font-size: 9.5px;
   line-height: 1;
   font-weight: 920;
+  text-decoration: none;
   cursor: pointer;
 }
 

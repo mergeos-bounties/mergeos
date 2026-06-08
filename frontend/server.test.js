@@ -1258,6 +1258,8 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /tokenLaunchCandidatesData\.value\?\.candidates/);
   assert.match(appSource, /candidate\.research_source/);
   assert.match(appSource, /candidate\.proof_policy/);
+  assert.match(appSource, /row\.proofSignals/);
+  assert.match(appSource, /class="token-ceo-candidate-actions"/);
   assert.match(appSource, /marketplaceData\.value\.projects[\s\S]*marketplaceData\.value\.bounties/);
   assert.match(appSource, /Use for CEO brief/);
   assert.match(appSource, /function prefillTokenLaunchBriefFromCandidate\(candidate = \{\}\)/);
@@ -1406,7 +1408,8 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(cssSource, /\.token-ceo-live-actions\s*\{[\s\S]*display: flex;/);
   assert.match(cssSource, /\.token-ceo-live-empty\s*\{[\s\S]*grid-template-columns: 30px minmax\(0, 1fr\) auto;/);
   assert.match(cssSource, /\.token-ceo-candidate-lane\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
-  assert.match(cssSource, /\.token-ceo-candidate-lane button\s*\{[\s\S]*grid-column: 2;/);
+  assert.match(cssSource, /\.token-ceo-candidate-actions\s*\{[\s\S]*grid-column: 2;/);
+  assert.match(cssSource, /\.token-ceo-candidate-actions a,[\s\S]*\.token-ceo-candidate-actions button\s*\{[\s\S]*text-decoration: none;/);
   assert.match(cssSource, /\.token-ceo-project-queue\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /\.token-ceo-source-packet\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /\.token-ceo-signal-chips\s*\{[\s\S]*flex-wrap: wrap;/);
