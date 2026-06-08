@@ -5232,6 +5232,9 @@
               <small>{{ tokenCeoCandidateEmptyCopy.eyebrow }}</small>
               <strong>{{ tokenCeoCandidateEmptyCopy.title }}</strong>
               <p>{{ tokenCeoCandidateEmptyCopy.body }}</p>
+              <div v-if="tokenCeoCandidateEmptyCopy.checks?.length" class="token-ceo-empty-gates" aria-label="CEO candidate qualification gates">
+                <span v-for="check in tokenCeoCandidateEmptyCopy.checks" :key="check">{{ check }}</span>
+              </div>
             </div>
             <div class="token-ceo-candidate-empty-actions">
               <button type="button" @click="openTokenLaunchBriefFromProofBoard">
@@ -5239,7 +5242,7 @@
                 <ArrowRight :size="11" />
               </button>
               <a :href="tokenCeoCandidatesURL" target="_blank" rel="noreferrer">
-                Candidates API
+                Review data
                 <Link2 :size="10" />
               </a>
             </div>
@@ -12978,6 +12981,7 @@ const tokenCeoCandidateEmptyCopy = computed(() => {
       eyebrow: 'CEO queue syncing',
       title: `Loading ${typeLabel} candidates.`,
       body: 'MergeOS is checking live marketplace demand, proof signals, readiness gates, and ledger context.',
+      checks: ['Demand score', 'Proof depth', 'Risk gate'],
     };
   }
   if (tokenLaunchCandidatesError.value) {
@@ -12985,6 +12989,7 @@ const tokenCeoCandidateEmptyCopy = computed(() => {
       eyebrow: 'Candidate API unavailable',
       title: `Use the CEO ${typeLabel} brief while the queue retries.`,
       body: tokenLaunchCandidatesError.value,
+      checks: ['Manual brief', 'Retry queue', 'Ledger context'],
     };
   }
   return publicPage.value === 'presale'
@@ -12992,11 +12997,13 @@ const tokenCeoCandidateEmptyCopy = computed(() => {
         eyebrow: 'No presale candidate yet',
         title: 'Open a CEO research brief to qualify utility, reserve, wallet, funding, and contract proof.',
         body: 'Candidates appear when a funded project has enough work demand, source context, proof signals, and Solana-ready gates.',
+        checks: ['Utility score', 'Funding proof', 'Wallet gate'],
       }
     : {
         eyebrow: 'No airdrop candidate yet',
         title: 'Open a CEO research brief to qualify mission demand, anti-bot policy, wallet uniqueness, and proof.',
         body: 'Candidates appear when a funded project has enough repository work, accepted delivery, proof signals, and public ledger context.',
+        checks: ['Mission demand', 'Anti-bot gate', 'Ledger proof'],
       };
 });
 function tokenLaunchCandidateScore({ openTasks = 0, acceptedTasks = 0, signalCount = 0, workPoolMRG = 0 } = {}) {

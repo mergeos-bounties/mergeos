@@ -1296,11 +1296,15 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /class="token-ceo-live-empty"/);
   assert.match(appSource, /class="token-ceo-candidate-lane"/);
   assert.match(appSource, /class="token-ceo-candidate-empty"/);
+  assert.match(appSource, /class="token-ceo-empty-gates"/);
   assert.match(appSource, /const tokenCeoCandidateEmptyCopy = computed/);
   assert.match(appSource, /const tokenLaunchCandidatesLoading = ref\(false\)/);
   assert.match(appSource, /const tokenLaunchCandidatesError = ref\(''\)/);
   assert.match(appSource, /Candidate API unavailable/);
   assert.match(appSource, /Open CEO brief/);
+  assert.match(appSource, /Review data/);
+  assert.match(appSource, /checks: \['Mission demand', 'Anti-bot gate', 'Ledger proof'\]/);
+  assert.match(appSource, /checks: \['Utility score', 'Funding proof', 'Wallet gate'\]/);
   assert.match(appSource, /class="token-ceo-candidate-policy"/);
   assert.match(appSource, /class="token-ceo-candidate-readiness"/);
   assert.match(appSource, /row\.decisionPreview\.nextAction/);
@@ -1655,6 +1659,9 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-candidate-actions\s*\{[\s\S]*grid-template-columns: minmax\(0, 0\.78fr\) minmax\(0, 1\.22fr\) !important;/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-candidate-actions button\s*\{[\s\S]*background: #0f9f78 !important;[\s\S]*color: #ffffff !important;/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-candidate-decisions button\s*\{[\s\S]*border-radius: 8px !important;/);
+  assert.match(cssSource, /Token CEO empty candidate polish: make the fallback feel like a decision gate, not an API state/);
+  assert.match(cssSource, /\.token-ceo-empty-gates\s*\{[\s\S]*display: flex !important;[\s\S]*flex-wrap: wrap !important;/);
+  assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-empty-gates\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\) !important;/);
   assert.match(cssSource, /Token CEO mobile first decision: put candidate actions inside the first viewport/);
   assert.match(cssSource, /\/\* Token CEO mobile first decision:[\s\S]*\.token-hero\s*\{[\s\S]*gap: 4px !important;/);
   assert.match(cssSource, /\/\* Token CEO mobile first decision:[\s\S]*\.token-ceo-decision-strip\s*\{[\s\S]*display: none !important;/);

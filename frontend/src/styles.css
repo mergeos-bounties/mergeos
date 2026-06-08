@@ -42119,3 +42119,44 @@ canvas {
     padding: 0 !important;
   }
 }
+
+/* Token CEO empty candidate polish: make the fallback feel like a decision gate, not an API state. */
+.token-ceo-empty-gates {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+  margin-top: 8px !important;
+}
+
+.token-ceo-empty-gates span {
+  min-height: 24px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  border: 1px solid rgba(79, 70, 229, 0.13) !important;
+  border-radius: 999px !important;
+  background: rgba(245, 243, 255, 0.72) !important;
+  color: #4c1d95 !important;
+  padding: 0 8px !important;
+  font-size: 9px !important;
+  line-height: 1 !important;
+  font-weight: 930 !important;
+  text-transform: uppercase !important;
+  white-space: nowrap !important;
+}
+
+@media (max-width: 620px) {
+  .token-ceo-empty-gates {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 5px !important;
+    margin-top: 7px !important;
+  }
+
+  .token-ceo-empty-gates span {
+    min-width: 0 !important;
+    justify-content: center !important;
+    overflow: hidden !important;
+    padding-inline: 5px !important;
+    text-overflow: ellipsis !important;
+  }
+}
