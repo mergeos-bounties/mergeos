@@ -39553,3 +39553,14 @@ canvas {
   }
 }
 
+/* Token CEO mobile first decision: put candidate actions inside the first viewport. */
+@media (max-width: 620px) {
+  .token-ceo-decision-strip {
+    display: none !important;
+  }
+
+  .token-ceo-candidate-lane article {
+    min-height: 0 !important;
+  }
+}
+
