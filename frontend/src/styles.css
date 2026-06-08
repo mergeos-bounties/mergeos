@@ -44835,6 +44835,202 @@ canvas {
   }
 }
 
+/* Whitepaper mobile executive pass: one compact cover, then proof map and chapter drawer. */
+@media (max-width: 760px) {
+  .token-page-whitepaper .home-container {
+    padding-block: 0 12px !important;
+  }
+
+  .token-page-whitepaper .token-shell {
+    gap: 8px !important;
+  }
+
+  .token-page-whitepaper .token-hero {
+    min-height: auto !important;
+    gap: 8px !important;
+    padding-block: 8px 0 !important;
+  }
+
+  .token-page-whitepaper .token-hero-copy {
+    gap: 8px !important;
+    padding: 0 !important;
+  }
+
+  .token-page-whitepaper .token-hero-copy h1 {
+    max-width: 10.8ch !important;
+    font-size: clamp(28px, 7.4vw, 34px) !important;
+    line-height: 1.03 !important;
+    text-wrap: balance !important;
+  }
+
+  .token-page-whitepaper .token-hero-copy p {
+    display: -webkit-box !important;
+    margin-top: 4px !important;
+    overflow: hidden !important;
+    -webkit-box-orient: vertical !important;
+    -webkit-line-clamp: 2 !important;
+    font-size: 12px !important;
+    line-height: 1.32 !important;
+  }
+
+  .token-page-whitepaper .token-hero .marketplace-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+    margin-top: 2px !important;
+  }
+
+  .token-page-whitepaper .token-hero .marketplace-actions .large {
+    min-height: 36px !important;
+    border-radius: 9px !important;
+    font-size: 11px !important;
+  }
+
+  .token-page-whitepaper .token-status-panel {
+    gap: 6px !important;
+    padding: 8px !important;
+    border-radius: 10px !important;
+  }
+
+  .token-page-whitepaper .token-status-panel .ledger-card-head {
+    display: none !important;
+  }
+
+  .token-page-whitepaper .token-metric-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 5px !important;
+  }
+
+  .token-page-whitepaper .token-metric-grid article {
+    min-height: 42px !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 2px !important;
+    padding: 6px 4px !important;
+    text-align: center !important;
+  }
+
+  .token-page-whitepaper .token-metric-grid .ledger-trust-icon {
+    display: none !important;
+  }
+
+  .token-page-whitepaper .token-metric-grid strong,
+  .token-page-whitepaper .token-metric-grid small {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .token-page-whitepaper .token-metric-grid strong {
+    font-size: 12px !important;
+  }
+
+  .token-page-whitepaper .token-metric-grid small {
+    font-size: 7.5px !important;
+    text-transform: uppercase !important;
+  }
+
+  .token-page-whitepaper .token-whitepaper-reader {
+    gap: 7px !important;
+    padding: 9px !important;
+    border-radius: 10px !important;
+  }
+
+  .token-page-whitepaper .token-whitepaper-copy {
+    gap: 6px !important;
+  }
+
+  .token-page-whitepaper .token-whitepaper-cover-meta {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 5px !important;
+  }
+
+  .token-page-whitepaper .token-whitepaper-cover-meta span {
+    min-width: 0 !important;
+    justify-content: center !important;
+    padding-inline: 4px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .token-page-whitepaper .token-whitepaper-copy > p {
+    -webkit-line-clamp: 2 !important;
+    font-size: 11px !important;
+    line-height: 1.3 !important;
+  }
+
+  .token-page-whitepaper .token-whitepaper-thesis {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+  }
+
+  .token-page-whitepaper .token-whitepaper-thesis article {
+    min-height: 62px !important;
+    padding: 8px !important;
+  }
+
+  .token-page-whitepaper .token-whitepaper-thesis small {
+    font-size: 7.5px !important;
+  }
+
+  .token-page-whitepaper .token-whitepaper-thesis strong {
+    font-size: 11px !important;
+  }
+
+  .token-page-whitepaper .token-whitepaper-thesis p {
+    -webkit-line-clamp: 1 !important;
+    font-size: 9.5px !important;
+    line-height: 1.25 !important;
+  }
+
+  .token-page-whitepaper .token-whitepaper-proof-links {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+  }
+
+  .token-page-whitepaper .token-whitepaper-proof-links article {
+    min-height: 48px !important;
+    grid-template-columns: 24px minmax(0, 1fr) !important;
+    gap: 6px !important;
+    padding: 7px !important;
+  }
+
+  .token-page-whitepaper .token-whitepaper-proof-links article button {
+    display: none !important;
+  }
+
+  .token-page-whitepaper .token-whitepaper-proof-links strong {
+    font-size: 10px !important;
+    line-height: 1.15 !important;
+  }
+
+  .token-page-whitepaper .token-whitepaper-brief {
+    gap: 8px !important;
+    padding: 9px !important;
+    border-radius: 10px !important;
+  }
+
+  .token-page-whitepaper .token-whitepaper-brief .contracts-section-head h2 {
+    font-size: clamp(18px, 5.2vw, 22px) !important;
+  }
+
+  .token-page-whitepaper .token-whitepaper-brief .contracts-section-head p {
+    display: none !important;
+  }
+
+  .token-page-whitepaper .token-whitepaper-chapter-drawer summary {
+    min-height: 40px !important;
+    padding: 0 10px !important;
+    font-size: 12px !important;
+  }
+
+  .token-page-whitepaper .token-whitepaper-chapter-drawer .token-whitepaper-section-list {
+    grid-template-columns: minmax(0, 1fr) !important;
+    margin: 0 6px 6px !important;
+  }
+}
+
 /* Token launch mobile skim: keep airdrop and presale focused on the CEO decision and primary action. */
 @media (max-width: 760px) {
   .token-page-airdrop .token-content-grid,
@@ -48035,5 +48231,156 @@ canvas {
 
   .public-home-page .home-ceo-token-desk button small {
     font-size: 8px !important;
+  }
+}
+
+/* Whitepaper final mobile cut: keep the paper cover inspectable inside the first viewport. */
+@media (max-width: 760px) {
+  .token-page-whitepaper .token-hero {
+    min-height: auto !important;
+    gap: 8px !important;
+    padding-block: 8px 0 !important;
+  }
+
+  .token-page-whitepaper .token-hero-copy {
+    padding: 0 !important;
+    gap: 8px !important;
+  }
+
+  .token-page-whitepaper .token-hero-copy h1.token-hero-title-full {
+    display: none !important;
+  }
+
+  .token-page-whitepaper .token-hero-copy h1.token-hero-title-mobile {
+    display: block !important;
+    width: min(100%, 330px) !important;
+    max-width: min(100%, 330px) !important;
+    font-size: clamp(31px, 8vw, 36px) !important;
+    line-height: 1.03 !important;
+    text-wrap: balance !important;
+  }
+
+  .token-page-whitepaper .token-hero-copy p {
+    margin-top: 2px !important;
+    -webkit-line-clamp: 2 !important;
+    font-size: 12px !important;
+    line-height: 1.3 !important;
+  }
+
+  .token-page-whitepaper .token-hero .marketplace-actions {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 5px !important;
+    margin-top: 2px !important;
+  }
+
+  .token-page-whitepaper .token-hero .marketplace-actions .large {
+    min-width: 0 !important;
+    min-height: 34px !important;
+    border-radius: 8px !important;
+    padding: 0 4px !important;
+    gap: 4px !important;
+    font-size: 0 !important;
+  }
+
+  .token-page-whitepaper .token-hero .marketplace-actions .action-label-full {
+    display: none !important;
+  }
+
+  .token-page-whitepaper .token-hero .marketplace-actions .action-label-mobile {
+    display: inline !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    color: inherit !important;
+    font-size: 9.5px !important;
+    line-height: 1 !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .token-page-whitepaper .token-hero .marketplace-actions svg {
+    display: none !important;
+  }
+
+  .token-page-whitepaper .token-status-panel {
+    gap: 5px !important;
+    padding: 7px !important;
+  }
+
+  .token-page-whitepaper .token-status-panel .ledger-card-head,
+  .token-page-whitepaper .token-status-panel > p {
+    display: none !important;
+  }
+
+  .token-page-whitepaper .token-metric-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 5px !important;
+  }
+
+  .token-page-whitepaper .token-metric-grid article {
+    min-height: 38px !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    padding: 5px 3px !important;
+    text-align: center !important;
+  }
+
+  .token-page-whitepaper .token-metric-grid .ledger-economy-mini-icon {
+    display: none !important;
+  }
+
+  .token-page-whitepaper .token-metric-grid strong,
+  .token-page-whitepaper .token-metric-grid small {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .token-page-whitepaper .token-metric-grid strong {
+    font-size: 11px !important;
+  }
+
+  .token-page-whitepaper .token-metric-grid small {
+    font-size: 7px !important;
+    text-transform: uppercase !important;
+  }
+
+  .token-page-whitepaper .token-whitepaper-reader {
+    gap: 6px !important;
+    padding: 8px !important;
+  }
+
+  .token-page-whitepaper .token-whitepaper-copy > p {
+    -webkit-line-clamp: 2 !important;
+    font-size: 10.5px !important;
+    line-height: 1.28 !important;
+  }
+
+  .token-page-whitepaper .token-whitepaper-thesis,
+  .token-page-whitepaper .token-whitepaper-proof-links {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 5px !important;
+  }
+
+  .token-page-whitepaper .token-whitepaper-thesis article {
+    min-height: 54px !important;
+    padding: 7px !important;
+  }
+
+  .token-page-whitepaper .token-whitepaper-thesis p {
+    display: none !important;
+  }
+
+  .token-page-whitepaper .token-whitepaper-proof-links article {
+    min-height: 44px !important;
+    grid-template-columns: 22px minmax(0, 1fr) !important;
+    padding: 6px !important;
+  }
+
+  .token-page-whitepaper .token-whitepaper-proof-links button {
+    display: none !important;
+  }
+
+  .token-page-whitepaper .token-whitepaper-brief {
+    padding: 8px !important;
   }
 }

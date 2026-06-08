@@ -1396,6 +1396,7 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /action: \{ page: 'whitepaper' \}/);
   assert.match(appSource, /const whitepaperDownloadPath = '\/whitepaper\/mergeos-whitepaper\.md'/);
   assert.match(appSource, /command: 'download-whitepaper'/);
+  assert.match(appSource, /mobileTitle: 'MergeOS whitepaper\.'/);
   assert.match(appSource, /function downloadWhitepaper\(\)/);
   assert.match(appSource, /href="#whitepaper-brief-title"/);
   assert.match(appSource, /Read executive paper/);
@@ -2010,6 +2011,17 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(cssSource, /@media \(max-width: 760px\)[\s\S]*\.token-page-whitepaper \.token-whitepaper-copy > \.marketplace-eyebrow,[\s\S]*\.token-page-whitepaper \.token-whitepaper-copy h2\s*\{[\s\S]*display: none !important;/);
   assert.match(cssSource, /@media \(max-width: 760px\)[\s\S]*\.token-page-whitepaper \.token-hero \.marketplace-actions\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\) !important;/);
   assert.match(cssSource, /@media \(max-width: 760px\)[\s\S]*\.token-page-whitepaper \.token-whitepaper-section-list article:nth-child\(n \+ 4\)\s*\{[\s\S]*display: none !important;/);
+  assert.match(cssSource, /Whitepaper mobile executive pass: one compact cover, then proof map and chapter drawer/);
+  assert.match(cssSource, /\/\* Whitepaper mobile executive pass:[\s\S]*\.token-page-whitepaper \.token-status-panel \.ledger-card-head\s*\{[\s\S]*display: none !important;/);
+  assert.match(cssSource, /\/\* Whitepaper mobile executive pass:[\s\S]*\.token-page-whitepaper \.token-metric-grid\s*\{[\s\S]*grid-template-columns: repeat\(4, minmax\(0, 1fr\)\) !important;/);
+  assert.match(cssSource, /\/\* Whitepaper mobile executive pass:[\s\S]*\.token-page-whitepaper \.token-whitepaper-thesis\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\) !important;/);
+  assert.match(cssSource, /\/\* Whitepaper mobile executive pass:[\s\S]*\.token-page-whitepaper \.token-whitepaper-proof-links\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\) !important;/);
+  assert.match(cssSource, /\/\* Whitepaper mobile executive pass:[\s\S]*\.token-page-whitepaper \.token-whitepaper-brief \.contracts-section-head p\s*\{[\s\S]*display: none !important;/);
+  assert.match(cssSource, /Whitepaper final mobile cut: keep the paper cover inspectable inside the first viewport/);
+  assert.match(cssSource, /\/\* Whitepaper final mobile cut:[\s\S]*\.token-page-whitepaper \.token-hero-copy h1\.token-hero-title-full\s*\{[\s\S]*display: none !important;/);
+  assert.match(cssSource, /\/\* Whitepaper final mobile cut:[\s\S]*\.token-page-whitepaper \.token-hero \.marketplace-actions\s*\{[\s\S]*grid-template-columns: repeat\(4, minmax\(0, 1fr\)\) !important;/);
+  assert.match(cssSource, /\/\* Whitepaper final mobile cut:[\s\S]*\.token-page-whitepaper \.token-status-panel \.ledger-card-head,[\s\S]*\.token-page-whitepaper \.token-status-panel > p\s*\{[\s\S]*display: none !important;/);
+  assert.match(cssSource, /\/\* Whitepaper final mobile cut:[\s\S]*\.token-page-whitepaper \.token-whitepaper-thesis,[\s\S]*\.token-page-whitepaper \.token-whitepaper-proof-links\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\) !important;/);
   assert.match(cssSource, /Token workflow mobile skim: show the decision path, then get users to the form faster/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-timeline-list li:nth-child\(n \+ 4\)\s*\{[\s\S]*display: none !important;/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-timeline-list li\s*\{[\s\S]*grid-template-columns: 28px minmax\(0, 1fr\) !important;/);

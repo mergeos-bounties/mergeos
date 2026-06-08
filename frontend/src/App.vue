@@ -12947,6 +12947,7 @@ const publicTokenPageDefinitions = {
   whitepaper: {
     eyebrow: 'MERGEOS WHITEPAPER',
     title: 'The operating system for AI software delivery.',
+    mobileTitle: 'MergeOS whitepaper.',
     body: 'Read the MergeOS product thesis, system architecture, AI orchestration layer, contributor marketplace, escrow economy, MRG token model, ledger proof, SDK, and open protocol roadmap.',
     badge: 'Architecture paper',
     badgeTone: 'purple',
