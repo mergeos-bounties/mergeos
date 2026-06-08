@@ -39821,3 +39821,44 @@ canvas {
     gap: 8px !important;
   }
 }
+
+/* Token workflow mobile skim: show the decision path, then get users to the form faster. */
+@media (max-width: 620px) {
+  .token-timeline-list li:nth-child(n + 4) {
+    display: none !important;
+  }
+
+  .token-timeline-list li {
+    grid-template-columns: 28px minmax(0, 1fr) !important;
+    gap: 8px !important;
+    padding: 9px !important;
+  }
+
+  .token-timeline-list li > span {
+    width: 28px !important;
+    height: 28px !important;
+    border-radius: 8px !important;
+  }
+
+  .token-timeline-list b {
+    grid-column: 2 !important;
+    width: fit-content !important;
+    max-width: 100% !important;
+    margin-top: 3px !important;
+  }
+
+  .token-timeline-list p,
+  .token-timeline-list small {
+    display: -webkit-box !important;
+    overflow: hidden !important;
+    -webkit-box-orient: vertical !important;
+  }
+
+  .token-timeline-list p {
+    -webkit-line-clamp: 2 !important;
+  }
+
+  .token-timeline-list small {
+    -webkit-line-clamp: 1 !important;
+  }
+}
