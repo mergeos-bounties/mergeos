@@ -45306,6 +45306,20 @@ canvas {
   line-height: 1.25 !important;
 }
 
+.token-page-airdrop .token-ceo-candidate-evidence,
+.token-page-presale .token-ceo-candidate-evidence {
+  display: block !important;
+  margin-top: 5px !important;
+  overflow: hidden !important;
+  color: #0f766e !important;
+  font-size: 10px !important;
+  font-style: normal !important;
+  font-weight: 860 !important;
+  line-height: 1.1 !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
 .token-page-airdrop .token-ceo-candidate-verdict,
 .token-page-presale .token-ceo-candidate-verdict {
   grid-template-columns: auto minmax(0, 1fr) !important;

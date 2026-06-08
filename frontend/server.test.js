@@ -1475,6 +1475,9 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /candidate\.decision_summary \|\| candidate\.gate_summary/);
   assert.match(appSource, /candidate\.research_source/);
   assert.match(appSource, /candidate\.proof_policy/);
+  assert.match(appSource, /class="token-ceo-candidate-evidence"/);
+  assert.match(appSource, /function tokenLaunchCandidateEvidenceSummary/);
+  assert.match(appSource, /Evidence: \$\{workCount\} tasks \/ \$\{signalCount\} signals \/ \$\{readyCount\}\/\$\{gateCount\} gates/);
   assert.match(appSource, /class="token-ceo-candidate-context" role="group"/);
   assert.match(appSource, /function tokenLaunchCandidateContextRows\(candidate = \{\}, readinessRows = \[\], launchType = 'airdrop'\)/);
   assert.match(appSource, /CEO brief/);
@@ -1504,6 +1507,7 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /const launchType = candidate\.launchType === 'presale' \|\| candidate\.launchType === 'airdrop'[\s\S]*\? candidate\.launchType[\s\S]*: \(publicPage\.value === 'presale' \? 'presale' : 'airdrop'\);/);
   assert.match(appSource, /row\.scoreLabel/);
   assert.match(appSource, /scoreLabel: `\$\{score\}% fit`/);
+  assert.match(appSource, /evidenceSummary: tokenLaunchCandidateEvidenceSummary/);
   assert.match(appSource, /class="token-ceo-candidate-decisions"/);
   assert.match(appSource, /class="token-ceo-candidate-signals"/);
   assert.match(appSource, /proofSignalRows = signals\.slice\(0, 3\)\.map/);
@@ -1733,6 +1737,7 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(cssSource, /\.token-ceo-candidate-policy em\s*\{[\s\S]*font-style: normal;[\s\S]*font-weight: 900;/);
   assert.match(cssSource, /\.token-ceo-candidate-decisions\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /\.token-ceo-candidate-decisions button\.approve\s*\{[\s\S]*background: #ecfdf5;/);
+  assert.match(cssSource, /\.token-page-airdrop \.token-ceo-candidate-evidence,[\s\S]*\.token-page-presale \.token-ceo-candidate-evidence\s*\{[\s\S]*white-space: nowrap !important;/);
   assert.match(cssSource, /\.token-ceo-project-queue\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /\.token-ceo-source-packet\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /\.token-ceo-signal-chips\s*\{[\s\S]*flex-wrap: wrap;/);
