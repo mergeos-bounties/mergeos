@@ -39118,22 +39118,44 @@ canvas {
     line-height: 1.2 !important;
   }
 
-  .token-ceo-candidate-lane p,
-  .token-ceo-candidate-lane em {
+  .token-ceo-candidate-lane p {
     margin-top: 4px !important;
     font-size: 10px !important;
     line-height: 1.24 !important;
     -webkit-line-clamp: 2 !important;
   }
 
+  .token-ceo-candidate-lane em {
+    grid-column: 1 / -1 !important;
+    margin-top: 4px !important;
+    border: 1px solid rgba(37, 99, 235, 0.1) !important;
+    border-radius: 999px !important;
+    background: rgba(239, 246, 255, 0.72) !important;
+    padding: 4px 7px !important;
+    color: #1d4ed8 !important;
+    font-size: 9px !important;
+    line-height: 1.1 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    -webkit-line-clamp: unset !important;
+  }
+
   .token-ceo-candidate-policy {
     margin-top: 5px !important;
-    padding: 6px !important;
+    border-color: rgba(15, 118, 110, 0.1) !important;
+    background: rgba(255, 255, 255, 0.82) !important;
+    padding: 6px 7px !important;
+  }
+
+  .token-ceo-candidate-policy b {
+    font-size: 8.4px !important;
   }
 
   .token-ceo-candidate-policy span {
-    font-size: 9.6px !important;
-    line-height: 1.22 !important;
+    margin-top: 2px !important;
+    font-size: 9.2px !important;
+    line-height: 1.18 !important;
     -webkit-line-clamp: 2 !important;
   }
 
