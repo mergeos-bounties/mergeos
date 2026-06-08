@@ -509,6 +509,9 @@ test('public protocol links match backend routes', async () => {
   assert.equal(tokenLaunchBriefsSchema.properties.briefs.items.required.includes('research_source'), true);
   assert.equal(tokenLaunchCandidatesSchema.properties.protocol_version.const, 'mergeos.token-launch-candidates.v1');
   assert.equal(tokenLaunchCandidatesSchema.required.includes('candidates'), true);
+  assert.equal(tokenLaunchCandidatesSchema.properties.stats.required.includes('ready_count'), true);
+  assert.equal(tokenLaunchCandidatesSchema.properties.stats.required.includes('review_count'), true);
+  assert.equal(tokenLaunchCandidatesSchema.properties.stats.required.includes('hold_count'), true);
   assert.equal(tokenLaunchCandidatesSchema.properties.candidates.items.required.includes('proof_policy'), true);
   assert.equal(tokenLaunchCandidatesSchema.properties.candidates.items.required.includes('next_action'), true);
   assert.equal(tokenLaunchCandidatesSchema.properties.candidates.items.required.includes('readiness_gates'), true);
@@ -1310,6 +1313,8 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /const candidatePath = publicPage\.value === 'airdrop' \|\| publicPage\.value === 'presale'/);
   assert.match(appSource, /const tokenCeoDecisionRows = computed/);
   assert.match(appSource, /const tokenCeoQueueStatRows = computed/);
+  assert.match(appSource, /Ready to open/);
+  assert.match(appSource, /candidateStats\.ready_count/);
   assert.match(appSource, /const tokenCeoLiveQueueRows = computed/);
   assert.match(appSource, /const tokenCeoLiveEmptyCopy = computed/);
   assert.match(appSource, /const tokenCeoCandidateRows = computed/);

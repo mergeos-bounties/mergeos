@@ -11,11 +11,14 @@
     "stats": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["candidate_count", "airdrop_count", "presale_count"],
+      "required": ["candidate_count", "airdrop_count", "presale_count", "ready_count", "review_count", "hold_count"],
       "properties": {
         "candidate_count": { "type": "integer", "minimum": 0 },
         "airdrop_count": { "type": "integer", "minimum": 0 },
         "presale_count": { "type": "integer", "minimum": 0 },
+        "ready_count": { "type": "integer", "minimum": 0 },
+        "review_count": { "type": "integer", "minimum": 0 },
+        "hold_count": { "type": "integer", "minimum": 0 },
         "updated_at": { "type": "string", "format": "date-time" }
       }
     },

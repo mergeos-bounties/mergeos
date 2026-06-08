@@ -177,6 +177,9 @@ type PublicTokenLaunchCandidatesStats struct {
 	CandidateCount int        `json:"candidate_count"`
 	AirdropCount   int        `json:"airdrop_count"`
 	PresaleCount   int        `json:"presale_count"`
+	ReadyCount     int        `json:"ready_count"`
+	ReviewCount    int        `json:"review_count"`
+	HoldCount      int        `json:"hold_count"`
 	UpdatedAt      *time.Time `json:"updated_at,omitempty"`
 }
 
@@ -606,6 +609,7 @@ func (s *Store) PublicTokenLaunchCandidates(launchTypeFilter string) PublicToken
 		researchScore := tokenLaunchCandidateResearchScore(project, proofSignals)
 		decisionLaunchType := tokenLaunchCandidateDecisionLaunchType(recommendedTypes, launchTypeFilter)
 		nextAction := tokenLaunchCandidateNextAction(decisionLaunchType, researchScore)
+		readinessGates := tokenLaunchCandidateReadinessGates(decisionLaunchType, researchScore, project, proofSignals)
 		candidate := PublicTokenLaunchCandidate{
 			CandidateID:            "tlc_" + project.ID,
 			ProjectID:              project.ID,
@@ -619,7 +623,7 @@ func (s *Store) PublicTokenLaunchCandidates(launchTypeFilter string) PublicToken
 			ResearchScore:          researchScore,
 			ProofSignals:           proofSignals,
 			DecisionOptions:        tokenLaunchCandidateDecisionOptions(decisionLaunchType, researchScore),
-			ReadinessGates:         tokenLaunchCandidateReadinessGates(decisionLaunchType, researchScore, project, proofSignals),
+			ReadinessGates:         readinessGates,
 			NextAction:             nextAction,
 			GateSummary:            fmt.Sprintf("%d open tasks, %d accepted tasks, %d proof signals", project.OpenTaskCount, project.AcceptedTaskCount, len(proofSignals)),
 			ProofPolicy:            tokenLaunchCandidateProofPolicy(projectBounties),
@@ -632,6 +636,14 @@ func (s *Store) PublicTokenLaunchCandidates(launchTypeFilter string) PublicToken
 		}
 		if stringSliceContains(recommendedTypes, "presale") {
 			response.Stats.PresaleCount++
+		}
+		switch tokenLaunchCandidateReadinessState(readinessGates) {
+		case "ready":
+			response.Stats.ReadyCount++
+		case "hold":
+			response.Stats.HoldCount++
+		default:
+			response.Stats.ReviewCount++
 		}
 	}
 	response.Stats.CandidateCount = len(response.Candidates)
@@ -1288,6 +1300,25 @@ func tokenLaunchCandidateReadinessGates(launchType string, score int, project *M
 			Evidence: "CEO must confirm wallet uniqueness, claim limits, and proof review before opening.",
 		},
 	}
+}
+
+func tokenLaunchCandidateReadinessState(gates []TokenLaunchCandidateReadinessGate) string {
+	if len(gates) == 0 {
+		return "review"
+	}
+	allReady := true
+	for _, gate := range gates {
+		if gate.State == "hold" {
+			return "hold"
+		}
+		if gate.State != "ready" {
+			allReady = false
+		}
+	}
+	if allReady {
+		return "ready"
+	}
+	return "review"
 }
 
 func tokenLaunchCandidateDecisionOptions(launchType string, score int) []TokenLaunchCandidateDecisionOption {

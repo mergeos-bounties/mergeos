@@ -232,6 +232,9 @@ test('validates airdrop claim, presale reservation, and token launch brief proto
       candidate_count: 1,
       airdrop_count: 1,
       presale_count: 1,
+      ready_count: 1,
+      review_count: 0,
+      hold_count: 0,
       updated_at: now,
     },
     candidates: [

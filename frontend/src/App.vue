@@ -12890,8 +12890,12 @@ const tokenCeoQueueStatRows = computed(() => {
   const candidateCount = Number(currentType === 'presale' ? candidateStats.presale_count : candidateStats.airdrop_count)
     || tokenCeoCandidateRows.value.length
     || 0;
+  const readyCount = Number(candidateStats.ready_count) || tokenCeoCandidateRows.value.filter((row) =>
+    Array.isArray(row.readinessRows) && row.readinessRows.every((gate) => gate.state === 'ready')
+  ).length || 0;
   return [
     { label: 'Research candidates', value: String(candidateCount) },
+    { label: 'Ready to open', value: String(readyCount) },
     { label: currentType === 'presale' ? 'Presale memos' : 'Airdrop memos', value: String(currentCount) },
     { label: 'Public source', value: 'API + ledger' },
   ];

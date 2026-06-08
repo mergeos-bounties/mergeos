@@ -1827,6 +1827,9 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 	if candidates.ProtocolVersion != tokenLaunchCandidatesProtocolVersion || candidates.Kind != "token_launch_candidates" || candidates.Stats.CandidateCount < 1 || candidates.Stats.AirdropCount < 1 {
 		t.Fatalf("public token launch candidates summary invalid: %#v", candidates)
 	}
+	if candidates.Stats.ReadyCount < 1 || candidates.Stats.ReviewCount != 0 || candidates.Stats.HoldCount != 0 {
+		t.Fatalf("public token launch candidates readiness stats invalid: %#v", candidates.Stats)
+	}
 	if len(candidates.Candidates) < 1 ||
 		candidates.Candidates[0].ProjectID != project.ID ||
 		candidates.Candidates[0].ResearchSource != "https://github.com/mergeos-bounties/mergeos" ||
