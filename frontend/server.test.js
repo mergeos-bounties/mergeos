@@ -1277,7 +1277,7 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /tokenLaunchCandidatesData\.value\?\.candidates/);
   assert.match(appSource, /candidate\.research_source/);
   assert.match(appSource, /candidate\.proof_policy/);
-  assert.match(appSource, /row\.proofSignals/);
+  assert.match(appSource, /row\.proofSignalRows/);
   assert.match(appSource, /function tokenLaunchCandidateScore/);
   assert.match(appSource, /function tokenLaunchCandidateDecisionRows/);
   assert.match(appSource, /function tokenLaunchCandidateDecisionRowsFromAPI\(rows = \[\], launchType = 'airdrop', score = 0\)/);
@@ -1292,6 +1292,9 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /row\.scoreLabel/);
   assert.match(appSource, /scoreLabel: `\$\{score\}% fit`/);
   assert.match(appSource, /class="token-ceo-candidate-decisions"/);
+  assert.match(appSource, /class="token-ceo-candidate-signals"/);
+  assert.match(appSource, /proofSignalRows = signals\.slice\(0, 3\)\.map/);
+  assert.match(appSource, /proofSignalExtra: Math\.max\(0, signals\.length - proofSignalRows\.length\)/);
   assert.match(appSource, /Approve memo/);
   assert.match(appSource, /Needs evidence/);
   assert.match(appSource, /Reject/);
@@ -1509,6 +1512,9 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(cssSource, /\/\* Token CEO brief compact form pass:[\s\S]*\.token-ceo-brief-form\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\) !important;/);
   assert.match(cssSource, /\/\* Token CEO brief compact form pass:[\s\S]*\.token-ceo-brief-form \.wizard-field small\s*\{[\s\S]*display: none !important;/);
   assert.match(cssSource, /\/\* Token CEO brief compact form pass:[\s\S]*\.token-ceo-brief-form \.wizard-field\.full textarea\s*\{[\s\S]*min-height: 108px !important;/);
+  assert.match(cssSource, /Token CEO candidate decision polish: turn raw research signals into scan-friendly evidence chips/);
+  assert.match(cssSource, /\.token-ceo-candidate-signals\s*\{[\s\S]*display: flex;[\s\S]*flex-wrap: wrap;/);
+  assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-candidate-signals\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\) !important;/);
   assert.match(cssSource, /\.token-proof-result small\s*\{[\s\S]*overflow: visible;[\s\S]*white-space: normal;[\s\S]*overflow-wrap: anywhere;/);
   assert.match(cssSource, /\.token-whitepaper-thesis p\s*\{[\s\S]*-webkit-line-clamp: 2;/);
 });

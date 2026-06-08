@@ -5143,7 +5143,10 @@
                 </small>
                 <strong>{{ row.title }}</strong>
                 <p>{{ row.body }}</p>
-                <em v-if="row.proofSignals">{{ row.proofSignals }}</em>
+                <div v-if="row.proofSignalRows?.length" class="token-ceo-candidate-signals" aria-label="CEO proof signals">
+                  <span v-for="signal in row.proofSignalRows" :key="signal">{{ signal }}</span>
+                  <b v-if="row.proofSignalExtra">+{{ row.proofSignalExtra }}</b>
+                </div>
                 <div v-if="row.decisionPreview" class="token-ceo-candidate-policy">
                   <b>{{ row.decisionPreview.label }}</b>
                   <span>{{ row.decisionPreview.proofPolicy }}</span>
@@ -12955,6 +12958,7 @@ const tokenCeoCandidateRows = computed(() => {
     return apiCandidates.slice(0, 3).map((candidate) => {
       const sourceUrl = String(candidate.research_source || '').trim();
       const signals = Array.isArray(candidate.proof_signals) ? candidate.proof_signals : [];
+      const proofSignalRows = signals.slice(0, 3).map((signal) => toTitleLabel(signal));
       const score = Number(candidate.research_score) || tokenLaunchCandidateScore({
         openTasks: Number(candidate.open_task_count) || 0,
         acceptedTasks: Number(candidate.accepted_task_count) || 0,
@@ -12973,7 +12977,8 @@ const tokenCeoCandidateRows = computed(() => {
         sourceUrl: /^https?:\/\//i.test(sourceUrl) ? sourceUrl : '',
         projectSummary: candidate.brief || '',
         proofPolicy: candidate.proof_policy || 'Require task evidence, review notes, repository context, and ledger proof before approval.',
-        proofSignals: signals.join(', '),
+        proofSignalRows,
+        proofSignalExtra: Math.max(0, signals.length - proofSignalRows.length),
         tone: launchType === 'presale' ? 'green' : 'purple',
       };
     });
@@ -12985,6 +12990,10 @@ const tokenCeoCandidateRows = computed(() => {
     const projectBounties = bounties.filter((bounty) => bounty.project_id === project.id);
     const firstBounty = projectBounties[0] || {};
     const sourceUrl = firstBounty.source_repository || firstBounty.issue_url || '';
+    const fallbackSignals = Array.isArray(firstBounty.evidence_required) && firstBounty.evidence_required.length
+      ? firstBounty.evidence_required
+      : ['repo context', 'task evidence', 'ledger proof'];
+    const proofSignalRows = fallbackSignals.slice(0, 3).map((signal) => toTitleLabel(signal));
     const openTasks = Number(project.open_task_count) || projectBounties.length || 0;
     const acceptedTasks = Number(project.accepted_task_count) || 0;
     const budget = formatPublicMRGFromCents(Number(project.work_pool_cents || project.budget_cents) || 0);
@@ -13008,6 +13017,8 @@ const tokenCeoCandidateRows = computed(() => {
       proofPolicy: firstBounty.evidence_required?.length
         ? `Require ${firstBounty.evidence_required.join(', ')} plus ledger proof before approval.`
         : 'Require task evidence, review notes, repository context, and ledger proof before approval.',
+      proofSignalRows,
+      proofSignalExtra: Math.max(0, fallbackSignals.length - proofSignalRows.length),
       tone: launchType === 'presale' ? 'green' : 'purple',
     };
   });

@@ -39474,8 +39474,82 @@ canvas {
     font-size: 11px !important;
   }
 
-  .token-ceo-brief-actions .secondary-button:last-child {
+.token-ceo-brief-actions .secondary-button:last-child {
     grid-column: 1 / -1 !important;
+  }
+}
+
+/* Token CEO candidate decision polish: turn raw research signals into scan-friendly evidence chips. */
+.token-ceo-candidate-signals {
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 8px;
+}
+
+.token-ceo-candidate-signals span,
+.token-ceo-candidate-signals b {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  border: 1px solid rgba(37, 99, 235, 0.12);
+  border-radius: 999px;
+  background: rgba(239, 246, 255, 0.76);
+  color: #1d4ed8;
+  padding: 0 8px;
+  font-size: 9.5px;
+  line-height: 1;
+  font-weight: 860;
+  white-space: nowrap;
+}
+
+.token-ceo-candidate-signals b {
+  border-color: rgba(15, 118, 110, 0.14);
+  background: rgba(236, 253, 245, 0.86);
+  color: #047857;
+}
+
+@media (max-width: 620px) {
+  .token-ceo-candidate-lane article {
+    min-height: 210px !important;
+  }
+
+  .token-ceo-candidate-signals {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 4px !important;
+    margin-top: 5px !important;
+  }
+
+  .token-ceo-candidate-signals span,
+  .token-ceo-candidate-signals b {
+    min-height: 20px !important;
+    justify-content: center !important;
+    padding: 0 6px !important;
+    overflow: hidden !important;
+    font-size: 8.6px !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .token-ceo-candidate-policy {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 3px !important;
+    padding: 6px !important;
+  }
+
+  .token-ceo-candidate-policy span,
+  .token-ceo-candidate-policy small {
+    -webkit-line-clamp: 1 !important;
+  }
+
+  .token-ceo-candidate-actions a,
+  .token-ceo-candidate-actions button,
+  .token-ceo-candidate-decisions button {
+    min-height: 31px !important;
+    font-size: 9.5px !important;
   }
 }
 
