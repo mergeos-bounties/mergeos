@@ -1515,7 +1515,7 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /\$\{candidateCount\} presale candidate\(s\), \$\{readyCount\} ready/);
   assert.match(appSource, /\$\{sourceLabel\}, bounty demand, proof depth, wallet risk/);
   assert.match(appSource, /\$\{sourceLabel\}, utility, reserve cap, funding rail, contract proof/);
-  assert.match(appSource, /Research candidates/);
+  assert.match(appSource, /currentType === 'presale' \? 'Presale candidates' : 'Airdrop candidates'/);
   assert.match(appSource, /API \+ ledger/);
   assert.match(appSource, /mission_demand/);
   assert.match(appSource, /utility_readiness/);

@@ -12967,7 +12967,7 @@ const tokenCeoQueueStatRows = computed(() => {
     Array.isArray(row.readinessRows) && row.readinessRows.every((gate) => gate.state === 'ready')
   ).length || 0;
   return [
-    { label: 'Research candidates', value: String(candidateCount) },
+    { label: currentType === 'presale' ? 'Presale candidates' : 'Airdrop candidates', value: String(candidateCount) },
     { label: 'Ready to open', value: String(readyCount) },
     { label: currentType === 'presale' ? 'Presale memos' : 'Airdrop memos', value: String(currentCount) },
     { label: 'Public source', value: 'API + ledger' },
