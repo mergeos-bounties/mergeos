@@ -842,6 +842,11 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.match(cssSource, /\/\* Home CEO front door pass:[\s\S]*\.public-home-copy h1\s*\{[\s\S]*font-size: clamp\(42px, 5vw, 66px\) !important;/);
   assert.match(cssSource, /\/\* Home CEO front door pass:[\s\S]*\.home-command-panel \.home-feed-preview\s*\{[\s\S]*display: none !important;/);
   assert.match(cssSource, /@media \(max-width: 980px\)[\s\S]*\.home-command-panel\s*\{[\s\S]*display: none !important;/);
+  assert.match(cssSource, /Home complete description final pass: concise first screen, complete product meaning/);
+  assert.match(cssSource, /\/\* Home complete description final pass:[\s\S]*\.public-home-page \.home-container\s*\{[\s\S]*max-width: 1080px !important;/);
+  assert.match(cssSource, /\/\* Home complete description final pass:[\s\S]*\.public-home-copy p\s*\{[\s\S]*max-width: 62ch !important;[\s\S]*line-height: 1\.48 !important;/);
+  assert.match(cssSource, /\/\* Home complete description final pass:[\s\S]*\.home-definition-strip article\s*\{[\s\S]*min-height: 96px !important;/);
+  assert.match(cssSource, /\/\* Home complete description final pass:[\s\S]*@media \(max-width: 620px\)[\s\S]*\.home-definition-strip small\s*\{[\s\S]*-webkit-line-clamp: 2 !important;/);
 });
 
 test('frontend system exposes required public pages and dashboard roles', async () => {
@@ -1499,6 +1504,7 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(cssSource, /Token workflow mobile forms: compact enough to complete/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-form-grid\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) !important;/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-form-grid input,[\s\S]*\.token-form-grid textarea,[\s\S]*\.token-form-grid select\s*\{[\s\S]*min-height: 40px !important;/);
+  assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-brief-form \.wizard-field\.full textarea\s*\{[\s\S]*min-height: 116px !important;/);
   assert.match(cssSource, /\.token-proof-result small\s*\{[\s\S]*overflow: visible;[\s\S]*white-space: normal;[\s\S]*overflow-wrap: anywhere;/);
   assert.match(cssSource, /\.token-whitepaper-thesis p\s*\{[\s\S]*-webkit-line-clamp: 2;/);
 });
