@@ -11718,6 +11718,10 @@ const tokenLaunchBriefsData = ref({
   stats: {},
   briefs: [],
 });
+const tokenLaunchCandidatesData = ref({
+  stats: {},
+  candidates: [],
+});
 const airdropMissionsData = ref({
   stats: {},
   missions: [],
@@ -12786,10 +12790,14 @@ const tokenCeoDecisionRows = computed(() => {
 });
 const tokenCeoQueueStatRows = computed(() => {
   const stats = tokenLaunchBriefsData.value?.stats || {};
+  const candidateStats = tokenLaunchCandidatesData.value?.stats || {};
   const currentType = publicPage.value === 'presale' ? 'presale' : 'airdrop';
   const currentCount = Number(currentType === 'presale' ? stats.presale_count : stats.airdrop_count) || tokenLaunchBriefProofCount.value || 0;
+  const candidateCount = Number(currentType === 'presale' ? candidateStats.presale_count : candidateStats.airdrop_count)
+    || tokenCeoCandidateRows.value.length
+    || 0;
   return [
-    { label: 'Active queue', value: String(Number(stats.brief_count) || tokenLaunchBriefProofCount.value || 0) },
+    { label: 'Research candidates', value: String(candidateCount) },
     { label: currentType === 'presale' ? 'Presale memos' : 'Airdrop memos', value: String(currentCount) },
     { label: 'Public source', value: 'API + ledger' },
   ];
@@ -12827,6 +12835,27 @@ const tokenCeoLiveEmptyCopy = computed(() => (
       }
 ));
 const tokenCeoCandidateRows = computed(() => {
+  const apiCandidates = Array.isArray(tokenLaunchCandidatesData.value?.candidates)
+    ? tokenLaunchCandidatesData.value.candidates
+    : [];
+  if (apiCandidates.length) {
+    const launchType = publicPage.value === 'presale' ? 'presale' : 'airdrop';
+    return apiCandidates.slice(0, 3).map((candidate) => {
+      const sourceUrl = String(candidate.research_source || '').trim();
+      const signals = Array.isArray(candidate.proof_signals) ? candidate.proof_signals : [];
+      return {
+        key: candidate.candidate_id || candidate.project_id || candidate.project_title,
+        label: launchType === 'presale' ? 'CEO presale candidate' : 'CEO airdrop candidate',
+        title: candidate.project_title || 'Funded MergeOS project',
+        body: candidate.gate_summary || `${formatCompactNumber(candidate.work_pool_mrg || 0)} MRG work pool / ${Number(candidate.open_task_count) || 0} open tasks`,
+        sourceUrl: /^https?:\/\//i.test(sourceUrl) ? sourceUrl : '',
+        projectSummary: candidate.brief || '',
+        proofPolicy: candidate.proof_policy || 'Require task evidence, review notes, repository context, and ledger proof before approval.',
+        proofSignals: signals.join(', '),
+        tone: launchType === 'presale' ? 'green' : 'purple',
+      };
+    });
+  }
   const projects = Array.isArray(marketplaceData.value.projects) ? marketplaceData.value.projects : [];
   const bounties = Array.isArray(marketplaceData.value.bounties) ? marketplaceData.value.bounties : [];
   const launchType = publicPage.value === 'presale' ? 'presale' : 'airdrop';
@@ -30512,7 +30541,7 @@ async function loadLedgerData(options = {}) {
     ledgerLoading.value = true;
   }
   try {
-    const [entries, marketplace, proof, verification, events, economy, launchBriefs] = await Promise.all([
+    const [entries, marketplace, proof, verification, events, economy, launchBriefs, launchCandidates] = await Promise.all([
       publicApi('/api/public/ledger'),
       publicApi('/api/public/marketplace'),
       publicApi('/api/public/ledger/proof'),
@@ -30520,6 +30549,7 @@ async function loadLedgerData(options = {}) {
       publicApi('/api/public/ledger/events?limit=100'),
       publicApi('/api/public/token-economy'),
       publicApi('/api/public/token/launch-briefs'),
+      publicApi('/api/public/token/launch-candidates'),
     ]);
     ledgerRawEntries.value = Array.isArray(entries) ? entries : [];
     ledgerProjects.value = Array.isArray(marketplace.projects) ? marketplace.projects : [];
@@ -30544,6 +30574,12 @@ async function loadLedgerData(options = {}) {
           briefs: Array.isArray(launchBriefs.briefs) ? launchBriefs.briefs : [],
         }
       : { stats: {}, briefs: [] };
+    tokenLaunchCandidatesData.value = launchCandidates && typeof launchCandidates === 'object'
+      ? {
+          stats: launchCandidates.stats || {},
+          candidates: Array.isArray(launchCandidates.candidates) ? launchCandidates.candidates : [],
+        }
+      : { stats: {}, candidates: [] };
   } catch (error) {
     ledgerError.value = error.message;
     ledgerProof.value = null;
@@ -30551,6 +30587,7 @@ async function loadLedgerData(options = {}) {
     ledgerEventData.value = { stats: {}, items: [] };
     ledgerEconomy.value = { stats: {}, totals: {}, balances: [], flows: [], recent_entries: [] };
     tokenLaunchBriefsData.value = { stats: {}, briefs: [] };
+    tokenLaunchCandidatesData.value = { stats: {}, candidates: [] };
   } finally {
     ledgerLoading.value = false;
   }
