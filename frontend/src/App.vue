@@ -5753,14 +5753,14 @@
               </article>
             </div>
             <div class="token-whitepaper-actions">
-              <a class="primary-button large" :href="whitepaperDownloadPath" download="mergeos-whitepaper.md">
+              <a class="primary-button large" href="#whitepaper-brief-title">
+                Read executive paper
+                <FileCheck2 :size="16" />
+              </a>
+              <a class="secondary-button large" :href="whitepaperDownloadPath" download="mergeos-whitepaper.md">
                 Download markdown
                 <Download :size="16" />
               </a>
-              <button class="secondary-button large" type="button" @click="copyWhitepaperOutline">
-                Copy outline
-                <FileCheck2 :size="16" />
-              </button>
             </div>
           </div>
           <div class="token-whitepaper-index token-whitepaper-proof-links" aria-label="Whitepaper live artifact map">
@@ -5790,10 +5790,10 @@
                 protocol schema, ledger event, contract reference, or MergeIDE delivery surface.
               </p>
             </div>
-            <a :href="whitepaperDownloadPath" download="mergeos-whitepaper.md">
-              Markdown
-              <Download :size="13" />
-            </a>
+            <button type="button" @click="copyWhitepaperOutline">
+              Copy outline
+              <FileCheck2 :size="13" />
+            </button>
           </div>
           <details class="token-whitepaper-chapter-drawer">
             <summary>

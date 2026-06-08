@@ -1300,6 +1300,10 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /const whitepaperDownloadPath = '\/whitepaper\/mergeos-whitepaper\.md'/);
   assert.match(appSource, /command: 'download-whitepaper'/);
   assert.match(appSource, /function downloadWhitepaper\(\)/);
+  assert.match(appSource, /href="#whitepaper-brief-title"/);
+  assert.match(appSource, /Read executive paper/);
+  assert.match(appSource, /Download markdown/);
+  assert.match(appSource, /Copy outline/);
   assert.match(appSource, /class="token-whitepaper-thesis"/);
   assert.match(appSource, /class="token-whitepaper-cover-meta"/);
   assert.match(appSource, /class="token-whitepaper-index token-whitepaper-proof-links"/);
@@ -1795,6 +1799,8 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(cssSource, /\/\* Token desktop CEO runway:[\s\S]*\.token-page \.token-hero-copy h1\s*\{[\s\S]*max-width: 820px !important;[\s\S]*font-size: clamp\(38px, 3\.35vw, 50px\) !important;/);
   assert.match(cssSource, /\/\* Token desktop CEO runway:[\s\S]*\.token-page \.token-ceo-research-panel\s*\{[\s\S]*padding: 18px 20px !important;/);
   assert.match(cssSource, /\.token-proof-result small\s*\{[\s\S]*overflow: visible;[\s\S]*white-space: normal;[\s\S]*overflow-wrap: anywhere;/);
+  assert.match(cssSource, /\.token-whitepaper-actions a,[\s\S]*\.token-whitepaper-actions button\s*\{[\s\S]*text-decoration: none;/);
+  assert.match(cssSource, /\.token-whitepaper-brief \.contracts-section-head a,[\s\S]*\.token-whitepaper-brief \.contracts-section-head button\s*\{[\s\S]*cursor: pointer;/);
   assert.match(cssSource, /\.token-whitepaper-thesis p\s*\{[\s\S]*-webkit-line-clamp: 2;/);
   assert.match(cssSource, /Whitepaper mobile skim: keep the route decisive before the full reader begins/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-whitepaper-thesis article:nth-child\(n \+ 3\),[\s\S]*\.token-whitepaper-index article:nth-child\(n \+ 3\)\s*\{[\s\S]*display: none !important;/);

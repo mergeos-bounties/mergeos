@@ -10164,7 +10164,8 @@ svg {
   margin-top: 18px;
 }
 
-.token-whitepaper-actions a {
+.token-whitepaper-actions a,
+.token-whitepaper-actions button {
   text-decoration: none;
 }
 
@@ -10287,7 +10288,8 @@ svg {
   max-width: 760px;
 }
 
-.token-whitepaper-brief .contracts-section-head a {
+.token-whitepaper-brief .contracts-section-head a,
+.token-whitepaper-brief .contracts-section-head button {
   min-height: 36px;
   display: inline-flex;
   align-items: center;
@@ -10302,6 +10304,7 @@ svg {
   font-weight: 900;
   text-decoration: none;
   white-space: nowrap;
+  cursor: pointer;
 }
 
 .token-whitepaper-section-list {
