@@ -5384,6 +5384,12 @@
               <div v-if="tokenLaunchBriefResult.ceo_memo" class="token-ceo-memo-result">
                 <strong>{{ tokenLaunchBriefResult.ceo_memo.decision_label }}</strong>
                 <small>{{ tokenLaunchBriefResult.ceo_memo.review_owner }} / {{ tokenLaunchBriefResult.ceo_memo.next_action }}</small>
+                <div class="token-ceo-memo-summary" aria-label="CEO memo readiness summary">
+                  <span v-for="row in tokenLaunchBriefMemoSummaryRows" :key="row.label" :class="row.tone">
+                    <b>{{ row.value }}</b>
+                    <small>{{ row.label }}</small>
+                  </span>
+                </div>
                 <a
                   v-if="tokenLaunchBriefResult.repository_url"
                   class="token-ceo-memo-source"
@@ -13433,6 +13439,19 @@ const tokenLaunchBriefValidationRows = computed(() =>
 const tokenLaunchBriefSubmitLabel = computed(() => {
   if (tokenLaunchBriefBusy.value) return 'Recording brief...';
   return user.value ? 'Record CEO brief' : 'Log in to brief CEO';
+});
+const tokenLaunchBriefMemoSummaryRows = computed(() => {
+  const gates = Array.isArray(tokenLaunchBriefResult.value?.ceo_memo?.gates)
+    ? tokenLaunchBriefResult.value.ceo_memo.gates
+    : [];
+  const ready = gates.filter((gate) => String(gate.status || '').toLowerCase() === 'ready').length;
+  const hold = gates.filter((gate) => /hold|blocked|risk/i.test(String(gate.status || ''))).length;
+  const review = Math.max(0, gates.length - ready - hold);
+  return [
+    { label: 'Ready gates', value: String(ready), tone: ready ? 'ready' : 'review' },
+    { label: 'Review gates', value: String(review), tone: review ? 'review' : 'ready' },
+    { label: 'Hold gates', value: String(hold), tone: hold ? 'hold' : 'ready' },
+  ];
 });
 const publicTokenMetricRows = computed(() => {
   const openTasks = Number(marketplaceStats.value.open_task_count) || (marketplaceData.value.bounties || []).length || 0;

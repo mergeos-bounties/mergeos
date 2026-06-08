@@ -1297,6 +1297,11 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /id="token-ceo-brief" class="token-ceo-brief-card"/);
   assert.match(appSource, /@submit\.prevent="submitTokenLaunchBrief"/);
   assert.match(appSource, /class="token-ceo-memo-result"/);
+  assert.match(appSource, /class="token-ceo-memo-summary"/);
+  assert.match(appSource, /const tokenLaunchBriefMemoSummaryRows = computed/);
+  assert.match(appSource, /Ready gates/);
+  assert.match(appSource, /Review gates/);
+  assert.match(appSource, /Hold gates/);
   assert.match(appSource, /tokenLaunchBriefResult\.ceo_memo\.decision_label/);
   assert.match(appSource, /tokenLaunchBriefResult\.ceo_memo\.gates\?\.length/);
   assert.match(appSource, /class="token-ceo-memo-source"/);
@@ -1568,6 +1573,8 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(cssSource, /\.token-ceo-brief-actions\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) auto auto;/);
   assert.match(cssSource, /\.token-ceo-research-grid\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /\.token-ceo-memo-result\s*\{[\s\S]*grid-column: 1 \/ -1;/);
+  assert.match(cssSource, /\.token-ceo-memo-summary\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
+  assert.match(cssSource, /\.token-ceo-memo-summary span\.hold\s*\{[\s\S]*background: rgba\(254, 242, 242, 0\.78\);/);
   assert.match(cssSource, /\.token-ceo-memo-source\s*\{[\s\S]*display: inline-flex;/);
   assert.match(cssSource, /\.token-proof-result-actions a,[\s\S]*\.token-proof-result-actions button\s*\{[\s\S]*display: inline-flex;/);
   assert.match(cssSource, /\.token-ceo-memo-gates\s*\{[\s\S]*grid-template-columns: repeat\(4, minmax\(0, 1fr\)\);/);
