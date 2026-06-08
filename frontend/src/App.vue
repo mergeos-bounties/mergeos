@@ -5184,6 +5184,10 @@
                 </small>
                 <strong>{{ row.title }}</strong>
                 <p>{{ row.body }}</p>
+                <div v-if="row.verdict" :class="['token-ceo-candidate-verdict', row.verdict.tone]" aria-label="CEO launch verdict">
+                  <b>{{ row.verdict.label }}</b>
+                  <span>{{ row.verdict.reason }}</span>
+                </div>
                 <div v-if="row.proofSignalRows?.length" class="token-ceo-candidate-signals" aria-label="CEO proof signals">
                   <span v-for="signal in row.proofSignalRows" :key="signal">{{ signal }}</span>
                   <b v-if="row.proofSignalExtra">+{{ row.proofSignalExtra }}</b>
@@ -13139,6 +13143,37 @@ function tokenLaunchCandidateReadinessRowsFromAPI(rows = [], fallback = []) {
     .filter((row) => row.label && row.value);
   return normalized.length ? normalized.slice(0, 3) : fallback;
 }
+function tokenLaunchCandidateVerdict({ launchType = 'airdrop', score = 0, readinessRows = [], signalCount = 0, openTasks = 0, acceptedTasks = 0 } = {}) {
+  const numericScore = Number(score) || 0;
+  const gates = Array.isArray(readinessRows) ? readinessRows : [];
+  const holdCount = gates.filter((gate) => String(gate.state || '').toLowerCase() === 'hold').length;
+  const reviewCount = gates.filter((gate) => String(gate.state || '').toLowerCase() === 'review').length;
+  const readyCount = gates.filter((gate) => String(gate.state || '').toLowerCase() === 'ready').length;
+  const signalTotal = Number(signalCount) || 0;
+  const demandTotal = (Number(openTasks) || 0) + (Number(acceptedTasks) || 0);
+  const launchLabel = launchType === 'presale' ? 'presale' : 'airdrop';
+  if (holdCount || numericScore < 68) {
+    return {
+      tone: 'hold',
+      label: `Hold ${launchLabel}`,
+      reason: holdCount
+        ? `${holdCount} gate needs CEO evidence before launch.`
+        : 'Score is below launch threshold; collect stronger source and proof.',
+    };
+  }
+  if (reviewCount || signalTotal < 3 || demandTotal < 1 || numericScore < 82) {
+    return {
+      tone: 'review',
+      label: `Review ${launchLabel}`,
+      reason: `${readyCount}/${Math.max(gates.length, 3)} gates ready; attach final proof before opening.`,
+    };
+  }
+  return {
+    tone: 'ready',
+    label: `Ready ${launchLabel}`,
+    reason: `${readyCount}/${Math.max(gates.length, 3)} gates ready with ${signalTotal} proof signals.`,
+  };
+}
 const tokenCeoCandidateRows = computed(() => {
   const apiCandidates = Array.isArray(tokenLaunchCandidatesData.value?.candidates)
     ? tokenLaunchCandidatesData.value.candidates
@@ -13167,6 +13202,7 @@ const tokenCeoCandidateRows = computed(() => {
         workPoolMRG,
         signalCount: signals.length,
       });
+      const readinessRows = tokenLaunchCandidateReadinessRowsFromAPI(candidate.readiness_gates, fallbackReadinessRows);
       return {
         key: candidate.candidate_id || candidate.project_id || candidate.project_title,
         label: launchType === 'presale' ? 'CEO presale candidate' : 'CEO airdrop candidate',
@@ -13180,7 +13216,15 @@ const tokenCeoCandidateRows = computed(() => {
         proofPolicy: candidate.proof_policy || 'Require task evidence, review notes, repository context, and ledger proof before approval.',
         proofSignalRows,
         proofSignalExtra: Math.max(0, signals.length - proofSignalRows.length),
-        readinessRows: tokenLaunchCandidateReadinessRowsFromAPI(candidate.readiness_gates, fallbackReadinessRows),
+        readinessRows,
+        verdict: tokenLaunchCandidateVerdict({
+          launchType,
+          score,
+          readinessRows,
+          signalCount: signals.length,
+          openTasks,
+          acceptedTasks,
+        }),
         tone: launchType === 'presale' ? 'green' : 'purple',
       };
     });
@@ -13206,6 +13250,14 @@ const tokenCeoCandidateRows = computed(() => {
       workPoolMRG: Math.floor((Number(project.work_pool_cents || project.budget_cents) || 0) / 100),
     });
     const decisionRows = tokenLaunchCandidateDecisionRows(launchType, score);
+    const readinessRows = tokenLaunchCandidateReadinessRows({
+      launchType,
+      score,
+      openTasks,
+      acceptedTasks,
+      workPoolMRG: Math.floor((Number(project.work_pool_cents || project.budget_cents) || 0) / 100),
+      signalCount: fallbackSignals.length,
+    });
     return {
       key: project.id || project.title,
       label: launchType === 'presale' ? 'CEO presale candidate' : 'CEO airdrop candidate',
@@ -13226,12 +13278,13 @@ const tokenCeoCandidateRows = computed(() => {
         : 'Require task evidence, review notes, repository context, and ledger proof before approval.',
       proofSignalRows,
       proofSignalExtra: Math.max(0, fallbackSignals.length - proofSignalRows.length),
-      readinessRows: tokenLaunchCandidateReadinessRows({
+      readinessRows,
+      verdict: tokenLaunchCandidateVerdict({
         launchType,
         score,
         openTasks,
         acceptedTasks,
-        workPoolMRG: Math.floor((Number(project.work_pool_cents || project.budget_cents) || 0) / 100),
+        readinessRows,
         signalCount: fallbackSignals.length,
       }),
       tone: launchType === 'presale' ? 'green' : 'purple',

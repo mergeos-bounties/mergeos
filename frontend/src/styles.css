@@ -39775,6 +39775,72 @@ canvas {
   margin-top: 8px;
 }
 
+.token-ceo-candidate-verdict {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 7px;
+  margin-top: 8px;
+  border: 1px solid rgba(100, 116, 139, 0.13);
+  border-radius: 8px;
+  background: rgba(248, 250, 252, 0.82);
+  padding: 7px 8px;
+}
+
+.token-ceo-candidate-verdict b,
+.token-ceo-candidate-verdict span {
+  min-width: 0;
+  line-height: 1.15;
+}
+
+.token-ceo-candidate-verdict b {
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.06);
+  color: #0f172a;
+  padding: 4px 7px;
+  font-size: 8.5px;
+  font-weight: 950;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.token-ceo-candidate-verdict span {
+  color: #475569;
+  font-size: 10px;
+  font-weight: 820;
+}
+
+.token-ceo-candidate-verdict.ready {
+  border-color: rgba(15, 118, 110, 0.18);
+  background: rgba(236, 253, 245, 0.82);
+}
+
+.token-ceo-candidate-verdict.ready b {
+  background: rgba(15, 118, 110, 0.12);
+  color: #0f766e;
+}
+
+.token-ceo-candidate-verdict.review {
+  border-color: rgba(217, 119, 6, 0.2);
+  background: rgba(255, 251, 235, 0.78);
+}
+
+.token-ceo-candidate-verdict.review b {
+  background: rgba(217, 119, 6, 0.13);
+  color: #92400e;
+}
+
+.token-ceo-candidate-verdict.hold {
+  border-color: rgba(220, 38, 38, 0.16);
+  background: rgba(254, 242, 242, 0.76);
+}
+
+.token-ceo-candidate-verdict.hold b {
+  background: rgba(220, 38, 38, 0.11);
+  color: #991b1b;
+}
+
 .token-ceo-candidate-signals span,
 .token-ceo-candidate-signals b {
   min-width: 0;
@@ -39888,6 +39954,21 @@ canvas {
     overflow: hidden !important;
     font-size: 8.6px !important;
     text-overflow: ellipsis !important;
+  }
+
+  .token-ceo-candidate-verdict {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 5px !important;
+    margin-top: 5px !important;
+    padding: 7px !important;
+  }
+
+  .token-ceo-candidate-verdict b {
+    width: fit-content !important;
+  }
+
+  .token-ceo-candidate-verdict span {
+    font-size: 9.5px !important;
   }
 
   .token-ceo-candidate-readiness {

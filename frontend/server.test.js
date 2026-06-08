@@ -1307,6 +1307,11 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /checks: \['Utility score', 'Funding proof', 'Wallet gate'\]/);
   assert.match(appSource, /class="token-ceo-candidate-policy"/);
   assert.match(appSource, /class="token-ceo-candidate-readiness"/);
+  assert.match(appSource, /token-ceo-candidate-verdict/);
+  assert.match(appSource, /function tokenLaunchCandidateVerdict/);
+  assert.match(appSource, /Hold \$\{launchLabel\}/);
+  assert.match(appSource, /Review \$\{launchLabel\}/);
+  assert.match(appSource, /Ready \$\{launchLabel\}/);
   assert.match(appSource, /row\.decisionPreview\.nextAction/);
   assert.match(appSource, /nextAction: String\(nextAction \|\| ''\)\.trim\(\)/);
   assert.match(appSource, /candidate\.next_action/);
@@ -1384,7 +1389,8 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /tokenLaunchCandidateReadinessRowsFromAPI\(candidate\.readiness_gates, fallbackReadinessRows\)/);
   assert.match(appSource, /label: 'Demand', value: `\$\{openCount\} open \/ \$\{acceptedCount\} accepted`/);
   assert.match(appSource, /label: 'Reserve', value: `\$\{formatCompactNumber\(pool\)\} MRG pool`/);
-  assert.match(appSource, /readinessRows: tokenLaunchCandidateReadinessRows/);
+  assert.match(appSource, /const readinessRows = tokenLaunchCandidateReadinessRows/);
+  assert.match(appSource, /readinessRows,/);
   assert.match(appSource, /Number\(candidate\.research_score\) \|\| tokenLaunchCandidateScore/);
   assert.match(appSource, /tokenLaunchCandidateDecisionRowsFromAPI\(candidate\.decision_options, launchType, score\)/);
   assert.match(appSource, /decisionPreview: tokenLaunchCandidateDecisionPreview\(decisionRows, candidate\.next_action\)/);
@@ -1655,6 +1661,10 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(cssSource, /\/\* Token CEO brief compact form pass:[\s\S]*\.token-ceo-brief-form \.wizard-field\.full textarea\s*\{[\s\S]*min-height: 108px !important;/);
   assert.match(cssSource, /Token CEO candidate decision polish: turn raw research signals into scan-friendly evidence chips/);
   assert.match(cssSource, /\.token-ceo-candidate-signals\s*\{[\s\S]*display: flex;[\s\S]*flex-wrap: wrap;/);
+  assert.match(cssSource, /\.token-ceo-candidate-verdict\s*\{[\s\S]*grid-template-columns: auto minmax\(0, 1fr\);/);
+  assert.match(cssSource, /\.token-ceo-candidate-verdict\.ready\s*\{[\s\S]*background: rgba\(236, 253, 245, 0\.82\);/);
+  assert.match(cssSource, /\.token-ceo-candidate-verdict\.review\s*\{[\s\S]*background: rgba\(255, 251, 235, 0\.78\);/);
+  assert.match(cssSource, /\.token-ceo-candidate-verdict\.hold\s*\{[\s\S]*background: rgba\(254, 242, 242, 0\.76\);/);
   assert.match(cssSource, /\.token-ceo-candidate-readiness\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /\.token-ceo-candidate-readiness span\.ready\s*\{[\s\S]*background: rgba\(236, 253, 245, 0\.82\);/);
   assert.match(cssSource, /\.token-ceo-candidate-readiness span\.hold\s*\{[\s\S]*background: rgba\(254, 242, 242, 0\.76\);/);
