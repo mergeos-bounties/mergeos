@@ -42912,3 +42912,125 @@ canvas {
     -webkit-line-clamp: 2 !important;
   }
 }
+
+/* Home DOM-pruned executive screen: one message, one CEO token desk, three proof cards. */
+.public-home-page {
+  min-height: calc(100dvh - 74px) !important;
+  display: grid !important;
+  align-items: center !important;
+  padding-block: clamp(12px, 2vw, 28px) !important;
+}
+
+.public-home-page .home-container {
+  width: min(100%, 940px) !important;
+  max-width: 940px !important;
+}
+
+.public-home-hero {
+  display: block !important;
+  min-height: 0 !important;
+}
+
+.public-home-copy {
+  width: min(100%, 780px) !important;
+  max-width: 780px !important;
+  margin-inline: auto !important;
+}
+
+.public-home-copy h1 {
+  max-width: 760px !important;
+  font-size: clamp(38px, 4.2vw, 58px) !important;
+  line-height: 1 !important;
+}
+
+.public-home-copy > p {
+  max-width: 700px !important;
+  margin-top: 10px !important;
+  font-size: clamp(13px, 1vw, 15.5px) !important;
+  line-height: 1.42 !important;
+}
+
+.home-ceo-token-desk {
+  width: min(100%, 780px) !important;
+  max-width: 780px !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  gap: 8px 14px !important;
+  margin-top: 12px !important;
+  padding: 12px !important;
+}
+
+.home-ceo-token-desk > p {
+  display: -webkit-box !important;
+  overflow: hidden !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 2 !important;
+}
+
+.home-definition-strip {
+  width: min(100%, 780px) !important;
+  max-width: 780px !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+  margin-top: 10px !important;
+}
+
+.home-definition-strip article {
+  min-height: 78px !important;
+  padding: 9px !important;
+}
+
+.home-definition-strip small {
+  display: -webkit-box !important;
+  overflow: hidden !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 2 !important;
+}
+
+.public-home-copy .marketplace-actions {
+  margin-top: 12px !important;
+}
+
+.home-mergeide-inline-link {
+  margin-top: 8px !important;
+}
+
+@media (max-width: 760px) {
+  .public-home-page {
+    display: block !important;
+    min-height: auto !important;
+    padding-block: 12px 18px !important;
+  }
+
+  .public-home-page .home-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding-inline: 14px !important;
+  }
+
+  .public-home-copy,
+  .home-ceo-token-desk,
+  .home-definition-strip,
+  .public-home-copy .marketplace-actions,
+  .home-mergeide-inline-link {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .public-home-copy h1 {
+    font-size: clamp(30px, 8.2vw, 40px) !important;
+  }
+
+  .home-ceo-token-desk,
+  .home-definition-strip {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .home-ceo-token-desk > div {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  .home-definition-strip article {
+    grid-template-columns: 30px minmax(0, 1fr) !important;
+    min-height: auto !important;
+  }
+}

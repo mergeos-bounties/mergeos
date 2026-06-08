@@ -4640,34 +4640,6 @@
             <span class="marketplace-eyebrow">{{ publicHomeCopy.eyebrow }}</span>
             <h1 id="home-title">{{ publicHomeCopy.title }}</h1>
             <p>{{ publicHomeCopy.body }}</p>
-            <div class="home-value-strip" :aria-label="publicHomeCopy.operatingLabel">
-              <article v-for="row in homeOperatingRows" :key="row.title">
-                <span>
-                  <component :is="row.icon" :size="13" />
-                </span>
-                <div>
-                  <strong>{{ row.title }}</strong>
-                  <small>{{ row.body }}</small>
-                </div>
-              </article>
-            </div>
-            <div class="home-definition-strip" :aria-label="publicHomeCopy.definitionLabel || 'What MergeOS connects'">
-              <article v-for="row in homeDefinitionRows" :key="row.title">
-                <span :class="['home-definition-icon', row.tone]">
-                  <component :is="row.icon" :size="13" />
-                </span>
-                <div>
-                  <strong>{{ row.title }}</strong>
-                  <small>{{ row.body }}</small>
-                </div>
-              </article>
-            </div>
-            <div class="home-explain-strip" :aria-label="publicHomeCopy.operatingLabel">
-              <article v-for="row in homeOperatingRows" :key="row.title">
-                <strong>{{ row.title }}</strong>
-                <span>{{ row.body }}</span>
-              </article>
-            </div>
             <section class="home-ceo-token-desk" :aria-label="publicHomeCopy.tokenDeskLabel">
               <span>
                 <Bot :size="14" />
@@ -4682,6 +4654,17 @@
                 </button>
               </div>
             </section>
+            <div class="home-definition-strip" :aria-label="publicHomeCopy.definitionLabel || 'What MergeOS connects'">
+              <article v-for="row in homeDefinitionRows.slice(0, 3)" :key="row.title">
+                <span :class="['home-definition-icon', row.tone]">
+                  <component :is="row.icon" :size="13" />
+                </span>
+                <div>
+                  <strong>{{ row.title }}</strong>
+                  <small>{{ row.body }}</small>
+                </div>
+              </article>
+            </div>
             <div class="marketplace-actions">
               <button class="primary-button large" type="button" @click="openProjectWizard">
                 {{ publicHomeCopy.primaryAction }}
@@ -4702,50 +4685,6 @@
               MergeIDE download
             </a>
           </div>
-
-          <aside class="public-home-panel home-command-panel" :aria-label="publicHomeCopy.commandLabel">
-            <div class="home-command-head">
-              <span class="home-command-mark" aria-hidden="true">
-                <img src="/favicon.svg" alt="" />
-              </span>
-              <div>
-                <span>{{ publicHomeCopy.commandEyebrow }}</span>
-                <strong>{{ publicHomeCopy.commandTitle }}</strong>
-              </div>
-              <span class="ledger-live-dot">Live</span>
-            </div>
-
-            <div class="public-stat-grid">
-              <article v-for="stat in homeLiveStats.slice(0, 2)" :key="stat.label">
-                <span :class="['home-stat-icon', stat.tone]">
-                  <component :is="stat.icon" :size="15" />
-                </span>
-                <div>
-                  <span>{{ stat.label }}</span>
-                  <strong>{{ stat.value }}</strong>
-                  <small>{{ stat.detail }}</small>
-                </div>
-              </article>
-            </div>
-
-            <div class="public-notification-feed home-feed-preview" aria-live="polite">
-              <div class="public-notification-head">
-                <span>
-                  <Bell :size="15" />
-                </span>
-                <strong>{{ publicHomeCopy.recentUpdates }}</strong>
-                <small>{{ publicNotificationRows.length }}</small>
-              </div>
-              <article v-for="note in publicNotificationRows.slice(0, 2)" :key="note.id">
-                <i :class="['notification-dot', note.tone]" />
-                <div>
-                  <strong>{{ note.subject }}</strong>
-                  <p>{{ note.body }}</p>
-                  <small>{{ note.meta }}</small>
-                </div>
-              </article>
-            </div>
-          </aside>
         </section>
 
       </div>
