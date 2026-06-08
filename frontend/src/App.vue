@@ -5046,6 +5046,16 @@
                 </button>
               </template>
             </div>
+            <div v-if="publicPage === 'airdrop' || publicPage === 'presale'" class="token-hero-gate-note" aria-label="CEO launch gate order">
+              <span>
+                <Search :size="13" />
+                CEO reviews candidate first
+              </span>
+              <span>
+                <ShieldCheck :size="13" />
+                {{ publicPage === 'airdrop' ? 'Claims open after proof gate' : 'Reservations open after funding gate' }}
+              </span>
+            </div>
             <div v-if="publicPage === 'airdrop' || publicPage === 'presale'" class="token-hero-ceo-strip" aria-label="CEO launch research summary">
               <article v-for="row in tokenCeoQueueStatRows" :key="row.label">
                 <small>{{ row.label }}</small>
@@ -5501,7 +5511,7 @@
           <summary>
             <span>
               <UserCheck :size="14" />
-              {{ publicPage === 'airdrop' ? 'Claim workflow' : 'Reserve workflow' }}
+              {{ publicPage === 'airdrop' ? 'Claim workflow after CEO gate' : 'Reserve workflow after CEO gate' }}
             </span>
             <b>{{ user ? 'Session ready' : 'Login required' }}</b>
             <ChevronDown :size="13" />

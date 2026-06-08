@@ -9231,6 +9231,30 @@ svg {
   max-width: 520px;
 }
 
+.token-hero-gate-note {
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.token-hero-gate-note span {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid rgba(15, 118, 110, 0.14);
+  border-radius: 999px;
+  background: rgba(236, 253, 245, 0.82);
+  color: #0f766e;
+  padding: 0 10px;
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
 .token-hero-ceo-strip article {
   min-width: 0;
   border: 1px solid rgba(15, 118, 110, 0.13);

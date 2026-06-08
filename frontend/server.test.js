@@ -1314,6 +1314,12 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /class="token-whitepaper-section-list"/);
   assert.match(appSource, /v-if="publicPage !== 'whitepaper'" class="token-content-grid"/);
   assert.match(appSource, /class="token-hero-ceo-strip"/);
+  assert.match(appSource, /class="token-hero-gate-note"/);
+  assert.match(appSource, /CEO reviews candidate first/);
+  assert.match(appSource, /Claims open after proof gate/);
+  assert.match(appSource, /Reservations open after funding gate/);
+  assert.match(appSource, /Claim workflow after CEO gate/);
+  assert.match(appSource, /Reserve workflow after CEO gate/);
   assert.match(appSource, /CEO launch research summary/);
   assert.match(appSource, /v-for="row in tokenCeoQueueStatRows"/);
   assert.ok(appSource.indexOf('class="token-hero-ceo-strip"') < appSource.indexOf('class="token-ceo-research-panel"'));
@@ -1681,6 +1687,8 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(cssSource, /\.token-ceo-launch-context span\s*\{[\s\S]*border-radius: 999px;/);
   assert.match(cssSource, /\.token-ceo-launch-context b\s*\{[\s\S]*text-transform: uppercase;/);
   assert.match(cssSource, /\.token-hero-ceo-strip\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
+  assert.match(cssSource, /\.token-hero-gate-note\s*\{[\s\S]*display: flex;[\s\S]*flex-wrap: wrap;/);
+  assert.match(cssSource, /\.token-hero-gate-note span\s*\{[\s\S]*border-radius: 999px;[\s\S]*white-space: nowrap;/);
   assert.match(cssSource, /\.token-hero-ceo-strip article\s*\{[\s\S]*border-radius: 8px;/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-hero-ceo-strip\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\) !important;/);
   assert.match(cssSource, /\.token-ceo-brief-form\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/);
