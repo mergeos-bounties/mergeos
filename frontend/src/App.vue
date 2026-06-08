@@ -5184,32 +5184,41 @@
                 </small>
                 <strong>{{ row.title }}</strong>
                 <p>{{ row.body }}</p>
-                <div v-if="row.contextRows?.length" class="token-ceo-candidate-context" role="group" aria-label="CEO launch brief context">
-                  <span v-for="item in row.contextRows" :key="item.label">
-                    <b>{{ item.label }}</b>
-                    <small>{{ item.value }}</small>
-                  </span>
-                </div>
                 <div v-if="row.verdict" :class="['token-ceo-candidate-verdict', row.verdict.tone]" aria-label="CEO launch verdict">
                   <b>{{ row.verdict.label }}</b>
                   <span>{{ row.verdict.reason }}</span>
                 </div>
-                <div v-if="row.proofSignalRows?.length" class="token-ceo-candidate-signals" aria-label="CEO proof signals">
-                  <span v-for="signal in row.proofSignalRows" :key="signal">{{ signal }}</span>
-                  <b v-if="row.proofSignalExtra">+{{ row.proofSignalExtra }}</b>
-                </div>
-                <div v-if="row.readinessRows?.length" class="token-ceo-candidate-readiness" aria-label="CEO readiness gates">
-                  <span v-for="gate in row.readinessRows" :key="gate.label" :class="gate.state">
-                    <b>{{ gate.label }}</b>
-                    <small>{{ gate.value }}</small>
-                  </span>
-                </div>
-                <div v-if="row.decisionPreview" class="token-ceo-candidate-policy">
-                  <b>{{ row.decisionPreview.label }}</b>
-                  <span>{{ row.decisionPreview.proofPolicy }}</span>
-                  <em v-if="row.decisionPreview.nextAction">{{ row.decisionPreview.nextAction }}</em>
-                  <small>{{ row.decisionPreview.riskNotes }}</small>
-                </div>
+                <details
+                  v-if="row.contextRows?.length || row.proofSignalRows?.length || row.readinessRows?.length || row.decisionPreview"
+                  class="token-ceo-candidate-proof"
+                >
+                  <summary>
+                    Proof packet
+                    <ChevronDown :size="12" />
+                  </summary>
+                  <div v-if="row.contextRows?.length" class="token-ceo-candidate-context" role="group" aria-label="CEO launch brief context">
+                    <span v-for="item in row.contextRows" :key="item.label">
+                      <b>{{ item.label }}</b>
+                      <small>{{ item.value }}</small>
+                    </span>
+                  </div>
+                  <div v-if="row.proofSignalRows?.length" class="token-ceo-candidate-signals" aria-label="CEO proof signals">
+                    <span v-for="signal in row.proofSignalRows" :key="signal">{{ signal }}</span>
+                    <b v-if="row.proofSignalExtra">+{{ row.proofSignalExtra }}</b>
+                  </div>
+                  <div v-if="row.readinessRows?.length" class="token-ceo-candidate-readiness" aria-label="CEO readiness gates">
+                    <span v-for="gate in row.readinessRows" :key="gate.label" :class="gate.state">
+                      <b>{{ gate.label }}</b>
+                      <small>{{ gate.value }}</small>
+                    </span>
+                  </div>
+                  <div v-if="row.decisionPreview" class="token-ceo-candidate-policy">
+                    <b>{{ row.decisionPreview.label }}</b>
+                    <span>{{ row.decisionPreview.proofPolicy }}</span>
+                    <em v-if="row.decisionPreview.nextAction">{{ row.decisionPreview.nextAction }}</em>
+                    <small>{{ row.decisionPreview.riskNotes }}</small>
+                  </div>
+                </details>
               </div>
               <div class="token-ceo-candidate-actions">
                 <a v-if="row.sourceUrl" :href="row.sourceUrl" target="_blank" rel="noreferrer">
@@ -5299,41 +5308,47 @@
               <ArrowRight :size="11" />
             </button>
           </article>
-          <div class="token-ceo-project-queue" aria-label="CEO project research queue">
-            <article v-for="row in tokenCeoProjectResearchRows" :key="row.title">
-              <span :class="['ledger-trust-icon', row.tone]">
-                <component :is="row.icon" :size="15" />
-              </span>
-              <div>
-                <strong>{{ row.title }}</strong>
-                <small>{{ row.body }}</small>
-              </div>
-              <b>{{ row.status }}</b>
-            </article>
-          </div>
-          <div class="token-ceo-source-packet" aria-label="CEO research packet">
-            <article v-for="row in tokenCeoSourcePacketRows" :key="row.label">
-              <span :class="['ledger-trust-icon', row.tone]">
-                <component :is="row.icon" :size="14" />
-              </span>
-              <div>
-                <small>{{ row.label }}</small>
-                <strong>{{ row.value }}</strong>
-              </div>
-            </article>
-          </div>
-          <div class="token-ceo-research-grid">
-            <article v-for="row in tokenCeoResearchRows" :key="row.title">
-              <span :class="['ledger-trust-icon', row.tone]">
-                <component :is="row.icon" :size="15" />
-              </span>
-              <div>
-                <strong>{{ row.title }}</strong>
-                <p>{{ row.body }}</p>
-                <small>{{ row.evidence }}</small>
-              </div>
-            </article>
-          </div>
+          <details class="token-ceo-proof-drawer">
+            <summary>
+              CEO source packet
+              <ChevronDown :size="13" />
+            </summary>
+            <div class="token-ceo-source-packet" aria-label="CEO research packet">
+              <article v-for="row in tokenCeoSourcePacketRows" :key="row.label">
+                <span :class="['ledger-trust-icon', row.tone]">
+                  <component :is="row.icon" :size="14" />
+                </span>
+                <div>
+                  <small>{{ row.label }}</small>
+                  <strong>{{ row.value }}</strong>
+                </div>
+              </article>
+            </div>
+            <div class="token-ceo-project-queue" aria-label="CEO project research queue">
+              <article v-for="row in tokenCeoProjectResearchRows" :key="row.title">
+                <span :class="['ledger-trust-icon', row.tone]">
+                  <component :is="row.icon" :size="15" />
+                </span>
+                <div>
+                  <strong>{{ row.title }}</strong>
+                  <small>{{ row.body }}</small>
+                </div>
+                <b>{{ row.status }}</b>
+              </article>
+            </div>
+            <div class="token-ceo-research-grid">
+              <article v-for="row in tokenCeoResearchRows" :key="row.title">
+                <span :class="['ledger-trust-icon', row.tone]">
+                  <component :is="row.icon" :size="15" />
+                </span>
+                <div>
+                  <strong>{{ row.title }}</strong>
+                  <p>{{ row.body }}</p>
+                  <small>{{ row.evidence }}</small>
+                </div>
+              </article>
+            </div>
+          </details>
           <form id="token-ceo-brief" class="token-ceo-brief-card" @submit.prevent="submitTokenLaunchBrief">
             <div class="token-ceo-brief-copy">
               <span class="marketplace-eyebrow">{{ tokenCeoLaunchBriefCopy.eyebrow }}</span>

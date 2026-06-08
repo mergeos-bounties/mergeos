@@ -1324,6 +1324,8 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /Review data/);
   assert.match(appSource, /checks: \['Mission demand', 'Anti-bot gate', 'Ledger proof'\]/);
   assert.match(appSource, /checks: \['Utility score', 'Funding proof', 'Wallet gate'\]/);
+  assert.match(appSource, /class="token-ceo-candidate-proof"/);
+  assert.match(appSource, /class="token-ceo-proof-drawer"/);
   assert.match(appSource, /class="token-ceo-candidate-policy"/);
   assert.match(appSource, /class="token-ceo-candidate-readiness"/);
   assert.match(appSource, /token-ceo-candidate-verdict/);

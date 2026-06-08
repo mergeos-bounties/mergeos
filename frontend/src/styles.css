@@ -42719,3 +42719,196 @@ canvas {
     overflow: visible !important;
   }
 }
+
+/* Token CEO compact decision desk: show the decision first, keep proof auditable on demand. */
+.token-page-airdrop .token-ceo-research-panel,
+.token-page-presale .token-ceo-research-panel {
+  gap: 10px !important;
+}
+
+.token-page-airdrop .token-ceo-queue-stats,
+.token-page-presale .token-ceo-queue-stats {
+  display: none !important;
+}
+
+.token-page-airdrop .token-ceo-candidate-lane,
+.token-page-presale .token-ceo-candidate-lane {
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 8px !important;
+}
+
+.token-page-airdrop .token-ceo-candidate-lane article,
+.token-page-presale .token-ceo-candidate-lane article {
+  grid-template-columns: 30px minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 10px !important;
+  padding: 10px 12px !important;
+}
+
+.token-page-airdrop .token-ceo-candidate-lane article > div:first-of-type,
+.token-page-presale .token-ceo-candidate-lane article > div:first-of-type {
+  display: grid !important;
+  gap: 5px !important;
+}
+
+.token-page-airdrop .token-ceo-candidate-lane strong,
+.token-page-presale .token-ceo-candidate-lane strong {
+  font-size: 13px !important;
+}
+
+.token-page-airdrop .token-ceo-candidate-lane p,
+.token-page-presale .token-ceo-candidate-lane p {
+  max-width: 820px !important;
+  margin-top: 0 !important;
+  -webkit-line-clamp: 1 !important;
+}
+
+.token-page-airdrop .token-ceo-candidate-verdict,
+.token-page-presale .token-ceo-candidate-verdict {
+  margin-top: 0 !important;
+  padding: 7px 8px !important;
+}
+
+.token-ceo-candidate-proof,
+.token-ceo-proof-drawer {
+  min-width: 0;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 8px;
+  background: rgba(248, 250, 252, 0.72);
+}
+
+.token-ceo-candidate-proof {
+  margin-top: 1px;
+}
+
+.token-ceo-candidate-proof summary,
+.token-ceo-proof-drawer summary {
+  min-height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  list-style: none;
+  color: #0f766e;
+  padding: 0 9px;
+  font-size: 9.5px;
+  line-height: 1;
+  font-weight: 940;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.token-ceo-candidate-proof summary::-webkit-details-marker,
+.token-ceo-proof-drawer summary::-webkit-details-marker {
+  display: none;
+}
+
+.token-ceo-candidate-proof[open] summary svg,
+.token-ceo-proof-drawer[open] summary svg {
+  transform: rotate(180deg);
+}
+
+.token-ceo-candidate-proof > div,
+.token-ceo-proof-drawer > div {
+  margin: 0 8px 8px !important;
+}
+
+.token-page-airdrop .token-ceo-candidate-actions,
+.token-page-presale .token-ceo-candidate-actions {
+  grid-column: auto !important;
+  justify-content: flex-end !important;
+  min-width: 144px !important;
+}
+
+.token-page-airdrop .token-ceo-candidate-actions a,
+.token-page-airdrop .token-ceo-candidate-actions button,
+.token-page-presale .token-ceo-candidate-actions a,
+.token-page-presale .token-ceo-candidate-actions button {
+  border-radius: 8px !important;
+  min-height: 30px !important;
+  padding: 0 9px !important;
+}
+
+.token-page-airdrop .token-ceo-candidate-decisions,
+.token-page-presale .token-ceo-candidate-decisions {
+  grid-column: 1 / -1 !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+
+.token-ceo-proof-drawer {
+  padding: 0 !important;
+}
+
+.token-ceo-proof-drawer[open] {
+  padding-bottom: 8px !important;
+}
+
+.token-ceo-proof-drawer .token-ceo-source-packet,
+.token-ceo-proof-drawer .token-ceo-project-queue,
+.token-ceo-proof-drawer .token-ceo-research-grid {
+  margin-top: 8px !important;
+}
+
+@media (min-width: 981px) {
+  .token-page-airdrop .token-hero,
+  .token-page-presale .token-hero {
+    grid-template-columns: minmax(0, 0.9fr) minmax(320px, 0.55fr) !important;
+    padding-block: 24px 12px !important;
+  }
+
+  .token-page-airdrop .token-hero-copy h1,
+  .token-page-presale .token-hero-copy h1 {
+    font-size: clamp(34px, 3vw, 46px) !important;
+  }
+
+  .token-page-airdrop .token-status-panel,
+  .token-page-presale .token-status-panel {
+    max-width: 360px !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .token-page-airdrop .token-ceo-decision-strip,
+  .token-page-presale .token-ceo-decision-strip {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .token-page-airdrop .token-ceo-candidate-lane article,
+  .token-page-presale .token-ceo-candidate-lane article {
+    grid-template-columns: 28px minmax(0, 1fr) !important;
+    align-items: start !important;
+    padding: 9px !important;
+  }
+
+  .token-page-airdrop .token-ceo-candidate-actions,
+  .token-page-presale .token-ceo-candidate-actions,
+  .token-page-airdrop .token-ceo-candidate-decisions,
+  .token-page-presale .token-ceo-candidate-decisions {
+    grid-column: 1 / -1 !important;
+    min-width: 0 !important;
+  }
+
+  .token-page-airdrop .token-ceo-candidate-actions,
+  .token-page-presale .token-ceo-candidate-actions {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .token-page-airdrop .token-ceo-candidate-actions a,
+  .token-page-airdrop .token-ceo-candidate-actions button,
+  .token-page-presale .token-ceo-candidate-actions a,
+  .token-page-presale .token-ceo-candidate-actions button {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  .token-page-airdrop .token-ceo-candidate-decisions,
+  .token-page-presale .token-ceo-candidate-decisions {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .token-page-airdrop .token-ceo-candidate-lane p,
+  .token-page-presale .token-ceo-candidate-lane p {
+    -webkit-line-clamp: 2 !important;
+  }
+}
