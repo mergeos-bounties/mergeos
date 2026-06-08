@@ -39625,6 +39625,76 @@ canvas {
   color: #047857;
 }
 
+.token-ceo-candidate-readiness {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  margin-top: 7px;
+}
+
+.token-ceo-candidate-readiness span {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+  border: 1px solid rgba(100, 116, 139, 0.12);
+  border-radius: 8px;
+  background: rgba(248, 250, 252, 0.8);
+  padding: 5px;
+}
+
+.token-ceo-candidate-readiness b,
+.token-ceo-candidate-readiness small {
+  min-width: 0;
+  overflow: hidden;
+  line-height: 1.08;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.token-ceo-candidate-readiness b {
+  color: #334155;
+  font-size: 8.2px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.token-ceo-candidate-readiness small {
+  color: #64748b;
+  font-size: 8.4px;
+  font-weight: 780;
+}
+
+.token-ceo-candidate-readiness span.ready {
+  border-color: rgba(15, 118, 110, 0.16);
+  background: rgba(236, 253, 245, 0.82);
+}
+
+.token-ceo-candidate-readiness span.ready b,
+.token-ceo-candidate-readiness span.ready small {
+  color: #0f766e;
+}
+
+.token-ceo-candidate-readiness span.review {
+  border-color: rgba(217, 119, 6, 0.16);
+  background: rgba(255, 251, 235, 0.82);
+}
+
+.token-ceo-candidate-readiness span.review b,
+.token-ceo-candidate-readiness span.review small {
+  color: #92400e;
+}
+
+.token-ceo-candidate-readiness span.hold {
+  border-color: rgba(220, 38, 38, 0.14);
+  background: rgba(254, 242, 242, 0.76);
+}
+
+.token-ceo-candidate-readiness span.hold b,
+.token-ceo-candidate-readiness span.hold small {
+  color: #991b1b;
+}
+
 @media (max-width: 620px) {
   .token-ceo-candidate-lane article {
     min-height: 210px !important;
@@ -39645,6 +39715,24 @@ canvas {
     overflow: hidden !important;
     font-size: 8.6px !important;
     text-overflow: ellipsis !important;
+  }
+
+  .token-ceo-candidate-readiness {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 3px !important;
+    margin-top: 5px !important;
+  }
+
+  .token-ceo-candidate-readiness span {
+    padding: 4px !important;
+  }
+
+  .token-ceo-candidate-readiness b {
+    font-size: 7.2px !important;
+  }
+
+  .token-ceo-candidate-readiness small {
+    font-size: 7.5px !important;
   }
 
   .token-ceo-candidate-policy {

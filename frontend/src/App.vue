@@ -5177,6 +5177,12 @@
                   <span v-for="signal in row.proofSignalRows" :key="signal">{{ signal }}</span>
                   <b v-if="row.proofSignalExtra">+{{ row.proofSignalExtra }}</b>
                 </div>
+                <div v-if="row.readinessRows?.length" class="token-ceo-candidate-readiness" aria-label="CEO readiness gates">
+                  <span v-for="gate in row.readinessRows" :key="gate.label" :class="gate.state">
+                    <b>{{ gate.label }}</b>
+                    <small>{{ gate.value }}</small>
+                  </span>
+                </div>
                 <div v-if="row.decisionPreview" class="token-ceo-candidate-policy">
                   <b>{{ row.decisionPreview.label }}</b>
                   <span>{{ row.decisionPreview.proofPolicy }}</span>
@@ -12998,6 +13004,33 @@ function tokenLaunchCandidateDecisionPreview(rows = [], nextAction = '') {
     riskNotes: preferred.riskNotes || 'Risk note pending CEO review.',
   };
 }
+function tokenLaunchCandidateReadinessRows({
+  launchType = 'airdrop',
+  score = 0,
+  openTasks = 0,
+  acceptedTasks = 0,
+  workPoolMRG = 0,
+  signalCount = 0,
+} = {}) {
+  const numericScore = Number(score) || 0;
+  const openCount = Number(openTasks) || 0;
+  const acceptedCount = Number(acceptedTasks) || 0;
+  const pool = Number(workPoolMRG) || 0;
+  const signals = Number(signalCount) || 0;
+  const strong = numericScore >= 82;
+  if (launchType === 'presale') {
+    return [
+      { label: 'Utility', value: `${signals || 0} proof signals`, state: signals >= 3 ? 'ready' : 'review' },
+      { label: 'Reserve', value: `${formatCompactNumber(pool)} MRG pool`, state: pool >= 50000 ? 'ready' : 'review' },
+      { label: 'Contract', value: strong ? 'Solana gates ready' : 'Needs CEO proof', state: strong ? 'ready' : 'hold' },
+    ];
+  }
+  return [
+    { label: 'Demand', value: `${openCount} open / ${acceptedCount} accepted`, state: openCount || acceptedCount ? 'ready' : 'review' },
+    { label: 'Proof', value: `${signals || 0} signals attached`, state: signals >= 3 ? 'ready' : 'review' },
+    { label: 'Anti-bot', value: strong ? 'Wallet gate ready' : 'Needs policy', state: strong ? 'ready' : 'hold' },
+  ];
+}
 const tokenCeoCandidateRows = computed(() => {
   const apiCandidates = Array.isArray(tokenLaunchCandidatesData.value?.candidates)
     ? tokenLaunchCandidatesData.value.candidates
@@ -13015,6 +13048,9 @@ const tokenCeoCandidateRows = computed(() => {
         workPoolMRG: Number(candidate.work_pool_mrg) || 0,
       });
       const decisionRows = tokenLaunchCandidateDecisionRowsFromAPI(candidate.decision_options, launchType, score);
+      const openTasks = Number(candidate.open_task_count) || 0;
+      const acceptedTasks = Number(candidate.accepted_task_count) || 0;
+      const workPoolMRG = Number(candidate.work_pool_mrg) || 0;
       return {
         key: candidate.candidate_id || candidate.project_id || candidate.project_title,
         label: launchType === 'presale' ? 'CEO presale candidate' : 'CEO airdrop candidate',
@@ -13022,12 +13058,20 @@ const tokenCeoCandidateRows = computed(() => {
         decisionRows,
         decisionPreview: tokenLaunchCandidateDecisionPreview(decisionRows, candidate.next_action),
         title: candidate.project_title || 'Funded MergeOS project',
-        body: candidate.gate_summary || `${formatCompactNumber(candidate.work_pool_mrg || 0)} MRG work pool / ${Number(candidate.open_task_count) || 0} open tasks`,
+        body: candidate.gate_summary || `${formatCompactNumber(workPoolMRG)} MRG work pool / ${openTasks} open tasks`,
         sourceUrl: /^https?:\/\//i.test(sourceUrl) ? sourceUrl : '',
         projectSummary: candidate.brief || '',
         proofPolicy: candidate.proof_policy || 'Require task evidence, review notes, repository context, and ledger proof before approval.',
         proofSignalRows,
         proofSignalExtra: Math.max(0, signals.length - proofSignalRows.length),
+        readinessRows: tokenLaunchCandidateReadinessRows({
+          launchType,
+          score,
+          openTasks,
+          acceptedTasks,
+          workPoolMRG,
+          signalCount: signals.length,
+        }),
         tone: launchType === 'presale' ? 'green' : 'purple',
       };
     });
@@ -13073,6 +13117,14 @@ const tokenCeoCandidateRows = computed(() => {
         : 'Require task evidence, review notes, repository context, and ledger proof before approval.',
       proofSignalRows,
       proofSignalExtra: Math.max(0, fallbackSignals.length - proofSignalRows.length),
+      readinessRows: tokenLaunchCandidateReadinessRows({
+        launchType,
+        score,
+        openTasks,
+        acceptedTasks,
+        workPoolMRG: Math.floor((Number(project.work_pool_cents || project.budget_cents) || 0) / 100),
+        signalCount: fallbackSignals.length,
+      }),
       tone: launchType === 'presale' ? 'green' : 'purple',
     };
   });

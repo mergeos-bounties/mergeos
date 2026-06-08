@@ -1265,6 +1265,7 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /class="token-ceo-live-empty"/);
   assert.match(appSource, /class="token-ceo-candidate-lane"/);
   assert.match(appSource, /class="token-ceo-candidate-policy"/);
+  assert.match(appSource, /class="token-ceo-candidate-readiness"/);
   assert.match(appSource, /row\.decisionPreview\.nextAction/);
   assert.match(appSource, /nextAction: String\(nextAction \|\| ''\)\.trim\(\)/);
   assert.match(appSource, /candidate\.next_action/);
@@ -1324,6 +1325,10 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /proofPolicy: contradictsLaunch \? fallback\.proofPolicy/);
   assert.match(appSource, /label: fallback\.label \|\| row\.label/);
   assert.match(appSource, /function tokenLaunchCandidateDecisionPreview\(rows = \[\], nextAction = ''\)/);
+  assert.match(appSource, /function tokenLaunchCandidateReadinessRows/);
+  assert.match(appSource, /label: 'Demand', value: `\$\{openCount\} open \/ \$\{acceptedCount\} accepted`/);
+  assert.match(appSource, /label: 'Reserve', value: `\$\{formatCompactNumber\(pool\)\} MRG pool`/);
+  assert.match(appSource, /readinessRows: tokenLaunchCandidateReadinessRows/);
   assert.match(appSource, /Number\(candidate\.research_score\) \|\| tokenLaunchCandidateScore/);
   assert.match(appSource, /tokenLaunchCandidateDecisionRowsFromAPI\(candidate\.decision_options, launchType, score\)/);
   assert.match(appSource, /decisionPreview: tokenLaunchCandidateDecisionPreview\(decisionRows, candidate\.next_action\)/);
@@ -1587,7 +1592,11 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(cssSource, /\/\* Token CEO brief compact form pass:[\s\S]*\.token-ceo-brief-form \.wizard-field\.full textarea\s*\{[\s\S]*min-height: 108px !important;/);
   assert.match(cssSource, /Token CEO candidate decision polish: turn raw research signals into scan-friendly evidence chips/);
   assert.match(cssSource, /\.token-ceo-candidate-signals\s*\{[\s\S]*display: flex;[\s\S]*flex-wrap: wrap;/);
+  assert.match(cssSource, /\.token-ceo-candidate-readiness\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
+  assert.match(cssSource, /\.token-ceo-candidate-readiness span\.ready\s*\{[\s\S]*background: rgba\(236, 253, 245, 0\.82\);/);
+  assert.match(cssSource, /\.token-ceo-candidate-readiness span\.hold\s*\{[\s\S]*background: rgba\(254, 242, 242, 0\.76\);/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-candidate-signals\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\) !important;/);
+  assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-candidate-readiness\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\) !important;/);
   assert.match(cssSource, /Token CEO mobile action hierarchy: make candidate review feel like one clear CEO decision/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-candidate-actions\s*\{[\s\S]*grid-template-columns: minmax\(0, 0\.78fr\) minmax\(0, 1\.22fr\) !important;/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-candidate-actions button\s*\{[\s\S]*background: #0f9f78 !important;[\s\S]*color: #ffffff !important;/);
