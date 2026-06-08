@@ -4650,7 +4650,10 @@
               <div>
                 <button v-for="row in homeTokenSignalRows" :key="row.title" type="button" @click="handlePublicAction(row.action)">
                   <component :is="row.icon" :size="13" />
-                  {{ row.title }}
+                  <span>
+                    <b>{{ row.title }}</b>
+                    <small>{{ row.detail }}</small>
+                  </span>
                 </button>
               </div>
             </section>
@@ -5090,11 +5093,11 @@
             <div class="token-ceo-head-actions">
               <b>{{ tokenCeoResearchCopy.readiness }}</b>
               <a :href="tokenCeoCandidatesURL" target="_blank" rel="noreferrer">
-                Candidates API
+                Candidate source
                 <Link2 :size="11" />
               </a>
               <a :href="tokenCeoQueueURL" target="_blank" rel="noreferrer">
-                Queue API
+                Memo ledger
                 <Link2 :size="11" />
               </a>
             </div>
@@ -13756,9 +13759,9 @@ const publicTokenChapterRows = computed(() => {
   ];
 });
 const homeTokenSignalRows = computed(() => [
-  { title: 'Airdrop', icon: Trophy, action: { page: 'airdrop' } },
-  { title: 'Presale', icon: CircleDollarSign, action: { page: 'presale' } },
-  { title: 'Whitepaper', icon: FileCheck2, action: { page: 'whitepaper' } },
+  { title: 'Airdrop', detail: 'mission review', icon: Trophy, action: { page: 'airdrop' } },
+  { title: 'Presale', detail: 'reserve gates', icon: CircleDollarSign, action: { page: 'presale' } },
+  { title: 'Whitepaper', detail: 'exec paper', icon: FileCheck2, action: { page: 'whitepaper' } },
 ]);
 const publicWhitepaperThesisRows = computed(() => [
   {

@@ -43562,3 +43562,50 @@ canvas {
     grid-template-columns: minmax(0, 1fr) !important;
   }
 }
+
+/* Home CEO launch desk labels: make the token entry points read like decisions, not nav pills. */
+.home-ceo-token-desk button {
+  min-height: 46px !important;
+  justify-content: flex-start !important;
+  text-align: left !important;
+  white-space: normal !important;
+}
+
+.home-ceo-token-desk button span {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.home-ceo-token-desk button b,
+.home-ceo-token-desk button small {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  line-height: 1.08;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-ceo-token-desk button b {
+  color: #78350f;
+  font-size: 10.5px;
+  font-weight: 940;
+}
+
+.home-ceo-token-desk button small {
+  color: #0f766e;
+  font-size: 8.8px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+@media (max-width: 620px) {
+  .home-ceo-token-desk > div {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .home-ceo-token-desk button {
+    min-height: 42px !important;
+  }
+}

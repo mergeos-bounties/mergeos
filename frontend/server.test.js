@@ -811,6 +811,9 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.match(appSource, /class="home-ceo-token-desk"/);
   assert.match(appSource, /tokenDeskTitle: 'Research airdrop and presale candidates before opening MRG\.'/);
   assert.match(appSource, /const homeTokenSignalRows = computed/);
+  assert.match(appSource, /detail: 'mission review'/);
+  assert.match(appSource, /detail: 'reserve gates'/);
+  assert.match(appSource, /detail: 'exec paper'/);
   assert.match(appSource, /homeSystemSummaryRows/);
   assert.match(appSource, /homeOperatingRows/);
   assert.match(appSource, /homePipelineRows/);
@@ -920,6 +923,9 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.match(cssSource, /\/\* Home complete story restore:[\s\S]*\.home-definition-strip\s*\{[\s\S]*grid-template-columns: repeat\(4, minmax\(0, 1fr\)\) !important;/);
   assert.match(cssSource, /\/\* Home complete story restore:[\s\S]*\.home-definition-strip small\s*\{[\s\S]*-webkit-line-clamp: unset !important;/);
   assert.match(cssSource, /\/\* Home complete story restore:[\s\S]*@media \(max-width: 620px\)[\s\S]*\.home-definition-strip\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) !important;/);
+  assert.match(cssSource, /Home CEO launch desk labels: make the token entry points read like decisions, not nav pills/);
+  assert.match(cssSource, /\.home-ceo-token-desk button b\s*\{[\s\S]*font-weight: 940;/);
+  assert.match(cssSource, /\.home-ceo-token-desk button small\s*\{[\s\S]*text-transform: uppercase;/);
 });
 
 test('frontend system exposes required public pages and dashboard roles', async () => {
@@ -1318,7 +1324,9 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /@click="handlePublicAction\(action\)"/);
   assert.match(appSource, /label: 'Send CEO brief', primary: true, icon: ArrowRight, command: 'token-launch-brief'/);
   assert.match(appSource, /label: 'Send CEO brief', primary: true, icon: UserCheck, command: 'token-launch-brief'/);
-  assert.match(appSource, /Queue API/);
+  assert.match(appSource, /Candidate source/);
+  assert.match(appSource, /Memo ledger/);
+  assert.doesNotMatch(appSource, /Queue API/);
   assert.match(appSource, /class="token-ceo-decision-strip"/);
   assert.match(appSource, /class="token-ceo-queue-stats"/);
   assert.match(appSource, /class="token-ceo-live-queue"/);
