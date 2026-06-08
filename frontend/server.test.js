@@ -1446,6 +1446,11 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /No presale memo recorded yet\./);
   assert.match(appSource, /const tokenCeoProjectResearchRows = computed/);
   assert.match(appSource, /const tokenCeoSourcePacketRows = computed/);
+  assert.match(appSource, /Candidate queue/);
+  assert.match(appSource, /function tokenCeoResearchSourceLabel\(source = ''\)/);
+  assert.match(appSource, /tokenLaunchCandidatesData\.value\?\.stats/);
+  assert.match(appSource, /ledger proof row\(s\) before claims/);
+  assert.match(appSource, /ledger proof row\(s\) before receipts/);
   assert.match(appSource, /const tokenCeoResearchSignalRows = computed/);
   assert.match(appSource, /const tokenCeoLaunchBriefCopy = computed/);
   assert.match(appSource, /const tokenLaunchBriefProofCount = computed/);
@@ -1503,10 +1508,10 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /CEO research brief for MRG presale window/);
   assert.match(appSource, /Mission demand/);
   assert.match(appSource, /Reserve receipt/);
-  assert.match(appSource, /Project seeking a task-based MRG airdrop/);
-  assert.match(appSource, /Project seeking an MRG presale window/);
-  assert.match(appSource, /Research URL, bounty demand, proof depth, wallet risk/);
-  assert.match(appSource, /Whitepaper, utility, reserve cap, funding rail, contract proof/);
+  assert.match(appSource, /\$\{candidateCount\} airdrop candidate\(s\), \$\{readyCount\} ready/);
+  assert.match(appSource, /\$\{candidateCount\} presale candidate\(s\), \$\{readyCount\} ready/);
+  assert.match(appSource, /\$\{sourceLabel\}, bounty demand, proof depth, wallet risk/);
+  assert.match(appSource, /\$\{sourceLabel\}, utility, reserve cap, funding rail, contract proof/);
   assert.match(appSource, /Research candidates/);
   assert.match(appSource, /API \+ ledger/);
   assert.match(appSource, /mission_demand/);

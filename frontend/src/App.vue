@@ -13413,19 +13413,38 @@ const tokenCeoProjectResearchRows = computed(() => {
 });
 const tokenCeoSourcePacketRows = computed(() => {
   const ceoMemos = tokenLaunchBriefProofCount.value;
+  const proofRows = Number(ledgerEconomyStats.value.ledger_entry_count) || ledgerRawEntries.value.length || ledgerEventItems.value.length || 0;
+  const stats = tokenLaunchCandidatesData.value?.stats || {};
+  const currentType = publicPage.value === 'presale' ? 'presale' : 'airdrop';
+  const candidateCount = Number(currentType === 'presale' ? stats.presale_count : stats.airdrop_count)
+    || tokenCeoCandidateRows.value.length
+    || 0;
+  const readyCount = Number(stats.ready_count) || 0;
+  const candidates = Array.isArray(tokenLaunchCandidatesData.value?.candidates) ? tokenLaunchCandidatesData.value.candidates : [];
+  const sourceLabel = tokenCeoResearchSourceLabel(candidates[0]?.research_source || tokenCeoLiveQueueRows.value[0]?.sourceUrl || '');
   if (publicPage.value === 'airdrop') {
     return [
-      { label: 'Project ask', value: 'Project seeking a task-based MRG airdrop', icon: Trophy, tone: 'green' },
-      { label: 'CEO reads', value: 'Research URL, bounty demand, proof depth, wallet risk', icon: Link2, tone: 'blue' },
-      { label: 'CEO output', value: `${ceoMemos} memo(s), gate summary, ledger proof before claims`, icon: FileCheck2, tone: 'purple' },
+      { label: 'Candidate queue', value: `${candidateCount} airdrop candidate(s), ${readyCount} ready`, icon: Trophy, tone: 'green' },
+      { label: 'CEO reads', value: `${sourceLabel}, bounty demand, proof depth, wallet risk`, icon: Link2, tone: 'blue' },
+      { label: 'CEO output', value: `${ceoMemos} memo(s), ${proofRows} ledger proof row(s) before claims`, icon: FileCheck2, tone: 'purple' },
     ];
   }
   return [
-    { label: 'Project ask', value: 'Project seeking an MRG presale window', icon: CircleDollarSign, tone: 'green' },
-    { label: 'CEO reads', value: 'Whitepaper, utility, reserve cap, funding rail, contract proof', icon: Link2, tone: 'blue' },
-    { label: 'CEO output', value: `${ceoMemos} memo(s), reserve gate, ledger proof before receipts`, icon: FileCheck2, tone: 'purple' },
+    { label: 'Candidate queue', value: `${candidateCount} presale candidate(s), ${readyCount} ready`, icon: CircleDollarSign, tone: 'green' },
+    { label: 'CEO reads', value: `${sourceLabel}, utility, reserve cap, funding rail, contract proof`, icon: Link2, tone: 'blue' },
+    { label: 'CEO output', value: `${ceoMemos} memo(s), ${proofRows} ledger proof row(s) before receipts`, icon: FileCheck2, tone: 'purple' },
   ];
 });
+function tokenCeoResearchSourceLabel(source = '') {
+  const raw = String(source || '').trim();
+  if (!raw) return 'Public source pending';
+  try {
+    const url = new URL(raw);
+    return url.hostname.replace(/^www\./, '') || raw;
+  } catch {
+    return raw.slice(0, 64);
+  }
+}
 const tokenCeoResearchSignalRows = computed(() => (
   publicPage.value === 'presale'
     ? ['utility_readiness', 'reserve_cap', 'wallet_path', 'contract_proof']
