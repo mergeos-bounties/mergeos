@@ -246,6 +246,7 @@ test('validates airdrop claim, presale reservation, and token launch brief proto
         recommended_launch_types: ['airdrop', 'presale'],
         decision_launch_type: 'airdrop',
         decision_state: 'ready',
+        decision_summary: 'Ready airdrop candidate: 86% fit with 18 tasks and 3 proof signals; CEO should confirm anti-bot, wallet, and ledger gates.',
         research_source: 'https://github.com/mergeos-bounties/mergeos',
         brief: 'Funded marketplace project with open bounties and accepted proof.',
         work_pool_mrg: 90000,

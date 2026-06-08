@@ -196,6 +196,7 @@ type PublicTokenLaunchCandidate struct {
 	RecommendedLaunchTypes []string                             `json:"recommended_launch_types"`
 	DecisionLaunchType     string                               `json:"decision_launch_type"`
 	DecisionState          string                               `json:"decision_state"`
+	DecisionSummary        string                               `json:"decision_summary"`
 	ResearchSource         string                               `json:"research_source"`
 	Brief                  string                               `json:"brief"`
 	WorkPoolMRG            int64                                `json:"work_pool_mrg"`
@@ -664,6 +665,7 @@ func (s *Store) PublicTokenLaunchCandidates(launchTypeFilter string) PublicToken
 		decisionState := tokenLaunchCandidateReadinessState(readinessGates)
 		readyToOpen := decisionState == "ready"
 		nextAction := tokenLaunchCandidateNextAction(decisionLaunchType, researchScore, readyToOpen)
+		decisionSummary := tokenLaunchCandidateDecisionSummary(decisionLaunchType, decisionState, researchScore, project.OpenTaskCount, project.AcceptedTaskCount, len(proofSignals))
 		candidate := PublicTokenLaunchCandidate{
 			CandidateID:            "tlc_" + project.ID,
 			ProjectID:              project.ID,
@@ -671,6 +673,7 @@ func (s *Store) PublicTokenLaunchCandidates(launchTypeFilter string) PublicToken
 			RecommendedLaunchTypes: recommendedTypes,
 			DecisionLaunchType:     decisionLaunchType,
 			DecisionState:          decisionState,
+			DecisionSummary:        decisionSummary,
 			ResearchSource:         source,
 			Brief:                  project.Brief,
 			WorkPoolMRG:            project.WorkPoolCents,
@@ -705,6 +708,7 @@ func (s *Store) PublicTokenLaunchCandidates(launchTypeFilter string) PublicToken
 		readinessGates := tokenLaunchBriefCandidateReadinessGates(launchType, brief, proofSignals)
 		decisionState := tokenLaunchCandidateReadinessState(readinessGates)
 		readyToOpen := decisionState == "ready"
+		decisionSummary := tokenLaunchCandidateDecisionSummary(launchType, decisionState, researchScore, 0, 0, len(proofSignals))
 		addCandidate(PublicTokenLaunchCandidate{
 			CandidateID:            "tlb_" + brief.BriefID,
 			ProjectID:              "launch_brief:" + brief.BriefID,
@@ -712,6 +716,7 @@ func (s *Store) PublicTokenLaunchCandidates(launchTypeFilter string) PublicToken
 			RecommendedLaunchTypes: []string{launchType},
 			DecisionLaunchType:     launchType,
 			DecisionState:          decisionState,
+			DecisionSummary:        decisionSummary,
 			ResearchSource:         brief.ResearchSource,
 			Brief:                  tokenLaunchBriefCandidateSummary(brief),
 			ResearchScore:          researchScore,
@@ -1418,6 +1423,34 @@ func tokenLaunchCandidateDecisionLaunchType(recommendedTypes []string, launchTyp
 		launchType = "presale"
 	}
 	return launchType
+}
+
+func tokenLaunchCandidateDecisionSummary(launchType, decisionState string, score, openTasks, acceptedTasks, signalCount int) string {
+	stateLabel := "review"
+	switch decisionState {
+	case "ready":
+		stateLabel = "ready"
+	case "hold":
+		stateLabel = "hold"
+	}
+	if launchType == "presale" {
+		switch stateLabel {
+		case "ready":
+			return fmt.Sprintf("Ready presale candidate: %d%% fit with %d proof signals; CEO should confirm wallet, funding, contract, and receipt gates.", score, signalCount)
+		case "hold":
+			return fmt.Sprintf("Hold presale candidate: %d%% fit with %d proof signals; collect utility, reserve cap, wallet, and funding evidence first.", score, signalCount)
+		default:
+			return fmt.Sprintf("Review presale candidate: %d%% fit with %d proof signals; draft CEO memo before reserve opens.", score, signalCount)
+		}
+	}
+	switch stateLabel {
+	case "ready":
+		return fmt.Sprintf("Ready airdrop candidate: %d%% fit with %d tasks and %d proof signals; CEO should confirm anti-bot, wallet, and ledger gates.", score, openTasks+acceptedTasks, signalCount)
+	case "hold":
+		return fmt.Sprintf("Hold airdrop candidate: %d%% fit with %d tasks and %d proof signals; collect useful-work proof and anti-bot evidence first.", score, openTasks+acceptedTasks, signalCount)
+	default:
+		return fmt.Sprintf("Review airdrop candidate: %d%% fit with %d tasks and %d proof signals; draft CEO memo before missions open.", score, openTasks+acceptedTasks, signalCount)
+	}
 }
 
 func tokenLaunchCandidateNextAction(launchType string, score int, readyToOpen bool) string {

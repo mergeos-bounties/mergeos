@@ -13281,7 +13281,7 @@ const tokenCeoCandidateRows = computed(() => {
         decisionRows,
         decisionPreview: tokenLaunchCandidateDecisionPreview(decisionRows, candidate.next_action),
         title: candidate.project_title || 'Funded MergeOS project',
-        body: candidate.gate_summary || `${formatCompactNumber(workPoolMRG)} MRG work pool / ${openTasks} open tasks`,
+        body: candidate.decision_summary || candidate.gate_summary || `${formatCompactNumber(workPoolMRG)} MRG work pool / ${openTasks} open tasks`,
         sourceUrl: /^https?:\/\//i.test(sourceUrl) ? sourceUrl : '',
         projectSummary: candidate.brief || '',
         proofPolicy: candidate.proof_policy || 'Require task evidence, review notes, repository context, and ledger proof before approval.',

@@ -1869,6 +1869,8 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 		!stringSliceContains(candidates.Candidates[0].RecommendedLaunchTypes, "airdrop") ||
 		candidates.Candidates[0].DecisionLaunchType != "airdrop" ||
 		candidates.Candidates[0].DecisionState != "review" ||
+		!strings.Contains(candidates.Candidates[0].DecisionSummary, "Review airdrop candidate") ||
+		!strings.Contains(candidates.Candidates[0].DecisionSummary, "draft CEO memo") ||
 		candidates.Candidates[0].ResearchScore < 42 ||
 		!stringSliceContains(candidates.Candidates[0].ProofSignals, "repository_context") ||
 		len(candidates.Candidates[0].DecisionOptions) != 3 ||
@@ -1910,6 +1912,8 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 		len(presaleCandidates.Candidates[0].DecisionOptions) != 3 ||
 		presaleCandidates.Candidates[0].DecisionLaunchType != "presale" ||
 		presaleCandidates.Candidates[0].DecisionState != "review" ||
+		!strings.Contains(presaleCandidates.Candidates[0].DecisionSummary, "Review presale candidate") ||
+		!strings.Contains(presaleCandidates.Candidates[0].DecisionSummary, "reserve opens") ||
 		presaleCandidates.Candidates[0].DecisionOptions[0].Label != "Draft presale" ||
 		len(presaleCandidates.Candidates[0].ReadinessGates) != 3 ||
 		presaleCandidates.Candidates[0].ReadinessGates[0].Key != "utility" ||
@@ -1932,6 +1936,7 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 	if standaloneCandidate == nil ||
 		standaloneCandidate.ProjectID != "launch_brief:"+standalonePresaleBrief.BriefID ||
 		standaloneCandidate.ResearchSource != "https://example.com/standalone-presale-whitepaper" ||
+		!strings.Contains(standaloneCandidate.DecisionSummary, "Review presale candidate") ||
 		!strings.Contains(standaloneCandidate.Brief, "open an MRG presale window") ||
 		standaloneCandidate.ReadinessGates[0].State != "review" ||
 		!stringSliceContains(standaloneCandidate.ProofSignals, "ceo_submitted_brief") ||

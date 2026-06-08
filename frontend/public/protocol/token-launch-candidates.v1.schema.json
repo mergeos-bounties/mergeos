@@ -38,6 +38,7 @@
           "recommended_launch_types",
           "decision_launch_type",
           "decision_state",
+          "decision_summary",
           "research_source",
           "brief",
           "work_pool_mrg",
@@ -68,6 +69,12 @@
           "decision_state": {
             "enum": ["ready", "review", "hold"],
             "description": "The overall candidate decision state derived from readiness gates."
+          },
+          "decision_summary": {
+            "type": "string",
+            "minLength": 12,
+            "maxLength": 260,
+            "description": "A short CEO-readable explanation of why the candidate is ready, needs review, or should hold."
           },
           "research_source": { "type": "string", "maxLength": 500 },
           "brief": { "type": "string", "maxLength": 1000 },
