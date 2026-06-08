@@ -1781,6 +1781,13 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(cssSource, /@media \(min-width: 980px\)[\s\S]*\.token-page-airdrop \.token-ceo-candidate-lane article,[\s\S]*\.token-page-presale \.token-ceo-candidate-lane article\s*\{[\s\S]*grid-template-columns: 34px minmax\(0, 1fr\) 172px !important;/);
   assert.match(cssSource, /@media \(max-width: 760px\)[\s\S]*\.token-ceo-candidate-proof\s*\{[\s\S]*display: none !important;/);
   assert.match(cssSource, /@media \(max-width: 430px\)[\s\S]*\.token-page-airdrop \.token-ceo-candidate-decisions,[\s\S]*\.token-page-presale \.token-ceo-candidate-decisions\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) !important;/);
+  assert.match(cssSource, /Token CEO decision-card pass: make candidate research feel like an executive decision, not tiny chips/);
+  assert.match(cssSource, /\.token-ceo-candidate-lane\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) !important;/);
+  assert.match(cssSource, /\.token-ceo-candidate-lane article\s*\{[\s\S]*grid-template-columns: 40px minmax\(0, 1fr\) minmax\(180px, 220px\) !important;/);
+  assert.match(cssSource, /\.token-ceo-candidate-actions\s*\{[\s\S]*grid-column: 3 !important;[\s\S]*display: grid !important;/);
+  assert.match(cssSource, /\.token-ceo-candidate-actions button\s*\{[\s\S]*background: #0f9f78 !important;/);
+  assert.match(cssSource, /\.token-ceo-candidate-decisions button\s*\{[\s\S]*min-height: 38px !important;[\s\S]*text-transform: uppercase !important;/);
+  assert.match(cssSource, /Token CEO decision-card final cascade: keep the lead candidate readable after legacy token overrides/);
   assert.match(appSource, /Funding reference <b>\*<\/b>/);
   assert.match(appSource, /Funding reference is required before reserve review\./);
   assert.match(cssSource, /Token CEO empty candidate polish: make the fallback feel like a decision gate, not an API state/);
