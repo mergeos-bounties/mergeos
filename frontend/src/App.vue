@@ -4646,7 +4646,7 @@
                 {{ publicHomeCopy.tokenDeskEyebrow }}
               </span>
               <strong>{{ publicHomeCopy.tokenDeskTitle }}</strong>
-              <p>{{ publicHomeCopy.tokenDeskBody }}</p>
+              <p>{{ homeTokenDeskBody }}</p>
               <div>
                 <button v-for="row in homeTokenSignalRows" :key="row.title" type="button" @click="handlePublicAction(row.action)">
                   <component :is="row.icon" :size="13" />
@@ -13773,6 +13773,15 @@ function formatHomeTokenSignalCount(count = 0, singular = 'item', fallback = '')
   if (!numeric) return fallback;
   return `${numeric} ${singular}${numeric === 1 ? '' : 's'}`;
 }
+const homeTokenDeskBody = computed(() => {
+  const candidates = Array.isArray(tokenLaunchCandidatesData.value?.candidates)
+    ? tokenLaunchCandidatesData.value.candidates
+    : [];
+  const lead = candidates[0] || {};
+  const summary = String(lead.decision_summary || lead.next_action || '').replace(/\s+/g, ' ').trim();
+  if (summary) return summary;
+  return publicHomeCopy.value.tokenDeskBody;
+});
 const homeTokenSignalRows = computed(() => {
   const candidateStats = tokenLaunchCandidatesData.value?.stats || {};
   const briefStats = tokenLaunchBriefsData.value?.stats || {};

@@ -810,6 +810,9 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.match(appSource, /const homeDefinitionRows = computed/);
   assert.match(appSource, /class="home-ceo-token-desk"/);
   assert.match(appSource, /tokenDeskTitle: 'Research airdrop and presale candidates before opening MRG\.'/);
+  assert.match(appSource, /\{\{ homeTokenDeskBody \}\}/);
+  assert.match(appSource, /const homeTokenDeskBody = computed/);
+  assert.match(appSource, /lead\.decision_summary \|\| lead\.next_action/);
   assert.match(appSource, /function formatHomeTokenSignalCount/);
   assert.match(appSource, /const homeTokenSignalRows = computed/);
   assert.match(appSource, /candidateStats\.airdrop_count/);
