@@ -2233,6 +2233,12 @@ test('signed-in mobile dashboard keeps nav, actions, and popovers phone-safe', a
   assert.match(cssSource, /\/\* Token CEO mobile shortlist:[\s\S]*@media \(max-width: 620px\)[\s\S]*\.token-page-airdrop \.token-ceo-candidate-lane article:nth-child\(n \+ 2\),[\s\S]*\.token-page-presale \.token-ceo-candidate-lane article:nth-child\(n \+ 2\)\s*\{[\s\S]*display: none !important;/);
   assert.match(cssSource, /Token CEO research memo: make the public candidate contract visible as CEO triage/);
   assert.match(cssSource, /\/\* Token CEO research memo:[\s\S]*\.token-page-airdrop \.token-ceo-candidate-memo,[\s\S]*\.token-page-presale \.token-ceo-candidate-memo\s*\{[\s\S]*border-left: 3px solid rgba\(15, 118, 110, 0\.28\) !important;/);
+  assert.match(cssSource, /Token CEO mobile decision cut: summary first, shortlist second, lead candidate third/);
+  assert.match(cssSource, /\/\* Token CEO mobile decision cut:[\s\S]*\.token-page-airdrop \.token-ceo-decision-strip,[\s\S]*\.token-page-presale \.token-ceo-launch-queue\s*\{[\s\S]*display: none !important;/);
+  assert.match(cssSource, /\/\* Token CEO mobile decision cut:[\s\S]*\.token-page-airdrop \.token-ceo-mobile-summary,[\s\S]*\.token-page-presale \.token-ceo-mobile-summary\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\) !important;/);
+  assert.match(cssSource, /\/\* Token CEO mobile decision cut:[\s\S]*\.token-page-airdrop \.token-ceo-mobile-shortlist,[\s\S]*\.token-page-presale \.token-ceo-mobile-shortlist\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\) !important;/);
+  assert.match(cssSource, /\/\* Token CEO mobile decision cut:[\s\S]*\.token-page-airdrop \.token-ceo-candidate-verdict,[\s\S]*\.token-page-presale \.token-ceo-candidate-proof\s*\{[\s\S]*display: none !important;/);
+  assert.match(cssSource, /\/\* Token CEO mobile decision cut:[\s\S]*\.token-page-airdrop \.token-ceo-candidate-decisions,[\s\S]*\.token-page-presale \.token-ceo-candidate-decisions\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\) !important;/);
   assert.match(cssSource, /@media \(max-width: 430px\)[\s\S]*\.dashboard-shell \.admin-dispute-lane,[\s\S]*\.dashboard-shell \.admin-ops-row\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\);/);
   assert.match(appSource, /dashboardNotificationMenuPlacement\.value = 'mobile-sheet';/);
   assert.match(appSource, /window\.visualViewport\?\.addEventListener\('resize', updateDashboardNotificationMenuPosition\);/);
