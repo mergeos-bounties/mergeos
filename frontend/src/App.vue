@@ -5131,42 +5131,6 @@
               <strong>{{ row.value }}</strong>
             </article>
           </div>
-          <div v-if="tokenCeoLiveQueueRows.length" class="token-ceo-live-queue" aria-label="Live CEO memo queue">
-            <article v-for="row in tokenCeoLiveQueueRows" :key="row.key">
-              <span :class="['ledger-trust-icon', row.tone]">
-                <FileCheck2 :size="14" />
-              </span>
-              <div>
-                <small>{{ row.label }}</small>
-                <strong>{{ row.title }}</strong>
-                <p>{{ row.summary }}</p>
-              </div>
-              <div class="token-ceo-live-actions">
-                <a :href="row.proofUrl" target="_blank" rel="noreferrer">
-                  Proof
-                  <Link2 :size="10" />
-                </a>
-                <a v-if="row.sourceUrl" :href="row.sourceUrl" target="_blank" rel="noreferrer">
-                  Source
-                  <Link2 :size="10" />
-                </a>
-              </div>
-            </article>
-          </div>
-          <article v-else class="token-ceo-live-empty" aria-label="Empty CEO memo queue">
-            <span class="ledger-trust-icon purple">
-              <FileCheck2 :size="14" />
-            </span>
-            <div>
-              <small>Live CEO queue</small>
-              <strong>{{ tokenCeoLiveEmptyCopy.title }}</strong>
-              <p>{{ tokenCeoLiveEmptyCopy.body }}</p>
-            </div>
-            <button type="button" @click="openTokenLaunchBriefFromProofBoard">
-              Open CEO brief
-              <ArrowRight :size="11" />
-            </button>
-          </article>
           <div v-if="tokenCeoCandidateRows.length" class="token-ceo-candidate-lane" aria-label="CEO candidate projects">
             <article v-for="row in tokenCeoCandidateRows" :key="row.key">
               <span :class="['ledger-trust-icon', row.tone]">
@@ -5204,6 +5168,42 @@
               </div>
             </article>
           </div>
+          <div v-if="tokenCeoLiveQueueRows.length" class="token-ceo-live-queue" aria-label="Live CEO memo queue">
+            <article v-for="row in tokenCeoLiveQueueRows" :key="row.key">
+              <span :class="['ledger-trust-icon', row.tone]">
+                <FileCheck2 :size="14" />
+              </span>
+              <div>
+                <small>{{ row.label }}</small>
+                <strong>{{ row.title }}</strong>
+                <p>{{ row.summary }}</p>
+              </div>
+              <div class="token-ceo-live-actions">
+                <a :href="row.proofUrl" target="_blank" rel="noreferrer">
+                  Proof
+                  <Link2 :size="10" />
+                </a>
+                <a v-if="row.sourceUrl" :href="row.sourceUrl" target="_blank" rel="noreferrer">
+                  Source
+                  <Link2 :size="10" />
+                </a>
+              </div>
+            </article>
+          </div>
+          <article v-else class="token-ceo-live-empty" aria-label="Empty CEO memo queue">
+            <span class="ledger-trust-icon purple">
+              <FileCheck2 :size="14" />
+            </span>
+            <div>
+              <small>Live CEO queue</small>
+              <strong>{{ tokenCeoLiveEmptyCopy.title }}</strong>
+              <p>{{ tokenCeoLiveEmptyCopy.body }}</p>
+            </div>
+            <button type="button" @click="openTokenLaunchBriefFromProofBoard">
+              Open CEO brief
+              <ArrowRight :size="11" />
+            </button>
+          </article>
           <div class="token-ceo-project-queue" aria-label="CEO project research queue">
             <article v-for="row in tokenCeoProjectResearchRows" :key="row.title">
               <span :class="['ledger-trust-icon', row.tone]">

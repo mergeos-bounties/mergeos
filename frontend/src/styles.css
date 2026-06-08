@@ -38527,3 +38527,150 @@ canvas {
   }
 }
 
+/* CEO token research mobile pass: surface candidate decisions before secondary queues. */
+@media (max-width: 620px) {
+  .token-page {
+    padding-top: 4px !important;
+  }
+
+  .token-shell {
+    gap: 8px !important;
+  }
+
+  .token-hero {
+    gap: 8px !important;
+  }
+
+  .token-hero-copy h1 {
+    font-size: clamp(23px, 7.1vw, 29px) !important;
+    line-height: 1.02 !important;
+  }
+
+  .token-hero-copy p {
+    -webkit-line-clamp: 2 !important;
+    margin-top: 8px !important;
+    font-size: 12px !important;
+    line-height: 1.32 !important;
+  }
+
+  .token-page .marketplace-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+    margin-top: 9px !important;
+  }
+
+  .token-page .marketplace-actions .primary-button {
+    grid-column: 1 / -1 !important;
+  }
+
+  .token-page .marketplace-actions .primary-button,
+  .token-page .marketplace-actions .secondary-button {
+    min-height: 34px !important;
+    padding-inline: 8px !important;
+    font-size: 12px !important;
+  }
+
+  .token-status-panel {
+    gap: 6px !important;
+    padding: 8px !important;
+  }
+
+  .token-status-panel .ledger-card-head {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    gap: 8px !important;
+  }
+
+  .token-status-panel .ledger-card-head h2 {
+    font-size: 13px !important;
+  }
+
+  .token-status-panel .ledger-card-head button {
+    min-height: 28px !important;
+    padding-inline: 7px !important;
+    font-size: 0 !important;
+  }
+
+  .token-status-panel .ledger-card-head button svg {
+    margin: 0 !important;
+  }
+
+  .token-metric-grid article {
+    min-height: 42px !important;
+    grid-template-columns: 24px minmax(0, 1fr) !important;
+    padding: 6px !important;
+  }
+
+  .token-metric-grid small {
+    font-size: 8.2px !important;
+  }
+
+  .token-metric-grid strong {
+    font-size: 13px !important;
+  }
+
+  .token-ceo-research-panel {
+    gap: 8px !important;
+    padding: 10px !important;
+  }
+
+  .token-ceo-research-head h2 {
+    font-size: 18px !important;
+  }
+
+  .token-ceo-research-head p {
+    -webkit-line-clamp: 2 !important;
+  }
+
+  .token-ceo-candidate-lane {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .token-ceo-candidate-lane article {
+    grid-template-columns: 30px minmax(0, 1fr) !important;
+    gap: 8px !important;
+    border-color: rgba(15, 118, 110, 0.18) !important;
+    background: linear-gradient(135deg, rgba(240, 253, 250, 0.96), rgba(255, 255, 255, 0.94)) !important;
+    padding: 10px !important;
+  }
+
+  .token-ceo-candidate-lane p {
+    -webkit-line-clamp: 2 !important;
+    font-size: 10.5px !important;
+  }
+
+  .token-ceo-candidate-lane em {
+    grid-column: 1 / -1 !important;
+    margin-top: 6px !important;
+    border-radius: 8px !important;
+    background: rgba(219, 234, 254, 0.7) !important;
+    padding: 6px !important;
+    color: #1e40af !important;
+    -webkit-line-clamp: 2 !important;
+  }
+
+  .token-ceo-candidate-actions {
+    grid-column: 1 / -1 !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 0.65fr) minmax(0, 1fr) !important;
+  }
+
+  .token-ceo-candidate-actions a,
+  .token-ceo-candidate-actions button {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  .token-ceo-candidate-decisions {
+    gap: 6px !important;
+  }
+
+  .token-ceo-candidate-decisions button {
+    min-height: 30px !important;
+    font-size: 9px !important;
+  }
+
+  .token-ceo-live-empty {
+    display: none !important;
+  }
+}
+

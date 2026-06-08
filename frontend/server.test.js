@@ -1247,6 +1247,7 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /action\.command === 'token-ceo-brief'/);
   assert.ok(appSource.indexOf('class="token-ceo-research-panel"') < appSource.indexOf('class="token-content-grid"'));
   assert.ok(appSource.indexOf('class="token-ceo-decision-strip"') < appSource.indexOf('class="token-ceo-brief-card"'));
+  assert.ok(appSource.indexOf('class="token-ceo-candidate-lane"') < appSource.indexOf('class="token-ceo-live-queue"'));
   assert.ok(appSource.indexOf('class="token-ceo-project-queue"') < appSource.indexOf('class="token-ceo-brief-card"'));
   assert.ok(appSource.indexOf('class="token-ceo-research-grid"') < appSource.indexOf('class="token-ceo-brief-card"'));
   assert.match(appSource, /CEO airdrop readiness review\./);
