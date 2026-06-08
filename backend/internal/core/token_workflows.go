@@ -648,8 +648,9 @@ func (s *Store) PublicTokenLaunchCandidates(launchTypeFilter string) PublicToken
 		proofSignals := tokenLaunchCandidateSignals(project, projectBounties)
 		researchScore := tokenLaunchCandidateResearchScore(project, proofSignals)
 		decisionLaunchType := tokenLaunchCandidateDecisionLaunchType(recommendedTypes, launchTypeFilter)
-		nextAction := tokenLaunchCandidateNextAction(decisionLaunchType, researchScore)
 		readinessGates := tokenLaunchCandidateReadinessGates(decisionLaunchType, researchScore, project, proofSignals)
+		readyToOpen := tokenLaunchCandidateReadinessState(readinessGates) == "ready"
+		nextAction := tokenLaunchCandidateNextAction(decisionLaunchType, researchScore, readyToOpen)
 		candidate := PublicTokenLaunchCandidate{
 			CandidateID:            "tlc_" + project.ID,
 			ProjectID:              project.ID,
@@ -662,7 +663,7 @@ func (s *Store) PublicTokenLaunchCandidates(launchTypeFilter string) PublicToken
 			AcceptedTaskCount:      project.AcceptedTaskCount,
 			ResearchScore:          researchScore,
 			ProofSignals:           proofSignals,
-			DecisionOptions:        tokenLaunchCandidateDecisionOptions(decisionLaunchType, researchScore),
+			DecisionOptions:        tokenLaunchCandidateDecisionOptions(decisionLaunchType, researchScore, readyToOpen),
 			ReadinessGates:         readinessGates,
 			NextAction:             nextAction,
 			GateSummary:            fmt.Sprintf("%d open tasks, %d accepted tasks, %d proof signals", project.OpenTaskCount, project.AcceptedTaskCount, len(proofSignals)),
@@ -687,6 +688,7 @@ func (s *Store) PublicTokenLaunchCandidates(launchTypeFilter string) PublicToken
 		proofSignals := tokenLaunchBriefCandidateSignals(brief)
 		researchScore := tokenLaunchBriefCandidateScore(brief, proofSignals)
 		readinessGates := tokenLaunchBriefCandidateReadinessGates(launchType, brief, proofSignals)
+		readyToOpen := tokenLaunchCandidateReadinessState(readinessGates) == "ready"
 		addCandidate(PublicTokenLaunchCandidate{
 			CandidateID:            "tlb_" + brief.BriefID,
 			ProjectID:              "launch_brief:" + brief.BriefID,
@@ -696,7 +698,7 @@ func (s *Store) PublicTokenLaunchCandidates(launchTypeFilter string) PublicToken
 			Brief:                  tokenLaunchBriefCandidateSummary(brief),
 			ResearchScore:          researchScore,
 			ProofSignals:           proofSignals,
-			DecisionOptions:        tokenLaunchCandidateDecisionOptions(launchType, researchScore),
+			DecisionOptions:        tokenLaunchCandidateDecisionOptions(launchType, researchScore, readyToOpen),
 			ReadinessGates:         readinessGates,
 			NextAction:             tokenLaunchCandidateBriefNextAction(launchType),
 			GateSummary:            brief.GateSummary,
@@ -1400,15 +1402,21 @@ func tokenLaunchCandidateDecisionLaunchType(recommendedTypes []string, launchTyp
 	return launchType
 }
 
-func tokenLaunchCandidateNextAction(launchType string, score int) string {
+func tokenLaunchCandidateNextAction(launchType string, score int, readyToOpen bool) string {
 	if launchType == "presale" {
-		if score >= 82 {
+		if score >= 82 && readyToOpen {
 			return "Open presale after CEO confirms utility, wallet, funding, contract, and receipt gates."
+		}
+		if score >= 82 {
+			return "Draft a CEO presale memo and attach utility, wallet, funding, Solana contract, and receipt proof before opening."
 		}
 		return "Collect utility, reserve cap, wallet, funding, and Solana contract evidence before presale opens."
 	}
-	if score >= 82 {
+	if score >= 82 && readyToOpen {
 		return "Open earned missions after CEO confirms repo demand, anti-bot checks, wallet uniqueness, and proof gates."
+	}
+	if score >= 82 {
+		return "Draft a CEO airdrop memo and attach repo demand, anti-bot, wallet uniqueness, and ledger proof before opening missions."
 	}
 	return "Collect repo demand, useful work proof, anti-bot policy, wallet uniqueness, and ledger evidence before missions open."
 }
@@ -1455,10 +1463,10 @@ func tokenLaunchCandidateReadinessGates(launchType string, score int, project *M
 			},
 			{
 				Key:      "contract",
-				Label:    "Contract",
-				State:    stateFrom(strong, signalCount >= 3),
-				Value:    ternaryString(strong, "Solana gates ready", "Needs CEO proof"),
-				Evidence: "CEO must confirm Solana wallet, funding receipt, and contract reference before opening.",
+				Label:    "CEO memo",
+				State:    stateFrom(false, strong || signalCount >= 3),
+				Value:    ternaryString(strong, "Memo required", "Needs CEO proof"),
+				Evidence: "CEO must write the presale memo after confirming Solana wallet, funding receipt, contract reference, and ledger proof.",
 			},
 		}
 	}
@@ -1479,10 +1487,10 @@ func tokenLaunchCandidateReadinessGates(launchType string, score int, project *M
 		},
 		{
 			Key:      "anti_bot",
-			Label:    "Anti-bot",
-			State:    stateFrom(strong, signalCount >= 3),
-			Value:    ternaryString(strong, "Wallet gate ready", "Needs policy"),
-			Evidence: "CEO must confirm wallet uniqueness, claim limits, and proof review before opening.",
+			Label:    "CEO memo",
+			State:    stateFrom(false, strong || signalCount >= 3),
+			Value:    ternaryString(strong, "Memo required", "Needs policy"),
+			Evidence: "CEO must write the airdrop memo after confirming wallet uniqueness, claim limits, and proof review.",
 		},
 	}
 }
@@ -1506,7 +1514,7 @@ func tokenLaunchCandidateReadinessState(gates []TokenLaunchCandidateReadinessGat
 	return "review"
 }
 
-func tokenLaunchCandidateDecisionOptions(launchType string, score int) []TokenLaunchCandidateDecisionOption {
+func tokenLaunchCandidateDecisionOptions(launchType string, score int, readyToOpen bool) []TokenLaunchCandidateDecisionOption {
 	if launchType != "presale" {
 		launchType = "airdrop"
 	}
@@ -1519,7 +1527,7 @@ func tokenLaunchCandidateDecisionOptions(launchType string, score int) []TokenLa
 		approveProof = "Approve only with utility proof, reserve cap, Solana wallet path, funding reference, contract proof, and public ledger receipt."
 		needsEvidenceProof = "Hold presale until utility, funding, wallet, contract, and receipt evidence are attached."
 	}
-	if score >= 82 {
+	if score >= 82 && readyToOpen {
 		if launchType == "presale" {
 			approveLabel = "Open presale"
 		} else {

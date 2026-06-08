@@ -1848,7 +1848,7 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 	if candidates.ProtocolVersion != tokenLaunchCandidatesProtocolVersion || candidates.Kind != "token_launch_candidates" || candidates.Stats.CandidateCount < 1 || candidates.Stats.AirdropCount < 1 {
 		t.Fatalf("public token launch candidates summary invalid: %#v", candidates)
 	}
-	if candidates.Stats.ReadyCount < 1 || candidates.Stats.ReviewCount != 0 || candidates.Stats.HoldCount != 0 {
+	if candidates.Stats.ReadyCount != 0 || candidates.Stats.ReviewCount < 1 || candidates.Stats.HoldCount != 0 {
 		t.Fatalf("public token launch candidates readiness stats invalid: %#v", candidates.Stats)
 	}
 	if len(candidates.Candidates) < 1 ||
@@ -1859,16 +1859,19 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 		!stringSliceContains(candidates.Candidates[0].ProofSignals, "repository_context") ||
 		len(candidates.Candidates[0].DecisionOptions) != 3 ||
 		candidates.Candidates[0].DecisionOptions[0].Key != "approve" ||
-		candidates.Candidates[0].DecisionOptions[0].Label != "Open missions" ||
+		candidates.Candidates[0].DecisionOptions[0].Label != "Draft missions" ||
 		candidates.Candidates[0].DecisionOptions[1].Key != "needs_evidence" ||
 		candidates.Candidates[0].DecisionOptions[2].Key != "reject" ||
 		len(candidates.Candidates[0].ReadinessGates) != 3 ||
 		candidates.Candidates[0].ReadinessGates[0].Key != "demand" ||
 		candidates.Candidates[0].ReadinessGates[0].State != "ready" ||
-		!strings.Contains(candidates.Candidates[0].ReadinessGates[2].Evidence, "wallet uniqueness") ||
+		candidates.Candidates[0].ReadinessGates[2].Key != "anti_bot" ||
+		candidates.Candidates[0].ReadinessGates[2].State != "review" ||
+		candidates.Candidates[0].ReadinessGates[2].Label != "CEO memo" ||
+		!strings.Contains(candidates.Candidates[0].ReadinessGates[2].Evidence, "write the airdrop memo") ||
 		!strings.Contains(candidates.Candidates[0].DecisionOptions[0].ProofPolicy, "repo task evidence") ||
 		strings.Contains(candidates.Candidates[0].DecisionOptions[0].ProofPolicy, "utility proof") ||
-		!strings.Contains(candidates.Candidates[0].NextAction, "Open earned missions") ||
+		!strings.Contains(candidates.Candidates[0].NextAction, "Draft a CEO airdrop memo") ||
 		candidates.Candidates[0].ProofPolicy == "" {
 		t.Fatalf("public token launch candidates rows invalid: %#v", candidates.Candidates)
 	}
@@ -1883,11 +1886,13 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 	}
 	if len(presaleCandidates.Candidates) < 1 ||
 		len(presaleCandidates.Candidates[0].DecisionOptions) != 3 ||
-		presaleCandidates.Candidates[0].DecisionOptions[0].Label != "Open presale" ||
+		presaleCandidates.Candidates[0].DecisionOptions[0].Label != "Draft presale" ||
 		len(presaleCandidates.Candidates[0].ReadinessGates) != 3 ||
 		presaleCandidates.Candidates[0].ReadinessGates[0].Key != "utility" ||
 		presaleCandidates.Candidates[0].ReadinessGates[2].Key != "contract" ||
-		!strings.Contains(presaleCandidates.Candidates[0].NextAction, "Open presale") ||
+		presaleCandidates.Candidates[0].ReadinessGates[2].Label != "CEO memo" ||
+		presaleCandidates.Candidates[0].ReadinessGates[2].State != "review" ||
+		!strings.Contains(presaleCandidates.Candidates[0].NextAction, "Draft a CEO presale memo") ||
 		!strings.Contains(presaleCandidates.Candidates[0].DecisionOptions[0].ProofPolicy, "utility proof") {
 		t.Fatalf("public presale launch candidates rows invalid: %#v", presaleCandidates.Candidates)
 	}
