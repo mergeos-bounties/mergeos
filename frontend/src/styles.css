@@ -45742,19 +45742,31 @@ canvas {
 @media (max-width: 620px) {
   .token-page-airdrop .token-proof-map,
   .token-page-presale .token-proof-map {
-    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
     gap: 6px !important;
   }
 
   .token-page-airdrop .token-proof-map article,
   .token-page-presale .token-proof-map article {
-    min-height: 56px !important;
-    grid-template-columns: 26px minmax(0, 1fr) !important;
-    padding: 7px !important;
+    min-height: 54px !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    justify-items: start !important;
+    padding: 7px 6px !important;
+  }
+
+  .token-page-airdrop .token-proof-map .ledger-trust-icon,
+  .token-page-presale .token-proof-map .ledger-trust-icon {
+    display: none !important;
+  }
+
+  .token-page-airdrop .token-proof-map strong,
+  .token-page-presale .token-proof-map strong {
+    margin-top: 3px !important;
+    font-size: 10px !important;
   }
 
   .token-page-airdrop .token-proof-map p,
   .token-page-presale .token-proof-map p {
-    -webkit-line-clamp: 1 !important;
+    display: none !important;
   }
 }

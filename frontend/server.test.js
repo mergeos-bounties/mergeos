@@ -2085,7 +2085,8 @@ test('signed-in mobile dashboard keeps nav, actions, and popovers phone-safe', a
   assert.match(cssSource, /\/\* Token hero CEO gate path:[\s\S]*@media \(max-width: 430px\)[\s\S]*\.token-page-airdrop \.token-hero-gate-note,[\s\S]*\.token-page-presale \.token-hero-gate-note\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\) !important;/);
   assert.match(cssSource, /Token proof map: keep the hidden long sections represented by one compact CEO-readable row/);
   assert.match(cssSource, /\/\* Token proof map:[\s\S]*\.token-page-airdrop \.token-proof-map,[\s\S]*\.token-page-presale \.token-proof-map\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\) !important;/);
-  assert.match(cssSource, /\/\* Token proof map:[\s\S]*@media \(max-width: 620px\)[\s\S]*\.token-page-airdrop \.token-proof-map,[\s\S]*\.token-page-presale \.token-proof-map\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) !important;/);
+  assert.match(cssSource, /\/\* Token proof map:[\s\S]*@media \(max-width: 620px\)[\s\S]*\.token-page-airdrop \.token-proof-map,[\s\S]*\.token-page-presale \.token-proof-map\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\) !important;/);
+  assert.match(cssSource, /\/\* Token proof map:[\s\S]*@media \(max-width: 620px\)[\s\S]*\.token-page-airdrop \.token-proof-map p,[\s\S]*\.token-page-presale \.token-proof-map p\s*\{[\s\S]*display: none !important;/);
   assert.match(cssSource, /@media \(max-width: 430px\)[\s\S]*\.dashboard-shell \.admin-dispute-lane,[\s\S]*\.dashboard-shell \.admin-ops-row\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\);/);
   assert.match(appSource, /dashboardNotificationMenuPlacement\.value = 'mobile-sheet';/);
   assert.match(appSource, /window\.visualViewport\?\.addEventListener\('resize', updateDashboardNotificationMenuPosition\);/);
