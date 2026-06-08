@@ -1860,6 +1860,9 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 	if candidates.Stats.ReadyCount != 0 || candidates.Stats.ReviewCount < 1 || candidates.Stats.HoldCount != 0 {
 		t.Fatalf("public token launch candidates readiness stats invalid: %#v", candidates.Stats)
 	}
+	if candidates.Stats.AirdropCount != candidates.Stats.CandidateCount || candidates.Stats.PresaleCount != 0 {
+		t.Fatalf("filtered airdrop candidate stats should stay scoped to airdrop: %#v", candidates.Stats)
+	}
 	if len(candidates.Candidates) < 1 ||
 		candidates.Candidates[0].ProjectID != project.ID ||
 		candidates.Candidates[0].ResearchSource != "https://github.com/mergeos-bounties/mergeos" ||
@@ -1894,6 +1897,9 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 	var presaleCandidates PublicTokenLaunchCandidatesResponse
 	if err := json.Unmarshal(presaleCandidatesResp.Body.Bytes(), &presaleCandidates); err != nil {
 		t.Fatal(err)
+	}
+	if presaleCandidates.Stats.PresaleCount != presaleCandidates.Stats.CandidateCount || presaleCandidates.Stats.AirdropCount != 0 {
+		t.Fatalf("filtered presale candidate stats should stay scoped to presale: %#v", presaleCandidates.Stats)
 	}
 	if len(presaleCandidates.Candidates) < 1 ||
 		len(presaleCandidates.Candidates[0].DecisionOptions) != 3 ||

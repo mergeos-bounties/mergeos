@@ -604,7 +604,11 @@ func (s *Store) PublicTokenLaunchCandidates(launchTypeFilter string) PublicToken
 			return
 		}
 		response.Candidates = append(response.Candidates, candidate)
-		for _, launchType := range candidate.RecommendedLaunchTypes {
+		statsLaunchTypes := candidate.RecommendedLaunchTypes
+		if launchTypeFilter != "" {
+			statsLaunchTypes = []string{launchTypeFilter}
+		}
+		for _, launchType := range statsLaunchTypes {
 			switch launchType {
 			case "airdrop":
 				response.Stats.AirdropCount++
