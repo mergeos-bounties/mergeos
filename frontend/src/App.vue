@@ -5471,7 +5471,9 @@
                 </div>
               </div>
               <div class="token-proof-result-actions">
-                <a :href="tokenLaunchBriefResult.ledger_proof_url || '/api/public/ledger/proof'" target="_blank" rel="noreferrer">Proof</a>
+                <a :href="tokenLaunchBriefResult.ledger_proof_url || '/api/public/ledger/proof'" target="_blank" rel="noreferrer">Ledger proof</a>
+                <a :href="tokenCeoQueueURL" target="_blank" rel="noreferrer">Memo ledger</a>
+                <a :href="tokenCeoCandidatesURL" target="_blank" rel="noreferrer">Candidate review</a>
                 <button type="button" @click="copyTokenWorkflowHash(tokenLaunchBriefResult)">Copy hash</button>
                 <button type="button" @click="openPublicPage('ledger')">Ledger board</button>
               </div>

@@ -1630,6 +1630,8 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /signals\.add\('contract_proof'\)/);
   assert.match(appSource, /research_signals: tokenLaunchBriefResearchSignals\(launchType\)/);
   assert.match(appSource, /tokenLaunchBriefResult\.research_signals\?\.length/);
+  assert.match(appSource, /<a :href="tokenCeoQueueURL" target="_blank" rel="noreferrer">Memo ledger<\/a>/);
+  assert.match(appSource, /<a :href="tokenCeoCandidatesURL" target="_blank" rel="noreferrer">Candidate review<\/a>/);
   assert.match(appSource, /Project brief intake/);
   assert.match(appSource, /Project utility intake/);
   assert.match(appSource, /Proof risk review/);
@@ -1849,8 +1851,12 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(cssSource, /\/\* Token CEO mobile launch desk pass:[\s\S]*\.token-page-airdrop \.token-ceo-launch-context,[\s\S]*\.token-page-presale \.token-ceo-launch-context,/);
   assert.match(cssSource, /Token CEO mobile context restore: keep launch type, ledger memo, and loaded decision visible/);
   assert.match(cssSource, /\/\* Token CEO mobile context restore:[\s\S]*\.token-page-airdrop \.token-ceo-launch-context,[\s\S]*\.token-page-presale \.token-ceo-launch-context\s*\{[\s\S]*display: grid !important;[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\) !important;/);
+  assert.match(cssSource, /\/\* Token CEO mobile context restore:[\s\S]*\.token-page-airdrop \.token-ceo-launch-context span,[\s\S]*\.token-page-presale \.token-ceo-launch-context span\s*\{[\s\S]*min-height: 24px !important;/);
+  assert.match(cssSource, /\/\* Token CEO mobile context restore:[\s\S]*\.token-page-airdrop \.token-ceo-launch-context b,[\s\S]*\.token-page-presale \.token-ceo-launch-context b\s*\{[\s\S]*display: none !important;/);
   assert.match(cssSource, /\/\* Token CEO mobile context restore:[\s\S]*\.token-page-airdrop \.token-ceo-decision-context,[\s\S]*\.token-page-presale \.token-ceo-decision-context\s*\{[\s\S]*display: grid !important;[\s\S]*grid-template-columns: minmax\(0, 1fr\) auto !important;/);
   assert.match(cssSource, /\.token-ceo-candidate-decisions button span,[\s\S]*\.token-ceo-candidate-decisions button small\s*\{[\s\S]*text-overflow: ellipsis !important;/);
+  assert.match(cssSource, /@media \(max-width: 760px\)[\s\S]*\.token-page-airdrop \.token-ceo-candidate-decisions,[\s\S]*\.token-page-presale \.token-ceo-candidate-decisions\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\) !important;/);
+  assert.match(cssSource, /@media \(max-width: 760px\)[\s\S]*\.token-page-airdrop \.token-ceo-candidate-decisions button small,[\s\S]*\.token-page-presale \.token-ceo-candidate-decisions button small\s*\{[\s\S]*display: none !important;/);
   assert.match(cssSource, /Token mobile viewport lock: CEO launch pages must never crop copy or actions/);
   assert.match(cssSource, /\/\* Token mobile viewport lock:[\s\S]*\.token-page-airdrop,[\s\S]*\.token-page-presale\s*\{[\s\S]*max-width: 100vw !important;[\s\S]*overflow-x: hidden !important;/);
   assert.match(cssSource, /\/\* Token mobile viewport lock:[\s\S]*\.token-page-airdrop \.home-container,[\s\S]*\.token-page-presale \.home-container\s*\{[\s\S]*width: calc\(100vw - 24px\) !important;[\s\S]*max-width: calc\(100vw - 24px\) !important;/);
