@@ -37713,3 +37713,269 @@ canvas {
   }
 }
 
+/* Home premium pass: one decisive first screen, compact system proof, no raw-looking mobile overflow. */
+.public-home-page {
+  min-height: calc(100dvh - 58px) !important;
+  display: flex !important;
+  align-items: center !important;
+  padding-block: clamp(18px, 3.2vw, 42px) !important;
+}
+
+.public-home-page .home-container {
+  max-width: 1120px !important;
+}
+
+.public-home-layout,
+.public-home-hero {
+  width: 100% !important;
+}
+
+.public-home-hero {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(330px, 390px) !important;
+  align-items: center !important;
+  gap: clamp(24px, 4vw, 58px) !important;
+}
+
+.public-home-copy {
+  max-width: 680px !important;
+  padding-block: 0 !important;
+}
+
+.public-home-copy h1 {
+  max-width: 690px !important;
+  margin-top: 12px !important;
+  font-size: clamp(46px, 5.8vw, 78px) !important;
+  line-height: 0.94 !important;
+  letter-spacing: 0 !important;
+  text-wrap: balance !important;
+}
+
+.public-home-copy p {
+  max-width: 620px !important;
+  margin-top: 18px !important;
+  color: #26352f !important;
+  font-size: clamp(16px, 1.35vw, 20px) !important;
+  line-height: 1.5 !important;
+  font-weight: 620 !important;
+}
+
+.home-definition-strip {
+  max-width: 660px !important;
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+  margin-top: 18px !important;
+}
+
+.home-definition-strip article {
+  min-height: 86px !important;
+  display: grid !important;
+  grid-template-columns: 26px minmax(0, 1fr) !important;
+  gap: 8px !important;
+  align-items: start !important;
+  border: 1px solid rgba(15, 118, 110, 0.12) !important;
+  border-radius: 8px !important;
+  background: rgba(255, 255, 255, 0.72) !important;
+  box-shadow: none !important;
+  padding: 10px !important;
+}
+
+.home-definition-icon {
+  width: 26px !important;
+  height: 26px !important;
+  border-radius: 8px !important;
+}
+
+.home-definition-strip strong {
+  font-size: 11px !important;
+  line-height: 1.15 !important;
+  font-weight: 920 !important;
+}
+
+.home-definition-strip small {
+  display: -webkit-box !important;
+  margin-top: 4px !important;
+  color: #52635c !important;
+  font-size: 10.5px !important;
+  line-height: 1.32 !important;
+  font-weight: 700 !important;
+  overflow: hidden !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 3 !important;
+}
+
+.home-explain-strip {
+  max-width: 660px !important;
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+  margin-top: 10px !important;
+}
+
+.home-explain-strip article {
+  min-height: 58px !important;
+  border-color: rgba(15, 118, 110, 0.11) !important;
+  border-radius: 8px !important;
+  background: rgba(247, 250, 248, 0.84) !important;
+  padding: 9px 10px !important;
+}
+
+.home-explain-strip strong {
+  font-size: 11px !important;
+  line-height: 1.15 !important;
+}
+
+.home-explain-strip span {
+  display: -webkit-box !important;
+  color: #61736a !important;
+  font-size: 10.5px !important;
+  line-height: 1.32 !important;
+  overflow: hidden !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 2 !important;
+}
+
+.public-home-copy .marketplace-actions {
+  margin-top: 20px !important;
+}
+
+.home-mergeide-inline-link {
+  margin-top: 12px !important;
+}
+
+.home-command-panel {
+  max-width: 390px !important;
+  align-self: center !important;
+  border-radius: 10px !important;
+  padding: 16px !important;
+  box-shadow: 0 22px 60px rgba(15, 23, 42, 0.08) !important;
+}
+
+.home-command-panel .public-stat-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 9px !important;
+}
+
+.home-command-panel .public-stat-grid article {
+  min-height: 86px !important;
+  border-radius: 8px !important;
+  padding: 12px !important;
+}
+
+.home-command-panel .public-stat-grid strong {
+  font-size: clamp(26px, 3vw, 38px) !important;
+  line-height: 1 !important;
+}
+
+.home-command-panel .public-notification-feed {
+  margin-top: 12px !important;
+}
+
+@media (max-width: 980px) {
+  .public-home-page {
+    min-height: auto !important;
+    align-items: start !important;
+    padding-block: 18px 28px !important;
+  }
+
+  .public-home-page .home-container {
+    max-width: 720px !important;
+  }
+
+  .public-home-hero {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 16px !important;
+  }
+
+  .home-command-panel {
+    display: none !important;
+  }
+}
+
+@media (max-width: 620px) {
+  .public-home-page {
+    padding-block: 12px 20px !important;
+  }
+
+  .home-navbar .brand-mark,
+  .brand-mark {
+    width: 30px !important;
+    height: 30px !important;
+  }
+
+  .home-navbar .brand-mark img,
+  .brand-mark img {
+    width: 30px !important;
+    height: 30px !important;
+    max-width: 30px !important;
+    max-height: 30px !important;
+  }
+
+  .public-home-copy h1 {
+    margin-top: 8px !important;
+    font-size: clamp(31px, 8.6vw, 38px) !important;
+    line-height: 1.02 !important;
+  }
+
+  .public-home-copy p {
+    display: -webkit-box !important;
+    margin-top: 12px !important;
+    font-size: 14px !important;
+    line-height: 1.43 !important;
+    overflow: hidden !important;
+    -webkit-box-orient: vertical !important;
+    -webkit-line-clamp: 4 !important;
+  }
+
+  .home-definition-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 7px !important;
+    margin-top: 14px !important;
+  }
+
+  .home-definition-strip article {
+    min-height: 74px !important;
+    padding: 8px !important;
+  }
+
+  .home-definition-strip small {
+    -webkit-line-clamp: 2 !important;
+  }
+
+  .home-explain-strip {
+    display: none !important;
+  }
+
+  .public-home-copy .marketplace-actions {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 8px !important;
+    margin-top: 14px !important;
+  }
+}
+
+/* Signed-in phone nav pass: avoid clipped labels like "Proje..." on the first row. */
+@media (max-width: 430px) {
+  .dashboard-shell .dash-mobile-nav {
+    display: grid !important;
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+    margin-inline: 0 !important;
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+
+  .dashboard-shell .dash-mobile-nav button {
+    min-width: 0 !important;
+    width: 100% !important;
+    min-height: 42px !important;
+    justify-content: center !important;
+    border-radius: 8px !important;
+    padding: 0 !important;
+  }
+
+  .dashboard-shell .dash-mobile-nav button span {
+    display: none !important;
+  }
+}
+

@@ -1814,6 +1814,39 @@ test('production server marks hashed assets as immutable', async (t) => {
   assert.match(script, /__mergeos_asset/);
 });
 
+test('production server does not fall back missing assets to app HTML', async (t) => {
+  const cwd = await fs.mkdtemp(path.join(os.tmpdir(), 'mergeos-frontend-missing-asset-'));
+  const clientDist = path.join(cwd, 'client');
+  const serverDir = path.join(cwd, 'server');
+  const serverEntry = path.join(serverDir, 'entry-server.mjs');
+  await fs.mkdir(clientDist, { recursive: true });
+  await fs.mkdir(serverDir, { recursive: true });
+  await fs.writeFile(path.join(clientDist, 'index.html'), '<!doctype html><html><body><div id="app"><!--ssr-outlet--></div></body></html>');
+  await fs.writeFile(serverEntry, "export async function render() { return '<main></main>'; }\n");
+
+  const server = await createMergeOSServer({
+    mode: 'production',
+    production: true,
+    cwd,
+    host: '127.0.0.1',
+    port: 0,
+    hmrPort: 0,
+    apiTarget: 'http://127.0.0.1:65535',
+    clientDist,
+    serverEntry,
+  });
+  t.after(() => server.close());
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+
+  const address = server.address();
+  const response = await fetch(`http://127.0.0.1:${address.port}/assets/missing.css`);
+  const body = await response.text();
+
+  assert.equal(response.status, 404);
+  assert.equal(response.headers.get('content-type'), 'text/plain; charset=utf-8');
+  assert.doesNotMatch(body, /<!doctype html>/i);
+});
+
 test('API proxy forwards the public frontend host for auth redirects', async (t) => {
   const api = http.createServer((req, res) => {
     res.setHeader('Content-Type', 'application/json');

@@ -255,6 +255,12 @@ async function serveStatic(req, res, clientDist = defaultClientDist) {
   try {
     stat = await fs.stat(requestedPath);
   } catch {
+    if (pathname.startsWith('/assets/')) {
+      res.statusCode = 404;
+      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+      res.end('Asset not found');
+      return true;
+    }
     return false;
   }
   if (!stat.isFile()) return false;
