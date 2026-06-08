@@ -874,6 +874,16 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.match(cssSource, /\/\* Home studio pass:[\s\S]*\.public-home-copy h1\s*\{[\s\S]*font-size: clamp\(44px, 5\.1vw, 70px\) !important;/);
   assert.match(cssSource, /\/\* Home studio pass:[\s\S]*\.home-command-panel \.public-stat-grid\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) !important;/);
   assert.match(cssSource, /\/\* Home studio pass:[\s\S]*@media \(max-width: 620px\)[\s\S]*\.public-home-copy > p\s*\{[\s\S]*display: block !important;/);
+  assert.match(cssSource, /Home CEO-grade cut: one tight product decision screen, no tall side console/);
+  assert.match(cssSource, /\/\* Home CEO-grade cut:[\s\S]*\.public-home-page\s*\{[\s\S]*min-height: calc\(100dvh - 74px\) !important;[\s\S]*align-items: center !important;/);
+  assert.match(cssSource, /\/\* Home CEO-grade cut:[\s\S]*\.public-home-page \.home-container\s*\{[\s\S]*max-width: 980px !important;/);
+  assert.match(cssSource, /\/\* Home CEO-grade cut:[\s\S]*\.public-home-copy\s*\{[\s\S]*width: min\(100%, 760px\) !important;[\s\S]*margin-inline: auto !important;/);
+  assert.match(cssSource, /\/\* Home CEO-grade cut:[\s\S]*\.home-explain-strip,[\s\S]*\.home-command-panel\s*\{[\s\S]*display: none !important;/);
+  assert.match(cssSource, /\/\* Home CEO-grade cut:[\s\S]*@media \(max-width: 760px\)[\s\S]*\.public-home-page \.home-container\s*\{[\s\S]*width: calc\(100vw - 20px\) !important;[\s\S]*max-width: calc\(100vw - 20px\) !important;/);
+  assert.match(cssSource, /\/\* Home CEO-grade cut:[\s\S]*@media \(max-width: 520px\)[\s\S]*\.home-definition-strip\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) !important;/);
+  assert.match(cssSource, /\/\* Home CEO-grade cut:[\s\S]*@media \(max-width: 520px\)[\s\S]*\.home-definition-strip article\s*\{[\s\S]*min-height: auto !important;[\s\S]*overflow: visible !important;/);
+  assert.match(cssSource, /\/\* Home CEO-grade cut:[\s\S]*@media \(max-width: 520px\)[\s\S]*\.home-definition-strip small\s*\{[\s\S]*-webkit-line-clamp: unset !important;[\s\S]*overflow: visible !important;/);
+  assert.match(cssSource, /\/\* Home CEO-grade cut:[\s\S]*@media \(max-width: 520px\)[\s\S]*\.public-home-copy \.marketplace-actions\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) !important;/);
 });
 
 test('frontend system exposes required public pages and dashboard roles', async () => {
