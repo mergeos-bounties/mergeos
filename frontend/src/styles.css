@@ -43159,6 +43159,264 @@ canvas {
   margin: 0 10px 10px !important;
 }
 
+/* Home executive panel restore: compact proof beside the pitch, not a hollow one-column page. */
+.public-home-page {
+  align-items: center !important;
+  padding-block: clamp(18px, 2.4vw, 34px) clamp(18px, 2.4vw, 30px) !important;
+}
+
+.public-home-page .home-container {
+  width: min(100%, 1160px) !important;
+  max-width: 1160px !important;
+}
+
+.public-home-layout {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(330px, 390px) !important;
+  gap: clamp(18px, 3vw, 42px) !important;
+  align-items: center !important;
+}
+
+.public-home-hero {
+  display: block !important;
+}
+
+.public-home-copy {
+  width: 100% !important;
+  max-width: 760px !important;
+  margin-inline: 0 !important;
+}
+
+.public-home-copy h1 {
+  max-width: 720px !important;
+  font-size: clamp(40px, 4.8vw, 66px) !important;
+  line-height: 0.98 !important;
+}
+
+.public-home-copy > p {
+  max-width: 68ch !important;
+  font-size: clamp(14px, 1.1vw, 16px) !important;
+  line-height: 1.5 !important;
+}
+
+.home-ceo-token-desk,
+.home-definition-strip,
+.public-home-copy .marketplace-actions,
+.home-mergeide-inline-link {
+  width: 100% !important;
+  max-width: 760px !important;
+}
+
+.home-definition-strip {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+}
+
+.home-definition-strip article {
+  min-height: 92px !important;
+}
+
+.home-definition-strip small {
+  -webkit-line-clamp: 3 !important;
+}
+
+.home-executive-panel {
+  display: grid;
+  gap: 10px;
+  border: 1px solid rgba(15, 23, 42, 0.09);
+  border-radius: 12px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(248, 252, 250, 0.92)),
+    #ffffff;
+  box-shadow: 0 22px 58px rgba(15, 23, 42, 0.1);
+  padding: 14px;
+}
+
+.home-executive-panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.07);
+  padding-bottom: 10px;
+}
+
+.home-executive-panel-head span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #047857;
+  font-family: var(--mono-font);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.home-executive-panel-head strong {
+  max-width: 170px;
+  color: #111827;
+  font-size: 13px;
+  line-height: 1.2;
+  text-align: right;
+}
+
+.home-executive-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.home-executive-stat-grid article,
+.home-executive-flow article,
+.home-executive-system article {
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.home-executive-stat-grid article {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  min-height: 70px;
+  padding: 9px;
+}
+
+.home-executive-stat-grid strong {
+  display: block;
+  color: #0f172a;
+  font-size: clamp(22px, 2.4vw, 30px);
+  line-height: 1;
+  font-weight: 940;
+}
+
+.home-executive-stat-grid small,
+.home-executive-system small {
+  display: block;
+  color: #647067;
+  font-size: 11px;
+  line-height: 1.25;
+  font-weight: 820;
+}
+
+.home-executive-memo {
+  border: 1px solid rgba(16, 185, 129, 0.18);
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(236, 253, 245, 0.92), rgba(239, 246, 255, 0.86));
+  padding: 12px;
+}
+
+.home-executive-memo span {
+  color: #047857;
+  font-family: var(--mono-font);
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.home-executive-memo strong {
+  display: block;
+  margin-top: 5px;
+  color: #0f172a;
+  font-size: 14px;
+  line-height: 1.25;
+}
+
+.home-executive-memo p {
+  display: -webkit-box;
+  margin: 7px 0 0;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  color: #475569;
+  font-size: 12px;
+  line-height: 1.35;
+  font-weight: 760;
+}
+
+.home-executive-flow {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.home-executive-flow article {
+  display: grid;
+  place-items: center;
+  gap: 6px;
+  min-height: 62px;
+  color: #0f766e;
+  padding: 8px;
+  text-align: center;
+}
+
+.home-executive-flow span {
+  color: #111827;
+  font-size: 11px;
+  line-height: 1.2;
+  font-weight: 900;
+}
+
+.home-executive-system {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.home-executive-system article {
+  min-height: 68px;
+  padding: 9px;
+}
+
+.home-executive-system strong {
+  display: block;
+  color: #111827;
+  font-size: 12px;
+  line-height: 1.15;
+  font-weight: 920;
+}
+
+@media (max-width: 980px) {
+  .public-home-layout {
+    grid-template-columns: minmax(0, 1fr) !important;
+    align-items: start !important;
+  }
+
+  .home-executive-panel {
+    width: min(100%, 760px);
+  }
+}
+
+@media (max-width: 620px) {
+  .public-home-page {
+    padding-block: 12px 18px !important;
+  }
+
+  .public-home-page .home-container {
+    padding-inline: 14px !important;
+  }
+
+  .public-home-copy h1 {
+    font-size: clamp(30px, 8vw, 39px) !important;
+  }
+
+  .home-definition-strip,
+  .home-executive-stat-grid,
+  .home-executive-system {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .home-executive-flow {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .home-executive-panel {
+    border-radius: 10px;
+    padding: 12px;
+  }
+}
+
 @media (max-width: 760px) {
   .token-page-whitepaper .token-whitepaper-reader {
     grid-template-columns: minmax(0, 1fr) !important;
@@ -43634,5 +43892,108 @@ canvas {
 
   .home-ceo-token-desk button {
     min-height: 42px !important;
+  }
+}
+
+/* Home executive panel final cascade: keep the restored proof panel alive after older homepage overrides. */
+.public-home-page .home-container {
+  width: min(100%, 1160px) !important;
+  max-width: 1160px !important;
+}
+
+.public-home-layout {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(330px, 390px) !important;
+  gap: clamp(18px, 3vw, 42px) !important;
+  align-items: center !important;
+}
+
+.public-home-copy,
+.home-ceo-token-desk,
+.home-definition-strip,
+.public-home-copy .marketplace-actions {
+  width: 100% !important;
+  max-width: 760px !important;
+}
+
+.home-mergeide-inline-link {
+  width: fit-content !important;
+  max-width: 100% !important;
+  padding-inline: 12px !important;
+}
+
+.home-definition-strip {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+}
+
+.home-definition-strip article {
+  min-height: 92px !important;
+}
+
+.home-definition-strip small {
+  display: -webkit-box !important;
+  overflow: hidden !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 3 !important;
+}
+
+.home-executive-panel {
+  display: grid !important;
+  gap: 10px !important;
+}
+
+@media (max-width: 980px) {
+  .public-home-layout {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
+@media (max-width: 620px) {
+  .public-home-page .home-container,
+  .public-home-copy,
+  .home-ceo-token-desk,
+  .home-definition-strip,
+  .public-home-copy .marketplace-actions,
+  .home-mergeide-inline-link,
+  .home-executive-panel {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .home-ceo-token-desk > div {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .home-definition-strip,
+  .home-executive-stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .home-ceo-token-desk > div {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .home-definition-strip article {
+    min-height: 112px !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .home-definition-strip small {
+    -webkit-line-clamp: 3 !important;
+  }
+
+  .home-executive-panel {
+    padding: 10px !important;
+  }
+
+  .home-executive-stat-grid article {
+    min-height: 62px !important;
+    grid-template-columns: 28px minmax(0, 1fr) !important;
+    padding: 7px !important;
+  }
+
+  .home-executive-memo,
+  .home-executive-system {
+    display: none !important;
   }
 }

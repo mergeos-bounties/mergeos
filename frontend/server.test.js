@@ -809,6 +809,11 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.match(appSource, /v-for="row in homeDefinitionRows"/);
   assert.match(appSource, /const homeDefinitionRows = computed/);
   assert.match(appSource, /class="home-ceo-token-desk"/);
+  assert.match(appSource, /class="home-executive-panel"/);
+  assert.match(appSource, /v-for="row in homeLiveStats"/);
+  assert.match(appSource, /class="home-executive-memo"/);
+  assert.match(appSource, /v-for="row in homePipelineRows"/);
+  assert.match(appSource, /v-for="row in homeSystemSummaryRows"/);
   assert.match(appSource, /tokenDeskTitle: 'Research airdrop and presale candidates before opening MRG\.'/);
   assert.match(appSource, /\{\{ homeTokenDeskBody \}\}/);
   assert.match(appSource, /const homeTokenDeskBody = computed/);
@@ -930,6 +935,11 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.match(cssSource, /Home CEO launch desk labels: make the token entry points read like decisions, not nav pills/);
   assert.match(cssSource, /\.home-ceo-token-desk button b\s*\{[\s\S]*font-weight: 940;/);
   assert.match(cssSource, /\.home-ceo-token-desk button small\s*\{[\s\S]*text-transform: uppercase;/);
+  assert.match(cssSource, /Home executive panel restore: compact proof beside the pitch, not a hollow one-column page/);
+  assert.match(cssSource, /\.public-home-layout\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) minmax\(330px, 390px\) !important;/);
+  assert.match(cssSource, /\.home-executive-panel\s*\{[\s\S]*box-shadow: 0 22px 58px rgba\(15, 23, 42, 0\.1\);/);
+  assert.match(cssSource, /\.home-executive-stat-grid\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/);
+  assert.match(cssSource, /\.home-executive-memo p\s*\{[\s\S]*-webkit-line-clamp: 3;/);
 });
 
 test('frontend system exposes required public pages and dashboard roles', async () => {

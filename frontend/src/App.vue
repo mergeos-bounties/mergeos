@@ -4689,6 +4689,43 @@
             </a>
           </div>
         </section>
+        <aside class="home-executive-panel" :aria-label="publicHomeCopy.commandLabel">
+          <div class="home-executive-panel-head">
+            <span>
+              <Bot :size="14" />
+              {{ publicHomeCopy.commandEyebrow }}
+            </span>
+            <strong>{{ publicHomeCopy.commandTitle }}</strong>
+          </div>
+          <div class="home-executive-stat-grid">
+            <article v-for="row in homeLiveStats" :key="row.label">
+              <span :class="['home-definition-icon', row.tone]">
+                <component :is="row.icon" :size="13" />
+              </span>
+              <div>
+                <strong>{{ row.value }}</strong>
+                <small>{{ row.detail }}</small>
+              </div>
+            </article>
+          </div>
+          <section class="home-executive-memo" :aria-label="publicHomeCopy.tokenDeskLabel">
+            <span>{{ publicHomeCopy.tokenDeskEyebrow }}</span>
+            <strong>{{ publicHomeCopy.tokenDeskTitle }}</strong>
+            <p>{{ homeTokenDeskBody }}</p>
+          </section>
+          <div class="home-executive-flow" :aria-label="publicHomeCopy.pipelineLabel">
+            <article v-for="row in homePipelineRows" :key="row.title">
+              <component :is="row.icon" :size="14" />
+              <span>{{ row.title }}</span>
+            </article>
+          </div>
+          <div class="home-executive-system" :aria-label="publicHomeCopy.systemSummaryLabel">
+            <article v-for="row in homeSystemSummaryRows" :key="row.title">
+              <strong>{{ row.title }}</strong>
+              <small>{{ row.body }}</small>
+            </article>
+          </div>
+        </aside>
 
       </div>
     </main>
