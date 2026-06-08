@@ -1284,6 +1284,7 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /const fallbackRows = tokenLaunchCandidateDecisionRows\(launchType, score\)/);
   assert.match(appSource, /contradictsLaunch/);
   assert.match(appSource, /proofPolicy: contradictsLaunch \? fallback\.proofPolicy/);
+  assert.match(appSource, /label: fallback\.label \|\| row\.label/);
   assert.match(appSource, /function tokenLaunchCandidateDecisionPreview\(rows = \[\]\)/);
   assert.match(appSource, /Number\(candidate\.research_score\) \|\| tokenLaunchCandidateScore/);
   assert.match(appSource, /tokenLaunchCandidateDecisionRowsFromAPI\(candidate\.decision_options, launchType, score\)/);
@@ -1296,9 +1297,10 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /proofSignalRows = signals\.slice\(0, 3\)\.map/);
   assert.match(appSource, /proofSignalExtra: Math\.max\(0, signals\.length - proofSignalRows\.length\)/);
   assert.match(appSource, /\['ai', 'api', 'ceo', 'dao', 'idl', 'mrg', 'pr', 'qa', 'sdk', 'ui', 'url', 'ux', 'go'\]\.includes\(lower\)/);
-  assert.match(appSource, /Approve memo/);
-  assert.match(appSource, /Needs evidence/);
-  assert.match(appSource, /Reject/);
+  assert.match(appSource, /Open presale/);
+  assert.match(appSource, /Open missions/);
+  assert.match(appSource, /Need proof/);
+  assert.match(appSource, /Hold launch/);
   assert.match(appSource, /CEO \$\{launchLabel\} decision: request more evidence before opening/);
   assert.match(appSource, /class="token-ceo-candidate-actions"/);
   assert.match(appSource, /marketplaceData\.value\.projects[\s\S]*marketplaceData\.value\.bounties/);

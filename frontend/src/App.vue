@@ -12887,10 +12887,13 @@ function tokenLaunchCandidateScore({ openTasks = 0, acceptedTasks = 0, signalCou
 function tokenLaunchCandidateDecisionRows(launchType = 'airdrop', score = 0) {
   const launchLabel = launchType === 'presale' ? 'presale' : 'airdrop';
   const strongFit = Number(score) >= 82;
+  const approveLabel = launchType === 'presale'
+    ? (strongFit ? 'Open presale' : 'Draft presale')
+    : (strongFit ? 'Open missions' : 'Draft missions');
   return [
     {
       key: 'approve',
-      label: strongFit ? 'Approve memo' : 'Draft approve',
+      label: approveLabel,
       tone: 'approve',
       proofPolicy: launchType === 'presale'
         ? 'Approve only with utility proof, reserve cap, Solana wallet path, funding reference, contract proof, and public ledger receipt.'
@@ -12899,7 +12902,7 @@ function tokenLaunchCandidateDecisionRows(launchType = 'airdrop', score = 0) {
     },
     {
       key: 'needs_evidence',
-      label: 'Needs evidence',
+      label: 'Need proof',
       tone: 'evidence',
       proofPolicy: launchType === 'presale'
         ? 'Hold presale until utility, funding, wallet, contract, and receipt evidence are attached.'
@@ -12908,7 +12911,7 @@ function tokenLaunchCandidateDecisionRows(launchType = 'airdrop', score = 0) {
     },
     {
       key: 'reject',
-      label: 'Reject',
+      label: 'Hold launch',
       tone: 'reject',
       proofPolicy: 'Do not open token workflow until source, demand, proof quality, wallet policy, and ledger evidence are remediated.',
       riskNotes: `CEO ${launchLabel} decision: reject for now; score ${score}% fit and proof is not launch-ready.`,
@@ -12930,7 +12933,7 @@ function tokenLaunchCandidateDecisionRowsFromAPI(rows = [], launchType = 'airdro
         && !new RegExp(`CEO\\s+${expectedLabel}\\s+decision`, 'i').test(riskNotes);
       return {
         key,
-        label: row.label || fallback.label || toTitleLabel(row.key || 'CEO decision'),
+        label: fallback.label || row.label || toTitleLabel(row.key || 'CEO decision'),
         tone: row.tone || row.key || fallback.tone || 'evidence',
         proofPolicy: contradictsLaunch ? fallback.proofPolicy : (proofPolicy || fallback.proofPolicy || ''),
         riskNotes: contradictsLaunch ? fallback.riskNotes : (riskNotes || fallback.riskNotes || ''),
