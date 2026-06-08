@@ -5087,7 +5087,7 @@
                 <span>{{ publicTokenPage.panelEyebrow }}</span>
                 <h2>{{ publicTokenPage.panelTitle }}</h2>
               </div>
-              <button type="button" :disabled="ledgerLoading" @click="refreshTokenPageData">
+              <button type="button" aria-label="Refresh token proof data" :disabled="ledgerLoading" @click="refreshTokenPageData">
                 <RefreshCw :class="{ 'loading-spin': ledgerLoading }" :size="14" />
                 Refresh
               </button>

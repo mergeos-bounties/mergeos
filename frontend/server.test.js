@@ -1217,6 +1217,7 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /title: 'A task-based airdrop for verified software delivery\.'/);
   assert.match(appSource, /title: 'Reserve MRG through a transparent presale workflow\.'/);
   assert.match(appSource, /title: 'The operating system for AI software delivery\.'/);
+  assert.match(appSource, /aria-label="Refresh token proof data"/);
   assert.match(appSource, /action: \{ page: 'airdrop' \}/);
   assert.match(appSource, /action: \{ page: 'presale' \}/);
   assert.match(appSource, /action: \{ page: 'whitepaper' \}/);
@@ -1508,6 +1509,8 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-workflow-proof-list article\s*\{[\s\S]*grid-template-columns: 32px minmax\(0, 1fr\);/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-memo-lane article,[\s\S]*\.token-workflow-proof-list article\s*\{[\s\S]*grid-template-columns: 32px minmax\(0, 1fr\);/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-status-panel \.ledger-card-head\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) auto;/);
+  assert.match(cssSource, /Token mobile refresh affordance: icon-only, stable, and not a clipped text pill/);
+  assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-status-panel \.ledger-card-head button\s*\{[\s\S]*width: 32px !important;[\s\S]*font-size: 0 !important;/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-metric-grid\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-status-panel > p\s*\{[\s\S]*display: none;/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-research-grid,[\s\S]*\.token-ceo-decision-strip,[\s\S]*\.token-ceo-project-queue,[\s\S]*\.token-whitepaper-thesis/);

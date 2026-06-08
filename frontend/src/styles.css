@@ -39780,3 +39780,24 @@ canvas {
     font-size: 8.4px !important;
   }
 }
+
+/* Token mobile refresh affordance: icon-only, stable, and not a clipped text pill. */
+@media (max-width: 620px) {
+  .token-status-panel .ledger-card-head button {
+    width: 32px !important;
+    min-width: 32px !important;
+    max-width: 32px !important;
+    min-height: 32px !important;
+    padding: 0 !important;
+    border-radius: 8px !important;
+    gap: 0 !important;
+    overflow: hidden !important;
+    font-size: 0 !important;
+  }
+
+  .token-status-panel .ledger-card-head button svg {
+    width: 14px !important;
+    height: 14px !important;
+    margin: 0 !important;
+  }
+}
