@@ -5185,6 +5185,23 @@
               <strong>{{ row.value }}</strong>
             </article>
           </div>
+          <div v-if="tokenCeoLaunchQueueRows.length" class="token-ceo-launch-queue" aria-label="CEO launch candidate queue">
+            <article v-for="row in tokenCeoLaunchQueueRows" :key="row.key">
+              <div>
+                <small>{{ row.tag }}</small>
+                <strong>{{ row.title }}</strong>
+                <p>{{ row.researchAsk }}</p>
+                <span>
+                  <b :class="row.statusTone">{{ row.status }}</b>
+                  <em>{{ row.decision }}</em>
+                </span>
+              </div>
+              <button type="button" @click="row.candidate ? prefillTokenLaunchBriefFromCandidate(row.candidate) : openTokenLaunchBriefFromProofBoard()">
+                {{ row.actionLabel }}
+                <ArrowRight :size="11" />
+              </button>
+            </article>
+          </div>
           <div v-if="tokenCeoMobileShortlistRows.length" class="token-ceo-mobile-shortlist" aria-label="Mobile CEO candidate shortlist">
             <span v-for="(row, index) in tokenCeoMobileShortlistRows" :key="row.key || row.title">
               <b>{{ index === 0 ? 'Lead' : row.priorityLabel || row.scoreLabel || `#${index + 1}` }}</b>
@@ -13089,6 +13106,38 @@ const tokenCeoQueueStatRows = computed(() => {
   ];
 });
 const tokenCeoMobileSummaryRows = computed(() => tokenCeoQueueStatRows.value.slice(0, 3));
+const tokenCeoLaunchQueueRows = computed(() => {
+  const launchType = tokenCeoCandidateLaunchType.value;
+  const launchLabel = launchType === 'presale' ? 'presale' : 'airdrop';
+  const candidateRows = tokenCeoCandidateRows.value.slice(0, 2).map((candidate, index) => ({
+    key: `candidate-${candidate.key || candidate.title || index}`,
+    tag: `${candidate.priorityLabel || candidate.scoreLabel || 'CEO review'} / ${candidate.requestedBy || 'Marketplace'}`,
+    title: candidate.title || `${toTitleLabel(launchLabel)} candidate`,
+    researchAsk: candidate.ceoResearchMemo || candidate.body || `CEO should research this ${launchLabel} candidate before opening.`,
+    status: candidate.verdict?.label || (launchType === 'presale' ? 'Review presale' : 'Review airdrop'),
+    statusTone: candidate.verdict?.tone || 'review',
+    decision: candidate.decisionPreview?.nextAction
+      || (launchType === 'presale'
+        ? 'Draft the presale memo before reserve receipts open.'
+        : 'Draft the airdrop memo before earned claims open.'),
+    actionLabel: launchType === 'presale' ? 'Open presale brief' : 'Open airdrop brief',
+    candidate,
+  }));
+  if (candidateRows.length) return candidateRows;
+  return tokenCeoLiveQueueRows.value.slice(0, 2).map((row, index) => ({
+    key: `memo-${row.key || index}`,
+    tag: `${toTitleLabel(launchLabel)} memo / ledger`,
+    title: row.title || `${toTitleLabel(launchLabel)} memo`,
+    researchAsk: row.summary || `CEO memo is recorded for ${launchLabel} review.`,
+    status: launchType === 'presale' ? 'Memo recorded' : 'Memo recorded',
+    statusTone: 'ready',
+    decision: launchType === 'presale'
+      ? 'Review funding, wallet, reserve, and contract proof before opening reserve.'
+      : 'Review mission demand, anti-bot policy, wallet, and proof gates before opening claims.',
+    actionLabel: launchType === 'presale' ? 'Review presale memo' : 'Review airdrop memo',
+    candidate: null,
+  }));
+});
 const tokenCeoLiveQueueRows = computed(() => {
   const currentType = publicPage.value === 'presale' ? 'presale' : 'airdrop';
   const briefs = Array.isArray(tokenLaunchBriefsData.value?.briefs) ? tokenLaunchBriefsData.value.briefs : [];

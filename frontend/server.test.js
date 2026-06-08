@@ -2120,6 +2120,12 @@ test('signed-in mobile dashboard keeps nav, actions, and popovers phone-safe', a
   assert.match(cssSource, /Token CEO mobile summary: keep candidate, ready, and memo counts visible after hiding the full queue grid/);
   assert.match(cssSource, /\/\* Token CEO mobile summary:[\s\S]*@media \(max-width: 760px\)[\s\S]*\.token-page-airdrop \.token-ceo-mobile-summary,[\s\S]*\.token-page-presale \.token-ceo-mobile-summary\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\) !important;/);
   assert.match(cssSource, /\/\* Token CEO mobile summary:[\s\S]*\.token-page-airdrop \.token-ceo-mobile-summary small,[\s\S]*\.token-page-presale \.token-ceo-mobile-summary small\s*\{[\s\S]*font-size: 8\.5px !important;/);
+  assert.match(appSource, /class="token-ceo-launch-queue"/);
+  assert.match(appSource, /const tokenCeoLaunchQueueRows = computed/);
+  assert.match(appSource, /row\.candidate \? prefillTokenLaunchBriefFromCandidate\(row\.candidate\) : openTokenLaunchBriefFromProofBoard\(\)/);
+  assert.match(cssSource, /Token CEO launch queue: surface projects that want airdrop\/presale as CEO decisions/);
+  assert.match(cssSource, /\.token-page-airdrop \.token-ceo-launch-queue article,[\s\S]*\.token-page-presale \.token-ceo-launch-queue article\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) 158px !important;/);
+  assert.match(cssSource, /@media \(max-width: 760px\)[\s\S]*\.token-page-airdrop \.token-ceo-launch-queue article,[\s\S]*\.token-page-presale \.token-ceo-launch-queue article\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) !important;/);
   assert.match(cssSource, /Token CEO mobile shortlist: show all candidate projects as chips, then keep only the lead decision card expanded/);
   assert.match(cssSource, /\/\* Token CEO mobile shortlist:[\s\S]*\.token-page-airdrop \.token-ceo-mobile-shortlist,[\s\S]*\.token-page-presale \.token-ceo-mobile-shortlist\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\) !important;/);
   assert.match(cssSource, /\/\* Token CEO mobile shortlist:[\s\S]*@media \(max-width: 620px\)[\s\S]*\.token-page-airdrop \.token-ceo-candidate-lane article:nth-child\(n \+ 2\),[\s\S]*\.token-page-presale \.token-ceo-candidate-lane article:nth-child\(n \+ 2\)\s*\{[\s\S]*display: none !important;/);
