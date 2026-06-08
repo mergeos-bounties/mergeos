@@ -837,13 +837,13 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.doesNotMatch(appSource, /class="home-system-explainer"/);
   assert.doesNotMatch(appSource, /localizedHomeWorkflowCards\.slice\(0, 4\)/);
   assert.match(appSource, /Operating system for funded software delivery\./);
-  assert.match(appSource, /MergeOS turns a product brief or repo into funded software work: CEO agents plan the scope, builders and AI agents execute tasks, escrow and Solana MRG track money, and every PR, deploy, payout, and receipt lands on a public proof ledger\./);
+  assert.match(appSource, /MergeOS is the product operating system for funded software work: import a brief or repo, let CEO agents plan scope, route tasks to builders or AI agents, hold escrow, account with Solana MRG, and publish PR, deploy, payout, receipt, and contract proof on one ledger\./);
   assert.match(appSource, /definitionRows: \[[\s\S]*title: 'Brief to scope', body: 'Product brief, repo, files, issues, budget, and acceptance criteria\.'/);
   assert.match(appSource, /title: 'CEO routing', body: 'CEO agents split funded work for builders, AI agents, QA, and DevOps\.'/);
   assert.match(appSource, /title: 'Escrow \+ MRG', body: 'Escrow funding and Solana MRG accounting follow each task\.'/);
   assert.match(appSource, /title: 'Proof ledger', body: 'PRs, deploys, payouts, receipts, and contract references stay public\.'/);
   assert.match(appSource, /title: 'Đầu vào', body: 'Brief, repo, issue, file, budget và deadline\.'/);
-  assert.match(appSource, /MergeOS biến brief hoặc repo thành funded tasks có CEO-agent planning, builder\/AI routing, escrow, PR\/deploy checks, Solana MRG accounting và public ledger proof\./);
+  assert.match(appSource, /MergeOS gom brief, repo, issue, ngân sách và tiêu chí nghiệm thu vào một luồng làm việc: CEO agent lập scope, route task cho builder hoặc AI agent, giữ escrow, ghi nhận Solana MRG, rồi công khai PR, deploy, payout, receipt và contract proof trên ledger\./);
   assert.match(appSource, /title: 'Product OS'[\s\S]*Project intake, repo import, AI task graph, escrow, PR monitor, deployment gates, and ledger proof stay in one operating flow\./);
   assert.match(appSource, /title: 'Delivery lanes'[\s\S]*Route funded work to human contributors, AI agents, or hybrid teams with shared scope, acceptance criteria, and payout state\./);
   assert.match(appSource, /title: 'Public proof layer'[\s\S]*Marketplace activity, escrow, token mint, PR evidence, deployment checks, SDK context, and protocol documents are discoverable\./);
@@ -1566,6 +1566,7 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /Use a repo, task board, docs, website, or public proof URL for CEO research\./);
   assert.match(appSource, /Research URL is required for CEO launch research\./);
   assert.match(appSource, /Research URL must start with http:\/\/ or https:\/\/\./);
+  assert.match(appSource, /tokenLaunchBriefFieldError\('allocation_policy'\)/);
   assert.match(appSource, /tokenLaunchBriefFieldError\('wallet_policy'\)/);
   assert.match(appSource, /tokenLaunchBriefFieldError\('risk_notes'\)/);
   assert.match(appSource, /walletPlaceholder: 'Require Solana wallet uniqueness, duplicate review, and anti-bot checks\.'/);
@@ -1583,6 +1584,12 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /launch_type: ''/);
   assert.match(appSource, /const tokenLaunchBriefDecisionContext = reactive/);
   assert.match(appSource, /const tokenLaunchBriefValidationMap = computed/);
+  assert.match(appSource, /errors\.allocation_policy = 'Allocation policy must explain caps or reserve rules\.'/);
+  assert.match(appSource, /Presale proof policy must mention funding rail or receipt evidence\./);
+  assert.match(appSource, /Presale proof policy must mention Solana contract or ledger proof\./);
+  assert.match(appSource, /Presale allocation policy must mention reserve, tier, or cap rules\./);
+  assert.match(appSource, /Airdrop proof policy must mention task, PR, QA, deploy, agent, or proof evidence\./);
+  assert.match(appSource, /Airdrop wallet policy must cover wallet uniqueness, duplicate review, or anti-bot checks\./);
   assert.match(appSource, /errors\.wallet_policy = 'Wallet policy must explain wallet ownership or uniqueness checks\.'/);
   assert.match(appSource, /errors\.risk_notes = 'CEO risk notes must explain the launch risk review\.'/);
   assert.match(appSource, /api\('\/api\/token\/launch-briefs'/);

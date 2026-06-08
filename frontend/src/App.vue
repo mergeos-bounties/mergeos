@@ -5414,9 +5414,10 @@
                 <input v-model.trim="tokenLaunchBriefForm.proof_policy" :disabled="tokenLaunchBriefBusy" maxlength="180" autocomplete="off" :placeholder="tokenCeoLaunchBriefCopy.proofPlaceholder" />
                 <p v-if="tokenLaunchBriefFieldError('proof_policy')" class="wizard-field-error">{{ tokenLaunchBriefFieldError('proof_policy') }}</p>
               </label>
-              <label class="wizard-field">
-                <span>{{ publicPage === 'airdrop' ? 'Allocation policy' : 'Reserve policy' }}</span>
+              <label class="wizard-field" :class="{ invalid: tokenLaunchBriefFieldError('allocation_policy') }">
+                <span>{{ publicPage === 'airdrop' ? 'Allocation policy' : 'Reserve policy' }} <b>*</b></span>
                 <input v-model.trim="tokenLaunchBriefForm.allocation_policy" :disabled="tokenLaunchBriefBusy" maxlength="180" autocomplete="off" :placeholder="tokenCeoLaunchBriefCopy.allocationPlaceholder" />
+                <p v-if="tokenLaunchBriefFieldError('allocation_policy')" class="wizard-field-error">{{ tokenLaunchBriefFieldError('allocation_policy') }}</p>
               </label>
               <label class="wizard-field" :class="{ invalid: tokenLaunchBriefFieldError('wallet_policy') }">
                 <span>Wallet policy <b>*</b></span>
@@ -9474,7 +9475,7 @@ const publicHomeTranslations = {
   'en-US': {
     eyebrow: 'MERGEOS DELIVERY OS',
     title: 'Operating system for funded software delivery.',
-    body: 'MergeOS turns a product brief or repo into funded software work: CEO agents plan the scope, builders and AI agents execute tasks, escrow and Solana MRG track money, and every PR, deploy, payout, and receipt lands on a public proof ledger.',
+    body: 'MergeOS is the product operating system for funded software work: import a brief or repo, let CEO agents plan scope, route tasks to builders or AI agents, hold escrow, account with Solana MRG, and publish PR, deploy, payout, receipt, and contract proof on one ledger.',
     primaryAction: 'Start a project',
     marketplaceAction: 'View live work',
     ledgerAction: 'Open proof ledger',
@@ -9570,8 +9571,8 @@ const publicHomeTranslations = {
   },
   'vi-VN': {
     eyebrow: 'MERGEOS DELIVERY OS',
-    title: 'Fund việc phần mềm. Route việc. Prove delivery.',
-    body: 'MergeOS biến brief hoặc repo thành funded tasks có CEO-agent planning, builder/AI routing, escrow, PR/deploy checks, Solana MRG accounting và public ledger proof.',
+    title: 'Hệ điều hành cho việc phần mềm đã fund.',
+    body: 'MergeOS gom brief, repo, issue, ngân sách và tiêu chí nghiệm thu vào một luồng làm việc: CEO agent lập scope, route task cho builder hoặc AI agent, giữ escrow, ghi nhận Solana MRG, rồi công khai PR, deploy, payout, receipt và contract proof trên ledger.',
     primaryAction: 'Bắt đầu dự án',
     marketplaceAction: 'Xem việc live',
     ledgerAction: 'Mở proof ledger',
@@ -13681,10 +13682,14 @@ const presaleReservationSubmitLabel = computed(() => {
 });
 const tokenLaunchBriefValidationMap = computed(() => {
   const errors = {};
+  const launchType = tokenLaunchBriefForm.launch_type === 'presale' || tokenLaunchBriefForm.launch_type === 'airdrop'
+    ? tokenLaunchBriefForm.launch_type
+    : (publicPage.value === 'presale' ? 'presale' : 'airdrop');
   const title = String(tokenLaunchBriefForm.project_title || '').trim();
   const summary = String(tokenLaunchBriefForm.project_summary || '').trim();
   const repoURL = String(tokenLaunchBriefForm.repository_url || '').trim();
   const proofPolicy = String(tokenLaunchBriefForm.proof_policy || '').trim();
+  const allocationPolicy = String(tokenLaunchBriefForm.allocation_policy || '').trim();
   const walletPolicy = String(tokenLaunchBriefForm.wallet_policy || '').trim();
   const riskNotes = String(tokenLaunchBriefForm.risk_notes || '').trim();
   if (!user.value) errors.session = 'Log in before sending a CEO launch brief.';
@@ -13693,8 +13698,21 @@ const tokenLaunchBriefValidationMap = computed(() => {
   if (!repoURL) errors.repository_url = 'Research URL is required for CEO launch research.';
   else if (!tokenWorkflowURLIsValid(repoURL)) errors.repository_url = 'Research URL must start with http:// or https://.';
   if (proofPolicy.length < 12) errors.proof_policy = 'Proof policy must explain the required evidence.';
+  if (allocationPolicy.length < 12) errors.allocation_policy = 'Allocation policy must explain caps or reserve rules.';
   if (walletPolicy.length < 12) errors.wallet_policy = 'Wallet policy must explain wallet ownership or uniqueness checks.';
   if (riskNotes.length < 12) errors.risk_notes = 'CEO risk notes must explain the launch risk review.';
+  if (launchType === 'presale') {
+    if (!/funding|rail|receipt|payment/i.test(proofPolicy)) errors.proof_policy = 'Presale proof policy must mention funding rail or receipt evidence.';
+    if (!/contract|solana|ledger/i.test(proofPolicy)) errors.proof_policy = 'Presale proof policy must mention Solana contract or ledger proof.';
+    if (!/reserve|tier|cap/i.test(allocationPolicy)) errors.allocation_policy = 'Presale allocation policy must mention reserve, tier, or cap rules.';
+    if (!/wallet/i.test(walletPolicy) || !/funding|receipt|ownership|duplicate/i.test(walletPolicy)) errors.wallet_policy = 'Presale wallet policy must cover wallet ownership plus funding, receipt, or duplicate checks.';
+    if (!/reserve|reversal|contract|compliance|risk/i.test(riskNotes)) errors.risk_notes = 'Presale risk notes must cover reserve, reversal, contract, compliance, or risk gates.';
+  } else {
+    if (!/proof|task|pr|qa|deploy|agent/i.test(proofPolicy)) errors.proof_policy = 'Airdrop proof policy must mention task, PR, QA, deploy, agent, or proof evidence.';
+    if (!/mission|claim|cap|score|allocation/i.test(allocationPolicy)) errors.allocation_policy = 'Airdrop allocation policy must mention mission, claim, score, cap, or allocation rules.';
+    if (!/wallet/i.test(walletPolicy) || !/unique|duplicate|bot|anti-bot/i.test(walletPolicy)) errors.wallet_policy = 'Airdrop wallet policy must cover wallet uniqueness, duplicate review, or anti-bot checks.';
+    if (!/bot|duplicate|proof|signup|risk|wallet/i.test(riskNotes)) errors.risk_notes = 'Airdrop risk notes must cover bot, duplicate, proof, signup, wallet, or risk gates.';
+  }
   return errors;
 });
 const tokenLaunchBriefValidationRows = computed(() =>
