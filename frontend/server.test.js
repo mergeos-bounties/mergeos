@@ -1304,6 +1304,9 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /marketplaceData\.value\.projects[\s\S]*marketplaceData\.value\.bounties/);
   assert.match(appSource, /Use for CEO brief/);
   assert.match(appSource, /function prefillTokenLaunchBriefFromCandidate\(candidate = \{\}\)/);
+  assert.match(appSource, /function scrollTokenLaunchBriefCardIntoView\(\)/);
+  assert.match(appSource, /window\.scrollTo\(\{ top, behavior: 'smooth' \}\)/);
+  assert.match(appSource, /window\.setTimeout\(run, 140\)/);
   assert.match(appSource, /CEO candidate loaded\./);
   assert.match(appSource, /tokenLaunchBriefDecisionContext\.label = label/);
   assert.match(appSource, /tokenLaunchBriefDecisionContext\.candidate = candidate\.title/);

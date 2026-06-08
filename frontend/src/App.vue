@@ -24859,6 +24859,18 @@ function prefillTokenLaunchBrief() {
   showToast('CEO research template added.');
 }
 
+function scrollTokenLaunchBriefCardIntoView() {
+  if (!hasWindow) return;
+  const run = () => {
+    const target = document.querySelector('.token-ceo-brief-card');
+    if (!target) return;
+    const top = Math.max(0, window.scrollY + target.getBoundingClientRect().top - 76);
+    window.scrollTo({ top, behavior: 'smooth' });
+  };
+  window.requestAnimationFrame(run);
+  window.setTimeout(run, 140);
+}
+
 function prefillTokenLaunchBriefFromCandidate(candidate = {}) {
   prefillTokenLaunchBrief();
   const launchType = publicPage.value === 'presale' ? 'presale' : 'airdrop';
@@ -24874,11 +24886,7 @@ function prefillTokenLaunchBriefFromCandidate(candidate = {}) {
   tokenLaunchBriefAttempted.value = false;
   tokenLaunchBriefError.value = '';
   showToast('CEO candidate loaded.');
-  if (!hasWindow) return;
-  window.requestAnimationFrame(() => {
-    const target = document.querySelector('.token-ceo-brief-card');
-    target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  });
+  scrollTokenLaunchBriefCardIntoView();
 }
 
 function applyTokenLaunchCandidateDecision(candidate = {}, decision = {}) {
@@ -24896,15 +24904,12 @@ function applyTokenLaunchCandidateDecision(candidate = {}, decision = {}) {
   tokenLaunchBriefAttempted.value = false;
   tokenLaunchBriefError.value = '';
   showToast(`${label} loaded into CEO brief.`);
+  scrollTokenLaunchBriefCardIntoView();
 }
 
 function openTokenLaunchBriefFromProofBoard() {
   prefillTokenLaunchBrief();
-  if (!hasWindow) return;
-  window.requestAnimationFrame(() => {
-    const target = document.querySelector('.token-ceo-brief-card');
-    target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  });
+  scrollTokenLaunchBriefCardIntoView();
 }
 
 function tokenWorkflowIntegerAmount(value = 0) {
