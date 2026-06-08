@@ -37682,10 +37682,25 @@ canvas {
   }
 
   .token-ceo-brief-form .wizard-field.full,
+  .token-ceo-brief-form .token-ceo-research-url-field,
   .token-ceo-brief-card .token-workflow-validation,
   .token-ceo-brief-card .token-workflow-error,
   .token-launch-brief-result {
     grid-column: 1 / -1 !important;
+  }
+
+  .token-ceo-brief-form .token-ceo-research-url-field {
+    grid-column: 1 / -1 !important;
+  }
+
+  .token-ceo-brief-form .token-ceo-research-url-field small {
+    display: -webkit-box !important;
+    -webkit-line-clamp: 1 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+    color: #64748b !important;
+    font-size: 9.5px !important;
+    line-height: 1.2 !important;
   }
 
   .token-ceo-brief-form textarea {
@@ -39436,10 +39451,25 @@ canvas {
   }
 
   .token-ceo-brief-form .wizard-field.full,
+  .token-ceo-brief-form .token-ceo-research-url-field,
   .token-ceo-brief-card .token-workflow-validation,
   .token-ceo-brief-card .token-workflow-error,
   .token-launch-brief-result {
     grid-column: 1 / -1 !important;
+  }
+
+  .token-ceo-brief-form .token-ceo-research-url-field {
+    grid-column: 1 / -1 !important;
+  }
+
+  .token-ceo-brief-form .token-ceo-research-url-field small {
+    display: -webkit-box !important;
+    -webkit-line-clamp: 1 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+    color: #64748b !important;
+    font-size: 9.5px !important;
+    line-height: 1.2 !important;
   }
 
   .token-ceo-brief-form .wizard-field {

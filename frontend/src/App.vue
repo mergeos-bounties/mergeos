@@ -5273,7 +5273,7 @@
                 <input v-model.trim="tokenLaunchBriefForm.project_title" :disabled="tokenLaunchBriefBusy" maxlength="120" autocomplete="off" placeholder="Project or repo name" />
                 <p v-if="tokenLaunchBriefFieldError('project_title')" class="wizard-field-error">{{ tokenLaunchBriefFieldError('project_title') }}</p>
               </label>
-              <label class="wizard-field" :class="{ invalid: tokenLaunchBriefFieldError('repository_url') }">
+              <label class="wizard-field token-ceo-research-url-field" :class="{ invalid: tokenLaunchBriefFieldError('repository_url') }">
                 <span>Research URL <b>*</b></span>
                 <input v-model.trim="tokenLaunchBriefForm.repository_url" :disabled="tokenLaunchBriefBusy" autocomplete="off" :placeholder="tokenCeoLaunchBriefCopy.urlPlaceholder" />
                 <small class="wizard-field-hint">{{ tokenCeoLaunchBriefCopy.urlHint }}</small>
@@ -9323,7 +9323,7 @@ const publicHomeTranslations = {
   'en-US': {
     eyebrow: 'MERGEOS DELIVERY OS',
     title: 'Operating system for funded software delivery.',
-    body: 'MergeOS connects MergeIDE, marketplace tasks, CEO agents, escrow, PR/deploy gates, Solana MRG, and public ledger proof from one project brief or repo.',
+    body: 'MergeOS turns a product brief or repo into funded software work: CEO agents plan the scope, builders and AI agents execute tasks, escrow and Solana MRG track money, and every PR, deploy, payout, and receipt lands on a public proof ledger.',
     primaryAction: 'Start a project',
     marketplaceAction: 'View live work',
     ledgerAction: 'Open proof ledger',
@@ -9349,9 +9349,10 @@ const publicHomeTranslations = {
     },
     statDetails: ['Funded briefs', 'Claimable work', 'Escrow tracked', 'MRG supply'],
     definitionRows: [
-      { title: 'Plan', body: 'Briefs, repos, files, issues, budget, and acceptance criteria.' },
-      { title: 'Route', body: 'CEO agents split work for builders, AI agents, QA, and DevOps.' },
-      { title: 'Prove', body: 'Escrow, Solana MRG, PRs, deploys, payouts, and ledger receipts.' },
+      { title: 'Brief to scope', body: 'Product brief, repo, files, issues, budget, and acceptance criteria.' },
+      { title: 'CEO routing', body: 'CEO agents split funded work for builders, AI agents, QA, and DevOps.' },
+      { title: 'Escrow + MRG', body: 'Escrow funding and Solana MRG accounting follow each task.' },
+      { title: 'Proof ledger', body: 'PRs, deploys, payouts, receipts, and contract references stay public.' },
     ],
     operatingRows: [
       { title: '1. Import context', body: 'Brief, repo, issues, files, budget, and acceptance criteria enter one workspace.' },

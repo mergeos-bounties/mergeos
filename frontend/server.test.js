@@ -795,10 +795,11 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.doesNotMatch(appSource, /localizedHomeWorkflowCards\.slice\(0, 4\)/);
   assert.match(appSource, /homeLiveStats\.slice\(0, 2\)/);
   assert.match(appSource, /Operating system for funded software delivery\./);
-  assert.match(appSource, /MergeOS connects MergeIDE, marketplace tasks, CEO agents, escrow, PR\/deploy gates, Solana MRG, and public ledger proof from one project brief or repo\./);
-  assert.match(appSource, /definitionRows: \[[\s\S]*title: 'Plan', body: 'Briefs, repos, files, issues, budget, and acceptance criteria\.'/);
-  assert.match(appSource, /title: 'Route', body: 'CEO agents split work for builders, AI agents, QA, and DevOps\.'/);
-  assert.match(appSource, /title: 'Prove', body: 'Escrow, Solana MRG, PRs, deploys, payouts, and ledger receipts\.'/);
+  assert.match(appSource, /MergeOS turns a product brief or repo into funded software work: CEO agents plan the scope, builders and AI agents execute tasks, escrow and Solana MRG track money, and every PR, deploy, payout, and receipt lands on a public proof ledger\./);
+  assert.match(appSource, /definitionRows: \[[\s\S]*title: 'Brief to scope', body: 'Product brief, repo, files, issues, budget, and acceptance criteria\.'/);
+  assert.match(appSource, /title: 'CEO routing', body: 'CEO agents split funded work for builders, AI agents, QA, and DevOps\.'/);
+  assert.match(appSource, /title: 'Escrow \+ MRG', body: 'Escrow funding and Solana MRG accounting follow each task\.'/);
+  assert.match(appSource, /title: 'Proof ledger', body: 'PRs, deploys, payouts, receipts, and contract references stay public\.'/);
   assert.match(appSource, /title: 'Đầu vào', body: 'Brief, repo, issue, file, budget và deadline\.'/);
   assert.match(appSource, /MergeOS biến brief hoặc repo thành funded tasks có CEO-agent planning, builder\/AI routing, escrow, PR\/deploy checks, Solana MRG accounting và public ledger proof\./);
   assert.match(appSource, /title: 'Product OS'[\s\S]*Project intake, repo import, AI task graph, escrow, PR monitor, deployment gates, and ledger proof stay in one operating flow\./);
@@ -1341,6 +1342,7 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /Wallet policy <b>\*<\/b>/);
   assert.match(appSource, /CEO risk notes <b>\*<\/b>/);
   assert.match(appSource, /Research URL <b>\*<\/b>/);
+  assert.match(appSource, /class="wizard-field token-ceo-research-url-field"/);
   assert.match(appSource, /urlPlaceholder: 'https:\/\/github\.com\/org\/repo or public proof page'/);
   assert.match(appSource, /urlPlaceholder: 'https:\/\/project\.site\/whitepaper or Solana contract proof'/);
   assert.match(appSource, /Use a repo, task board, docs, website, or public proof URL for CEO research\./);
@@ -1526,6 +1528,8 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(cssSource, /Token CEO brief compact form pass: keep mobile decision flow above the fold/);
   assert.match(cssSource, /\/\* Token CEO brief compact form pass:[\s\S]*\.token-ceo-brief-form\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\) !important;/);
   assert.match(cssSource, /\/\* Token CEO brief compact form pass:[\s\S]*\.token-ceo-brief-form \.wizard-field small\s*\{[\s\S]*display: none !important;/);
+  assert.match(cssSource, /\/\* Token CEO brief compact form pass:[\s\S]*\.token-ceo-brief-form \.token-ceo-research-url-field\s*\{[\s\S]*grid-column: 1 \/ -1 !important;/);
+  assert.match(cssSource, /\/\* Token CEO brief compact form pass:[\s\S]*\.token-ceo-brief-form \.token-ceo-research-url-field small\s*\{[\s\S]*display: -webkit-box !important;[\s\S]*-webkit-line-clamp: 1 !important;/);
   assert.match(cssSource, /\/\* Token CEO brief compact form pass:[\s\S]*\.token-ceo-brief-form \.wizard-field\.full textarea\s*\{[\s\S]*min-height: 108px !important;/);
   assert.match(cssSource, /Token CEO candidate decision polish: turn raw research signals into scan-friendly evidence chips/);
   assert.match(cssSource, /\.token-ceo-candidate-signals\s*\{[\s\S]*display: flex;[\s\S]*flex-wrap: wrap;/);
