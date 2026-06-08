@@ -1428,7 +1428,10 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /\/api\/public\/token\/launch-briefs\?launch_type=\$\{publicPage\.value === 'presale' \? 'presale' : 'airdrop'\}/);
   assert.match(appSource, /const tokenCeoCandidatesURL = computed/);
   assert.match(appSource, /function tokenLaunchCandidateAPIPath\(launchType = ''\)/);
-  assert.match(appSource, /\/api\/public\/token\/launch-candidates\?launch_type=\$\{type === 'presale' \? 'presale' : 'airdrop'\}/);
+  assert.match(appSource, /publicPage\.value === 'airdrop' \|\| publicPage\.value === 'presale'/);
+  assert.match(appSource, /if \(type === 'airdrop' \|\| type === 'presale'\) \{/);
+  assert.match(appSource, /return `\/api\/public\/token\/launch-candidates\?launch_type=\$\{type\}`;/);
+  assert.match(appSource, /return '\/api\/public\/token\/launch-candidates';/);
   assert.match(appSource, /async function loadTokenLaunchCandidates\(launchType = ''\)/);
   assert.match(appSource, /tokenLaunchCandidatesLoading\.value = true/);
   assert.match(appSource, /tokenLaunchCandidatesError\.value = error\?\.message \|\| 'CEO candidate queue is temporarily unavailable\.'/);

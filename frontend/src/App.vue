@@ -12926,8 +12926,15 @@ const tokenCeoQueueURL = computed(() =>
   `/api/public/token/launch-briefs?launch_type=${publicPage.value === 'presale' ? 'presale' : 'airdrop'}`,
 );
 function tokenLaunchCandidateAPIPath(launchType = '') {
-  const type = launchType || (publicPage.value === 'presale' ? 'presale' : 'airdrop');
-  return `/api/public/token/launch-candidates?launch_type=${type === 'presale' ? 'presale' : 'airdrop'}`;
+  const type = launchType || (
+    publicPage.value === 'airdrop' || publicPage.value === 'presale'
+      ? publicPage.value
+      : 'all'
+  );
+  if (type === 'airdrop' || type === 'presale') {
+    return `/api/public/token/launch-candidates?launch_type=${type}`;
+  }
+  return '/api/public/token/launch-candidates';
 }
 const tokenCeoCandidatesURL = computed(() =>
   tokenLaunchCandidateAPIPath(),
