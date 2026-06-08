@@ -1547,6 +1547,12 @@ test('signed-in mobile dashboard keeps nav, actions, and popovers phone-safe', a
   assert.match(cssSource, /\.dashboard-shell \.dash-top-actions\s*\{[\s\S]*grid-template-columns: var\(--dash-touch-target\) var\(--dash-touch-target\) minmax\(88px, 1fr\) var\(--dash-touch-target\) !important;/);
   assert.match(cssSource, /\.dashboard-shell \.dash-command-copy p\s*\{[\s\S]*-webkit-line-clamp: unset !important;/);
   assert.match(cssSource, /\.dashboard-shell \.dashboard-role-map\s*\{[\s\S]*mask-image: none !important;/);
+  assert.match(cssSource, /Signed-in mobile executive pass: dashboard starts as an app, not a long role manual/);
+  assert.match(cssSource, /\/\* Signed-in mobile executive pass:[\s\S]*\.dashboard-shell \.dash-command-copy p\s*\{[\s\S]*-webkit-line-clamp: 2 !important;/);
+  assert.match(cssSource, /\/\* Signed-in mobile executive pass:[\s\S]*\.dashboard-shell \.dash-command-metrics article:nth-child\(n \+ 3\)\s*\{[\s\S]*display: none !important;/);
+  assert.match(cssSource, /\/\* Signed-in mobile executive pass:[\s\S]*\.dashboard-shell \.dashboard-role-map\s*\{[\s\S]*grid-template-columns: repeat\(4, minmax\(0, 1fr\)\) !important;/);
+  assert.match(cssSource, /\/\* Signed-in mobile executive pass:[\s\S]*\.dashboard-shell \.dashboard-role-map article.active\s*\{[\s\S]*grid-column: 1 \/ -1 !important;/);
+  assert.match(cssSource, /\/\* Signed-in mobile executive pass:[\s\S]*\.dashboard-shell \.dashboard-role-map article.active \.dashboard-role-proof\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\) !important;/);
   assert.match(cssSource, /\.notification-dropdown,[\s\S]*\.dashboard-shell \.notification-dropdown,[\s\S]*\.dashboard-shell \.account-context-menu,/);
   assert.match(cssSource, /\.dashboard-shell :is\(input, select, textarea\)\s*\{[\s\S]*font-size: 16px;/);
   assert.match(cssSource, /\.project-flow-shell \.project-flow-main\s*\{[\s\S]*padding-bottom: calc\(86px \+ env\(safe-area-inset-bottom\)\);/);

@@ -38179,3 +38179,186 @@ canvas {
   }
 }
 
+/* Signed-in mobile executive pass: dashboard starts as an app, not a long role manual. */
+@media (max-width: 760px) {
+  .dashboard-shell .dash-command-strip {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 10px !important;
+    margin-top: 8px !important;
+    padding: 12px !important;
+    border-radius: 10px !important;
+  }
+
+  .dashboard-shell .dash-command-copy .marketplace-eyebrow {
+    font-size: 10px !important;
+  }
+
+  .dashboard-shell .dash-command-copy h1 {
+    margin-top: 5px !important;
+    font-size: clamp(22px, 6.2vw, 28px) !important;
+    line-height: 1.04 !important;
+  }
+
+  .dashboard-shell .dash-command-copy p {
+    display: -webkit-box !important;
+    margin-top: 6px !important;
+    font-size: 12px !important;
+    line-height: 1.35 !important;
+    overflow: hidden !important;
+    -webkit-box-orient: vertical !important;
+    -webkit-line-clamp: 2 !important;
+  }
+
+  .dashboard-shell .dash-command-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 7px !important;
+  }
+
+  .dashboard-shell .dash-command-metrics article {
+    min-height: 52px !important;
+    grid-template-columns: 28px minmax(0, 1fr) !important;
+    gap: 7px !important;
+    padding: 8px !important;
+  }
+
+  .dashboard-shell .dash-command-metrics article:nth-child(n + 3) {
+    display: none !important;
+  }
+
+  .dashboard-shell .dash-command-metrics .public-card-icon {
+    width: 28px !important;
+    height: 28px !important;
+    margin: 0 !important;
+  }
+
+  .dashboard-shell .dash-command-metrics strong {
+    font-size: 17px !important;
+    line-height: 1 !important;
+  }
+
+  .dashboard-shell .dash-command-metrics small {
+    margin-top: 2px !important;
+    font-size: 9.5px !important;
+    line-height: 1.1 !important;
+  }
+
+  .dashboard-shell .dashboard-role-map {
+    display: grid !important;
+    grid-auto-flow: initial !important;
+    grid-auto-columns: initial !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    mask-image: none !important;
+  }
+
+  .dashboard-shell .dashboard-role-map article {
+    min-height: 66px !important;
+    display: grid !important;
+    align-content: center !important;
+    gap: 0 !important;
+    border-radius: 10px !important;
+    padding: 8px 6px !important;
+    text-align: center !important;
+    box-shadow: none !important;
+  }
+
+  .dashboard-shell .dashboard-role-map header {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    justify-items: center !important;
+    gap: 5px !important;
+  }
+
+  .dashboard-shell .dashboard-role-map header .public-card-icon {
+    width: 28px !important;
+    height: 28px !important;
+    margin: 0 !important;
+  }
+
+  .dashboard-shell .dashboard-role-map header small,
+  .dashboard-shell .dashboard-role-map p,
+  .dashboard-shell .dashboard-role-proof,
+  .dashboard-shell .dashboard-role-stats,
+  .dashboard-shell .dashboard-role-lanes,
+  .dashboard-shell .dashboard-role-primary {
+    display: none !important;
+  }
+
+  .dashboard-shell .dashboard-role-map header strong {
+    max-width: 100% !important;
+    font-size: 10.5px !important;
+    line-height: 1.15 !important;
+    text-align: center !important;
+    white-space: normal !important;
+    -webkit-line-clamp: 2 !important;
+  }
+
+  .dashboard-shell .dashboard-role-map header b {
+    max-width: 100% !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 3px 5px !important;
+    font-size: 8.5px !important;
+    line-height: 1 !important;
+  }
+
+  .dashboard-shell .dashboard-role-map article.active {
+    border-color: rgba(15, 159, 120, 0.34) !important;
+    background: #eefbf5 !important;
+  }
+
+  .dashboard-shell .dashboard-role-map article.active p,
+  .dashboard-shell .dashboard-role-map article.active .dashboard-role-proof,
+  .dashboard-shell .dashboard-role-map article.active .dashboard-role-primary {
+    display: grid !important;
+    grid-column: 1 / -1 !important;
+  }
+
+  .dashboard-shell .dashboard-role-map article.active {
+    grid-column: 1 / -1 !important;
+    min-height: 0 !important;
+    text-align: left !important;
+  }
+
+  .dashboard-shell .dashboard-role-map article.active header {
+    grid-template-columns: 30px minmax(0, 1fr) auto !important;
+    justify-items: stretch !important;
+    text-align: left !important;
+  }
+
+  .dashboard-shell .dashboard-role-map article.active header strong {
+    text-align: left !important;
+  }
+
+  .dashboard-shell .dashboard-role-map article.active p {
+    margin-top: 7px !important;
+    font-size: 11px !important;
+    line-height: 1.35 !important;
+    -webkit-line-clamp: 2 !important;
+  }
+
+  .dashboard-shell .dashboard-role-map article.active .dashboard-role-proof {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    margin-top: 8px !important;
+  }
+
+  .dashboard-shell .dashboard-role-map article.active .dashboard-role-primary {
+    min-height: 34px !important;
+    margin-top: 8px !important;
+  }
+}
+
+@media (max-width: 430px) {
+  .dashboard-shell .dashboard-role-map {
+    grid-auto-flow: initial !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+
+  .dashboard-shell .dashboard-role-map article:not(.active) header b {
+    display: none !important;
+  }
+}
+
