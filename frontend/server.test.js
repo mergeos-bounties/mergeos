@@ -1652,6 +1652,16 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(cssSource, /\/\* Token CEO mobile launch desk pass:[\s\S]*\.token-page-airdrop \.token-status-panel,[\s\S]*\.token-page-presale \.token-status-panel\s*\{[\s\S]*display: none !important;/);
   assert.match(cssSource, /\/\* Token CEO mobile launch desk pass:[\s\S]*\.token-page-airdrop \.token-hero-copy p,[\s\S]*\.token-page-presale \.token-hero-copy p\s*\{[\s\S]*-webkit-line-clamp: 2 !important;/);
   assert.match(cssSource, /\/\* Token CEO mobile launch desk pass:[\s\S]*\.token-page-airdrop \.token-ceo-launch-context,[\s\S]*\.token-page-presale \.token-ceo-launch-context,/);
+  assert.match(cssSource, /Token mobile viewport lock: CEO launch pages must never crop copy or actions/);
+  assert.match(cssSource, /\/\* Token mobile viewport lock:[\s\S]*\.token-page-airdrop,[\s\S]*\.token-page-presale\s*\{[\s\S]*max-width: 100vw !important;[\s\S]*overflow-x: hidden !important;/);
+  assert.match(cssSource, /\/\* Token mobile viewport lock:[\s\S]*\.token-page-airdrop \.home-container,[\s\S]*\.token-page-presale \.home-container\s*\{[\s\S]*width: calc\(100vw - 24px\) !important;[\s\S]*max-width: calc\(100vw - 24px\) !important;/);
+  assert.match(cssSource, /\/\* Token mobile viewport lock:[\s\S]*\.token-page-airdrop \.token-hero-copy h1,[\s\S]*\.token-page-presale \.token-hero-copy h1\s*\{[\s\S]*font-size: clamp\(25px, 7\.6vw, 30px\) !important;[\s\S]*overflow-wrap: anywhere !important;/);
+  assert.match(cssSource, /\/\* Token mobile viewport lock:[\s\S]*\.token-page-airdrop \.token-hero-copy p,[\s\S]*\.token-page-presale \.token-hero-copy p,[\s\S]*\.token-page-airdrop \.token-ceo-candidate-empty p,[\s\S]*-webkit-line-clamp: unset !important;/);
+  assert.match(cssSource, /\/\* Token mobile viewport lock:[\s\S]*\.token-page-airdrop \.token-ceo-research-head,[\s\S]*\.token-page-presale \.token-ceo-research-head\s*\{[\s\S]*grid-template-columns: 34px minmax\(0, 1fr\) !important;/);
+  assert.match(cssSource, /\/\* Token mobile viewport lock:[\s\S]*\.token-page-airdrop \.token-ceo-candidate-empty,[\s\S]*\.token-page-presale \.token-ceo-candidate-empty\s*\{[\s\S]*grid-template-columns: 28px minmax\(0, 1fr\) !important;/);
+  assert.match(cssSource, /\/\* Token mobile viewport lock:[\s\S]*\.token-page-airdrop \.token-ceo-candidate-empty-actions,[\s\S]*\.token-page-presale \.token-ceo-candidate-empty-actions\s*\{[\s\S]*grid-column: 1 \/ -1 !important;[\s\S]*grid-template-columns: minmax\(0, 1fr\) minmax\(0, 1fr\) !important;/);
+  assert.match(cssSource, /@media \(max-width: 430px\)[\s\S]*\.token-page-airdrop \.home-container,[\s\S]*\.token-page-presale \.home-container\s*\{[\s\S]*width: min\(360px, calc\(100vw - 24px\)\) !important;/);
+  assert.match(cssSource, /@media \(max-width: 430px\)[\s\S]*\.token-page-airdrop \.token-hero-copy p,[\s\S]*\.token-page-presale \.token-hero-copy p,[\s\S]*max-width: 330px !important;/);
   assert.match(cssSource, /\.token-proof-result small\s*\{[\s\S]*overflow: visible;[\s\S]*white-space: normal;[\s\S]*overflow-wrap: anywhere;/);
   assert.match(cssSource, /\.token-whitepaper-thesis p\s*\{[\s\S]*-webkit-line-clamp: 2;/);
   assert.match(cssSource, /Whitepaper mobile skim: keep the route decisive before the full reader begins/);
