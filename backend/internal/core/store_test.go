@@ -1863,6 +1863,11 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 	if candidates.Stats.AirdropCount != candidates.Stats.CandidateCount || candidates.Stats.PresaleCount != 0 {
 		t.Fatalf("filtered airdrop candidate stats should stay scoped to airdrop: %#v", candidates.Stats)
 	}
+	for i := 1; i < len(candidates.Candidates); i++ {
+		if candidates.Candidates[i-1].ResearchScore < candidates.Candidates[i].ResearchScore && candidates.Candidates[i-1].DecisionState == candidates.Candidates[i].DecisionState {
+			t.Fatalf("airdrop candidates should be sorted for CEO review: %#v", candidates.Candidates)
+		}
+	}
 	if len(candidates.Candidates) < 1 ||
 		candidates.Candidates[0].ProjectID != project.ID ||
 		candidates.Candidates[0].ResearchSource != "https://github.com/mergeos-bounties/mergeos" ||
@@ -1907,6 +1912,11 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 	}
 	if presaleCandidates.Stats.PresaleCount != presaleCandidates.Stats.CandidateCount || presaleCandidates.Stats.AirdropCount != 0 {
 		t.Fatalf("filtered presale candidate stats should stay scoped to presale: %#v", presaleCandidates.Stats)
+	}
+	for i := 1; i < len(presaleCandidates.Candidates); i++ {
+		if presaleCandidates.Candidates[i-1].ResearchScore < presaleCandidates.Candidates[i].ResearchScore && presaleCandidates.Candidates[i-1].DecisionState == presaleCandidates.Candidates[i].DecisionState {
+			t.Fatalf("presale candidates should be sorted for CEO review: %#v", presaleCandidates.Candidates)
+		}
 	}
 	if len(presaleCandidates.Candidates) < 1 ||
 		len(presaleCandidates.Candidates[0].DecisionOptions) != 3 ||

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -730,8 +731,44 @@ func (s *Store) PublicTokenLaunchCandidates(launchTypeFilter string) PublicToken
 			CreatedAt:              brief.CreatedAt,
 		})
 	}
+	sortTokenLaunchCandidates(response.Candidates)
 	response.Stats.CandidateCount = len(response.Candidates)
 	return response
+}
+
+func sortTokenLaunchCandidates(candidates []PublicTokenLaunchCandidate) {
+	sort.SliceStable(candidates, func(i, j int) bool {
+		left := candidates[i]
+		right := candidates[j]
+		if tokenLaunchCandidateStateRank(left.DecisionState) != tokenLaunchCandidateStateRank(right.DecisionState) {
+			return tokenLaunchCandidateStateRank(left.DecisionState) < tokenLaunchCandidateStateRank(right.DecisionState)
+		}
+		if left.ResearchScore != right.ResearchScore {
+			return left.ResearchScore > right.ResearchScore
+		}
+		leftActivity := left.OpenTaskCount + left.AcceptedTaskCount
+		rightActivity := right.OpenTaskCount + right.AcceptedTaskCount
+		if leftActivity != rightActivity {
+			return leftActivity > rightActivity
+		}
+		if !left.CreatedAt.Equal(right.CreatedAt) {
+			return left.CreatedAt.After(right.CreatedAt)
+		}
+		return left.CandidateID < right.CandidateID
+	})
+}
+
+func tokenLaunchCandidateStateRank(state string) int {
+	switch state {
+	case "ready":
+		return 0
+	case "review":
+		return 1
+	case "hold":
+		return 2
+	default:
+		return 3
+	}
 }
 
 func tokenLaunchBriefCandidateSignals(brief PublicTokenLaunchBriefRecord) []string {
