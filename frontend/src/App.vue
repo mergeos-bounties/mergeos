@@ -5288,7 +5288,16 @@
               </article>
             </div>
           </details>
-          <form id="token-ceo-brief" class="token-ceo-brief-card" @submit.prevent="submitTokenLaunchBrief">
+          <details id="token-ceo-brief" class="token-ceo-brief-drawer">
+            <summary>
+              <span>
+                <FileCheck2 :size="14" />
+                CEO brief intake
+              </span>
+              <b>{{ tokenCeoLaunchBriefCopy.launchTypeLabel }}</b>
+              <ChevronDown :size="13" />
+            </summary>
+          <form class="token-ceo-brief-card" @submit.prevent="submitTokenLaunchBrief">
             <div class="token-ceo-brief-copy">
               <span class="marketplace-eyebrow">{{ tokenCeoLaunchBriefCopy.eyebrow }}</span>
               <strong>{{ tokenCeoLaunchBriefCopy.title }}</strong>
@@ -5418,6 +5427,7 @@
               </button>
             </div>
           </form>
+          </details>
         </section>
 
         <section v-if="publicPage !== 'whitepaper'" class="token-content-grid">
@@ -25243,6 +25253,7 @@ function scrollTokenLaunchBriefCardIntoView() {
   const run = (behavior = 'smooth') => {
     const target = document.getElementById('token-ceo-brief') || document.querySelector('.token-ceo-brief-card');
     if (!target) return;
+    if ('open' in target) target.open = true;
     const navHeight = Math.round(document.querySelector('.home-navbar')?.getBoundingClientRect().height || 64);
     const top = Math.max(0, window.scrollY + target.getBoundingClientRect().top - navHeight - 14);
     window.scrollTo({ top, behavior });

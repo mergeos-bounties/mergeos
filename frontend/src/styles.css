@@ -43154,3 +43154,80 @@ canvas {
     grid-template-columns: minmax(0, 1fr) !important;
   }
 }
+
+/* Token CEO brief drawer: keep the decision desk visible until an operator asks to write the memo. */
+.token-ceo-brief-drawer {
+  min-width: 0;
+  scroll-margin-top: 86px;
+  border: 1px solid rgba(124, 58, 237, 0.13);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(250, 245, 255, 0.82), rgba(255, 255, 255, 0.96)),
+    #ffffff;
+  box-shadow: 0 14px 34px rgba(17, 24, 39, 0.06);
+}
+
+.token-ceo-brief-drawer > summary {
+  min-height: 48px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 18px;
+  align-items: center;
+  gap: 10px;
+  list-style: none;
+  color: #111827;
+  padding: 0 14px;
+  cursor: pointer;
+}
+
+.token-ceo-brief-drawer > summary::-webkit-details-marker {
+  display: none;
+}
+
+.token-ceo-brief-drawer > summary span {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 940;
+}
+
+.token-ceo-brief-drawer > summary b {
+  border: 1px solid rgba(15, 118, 110, 0.12);
+  border-radius: 999px;
+  background: rgba(236, 253, 245, 0.76);
+  color: #0f766e;
+  padding: 5px 8px;
+  font-size: 9px;
+  line-height: 1;
+  font-weight: 930;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.token-ceo-brief-drawer[open] > summary {
+  border-bottom: 1px solid rgba(124, 58, 237, 0.1);
+}
+
+.token-ceo-brief-drawer[open] > summary svg:last-child {
+  transform: rotate(180deg);
+}
+
+.token-ceo-brief-drawer .token-ceo-brief-card {
+  border: 0 !important;
+  border-radius: 0 0 8px 8px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+@media (max-width: 620px) {
+  .token-ceo-brief-drawer > summary {
+    min-height: 44px;
+    grid-template-columns: minmax(0, 1fr) 18px;
+    padding-inline: 10px;
+  }
+
+  .token-ceo-brief-drawer > summary b {
+    display: none;
+  }
+}

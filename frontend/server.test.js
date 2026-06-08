@@ -1352,7 +1352,8 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /tokenCeoLaunchBriefCopy\.launchTypeLabel/);
   assert.match(appSource, /tokenCeoLaunchBriefCopy\.ledgerMemo/);
   assert.match(appSource, /class="token-ceo-decision-context"/);
-  assert.match(appSource, /id="token-ceo-brief" class="token-ceo-brief-card"/);
+  assert.match(appSource, /id="token-ceo-brief" class="token-ceo-brief-drawer"/);
+  assert.match(appSource, /class="token-ceo-brief-card"/);
   assert.match(appSource, /@submit\.prevent="submitTokenLaunchBrief"/);
   assert.match(appSource, /class="token-ceo-memo-result"/);
   assert.match(appSource, /class="token-ceo-memo-summary"/);
@@ -1454,6 +1455,7 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /function prefillTokenLaunchBriefFromCandidate\(candidate = \{\}\)/);
   assert.match(appSource, /function scrollTokenLaunchBriefCardIntoView\(\)/);
   assert.match(appSource, /document\.getElementById\('token-ceo-brief'\) \|\| document\.querySelector\('\.token-ceo-brief-card'\)/);
+  assert.match(appSource, /if \('open' in target\) target\.open = true;/);
   assert.match(appSource, /const navHeight = Math\.round\(document\.querySelector\('\.home-navbar'\)\?\.getBoundingClientRect\(\)\.height \|\| 64\)/);
   assert.match(appSource, /window\.scrollTo\(\{ top, behavior \}\)/);
   assert.match(appSource, /if \(behavior === 'auto'\) window\.scrollTo\(0, top\)/);
@@ -1645,6 +1647,7 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(cssSource, /\.token-ceo-brief-gates\s*\{[\s\S]*grid-template-columns: repeat\(4, minmax\(0, max-content\)\);/);
   assert.match(cssSource, /\.token-ceo-decision-context\s*\{[\s\S]*grid-template-columns: auto minmax\(0, 1fr\) auto;/);
   assert.match(cssSource, /\.token-ceo-brief-card\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\);/);
+  assert.match(cssSource, /\.token-ceo-brief-drawer\s*\{/);
   assert.match(cssSource, /\.token-ceo-brief-card\s*\{[\s\S]*scroll-margin-top: 86px;/);
   assert.match(cssSource, /\.token-ceo-launch-context\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, max-content\)\);/);
   assert.match(cssSource, /\.token-ceo-launch-context span\s*\{[\s\S]*border-radius: 999px;/);
