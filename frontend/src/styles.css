@@ -45437,3 +45437,38 @@ canvas {
     letter-spacing: 0 !important;
   }
 }
+
+/* Project wizard mobile command rail: keep the primary action reachable without turning the form into a desktop footer. */
+@media (max-width: 620px) {
+  .project-flow-shell {
+    --project-mobile-action-height: 66px !important;
+  }
+
+  .project-flow-shell .project-flow-main {
+    padding-bottom: calc(var(--project-mobile-action-height) + 28px + env(safe-area-inset-bottom)) !important;
+  }
+
+  .project-flow-shell .project-step-actions {
+    position: fixed !important;
+    right: max(10px, env(safe-area-inset-right)) !important;
+    bottom: max(8px, env(safe-area-inset-bottom)) !important;
+    left: max(10px, env(safe-area-inset-left)) !important;
+    z-index: 980 !important;
+    width: auto !important;
+    max-width: none !important;
+    min-height: var(--project-mobile-action-height) !important;
+    margin: 0 !important;
+    border: 1px solid rgba(203, 213, 225, 0.82) !important;
+    border-radius: 12px !important;
+    background: rgba(255, 255, 255, 0.96) !important;
+    box-shadow: 0 -18px 42px rgba(15, 23, 42, 0.13) !important;
+  }
+
+  .project-flow-shell .project-step-actions > div {
+    grid-template-columns: minmax(0, 0.84fr) minmax(0, 1.16fr) !important;
+  }
+
+  .project-flow-shell .project-step-actions button {
+    min-height: 44px !important;
+  }
+}

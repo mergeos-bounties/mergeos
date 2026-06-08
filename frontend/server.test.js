@@ -2051,6 +2051,10 @@ test('signed-in mobile dashboard keeps nav, actions, and popovers phone-safe', a
   assert.match(cssSource, /\/\* Project wizard mobile final compact pass:[\s\S]*\.project-flow-shell \.wizard-validation-banner\s*\{[\s\S]*max-height: 132px !important;/);
   assert.match(cssSource, /\/\* Project wizard mobile final compact pass:[\s\S]*\.project-flow-shell \.quality-check-list\s*\{[\s\S]*display: none !important;/);
   assert.match(cssSource, /\/\* Project wizard mobile final compact pass:[\s\S]*\.project-flow-shell \.project-step-actions\s*\{[\s\S]*min-height: var\(--project-mobile-action-height\) !important;/);
+  assert.match(cssSource, /Project wizard mobile command rail: keep the primary action reachable without turning the form into a desktop footer/);
+  assert.match(cssSource, /\/\* Project wizard mobile command rail:[\s\S]*\.project-flow-shell \.project-flow-main\s*\{[\s\S]*padding-bottom: calc\(var\(--project-mobile-action-height\) \+ 28px \+ env\(safe-area-inset-bottom\)\) !important;/);
+  assert.match(cssSource, /\/\* Project wizard mobile command rail:[\s\S]*\.project-flow-shell \.project-step-actions\s*\{[\s\S]*position: fixed !important;[\s\S]*bottom: max\(8px, env\(safe-area-inset-bottom\)\) !important;[\s\S]*z-index: 980 !important;/);
+  assert.match(cssSource, /\/\* Project wizard mobile command rail:[\s\S]*\.project-flow-shell \.project-step-actions > div\s*\{[\s\S]*grid-template-columns: minmax\(0, 0\.84fr\) minmax\(0, 1\.16fr\) !important;/);
   assert.match(cssSource, /@media \(max-width: 430px\)[\s\S]*\.dashboard-shell \.admin-dispute-lane,[\s\S]*\.dashboard-shell \.admin-ops-row\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\);/);
   assert.match(appSource, /dashboardNotificationMenuPlacement\.value = 'mobile-sheet';/);
   assert.match(appSource, /window\.visualViewport\?\.addEventListener\('resize', updateDashboardNotificationMenuPosition\);/);
