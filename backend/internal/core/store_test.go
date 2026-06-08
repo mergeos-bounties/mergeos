@@ -1867,6 +1867,7 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 		candidates.Candidates[0].ProjectID != project.ID ||
 		candidates.Candidates[0].ResearchSource != "https://github.com/mergeos-bounties/mergeos" ||
 		!stringSliceContains(candidates.Candidates[0].RecommendedLaunchTypes, "airdrop") ||
+		candidates.Candidates[0].DecisionLaunchType != "airdrop" ||
 		candidates.Candidates[0].ResearchScore < 42 ||
 		!stringSliceContains(candidates.Candidates[0].ProofSignals, "repository_context") ||
 		len(candidates.Candidates[0].DecisionOptions) != 3 ||
@@ -1906,6 +1907,7 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 	}
 	if len(presaleCandidates.Candidates) < 1 ||
 		len(presaleCandidates.Candidates[0].DecisionOptions) != 3 ||
+		presaleCandidates.Candidates[0].DecisionLaunchType != "presale" ||
 		presaleCandidates.Candidates[0].DecisionOptions[0].Label != "Draft presale" ||
 		len(presaleCandidates.Candidates[0].ReadinessGates) != 3 ||
 		presaleCandidates.Candidates[0].ReadinessGates[0].Key != "utility" ||

@@ -194,6 +194,7 @@ type PublicTokenLaunchCandidate struct {
 	ProjectID              string                               `json:"project_id"`
 	ProjectTitle           string                               `json:"project_title"`
 	RecommendedLaunchTypes []string                             `json:"recommended_launch_types"`
+	DecisionLaunchType     string                               `json:"decision_launch_type"`
 	ResearchSource         string                               `json:"research_source"`
 	Brief                  string                               `json:"brief"`
 	WorkPoolMRG            int64                                `json:"work_pool_mrg"`
@@ -666,6 +667,7 @@ func (s *Store) PublicTokenLaunchCandidates(launchTypeFilter string) PublicToken
 			ProjectID:              project.ID,
 			ProjectTitle:           project.Title,
 			RecommendedLaunchTypes: recommendedTypes,
+			DecisionLaunchType:     decisionLaunchType,
 			ResearchSource:         source,
 			Brief:                  project.Brief,
 			WorkPoolMRG:            project.WorkPoolCents,
@@ -704,6 +706,7 @@ func (s *Store) PublicTokenLaunchCandidates(launchTypeFilter string) PublicToken
 			ProjectID:              "launch_brief:" + brief.BriefID,
 			ProjectTitle:           brief.ProjectTitle,
 			RecommendedLaunchTypes: []string{launchType},
+			DecisionLaunchType:     launchType,
 			ResearchSource:         brief.ResearchSource,
 			Brief:                  tokenLaunchBriefCandidateSummary(brief),
 			ResearchScore:          researchScore,
