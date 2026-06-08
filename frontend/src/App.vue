@@ -5100,11 +5100,15 @@
             <div v-if="publicPage === 'airdrop' || publicPage === 'presale'" class="token-hero-gate-note" aria-label="CEO launch gate order">
               <span>
                 <Search :size="13" />
-                CEO reviews candidate first
+                1. CEO research
               </span>
               <span>
                 <ShieldCheck :size="13" />
-                {{ publicPage === 'airdrop' ? 'Claims open after proof gate' : 'Reservations open after funding gate' }}
+                {{ publicPage === 'airdrop' ? '2. Proof gate' : '2. Funding gate' }}
+              </span>
+              <span>
+                <ArrowRight :size="13" />
+                {{ publicPage === 'airdrop' ? '3. Open claims' : '3. Open reserve' }}
               </span>
             </div>
             <div v-if="publicPage === 'airdrop' || publicPage === 'presale'" class="token-hero-ceo-strip" aria-label="CEO launch research summary">

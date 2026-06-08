@@ -45635,3 +45635,40 @@ canvas {
     line-height: 1.13 !important;
   }
 }
+
+/* Token hero CEO gate path: one readable launch path instead of scattered proof badges. */
+.token-page-airdrop .token-hero-gate-note,
+.token-page-presale .token-hero-gate-note {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, max-content)) !important;
+  justify-content: start !important;
+  gap: 6px !important;
+  margin-top: 8px !important;
+}
+
+.token-page-airdrop .token-hero-gate-note span,
+.token-page-presale .token-hero-gate-note span {
+  min-height: 28px !important;
+  border-color: rgba(15, 118, 110, 0.16) !important;
+  background: rgba(240, 253, 250, 0.72) !important;
+  color: #0f766e !important;
+  font-size: 10px !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  padding: 6px 8px !important;
+}
+
+@media (max-width: 430px) {
+  .token-page-airdrop .token-hero-gate-note,
+  .token-page-presale .token-hero-gate-note {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  .token-page-airdrop .token-hero-gate-note span,
+  .token-page-presale .token-hero-gate-note span {
+    justify-content: center !important;
+    min-width: 0 !important;
+    padding-inline: 4px !important;
+    font-size: 8.8px !important;
+  }
+}

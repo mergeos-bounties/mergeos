@@ -1346,9 +1346,11 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /v-if="publicPage !== 'whitepaper'" class="token-content-grid"/);
   assert.match(appSource, /class="token-hero-ceo-strip"/);
   assert.match(appSource, /class="token-hero-gate-note"/);
-  assert.match(appSource, /CEO reviews candidate first/);
-  assert.match(appSource, /Claims open after proof gate/);
-  assert.match(appSource, /Reservations open after funding gate/);
+  assert.match(appSource, /1\. CEO research/);
+  assert.match(appSource, /2\. Proof gate/);
+  assert.match(appSource, /2\. Funding gate/);
+  assert.match(appSource, /3\. Open claims/);
+  assert.match(appSource, /3\. Open reserve/);
   assert.match(appSource, /Claim workflow after CEO gate/);
   assert.match(appSource, /Reserve workflow after CEO gate/);
   assert.match(appSource, /CEO launch research summary/);
@@ -2073,6 +2075,9 @@ test('signed-in mobile dashboard keeps nav, actions, and popovers phone-safe', a
   assert.match(cssSource, /\/\* Project wizard mobile budget trim:[\s\S]*\.project-flow-shell \.project-mobile-optional-panel\[open\] \.project-mobile-optional-summary svg\s*\{[\s\S]*transform: rotate\(180deg\) !important;/);
   assert.match(cssSource, /Token CEO mobile proof summary: surface the research checks even when the full proof packet stays collapsed/);
   assert.match(cssSource, /\/\* Token CEO mobile proof summary:[\s\S]*\.token-page-airdrop \.token-ceo-candidate-mobile-proof,[\s\S]*\.token-page-presale \.token-ceo-candidate-mobile-proof\s*\{[\s\S]*display: block !important;[\s\S]*white-space: nowrap !important;/);
+  assert.match(cssSource, /Token hero CEO gate path: one readable launch path instead of scattered proof badges/);
+  assert.match(cssSource, /\/\* Token hero CEO gate path:[\s\S]*\.token-page-airdrop \.token-hero-gate-note,[\s\S]*\.token-page-presale \.token-hero-gate-note\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, max-content\)\) !important;/);
+  assert.match(cssSource, /\/\* Token hero CEO gate path:[\s\S]*@media \(max-width: 430px\)[\s\S]*\.token-page-airdrop \.token-hero-gate-note,[\s\S]*\.token-page-presale \.token-hero-gate-note\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\) !important;/);
   assert.match(cssSource, /@media \(max-width: 430px\)[\s\S]*\.dashboard-shell \.admin-dispute-lane,[\s\S]*\.dashboard-shell \.admin-ops-row\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\);/);
   assert.match(appSource, /dashboardNotificationMenuPlacement\.value = 'mobile-sheet';/);
   assert.match(appSource, /window\.visualViewport\?\.addEventListener\('resize', updateDashboardNotificationMenuPosition\);/);
