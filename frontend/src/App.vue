@@ -9369,8 +9369,8 @@ const publicNavTranslations = {
 const publicHomeTranslations = {
   'en-US': {
     eyebrow: 'MERGEOS DELIVERY OS',
-    title: 'Operating system for funded software delivery.',
-    body: 'MergeOS turns a product brief or repo into funded software work: CEO agents plan the scope, builders and AI agents execute tasks, escrow and Solana MRG track money, and every PR, deploy, payout, and receipt lands on a public proof ledger so founders can see who is doing what, what is funded, and what is verified.',
+    title: 'Fund software work, route tasks, prove delivery.',
+    body: 'MergeOS turns a brief or repo into funded work: CEO agents scope it, builders and AI agents execute it, escrow and Solana MRG track money, and every PR, deploy, payout, and receipt lands on a public proof ledger.',
     primaryAction: 'Start a project',
     marketplaceAction: 'View live work',
     ledgerAction: 'Open proof ledger',

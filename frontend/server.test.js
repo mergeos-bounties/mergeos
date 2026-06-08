@@ -803,8 +803,8 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.doesNotMatch(appSource, /class="home-system-explainer"/);
   assert.doesNotMatch(appSource, /localizedHomeWorkflowCards\.slice\(0, 4\)/);
   assert.match(appSource, /homeLiveStats\.slice\(0, 2\)/);
-  assert.match(appSource, /Operating system for funded software delivery\./);
-  assert.match(appSource, /MergeOS turns a product brief or repo into funded software work: CEO agents plan the scope, builders and AI agents execute tasks, escrow and Solana MRG track money, and every PR, deploy, payout, and receipt lands on a public proof ledger so founders can see who is doing what, what is funded, and what is verified\./);
+  assert.match(appSource, /Fund software work, route tasks, prove delivery\./);
+  assert.match(appSource, /MergeOS turns a brief or repo into funded work: CEO agents scope it, builders and AI agents execute it, escrow and Solana MRG track money, and every PR, deploy, payout, and receipt lands on a public proof ledger\./);
   assert.match(appSource, /definitionRows: \[[\s\S]*title: 'Brief to scope', body: 'Product brief, repo, files, issues, budget, deadline, and acceptance criteria become one funded work packet\.'/);
   assert.match(appSource, /title: 'CEO routing', body: 'CEO agents split scope into builder, AI agent, QA, and DevOps tasks with owners and status\.'/);
   assert.match(appSource, /title: 'Escrow \+ MRG', body: 'Escrow funding, reserve state, and Solana MRG accounting follow each task before payout\.'/);
@@ -869,6 +869,11 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.match(cssSource, /\.home-ceo-token-desk\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) auto;/);
   assert.match(cssSource, /\.home-ceo-token-desk > div\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(74px, 1fr\)\);/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.home-ceo-token-desk > div\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\) !important;/);
+  assert.match(cssSource, /Home studio pass: concise, premium first screen with enough product proof/);
+  assert.match(cssSource, /\/\* Home studio pass:[\s\S]*\.public-home-page\s*\{[\s\S]*padding-block: clamp\(22px, 3vw, 44px\) clamp\(18px, 2\.4vw, 30px\) !important;/);
+  assert.match(cssSource, /\/\* Home studio pass:[\s\S]*\.public-home-copy h1\s*\{[\s\S]*font-size: clamp\(44px, 5\.1vw, 70px\) !important;/);
+  assert.match(cssSource, /\/\* Home studio pass:[\s\S]*\.home-command-panel \.public-stat-grid\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) !important;/);
+  assert.match(cssSource, /\/\* Home studio pass:[\s\S]*@media \(max-width: 620px\)[\s\S]*\.public-home-copy > p\s*\{[\s\S]*display: block !important;/);
 });
 
 test('frontend system exposes required public pages and dashboard roles', async () => {

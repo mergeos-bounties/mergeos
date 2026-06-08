@@ -40520,3 +40520,234 @@ canvas {
     font-size: 9px !important;
   }
 }
+
+/* Home studio pass: concise, premium first screen with enough product proof. */
+.public-home-page {
+  min-height: auto !important;
+  align-items: start !important;
+  padding-block: clamp(22px, 3vw, 44px) clamp(18px, 2.4vw, 30px) !important;
+}
+
+.public-home-page .home-container {
+  width: min(100%, 1180px) !important;
+  max-width: 1180px !important;
+}
+
+.public-home-hero {
+  grid-template-columns: minmax(0, 1fr) minmax(310px, 370px) !important;
+  align-items: start !important;
+  gap: clamp(24px, 3.6vw, 54px) !important;
+}
+
+.public-home-copy {
+  max-width: 720px !important;
+  gap: 14px !important;
+}
+
+.public-home-copy .marketplace-eyebrow {
+  width: fit-content !important;
+  border: 1px solid rgba(0, 131, 105, 0.16) !important;
+  border-radius: 999px !important;
+  background: rgba(236, 253, 245, 0.72) !important;
+  padding: 7px 10px !important;
+  letter-spacing: 0.12em !important;
+}
+
+.public-home-copy h1 {
+  max-width: 680px !important;
+  font-size: clamp(44px, 5.1vw, 70px) !important;
+  line-height: 0.96 !important;
+  letter-spacing: 0 !important;
+}
+
+.public-home-copy > p {
+  max-width: 58ch !important;
+  color: #24322f !important;
+  font-size: clamp(15px, 1.25vw, 18px) !important;
+  line-height: 1.48 !important;
+  font-weight: 690 !important;
+}
+
+.home-definition-strip {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+}
+
+.home-definition-strip article {
+  min-height: 96px !important;
+  border-color: rgba(0, 131, 105, 0.13) !important;
+  background: rgba(255, 255, 255, 0.84) !important;
+  box-shadow: none !important;
+  padding: 12px !important;
+}
+
+.home-definition-strip article:hover {
+  transform: translateY(-2px) !important;
+  border-color: rgba(0, 131, 105, 0.24) !important;
+  box-shadow: 0 18px 34px rgba(5, 35, 28, 0.08) !important;
+}
+
+.home-definition-strip strong {
+  color: #0b1513 !important;
+  font-size: 12px !important;
+  line-height: 1.18 !important;
+}
+
+.home-definition-strip small {
+  -webkit-line-clamp: 3 !important;
+  color: #586963 !important;
+  font-size: 10.5px !important;
+  line-height: 1.28 !important;
+}
+
+.home-ceo-token-desk {
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  border-color: rgba(0, 131, 105, 0.15) !important;
+  background:
+    linear-gradient(135deg, rgba(236, 253, 245, 0.86), rgba(255, 255, 255, 0.92)),
+    #ffffff !important;
+  box-shadow: 0 18px 42px rgba(0, 108, 84, 0.08) !important;
+  padding: 13px 14px !important;
+}
+
+.home-ceo-token-desk > span,
+.home-ceo-token-desk > span svg {
+  color: #007c65 !important;
+}
+
+.home-ceo-token-desk > strong {
+  font-size: 16px !important;
+}
+
+.home-ceo-token-desk > p {
+  max-width: 58ch !important;
+  color: #53655f !important;
+  font-size: 12px !important;
+}
+
+.home-ceo-token-desk button {
+  border-color: rgba(0, 131, 105, 0.15) !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+  color: #006b58 !important;
+}
+
+.public-home-copy .marketplace-actions {
+  gap: 10px !important;
+}
+
+.public-home-copy .marketplace-actions .large {
+  min-height: 46px !important;
+  border-radius: 8px !important;
+  padding-inline: 18px !important;
+}
+
+.home-mergeide-inline-link {
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.82) !important;
+  box-shadow: 0 10px 24px rgba(8, 26, 22, 0.06) !important;
+}
+
+.home-command-panel {
+  position: sticky !important;
+  top: 96px !important;
+  max-width: 370px !important;
+  border-color: rgba(0, 131, 105, 0.15) !important;
+  background: rgba(255, 255, 255, 0.88) !important;
+  box-shadow: 0 28px 70px rgba(5, 35, 28, 0.11) !important;
+  padding: 16px !important;
+}
+
+.home-command-head {
+  align-items: center !important;
+  border-bottom: 1px solid rgba(7, 24, 20, 0.08) !important;
+  padding-bottom: 12px !important;
+}
+
+.home-command-head strong {
+  font-size: 15px !important;
+  line-height: 1.18 !important;
+}
+
+.home-command-panel .public-stat-grid {
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 8px !important;
+}
+
+.home-command-panel .public-stat-grid article {
+  grid-template-columns: 34px minmax(0, 1fr) !important;
+  min-height: 64px !important;
+  background: linear-gradient(180deg, #ffffff, rgba(248, 252, 250, 0.92)) !important;
+  padding: 10px !important;
+}
+
+.home-command-panel .public-stat-grid strong {
+  font-size: 24px !important;
+  line-height: 1 !important;
+}
+
+@media (max-width: 980px) {
+  .public-home-page {
+    padding-block: 16px 22px !important;
+  }
+
+  .public-home-copy {
+    max-width: 100% !important;
+  }
+
+  .home-definition-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 620px) {
+  .public-home-copy .marketplace-eyebrow {
+    max-width: 100% !important;
+    font-size: 9px !important;
+  }
+
+  .public-home-copy h1 {
+    font-size: clamp(34px, 10.4vw, 46px) !important;
+    line-height: 0.98 !important;
+  }
+
+  .public-home-copy > p {
+    display: block !important;
+    overflow: visible !important;
+    font-size: 13.5px !important;
+    line-height: 1.42 !important;
+  }
+
+  .home-definition-strip {
+    gap: 8px !important;
+  }
+
+  .home-definition-strip article {
+    min-height: 96px !important;
+    padding: 10px !important;
+  }
+
+  .home-definition-strip small {
+    -webkit-line-clamp: 3 !important;
+  }
+
+  .home-ceo-token-desk > div {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .home-ceo-token-desk button {
+    justify-content: flex-start !important;
+    min-height: 34px !important;
+    padding: 0 10px !important;
+    font-size: 10.5px !important;
+  }
+
+  .public-home-copy .marketplace-actions {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .public-home-copy .marketplace-actions .large,
+  .home-mergeide-inline-link {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+}
