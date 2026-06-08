@@ -823,6 +823,10 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.match(cssSource, /\.public-home-copy h1\s*\{[\s\S]*font-size: clamp\(42px, 4\.4vw, 68px\) !important;/);
   assert.match(cssSource, /\.home-definition-strip\s*\{[\s\S]*grid-template-columns: repeat\(4, minmax\(0, 1fr\)\) !important;/);
   assert.match(cssSource, /\.home-definition-strip small\s*\{[\s\S]*display: block !important;/);
+  assert.match(cssSource, /Home mobile proof strip: keep the full product meaning without turning the first screen into a long stack/);
+  assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.home-definition-strip\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\) !important;/);
+  assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.home-definition-strip article\s*\{[\s\S]*min-height: 104px !important;/);
+  assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.home-definition-strip small\s*\{[\s\S]*-webkit-line-clamp: 3 !important;/);
   assert.match(cssSource, /\.home-command-panel\s*\{[\s\S]*max-width: 380px !important;/);
   assert.match(cssSource, /\.home-explain-strip\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\) !important;/);
   assert.match(cssSource, /@media \(max-width: 980px\)[\s\S]*\.home-explain-strip\s*\{[\s\S]*grid-template-columns: 1fr !important;/);

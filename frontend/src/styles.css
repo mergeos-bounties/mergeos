@@ -39684,3 +39684,55 @@ canvas {
   }
 }
 
+/* Home mobile proof strip: keep the full product meaning without turning the first screen into a long stack. */
+@media (max-width: 620px) {
+  .public-home-copy p {
+    display: -webkit-box !important;
+    overflow: hidden !important;
+    -webkit-box-orient: vertical !important;
+    -webkit-line-clamp: 4 !important;
+  }
+
+  .home-definition-strip {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 7px !important;
+  }
+
+  .home-definition-strip article {
+    min-height: 104px !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    align-content: start !important;
+    gap: 6px !important;
+    padding: 9px !important;
+  }
+
+  .home-definition-icon {
+    width: 26px !important;
+    height: 26px !important;
+  }
+
+  .home-definition-strip strong {
+    font-size: 10.8px !important;
+    line-height: 1.12 !important;
+  }
+
+  .home-definition-strip small {
+    display: -webkit-box !important;
+    overflow: hidden !important;
+    font-size: 9.7px !important;
+    line-height: 1.2 !important;
+    -webkit-box-orient: vertical !important;
+    -webkit-line-clamp: 3 !important;
+  }
+}
+
+@media (max-width: 360px) {
+  .home-definition-strip article {
+    min-height: 112px !important;
+  }
+
+  .home-definition-strip small {
+    font-size: 9.2px !important;
+  }
+}
