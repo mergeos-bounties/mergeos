@@ -1471,7 +1471,10 @@
     </footer>
   </div>
 
-  <div v-else-if="user && !publicModeVisible" class="dashboard-shell">
+  <div
+    v-else-if="user && !publicModeVisible"
+    :class="['dashboard-shell', { 'dashboard-no-project': !dashboardSelectedProject && dashboardSection === 'projects' }]"
+  >
     <div v-if="toastMessage" class="toast dashboard-toast" role="status" aria-live="polite">
       {{ toastMessage }}
     </div>

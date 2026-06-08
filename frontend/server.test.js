@@ -1870,6 +1870,7 @@ test('signed-in mobile dashboard keeps nav, actions, and popovers phone-safe', a
 
   assert.match(cssSource, /Signed-in mobile system/);
   assert.match(appSource, /class="dash-mobile-nav"/);
+  assert.match(appSource, /'dashboard-no-project': !dashboardSelectedProject && dashboardSection === 'projects'/);
   assert.match(appSource, /dashboardMobilePrimaryNav/);
   assert.match(appSource, /toggleDashboardMobileSearch/);
   assert.match(cssSource, /\.dashboard-shell \.dash-mobile-nav\s*\{[\s\S]*grid-template-columns: repeat\(5, minmax\(0, 1fr\)\);/);
@@ -2025,6 +2026,9 @@ test('signed-in mobile dashboard keeps nav, actions, and popovers phone-safe', a
   assert.match(cssSource, /\/\* Signed-in mobile role switcher pass:[\s\S]*\.dashboard-shell \.dashboard-role-map article.active\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) auto !important;[\s\S]*min-height: 78px !important;/);
   assert.match(cssSource, /\/\* Signed-in mobile role switcher pass:[\s\S]*\.dashboard-shell \.dashboard-role-map article.active p,[\s\S]*\.dashboard-shell \.dashboard-role-map article.active \.dashboard-role-proof,/);
   assert.match(cssSource, /\/\* Signed-in mobile role switcher pass:[\s\S]*\.dashboard-shell \.dashboard-role-map article.active \.dashboard-role-primary\s*\{[\s\S]*min-height: 34px !important;/);
+  assert.match(cssSource, /Signed-in mobile product cut: one compact cockpit first, secondary proof later/);
+  assert.match(cssSource, /\.dashboard-shell \.dash-rail,[\s\S]*\.dashboard-shell \.dash-breadcrumb\s*\{[\s\S]*display: none !important;/);
+  assert.match(cssSource, /\.dashboard-shell\.dashboard-no-project \.dash-metrics,[\s\S]*\.dashboard-shell\.dashboard-no-project \.project-pr-monitor,[\s\S]*\.dashboard-shell\.dashboard-no-project \.dashboard-focus-target\s*\{[\s\S]*display: none !important;/);
   assert.match(cssSource, /@media \(max-width: 430px\)[\s\S]*\.dashboard-shell \.dash-command-metrics\s*\{[\s\S]*grid-auto-flow: row !important;[\s\S]*mask-image: none !important;/);
 });
 

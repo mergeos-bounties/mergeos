@@ -44432,3 +44432,181 @@ canvas {
     display: none !important;
   }
 }
+
+/* Signed-in mobile product cut: one compact cockpit first, secondary proof later. */
+@media (max-width: 760px) {
+  .dashboard-shell .dash-content {
+    gap: 8px !important;
+    padding-bottom: calc(14px + env(safe-area-inset-bottom)) !important;
+  }
+
+  .dashboard-shell .dash-rail,
+  .dashboard-shell .dash-breadcrumb {
+    display: none !important;
+  }
+
+  .dashboard-shell .dash-project-header {
+    gap: 10px !important;
+    padding: 11px !important;
+  }
+
+  .dashboard-shell .dash-project-title {
+    grid-template-columns: 38px minmax(0, 1fr) !important;
+    gap: 9px !important;
+  }
+
+  .dashboard-shell .dash-project-title .project-photo {
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 10px !important;
+  }
+
+  .dashboard-shell .dash-project-title h1 {
+    font-size: clamp(20px, 6vw, 26px) !important;
+    line-height: 1.05 !important;
+  }
+
+  .dashboard-shell .dash-project-title p {
+    display: -webkit-box !important;
+    overflow: hidden !important;
+    -webkit-box-orient: vertical !important;
+    -webkit-line-clamp: 2 !important;
+    font-size: 12px !important;
+    line-height: 1.35 !important;
+  }
+
+  .dashboard-shell .dash-project-actions,
+  .dashboard-shell .dashboard-tool-empty-actions.compact {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 7px !important;
+  }
+
+  .dashboard-shell .dash-project-actions > *,
+  .dashboard-shell .dashboard-tool-empty-actions.compact > * {
+    min-height: 38px !important;
+    padding-inline: 8px !important;
+    font-size: 12px !important;
+  }
+
+  .dashboard-shell .dash-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  .dashboard-shell .dash-metrics article:nth-child(n + 3) {
+    display: none !important;
+  }
+
+  .dashboard-shell .dash-metrics article {
+    min-height: 62px !important;
+    padding: 9px !important;
+  }
+
+  .dashboard-shell .dash-metrics strong {
+    font-size: clamp(20px, 6.4vw, 28px) !important;
+    line-height: 1 !important;
+  }
+
+  .dashboard-shell .customer-dashboard-operating-strip {
+    display: grid !important;
+    grid-auto-flow: column !important;
+    grid-auto-columns: minmax(92px, 29vw) !important;
+    grid-template-columns: none !important;
+    gap: 7px !important;
+    overflow-x: auto !important;
+    padding-bottom: 2px !important;
+    scroll-snap-type: x proximity !important;
+  }
+
+  .dashboard-shell .customer-dashboard-operating-strip button {
+    min-height: 58px !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    justify-items: center !important;
+    gap: 4px !important;
+    padding: 7px 6px !important;
+    text-align: center !important;
+    scroll-snap-align: start !important;
+  }
+
+  .dashboard-shell .customer-dashboard-operating-strip .public-card-icon {
+    width: 24px !important;
+    height: 24px !important;
+  }
+
+  .dashboard-shell .customer-dashboard-operating-strip small,
+  .dashboard-shell .customer-dashboard-operating-strip em {
+    display: none !important;
+  }
+
+  .dashboard-shell .customer-dashboard-operating-strip strong {
+    font-size: 10.5px !important;
+    line-height: 1.1 !important;
+  }
+
+  .dashboard-shell .delivery-snapshot-card {
+    gap: 10px !important;
+    padding: 11px !important;
+  }
+
+  .dashboard-shell .delivery-snapshot-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 7px !important;
+  }
+
+  .dashboard-shell .delivery-snapshot-actions > .dashboard-status-pill {
+    grid-column: 1 / -1 !important;
+    min-height: 28px !important;
+  }
+
+  .dashboard-shell .delivery-snapshot-actions button {
+    min-height: 38px !important;
+    font-size: 12px !important;
+  }
+
+  .dashboard-shell .delivery-snapshot-main {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 8px !important;
+  }
+
+  .dashboard-shell .delivery-snapshot-progress {
+    min-height: 58px !important;
+    padding: 9px !important;
+  }
+
+  .dashboard-shell .delivery-snapshot-progress small,
+  .dashboard-shell .delivery-snapshot-components,
+  .dashboard-shell .delivery-snapshot-stats {
+    display: none !important;
+  }
+
+  .dashboard-shell .dash-empty-state {
+    min-height: 0 !important;
+    gap: 8px !important;
+    padding: 12px !important;
+  }
+
+  .dashboard-shell .dash-empty-state strong {
+    font-size: clamp(18px, 5vw, 24px) !important;
+    line-height: 1.1 !important;
+  }
+
+  .dashboard-shell .dash-empty-state p {
+    display: -webkit-box !important;
+    overflow: hidden !important;
+    -webkit-box-orient: vertical !important;
+    -webkit-line-clamp: 2 !important;
+    font-size: 12px !important;
+    line-height: 1.35 !important;
+  }
+
+  .dashboard-shell.dashboard-no-project .dash-metrics,
+  .dashboard-shell.dashboard-no-project .customer-dashboard-operating-strip,
+  .dashboard-shell.dashboard-no-project .delivery-snapshot-card,
+  .dashboard-shell.dashboard-no-project .dash-tabs,
+  .dashboard-shell.dashboard-no-project .dash-overview-grid,
+  .dashboard-shell.dashboard-no-project .project-pr-monitor,
+  .dashboard-shell.dashboard-no-project .dashboard-focus-target {
+    display: none !important;
+  }
+}
