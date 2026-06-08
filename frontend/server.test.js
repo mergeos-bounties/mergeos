@@ -1491,7 +1491,9 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /Number\(candidate\.research_score\) \|\| tokenLaunchCandidateScore/);
   assert.match(appSource, /tokenLaunchCandidateDecisionRowsFromAPI\(candidate\.decision_options, launchType, score\)/);
   assert.match(appSource, /decisionPreview: tokenLaunchCandidateDecisionPreview\(decisionRows, candidate\.next_action\)/);
+  assert.match(appSource, /launchType,/);
   assert.match(appSource, /function applyTokenLaunchCandidateDecision\(candidate = \{\}, decision = \{\}\)/);
+  assert.match(appSource, /const launchType = candidate\.launchType === 'presale' \|\| candidate\.launchType === 'airdrop'[\s\S]*\? candidate\.launchType[\s\S]*: \(publicPage\.value === 'presale' \? 'presale' : 'airdrop'\);/);
   assert.match(appSource, /row\.scoreLabel/);
   assert.match(appSource, /scoreLabel: `\$\{score\}% fit`/);
   assert.match(appSource, /class="token-ceo-candidate-decisions"/);

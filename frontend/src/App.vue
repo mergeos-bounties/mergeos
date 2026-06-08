@@ -13349,6 +13349,7 @@ const tokenCeoCandidateRows = computed(() => {
       const contextRows = tokenLaunchCandidateContextRows(candidate, readinessRows, launchType);
       return {
         key: candidate.candidate_id || candidate.project_id || candidate.project_title,
+        launchType,
         label: launchType === 'presale' ? 'CEO presale candidate' : 'CEO airdrop candidate',
         scoreLabel: `${score}% fit`,
         decisionRows,
@@ -25393,7 +25394,9 @@ function scrollTokenLaunchBriefCardIntoView() {
 
 function prefillTokenLaunchBriefFromCandidate(candidate = {}) {
   prefillTokenLaunchBrief();
-  const launchType = publicPage.value === 'presale' ? 'presale' : 'airdrop';
+  const launchType = candidate.launchType === 'presale' || candidate.launchType === 'airdrop'
+    ? candidate.launchType
+    : (publicPage.value === 'presale' ? 'presale' : 'airdrop');
   tokenLaunchBriefForm.project_title = candidate.title || tokenLaunchBriefForm.project_title;
   tokenLaunchBriefForm.repository_url = candidate.sourceUrl || tokenLaunchBriefForm.repository_url;
   tokenLaunchBriefForm.project_summary = launchType === 'presale'
@@ -25411,7 +25414,9 @@ function prefillTokenLaunchBriefFromCandidate(candidate = {}) {
 
 function applyTokenLaunchCandidateDecision(candidate = {}, decision = {}) {
   prefillTokenLaunchBriefFromCandidate(candidate);
-  const launchType = publicPage.value === 'presale' ? 'presale' : 'airdrop';
+  const launchType = candidate.launchType === 'presale' || candidate.launchType === 'airdrop'
+    ? candidate.launchType
+    : (publicPage.value === 'presale' ? 'presale' : 'airdrop');
   const label = decision.label || 'CEO decision';
   tokenLaunchBriefForm.proof_policy = decision.proofPolicy || tokenLaunchBriefForm.proof_policy;
   tokenLaunchBriefForm.risk_notes = decision.riskNotes || tokenLaunchBriefForm.risk_notes;
