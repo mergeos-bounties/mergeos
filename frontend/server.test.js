@@ -806,7 +806,7 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.match(cssSource, /Home executive pass: a short premium decision screen/);
   assert.match(appSource, /class="home-mergeide-inline-link"/);
   assert.match(appSource, /class="home-definition-strip"/);
-  assert.match(appSource, /homeDefinitionRows\.slice\(0, 3\)/);
+  assert.match(appSource, /v-for="row in homeDefinitionRows"/);
   assert.match(appSource, /const homeDefinitionRows = computed/);
   assert.match(appSource, /class="home-ceo-token-desk"/);
   assert.match(appSource, /tokenDeskTitle: 'Research airdrop and presale candidates before opening MRG\.'/);
@@ -914,6 +914,12 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.match(cssSource, /Home product-grade compression: keep the homepage descriptive, but make it a tight decision screen/);
   assert.match(cssSource, /\/\* Home product-grade compression:[\s\S]*\.home-value-strip,[\s\S]*\.home-explain-strip,[\s\S]*\.home-command-panel\s*\{[\s\S]*display: none !important;/);
   assert.match(cssSource, /\/\* Home product-grade compression:[\s\S]*@media \(max-width: 760px\)[\s\S]*\.public-home-page \.home-container\s*\{[\s\S]*width: 100% !important;[\s\S]*padding-inline: 14px !important;/);
+  assert.match(cssSource, /Home complete story restore: short hero, full product description, no hollow desktop spacing/);
+  assert.match(cssSource, /\/\* Home complete story restore:[\s\S]*\.public-home-page \.home-container\s*\{[\s\S]*max-width: 1120px !important;/);
+  assert.match(cssSource, /\/\* Home complete story restore:[\s\S]*\.public-home-copy > p\s*\{[\s\S]*max-width: 74ch !important;[\s\S]*line-height: 1\.52 !important;/);
+  assert.match(cssSource, /\/\* Home complete story restore:[\s\S]*\.home-definition-strip\s*\{[\s\S]*grid-template-columns: repeat\(4, minmax\(0, 1fr\)\) !important;/);
+  assert.match(cssSource, /\/\* Home complete story restore:[\s\S]*\.home-definition-strip small\s*\{[\s\S]*-webkit-line-clamp: unset !important;/);
+  assert.match(cssSource, /\/\* Home complete story restore:[\s\S]*@media \(max-width: 620px\)[\s\S]*\.home-definition-strip\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) !important;/);
 });
 
 test('frontend system exposes required public pages and dashboard roles', async () => {

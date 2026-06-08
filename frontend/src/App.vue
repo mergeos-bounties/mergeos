@@ -4655,7 +4655,7 @@
               </div>
             </section>
             <div class="home-definition-strip" :aria-label="publicHomeCopy.definitionLabel || 'What MergeOS connects'">
-              <article v-for="row in homeDefinitionRows.slice(0, 3)" :key="row.title">
+              <article v-for="row in homeDefinitionRows" :key="row.title">
                 <span :class="['home-definition-icon', row.tone]">
                   <component :is="row.icon" :size="13" />
                 </span>
