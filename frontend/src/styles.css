@@ -39418,3 +39418,64 @@ canvas {
   }
 }
 
+/* Token CEO brief compact form pass: keep mobile decision flow above the fold. */
+@media (max-width: 620px) {
+  .token-ceo-brief-card {
+    gap: 7px !important;
+    padding: 9px !important;
+  }
+
+  .token-ceo-brief-copy p,
+  .token-ceo-brief-form .wizard-field small {
+    display: none !important;
+  }
+
+  .token-ceo-brief-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+  }
+
+  .token-ceo-brief-form .wizard-field.full,
+  .token-ceo-brief-card .token-workflow-validation,
+  .token-ceo-brief-card .token-workflow-error,
+  .token-launch-brief-result {
+    grid-column: 1 / -1 !important;
+  }
+
+  .token-ceo-brief-form .wizard-field {
+    gap: 4px !important;
+  }
+
+  .token-ceo-brief-form .wizard-field span {
+    font-size: 10px !important;
+    line-height: 1.15 !important;
+  }
+
+  .token-ceo-brief-form input,
+  .token-ceo-brief-form textarea {
+    min-height: 34px !important;
+    padding: 8px 9px !important;
+    font-size: 11.5px !important;
+  }
+
+  .token-ceo-brief-form .wizard-field.full textarea {
+    min-height: 108px !important;
+  }
+
+  .token-ceo-brief-actions {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    gap: 6px !important;
+  }
+
+  .token-ceo-brief-actions .primary-button,
+  .token-ceo-brief-actions .secondary-button {
+    min-height: 36px !important;
+    padding-inline: 8px !important;
+    font-size: 11px !important;
+  }
+
+  .token-ceo-brief-actions .secondary-button:last-child {
+    grid-column: 1 / -1 !important;
+  }
+}
+
