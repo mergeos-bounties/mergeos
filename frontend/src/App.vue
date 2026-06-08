@@ -5467,12 +5467,12 @@
                 <input v-model.trim="airdropClaimForm.wallet_address" :disabled="airdropClaimBusy" autocomplete="off" :placeholder="user?.wallet_address || 'Paste Solana wallet address'" />
                 <p v-if="airdropClaimFieldError('wallet_address')" class="wizard-field-error">{{ airdropClaimFieldError('wallet_address') }}</p>
               </label>
-              <label class="wizard-field" :class="{ invalid: airdropClaimFieldError('worker_id') }">
+              <label class="wizard-field token-compact-half" :class="{ invalid: airdropClaimFieldError('worker_id') }">
                 <span>Worker ID</span>
                 <input v-model.trim="airdropClaimForm.worker_id" :disabled="airdropClaimBusy" autocomplete="off" placeholder="github:builder or wallet" />
                 <p v-if="airdropClaimFieldError('worker_id')" class="wizard-field-error">{{ airdropClaimFieldError('worker_id') }}</p>
               </label>
-              <label class="wizard-field" :class="{ invalid: airdropClaimFieldError('task_reference') }">
+              <label class="wizard-field token-compact-half" :class="{ invalid: airdropClaimFieldError('task_reference') }">
                 <span>Task reference</span>
                 <input v-model.trim="airdropClaimForm.task_reference" :disabled="airdropClaimBusy" autocomplete="off" placeholder="task:MRG-101 or bounty id" />
                 <p v-if="airdropClaimFieldError('task_reference')" class="wizard-field-error">{{ airdropClaimFieldError('task_reference') }}</p>
@@ -5520,7 +5520,7 @@
               </ul>
             </div>
             <div class="token-form-grid">
-              <label class="wizard-field" :class="{ invalid: presaleReservationFieldError('tier') }">
+              <label class="wizard-field token-compact-half" :class="{ invalid: presaleReservationFieldError('tier') }">
                 <span>Reserve tier <b>*</b></span>
                 <select v-model="presaleReservationForm.tier" :disabled="presaleReservationBusy">
                   <option value="builder">Builder</option>
@@ -5530,7 +5530,7 @@
                 </select>
                 <p v-if="presaleReservationFieldError('tier')" class="wizard-field-error">{{ presaleReservationFieldError('tier') }}</p>
               </label>
-              <label class="wizard-field" :class="{ invalid: presaleReservationFieldError('reserve_mrg') }">
+              <label class="wizard-field token-compact-half" :class="{ invalid: presaleReservationFieldError('reserve_mrg') }">
                 <span>Reserve MRG <b>*</b></span>
                 <input v-model.number="presaleReservationForm.reserve_mrg" :disabled="presaleReservationBusy" min="100" max="1000000" type="number" />
                 <p v-if="presaleReservationFieldError('reserve_mrg')" class="wizard-field-error">{{ presaleReservationFieldError('reserve_mrg') }}</p>
@@ -5540,7 +5540,7 @@
                 <input v-model.trim="presaleReservationForm.wallet_address" :disabled="presaleReservationBusy" autocomplete="off" :placeholder="user?.wallet_address || 'Paste Solana wallet address'" />
                 <p v-if="presaleReservationFieldError('wallet_address')" class="wizard-field-error">{{ presaleReservationFieldError('wallet_address') }}</p>
               </label>
-              <label class="wizard-field" :class="{ invalid: presaleReservationFieldError('funding_rail') }">
+              <label class="wizard-field token-compact-half" :class="{ invalid: presaleReservationFieldError('funding_rail') }">
                 <span>Funding rail <b>*</b></span>
                 <select v-model="presaleReservationForm.funding_rail" :disabled="presaleReservationBusy">
                   <option value="solana">Solana</option>
@@ -5552,7 +5552,7 @@
                 </select>
                 <p v-if="presaleReservationFieldError('funding_rail')" class="wizard-field-error">{{ presaleReservationFieldError('funding_rail') }}</p>
               </label>
-              <label class="wizard-field" :class="{ invalid: presaleReservationFieldError('funding_reference') }">
+              <label class="wizard-field token-compact-half" :class="{ invalid: presaleReservationFieldError('funding_reference') }">
                 <span>Funding reference</span>
                 <input v-model.trim="presaleReservationForm.funding_reference" :disabled="presaleReservationBusy" autocomplete="off" placeholder="Solana signature, invoice, or pending_review" />
                 <p v-if="presaleReservationFieldError('funding_reference')" class="wizard-field-error">{{ presaleReservationFieldError('funding_reference') }}</p>
@@ -9333,7 +9333,7 @@ const publicHomeTranslations = {
   'en-US': {
     eyebrow: 'MERGEOS DELIVERY OS',
     title: 'Operating system for funded software delivery.',
-    body: 'MergeOS turns a product brief or repo into funded software work: CEO agents plan the scope, builders and AI agents execute tasks, escrow and Solana MRG track money, and every PR, deploy, payout, and receipt lands on a public proof ledger.',
+    body: 'MergeOS turns a product brief or repo into funded software work: CEO agents plan the scope, builders and AI agents execute tasks, escrow and Solana MRG track money, and every PR, deploy, payout, and receipt lands on a public proof ledger so founders can see who is doing what, what is funded, and what is verified.',
     primaryAction: 'Start a project',
     marketplaceAction: 'View live work',
     ledgerAction: 'Open proof ledger',
@@ -9359,10 +9359,10 @@ const publicHomeTranslations = {
     },
     statDetails: ['Funded briefs', 'Claimable work', 'Escrow tracked', 'MRG supply'],
     definitionRows: [
-      { title: 'Brief to scope', body: 'Product brief, repo, files, issues, budget, and acceptance criteria.' },
-      { title: 'CEO routing', body: 'CEO agents split funded work for builders, AI agents, QA, and DevOps.' },
-      { title: 'Escrow + MRG', body: 'Escrow funding and Solana MRG accounting follow each task.' },
-      { title: 'Proof ledger', body: 'PRs, deploys, payouts, receipts, and contract references stay public.' },
+      { title: 'Brief to scope', body: 'Product brief, repo, files, issues, budget, deadline, and acceptance criteria become one funded work packet.' },
+      { title: 'CEO routing', body: 'CEO agents split scope into builder, AI agent, QA, and DevOps tasks with owners and status.' },
+      { title: 'Escrow + MRG', body: 'Escrow funding, reserve state, and Solana MRG accounting follow each task before payout.' },
+      { title: 'Proof ledger', body: 'PRs, deploys, approvals, payouts, receipts, and contract references stay public and traceable.' },
     ],
     operatingRows: [
       { title: '1. Import context', body: 'Brief, repo, issues, files, budget, and acceptance criteria enter one workspace.' },

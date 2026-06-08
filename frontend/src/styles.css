@@ -39862,3 +39862,84 @@ canvas {
     -webkit-line-clamp: 1 !important;
   }
 }
+
+/* Home full-description restore: let the proof cards say enough without becoming a tall brochure. */
+.home-definition-strip article {
+  min-height: 112px !important;
+}
+
+.home-definition-strip small {
+  display: block !important;
+  -webkit-line-clamp: unset !important;
+  overflow: visible !important;
+}
+
+.home-explain-strip span {
+  -webkit-line-clamp: unset !important;
+  overflow: visible !important;
+}
+
+@media (max-width: 620px) {
+  .public-home-copy p {
+    font-size: 12.25px !important;
+    line-height: 1.42 !important;
+  }
+
+  .home-definition-strip {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .home-definition-strip article {
+    min-height: 0 !important;
+    padding: 9px 10px !important;
+  }
+
+  .home-definition-strip small {
+    font-size: 10.75px !important;
+    line-height: 1.28 !important;
+    -webkit-line-clamp: unset !important;
+    overflow: visible !important;
+  }
+
+  .home-explain-strip {
+    display: none !important;
+  }
+}
+
+/* Token workflow mobile field pairs: keep optional metadata compact while preserving full-width proof fields. */
+@media (max-width: 620px) {
+  .token-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 7px !important;
+  }
+
+  .token-form-grid .wizard-field {
+    grid-column: 1 / -1 !important;
+  }
+
+  .token-form-grid .token-compact-half {
+    grid-column: span 1 !important;
+  }
+
+  .token-form-grid .token-compact-half span {
+    font-size: 10px !important;
+    line-height: 1.15 !important;
+  }
+
+  .token-form-grid .token-compact-half input,
+  .token-form-grid .token-compact-half select {
+    min-height: 38px !important;
+    padding-inline: 8px !important;
+    font-size: 12px !important;
+  }
+}
+
+@media (max-width: 360px) {
+  .token-form-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .token-form-grid .token-compact-half {
+    grid-column: 1 / -1 !important;
+  }
+}

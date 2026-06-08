@@ -795,11 +795,11 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.doesNotMatch(appSource, /localizedHomeWorkflowCards\.slice\(0, 4\)/);
   assert.match(appSource, /homeLiveStats\.slice\(0, 2\)/);
   assert.match(appSource, /Operating system for funded software delivery\./);
-  assert.match(appSource, /MergeOS turns a product brief or repo into funded software work: CEO agents plan the scope, builders and AI agents execute tasks, escrow and Solana MRG track money, and every PR, deploy, payout, and receipt lands on a public proof ledger\./);
-  assert.match(appSource, /definitionRows: \[[\s\S]*title: 'Brief to scope', body: 'Product brief, repo, files, issues, budget, and acceptance criteria\.'/);
-  assert.match(appSource, /title: 'CEO routing', body: 'CEO agents split funded work for builders, AI agents, QA, and DevOps\.'/);
-  assert.match(appSource, /title: 'Escrow \+ MRG', body: 'Escrow funding and Solana MRG accounting follow each task\.'/);
-  assert.match(appSource, /title: 'Proof ledger', body: 'PRs, deploys, payouts, receipts, and contract references stay public\.'/);
+  assert.match(appSource, /MergeOS turns a product brief or repo into funded software work: CEO agents plan the scope, builders and AI agents execute tasks, escrow and Solana MRG track money, and every PR, deploy, payout, and receipt lands on a public proof ledger so founders can see who is doing what, what is funded, and what is verified\./);
+  assert.match(appSource, /definitionRows: \[[\s\S]*title: 'Brief to scope', body: 'Product brief, repo, files, issues, budget, deadline, and acceptance criteria become one funded work packet\.'/);
+  assert.match(appSource, /title: 'CEO routing', body: 'CEO agents split scope into builder, AI agent, QA, and DevOps tasks with owners and status\.'/);
+  assert.match(appSource, /title: 'Escrow \+ MRG', body: 'Escrow funding, reserve state, and Solana MRG accounting follow each task before payout\.'/);
+  assert.match(appSource, /title: 'Proof ledger', body: 'PRs, deploys, approvals, payouts, receipts, and contract references stay public and traceable\.'/);
   assert.match(appSource, /title: 'Đầu vào', body: 'Brief, repo, issue, file, budget và deadline\.'/);
   assert.match(appSource, /MergeOS biến brief hoặc repo thành funded tasks có CEO-agent planning, builder\/AI routing, escrow, PR\/deploy checks, Solana MRG accounting và public ledger proof\./);
   assert.match(appSource, /title: 'Product OS'[\s\S]*Project intake, repo import, AI task graph, escrow, PR monitor, deployment gates, and ledger proof stay in one operating flow\./);
@@ -851,6 +851,10 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.match(cssSource, /\/\* Home complete description final pass:[\s\S]*\.public-home-copy p\s*\{[\s\S]*max-width: 62ch !important;[\s\S]*line-height: 1\.48 !important;/);
   assert.match(cssSource, /\/\* Home complete description final pass:[\s\S]*\.home-definition-strip article\s*\{[\s\S]*min-height: 96px !important;/);
   assert.match(cssSource, /\/\* Home complete description final pass:[\s\S]*@media \(max-width: 620px\)[\s\S]*\.home-definition-strip small\s*\{[\s\S]*-webkit-line-clamp: 2 !important;/);
+  assert.match(cssSource, /Home full-description restore: let the proof cards say enough without becoming a tall brochure/);
+  assert.match(cssSource, /\/\* Home full-description restore:[\s\S]*\.home-definition-strip small\s*\{[\s\S]*-webkit-line-clamp: unset !important;/);
+  assert.match(cssSource, /\/\* Home full-description restore:[\s\S]*@media \(max-width: 620px\)[\s\S]*\.home-definition-strip\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) !important;/);
+  assert.match(cssSource, /\/\* Home full-description restore:[\s\S]*@media \(max-width: 620px\)[\s\S]*\.home-explain-strip\s*\{[\s\S]*display: none !important;/);
 });
 
 test('frontend system exposes required public pages and dashboard roles', async () => {
@@ -1228,6 +1232,7 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /class="token-whitepaper-brief"/);
   assert.match(appSource, /class="token-whitepaper-section-list"/);
   assert.match(appSource, /v-if="publicPage !== 'whitepaper'" class="token-content-grid"/);
+  assert.match(appSource, /class="wizard-field token-compact-half"/);
   assert.match(appSource, /const publicWhitepaperThesisRows = computed\(\(\) => \[/);
   assert.match(appSource, /const publicWhitepaperChapterSections = computed\(\(\) => \[/);
   assert.match(appSource, /The paper is structured around executable product proof/);
@@ -1563,6 +1568,9 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(cssSource, /Token workflow mobile skim: show the decision path, then get users to the form faster/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-timeline-list li:nth-child\(n \+ 4\)\s*\{[\s\S]*display: none !important;/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-timeline-list li\s*\{[\s\S]*grid-template-columns: 28px minmax\(0, 1fr\) !important;/);
+  assert.match(cssSource, /Token workflow mobile field pairs: keep optional metadata compact while preserving full-width proof fields/);
+  assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-form-grid\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\) !important;/);
+  assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-form-grid \.token-compact-half\s*\{[\s\S]*grid-column: span 1 !important;/);
 });
 
 test('contracts page exposes Solana proof manifest alongside the public IDL', async () => {
