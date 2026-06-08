@@ -47846,6 +47846,10 @@ canvas {
   display: none;
 }
 
+.action-label-mobile {
+  display: none;
+}
+
 /* Token mobile title release: short CEO launch headlines keep actions near the first viewport. */
 @media (max-width: 760px) {
   .token-page-airdrop .token-hero,
@@ -47893,5 +47897,52 @@ canvas {
   .token-page-airdrop .token-ceo-research-panel,
   .token-page-presale .token-ceo-research-panel {
     margin-top: 10px !important;
+  }
+}
+
+/* Token mobile action rail: keep secondary token actions compact so CEO candidates appear sooner. */
+@media (max-width: 760px) {
+  .token-page-airdrop .token-hero .marketplace-actions,
+  .token-page-presale .token-hero .marketplace-actions {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 7px !important;
+  }
+
+  .token-page-airdrop .token-hero .marketplace-actions .large,
+  .token-page-presale .token-hero .marketplace-actions .large {
+    min-width: 0 !important;
+    min-height: 38px !important;
+    border-radius: 10px !important;
+    padding-inline: 8px !important;
+    gap: 5px !important;
+    font-size: 11px !important;
+    line-height: 1 !important;
+    white-space: nowrap !important;
+  }
+
+  .token-page-airdrop .token-hero .marketplace-actions .large:first-child,
+  .token-page-presale .token-hero .marketplace-actions .large:first-child {
+    grid-column: 1 / -1 !important;
+    min-height: 44px !important;
+    font-size: 13px !important;
+  }
+
+  .token-page-airdrop .token-hero .marketplace-actions .action-label-full,
+  .token-page-presale .token-hero .marketplace-actions .action-label-full {
+    display: none !important;
+  }
+
+  .token-page-airdrop .token-hero .marketplace-actions .action-label-mobile,
+  .token-page-presale .token-hero .marketplace-actions .action-label-mobile {
+    display: inline !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .token-page-airdrop .token-hero-gate-note,
+  .token-page-presale .token-hero-gate-note {
+    margin-top: 1px !important;
   }
 }

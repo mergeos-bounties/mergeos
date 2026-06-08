@@ -5103,7 +5103,8 @@
                   href="#token-ceo-brief"
                   @click="handlePublicAction(action)"
                 >
-                  {{ action.label }}
+                  <span class="action-label-full">{{ action.label }}</span>
+                  <span class="action-label-mobile">{{ action.mobileLabel || action.label }}</span>
                   <component :is="action.icon" :size="16" />
                 </a>
                 <button
@@ -5112,7 +5113,8 @@
                   type="button"
                   @click="handlePublicAction(action)"
                 >
-                  {{ action.label }}
+                  <span class="action-label-full">{{ action.label }}</span>
+                  <span class="action-label-mobile">{{ action.mobileLabel || action.label }}</span>
                   <component :is="action.icon" :size="16" />
                 </button>
               </template>
@@ -12911,10 +12913,10 @@ const publicTokenPageDefinitions = {
     detailBody: 'Claiming should only open after wallet, account, work proof, and anti-abuse checks are all satisfied.',
     chapterTitle: 'Airdrop mission types',
     actions: [
-      { label: 'Send CEO brief', primary: true, icon: ArrowRight, command: 'token-launch-brief' },
-      { label: 'Open claim workflow', icon: Trophy, command: 'airdrop-claim' },
-      { label: 'Open bounties', icon: ListTodo, command: 'bounties' },
-      { label: 'Live proof', icon: Zap, page: 'live' },
+      { label: 'Send CEO brief', mobileLabel: 'Send brief', primary: true, icon: ArrowRight, command: 'token-launch-brief' },
+      { label: 'Open claim workflow', mobileLabel: 'Claim', icon: Trophy, command: 'airdrop-claim' },
+      { label: 'Open bounties', mobileLabel: 'Bounties', icon: ListTodo, command: 'bounties' },
+      { label: 'Live proof', mobileLabel: 'Proof', icon: Zap, page: 'live' },
     ],
   },
   presale: {
@@ -12936,10 +12938,10 @@ const publicTokenPageDefinitions = {
     detailBody: 'The page is built around KYC-ready account state, wallet readiness, escrow reserve, and ledger-visible receipts.',
     chapterTitle: 'Presale checkpoints',
     actions: [
-      { label: 'Send CEO brief', primary: true, icon: UserCheck, command: 'token-launch-brief' },
-      { label: 'Open reserve workflow', icon: CircleDollarSign, command: 'presale-reserve' },
-      { label: 'Contracts', icon: Lock, page: 'contracts' },
-      { label: 'Ledger proof', icon: ShieldCheck, page: 'ledger' },
+      { label: 'Send CEO brief', mobileLabel: 'Send brief', primary: true, icon: UserCheck, command: 'token-launch-brief' },
+      { label: 'Open reserve workflow', mobileLabel: 'Reserve', icon: CircleDollarSign, command: 'presale-reserve' },
+      { label: 'Contracts', mobileLabel: 'Contract', icon: Lock, page: 'contracts' },
+      { label: 'Ledger proof', mobileLabel: 'Ledger', icon: ShieldCheck, page: 'ledger' },
     ],
   },
   whitepaper: {
