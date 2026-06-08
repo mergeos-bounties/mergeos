@@ -45134,6 +45134,65 @@ canvas {
   }
 }
 
+/* Home description fit pass: complete product meaning without a tall or shouty hero. */
+.public-home-layout {
+  gap: clamp(18px, 2.5vw, 30px) !important;
+}
+
+.public-home-copy h1 {
+  max-width: 14.5ch !important;
+  font-size: clamp(42px, 4.4vw, 62px) !important;
+  line-height: 1.03 !important;
+}
+
+.public-home-copy > p {
+  max-width: 60ch !important;
+  font-size: clamp(14.5px, 1.22vw, 16px) !important;
+  line-height: 1.48 !important;
+  font-weight: 680 !important;
+}
+
+.home-definition-strip article {
+  min-height: 78px !important;
+}
+
+.home-definition-strip small {
+  -webkit-line-clamp: 2 !important;
+  line-height: 1.28 !important;
+}
+
+.home-executive-panel {
+  transform: translateY(-4px) !important;
+}
+
+@media (max-width: 760px) {
+  .public-home-copy h1 {
+    max-width: 13.2ch !important;
+    font-size: clamp(30px, 8.4vw, 38px) !important;
+    line-height: 1.02 !important;
+  }
+
+  .public-home-copy > p {
+    -webkit-line-clamp: unset !important;
+    font-size: 12.8px !important;
+    line-height: 1.34 !important;
+  }
+
+  .home-definition-strip {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .home-definition-strip article {
+    min-height: 76px !important;
+  }
+}
+
+@media (max-width: 430px) {
+  .home-definition-strip article:nth-child(n + 4) {
+    display: grid !important;
+  }
+}
+
 /* Token CEO candidate final cut: one compact decision row for real airdrop/presale candidates. */
 .token-page-airdrop .token-ceo-candidate-lane article,
 .token-page-presale .token-ceo-candidate-lane article {

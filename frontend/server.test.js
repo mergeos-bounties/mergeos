@@ -837,13 +837,13 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.doesNotMatch(appSource, /class="home-system-explainer"/);
   assert.doesNotMatch(appSource, /localizedHomeWorkflowCards\.slice\(0, 4\)/);
   assert.match(appSource, /Operating system for funded software delivery\./);
-  assert.match(appSource, /MergeOS is the product operating system for funded software work: import a brief or repo, let CEO agents plan scope, route tasks to builders or AI agents, hold escrow, account with Solana MRG, and publish PR, deploy, payout, receipt, and contract proof on one ledger\./);
+  assert.match(appSource, /MergeOS turns a product brief or GitHub repo into funded tasks with scope, escrow, builder or AI routing, PR review, deployment checks, Solana MRG accounting, and payout proof in one workspace\./);
   assert.match(appSource, /definitionRows: \[[\s\S]*title: 'Brief to scope', body: 'Product brief, repo, files, issues, budget, and acceptance criteria\.'/);
   assert.match(appSource, /title: 'CEO routing', body: 'CEO agents split funded work for builders, AI agents, QA, and DevOps\.'/);
   assert.match(appSource, /title: 'Escrow \+ MRG', body: 'Escrow funding and Solana MRG accounting follow each task\.'/);
   assert.match(appSource, /title: 'Proof ledger', body: 'PRs, deploys, payouts, receipts, and contract references stay public\.'/);
   assert.match(appSource, /title: 'Đầu vào', body: 'Brief, repo, issue, file, budget và deadline\.'/);
-  assert.match(appSource, /MergeOS gom brief, repo, issue, ngân sách và tiêu chí nghiệm thu vào một luồng làm việc: CEO agent lập scope, route task cho builder hoặc AI agent, giữ escrow, ghi nhận Solana MRG, rồi công khai PR, deploy, payout, receipt và contract proof trên ledger\./);
+  assert.match(appSource, /MergeOS biến brief sản phẩm hoặc GitHub repo thành task đã fund với scope, escrow, route builder hoặc AI agent, review PR, kiểm tra deploy, ghi nhận Solana MRG và payout proof trong một workspace\./);
   assert.match(appSource, /title: 'Product OS'[\s\S]*Project intake, repo import, AI task graph, escrow, PR monitor, deployment gates, and ledger proof stay in one operating flow\./);
   assert.match(appSource, /title: 'Delivery lanes'[\s\S]*Route funded work to human contributors, AI agents, or hybrid teams with shared scope, acceptance criteria, and payout state\./);
   assert.match(appSource, /title: 'Public proof layer'[\s\S]*Marketplace activity, escrow, token mint, PR evidence, deployment checks, SDK context, and protocol documents are discoverable\./);
@@ -949,6 +949,11 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.match(cssSource, /\/\* Home final product brief:[\s\S]*\.home-definition-strip small\s*\{[\s\S]*-webkit-line-clamp: 3 !important;/);
   assert.match(cssSource, /\/\* Home final product brief:[\s\S]*@media \(max-width: 760px\)[\s\S]*\.home-ceo-token-desk\s*\{[\s\S]*display: none !important;/);
   assert.match(cssSource, /\/\* Home final product brief:[\s\S]*@media \(max-width: 430px\)[\s\S]*\.home-definition-strip article:nth-child\(n \+ 4\)\s*\{[\s\S]*display: none !important;/);
+  assert.match(cssSource, /Home description fit pass: complete product meaning without a tall or shouty hero/);
+  assert.match(cssSource, /\/\* Home description fit pass:[\s\S]*\.public-home-copy h1\s*\{[\s\S]*max-width: 14\.5ch !important;[\s\S]*font-size: clamp\(42px, 4\.4vw, 62px\) !important;/);
+  assert.match(cssSource, /\/\* Home description fit pass:[\s\S]*\.public-home-copy > p\s*\{[\s\S]*max-width: 60ch !important;[\s\S]*font-weight: 680 !important;/);
+  assert.match(cssSource, /\/\* Home description fit pass:[\s\S]*@media \(max-width: 760px\)[\s\S]*\.public-home-copy > p\s*\{[\s\S]*-webkit-line-clamp: unset !important;/);
+  assert.match(cssSource, /\/\* Home description fit pass:[\s\S]*@media \(max-width: 430px\)[\s\S]*\.home-definition-strip article:nth-child\(n \+ 4\)\s*\{[\s\S]*display: grid !important;/);
 });
 
 test('frontend system exposes required public pages and dashboard roles', async () => {
