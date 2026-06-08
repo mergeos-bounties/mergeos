@@ -964,6 +964,10 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.match(cssSource, /\/\* Home mobile product proof grid:[\s\S]*\.home-definition-strip\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\) !important;/);
   assert.match(cssSource, /\/\* Home mobile product proof grid:[\s\S]*\.home-definition-strip article,[\s\S]*\.home-definition-strip article:nth-child\(n \+ 4\)\s*\{[\s\S]*display: grid !important;[\s\S]*min-height: 66px !important;/);
   assert.match(cssSource, /\/\* Home mobile product proof grid:[\s\S]*\.home-definition-strip small\s*\{[\s\S]*-webkit-line-clamp: 2 !important;[\s\S]*font-size: 9px !important;/);
+  assert.match(cssSource, /Mobile product repair: remove the last visible horizontal cuts on home/);
+  assert.match(cssSource, /@media \(max-width: 760px\)[\s\S]*html,[\s\S]*body,[\s\S]*#app\s*\{[\s\S]*overflow-x: clip !important;/);
+  assert.match(cssSource, /@media \(max-width: 760px\)[\s\S]*\.public-home-hero,[\s\S]*\.public-home-copy\s*\{[\s\S]*width: calc\(100vw - 24px\) !important;/);
+  assert.match(cssSource, /@media \(max-width: 760px\)[\s\S]*\.project-flow-shell \.project-step-actions,[\s\S]*\.project-flow-shell \.funding-actions\s*\{[\s\S]*position: fixed !important;/);
 });
 
 test('frontend system exposes required public pages and dashboard roles', async () => {

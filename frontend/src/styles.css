@@ -46139,3 +46139,293 @@ canvas {
     font-size: 9.5px !important;
   }
 }
+
+/* Mobile product repair: remove the last visible horizontal cuts on home,
+   project creation, and token launch pages. */
+@media (max-width: 760px) {
+  html,
+  body,
+  #app {
+    max-width: 100vw !important;
+    overflow-x: clip !important;
+  }
+
+  .public-home-page,
+  .token-page-airdrop,
+  .token-page-presale,
+  .project-flow-shell {
+    width: 100% !important;
+    max-width: 100vw !important;
+    overflow-x: clip !important;
+  }
+
+  .public-home-page .home-container,
+  .token-page-airdrop .token-page-container,
+  .token-page-presale .token-page-container {
+    width: 100% !important;
+    max-width: 100vw !important;
+    padding-inline: 12px !important;
+  }
+
+  .public-home-copy,
+  .public-home-copy > *,
+  .token-hero-copy,
+  .token-hero-copy > * {
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .public-home-hero,
+  .public-home-copy {
+    width: calc(100vw - 24px) !important;
+    max-width: calc(100vw - 24px) !important;
+    min-width: 0 !important;
+  }
+
+  .public-home-copy h1 {
+    max-width: 11ch !important;
+    font-size: clamp(36px, 12vw, 48px) !important;
+    line-height: 0.96 !important;
+  }
+
+  .public-home-copy > p {
+    display: -webkit-box !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    -webkit-box-orient: vertical !important;
+    -webkit-line-clamp: 4 !important;
+    font-size: 12px !important;
+    line-height: 1.28 !important;
+    white-space: normal !important;
+  }
+
+  .public-home-copy .marketplace-actions,
+  .token-hero-actions {
+    width: 100% !important;
+    max-width: 100% !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 8px !important;
+  }
+
+  .public-home-copy .marketplace-actions > *,
+  .token-hero-actions > * {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .home-definition-strip {
+    width: 100% !important;
+    max-width: 100% !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .home-definition-strip article {
+    min-height: 58px !important;
+    grid-template-columns: 26px minmax(0, 1fr) !important;
+    align-items: center !important;
+  }
+
+  .home-definition-strip strong {
+    font-size: 11px !important;
+  }
+
+  .home-definition-strip small {
+    -webkit-line-clamp: 2 !important;
+    font-size: 9.5px !important;
+  }
+
+  .token-page-airdrop .token-hero,
+  .token-page-presale .token-hero {
+    padding-top: 26px !important;
+  }
+
+  .token-page-airdrop .token-hero-copy,
+  .token-page-presale .token-hero-copy {
+    text-align: left !important;
+  }
+
+  .token-page-airdrop .token-hero-copy h1,
+  .token-page-presale .token-hero-copy h1 {
+    font-size: clamp(31px, 9vw, 38px) !important;
+    line-height: 1.02 !important;
+  }
+
+  .token-page-airdrop .token-hero-copy p,
+  .token-page-presale .token-hero-copy p {
+    -webkit-line-clamp: 4 !important;
+    overflow: hidden !important;
+  }
+
+  .project-flow-navbar {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    gap: 8px !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+  }
+
+  .project-flow-navbar .brand-link {
+    min-width: 0 !important;
+  }
+
+  .project-flow-nav,
+  .project-flow-actions > .primary-button {
+    display: none !important;
+  }
+
+  .project-flow-actions {
+    justify-content: end !important;
+  }
+
+  .project-flow-main {
+    gap: 10px !important;
+    padding: 10px 10px calc(92px + env(safe-area-inset-bottom)) !important;
+  }
+
+  .project-flow-sidebar,
+  .project-flow-board,
+  .project-flow-shell .wizard-card,
+  .project-flow-shell .wizard-section,
+  .project-flow-shell .wizard-field,
+  .project-flow-shell .select-tile-grid,
+  .project-flow-shell .select-tile,
+  .project-flow-shell input,
+  .project-flow-shell textarea,
+  .project-flow-shell select {
+    width: 100% !important;
+    max-width: calc(100vw - 20px) !important;
+    min-width: 0 !important;
+  }
+
+  .project-flow-board,
+  .project-flow-shell .wizard-card {
+    width: calc(100vw - 20px) !important;
+  }
+
+  .project-flow-title {
+    display: none !important;
+  }
+
+  .project-step-list {
+    grid-auto-flow: column !important;
+    grid-auto-columns: minmax(102px, 1fr) !important;
+    grid-template-columns: none !important;
+    overflow-x: auto !important;
+    overscroll-behavior-x: contain !important;
+    scroll-snap-type: x proximity !important;
+    padding-bottom: 2px !important;
+  }
+
+  .project-step-list button {
+    scroll-snap-align: start !important;
+    min-height: 54px !important;
+    border-radius: 8px !important;
+  }
+
+  .project-flow-shell .wizard-card {
+    border-radius: 9px !important;
+    overflow: hidden !important;
+    padding: 12px !important;
+  }
+
+  .project-flow-shell .wizard-card-heading h2 {
+    font-size: clamp(22px, 6.8vw, 28px) !important;
+    line-height: 1.04 !important;
+  }
+
+  .project-flow-shell .wizard-card-heading p {
+    display: -webkit-box !important;
+    overflow: hidden !important;
+    -webkit-box-orient: vertical !important;
+    -webkit-line-clamp: 2 !important;
+    font-size: 11px !important;
+    overflow-wrap: anywhere !important;
+    white-space: normal !important;
+  }
+
+  .project-flow-shell .wizard-card-heading h2,
+  .project-flow-shell .wizard-field span,
+  .project-flow-shell .wizard-field small,
+  .project-flow-shell .select-tile strong,
+  .project-flow-shell .select-tile small {
+    max-width: 100% !important;
+    overflow-wrap: anywhere !important;
+    white-space: normal !important;
+  }
+
+  .project-flow-shell .wizard-field textarea {
+    min-height: 102px !important;
+  }
+
+  .project-flow-shell .select-tile-grid,
+  .project-flow-shell .funding-provider-grid,
+  .project-flow-shell .settings-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .project-flow-shell .select-tile {
+    min-height: 76px !important;
+    padding: 12px !important;
+  }
+
+  .project-flow-shell .project-flow-rail {
+    display: none !important;
+  }
+
+  .project-flow-shell .project-step-actions,
+  .project-flow-shell .funding-actions {
+    position: fixed !important;
+    left: 10px !important;
+    right: 10px !important;
+    bottom: max(8px, env(safe-area-inset-bottom)) !important;
+    z-index: 1200 !important;
+    display: grid !important;
+    grid-template-columns: 44px minmax(0, 1fr) !important;
+    gap: 8px !important;
+    width: auto !important;
+    max-width: none !important;
+    min-height: 58px !important;
+    margin: 0 !important;
+    border: 1px solid rgba(15, 23, 42, 0.1) !important;
+    border-radius: 13px !important;
+    background: rgba(255, 255, 255, 0.97) !important;
+    box-shadow: 0 -18px 40px rgba(15, 23, 42, 0.14) !important;
+    padding: 7px !important;
+  }
+
+  .project-flow-shell .project-step-actions > .secondary-button {
+    width: 44px !important;
+    min-width: 44px !important;
+    padding: 0 !important;
+    font-size: 0 !important;
+  }
+
+  .project-flow-shell .project-step-actions > div,
+  .project-flow-shell .funding-actions > div {
+    display: grid !important;
+    grid-template-columns: minmax(0, 0.88fr) minmax(0, 1.12fr) !important;
+    gap: 8px !important;
+    min-width: 0 !important;
+  }
+
+  .project-flow-shell .project-step-actions button,
+  .project-flow-shell .funding-actions button {
+    min-height: 44px !important;
+    border-radius: 9px !important;
+    font-size: 12px !important;
+    white-space: nowrap !important;
+  }
+}
+
+@media (max-width: 430px) {
+  .project-flow-shell .project-step-actions,
+  .project-flow-shell .funding-actions {
+    left: 8px !important;
+    right: 8px !important;
+  }
+
+  .project-flow-shell .project-step-actions > div,
+  .project-flow-shell .funding-actions > div {
+    grid-template-columns: minmax(0, 0.86fr) minmax(0, 1.14fr) !important;
+  }
+}
