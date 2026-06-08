@@ -39775,6 +39775,49 @@ canvas {
   margin-top: 8px;
 }
 
+.token-ceo-candidate-context {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.token-ceo-candidate-context span {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+  border: 1px solid rgba(15, 118, 110, 0.12);
+  border-radius: 8px;
+  background: rgba(240, 253, 250, 0.52);
+  padding: 7px 8px;
+}
+
+.token-ceo-candidate-context b,
+.token-ceo-candidate-context small {
+  min-width: 0;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  line-height: 1.15;
+}
+
+.token-ceo-candidate-context b {
+  -webkit-line-clamp: 1;
+  color: #0f766e;
+  font-size: 8.2px;
+  font-weight: 950;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.token-ceo-candidate-context small {
+  -webkit-line-clamp: 2;
+  color: #334155;
+  font-size: 9.4px;
+  font-weight: 780;
+}
+
 .token-ceo-candidate-verdict {
   min-width: 0;
   display: grid;
@@ -39954,6 +39997,25 @@ canvas {
     overflow: hidden !important;
     font-size: 8.6px !important;
     text-overflow: ellipsis !important;
+  }
+
+  .token-ceo-candidate-context {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 4px !important;
+    margin-top: 5px !important;
+  }
+
+  .token-ceo-candidate-context span {
+    padding: 5px 6px !important;
+  }
+
+  .token-ceo-candidate-context span:nth-child(n + 3) {
+    display: none !important;
+  }
+
+  .token-ceo-candidate-context small {
+    -webkit-line-clamp: 1 !important;
+    font-size: 9px !important;
   }
 
   .token-ceo-candidate-verdict {

@@ -5184,6 +5184,12 @@
                 </small>
                 <strong>{{ row.title }}</strong>
                 <p>{{ row.body }}</p>
+                <div v-if="row.contextRows?.length" class="token-ceo-candidate-context" role="group" aria-label="CEO launch brief context">
+                  <span v-for="item in row.contextRows" :key="item.label">
+                    <b>{{ item.label }}</b>
+                    <small>{{ item.value }}</small>
+                  </span>
+                </div>
                 <div v-if="row.verdict" :class="['token-ceo-candidate-verdict', row.verdict.tone]" aria-label="CEO launch verdict">
                   <b>{{ row.verdict.label }}</b>
                   <span>{{ row.verdict.reason }}</span>
@@ -13137,11 +13143,36 @@ function tokenLaunchCandidateReadinessRowsFromAPI(rows = [], fallback = []) {
       return {
         label: row.label || toTitleLabel(row.key || 'Gate'),
         value: row.value || row.evidence || 'CEO review',
+        evidence: row.evidence || row.value || '',
         state,
       };
     })
     .filter((row) => row.label && row.value);
   return normalized.length ? normalized.slice(0, 3) : fallback;
+}
+function tokenLaunchCandidateContextRows(candidate = {}, readinessRows = [], launchType = 'airdrop') {
+  const brief = String(candidate.brief || '').trim();
+  const proofPolicy = String(candidate.proof_policy || '').trim();
+  const source = String(candidate.research_source || '').trim();
+  const gates = Array.isArray(readinessRows) ? readinessRows : [];
+  const evidence = gates
+    .map((gate) => String(gate.evidence || '').trim())
+    .filter(Boolean)
+    .filter((value, index, values) => values.indexOf(value) === index)
+    .slice(0, 2)
+    .join(' ');
+  const rows = [
+    { label: 'CEO brief', value: brief },
+    { label: launchType === 'presale' ? 'Policy gates' : 'Proof gates', value: proofPolicy },
+    { label: 'Evidence', value: evidence || source },
+  ];
+  return rows
+    .map((row) => ({
+      label: row.label,
+      value: String(row.value || '').replace(/\s+/g, ' ').trim(),
+    }))
+    .filter((row) => row.value)
+    .slice(0, 3);
 }
 function tokenLaunchCandidateVerdict({ launchType = 'airdrop', score = 0, readinessRows = [], signalCount = 0, openTasks = 0, acceptedTasks = 0 } = {}) {
   const numericScore = Number(score) || 0;
@@ -13203,6 +13234,7 @@ const tokenCeoCandidateRows = computed(() => {
         signalCount: signals.length,
       });
       const readinessRows = tokenLaunchCandidateReadinessRowsFromAPI(candidate.readiness_gates, fallbackReadinessRows);
+      const contextRows = tokenLaunchCandidateContextRows(candidate, readinessRows, launchType);
       return {
         key: candidate.candidate_id || candidate.project_id || candidate.project_title,
         label: launchType === 'presale' ? 'CEO presale candidate' : 'CEO airdrop candidate',
@@ -13214,6 +13246,7 @@ const tokenCeoCandidateRows = computed(() => {
         sourceUrl: /^https?:\/\//i.test(sourceUrl) ? sourceUrl : '',
         projectSummary: candidate.brief || '',
         proofPolicy: candidate.proof_policy || 'Require task evidence, review notes, repository context, and ledger proof before approval.',
+        contextRows,
         proofSignalRows,
         proofSignalExtra: Math.max(0, signals.length - proofSignalRows.length),
         readinessRows,
@@ -13258,6 +13291,14 @@ const tokenCeoCandidateRows = computed(() => {
       workPoolMRG: Math.floor((Number(project.work_pool_cents || project.budget_cents) || 0) / 100),
       signalCount: fallbackSignals.length,
     });
+    const proofPolicy = firstBounty.evidence_required?.length
+      ? `Require ${firstBounty.evidence_required.join(', ')} plus ledger proof before approval.`
+      : 'Require task evidence, review notes, repository context, and ledger proof before approval.';
+    const contextRows = tokenLaunchCandidateContextRows({
+      brief: project.brief || firstBounty.acceptance || '',
+      proof_policy: proofPolicy,
+      research_source: sourceUrl,
+    }, readinessRows, launchType);
     return {
       key: project.id || project.title,
       label: launchType === 'presale' ? 'CEO presale candidate' : 'CEO airdrop candidate',
@@ -13273,9 +13314,8 @@ const tokenCeoCandidateRows = computed(() => {
       body: `${budget} work pool / ${openTasks} open tasks / ${acceptedTasks} accepted`,
       sourceUrl,
       projectSummary: project.brief || firstBounty.acceptance || '',
-      proofPolicy: firstBounty.evidence_required?.length
-        ? `Require ${firstBounty.evidence_required.join(', ')} plus ledger proof before approval.`
-        : 'Require task evidence, review notes, repository context, and ledger proof before approval.',
+      proofPolicy,
+      contextRows,
       proofSignalRows,
       proofSignalExtra: Math.max(0, fallbackSignals.length - proofSignalRows.length),
       readinessRows,

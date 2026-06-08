@@ -1375,6 +1375,11 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /tokenLaunchCandidatesData\.value\?\.candidates/);
   assert.match(appSource, /candidate\.research_source/);
   assert.match(appSource, /candidate\.proof_policy/);
+  assert.match(appSource, /class="token-ceo-candidate-context" role="group"/);
+  assert.match(appSource, /function tokenLaunchCandidateContextRows\(candidate = \{\}, readinessRows = \[\], launchType = 'airdrop'\)/);
+  assert.match(appSource, /CEO brief/);
+  assert.match(appSource, /Policy gates/);
+  assert.match(appSource, /Proof gates/);
   assert.match(appSource, /row\.proofSignalRows/);
   assert.match(appSource, /function tokenLaunchCandidateScore/);
   assert.match(appSource, /function tokenLaunchCandidateDecisionRows/);
@@ -1660,6 +1665,10 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(cssSource, /\/\* Token CEO brief compact form pass:[\s\S]*\.token-ceo-brief-form \.token-ceo-research-url-field small\s*\{[\s\S]*display: -webkit-box !important;[\s\S]*-webkit-line-clamp: 1 !important;/);
   assert.match(cssSource, /\/\* Token CEO brief compact form pass:[\s\S]*\.token-ceo-brief-form \.wizard-field\.full textarea\s*\{[\s\S]*min-height: 108px !important;/);
   assert.match(cssSource, /Token CEO candidate decision polish: turn raw research signals into scan-friendly evidence chips/);
+  assert.match(cssSource, /\.token-ceo-candidate-context\s*\{/);
+  assert.match(cssSource, /\.token-ceo-candidate-context small\s*\{/);
+  assert.match(cssSource, /\.token-ceo-candidate-context span:nth-child\(n \+ 3\)\s*\{[\s\S]*display: none !important;/);
+  assert.match(cssSource, /\.token-ceo-candidate-context small\s*\{[\s\S]*font-size: 9px !important;/);
   assert.match(cssSource, /\.token-ceo-candidate-signals\s*\{[\s\S]*display: flex;[\s\S]*flex-wrap: wrap;/);
   assert.match(cssSource, /\.token-ceo-candidate-verdict\s*\{[\s\S]*grid-template-columns: auto minmax\(0, 1fr\);/);
   assert.match(cssSource, /\.token-ceo-candidate-verdict\.ready\s*\{[\s\S]*background: rgba\(236, 253, 245, 0\.82\);/);
