@@ -1865,7 +1865,7 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 		len(candidates.Candidates[0].ReadinessGates) != 3 ||
 		candidates.Candidates[0].ReadinessGates[0].Key != "demand" ||
 		candidates.Candidates[0].ReadinessGates[0].State != "ready" ||
-		candidates.Candidates[0].ReadinessGates[2].Key != "anti_bot" ||
+		candidates.Candidates[0].ReadinessGates[2].Key != "ceo_memo" ||
 		candidates.Candidates[0].ReadinessGates[2].State != "review" ||
 		candidates.Candidates[0].ReadinessGates[2].Label != "CEO memo" ||
 		!strings.Contains(candidates.Candidates[0].ReadinessGates[2].Evidence, "write the airdrop memo") ||
@@ -1889,7 +1889,7 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 		presaleCandidates.Candidates[0].DecisionOptions[0].Label != "Draft presale" ||
 		len(presaleCandidates.Candidates[0].ReadinessGates) != 3 ||
 		presaleCandidates.Candidates[0].ReadinessGates[0].Key != "utility" ||
-		presaleCandidates.Candidates[0].ReadinessGates[2].Key != "contract" ||
+		presaleCandidates.Candidates[0].ReadinessGates[2].Key != "ceo_memo" ||
 		presaleCandidates.Candidates[0].ReadinessGates[2].Label != "CEO memo" ||
 		presaleCandidates.Candidates[0].ReadinessGates[2].State != "review" ||
 		!strings.Contains(presaleCandidates.Candidates[0].NextAction, "Draft a CEO presale memo") ||

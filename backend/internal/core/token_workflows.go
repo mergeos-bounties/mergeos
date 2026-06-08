@@ -1462,7 +1462,7 @@ func tokenLaunchCandidateReadinessGates(launchType string, score int, project *M
 				Evidence: fmt.Sprintf("%d open tasks and %d accepted tasks", openTasks, acceptedTasks),
 			},
 			{
-				Key:      "contract",
+				Key:      "ceo_memo",
 				Label:    "CEO memo",
 				State:    stateFrom(false, strong || signalCount >= 3),
 				Value:    ternaryString(strong, "Memo required", "Needs CEO proof"),
@@ -1486,7 +1486,7 @@ func tokenLaunchCandidateReadinessGates(launchType string, score int, project *M
 			Evidence: signalEvidence,
 		},
 		{
-			Key:      "anti_bot",
+			Key:      "ceo_memo",
 			Label:    "CEO memo",
 			State:    stateFrom(false, strong || signalCount >= 3),
 			Value:    ternaryString(strong, "Memo required", "Needs policy"),
