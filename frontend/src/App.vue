@@ -13550,6 +13550,28 @@ const tokenCeoResearchSignalRows = computed(() => (
     ? ['utility_readiness', 'reserve_cap', 'wallet_path', 'contract_proof']
     : ['mission_demand', 'anti_bot', 'proof_gate', 'repo_context']
 ));
+function tokenLaunchBriefResearchSignals(launchType = 'airdrop') {
+  const source = String(tokenLaunchBriefForm.repository_url || '').trim();
+  const summary = String(tokenLaunchBriefForm.project_summary || '').trim();
+  const proofPolicy = String(tokenLaunchBriefForm.proof_policy || '').trim();
+  const allocationPolicy = String(tokenLaunchBriefForm.allocation_policy || '').trim();
+  const walletPolicy = String(tokenLaunchBriefForm.wallet_policy || '').trim();
+  const riskNotes = String(tokenLaunchBriefForm.risk_notes || '').trim();
+  const signals = new Set();
+  if (/github\.com|repo|issue|task|bounty/i.test(`${source} ${summary}`)) signals.add('repo_context');
+  if (/proof|pr|qa|deploy|agent|receipt|ledger/i.test(proofPolicy)) signals.add('proof_gate');
+  if (/wallet|solana/i.test(walletPolicy)) signals.add('wallet_path');
+  if (launchType === 'presale') {
+    if (/utility|use case|product|market/i.test(summary)) signals.add('utility_readiness');
+    if (/reserve|tier|cap|allocation/i.test(allocationPolicy)) signals.add('reserve_cap');
+    if (/funding|rail|receipt|payment/i.test(`${proofPolicy} ${walletPolicy}`)) signals.add('funding_rail');
+    if (/contract|solana|ledger/i.test(`${proofPolicy} ${riskNotes}`)) signals.add('contract_proof');
+  } else {
+    if (/mission|claim|allocation|score|task|bounty/i.test(`${summary} ${allocationPolicy}`)) signals.add('mission_demand');
+    if (/bot|anti-bot|duplicate|unique|wallet/i.test(`${walletPolicy} ${riskNotes}`)) signals.add('anti_bot');
+  }
+  return Array.from(signals);
+}
 const tokenCeoLaunchBriefCopy = computed(() => {
   if (publicPage.value === 'airdrop') {
     return {
@@ -25591,7 +25613,7 @@ async function submitTokenLaunchBrief() {
         proof_policy: tokenLaunchBriefForm.proof_policy,
         wallet_policy: tokenLaunchBriefForm.wallet_policy || (launchType === 'presale' ? 'Require Solana wallet, funding reference, contract reference, and receipt review.' : 'Require Solana wallet uniqueness and anti-bot review.'),
         risk_notes: tokenLaunchBriefForm.risk_notes || (launchType === 'presale' ? 'Review reserve caps, funding rail risk, and compliance language before opening.' : 'Review bot farming, duplicated wallets, empty signups, and unverifiable proof.'),
-        research_signals: tokenCeoResearchSignalRows.value,
+        research_signals: tokenLaunchBriefResearchSignals(launchType),
       }),
     });
     tokenLaunchBriefResult.value = response;

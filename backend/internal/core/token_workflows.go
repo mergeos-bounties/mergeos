@@ -796,7 +796,8 @@ func tokenLaunchBriefCandidateSummary(brief PublicTokenLaunchBriefRecord) string
 }
 
 func tokenLaunchBriefCandidateScore(brief PublicTokenLaunchBriefRecord, proofSignals []string) int {
-	score := 50 + (minInt(len(proofSignals), 8) * 5)
+	evidenceSignalCount := tokenLaunchEvidenceSignalCount(proofSignals)
+	score := 50 + (minInt(evidenceSignalCount, 8) * 5)
 	if strings.Contains(brief.GateSummary, "4/4") || strings.Contains(brief.GateSummary, "3/3") {
 		score += 14
 	}
@@ -810,6 +811,19 @@ func tokenLaunchBriefCandidateScore(brief PublicTokenLaunchBriefRecord, proofSig
 		return 50
 	}
 	return score
+}
+
+func tokenLaunchEvidenceSignalCount(proofSignals []string) int {
+	count := 0
+	for _, signal := range proofSignals {
+		switch normalizeTokenWorkflowID(signal) {
+		case "", "ceo_submitted_brief", "ceo_research_candidate", "airdrop_launch", "presale_launch":
+			continue
+		default:
+			count++
+		}
+	}
+	return count
 }
 
 func tokenLaunchBriefCandidateReadinessGates(launchType string, brief PublicTokenLaunchBriefRecord, proofSignals []string) []TokenLaunchCandidateReadinessGate {
@@ -840,7 +854,7 @@ func tokenLaunchBriefCandidateReadinessGates(launchType string, brief PublicToke
 	antiBotEvidence := tokenLaunchBriefJoinEvidence(walletEvidence, riskEvidence)
 	return []TokenLaunchCandidateReadinessGate{
 		{Key: "demand", Label: "Demand", State: "review", Value: gateSummary, Evidence: sourceEvidence},
-		{Key: "proof", Label: "Proof", State: "review", Value: fmt.Sprintf("%d signals attached", len(proofSignals)), Evidence: proofEvidence},
+		{Key: "proof", Label: "Proof", State: "review", Value: fmt.Sprintf("%d checks recorded", tokenLaunchEvidenceSignalCount(proofSignals)), Evidence: proofEvidence},
 		{Key: "anti_bot", Label: "Anti-bot", State: "review", Value: "Needs signoff", Evidence: antiBotEvidence},
 	}
 }

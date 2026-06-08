@@ -1794,6 +1794,10 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 	if !stringSliceContains(launchBrief.ResearchSignals, "airdrop_launch") || !stringSliceContains(launchBrief.ResearchSignals, "research_source") || !stringSliceContains(launchBrief.ResearchSignals, "repository_context") {
 		t.Fatalf("token launch brief research signals invalid: %#v", launchBrief.ResearchSignals)
 	}
+	if tokenLaunchEvidenceSignalCount(launchBrief.ResearchSignals) >= len(launchBrief.ResearchSignals) ||
+		tokenLaunchEvidenceSignalCount([]string{"ceo_submitted_brief", "ceo_research_candidate", "airdrop_launch"}) != 0 {
+		t.Fatalf("token launch evidence signal count should ignore administrative markers: %#v", launchBrief.ResearchSignals)
+	}
 	if launchBrief.CEOMemo.Decision != "pending_open_decision" || launchBrief.CEOMemo.ReviewOwner != "CEO token launch reviewer" || len(launchBrief.CEOMemo.Gates) != 4 {
 		t.Fatalf("token launch brief CEO memo invalid: %#v", launchBrief.CEOMemo)
 	}
@@ -1827,6 +1831,11 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 		!strings.Contains(publicLaunchBriefs.Briefs[0].WalletPolicy, "Solana wallet uniqueness") ||
 		!strings.Contains(publicLaunchBriefs.Briefs[0].RiskNotes, "bot farming") {
 		t.Fatalf("public token launch brief missing CEO research fields: %#v", publicLaunchBriefs.Briefs[0])
+	}
+	briefSignals := tokenLaunchBriefCandidateSignals(publicLaunchBriefs.Briefs[0])
+	briefGates := tokenLaunchBriefCandidateReadinessGates("airdrop", publicLaunchBriefs.Briefs[0], briefSignals)
+	if len(briefGates) < 2 || !strings.Contains(briefGates[1].Value, "checks recorded") {
+		t.Fatalf("token launch brief candidate proof gate should describe recorded checks, not attached proof: %#v", briefGates)
 	}
 	filteredLaunchBriefsResp := httptest.NewRecorder()
 	server.Routes().ServeHTTP(filteredLaunchBriefsResp, httptest.NewRequest(http.MethodGet, "/api/public/token/launch-briefs?launch_type=airdrop", nil))

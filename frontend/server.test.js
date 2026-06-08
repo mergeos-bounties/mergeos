@@ -1625,7 +1625,10 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /API \+ ledger/);
   assert.match(appSource, /mission_demand/);
   assert.match(appSource, /utility_readiness/);
-  assert.match(appSource, /research_signals: tokenCeoResearchSignalRows\.value/);
+  assert.match(appSource, /function tokenLaunchBriefResearchSignals\(launchType = 'airdrop'\)/);
+  assert.match(appSource, /signals\.add\('repo_context'\)/);
+  assert.match(appSource, /signals\.add\('contract_proof'\)/);
+  assert.match(appSource, /research_signals: tokenLaunchBriefResearchSignals\(launchType\)/);
   assert.match(appSource, /tokenLaunchBriefResult\.research_signals\?\.length/);
   assert.match(appSource, /Project brief intake/);
   assert.match(appSource, /Project utility intake/);
