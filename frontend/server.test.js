@@ -507,6 +507,11 @@ test('public protocol links match backend routes', async () => {
   assert.equal(tokenLaunchBriefsSchema.required.includes('stats'), true);
   assert.equal(tokenLaunchBriefsSchema.required.includes('briefs'), true);
   assert.equal(tokenLaunchBriefsSchema.properties.briefs.items.required.includes('research_source'), true);
+  assert.equal(Boolean(tokenLaunchBriefsSchema.properties.briefs.items.properties.project_summary), true);
+  assert.equal(Boolean(tokenLaunchBriefsSchema.properties.briefs.items.properties.allocation_policy), true);
+  assert.equal(Boolean(tokenLaunchBriefsSchema.properties.briefs.items.properties.proof_policy), true);
+  assert.equal(Boolean(tokenLaunchBriefsSchema.properties.briefs.items.properties.wallet_policy), true);
+  assert.equal(Boolean(tokenLaunchBriefsSchema.properties.briefs.items.properties.risk_notes), true);
   assert.equal(tokenLaunchCandidatesSchema.properties.protocol_version.const, 'mergeos.token-launch-candidates.v1');
   assert.equal(tokenLaunchCandidatesSchema.required.includes('candidates'), true);
   assert.equal(tokenLaunchCandidatesSchema.properties.stats.required.includes('ready_count'), true);
