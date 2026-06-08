@@ -5187,9 +5187,9 @@
           </div>
           <div v-if="tokenCeoMobileShortlistRows.length" class="token-ceo-mobile-shortlist" aria-label="Mobile CEO candidate shortlist">
             <span v-for="(row, index) in tokenCeoMobileShortlistRows" :key="row.key || row.title">
-              <b>{{ index === 0 ? 'Lead' : row.scoreLabel || `#${index + 1}` }}</b>
+              <b>{{ index === 0 ? 'Lead' : row.priorityLabel || row.scoreLabel || `#${index + 1}` }}</b>
               <strong>{{ row.title }}</strong>
-              <small>{{ row.verdict?.label || row.label }}</small>
+              <small>{{ row.requestedBy || row.verdict?.label || row.label }}</small>
             </span>
           </div>
           <div v-if="tokenCeoCandidateRows.length" class="token-ceo-candidate-lane" aria-label="CEO candidate projects">
@@ -5204,6 +5204,9 @@
                 </small>
                 <strong>{{ row.title }}</strong>
                 <p>{{ row.body }}</p>
+                <em v-if="row.ceoResearchMemo" class="token-ceo-candidate-memo">
+                  {{ row.ceoResearchMemo }}
+                </em>
                 <em v-if="row.evidenceSummary" class="token-ceo-candidate-evidence">
                   {{ row.evidenceSummary }}
                 </em>
@@ -13336,6 +13339,19 @@ function tokenLaunchCandidateEvidenceSummary({ signals = [], readinessRows = [],
   const workCount = (Number(openTasks) || 0) + (Number(acceptedTasks) || 0);
   return `Evidence: ${workCount} tasks / ${signalCount} signals / ${readyCount}/${gateCount} gates`;
 }
+function tokenCeoCandidatePriorityLabel(decisionState = '', score = 0) {
+  if (decisionState === 'ready') return 'Open-ready';
+  if (decisionState === 'hold') return 'Hold';
+  const normalizedScore = Number(score) || 0;
+  if (normalizedScore >= 70) return 'High review';
+  if (normalizedScore >= 55) return 'Review';
+  return 'Needs evidence';
+}
+function tokenCeoCandidateResearchMemo({ launchType = 'airdrop', title = '', score = 0, openTasks = 0, acceptedTasks = 0, signalCount = 0 } = {}) {
+  const launchLabel = launchType === 'presale' ? 'presale' : 'airdrop';
+  const candidateTitle = String(title || '').trim() || 'this project';
+  return `CEO should research ${candidateTitle} for ${launchLabel}: ${Number(score) || 0}% fit, ${Number(openTasks) || 0} open tasks, ${Number(acceptedTasks) || 0} accepted tasks, ${Number(signalCount) || 0} proof signals.`;
+}
 function tokenLaunchCandidateProofSummary({ proofSignalRows = [], readinessRows = [] } = {}) {
   const signals = Array.isArray(proofSignalRows) ? proofSignalRows.filter(Boolean).slice(0, 2) : [];
   const gates = Array.isArray(readinessRows) ? readinessRows : [];
@@ -13438,6 +13454,17 @@ const tokenCeoCandidateRows = computed(() => {
         launchType,
         label: launchType === 'presale' ? 'CEO presale candidate' : 'CEO airdrop candidate',
         scoreLabel: `${score}% fit`,
+        intentSource: candidate.intent_source || 'marketplace_project',
+        requestedBy: candidate.requested_by || 'Marketplace',
+        priorityLabel: candidate.priority_label || tokenCeoCandidatePriorityLabel(candidate.decision_state, score),
+        ceoResearchMemo: candidate.ceo_research_memo || tokenCeoCandidateResearchMemo({
+          launchType,
+          title: candidate.project_title,
+          score,
+          openTasks,
+          acceptedTasks,
+          signalCount: signals.length,
+        }),
         evidenceSummary: tokenLaunchCandidateEvidenceSummary({ signals, readinessRows, openTasks, acceptedTasks, launchType }),
         proofSummary: tokenLaunchCandidateProofSummary({ proofSignalRows, readinessRows }),
         decisionRows,
@@ -13505,6 +13532,17 @@ const tokenCeoCandidateRows = computed(() => {
       key: project.id || project.title,
       label: launchType === 'presale' ? 'CEO presale candidate' : 'CEO airdrop candidate',
       scoreLabel: `${score}% fit`,
+      intentSource: 'marketplace_project',
+      requestedBy: project.client_display_name || 'Marketplace',
+      priorityLabel: tokenCeoCandidatePriorityLabel(undefined, score),
+      ceoResearchMemo: tokenCeoCandidateResearchMemo({
+        launchType,
+        title: project.title,
+        score,
+        openTasks,
+        acceptedTasks,
+        signalCount: fallbackSignals.length,
+      }),
       evidenceSummary: tokenLaunchCandidateEvidenceSummary({ signals: fallbackSignals, readinessRows, openTasks, acceptedTasks, launchType }),
       proofSummary: tokenLaunchCandidateProofSummary({ proofSignalRows, readinessRows }),
       decisionRows,

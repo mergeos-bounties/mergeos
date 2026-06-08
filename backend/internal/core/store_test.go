@@ -1896,6 +1896,11 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 		candidates.Candidates[0].ResearchSource != "https://github.com/mergeos-bounties/mergeos" ||
 		!stringSliceContains(candidates.Candidates[0].RecommendedLaunchTypes, "airdrop") ||
 		candidates.Candidates[0].DecisionLaunchType != "airdrop" ||
+		candidates.Candidates[0].IntentSource != "marketplace_project" ||
+		candidates.Candidates[0].RequestedBy == "" ||
+		candidates.Candidates[0].PriorityLabel == "" ||
+		!strings.Contains(candidates.Candidates[0].CEOResearchMemo, "CEO should research") ||
+		!strings.Contains(candidates.Candidates[0].CEOResearchMemo, "airdrop") ||
 		candidates.Candidates[0].DecisionState != "review" ||
 		!strings.Contains(candidates.Candidates[0].DecisionSummary, "Review airdrop candidate") ||
 		!strings.Contains(candidates.Candidates[0].DecisionSummary, "draft CEO memo") ||
@@ -1944,6 +1949,10 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 	if len(presaleCandidates.Candidates) < 1 ||
 		len(presaleCandidates.Candidates[0].DecisionOptions) != 3 ||
 		presaleCandidates.Candidates[0].DecisionLaunchType != "presale" ||
+		presaleCandidates.Candidates[0].IntentSource == "" ||
+		presaleCandidates.Candidates[0].RequestedBy == "" ||
+		presaleCandidates.Candidates[0].PriorityLabel == "" ||
+		!strings.Contains(presaleCandidates.Candidates[0].CEOResearchMemo, "presale") ||
 		presaleCandidates.Candidates[0].DecisionState != "review" ||
 		!strings.Contains(presaleCandidates.Candidates[0].DecisionSummary, "Review presale candidate") ||
 		!strings.Contains(presaleCandidates.Candidates[0].DecisionSummary, "reserve opens") ||
@@ -1968,6 +1977,10 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 	}
 	if standaloneCandidate == nil ||
 		standaloneCandidate.ProjectID != "launch_brief:"+standalonePresaleBrief.BriefID ||
+		standaloneCandidate.IntentSource != "ceo_launch_brief" ||
+		standaloneCandidate.RequestedBy != "CEO brief" ||
+		standaloneCandidate.PriorityLabel == "" ||
+		!strings.Contains(standaloneCandidate.CEOResearchMemo, "CEO-submitted presale candidate") ||
 		standaloneCandidate.ResearchSource != "https://example.com/standalone-presale-whitepaper" ||
 		!strings.Contains(standaloneCandidate.DecisionSummary, "Review presale candidate") ||
 		!strings.Contains(standaloneCandidate.Brief, "open an MRG presale window") ||

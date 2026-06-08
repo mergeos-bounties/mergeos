@@ -46111,3 +46111,31 @@ canvas {
     margin-top: 0 !important;
   }
 }
+
+/* Token CEO research memo: make the public candidate contract visible as CEO triage, not generic card copy. */
+.token-page-airdrop .token-ceo-candidate-memo,
+.token-page-presale .token-ceo-candidate-memo {
+  display: -webkit-box !important;
+  margin-top: 6px !important;
+  overflow: hidden !important;
+  border-left: 3px solid rgba(15, 118, 110, 0.28) !important;
+  border-radius: 7px !important;
+  background: rgba(240, 253, 250, 0.72) !important;
+  color: #0f766e !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 2 !important;
+  padding: 6px 8px !important;
+  font-size: 10px !important;
+  font-style: normal !important;
+  font-weight: 850 !important;
+  line-height: 1.25 !important;
+}
+
+@media (max-width: 620px) {
+  .token-page-airdrop .token-ceo-candidate-memo,
+  .token-page-presale .token-ceo-candidate-memo {
+    margin-top: 5px !important;
+    -webkit-line-clamp: 1 !important;
+    font-size: 9.5px !important;
+  }
+}

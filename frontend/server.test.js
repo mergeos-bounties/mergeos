@@ -521,6 +521,12 @@ test('public protocol links match backend routes', async () => {
   assert.equal(tokenLaunchCandidatesSchema.properties.stats.required.includes('review_count'), true);
   assert.equal(tokenLaunchCandidatesSchema.properties.stats.required.includes('hold_count'), true);
   assert.equal(tokenLaunchCandidatesSchema.properties.candidates.items.required.includes('proof_policy'), true);
+  assert.equal(tokenLaunchCandidatesSchema.properties.candidates.items.required.includes('intent_source'), true);
+  assert.equal(tokenLaunchCandidatesSchema.properties.candidates.items.required.includes('requested_by'), true);
+  assert.equal(tokenLaunchCandidatesSchema.properties.candidates.items.required.includes('priority_label'), true);
+  assert.equal(tokenLaunchCandidatesSchema.properties.candidates.items.required.includes('ceo_research_memo'), true);
+  assert.equal(tokenLaunchCandidatesSchema.properties.candidates.items.properties.intent_source.enum.includes('ceo_launch_brief'), true);
+  assert.equal(tokenLaunchCandidatesSchema.properties.candidates.items.properties.ceo_research_memo.maxLength, 320);
   assert.equal(tokenLaunchCandidatesSchema.properties.candidates.items.required.includes('decision_launch_type'), true);
   assert.equal(tokenLaunchCandidatesSchema.properties.candidates.items.properties.decision_launch_type.enum.includes('airdrop'), true);
   assert.equal(tokenLaunchCandidatesSchema.properties.candidates.items.properties.decision_launch_type.enum.includes('presale'), true);
@@ -1494,6 +1500,12 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /candidate\.proof_policy/);
   assert.match(appSource, /class="token-ceo-candidate-evidence"/);
   assert.match(appSource, /class="token-ceo-candidate-mobile-proof"/);
+  assert.match(appSource, /class="token-ceo-candidate-memo"/);
+  assert.match(appSource, /candidate\.ceo_research_memo/);
+  assert.match(appSource, /candidate\.requested_by/);
+  assert.match(appSource, /candidate\.priority_label/);
+  assert.match(appSource, /function tokenCeoCandidateResearchMemo/);
+  assert.match(appSource, /function tokenCeoCandidatePriorityLabel/);
   assert.match(appSource, /function tokenLaunchCandidateEvidenceSummary/);
   assert.match(appSource, /function tokenLaunchCandidateProofSummary/);
   assert.match(appSource, /Evidence: \$\{workCount\} tasks \/ \$\{signalCount\} signals \/ \$\{readyCount\}\/\$\{gateCount\} gates/);
@@ -2099,6 +2111,8 @@ test('signed-in mobile dashboard keeps nav, actions, and popovers phone-safe', a
   assert.match(cssSource, /Token CEO mobile shortlist: show all candidate projects as chips, then keep only the lead decision card expanded/);
   assert.match(cssSource, /\/\* Token CEO mobile shortlist:[\s\S]*\.token-page-airdrop \.token-ceo-mobile-shortlist,[\s\S]*\.token-page-presale \.token-ceo-mobile-shortlist\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\) !important;/);
   assert.match(cssSource, /\/\* Token CEO mobile shortlist:[\s\S]*@media \(max-width: 620px\)[\s\S]*\.token-page-airdrop \.token-ceo-candidate-lane article:nth-child\(n \+ 2\),[\s\S]*\.token-page-presale \.token-ceo-candidate-lane article:nth-child\(n \+ 2\)\s*\{[\s\S]*display: none !important;/);
+  assert.match(cssSource, /Token CEO research memo: make the public candidate contract visible as CEO triage/);
+  assert.match(cssSource, /\/\* Token CEO research memo:[\s\S]*\.token-page-airdrop \.token-ceo-candidate-memo,[\s\S]*\.token-page-presale \.token-ceo-candidate-memo\s*\{[\s\S]*border-left: 3px solid rgba\(15, 118, 110, 0\.28\) !important;/);
   assert.match(cssSource, /@media \(max-width: 430px\)[\s\S]*\.dashboard-shell \.admin-dispute-lane,[\s\S]*\.dashboard-shell \.admin-ops-row\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\);/);
   assert.match(appSource, /dashboardNotificationMenuPlacement\.value = 'mobile-sheet';/);
   assert.match(appSource, /window\.visualViewport\?\.addEventListener\('resize', updateDashboardNotificationMenuPosition\);/);

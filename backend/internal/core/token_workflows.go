@@ -194,6 +194,10 @@ type PublicTokenLaunchCandidate struct {
 	CandidateID            string                               `json:"candidate_id"`
 	ProjectID              string                               `json:"project_id"`
 	ProjectTitle           string                               `json:"project_title"`
+	IntentSource           string                               `json:"intent_source"`
+	RequestedBy            string                               `json:"requested_by"`
+	PriorityLabel          string                               `json:"priority_label"`
+	CEOResearchMemo        string                               `json:"ceo_research_memo"`
 	RecommendedLaunchTypes []string                             `json:"recommended_launch_types"`
 	DecisionLaunchType     string                               `json:"decision_launch_type"`
 	DecisionState          string                               `json:"decision_state"`
@@ -671,6 +675,10 @@ func (s *Store) PublicTokenLaunchCandidates(launchTypeFilter string) PublicToken
 			CandidateID:            "tlc_" + project.ID,
 			ProjectID:              project.ID,
 			ProjectTitle:           project.Title,
+			IntentSource:           "marketplace_project",
+			RequestedBy:            tokenLaunchCandidateRequestedBy(project),
+			PriorityLabel:          tokenLaunchCandidatePriorityLabel(decisionState, researchScore),
+			CEOResearchMemo:        tokenLaunchCandidateResearchMemo(decisionLaunchType, project.Title, researchScore, project.OpenTaskCount, project.AcceptedTaskCount, len(proofSignals)),
 			RecommendedLaunchTypes: recommendedTypes,
 			DecisionLaunchType:     decisionLaunchType,
 			DecisionState:          decisionState,
@@ -714,6 +722,10 @@ func (s *Store) PublicTokenLaunchCandidates(launchTypeFilter string) PublicToken
 			CandidateID:            "tlb_" + brief.BriefID,
 			ProjectID:              "launch_brief:" + brief.BriefID,
 			ProjectTitle:           brief.ProjectTitle,
+			IntentSource:           "ceo_launch_brief",
+			RequestedBy:            "CEO brief",
+			PriorityLabel:          tokenLaunchCandidatePriorityLabel(decisionState, researchScore),
+			CEOResearchMemo:        tokenLaunchBriefCandidateResearchMemo(launchType, brief, researchScore, proofSignals),
 			RecommendedLaunchTypes: []string{launchType},
 			DecisionLaunchType:     launchType,
 			DecisionState:          decisionState,
@@ -769,6 +781,60 @@ func tokenLaunchCandidateStateRank(state string) int {
 	default:
 		return 3
 	}
+}
+
+func tokenLaunchCandidateRequestedBy(project *MarketplaceProject) string {
+	if project == nil {
+		return "Marketplace"
+	}
+	if requestedBy := strings.TrimSpace(project.ClientDisplayName); requestedBy != "" {
+		return requestedBy
+	}
+	return "Marketplace"
+}
+
+func tokenLaunchCandidatePriorityLabel(decisionState string, score int) string {
+	switch decisionState {
+	case "ready":
+		return "Open-ready"
+	case "hold":
+		return "Hold"
+	}
+	if score >= 70 {
+		return "High review"
+	}
+	if score >= 55 {
+		return "Review"
+	}
+	return "Needs evidence"
+}
+
+func tokenLaunchCandidateResearchMemo(launchType, projectTitle string, score, openTasks, acceptedTasks, signalCount int) string {
+	launchLabel := "airdrop"
+	if launchType == "presale" {
+		launchLabel = "presale"
+	}
+	title := strings.TrimSpace(projectTitle)
+	if title == "" {
+		title = "this project"
+	}
+	return fmt.Sprintf("CEO should research %s for %s: %d%% fit, %d open tasks, %d accepted tasks, %d proof signals.", title, launchLabel, score, openTasks, acceptedTasks, signalCount)
+}
+
+func tokenLaunchBriefCandidateResearchMemo(launchType string, brief PublicTokenLaunchBriefRecord, score int, proofSignals []string) string {
+	launchLabel := "airdrop"
+	if launchType == "presale" {
+		launchLabel = "presale"
+	}
+	title := strings.TrimSpace(brief.ProjectTitle)
+	if title == "" {
+		title = "submitted launch brief"
+	}
+	source := "no research source"
+	if strings.TrimSpace(brief.ResearchSource) != "" {
+		source = "research source attached"
+	}
+	return fmt.Sprintf("CEO-submitted %s candidate: %s, %d%% fit, %d proof signals, %s.", launchLabel, title, score, tokenLaunchEvidenceSignalCount(proofSignals), source)
 }
 
 func tokenLaunchBriefCandidateSignals(brief PublicTokenLaunchBriefRecord) []string {
