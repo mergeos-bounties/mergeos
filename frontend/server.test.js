@@ -1287,6 +1287,10 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /command: 'download-whitepaper'/);
   assert.match(appSource, /function downloadWhitepaper\(\)/);
   assert.match(appSource, /class="token-whitepaper-thesis"/);
+  assert.match(appSource, /class="token-whitepaper-cover-meta"/);
+  assert.match(appSource, /class="token-whitepaper-index token-whitepaper-proof-links"/);
+  assert.match(appSource, /publicWhitepaperArtifactRows\.slice\(0, 3\)/);
+  assert.match(appSource, /class="token-whitepaper-chapter-drawer"/);
   assert.match(appSource, /class="token-whitepaper-brief"/);
   assert.match(appSource, /class="token-whitepaper-section-list"/);
   assert.match(appSource, /v-if="publicPage !== 'whitepaper'" class="token-content-grid"/);

@@ -5704,13 +5704,18 @@
 
         <section v-if="publicPage === 'whitepaper'" class="token-whitepaper-reader" aria-labelledby="whitepaper-reader-title">
           <div class="token-whitepaper-copy">
-            <span class="marketplace-eyebrow">READ THE PAPER</span>
-            <h2 id="whitepaper-reader-title">Whitepaper backed by live MergeOS artifacts</h2>
+            <span class="marketplace-eyebrow">MERGEOS WHITEPAPER</span>
+            <h2 id="whitepaper-reader-title">Operating paper for funded AI software delivery</h2>
+            <div class="token-whitepaper-cover-meta" aria-label="Whitepaper document metadata">
+              <span>Version 1.0</span>
+              <span>Public architecture</span>
+              <span>MRG on Solana</span>
+            </div>
             <p>
               The public paper is a product architecture document. It links the system vision to repository boundaries,
               AI orchestration, marketplace work, Solana MRG contracts, SDK routes, and ledger proof.
             </p>
-            <div class="token-whitepaper-thesis">
+            <div class="token-whitepaper-thesis" aria-label="Whitepaper thesis">
               <article v-for="row in publicWhitepaperThesisRows" :key="row.label">
                 <small>{{ row.label }}</small>
                 <strong>{{ row.value }}</strong>
@@ -5728,8 +5733,8 @@
               </button>
             </div>
           </div>
-          <div class="token-whitepaper-index" aria-label="Whitepaper live artifact map">
-            <article v-for="row in publicWhitepaperArtifactRows" :key="row.title">
+          <div class="token-whitepaper-index token-whitepaper-proof-links" aria-label="Whitepaper live artifact map">
+            <article v-for="row in publicWhitepaperArtifactRows.slice(0, 3)" :key="row.title">
               <span :class="['ledger-trust-icon', row.tone]">
                 <component :is="row.icon" :size="15" />
               </span>
@@ -5760,16 +5765,22 @@
               <Download :size="13" />
             </a>
           </div>
-          <div class="token-whitepaper-section-list">
-            <article v-for="section in publicWhitepaperChapterSections" :key="section.title">
-              <span>{{ section.kicker }}</span>
-              <h3>{{ section.title }}</h3>
-              <p>{{ section.body }}</p>
-              <ul>
-                <li v-for="point in section.points" :key="point">{{ point }}</li>
-              </ul>
-            </article>
-          </div>
+          <details class="token-whitepaper-chapter-drawer">
+            <summary>
+              Chapter map
+              <ChevronDown :size="13" />
+            </summary>
+            <div class="token-whitepaper-section-list">
+              <article v-for="section in publicWhitepaperChapterSections" :key="section.title">
+                <span>{{ section.kicker }}</span>
+                <h3>{{ section.title }}</h3>
+                <p>{{ section.body }}</p>
+                <ul>
+                  <li v-for="point in section.points" :key="point">{{ point }}</li>
+                </ul>
+              </article>
+            </div>
+          </details>
         </section>
 
         <section v-if="publicTokenChapterRows.length" class="token-chapter-grid" :aria-label="publicTokenPage.chapterTitle">

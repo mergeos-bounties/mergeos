@@ -43034,3 +43034,123 @@ canvas {
     min-height: auto !important;
   }
 }
+
+/* Whitepaper premium cover: first view reads like an architecture paper, not a long docs list. */
+.token-page-whitepaper .token-hero {
+  padding-block: clamp(24px, 3vw, 44px) 14px !important;
+}
+
+.token-page-whitepaper .token-whitepaper-reader {
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 0.48fr) !important;
+  gap: 14px !important;
+  padding: 18px !important;
+}
+
+.token-page-whitepaper .token-whitepaper-copy {
+  gap: 10px !important;
+}
+
+.token-page-whitepaper .token-whitepaper-copy h2 {
+  max-width: 760px !important;
+  font-size: clamp(34px, 4vw, 54px) !important;
+  line-height: 1.02 !important;
+}
+
+.token-whitepaper-cover-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.token-whitepaper-cover-meta span {
+  min-height: 26px;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid rgba(15, 118, 110, 0.14);
+  border-radius: 999px;
+  background: rgba(236, 253, 245, 0.76);
+  color: #0f766e;
+  padding: 0 9px;
+  font-family: var(--mono-font);
+  font-size: 9.5px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.token-page-whitepaper .token-whitepaper-thesis {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+}
+
+.token-page-whitepaper .token-whitepaper-thesis article {
+  min-height: 110px !important;
+  padding: 11px !important;
+}
+
+.token-page-whitepaper .token-whitepaper-thesis p {
+  -webkit-line-clamp: 2 !important;
+}
+
+.token-whitepaper-proof-links {
+  align-content: start !important;
+  gap: 8px !important;
+}
+
+.token-whitepaper-proof-links article {
+  min-height: 86px !important;
+}
+
+.token-whitepaper-chapter-drawer {
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.token-whitepaper-chapter-drawer summary {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  list-style: none;
+  color: #111827;
+  padding: 0 14px;
+  font-size: 12px;
+  font-weight: 930;
+  cursor: pointer;
+}
+
+.token-whitepaper-chapter-drawer summary::-webkit-details-marker {
+  display: none;
+}
+
+.token-whitepaper-chapter-drawer[open] summary svg {
+  transform: rotate(180deg);
+}
+
+.token-whitepaper-chapter-drawer .token-whitepaper-section-list {
+  margin: 0 10px 10px !important;
+}
+
+@media (max-width: 760px) {
+  .token-page-whitepaper .token-whitepaper-reader {
+    grid-template-columns: minmax(0, 1fr) !important;
+    padding: 10px !important;
+  }
+
+  .token-page-whitepaper .token-whitepaper-copy h2 {
+    font-size: clamp(28px, 8vw, 38px) !important;
+  }
+
+  .token-page-whitepaper .token-whitepaper-thesis {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .token-page-whitepaper .token-whitepaper-thesis article {
+    min-height: auto !important;
+  }
+
+  .token-page-whitepaper .token-whitepaper-actions {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
