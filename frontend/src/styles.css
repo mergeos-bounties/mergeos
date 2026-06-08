@@ -39555,11 +39555,16 @@ canvas {
 
 /* Token CEO mobile first decision: put candidate actions inside the first viewport. */
 @media (max-width: 620px) {
+  .token-hero {
+    gap: 4px !important;
+  }
+
   .token-ceo-decision-strip {
     display: none !important;
   }
 
   .token-ceo-candidate-lane article {
+    padding-bottom: 7px !important;
     min-height: 0 !important;
   }
 }

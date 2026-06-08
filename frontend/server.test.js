@@ -1517,6 +1517,7 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(cssSource, /\.token-ceo-candidate-signals\s*\{[\s\S]*display: flex;[\s\S]*flex-wrap: wrap;/);
   assert.match(cssSource, /@media \(max-width: 620px\)[\s\S]*\.token-ceo-candidate-signals\s*\{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\) !important;/);
   assert.match(cssSource, /Token CEO mobile first decision: put candidate actions inside the first viewport/);
+  assert.match(cssSource, /\/\* Token CEO mobile first decision:[\s\S]*\.token-hero\s*\{[\s\S]*gap: 4px !important;/);
   assert.match(cssSource, /\/\* Token CEO mobile first decision:[\s\S]*\.token-ceo-decision-strip\s*\{[\s\S]*display: none !important;/);
   assert.match(cssSource, /\.token-proof-result small\s*\{[\s\S]*overflow: visible;[\s\S]*white-space: normal;[\s\S]*overflow-wrap: anywhere;/);
   assert.match(cssSource, /\.token-whitepaper-thesis p\s*\{[\s\S]*-webkit-line-clamp: 2;/);
