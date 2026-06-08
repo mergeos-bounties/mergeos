@@ -1264,8 +1264,15 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /candidate\.proof_policy/);
   assert.match(appSource, /row\.proofSignals/);
   assert.match(appSource, /function tokenLaunchCandidateScore/);
+  assert.match(appSource, /function tokenLaunchCandidateDecisionRows/);
+  assert.match(appSource, /function applyTokenLaunchCandidateDecision\(candidate = \{\}, decision = \{\}\)/);
   assert.match(appSource, /row\.scoreLabel/);
   assert.match(appSource, /scoreLabel: `\$\{score\}% fit`/);
+  assert.match(appSource, /class="token-ceo-candidate-decisions"/);
+  assert.match(appSource, /Approve memo/);
+  assert.match(appSource, /Needs evidence/);
+  assert.match(appSource, /Reject/);
+  assert.match(appSource, /CEO \$\{launchLabel\} decision: request more evidence before opening/);
   assert.match(appSource, /class="token-ceo-candidate-actions"/);
   assert.match(appSource, /marketplaceData\.value\.projects[\s\S]*marketplaceData\.value\.bounties/);
   assert.match(appSource, /Use for CEO brief/);
@@ -1418,6 +1425,8 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(cssSource, /\.token-ceo-candidate-actions\s*\{[\s\S]*grid-column: 2;/);
   assert.match(cssSource, /\.token-ceo-candidate-actions a,[\s\S]*\.token-ceo-candidate-actions button\s*\{[\s\S]*text-decoration: none;/);
   assert.match(cssSource, /\.token-ceo-candidate-lane small b\s*\{[\s\S]*border-radius: 999px;/);
+  assert.match(cssSource, /\.token-ceo-candidate-decisions\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
+  assert.match(cssSource, /\.token-ceo-candidate-decisions button\.approve\s*\{[\s\S]*background: #ecfdf5;/);
   assert.match(cssSource, /\.token-ceo-project-queue\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /\.token-ceo-source-packet\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /\.token-ceo-signal-chips\s*\{[\s\S]*flex-wrap: wrap;/);

@@ -8901,6 +8901,48 @@ svg {
   cursor: pointer;
 }
 
+.token-ceo-candidate-decisions {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.token-ceo-candidate-decisions button {
+  min-width: 0;
+  min-height: 26px;
+  overflow: hidden;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 999px;
+  background: #ffffff;
+  color: #334155;
+  padding: 0 6px;
+  font-size: 8.8px;
+  line-height: 1;
+  font-weight: 930;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.token-ceo-candidate-decisions button.approve {
+  border-color: rgba(15, 118, 110, 0.18);
+  background: #ecfdf5;
+  color: #0f766e;
+}
+
+.token-ceo-candidate-decisions button.evidence {
+  border-color: rgba(217, 119, 6, 0.18);
+  background: #fffbeb;
+  color: #a16207;
+}
+
+.token-ceo-candidate-decisions button.reject {
+  border-color: rgba(220, 38, 38, 0.16);
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
 .token-ceo-project-queue {
   min-width: 0;
   display: grid;

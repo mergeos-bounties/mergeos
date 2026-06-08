@@ -5191,6 +5191,17 @@
                   <ArrowRight :size="10" />
                 </button>
               </div>
+              <div class="token-ceo-candidate-decisions" aria-label="CEO candidate decision actions">
+                <button
+                  v-for="decision in row.decisionRows"
+                  :key="decision.key"
+                  :class="decision.tone"
+                  type="button"
+                  @click="applyTokenLaunchCandidateDecision(row, decision)"
+                >
+                  {{ decision.label }}
+                </button>
+              </div>
             </article>
           </div>
           <div class="token-ceo-project-queue" aria-label="CEO project research queue">
@@ -12851,6 +12862,37 @@ function tokenLaunchCandidateScore({ openTasks = 0, acceptedTasks = 0, signalCou
   const poolScore = Math.min(Math.floor((Number(workPoolMRG) || 0) / 10000), 8) * 2;
   return Math.min(98, Math.max(42, 42 + demandScore + deliveryScore + proofScore + poolScore));
 }
+function tokenLaunchCandidateDecisionRows(launchType = 'airdrop', score = 0) {
+  const launchLabel = launchType === 'presale' ? 'presale' : 'airdrop';
+  const strongFit = Number(score) >= 82;
+  return [
+    {
+      key: 'approve',
+      label: strongFit ? 'Approve memo' : 'Draft approve',
+      tone: 'approve',
+      proofPolicy: launchType === 'presale'
+        ? 'Approve only with utility proof, reserve cap, Solana wallet path, funding reference, contract proof, and public ledger receipt.'
+        : 'Approve only with repo task evidence, useful work proof, anti-bot review, wallet uniqueness, and public ledger receipt.',
+      riskNotes: `CEO ${launchLabel} decision: ready to open after final proof review; score ${score}% fit.`,
+    },
+    {
+      key: 'needs_evidence',
+      label: 'Needs evidence',
+      tone: 'evidence',
+      proofPolicy: launchType === 'presale'
+        ? 'Hold presale until utility, funding, wallet, contract, and receipt evidence are attached.'
+        : 'Hold airdrop until repo task, PR/deploy proof, QA evidence, and wallet uniqueness are attached.',
+      riskNotes: `CEO ${launchLabel} decision: request more evidence before opening; score ${score}% fit.`,
+    },
+    {
+      key: 'reject',
+      label: 'Reject',
+      tone: 'reject',
+      proofPolicy: 'Do not open token workflow until source, demand, proof quality, wallet policy, and ledger evidence are remediated.',
+      riskNotes: `CEO ${launchLabel} decision: reject for now; score ${score}% fit and proof is not launch-ready.`,
+    },
+  ];
+}
 const tokenCeoCandidateRows = computed(() => {
   const apiCandidates = Array.isArray(tokenLaunchCandidatesData.value?.candidates)
     ? tokenLaunchCandidatesData.value.candidates
@@ -12870,6 +12912,7 @@ const tokenCeoCandidateRows = computed(() => {
         key: candidate.candidate_id || candidate.project_id || candidate.project_title,
         label: launchType === 'presale' ? 'CEO presale candidate' : 'CEO airdrop candidate',
         scoreLabel: `${score}% fit`,
+        decisionRows: tokenLaunchCandidateDecisionRows(launchType, score),
         title: candidate.project_title || 'Funded MergeOS project',
         body: candidate.gate_summary || `${formatCompactNumber(candidate.work_pool_mrg || 0)} MRG work pool / ${Number(candidate.open_task_count) || 0} open tasks`,
         sourceUrl: /^https?:\/\//i.test(sourceUrl) ? sourceUrl : '',
@@ -12900,6 +12943,7 @@ const tokenCeoCandidateRows = computed(() => {
       key: project.id || project.title,
       label: launchType === 'presale' ? 'CEO presale candidate' : 'CEO airdrop candidate',
       scoreLabel: `${score}% fit`,
+      decisionRows: tokenLaunchCandidateDecisionRows(launchType, score),
       title: project.title || 'Funded MergeOS project',
       body: `${budget} work pool / ${openTasks} open tasks / ${acceptedTasks} accepted`,
       sourceUrl,
@@ -24744,6 +24788,20 @@ function prefillTokenLaunchBriefFromCandidate(candidate = {}) {
     const target = document.querySelector('.token-ceo-brief-card');
     target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   });
+}
+
+function applyTokenLaunchCandidateDecision(candidate = {}, decision = {}) {
+  prefillTokenLaunchBriefFromCandidate(candidate);
+  const launchType = publicPage.value === 'presale' ? 'presale' : 'airdrop';
+  const label = decision.label || 'CEO decision';
+  tokenLaunchBriefForm.proof_policy = decision.proofPolicy || tokenLaunchBriefForm.proof_policy;
+  tokenLaunchBriefForm.risk_notes = decision.riskNotes || tokenLaunchBriefForm.risk_notes;
+  tokenLaunchBriefForm.allocation_policy = launchType === 'presale'
+    ? `${label}: reserve window remains gated by tier cap, funding rail, receipt policy, and Solana contract proof.`
+    : `${label}: earned missions remain gated by useful work, anti-bot review, proof quality, and wallet uniqueness.`;
+  tokenLaunchBriefAttempted.value = false;
+  tokenLaunchBriefError.value = '';
+  showToast(`${label} loaded into CEO brief.`);
 }
 
 function openTokenLaunchBriefFromProofBoard() {
