@@ -835,6 +835,10 @@ test('public home keeps a short decision-screen rhythm', async () => {
   assert.match(cssSource, /\/\* Home compact product story pass:[\s\S]*\.public-home-page\s*\{[\s\S]*min-height: auto !important;[\s\S]*padding-block: clamp\(10px, 1\.8vw, 24px\) clamp\(18px, 2\.6vw, 32px\) !important;/);
   assert.match(cssSource, /\/\* Home compact product story pass:[\s\S]*\.public-home-page \.home-container\s*\{[\s\S]*max-width: 1040px !important;/);
   assert.match(cssSource, /\/\* Home compact product story pass:[\s\S]*\.home-command-panel\s*\{[\s\S]*align-self: start !important;/);
+  assert.match(cssSource, /Home CEO front door pass: shorter, cleaner, more like a product cockpit than a long brochure/);
+  assert.match(cssSource, /\/\* Home CEO front door pass:[\s\S]*\.public-home-page\s*\{[\s\S]*padding-block: clamp\(20px, 3vw, 38px\) clamp\(22px, 3vw, 40px\) !important;/);
+  assert.match(cssSource, /\/\* Home CEO front door pass:[\s\S]*\.public-home-copy h1\s*\{[\s\S]*font-size: clamp\(42px, 5vw, 66px\) !important;/);
+  assert.match(cssSource, /\/\* Home CEO front door pass:[\s\S]*\.home-command-panel \.home-feed-preview\s*\{[\s\S]*display: none !important;/);
   assert.match(cssSource, /@media \(max-width: 980px\)[\s\S]*\.home-command-panel\s*\{[\s\S]*display: none !important;/);
 });
 
@@ -1259,6 +1263,9 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(appSource, /candidate\.research_source/);
   assert.match(appSource, /candidate\.proof_policy/);
   assert.match(appSource, /row\.proofSignals/);
+  assert.match(appSource, /function tokenLaunchCandidateScore/);
+  assert.match(appSource, /row\.scoreLabel/);
+  assert.match(appSource, /scoreLabel: `\$\{score\}% fit`/);
   assert.match(appSource, /class="token-ceo-candidate-actions"/);
   assert.match(appSource, /marketplaceData\.value\.projects[\s\S]*marketplaceData\.value\.bounties/);
   assert.match(appSource, /Use for CEO brief/);
@@ -1410,6 +1417,7 @@ test('public token pages expose airdrop, presale, and whitepaper routes', async 
   assert.match(cssSource, /\.token-ceo-candidate-lane\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /\.token-ceo-candidate-actions\s*\{[\s\S]*grid-column: 2;/);
   assert.match(cssSource, /\.token-ceo-candidate-actions a,[\s\S]*\.token-ceo-candidate-actions button\s*\{[\s\S]*text-decoration: none;/);
+  assert.match(cssSource, /\.token-ceo-candidate-lane small b\s*\{[\s\S]*border-radius: 999px;/);
   assert.match(cssSource, /\.token-ceo-project-queue\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /\.token-ceo-source-packet\s*\{[\s\S]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
   assert.match(cssSource, /\.token-ceo-signal-chips\s*\{[\s\S]*flex-wrap: wrap;/);

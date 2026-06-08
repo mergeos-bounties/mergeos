@@ -5173,7 +5173,10 @@
                 <Compass :size="14" />
               </span>
               <div>
-                <small>{{ row.label }}</small>
+                <small>
+                  {{ row.label }}
+                  <b v-if="row.scoreLabel">{{ row.scoreLabel }}</b>
+                </small>
                 <strong>{{ row.title }}</strong>
                 <p>{{ row.body }}</p>
                 <em v-if="row.proofSignals">{{ row.proofSignals }}</em>
@@ -12841,6 +12844,13 @@ const tokenCeoLiveEmptyCopy = computed(() => (
         body: 'Send the CEO repo, mission demand, anti-bot, wallet, and proof gate brief before earned claims open.',
       }
 ));
+function tokenLaunchCandidateScore({ openTasks = 0, acceptedTasks = 0, signalCount = 0, workPoolMRG = 0 } = {}) {
+  const demandScore = Math.min(Number(openTasks) || 0, 8) * 6;
+  const deliveryScore = Math.min(Number(acceptedTasks) || 0, 12) * 3;
+  const proofScore = Math.min(Number(signalCount) || 0, 8) * 5;
+  const poolScore = Math.min(Math.floor((Number(workPoolMRG) || 0) / 10000), 8) * 2;
+  return Math.min(98, Math.max(42, 42 + demandScore + deliveryScore + proofScore + poolScore));
+}
 const tokenCeoCandidateRows = computed(() => {
   const apiCandidates = Array.isArray(tokenLaunchCandidatesData.value?.candidates)
     ? tokenLaunchCandidatesData.value.candidates
@@ -12850,9 +12860,16 @@ const tokenCeoCandidateRows = computed(() => {
     return apiCandidates.slice(0, 3).map((candidate) => {
       const sourceUrl = String(candidate.research_source || '').trim();
       const signals = Array.isArray(candidate.proof_signals) ? candidate.proof_signals : [];
+      const score = tokenLaunchCandidateScore({
+        openTasks: Number(candidate.open_task_count) || 0,
+        acceptedTasks: Number(candidate.accepted_task_count) || 0,
+        signalCount: signals.length,
+        workPoolMRG: Number(candidate.work_pool_mrg) || 0,
+      });
       return {
         key: candidate.candidate_id || candidate.project_id || candidate.project_title,
         label: launchType === 'presale' ? 'CEO presale candidate' : 'CEO airdrop candidate',
+        scoreLabel: `${score}% fit`,
         title: candidate.project_title || 'Funded MergeOS project',
         body: candidate.gate_summary || `${formatCompactNumber(candidate.work_pool_mrg || 0)} MRG work pool / ${Number(candidate.open_task_count) || 0} open tasks`,
         sourceUrl: /^https?:\/\//i.test(sourceUrl) ? sourceUrl : '',
@@ -12873,9 +12890,16 @@ const tokenCeoCandidateRows = computed(() => {
     const openTasks = Number(project.open_task_count) || projectBounties.length || 0;
     const acceptedTasks = Number(project.accepted_task_count) || 0;
     const budget = formatPublicMRGFromCents(Number(project.work_pool_cents || project.budget_cents) || 0);
+    const score = tokenLaunchCandidateScore({
+      openTasks,
+      acceptedTasks,
+      signalCount: Number(project.proof_signal_count) || projectBounties.length || 0,
+      workPoolMRG: Math.floor((Number(project.work_pool_cents || project.budget_cents) || 0) / 100),
+    });
     return {
       key: project.id || project.title,
       label: launchType === 'presale' ? 'CEO presale candidate' : 'CEO airdrop candidate',
+      scoreLabel: `${score}% fit`,
       title: project.title || 'Funded MergeOS project',
       body: `${budget} work pool / ${openTasks} open tasks / ${acceptedTasks} accepted`,
       sourceUrl,
