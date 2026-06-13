@@ -44652,6 +44652,79 @@ canvas {
   }
 }
 
+/* Issue #17 project route owner: selected dashboard projects stay readable and non-overflowing. */
+.dashboard-shell .dash-project-header,
+.dashboard-shell .dash-metrics,
+.dashboard-shell .customer-dashboard-operating-strip,
+.dashboard-shell .delivery-snapshot-card,
+.dashboard-shell .dash-overview-grid,
+.dashboard-shell .project-pr-monitor,
+.dashboard-shell .dashboard-focus-target {
+  min-width: 0;
+}
+
+.dashboard-shell .dash-project-title > div,
+.dashboard-shell .dash-project-title h1,
+.dashboard-shell .dash-project-title p,
+.dashboard-shell .dash-metrics article,
+.dashboard-shell .dash-metrics strong,
+.dashboard-shell .customer-dashboard-operating-strip button,
+.dashboard-shell .customer-dashboard-operating-strip span,
+.dashboard-shell .customer-dashboard-operating-strip strong,
+.dashboard-shell .customer-dashboard-operating-strip em,
+.dashboard-shell .delivery-snapshot-card :is(h2, p, strong, small, span, b),
+.dashboard-shell .dash-pr-row :is(strong, small, span, b, a, button) {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.dashboard-shell .dash-project-actions {
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.dashboard-shell .dash-project-actions > button,
+.dashboard-shell .dashboard-project-action-menu > button {
+  max-width: 100%;
+}
+
+@media (max-width: 760px) {
+  .dashboard-shell .dash-project-title {
+    align-items: start !important;
+  }
+
+  .dashboard-shell .dash-project-title .live-badge {
+    grid-column: 1 / -1 !important;
+    justify-self: start !important;
+    max-width: 100% !important;
+  }
+
+  .dashboard-shell .dash-project-actions {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    width: 100% !important;
+  }
+
+  .dashboard-shell .dash-project-actions > button,
+  .dashboard-shell .dashboard-project-action-menu,
+  .dashboard-shell .dashboard-project-action-menu > button {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .dashboard-shell .dash-tabs {
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-gutter: stable;
+  }
+
+  .dashboard-shell .dash-overview-grid,
+  .dashboard-shell .dash-pr-row {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
 /* Whitepaper mobile paper cut: no duplicate cover, just summary, proof, and chapters. */
 @media (max-width: 760px) {
   .token-page-whitepaper .token-shell {
