@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -323,10 +324,22 @@ func (s *Server) getFrontRedirectBase(r *http.Request) string {
 		return "http://127.0.0.1:5173"
 	}
 	scheme := "https"
-	if strings.Contains(r.Host, "localhost") || strings.Contains(r.Host, "127.0.0.1") {
+	if isLoopbackRedirectHost(r.Host) {
 		scheme = "http"
 	}
 	return scheme + "://" + s.cfg.PrimaryDomain
+}
+
+func isLoopbackRedirectHost(host string) bool {
+	host = strings.TrimSpace(host)
+	if host == "" {
+		return false
+	}
+	if parsedHost, _, err := net.SplitHostPort(host); err == nil {
+		host = parsedHost
+	}
+	host = strings.Trim(host, "[]")
+	return host == "localhost" || host == "127.0.0.1" || host == "::1"
 }
 
 func firstForwardedHeader(value string) string {
