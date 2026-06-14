@@ -209,6 +209,15 @@ func TestAdminPullRequestReadinessBlocksSecretFilesAndWarnsSensitiveCode(t *test
 	}
 }
 
+func TestAdminPullRequestSecuritySensitivePathIsCaseInsensitive(t *testing.T) {
+	if !adminPullRequestSecuritySensitivePath("Backend/Internal/Auth/Login.go", "Login.go") {
+		t.Fatal("expected uppercase auth path to be treated as security-sensitive")
+	}
+	if adminPullRequestSecuritySensitivePath("docs/Guide.md", "Guide.md") {
+		t.Fatal("expected ordinary docs path to stay low-risk")
+	}
+}
+
 func TestAdminPullRequestReadinessBlocksBroadDeletionHeavyDiff(t *testing.T) {
 	readiness := adminPullRequestReadiness(
 		&Task{Title: "Small frontend fix", Acceptance: "Keep changes scoped to the issue"},
