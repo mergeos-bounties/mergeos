@@ -115,6 +115,6 @@
     }
   },
   "devDependencies": {
-    "@yao-pkg/pkg": "^6.20.0"
+    "@yao-pkg/pkg": "^6.12.0"
   }
 }
