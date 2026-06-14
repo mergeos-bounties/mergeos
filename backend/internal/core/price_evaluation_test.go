@@ -97,4 +97,11 @@ func TestEvaluateProjectPriceRouteRequiresAuthAndReturnsJSON(t *testing.T) {
 	if result.SuggestedPriceCents == 0 || len(result.Breakdown) == 0 || !result.Editable {
 		t.Fatalf("unexpected response: %#v", result)
 	}
+	legacy, err := EvaluateProjectPrice(payload)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.SuggestedPriceCents != legacy.SuggestedPriceCents {
+		t.Fatalf("expected no-LLM route to preserve legacy rule-based estimate: got %d want %d", result.SuggestedPriceCents, legacy.SuggestedPriceCents)
+	}
 }

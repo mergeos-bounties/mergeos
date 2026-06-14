@@ -1657,6 +1657,16 @@ func (s *Server) evaluateProjectPrice(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if s.geminiReviewer == nil || !s.geminiReviewer.Ready() {
+		result, err := EvaluateProjectPrice(req)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		writeJSON(w, http.StatusOK, result)
+		return
+	}
+
 	llmReq := LLMPriceEvaluationRequest{
 		Title:           req.Title,
 		Description:     req.Description,
@@ -1671,10 +1681,14 @@ func (s *Server) evaluateProjectPrice(w http.ResponseWriter, r *http.Request) {
 
 	llmResp, err := s.EvaluateProjectLLM(r.Context(), llmReq)
 	if err != nil {
-		writeError(w, http.StatusBadGateway, err.Error())
+		result, fallbackErr := EvaluateProjectPrice(req)
+		if fallbackErr != nil {
+			writeError(w, http.StatusBadRequest, fallbackErr.Error())
+			return
+		}
+		writeJSON(w, http.StatusOK, result)
 		return
 	}
-
 	var breakdown []PriceBreakdownItem
 	for cat, usd := range llmResp.TaskBreakdown {
 		breakdown = append(breakdown, PriceBreakdownItem{
