@@ -115,6 +115,11 @@
     }
   },
   "devDependencies": {
-    "@yao-pkg/pkg": "^6.12.0"
+    "@yao-pkg/pkg": "^6.20.0"
+  },
+  "overrides": {
+    "@yao-pkg/pkg": {
+      "esbuild": "0.28.1"
+    }
   }
 }
