@@ -1797,8 +1797,8 @@
         <section class="dash-main">
           <template v-if="dashboardSection === 'payments'">
             <div class="dash-breadcrumb">
-              <Home :size="14" />
-              <span>Payments</span>
+              <Home :size="14" class="dash-breadcrumb-link" @click="openDashboardSection('projects', { focus: 'overview' })" />
+              <span class="dash-breadcrumb-link" @click="openDashboardSection('payments')">Payments</span>
               <ChevronDown :size="13" />
               <strong>{{ dashboardPaymentView.title }}</strong>
             </div>
@@ -1920,8 +1920,8 @@
 
           <template v-else-if="dashboardSection === 'admin'">
             <div class="dash-breadcrumb">
-              <Home :size="14" />
-              <span>Admin</span>
+              <Home :size="14" class="dash-breadcrumb-link" @click="openDashboardSection('projects', { focus: 'overview' })" />
+              <span class="dash-breadcrumb-link" @click="openDashboardSection('admin')">Admin</span>
               <ChevronDown :size="13" />
               <strong>Operations Console</strong>
             </div>
@@ -2282,8 +2282,8 @@
 
           <template v-else-if="dashboardSection === 'worker'">
             <div class="dash-breadcrumb">
-              <Home :size="14" />
-              <span>Worker</span>
+              <Home :size="14" class="dash-breadcrumb-link" @click="openDashboardSection('projects', { focus: 'overview' })" />
+              <span class="dash-breadcrumb-link" @click="openDashboardSection('worker')">Worker</span>
               <ChevronDown :size="13" />
               <strong>{{ workerDashboardView.title }}</strong>
             </div>
@@ -2649,8 +2649,8 @@
 
           <template v-else-if="dashboardToolSectionView">
             <div class="dash-breadcrumb">
-              <Home :size="14" />
-              <span>{{ dashboardToolSectionView.group }}</span>
+              <Home :size="14" class="dash-breadcrumb-link" @click="openDashboardSection('projects', { focus: 'overview' })" />
+              <span class="dash-breadcrumb-link" @click="openDashboardSection(dashboardSection)">{{ dashboardToolSectionView.group }}</span>
               <ChevronDown :size="13" />
               <strong>{{ dashboardToolSectionView.title }}</strong>
             </div>
@@ -3115,8 +3115,8 @@
 
           <template v-else>
             <div class="dash-breadcrumb">
-              <Home :size="14" />
-              <span>My Projects</span>
+              <Home :size="14" class="dash-breadcrumb-link" @click="openDashboardSection('projects', { focus: 'overview' })" />
+              <span class="dash-breadcrumb-link" @click="openDashboardSection('projects', { focus: 'list' })">My Projects</span>
               <ChevronDown :size="13" />
               <strong>{{ dashboardProjectView.title }}</strong>
             </div>
@@ -26411,6 +26411,9 @@ function openDashboardSection(section, options = {}) {
     dashboardSection.value = section;
     if (section === 'projects') {
       dashboardProjectFocus.value = normalizeDashboardProjectFocus(options.focus);
+      if (options.focus === 'list' || options.focus === 'overview') {
+        selectedDashboardProjectID.value = '';
+      }
     }
     if (section === 'worker') {
       void loadWorkerDashboardData({ silent: true });

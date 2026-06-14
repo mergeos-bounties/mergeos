@@ -21,10 +21,18 @@ type Server struct {
 	payments       *PaymentManager
 	geminiReviewer *GeminiReviewService
 	eventHub       *eventHub
+	usdtGateway    *USDTGatewayManager
 }
 
 func NewServer(cfg Config, store *Store, payments *PaymentManager) *Server {
-	return &Server{cfg: cfg, store: store, payments: payments, geminiReviewer: NewGeminiReviewService(cfg, store), eventHub: newEventHub()}
+	return &Server{
+		cfg:            cfg,
+		store:          store,
+		payments:       payments,
+		geminiReviewer: NewGeminiReviewService(cfg, store),
+		eventHub:       newEventHub(),
+		usdtGateway:    NewUSDTGatewayManager(cfg, store),
+	}
 }
 
 func (s *Server) Routes() http.Handler {
@@ -77,6 +85,8 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("POST /api/payments/paypal/orders", s.createPayPalOrder)
 	mux.HandleFunc("POST /api/payments/card/intents", s.createCardPaymentIntent)
 	mux.HandleFunc("POST /api/payments/paypal/webhook", s.handlePayPalWebhook)
+	mux.HandleFunc("POST /api/payments/usdt/webhook", s.handleUSDTWebhook)
+	mux.HandleFunc("GET /api/admin/usdt/webhooks", s.adminUSDTWebhookEvents)
 	mux.HandleFunc("POST /api/uploads", s.uploadAttachment)
 	mux.HandleFunc("GET /api/uploads/", s.downloadAttachment)
 	mux.HandleFunc("GET /api/admin/summary", s.adminSummary)
@@ -1656,11 +1666,58 @@ func (s *Server) evaluateProjectPrice(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid JSON body")
 		return
 	}
-	result, err := EvaluateProjectPrice(req)
+
+	llmReq := LLMPriceEvaluationRequest{
+		Title:           req.Title,
+		Description:     req.Description,
+		Requirements:    splitCSVish(req.Requirements),
+		Deliverables:    req.Deliverables,
+		Timeline:        req.Timeline,
+		TechStack:       req.TechStack,
+		Complexity:      req.Complexity,
+		Constraints:     req.Constraints,
+		ReferenceBudget: req.ReferenceBudgetCents / 100,
+	}
+
+	llmResp, err := s.EvaluateProjectLLM(r.Context(), llmReq)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeError(w, http.StatusBadGateway, err.Error())
 		return
 	}
+
+	var breakdown []PriceBreakdownItem
+	for cat, usd := range llmResp.TaskBreakdown {
+		breakdown = append(breakdown, PriceBreakdownItem{
+			Category:    cat,
+			AmountCents: usd * 100,
+			Reason:      "Estimated by AI",
+		})
+	}
+
+	confidence := "medium"
+	if llmResp.ConfidenceLevel >= 0.8 {
+		confidence = "high"
+	} else if llmResp.ConfidenceLevel <= 0.4 {
+		confidence = "low"
+	}
+
+	midCents := ((llmResp.SuggestedLow + llmResp.SuggestedHigh) / 2) * 100
+
+	result := &ProjectPriceEvaluationResponse{
+		ProtocolVersion:     "mergeos.estimate.v1",
+		Kind:                "project_estimate",
+		SuggestedPriceCents: midCents,
+		SuggestedRange: PriceRange{
+			LowCents:  llmResp.SuggestedLow * 100,
+			HighCents: llmResp.SuggestedHigh * 100,
+		},
+		Confidence:  confidence,
+		Breakdown:   breakdown,
+		Assumptions: llmResp.Assumptions,
+		Risks:       llmResp.Risks,
+		Editable:    llmResp.Editable,
+	}
+
 	writeJSON(w, http.StatusOK, result)
 }
 
@@ -2252,4 +2309,41 @@ func (s *Server) cryptoWebhook(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusCreated, project)
+}
+
+func (s *Server) handleUSDTWebhook(w http.ResponseWriter, r *http.Request) {
+	s.usdtGateway.handleWebhook(w, r)
+}
+
+func (s *Server) adminUSDTWebhookEvents(w http.ResponseWriter, r *http.Request) {
+	if _, ok := s.requireAdmin(w, r); !ok {
+		return
+	}
+	events := s.store.ListUSDTWebhookEvents()
+
+	// Sanitize: strip raw_payload to prevent leaking gateway secrets
+	sanitized := make([]map[string]interface{}, 0, len(events))
+	for _, e := range events {
+		entry := map[string]interface{}{
+			"id":               e.ID,
+			"provider":         e.Provider,
+			"event_type":       e.EventType,
+			"status":           e.Status,
+			"gateway_id":       e.GatewayID,
+			"amount_cents":     e.AmountCents,
+			"currency":         e.Currency,
+			"network":          e.Network,
+			"tx_hash":          e.TxHash,
+			"sender_address":   e.SenderAddress,
+			"receiver_address": e.ReceiverAddress,
+			"signature_valid":  e.SignatureValid,
+			"project_id":       e.ProjectID,
+			"idempotency_key":  e.IdempotencyKey,
+			"error":            e.Error,
+			"received_at":      e.ReceivedAt,
+			"processed_at":     e.ProcessedAt,
+		}
+		sanitized = append(sanitized, entry)
+	}
+	writeJSON(w, http.StatusOK, sanitized)
 }

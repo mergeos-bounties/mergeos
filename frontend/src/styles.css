@@ -14404,6 +14404,15 @@ svg {
   color: var(--green);
 }
 
+.dash-breadcrumb-link {
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.dash-breadcrumb-link:hover {
+  color: #273244;
+}
+
 .dash-breadcrumb strong {
   min-width: 0;
   overflow: hidden;
