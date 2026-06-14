@@ -1694,7 +1694,7 @@ func (s *Server) evaluateProjectPrice(w http.ResponseWriter, r *http.Request) {
 	midCents := ((llmResp.SuggestedLow + llmResp.SuggestedHigh) / 2) * 100
 
 	result := &ProjectPriceEvaluationResponse{
-		ProtocolVersion:     "mergeos.estimate.llm.v1",
+		ProtocolVersion:     "mergeos.estimate.v1",
 		Kind:                "project_estimate",
 		SuggestedPriceCents: midCents,
 		SuggestedRange: PriceRange{
