@@ -118,6 +118,26 @@ func (s *Store) ListAttachments(userID string) []*Attachment {
 	return attachments
 }
 
+func safeAttachmentDownloadName(name string) string {
+	name = strings.TrimSpace(name)
+	var builder strings.Builder
+	for _, r := range name {
+		switch {
+		case r == '"' || r == '\\' || r == '/':
+			builder.WriteByte('_')
+		case r == '\r' || r == '\n' || r == '\t' || r < 0x20 || r == 0x7f:
+			builder.WriteByte('_')
+		default:
+			builder.WriteRune(r)
+		}
+	}
+	cleaned := strings.TrimSpace(builder.String())
+	if cleaned == "" {
+		return "attachment"
+	}
+	return cleaned
+}
+
 func detectContentType(path string) string {
 	file, err := os.Open(path)
 	if err != nil {

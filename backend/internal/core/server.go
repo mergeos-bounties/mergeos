@@ -1631,7 +1631,7 @@ func (s *Server) downloadAttachment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", attachment.ContentType)
-	w.Header().Set("Content-Disposition", "inline; filename=\""+strings.ReplaceAll(attachment.OriginalName, "\"", "")+"\"")
+	w.Header().Set("Content-Disposition", "inline; filename=\""+safeAttachmentDownloadName(attachment.OriginalName)+"\"")
 	http.ServeFile(w, r, attachment.StoredPath)
 }
 
