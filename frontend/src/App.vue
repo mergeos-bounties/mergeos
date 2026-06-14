@@ -9100,7 +9100,14 @@
             <header class="auth-copy">
               <h2 id="auth-title">
                 {{ authTitle }}
-                <span v-if="authMode === 'login'" class="wave-mark">&#128075;</span>
+                <span v-if="authMode === 'login'" class="wave-mark" aria-hidden="true">
+                  <svg class="wave-hand-svg" viewBox="0 0 24 24" width="28" height="28" fill="#facc15" stroke="#ca8a04" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle;">
+                    <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v5" />
+                    <path d="M14 10V5a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v5" />
+                    <path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v4.5" />
+                    <path d="M6 10.5v1.5a6 6 0 0 0 6 6h2a6 6 0 0 0 6-6V9a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2" />
+                  </svg>
+                </span>
               </h2>
               <p>{{ authSubtitle }}</p>
             </header>
