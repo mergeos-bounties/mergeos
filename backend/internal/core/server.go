@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -1697,6 +1698,9 @@ func (s *Server) evaluateProjectPrice(w http.ResponseWriter, r *http.Request) {
 			Reason:      "Estimated by AI",
 		})
 	}
+	sort.Slice(breakdown, func(i, j int) bool {
+		return breakdown[i].Category < breakdown[j].Category
+	})
 
 	confidence := "medium"
 	if llmResp.ConfidenceLevel >= 0.8 {
