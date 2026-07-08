@@ -47,7 +47,17 @@ func (g *defaultUSDTGateway) VerifyWebhookSignature(payload []byte, signature st
 	mac := hmac.New(sha256.New, []byte(g.secretKey))
 	mac.Write(payload)
 	expectedMAC := hex.EncodeToString(mac.Sum(nil))
-	return hmac.Equal([]byte(expectedMAC), []byte(signature))
+
+	// Prevent timing attacks by comparing lengths first and then using constant time comparison if valid.
+	// However, hmac.Equal already does constant time comparison if the lengths are equal.
+	// Since signature is user input, we ensure it's converted safely.
+	sigBytes, err := hex.DecodeString(signature)
+	if err != nil {
+		return false // Invalid hex string
+	}
+	expectedBytes, _ := hex.DecodeString(expectedMAC)
+
+	return hmac.Equal(expectedBytes, sigBytes)
 }
 
 // ProcessEvent processes the USDT event idempotently
