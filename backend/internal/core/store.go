@@ -644,7 +644,6 @@ func (s *Store) CreateProject(ctx context.Context, userID string, req CreateProj
 	if req.PaymentMethod != PaymentPayPal && req.PaymentMethod != PaymentCrypto && req.PaymentMethod != PaymentUSDT && req.PaymentMethod != PaymentStripe {
 		return nil, errors.New("payment method must be paypal, crypto, solana spl, or stripe")
 	}
-	tokenSymbol := normalizedTokenSymbol(s.cfg.TokenSymbol)
 	sourceRepoURL := strings.TrimSpace(req.SourceRepoURL)
 	var importedIssues []*ImportedRepoIssue
 	if sourceRepoURL != "" {
@@ -668,6 +667,54 @@ func (s *Store) CreateProject(ctx context.Context, userID string, req CreateProj
 	if err != nil {
 		return nil, err
 	}
+	return s.createFundedProject(ctx, userID, req, sourceRepoURL, importedIssues, verification)
+}
+
+// CreateAdminFundedProject creates a funded project for maintainers without a live payment capture.
+// Used to seed sister products (e.g. NeraJob) onto the marketplace like Gomi.
+func (s *Store) CreateAdminFundedProject(ctx context.Context, userID string, req CreateProjectRequest) (*Project, error) {
+	if strings.TrimSpace(userID) == "" {
+		return nil, errors.New("login is required")
+	}
+	if strings.TrimSpace(req.Title) == "" {
+		return nil, errors.New("title is required")
+	}
+	req.PaymentMethod = normalizeFundingPaymentMethod(req.PaymentMethod)
+	if req.PaymentMethod == "" {
+		req.PaymentMethod = PaymentPayPal
+	}
+	if req.BudgetCents < 10000 {
+		return nil, errors.New("funding payment must be at least 100 USD")
+	}
+	if req.PaymentMethod != PaymentPayPal && req.PaymentMethod != PaymentCrypto && req.PaymentMethod != PaymentUSDT && req.PaymentMethod != PaymentStripe {
+		return nil, errors.New("payment method must be paypal, crypto, solana spl, or stripe")
+	}
+	sourceRepoURL := strings.TrimSpace(req.SourceRepoURL)
+	var importedIssues []*ImportedRepoIssue
+	if sourceRepoURL != "" {
+		imported, err := ImportRepoIssues(ctx, s.cfg, ImportRepoIssuesRequest{RepoURL: sourceRepoURL})
+		if err != nil {
+			return nil, err
+		}
+		if len(imported.Issues) == 0 {
+			return nil, errors.New("repo has no open issues to fund")
+		}
+		importedIssues = imported.Issues
+		sourceRepoURL = imported.RepoURL
+	}
+	reference := strings.TrimSpace(req.PaymentReference)
+	if reference == "" {
+		reference = "ADMIN-PAYPAL-SEED"
+	}
+	verification := PaymentVerification{
+		Provider:  "admin-paypal",
+		Reference: reference,
+	}
+	return s.createFundedProject(ctx, userID, req, sourceRepoURL, importedIssues, verification)
+}
+
+func (s *Store) createFundedProject(ctx context.Context, userID string, req CreateProjectRequest, sourceRepoURL string, importedIssues []*ImportedRepoIssue, verification PaymentVerification) (*Project, error) {
+	tokenSymbol := normalizedTokenSymbol(s.cfg.TokenSymbol)
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -689,7 +736,7 @@ func (s *Store) CreateProject(ctx context.Context, userID string, req CreateProj
 	if clientEmail == "" {
 		clientEmail = user.Email
 	}
-	clientEmail, err = normalizeEmail(clientEmail)
+	clientEmail, err := normalizeEmail(clientEmail)
 	if err != nil {
 		return nil, err
 	}

@@ -1,5 +1,7 @@
+import { blogSlugFromPath, getBlogPost, listBlogPosts } from './blog.js';
+
 const siteName = 'MergeOS';
-const defaultOrigin = 'https://mergeos.dev';
+const defaultOrigin = 'https://mergeos.shop';
 const defaultImagePath = '/favicon.svg';
 const mergeIdeRepositorySlug = 'mergeos-bounties/mergeos';
 const mergeIdeReleaseTag = 'mergeide-windows-latest';
@@ -27,6 +29,7 @@ const publicSeoPaths = {
   presale: '/presale',
   whitepaper: '/whitepaper',
   mergeide: '/mergeide',
+  blog: '/blog',
   terms: '/terms',
   privacy: '/privacy',
 };
@@ -48,6 +51,7 @@ const publicSeoAliases = {
   presale: ['/mrg-presale', '/token-presale', '/presale-register', '/reserve-mrg'],
   whitepaper: ['/mergeos-whitepaper', '/white-paper', '/paper', '/architecture-paper'],
   mergeide: ['/ide', '/merge-ide', '/download'],
+  blog: ['/blog-index', '/news', '/articles', '/learn'],
 };
 
 const publicSeoLabels = {
@@ -56,6 +60,7 @@ const publicSeoLabels = {
   airdrop: 'Airdrop',
   presale: 'Presale',
   whitepaper: 'Whitepaper',
+  blog: 'Blog',
 };
 
 const pageSeo = {
@@ -160,6 +165,19 @@ const pageSeo = {
     keywords: ['MergeIDE', 'MergeIDE Windows exe', 'AI IDE', 'repo-aware IDE', 'agent runbooks', 'task packet workspace', 'developer IDE'],
     type: 'SoftwareApplication',
   },
+  blog: {
+    title: 'MergeOS Blog | AI delivery, escrow, ledger proof, and contributor guides',
+    description:
+      'Read MergeOS guides on escrow-backed software delivery, AI agent workflows, public ledger proof, MRG bounty claims, and ecosystem tools like NeraJob.',
+    keywords: [
+      'MergeOS blog',
+      'AI software delivery guides',
+      'escrow bounties',
+      'MRG claim guide',
+      'public ledger proof',
+      'developer marketplace articles',
+    ],
+  },
   terms: {
     title: 'MergeOS Terms of Service | Funded software delivery rules',
     description: 'Read the MergeOS terms for customers, contributors, AI agents, escrow workflows, task claims, reviews, ledger proof, disputes, and payout releases.',
@@ -180,6 +198,9 @@ function normalizeSeoPath(path = '/') {
 
 export function seoPageFromPath(path = '/') {
   const normalized = normalizeSeoPath(path);
+  const blogRoute = blogSlugFromPath(normalized);
+  if (blogRoute?.page === 'blog-post') return 'blog-post';
+  if (blogRoute?.page === 'blog') return 'blog';
   const direct = Object.entries(publicSeoPaths).find(([, route]) => route === normalized);
   if (direct) return direct[0];
   const alias = Object.entries(publicSeoAliases).find(([, aliases]) =>
@@ -211,11 +232,20 @@ function safeJsonLd(value) {
 }
 
 export function getSeoDataForPath(path = '/', options = {}) {
+  const blogRoute = blogSlugFromPath(path);
   const page = options.page || seoPageFromPath(path);
-  const entry = pageSeo[page] || pageSeo.home;
-  const routePath = seoPathForPage(page);
+  const post = page === 'blog-post' ? getBlogPost(options.blogSlug || blogRoute?.slug || '') : null;
+  const entry = post
+    ? {
+        title: `${post.title} | MergeOS Blog`,
+        description: post.description,
+        keywords: post.keywords || post.tags || [],
+        type: 'article',
+      }
+    : pageSeo[page] || pageSeo.home;
+  const routePath = post ? post.path : seoPathForPage(page === 'blog-post' ? 'blog' : page);
   const origin = options.origin || defaultOrigin;
-  const canonical = absoluteUrl(routePath, origin);
+  const canonical = absoluteUrl(post ? post.path : routePath, origin);
   const image = absoluteUrl(defaultImagePath, origin);
   const graph = [
     {
@@ -224,6 +254,11 @@ export function getSeoDataForPath(path = '/', options = {}) {
       name: siteName,
       url: absoluteUrl('/', origin),
       logo: image,
+      sameAs: [
+        'https://github.com/mergeos-bounties/mergeos',
+        'https://github.com/mergeos-bounties/NeraJob',
+        'https://scan.mergeos.shop',
+      ],
     },
     {
       '@type': 'WebSite',
@@ -231,31 +266,63 @@ export function getSeoDataForPath(path = '/', options = {}) {
       name: siteName,
       url: absoluteUrl('/', origin),
       publisher: { '@id': absoluteUrl('/#organization', origin) },
+      potentialAction: {
+        '@type': 'SearchAction',
+        target: `${absoluteUrl('/marketplace', origin)}?q={search_term_string}`,
+        'query-input': 'required name=search_term_string',
+      },
     },
     {
-      '@type': 'WebPage',
+      '@type': post ? 'BlogPosting' : 'WebPage',
       '@id': `${canonical}#webpage`,
       url: canonical,
       name: entry.title,
+      headline: post ? post.title : entry.title,
       description: entry.description,
+      datePublished: post?.date,
+      dateModified: post?.updated || post?.date,
+      author: post
+        ? { '@type': 'Organization', name: post.author || siteName }
+        : { '@id': absoluteUrl('/#organization', origin) },
       isPartOf: { '@id': absoluteUrl('/#website', origin) },
       about: { '@id': absoluteUrl('/#organization', origin) },
+      mainEntityOfPage: canonical,
     },
   ];
 
-  if (['airdrop', 'presale', 'whitepaper'].includes(page)) {
+  if (['airdrop', 'presale', 'whitepaper', 'blog'].includes(page) || post) {
+    const crumbs = [
+      ['home', publicSeoPaths.home],
+      ['blog', publicSeoPaths.blog],
+    ];
+    if (post) crumbs.push([post.slug, post.path]);
+    else if (page !== 'blog') {
+      crumbs.splice(1, 1, ['product', publicSeoPaths.product], [page, routePath]);
+    }
     graph.push({
       '@type': 'BreadcrumbList',
       '@id': `${canonical}#breadcrumb`,
-      itemListElement: [
-        ['home', publicSeoPaths.home],
-        ['product', publicSeoPaths.product],
-        [page, routePath],
-      ].map(([key, pathValue], index) => ({
+      itemListElement: crumbs.map(([key, pathValue], index) => ({
         '@type': 'ListItem',
         position: index + 1,
-        name: publicSeoLabels[key] || key,
+        name: publicSeoLabels[key] || (post && key === post.slug ? post.title : key),
         item: absoluteUrl(pathValue, origin),
+      })),
+    });
+  }
+
+  if (page === 'blog' && !post) {
+    graph.push({
+      '@type': 'Blog',
+      '@id': `${canonical}#blog`,
+      name: 'MergeOS Blog',
+      url: canonical,
+      blogPost: listBlogPosts().map((item) => ({
+        '@type': 'BlogPosting',
+        headline: item.title,
+        url: absoluteUrl(item.path || `/blog/${item.slug}`, origin),
+        datePublished: item.date,
+        description: item.description,
       })),
     });
   }
@@ -857,7 +924,7 @@ export function getSeoDataForPath(path = '/', options = {}) {
 
   return {
     page,
-    path: routePath,
+    path: post ? post.path : routePath,
     title: entry.title,
     description: entry.description,
     keywords: entry.keywords || [],
@@ -865,7 +932,7 @@ export function getSeoDataForPath(path = '/', options = {}) {
     image,
     robots: 'index, follow, max-image-preview:large',
     locale: options.locale || 'en_US',
-    type: page === 'mergeide' ? 'product' : 'website',
+    type: page === 'mergeide' ? 'product' : post ? 'article' : 'website',
     structuredData: {
       '@context': 'https://schema.org',
       '@graph': graph,

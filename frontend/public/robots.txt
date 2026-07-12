@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Sitemap: https://mergeos.shop/sitemap.xml
+
+Allow: /blog
+Allow: /marketplace
+Allow: /ledger
+Allow: /protocol
+Allow: /whitepaper
+Allow: /mergeide

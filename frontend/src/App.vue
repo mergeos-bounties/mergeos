@@ -98,6 +98,7 @@
         <a href="/marketplace" @click.prevent="closeProjectWizard(); openPublicPage('marketplace')">{{ publicNavCopy.marketplace }}</a>
         <a :href="publicPathForPage('live')" @click.prevent="closeProjectWizard(); openPublicPage('live')">{{ publicNavCopy.liveFeed }}</a>
         <a href="/how-it-works" @click.prevent="closeProjectWizard(); openPublicPage('how-it-works')">{{ publicNavCopy.howItWorks }}</a>
+        <a href="/blog" @click.prevent="closeProjectWizard(); openPublicPage('blog')">Blog</a>
         <a :href="publicPathForPage('ledger')" @click.prevent="closeProjectWizard(); openPublicPage('ledger')">{{ publicNavCopy.ledger }}</a>
         <a :href="publicPathForPage('protocol')" @click.prevent="closeProjectWizard(); openPublicPage('protocol')">{{ publicNavCopy.protocol }}</a>
       </nav>
@@ -4519,6 +4520,7 @@
           <a href="/marketplace" :class="{ 'nav-active': publicPage === 'marketplace' }" @click.prevent="openPublicPage('marketplace')">{{ publicNavCopy.marketplace }}</a>
           <a :href="publicPathForPage('live')" :class="{ 'nav-active': publicPage === 'live' }" @click.prevent="openPublicPage('live')">{{ publicNavCopy.liveFeed }}</a>
           <a href="/how-it-works" :class="{ 'nav-active': publicPage === 'how-it-works' }" @click.prevent="openPublicPage('how-it-works')">{{ publicNavCopy.howItWorks }}</a>
+          <a href="/blog" :class="{ 'nav-active': publicPage === 'blog' || publicPage === 'blog-post' }" @click.prevent="openPublicPage('blog')">Blog</a>
           <a :href="publicPathForPage('ledger')" :class="{ 'nav-active': publicPage === 'ledger' }" @click.prevent="openPublicPage('ledger')">{{ publicNavCopy.ledger }}</a>
           <a :href="publicPathForPage('protocol')" :class="{ 'nav-active': publicPage === 'protocol' }" @click.prevent="openPublicPage('protocol')">{{ publicNavCopy.protocol }}</a>
         </nav>
@@ -4760,6 +4762,59 @@
           </div>
         </aside>
 
+      </div>
+    </main>
+
+    <main v-else-if="publicPage === 'blog' || publicPage === 'blog-post'" id="top" class="public-blog-page">
+      <div class="home-container blog-shell">
+        <header class="blog-hero">
+          <span class="marketplace-eyebrow">MERGEOS BLOG</span>
+          <h1>{{ publicPage === 'blog-post' && activeBlogPost ? activeBlogPost.title : 'Guides for escrow, agents, and proof' }}</h1>
+          <p>
+            {{
+              publicPage === 'blog-post' && activeBlogPost
+                ? activeBlogPost.description
+                : 'Practical articles on AI software delivery, funded bounties, public ledger proof, and the MergeOS ecosystem—including NeraJob.'
+            }}
+          </p>
+          <div class="marketplace-actions">
+            <button class="secondary-button large" type="button" @click="openPublicPage('blog')">All posts</button>
+            <button class="primary-button large" type="button" @click="openPublicPage('marketplace')">Marketplace</button>
+          </div>
+        </header>
+
+        <section v-if="publicPage === 'blog'" class="blog-post-grid" aria-label="Blog posts">
+          <article v-for="post in publicBlogPosts" :key="post.slug" class="blog-post-card">
+            <div class="blog-post-meta">
+              <time :datetime="post.date">{{ post.date }}</time>
+              <span>{{ (post.tags || []).slice(0, 2).join(' · ') }}</span>
+            </div>
+            <h2>
+              <a :href="'/blog/' + post.slug" @click.prevent="openBlogPost(post.slug)">{{ post.title }}</a>
+            </h2>
+            <p>{{ post.description }}</p>
+            <button class="secondary-button compact" type="button" @click="openBlogPost(post.slug)">Read article</button>
+          </article>
+        </section>
+
+        <article v-else-if="activeBlogPost" class="blog-article">
+          <div class="blog-post-meta">
+            <time :datetime="activeBlogPost.date">{{ activeBlogPost.date }}</time>
+            <span>{{ activeBlogPost.author }}</span>
+            <a :href="activeBlogPost.markdownPath" rel="noopener">Markdown</a>
+          </div>
+          <div class="blog-article-body" v-html="activeBlogHtml"></div>
+          <footer class="blog-article-footer">
+            <button class="secondary-button compact" type="button" @click="openPublicPage('blog')">← Back to blog</button>
+            <button class="primary-button compact" type="button" @click="openPublicPage('how-it-works')">How MergeOS works</button>
+          </footer>
+        </article>
+
+        <section v-else class="blog-article">
+          <h2>Article not found</h2>
+          <p>That post is missing. Browse the full index instead.</p>
+          <button class="primary-button compact" type="button" @click="openPublicPage('blog')">View all posts</button>
+        </section>
       </div>
     </main>
 
@@ -9295,6 +9350,7 @@
 <script setup>
 import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue';
 import { getSeoDataForPath } from './seo.js';
+import { getBlogPost, listBlogPosts, markdownToHtml } from './blog.js';
 import {
   ArrowLeft,
   ArrowRight,
@@ -9380,6 +9436,7 @@ const publicPagePaths = {
   presale: '/presale',
   whitepaper: '/whitepaper',
   mergeide: '/mergeide',
+  blog: '/blog',
   terms: '/terms',
   privacy: '/privacy',
 };
@@ -9400,6 +9457,7 @@ const publicPagePathAliases = {
   presale: ['/mrg-presale', '/token-presale', '/presale-register', '/reserve-mrg'],
   whitepaper: ['/mergeos-whitepaper', '/white-paper', '/paper', '/architecture-paper'],
   mergeide: ['/ide', '/merge-ide', '/download'],
+  blog: ['/blog-index', '/news', '/articles', '/learn'],
 };
 const publicPageNames = new Set(Object.keys(publicPagePaths));
 const whitepaperDownloadPath = '/whitepaper/mergeos-whitepaper.md';
@@ -11775,11 +11833,15 @@ function normalizeRoutePath(path = '/') {
 }
 
 function normalizePublicPage(page = 'home') {
+  if (page === 'blog-post') return 'blog-post';
   return publicPageNames.has(page) ? page : 'home';
 }
 
 function publicPageFromPath(path = '/') {
   const normalizedPath = normalizeRoutePath(path);
+  if (normalizedPath === '/blog') return 'blog';
+  const blogMatch = normalizedPath.match(/^\/blog\/([^/]+)$/);
+  if (blogMatch) return 'blog-post';
   const match = Object.entries(publicPagePaths).find(([, routePath]) => routePath === normalizedPath);
   if (match) return match[0];
   const aliasMatch = Object.entries(publicPagePathAliases).find(([, aliases]) =>
@@ -11789,8 +11851,16 @@ function publicPageFromPath(path = '/') {
   return match?.[0] || 'home';
 }
 
-function publicPathForPage(page = 'home') {
+function publicPathForPage(page = 'home', slug = '') {
+  if (page === 'blog-post' && slug) return `/blog/${encodeURIComponent(slug)}`;
+  if (page === 'blog') return '/blog';
   return publicPagePaths[normalizePublicPage(page)] || '/';
+}
+
+function blogSlugFromRoutePath(path = '/') {
+  const normalizedPath = normalizeRoutePath(path);
+  const match = normalizedPath.match(/^\/blog\/([^/]+)$/);
+  return match ? decodeURIComponent(match[1] || '') : '';
 }
 
 function normalizeProjectWizardStep(step = 1) {
@@ -12056,6 +12126,8 @@ const initialProjectWizardRoute = projectWizardRouteFromPath(initialRoutePath);
 const initialDashboardRoute = dashboardRouteFromPath(initialRoutePath);
 const initialPublicPage = publicPageFromPath(initialRoutePath);
 const publicPage = ref(initialPublicPage);
+const publicBlogSlug = ref(blogSlugFromRoutePath(initialRoutePath));
+const publicBlogPosts = listBlogPosts();
 const publicModeVisible = ref(!initialDashboardRoute && (Boolean(initialProjectWizardRoute) || initialPublicPage !== 'home'));
 
 const projectWizardVisible = ref(Boolean(initialProjectWizardRoute));
@@ -25511,15 +25583,15 @@ function refreshTokenPageData() {
   if (publicPage.value === 'presale') void loadRuntimeConfig().catch(() => {});
 }
 
-function updatePublicBrowserPath(page, replace = false) {
+function updatePublicBrowserPath(page, replace = false, slug = '') {
   if (!hasWindow) return;
-  const targetPath = publicPathForPage(page);
+  const targetPath = publicPathForPage(page, slug || publicBlogSlug.value);
   const currentPath = normalizeRoutePath(window.location.pathname);
   if (currentPath === targetPath && !window.location.search && !window.location.hash) {
     return;
   }
   const method = replace ? 'replaceState' : 'pushState';
-  window.history[method]({ publicPage: page }, '', targetPath);
+  window.history[method]({ publicPage: page, blogSlug: slug || publicBlogSlug.value || '' }, '', targetPath);
 }
 
 function updateProjectWizardBrowserPath(replace = false) {
@@ -25560,16 +25632,37 @@ function openPublicPage(page, options = {}) {
   closeNavContextMenu();
   publicModeVisible.value = true;
   projectWizardVisible.value = false;
-  const nextPage = normalizePublicPage(page);
+  let nextPage = normalizePublicPage(page);
+  if (options.blogSlug) {
+    nextPage = 'blog-post';
+    publicBlogSlug.value = String(options.blogSlug || '').trim();
+  } else if (nextPage === 'blog') {
+    publicBlogSlug.value = '';
+  } else if (nextPage === 'blog-post' && !publicBlogSlug.value) {
+    nextPage = 'blog';
+  }
   publicPage.value = nextPage;
   loadPublicPageData(nextPage);
-  updatePublicBrowserPath(nextPage, Boolean(options.replace));
+  updatePublicBrowserPath(nextPage, Boolean(options.replace), publicBlogSlug.value);
   if (!hasWindow) return;
   if (options.scroll === false) return;
   window.requestAnimationFrame(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 }
+
+function openBlogPost(slug = '') {
+  openPublicPage('blog-post', { blogSlug: slug });
+}
+
+const activeBlogPost = computed(() => {
+  if (publicPage.value !== 'blog-post') return null;
+  return getBlogPost(publicBlogSlug.value);
+});
+const activeBlogHtml = computed(() => {
+  const post = activeBlogPost.value;
+  return post ? markdownToHtml(post.body) : '';
+});
 
 function syncPublicPageFromBrowserPath() {
   if (!hasWindow) return;
@@ -25599,6 +25692,7 @@ function syncPublicPageFromBrowserPath() {
   projectWizardVisible.value = false;
   const nextPage = publicPageFromPath(window.location.pathname);
   publicPage.value = nextPage;
+  publicBlogSlug.value = blogSlugFromRoutePath(window.location.pathname);
   loadPublicPageData(nextPage);
 }
 

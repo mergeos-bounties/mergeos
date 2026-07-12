@@ -84,6 +84,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/admin/users", s.adminUsers)
 	mux.HandleFunc("PATCH /api/admin/users/{id}", s.updateAdminUser)
 	mux.HandleFunc("GET /api/admin/projects", s.adminProjects)
+	mux.HandleFunc("POST /api/admin/projects", s.adminCreateProject)
 	mux.HandleFunc("GET /api/admin/tasks", s.adminTasks)
 	mux.HandleFunc("GET /api/admin/tasks/{id}/pulls", s.adminTaskPullRequests)
 	mux.HandleFunc("POST /api/admin/tasks/{id}/pulls/{number}/merge", s.mergeAdminTaskPullRequest)
@@ -1762,6 +1763,31 @@ func (s *Server) createProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	project, err := s.store.CreateProject(r.Context(), user.ID, req)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	s.broadcastLiveFeedEvent("project_created")
+	writeJSON(w, http.StatusCreated, project)
+}
+
+func (s *Server) adminCreateProject(w http.ResponseWriter, r *http.Request) {
+	user, ok := s.requireAdmin(w, r)
+	if !ok {
+		return
+	}
+	var req CreateProjectRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	if strings.TrimSpace(string(req.PaymentMethod)) == "" {
+		req.PaymentMethod = PaymentPayPal
+	}
+	if strings.TrimSpace(req.PaymentReference) == "" {
+		req.PaymentReference = "ADMIN-PAYPAL-SEED"
+	}
+	project, err := s.store.CreateAdminFundedProject(r.Context(), user.ID, req)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
