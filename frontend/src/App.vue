@@ -11807,6 +11807,34 @@ function projectWizardRouteFromPath(path = '/') {
   return null;
 }
 
+function dashboardRouteFromPath(path = '/') {
+  const normalizedPath = normalizeRoutePath(path);
+  if (normalizedPath === '/dashboard') return { section: 'projects', focus: 'overview', projectID: '' };
+  const projectMatch = normalizedPath.match(/^\/dashboard\/projects\/([^/]+)$/);
+  if (projectMatch) {
+    return {
+      section: 'projects',
+      focus: 'overview',
+      projectID: decodeURIComponent(projectMatch[1] || ''),
+    };
+  }
+  const sectionMatch = normalizedPath.match(/^\/dashboard\/([^/]+)$/);
+  if (sectionMatch) {
+    return {
+      section: sectionMatch[1] || 'projects',
+      focus: 'overview',
+      projectID: '',
+    };
+  }
+  return null;
+}
+
+function dashboardPathForState(section = dashboardSection.value, projectID = selectedDashboardProjectID.value) {
+  if (section === 'projects' && projectID) return `/dashboard/projects/${encodeURIComponent(projectID)}`;
+  if (section && section !== 'projects') return `/dashboard/${encodeURIComponent(section)}`;
+  return '/dashboard';
+}
+
 function projectWizardPathForState(stage = 'setup', step = 1) {
   if (stage === 'funding') return projectWizardStagePaths.funding;
   if (stage === 'success') return projectWizardStagePaths.success;
@@ -12025,9 +12053,10 @@ let toastTimer = 0;
 
 const initialRoutePath = props.initialPath || (hasWindow ? window.location.pathname : '/');
 const initialProjectWizardRoute = projectWizardRouteFromPath(initialRoutePath);
+const initialDashboardRoute = dashboardRouteFromPath(initialRoutePath);
 const initialPublicPage = publicPageFromPath(initialRoutePath);
 const publicPage = ref(initialPublicPage);
-const publicModeVisible = ref(Boolean(initialProjectWizardRoute) || initialPublicPage !== 'home');
+const publicModeVisible = ref(!initialDashboardRoute && (Boolean(initialProjectWizardRoute) || initialPublicPage !== 'home'));
 
 const projectWizardVisible = ref(Boolean(initialProjectWizardRoute));
 const projectWizardStage = ref(initialProjectWizardRoute?.stage || 'setup');
@@ -12216,9 +12245,9 @@ const dashboardError = ref('');
 const dashboardSearch = ref('');
 const dashboardMobileSearchOpen = ref(false);
 const dashboardMobileNavOpen = ref(false);
-const dashboardSection = ref('projects');
-const dashboardProjectFocus = ref('overview');
-const selectedDashboardProjectID = ref('');
+const dashboardSection = ref(initialDashboardRoute?.section || 'projects');
+const dashboardProjectFocus = ref(initialDashboardRoute?.focus || 'overview');
+const selectedDashboardProjectID = ref(initialDashboardRoute?.projectID || '');
 const dashboardProjectActionsVisible = ref(false);
 const dashboardProjectHeader = ref(null);
 const dashboardProjectListPanel = ref(null);
@@ -25508,6 +25537,25 @@ function updateProjectWizardBrowserPath(replace = false) {
   );
 }
 
+function updateDashboardBrowserPath(replace = false) {
+  if (!hasWindow) return;
+  const targetPath = dashboardPathForState();
+  const currentPath = normalizeRoutePath(window.location.pathname);
+  if (currentPath === targetPath && !window.location.search && !window.location.hash) {
+    return;
+  }
+  const method = replace ? 'replaceState' : 'pushState';
+  window.history[method](
+    {
+      dashboard: true,
+      section: dashboardSection.value,
+      projectID: selectedDashboardProjectID.value || '',
+    },
+    '',
+    targetPath,
+  );
+}
+
 function openPublicPage(page, options = {}) {
   closeNavContextMenu();
   publicModeVisible.value = true;
@@ -25525,6 +25573,20 @@ function openPublicPage(page, options = {}) {
 
 function syncPublicPageFromBrowserPath() {
   if (!hasWindow) return;
+  const dashboardRoute = dashboardRouteFromPath(window.location.pathname);
+  if (dashboardRoute) {
+    projectWizardVisible.value = false;
+    publicModeVisible.value = false;
+    dashboardSection.value = dashboardRoute.section;
+    dashboardProjectFocus.value = normalizeDashboardProjectFocus(dashboardRoute.focus);
+    if (dashboardRoute.projectID) {
+      selectedDashboardProjectID.value = dashboardRoute.projectID;
+    }
+    if (user.value) {
+      void loadDashboardData({ silent: true, selectProjectID: dashboardRoute.projectID || selectedDashboardProjectID.value });
+    }
+    return;
+  }
   publicModeVisible.value = true;
   const wizardRoute = projectWizardRouteFromPath(window.location.pathname);
   if (wizardRoute) {
@@ -26194,6 +26256,7 @@ function openDashboard() {
     void loadDashboardData({ silent: true });
     void loadWorkerDashboardData({ silent: true });
   }
+  updateDashboardBrowserPath();
   if (!hasWindow) return;
   window.requestAnimationFrame(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -26239,7 +26302,14 @@ async function selectDashboardProject(projectID) {
   if (!projectID) return;
   dashboardProjectActionsVisible.value = false;
   selectedDashboardProjectID.value = projectID;
-  void loadDashboardDeliverySnapshotData(projectID, { silent: true });
+  dashboardSection.value = 'projects';
+  dashboardProjectFocus.value = 'overview';
+  updateDashboardBrowserPath();
+  await Promise.allSettled([
+    loadDashboardData({ silent: true, selectProjectID: projectID }),
+    loadDashboardDeliverySnapshotData(projectID, { silent: true }),
+    loadDashboardProjectDashboardData(projectID, { silent: true }),
+  ]);
   await nextTick();
   if (!hasWindow) return;
   dashboardProjectHeader.value?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -26419,6 +26489,7 @@ function openDashboardSection(section, options = {}) {
     if (section === 'projects') {
       dashboardProjectFocus.value = normalizeDashboardProjectFocus(options.focus);
     }
+    updateDashboardBrowserPath(Boolean(options.replace));
     if (section === 'worker') {
       void loadWorkerDashboardData({ silent: true });
     }
@@ -31779,6 +31850,9 @@ async function loadDashboardData(options = {}) {
     selectedDashboardProjectID.value = selectedExists
       ? requestedProjectID
       : (dashboardSortedProjects.value[0]?.id || '');
+    if (!publicModeVisible.value && dashboardSection.value === 'projects') {
+      updateDashboardBrowserPath(Boolean(options.replacePath));
+    }
     if (selectedDashboardProjectID.value) {
       await Promise.all([
         loadDashboardDeliverySnapshotData(selectedDashboardProjectID.value, { silent: true }),
@@ -33622,7 +33696,16 @@ async function restoreSession() {
   if (!token.value) return;
   try {
     user.value = await api('/api/auth/me');
-    await loadDashboardData({ silent: true });
+    const dashboardRoute = hasWindow ? dashboardRouteFromPath(window.location.pathname) : initialDashboardRoute;
+    if (dashboardRoute) {
+      publicModeVisible.value = false;
+      dashboardSection.value = dashboardRoute.section;
+      dashboardProjectFocus.value = normalizeDashboardProjectFocus(dashboardRoute.focus);
+      if (dashboardRoute.projectID) {
+        selectedDashboardProjectID.value = dashboardRoute.projectID;
+      }
+    }
+    await loadDashboardData({ silent: true, selectProjectID: dashboardRoute?.projectID || selectedDashboardProjectID.value });
     await loadWorkerDashboardData({ silent: true });
     if (isAdminUser.value) {
       await loadAdminConsoleData({ silent: true });
@@ -33690,7 +33773,9 @@ onMounted(async () => {
     window.addEventListener('blur', handleNavContextViewportLeave);
     document.addEventListener('click', handleDashboardNotificationOutsideClick);
     if (!handledGitHubCallback && !handledPasswordResetToken && !paypalCheckoutPath) {
-      if (projectWizardVisible.value) {
+      if (dashboardRouteFromPath(window.location.pathname)) {
+        updateDashboardBrowserPath(true);
+      } else if (projectWizardVisible.value) {
         restoreProjectDraft({ silent: true, restoreStep: false });
         if (!guardProjectWizardRouteValidation({ replace: true, silent: false })) {
           updateProjectWizardBrowserPath(true);

@@ -2291,6 +2291,26 @@ test('signed-in mobile dashboard keeps nav, actions, and popovers phone-safe', a
   assert.match(cssSource, /@media \(max-width: 430px\)[\s\S]*\.dashboard-shell \.dash-command-metrics\s*\{[\s\S]*grid-auto-flow: row !important;[\s\S]*mask-image: none !important;/);
 });
 
+test('dashboard project routes preserve selected project context after login', async () => {
+  const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
+  const cssSource = await fs.readFile(new URL('./src/styles.css', import.meta.url), 'utf-8');
+
+  assert.match(appSource, /function dashboardRouteFromPath\(path = '\/'\)/);
+  assert.ok(appSource.includes("normalizedPath.match(/^\\/dashboard\\/projects\\/([^/]+)$/)"));
+  assert.match(appSource, /const initialDashboardRoute = dashboardRouteFromPath\(initialRoutePath\);/);
+  assert.match(appSource, /const publicModeVisible = ref\(!initialDashboardRoute/);
+  assert.match(appSource, /const selectedDashboardProjectID = ref\(initialDashboardRoute\?\.projectID \|\| ''\);/);
+  assert.match(appSource, /function updateDashboardBrowserPath\(replace = false\)/);
+  assert.match(appSource, /window\.history\[method\]\([\s\S]*dashboard: true,[\s\S]*projectID: selectedDashboardProjectID\.value \|\| '',/);
+  assert.match(appSource, /const dashboardRoute = dashboardRouteFromPath\(window\.location\.pathname\);[\s\S]*loadDashboardData\(\{ silent: true, selectProjectID: dashboardRoute\.projectID \|\| selectedDashboardProjectID\.value \}\);/);
+  assert.match(appSource, /await Promise\.allSettled\(\[[\s\S]*loadDashboardData\(\{ silent: true, selectProjectID: projectID \}\),[\s\S]*loadDashboardDeliverySnapshotData\(projectID, \{ silent: true \}\),[\s\S]*loadDashboardProjectDashboardData\(projectID, \{ silent: true \}\),/);
+  assert.match(appSource, /await loadDashboardData\(\{ silent: true, selectProjectID: dashboardRoute\?\.projectID \|\| selectedDashboardProjectID\.value \}\);/);
+  assert.match(cssSource, /Issue #17 project route owner: selected dashboard projects stay readable and non-overflowing/);
+  assert.match(cssSource, /\.dashboard-shell \.dash-project-actions\s*\{[\s\S]*flex-wrap: wrap;/);
+  assert.match(cssSource, /@media \(max-width: 760px\)[\s\S]*\.dashboard-shell \.dash-project-title \.live-badge\s*\{[\s\S]*grid-column: 1 \/ -1 !important;/);
+  assert.match(cssSource, /@media \(max-width: 760px\)[\s\S]*\.dashboard-shell \.dash-overview-grid,[\s\S]*\.dashboard-shell \.dash-pr-row\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) !important;/);
+});
+
 test('AI workflow dashboard exposes stage checklists from the protocol contract', async () => {
   const appSource = await fs.readFile(new URL('./src/App.vue', import.meta.url), 'utf-8');
   const cssSource = await fs.readFile(new URL('./src/styles.css', import.meta.url), 'utf-8');
