@@ -133,8 +133,7 @@ func projectEscrowLedgerApplies(project *Project, taskIDs map[string]bool, entry
 	if projectID == "" {
 		return false
 	}
-	haystack := strings.Join([]string{entry.FromAccount, entry.ToAccount, entry.Reference}, "|")
-	return strings.Contains(haystack, projectID)
+	return ledgerEntryReferencesID(entry, projectID)
 }
 
 func projectEscrowTaskRow(task *Task, paidCents int64) ProjectEscrowTask {
