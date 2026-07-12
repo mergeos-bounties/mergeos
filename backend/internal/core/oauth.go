@@ -21,14 +21,7 @@ func generateState() string {
 // Redirects to provider
 func (s *Server) googleLogin(w http.ResponseWriter, r *http.Request) {
 	state := generateState()
-	// Set HttpOnly state cookie
-	http.SetCookie(w, &http.Cookie{
-		Name:     "google_oauth_state",
-		Value:    state,
-		Path:     "/",
-		MaxAge:   300, // 5 mins
-		HttpOnly: true,
-	})
+	s.setOAuthStateCookie(w, "google_oauth_state", state)
 
 	clientID := s.cfg.GoogleClientID
 	if clientID == "" {
@@ -152,13 +145,7 @@ func (s *Server) googleCallback(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) githubBrowserLogin(w http.ResponseWriter, r *http.Request) {
 	state := generateState()
-	http.SetCookie(w, &http.Cookie{
-		Name:     "github_oauth_state",
-		Value:    state,
-		Path:     "/",
-		MaxAge:   300,
-		HttpOnly: true,
-	})
+	s.setOAuthStateCookie(w, "github_oauth_state", state)
 
 	clientID := s.cfg.GitHubOAuthClientID
 	if clientID == "" {
@@ -345,4 +332,17 @@ func isLoopbackRedirectHost(host string) bool {
 func firstForwardedHeader(value string) string {
 	head, _, _ := strings.Cut(value, ",")
 	return strings.TrimSpace(head)
+}
+
+func (s *Server) setOAuthStateCookie(w http.ResponseWriter, name, state string) {
+	cookie := &http.Cookie{
+		Name:     name,
+		Value:    state,
+		Path:     "/",
+		MaxAge:   300,
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+		Secure:   s.cfg.Environment != "local",
+	}
+	http.SetCookie(w, cookie)
 }
