@@ -31,10 +31,23 @@ Admin ledger payouts use the same scale (`future-small` 25, `future-medium` 50, 
 
 | Bounty | Type | Reward | Claimed or submitted by | Current status |
 | --- | --- | ---: | --- | --- |
-| [#3 AI project evaluation](https://github.com/mergeos-bounties/mergeos/issues/3) | Feature bounty | 50 MRG | Prior claims on closed PRs; task already paid | Issue remains open for remaining AI UX gaps; rule-based evaluate-price exists on master |
-| [#7 PayPal sandbox payment flow](https://github.com/mergeos-bounties/mergeos/issues/7) | Feature bounty | 100 MRG | Multiple closed PRs | Open — needs non-duplicative sandbox proof against current master webhook path |
-| [#8 USDT crypto payment gateway](https://github.com/mergeos-bounties/mergeos/issues/8) | Feature bounty | 100 MRG | Prior accepted task payout | Open — incomplete stubs rejected; needs full ledger-wired webhook |
-| [#64 QA verification of submitted PRs](https://github.com/mergeos-bounties/mergeos/issues/64) | QA bounty | 300 MRG per PR | Ongoing | Open — verify open/merged bounty PRs with evidence |
+| [#1 Claim token intake](https://github.com/mergeos-bounties/mergeos/issues/1) | Claim intake | — | Open | Comment new claims here before opening a PR |
+| [#3 AI project evaluation](https://github.com/mergeos-bounties/mergeos/issues/3) | Feature bounty | 50 MRG | Prior claims; task already paid | Legacy open issue — prefer focused [#235](https://github.com/mergeos-bounties/mergeos/issues/235) |
+| [#7 PayPal sandbox payment flow](https://github.com/mergeos-bounties/mergeos/issues/7) | Feature bounty | 100 MRG | Multiple closed PRs | Open — non-duplicative sandbox proof vs current master |
+| [#8 USDT crypto payment gateway](https://github.com/mergeos-bounties/mergeos/issues/8) | Feature bounty | 100 MRG | Prior accepted payout | Open — full ledger-wired webhook only |
+| [#64 QA verification of submitted PRs](https://github.com/mergeos-bounties/mergeos/issues/64) | QA bounty | 300 MRG per PR | Ongoing | Verify open/merged bounty PRs with evidence |
+| [#231 Payment rails empty-state](https://github.com/mergeos-bounties/mergeos/issues/231) | Feature bounty | 100 MRG | Unclaimed | Open |
+| [#232 Stripe PaymentIntent funding rail](https://github.com/mergeos-bounties/mergeos/issues/232) | Feature bounty | 100 MRG | Unclaimed | Open |
+| [#233 SMTP notifications + offline fallback](https://github.com/mergeos-bounties/mergeos/issues/233) | Feature bounty | 50 MRG | Unclaimed | Open |
+| [#234 OAuth state cookie hardening](https://github.com/mergeos-bounties/mergeos/issues/234) | Bug bounty | 50 MRG | Unclaimed | Open — no mock regressions |
+| [#235 Gemini evaluate-price with fallback](https://github.com/mergeos-bounties/mergeos/issues/235) | Feature bounty | 100 MRG | Unclaimed | Open — backend-only preferred |
+| [#236 Funding wizard blocked-state](https://github.com/mergeos-bounties/mergeos/issues/236) | Feature bounty | 50 MRG | Unclaimed | Open |
+| [#237 Scan github worker alias aggregate](https://github.com/mergeos-bounties/mergeos/issues/237) | Feature bounty | 50 MRG | Unclaimed | Open / good first issue |
+| [#238 SDK evidence_required helpers](https://github.com/mergeos-bounties/mergeos/issues/238) | Feature bounty | 25 MRG | Unclaimed | Open / good first issue |
+| [#239 Password reset UX when SMTP offline](https://github.com/mergeos-bounties/mergeos/issues/239) | Bug bounty | 50 MRG | Unclaimed | Open |
+| [#240 Admin credit+comment template UX](https://github.com/mergeos-bounties/mergeos/issues/240) | Feature bounty | 100 MRG | Unclaimed | Open |
+| [#241 Bank transfer manual verify path](https://github.com/mergeos-bounties/mergeos/issues/241) | Feature bounty | 50 MRG | Unclaimed | Open |
+| [#242 Public config LOCAL-PAID leak regression](https://github.com/mergeos-bounties/mergeos/issues/242) | Bug bounty | 25 MRG | Unclaimed | Open / good first issue |
 
 ## Awarded Bounties
 
