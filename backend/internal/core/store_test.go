@@ -6714,6 +6714,17 @@ func TestAdminCanCreateManualLedgerCredit(t *testing.T) {
 	}
 }
 
+func TestManualCreditWorkerGitHubAliasUsesCanonicalPayoutAccount(t *testing.T) {
+	store := &Store{wallets: map[string]*Wallet{}}
+
+	if got, want := normalizeAdminCreditWorkerID("worker:github:EliasX45"), "github:eliasx45"; got != want {
+		t.Fatalf("admin worker id = %q, want %q", got, want)
+	}
+	if got, want := store.payoutAccountForWorkerLocked("worker:github:EliasX45"), "github:eliasx45"; got != want {
+		t.Fatalf("payout account = %q, want %q", got, want)
+	}
+}
+
 func TestAdminOpsQueueReturnsDisputeModerationAndPayoutItems(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := Config{

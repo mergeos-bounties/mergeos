@@ -67,6 +67,9 @@ func normalizeAdminCreditWorkerID(value string) string {
 		return ""
 	}
 	lower := strings.ToLower(value)
+	if strings.HasPrefix(lower, "worker:github:") {
+		return githubWorkerAccount(strings.TrimPrefix(lower, "worker:"))
+	}
 	if strings.HasPrefix(lower, "github:") {
 		return githubWorkerAccount(value)
 	}
