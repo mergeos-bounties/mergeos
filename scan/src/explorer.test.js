@@ -76,6 +76,8 @@ test('finds transactions, blocks and addresses from one search box', () => {
 test('treats github aliases as short public addresses', () => {
   assert.equal(githubUsernameFromAccount('github:hummusonrails'), 'hummusonrails');
   assert.equal(githubUsernameFromAccount('worker:github:hummusonrails'), 'hummusonrails');
+  assert.equal(normalizeLedgerAccount('worker:github:HummusOnRails'), 'github:hummusonrails');
+  assert.equal(normalizeLedgerAccount('github:/HummusOnRails/'), 'github:hummusonrails');
   assert.equal(githubProfileURL('github:hummusonrails'), 'https://github.com/hummusonrails');
   assert.equal(accountRole('github:hummusonrails'), 'GitHub Contributor');
 });
@@ -104,6 +106,38 @@ test('filters entries by type, account and free text', () => {
   assert.equal(filterEntries(entries, { type: 'token_mint' }).length, 1);
   assert.equal(filterEntries(entries, { account: 'project:prj_0001' }).length, 2);
   assert.equal(filterEntries(entries, { query: 'paypal' }).length, 1);
+});
+
+test('keeps github worker aliases on one scan account', () => {
+  const workerEntries = [
+    {
+      sequence: 1,
+      type: 'manual_credit',
+      from_account: 'reserve:task',
+      to_account: 'worker:github:HummusOnRails',
+      amount_cents: 25,
+      previous_hash: '0'.repeat(64),
+      entry_hash: 'a'.repeat(64),
+      created_at: '2026-05-26T00:00:00Z',
+    },
+    {
+      sequence: 2,
+      type: 'task_payment',
+      from_account: 'reserve:task',
+      to_account: 'github:hummusonrails',
+      amount_cents: 50,
+      previous_hash: 'a'.repeat(64),
+      entry_hash: 'b'.repeat(64),
+      created_at: '2026-05-26T00:01:00Z',
+    },
+  ];
+
+  const accounts = aggregateAccounts(workerEntries);
+  const worker = accounts.find((row) => row.account === 'github:hummusonrails');
+
+  assert.equal(worker.received_cents, 75);
+  assert.equal(worker.tx_count, 2);
+  assert.equal(filterEntries(workerEntries, { account: 'github:hummusonrails' }).length, 2);
 });
 
 test('builds explorer-level stats from ledger and marketplace payloads', () => {
