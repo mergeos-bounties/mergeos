@@ -16,6 +16,14 @@ Use this index as the fast public map for MergeOS bounty docs and current bounty
 | [LICENSE](LICENSE) | MIT license for this repository. |
 | [Claim Token issue #1](https://github.com/mergeos-bounties/mergeos/issues/1) | Intake queue for new bug bounty claims. |
 
+## Sister projects (mergeos-bounties org)
+
+| Repository | Purpose |
+| --- | --- |
+| [NeraJob](https://github.com/mergeos-bounties/NeraJob) | Python job scanner (global boards), CV builder, and apply assistant |
+| [Gomi](https://github.com/mergeos-bounties/Gomi) | Gomi Office IDE (Code - OSS multi-agent direction) |
+| [mergeos-contracts](https://github.com/mergeos-bounties/mergeos-contracts) | Contract sources related to MergeOS |
+
 ## Bounty Reward Scale
 
 | Bounty scope | Reward |
