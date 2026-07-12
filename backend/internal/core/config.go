@@ -111,6 +111,13 @@ func LoadConfig() Config {
 		adminEmail = getenv("ADMIN_EMAIL", defaultLocalAdminEmail)
 		adminPassword = getenv("ADMIN_PASSWORD", defaultLocalAdminPassword)
 	}
+	// Free local payment verifier must never be enabled in production unless an
+	// explicit break-glass flag is set. Production previously leaked LOCAL-PAID
+	// via /api/config when DEV_PAYMENT_ENABLED was left true in deploy env.
+	devPaymentEnabled := getenvBool("DEV_PAYMENT_ENABLED", devPaymentDefault)
+	if env == "production" && !getenvBool("DEV_PAYMENT_ALLOW_IN_PRODUCTION", false) {
+		devPaymentEnabled = false
+	}
 	payPalDefaultEnv := "sandbox"
 	if env == "production" {
 		payPalDefaultEnv = "live"
@@ -146,7 +153,7 @@ func LoadConfig() Config {
 		StatePath:                statePath,
 		DatabaseURL:              os.Getenv("DATABASE_URL"),
 		PlatformFeeBps:           getenvInt64("PLATFORM_FEE_BPS", 1000),
-		DevPaymentEnabled:        getenvBool("DEV_PAYMENT_ENABLED", devPaymentDefault),
+		DevPaymentEnabled:        devPaymentEnabled,
 		DevPaymentCode:           getenv("DEV_PAYMENT_CODE", defaultDevPaymentCode),
 		AdminEmail:               adminEmail,
 		AdminPassword:            adminPassword,

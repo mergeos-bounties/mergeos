@@ -170,7 +170,8 @@ func (s *Server) health(w http.ResponseWriter, _ *http.Request) {
 }
 
 func (s *Server) config(w http.ResponseWriter, _ *http.Request) {
-	writeJSON(w, http.StatusOK, RuntimeConfigResponse{
+	production := normalizeEnvironment(s.cfg.Environment) == "production"
+	response := RuntimeConfigResponse{
 		Environment:       s.cfg.Environment,
 		TokenSymbol:       s.cfg.TokenSymbol,
 		PaymentMode:       paymentMode(s.cfg),
@@ -181,25 +182,29 @@ func (s *Server) config(w http.ResponseWriter, _ *http.Request) {
 		PayPalReady:       s.cfg.PayPalReady(),
 		CryptoReady:       s.cfg.CryptoReady(),
 		StripeReady:       s.cfg.StripeReady(),
-		CardReady:         s.cfg.DevPaymentEnabled,
+		CardReady:         s.cfg.DevPaymentEnabled && !production,
 		StripePublicKey:   s.cfg.StripePublishableKey,
 		CardPublicKey:     s.cfg.StripePublishableKey,
 		PaymentRails:      paymentRails(s.cfg),
 		GitHubReady:       s.cfg.GitHubReady(),
 		SMTPReady:         s.cfg.SMTPReady(),
-		DevPaymentEnabled: s.cfg.DevPaymentEnabled,
-		DevPaymentCode:    s.devPaymentCode(),
+		DevPaymentEnabled: s.cfg.DevPaymentEnabled && !production,
+		DevPaymentCode:    s.publicDevPaymentCode(),
 		CryptoReceiver:    s.cfg.CryptoReceiver,
 		CryptoAsset:       s.cfg.CryptoAsset,
 		CryptoToken:       s.cfg.CryptoTokenContract,
-		BountyRoot:        s.cfg.BountyRoot,
-		UploadRoot:        s.cfg.UploadRoot,
-		AdminBootstrap:    s.cfg.AdminAutoPromote || strings.TrimSpace(s.cfg.AdminEmail) != "",
+		AdminBootstrap:    !production && (s.cfg.AdminAutoPromote || strings.TrimSpace(s.cfg.AdminEmail) != ""),
 		PrimaryDomain:     s.cfg.PrimaryDomain,
 		AdminDomain:       s.cfg.AdminDomain,
 		ScanDomain:        s.cfg.ScanDomain,
 		SSLReviewDomains:  s.cfg.SSLReviewDomains,
-	})
+	}
+	// Never expose local filesystem paths or free-payment codes on production public config.
+	if !production {
+		response.BountyRoot = s.cfg.BountyRoot
+		response.UploadRoot = s.cfg.UploadRoot
+	}
+	writeJSON(w, http.StatusOK, response)
 }
 
 func (s *Server) importRepoIssues(w http.ResponseWriter, r *http.Request) {
@@ -2078,6 +2083,15 @@ func (s *Server) devPaymentCode() string {
 		return ""
 	}
 	return s.cfg.DevPaymentCode
+}
+
+// publicDevPaymentCode is only returned for non-production runtimes so the free
+// local verifier secret cannot be scraped from /api/config on production.
+func (s *Server) publicDevPaymentCode() string {
+	if normalizeEnvironment(s.cfg.Environment) == "production" {
+		return ""
+	}
+	return s.devPaymentCode()
 }
 
 func (s *Server) evaluateProject(w http.ResponseWriter, r *http.Request) {

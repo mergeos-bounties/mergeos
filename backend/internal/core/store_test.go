@@ -201,6 +201,51 @@ func TestRuntimeConfigReturnsPaymentRails(t *testing.T) {
 	}
 }
 
+func TestRuntimeConfigRedactsDevPaymentOnProduction(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		Environment:       "production",
+		TokenSymbol:       defaultTokenSymbol,
+		StatePath:         filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:    1000,
+		DevPaymentEnabled: true,
+		DevPaymentCode:    defaultDevPaymentCode,
+		BountyRoot:        filepath.Join(tempDir, "bounties"),
+		UploadRoot:        filepath.Join(tempDir, "uploads"),
+		GitHubOwner:       defaultGitHubOwner,
+		SMTPFrom:          "noreply@mergeos.local",
+		PrimaryDomain:     "mergeos.shop",
+		AdminDomain:       "uta.mergeos.shop",
+		ScanDomain:        "scan.mergeos.shop",
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	server := NewServer(cfg, store, payments)
+	req := httptest.NewRequest(http.MethodGet, "/api/config", nil)
+	resp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(resp, req)
+	if resp.Code != http.StatusOK {
+		t.Fatalf("config status = %d, body = %s", resp.Code, resp.Body.String())
+	}
+	body := resp.Body.String()
+	if strings.Contains(body, defaultDevPaymentCode) {
+		t.Fatalf("production config leaked dev payment code: %s", body)
+	}
+	if strings.Contains(body, cfg.BountyRoot) || strings.Contains(body, cfg.UploadRoot) {
+		t.Fatalf("production config leaked local paths: %s", body)
+	}
+	var payload RuntimeConfigResponse
+	if err := json.Unmarshal(resp.Body.Bytes(), &payload); err != nil {
+		t.Fatal(err)
+	}
+	if payload.DevPaymentEnabled || payload.DevPaymentCode != "" || payload.CardReady {
+		t.Fatalf("production public config still advertised free payment verifier: %#v", payload)
+	}
+}
+
 func TestCreateCardPaymentIntentRouteUsesDevVerifier(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := Config{

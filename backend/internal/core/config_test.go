@@ -258,6 +258,28 @@ func TestLoadConfigProductionDefaultsAreStrict(t *testing.T) {
 	}
 }
 
+func TestLoadConfigProductionIgnoresDevPaymentUnlessBreakGlass(t *testing.T) {
+	withTempConfigDir(t)
+	clearConfigEnv(t)
+	t.Setenv("MERGEOS_ENV", "production")
+	t.Setenv("DEV_PAYMENT_ENABLED", "true")
+	t.Setenv("DEV_PAYMENT_CODE", "LOCAL-PAID")
+
+	cfg := LoadConfig()
+	if cfg.DevPaymentEnabled {
+		t.Fatal("production should ignore DEV_PAYMENT_ENABLED without break-glass flag")
+	}
+
+	t.Setenv("DEV_PAYMENT_ALLOW_IN_PRODUCTION", "true")
+	cfg = LoadConfig()
+	if !cfg.DevPaymentEnabled {
+		t.Fatal("break-glass flag should allow production dev payment when explicitly set")
+	}
+	if cfg.DevPaymentCode != "LOCAL-PAID" {
+		t.Fatalf("dev payment code = %q", cfg.DevPaymentCode)
+	}
+}
+
 func TestLoadConfigRealEnvWinsOverEnvFiles(t *testing.T) {
 	withTempConfigDir(t)
 	clearConfigEnv(t)
