@@ -21,6 +21,8 @@ Use this index as the fast public map for MergeOS bounty docs and current bounty
 | Repository | Purpose |
 | --- | --- |
 | [NeraJob](https://github.com/mergeos-bounties/NeraJob) | Python job scanner (global boards), CV builder, and apply assistant |
+| [Loru](https://github.com/mergeos-bounties/Loru) | Sign language training toolkit (sign→text / sign→voice) |
+| [PoseGuide](https://github.com/mergeos-bounties/PoseGuide) | Photography pose guidance (scene → standing pose coach) |
 | [Gomi](https://github.com/mergeos-bounties/Gomi) | Gomi Office IDE (Code - OSS multi-agent direction) |
 | [mergeos-contracts](https://github.com/mergeos-bounties/mergeos-contracts) | Contract sources related to MergeOS |
 

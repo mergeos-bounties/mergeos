@@ -762,13 +762,14 @@ func (s *Store) createFundedProject(ctx context.Context, userID string, req Crea
 		PaymentStatus:    "verified",
 		PaymentProvider:  verification.Provider,
 		PaymentReference: verification.Reference,
-		RepoVisibility:   "private-child-bounty-repo",
-		AllowAgents:      &allowAgents,
-		BudgetCents:      req.BudgetCents,
-		FeeCents:         fee,
-		WorkPoolCents:    workPool,
-		Status:           ProjectFunded,
-		CreatedAt:        now,
+		// Default: local workspace. Overridden below when a public source repo is funded.
+		RepoVisibility: "local-bounty-workspace",
+		AllowAgents:    &allowAgents,
+		BudgetCents:    req.BudgetCents,
+		FeeCents:       fee,
+		WorkPoolCents:  workPool,
+		Status:         ProjectFunded,
+		CreatedAt:      now,
 	}
 	if verification.Provider == "paypal" {
 		if err := s.attachPayPalOrderIntentLocked(user.ID, verification.Reference, PaymentOrderFlowProjectFunding, project.ID, "", req.BudgetCents); err != nil {
@@ -777,6 +778,16 @@ func (s *Store) createFundedProject(ctx context.Context, userID string, req Crea
 	}
 	if sourceRepoURL != "" && !strings.Contains(project.Brief, sourceRepoURL) {
 		project.Brief = "Source repository: " + sourceRepoURL + "\n\n" + project.Brief
+	}
+	// Bind to the public source product repo when funding imported issues.
+	// Never create a private mergeos-prj_* child repository.
+	if sourceRepoURL != "" {
+		if fullName, htmlURL := parseGitHubRepoURL(sourceRepoURL); fullName != "" {
+			project.BountyRepoName = fullName
+			project.RepoURL = htmlURL
+			project.RepoProvider = "github"
+			project.RepoVisibility = "source-repository"
+		}
 	}
 	for _, attachmentID := range req.AttachmentIDs {
 		attachment, ok := s.attachments[attachmentID]
@@ -806,9 +817,18 @@ func (s *Store) createFundedProject(ctx context.Context, userID string, req Crea
 	project.RepoProvider = repo.Provider
 	project.RepoURL = repo.URL
 	project.RepoLocalPath = repo.LocalPath
+	if project.RepoVisibility == "" || project.RepoVisibility == "private-child-bounty-repo" {
+		if repo.Provider == "github" {
+			project.RepoVisibility = "source-repository"
+		} else {
+			project.RepoVisibility = "local-bounty-workspace"
+		}
+	}
 	for _, task := range project.Tasks {
 		if issue, ok := repo.Issues[task.ID]; ok {
-			task.IssueNumber = issue.Number
+			if task.IssueNumber == 0 {
+				task.IssueNumber = issue.Number
+			}
 			if strings.TrimSpace(task.IssueURL) == "" {
 				task.IssueURL = issue.URL
 			}
@@ -831,7 +851,11 @@ func (s *Store) createFundedProject(ctx context.Context, userID string, req Crea
 		s.addLedger("task_reserve", "reserve:project:"+projectID, taskReserveAccount(), task.RewardCents, reference)
 	}
 	subject := "MergeOS project funded: " + project.Title
-	body := fmt.Sprintf("Hi %s,\n\nYour project %q is funded. MergeOS created bounty repo %s and split it into %d payable tasks.\n\nBudget: %s %s\nWork pool: %s %s\nAttachments: %d\n\nWe will notify you as tasks are accepted.", project.ClientName, project.Title, project.BountyRepoName, len(project.Tasks), formatTokenAmount(project.BudgetCents), tokenSymbol, formatTokenAmount(project.WorkPoolCents), tokenSymbol, len(project.Attachments))
+	repoLabel := project.BountyRepoName
+	if repoLabel == "" {
+		repoLabel = project.RepoURL
+	}
+	body := fmt.Sprintf("Hi %s,\n\nYour project %q is funded against %s and split into %d payable tasks.\n\nBudget: %s %s\nWork pool: %s %s\nAttachments: %d\n\nWe will notify you as tasks are accepted.", project.ClientName, project.Title, repoLabel, len(project.Tasks), formatTokenAmount(project.BudgetCents), tokenSymbol, formatTokenAmount(project.WorkPoolCents), tokenSymbol, len(project.Attachments))
 	status := s.emailer.Send(project.ClientEmail, subject, body)
 	s.addNotificationLocked(user.ID, project.ID, "email", subject, body, status)
 	if err := s.saveLocked(); err != nil {

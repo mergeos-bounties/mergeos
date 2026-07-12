@@ -56,7 +56,7 @@ MergeOS currently supports:
 - Solana SPL transaction verification for MRG-style payment rails.
 - GitHub open issue import with heuristic complexity, estimated MRG reward, and estimated hours.
 - GitHub reward aliases. If a worker has not linked a wallet yet, payouts can still target `github:username`; once linked, payouts route to the user's Solana MRG wallet address.
-- Local git bounty workspaces or GitHub private bounty repos when `GITHUB_TOKEN` is configured.
+- Local git bounty workspaces, or bind funded projects to an existing public source repository (MergeOS does **not** create private `mergeos-prj_*` child repos).
 - Static repository scan for dependency manifests, technical-debt markers, and secret-hygiene findings.
 - Project task dependency graph generation for workflow routing, effort metadata, dependency edges, and release readiness.
 - Project escrow summaries for reserve, release, remaining-balance, and overdrawn payout review.
@@ -297,7 +297,7 @@ Important backend variables:
 - `STRIPE_PUBLISHABLE_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`: Stripe rail metadata and PaymentIntent verifier. When configured, the Stripe rail accepts a succeeded USD PaymentIntent ID as `payment_reference` and verifies currency and amount before project funding.
 - `CRYPTO_RPC_URL`, `CRYPTO_RECEIVER`, `CRYPTO_ASSET`, `CRYPTO_TOKEN_MINT`: Solana SPL verifier. `CRYPTO_ASSET=spl` exposes the crypto/USDT rail as a Solana transaction signature verifier for MRG-style SPL payments.
 - `MRG_SOLANA_PROGRAM_ID`: deployed MergeOS Anchor program id used by wallet migration and MRG ledger instruction metadata. Leave empty until the program is deployed; the migration API will then return `program_ready: false`.
-- `GITHUB_TOKEN`, `GITHUB_OWNER`, `GITHUB_OWNER_TYPE`: backend runtime values for GitHub bounty repo creation and admin PR merge actions
+- `GITHUB_TOKEN`, `GITHUB_OWNER`, `GITHUB_OWNER_TYPE`: backend runtime values for binding source product repos and admin PR merge actions (MergeOS does not create private `mergeos-prj_*` child repos)
 - `MERGEOS_GITHUB_TOKEN`: Docker Compose and GitHub Actions secret name that maps into backend `GITHUB_TOKEN`; use a personal access token with repo write access, not the automatic GitHub Actions token
 - `GEMINI_API_KEYS`, `OPENAI_API_KEYS`, `ANTHROPIC_API_KEYS`, `GROQ_API_KEYS`, `OPENROUTER_API_KEYS`, `DEEPSEEK_API_KEYS`, `MISTRAL_API_KEYS`: comma-separated LLM key pools used to seed the initial provider-aware LLM key table. Admins can still add Gemini, OpenAI, Anthropic, Groq, OpenRouter, DeepSeek, and Mistral tokens later in the admin UI, while request counts and key status are tracked in the database.
 - `GEMINI_REVIEW_MODEL`, `OPENAI_REVIEW_MODEL`, `ANTHROPIC_REVIEW_MODEL`, `GROQ_REVIEW_MODEL`, `OPENROUTER_REVIEW_MODEL`, `DEEPSEEK_REVIEW_MODEL`, `MISTRAL_REVIEW_MODEL`: reviewer model defaults for seeded provider keys. Admin settings can select the active LLM provider and model at runtime.
@@ -308,7 +308,7 @@ Important backend variables:
 - `GITHUB_OAUTH_CLIENT_ID`, `GITHUB_OAUTH_CLIENT_SECRET`: legacy backend aliases still accepted for older OAuth configuration
 - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`: backend runtime values for Google login
 - `MERGEOS_GOOGLE_CLIENT_ID`, `MERGEOS_GOOGLE_CLIENT_SECRET`: Docker Compose and GitHub Actions secret names that map into Google login runtime values
-- `BOUNTY_ROOT`: local child bounty repo root
+- `BOUNTY_ROOT`: local bounty workspace root when no source repository is provided
 - `UPLOAD_ROOT`: attachment storage root
 - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_FROM`: email notifications
 

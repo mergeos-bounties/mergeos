@@ -3,7 +3,6 @@ package core
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -180,89 +179,73 @@ type GitHubRepoFactory struct {
 	client *http.Client
 }
 
+// CreateProjectRepo no longer creates private GitHub child repos (mergeos-prj_*).
+// Prefer binding an existing source product repository when present; otherwise use a
+// local bounty workspace only.
 func (f *GitHubRepoFactory) CreateProjectRepo(ctx context.Context, project *Project, tasks []*Task) (*RepoResult, error) {
-	repoName := fmt.Sprintf("%s-%s", slug(project.ClientName), project.ID)
-	createURL := "https://api.github.com/user/repos"
-	if f.cfg.GitHubOwnerType == "org" {
-		createURL = "https://api.github.com/orgs/" + f.cfg.GitHubOwner + "/repos"
+	if fullName := projectGitHubRepoFullName(project); fullName != "" {
+		return bindExistingGitHubRepo(project, tasks, fullName), nil
 	}
-	repoPayload := map[string]any{
-		"name":        repoName,
-		"private":     true,
-		"has_issues":  true,
-		"description": "MergeOS child bounty repo for " + project.Title,
-	}
-	var created struct {
-		Name     string `json:"name"`
-		FullName string `json:"full_name"`
-		HTMLURL  string `json:"html_url"`
-	}
-	if err := f.githubJSON(ctx, http.MethodPost, createURL, repoPayload, &created); err != nil {
-		return nil, err
-	}
-	if created.Name == "" {
-		created.Name = repoName
-	}
-	if created.FullName == "" {
-		created.FullName = f.cfg.GitHubOwner + "/" + created.Name
-	}
+	// No source repository on the project: keep a local workspace, never POST /user/repos.
+	return LocalRepoFactory{cfg: f.cfg}.CreateProjectRepo(ctx, project, tasks)
+}
 
-	readmePayload := map[string]any{
-		"message": "Initialize MergeOS bounty repo",
-		"content": base64.StdEncoding.EncodeToString([]byte(renderRepoReadme(project, tasks, f.cfg.TokenSymbol))),
-	}
-	contentsURL := "https://api.github.com/repos/" + created.FullName + "/contents/README.md"
-	if err := f.githubJSON(ctx, http.MethodPut, contentsURL, readmePayload, nil); err != nil {
-		return nil, err
-	}
-	for _, attachment := range project.Attachments {
-		if attachment.StoredPath == "" {
-			continue
-		}
-		data, err := os.ReadFile(attachment.StoredPath)
-		if err != nil {
-			return nil, err
-		}
-		attachmentPayload := map[string]any{
-			"message": "Add client attachment " + attachment.OriginalName,
-			"content": base64.StdEncoding.EncodeToString(data),
-		}
-		attachmentURL := "https://api.github.com/repos/" + created.FullName + "/contents/attachments/" + attachmentRepoName(attachment)
-		if err := f.githubJSON(ctx, http.MethodPut, attachmentURL, attachmentPayload, nil); err != nil {
-			return nil, err
+// bindExistingGitHubRepo attaches a funded project to an already-existing GitHub repo
+// (typically the public product source). It does not create repositories or issues.
+func bindExistingGitHubRepo(project *Project, tasks []*Task, fullName string) *RepoResult {
+	fullName = strings.TrimSpace(fullName)
+	htmlURL := "https://github.com/" + fullName
+	if project != nil {
+		if strings.TrimSpace(project.RepoURL) != "" {
+			htmlURL = strings.TrimSuffix(strings.TrimSpace(project.RepoURL), ".git")
 		}
 	}
-
 	issues := map[string]RepoIssue{}
 	for _, task := range tasks {
-		issuePayload := map[string]any{
-			"title": task.Title,
-			"body":  renderTaskMarkdown(project, task, f.cfg.TokenSymbol),
-			"labels": []string{
-				"mergeos",
-				"worker:" + string(task.RequiredWorkerKind),
-			},
+		if task == nil {
+			continue
 		}
-		var issue struct {
-			Number  int    `json:"number"`
-			HTMLURL string `json:"html_url"`
-		}
-		issueURL := "https://api.github.com/repos/" + created.FullName + "/issues"
-		if err := f.githubJSON(ctx, http.MethodPost, issueURL, issuePayload, &issue); err != nil {
-			return nil, err
+		issueURL := strings.TrimSpace(task.IssueURL)
+		if issueURL == "" && task.IssueNumber > 0 {
+			issueURL = fmt.Sprintf("https://github.com/%s/issues/%d", fullName, task.IssueNumber)
 		}
 		issues[task.ID] = RepoIssue{
-			Number: issue.Number,
-			URL:    issue.HTMLURL,
+			Number: task.IssueNumber,
+			URL:    issueURL,
 		}
 	}
-
 	return &RepoResult{
 		Provider: "github",
-		Name:     created.FullName,
-		URL:      created.HTMLURL,
+		Name:     fullName,
+		URL:      htmlURL,
 		Issues:   issues,
-	}, nil
+	}
+}
+
+// parseGitHubRepoURL extracts owner/repo and a canonical HTML URL from a GitHub repo URL
+// or full name (owner/repo). Returns empty strings when the input is not a GitHub repo.
+func parseGitHubRepoURL(raw string) (fullName, htmlURL string) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return "", ""
+	}
+	raw = strings.TrimSuffix(raw, ".git")
+	raw = strings.TrimSuffix(raw, "/")
+	if strings.Count(raw, "/") == 1 && !strings.Contains(raw, "://") && !strings.Contains(raw, "github.com") {
+		return raw, "https://github.com/" + raw
+	}
+	marker := "github.com/"
+	idx := strings.Index(strings.ToLower(raw), marker)
+	if idx < 0 {
+		return "", ""
+	}
+	rest := strings.Trim(raw[idx+len(marker):], "/")
+	parts := strings.Split(rest, "/")
+	if len(parts) < 2 {
+		return "", ""
+	}
+	fullName = parts[0] + "/" + parts[1]
+	return fullName, "https://github.com/" + fullName
 }
 
 func (f *GitHubRepoFactory) CreateProjectTask(ctx context.Context, project *Project, task *Task) (*RepoIssue, error) {
@@ -346,7 +329,7 @@ func renderRepoReadme(project *Project, tasks []*Task, tokenSymbol string) strin
 	tokenSymbol = normalizedTokenSymbol(tokenSymbol)
 	var builder strings.Builder
 	builder.WriteString("# " + project.Title + "\n\n")
-	builder.WriteString("Private child bounty repo generated by MergeOS.\n\n")
+	builder.WriteString("Local MergeOS bounty workspace (no private GitHub child repo is created).\n\n")
 	builder.WriteString("Client: " + project.ClientName + "\n\n")
 	if project.CompanyName != "" {
 		builder.WriteString("Company: " + project.CompanyName + "\n\n")
