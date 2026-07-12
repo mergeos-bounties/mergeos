@@ -7,9 +7,10 @@ import (
 )
 
 type Server struct {
-	cfg      Config
-	store    *Store
-	payments *PaymentManager
+	cfg           Config
+	store         *Store
+	payments      *PaymentManager
+	paypalBaseURL string
 }
 
 func NewServer(cfg Config, store *Store, payments *PaymentManager) *Server {
@@ -28,6 +29,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/auth/me", s.me)
 	mux.HandleFunc("POST /api/auth/logout", s.logout)
 	mux.HandleFunc("POST /api/payments/paypal/orders", s.createPayPalOrder)
+	mux.HandleFunc("POST /api/payments/paypal/webhook", s.handlePayPalWebhook)
 	mux.HandleFunc("POST /api/uploads", s.uploadAttachment)
 	mux.HandleFunc("GET /api/uploads/", s.downloadAttachment)
 	mux.HandleFunc("GET /api/admin/summary", s.adminSummary)

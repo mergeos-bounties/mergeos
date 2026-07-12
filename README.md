@@ -234,7 +234,12 @@ Important backend variables:
 - `PRIMARY_DOMAIN`, `ADMIN_DOMAIN`, `SCAN_DOMAIN`: production hostnames, defaulting to `mergeos.shop`, `uta.mergeos.shop`, and `scan.mergeos.shop`
 - `PLATFORM_FEE_BPS`: platform fee basis points
 - `DEV_PAYMENT_ENABLED` and `DEV_PAYMENT_CODE`: local verifier
-- `PAYPAL_ENV`, `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`: PayPal Orders v2
+- `PAYPAL_ENV`, `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_WEBHOOK_ID`: PayPal Orders v2 plus webhook signature verification. PayPal checkout orders are stored as server-side funding intents and return `payment_reference` equal to the PayPal order id. Production rejects PayPal webhook events unless `PAYPAL_WEBHOOK_ID` is configured.
+
+#### PayPal Webhook
+- **Callback URL**: `POST /api/payments/paypal/webhook`
+- **Configuration**: Set `PAYPAL_WEBHOOK_ID` to the ID registered in the PayPal Developer Dashboard for your webhook listener.
+- **Verification**: The server automatically calls PayPal's `/v1/notifications/verify-webhook-signature` API endpoint with the transmission signature headers to verify the webhook origin before processing order captures.
 - `CRYPTO_RPC_URL`, `CRYPTO_RECEIVER`, `CRYPTO_ASSET`, `CRYPTO_TOKEN_CONTRACT`: crypto verifier
 - `GITHUB_TOKEN`, `GITHUB_OWNER`, `GITHUB_OWNER_TYPE`: GitHub bounty repo creation
 - `BOUNTY_ROOT`: local child bounty repo root
