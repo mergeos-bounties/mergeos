@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"crypto/hmac"
+	"sort"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -1661,11 +1662,75 @@ func (s *Server) evaluateProjectPrice(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid JSON body")
 		return
 	}
-	result, err := EvaluateProjectPrice(req)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+	if s.geminiReviewer == nil || !s.geminiReviewer.Ready() {
+		result, err := EvaluateProjectPrice(req)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		writeJSON(w, http.StatusOK, result)
 		return
 	}
+
+	llmReq := LLMPriceEvaluationRequest{
+		Title:           req.Title,
+		Description:     req.Description,
+		Requirements:    splitCSVish(req.Requirements),
+		Deliverables:    req.Deliverables,
+		Timeline:        req.Timeline,
+		TechStack:       req.TechStack,
+		Complexity:      req.Complexity,
+		Constraints:     req.Constraints,
+		ReferenceBudget: req.ReferenceBudgetCents / 100,
+	}
+
+	llmResp, err := s.EvaluateProjectLLM(r.Context(), llmReq)
+	if err != nil {
+		result, fallbackErr := EvaluateProjectPrice(req)
+		if fallbackErr != nil {
+			writeError(w, http.StatusBadRequest, fallbackErr.Error())
+			return
+		}
+		writeJSON(w, http.StatusOK, result)
+		return
+	}
+
+	var breakdown []PriceBreakdownItem
+	for cat, usd := range llmResp.TaskBreakdown {
+		breakdown = append(breakdown, PriceBreakdownItem{
+			Category:    cat,
+			AmountCents: usd * 100,
+			Reason:      "Estimated by AI",
+		})
+	}
+	sort.Slice(breakdown, func(i, j int) bool {
+		return breakdown[i].Category < breakdown[j].Category
+	})
+
+	confidence := "medium"
+	if llmResp.ConfidenceLevel >= 0.8 {
+		confidence = "high"
+	} else if llmResp.ConfidenceLevel <= 0.4 {
+		confidence = "low"
+	}
+
+	midCents := ((llmResp.SuggestedLow + llmResp.SuggestedHigh) / 2) * 100
+
+	result := &ProjectPriceEvaluationResponse{
+		ProtocolVersion:     "mergeos.estimate.v1",
+		Kind:                "project_estimate",
+		SuggestedPriceCents: midCents,
+		SuggestedRange: PriceRange{
+			LowCents:  llmResp.SuggestedLow * 100,
+			HighCents: llmResp.SuggestedHigh * 100,
+		},
+		Confidence:  confidence,
+		Breakdown:   breakdown,
+		Assumptions: llmResp.Assumptions,
+		Risks:       llmResp.Risks,
+		Editable:    llmResp.Editable,
+	}
+
 	writeJSON(w, http.StatusOK, result)
 }
 
