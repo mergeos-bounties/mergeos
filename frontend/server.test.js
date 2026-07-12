@@ -2176,6 +2176,13 @@ test('signed-in mobile dashboard keeps nav, actions, and popovers phone-safe', a
   assert.match(appSource, /:open="projectAiPricingPanelOpen"/);
   assert.match(appSource, /function updateProjectMobileOptionalPanels\(\)/);
   assert.match(appSource, /window\.addEventListener\('resize', updateProjectMobileOptionalPanels\)/);
+  assert.match(appSource, /function paymentRailOptions\(config = runtimeConfig\.value\)/);
+  assert.match(appSource, /function paymentRailsReady\(config = runtimeConfig\.value\)/);
+  assert.match(appSource, /paymentRailsAreConfigured/);
+  assert.match(appSource, /No payment providers are ready yet\./);
+  assert.match(appSource, /paymentRailsDisabledReasons\.length \? paymentRailsDisabledReasons\[0\]/);
+  assert.match(appSource, /:disabled="projectPaymentBusy \|\| !paymentRailsAreConfigured"/);
+  assert.match(appSource, /:disabled="repoTaskFundingBusy \|\| !paymentRailsAreConfigured"/);
   assert.match(cssSource, /Project wizard mobile budget trim: keep AI pricing available without making step 3 a long control wall/);
   assert.match(cssSource, /\/\* Project wizard mobile budget trim:[\s\S]*\.project-flow-shell \.project-mobile-optional-summary\s*\{[\s\S]*grid-template-columns: minmax\(0, 1fr\) 26px !important;[\s\S]*min-height: 48px !important;/);
   assert.match(cssSource, /\/\* Project wizard mobile budget trim:[\s\S]*\.project-flow-shell \.project-mobile-optional-panel\[open\] \.project-mobile-optional-summary svg\s*\{[\s\S]*transform: rotate\(180deg\) !important;/);
