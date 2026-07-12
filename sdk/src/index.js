@@ -127,7 +127,7 @@ export class MergeOSClient {
   }
 
   publicLedgerEvents(options = {}) {
-    const limit = Number(options.limit) > 0 ? `?limit=${encodeURIComponent(Number(options.limit))}` : '';
+    const limit = publicLimitQuery(options.limit);
     return this.request(`/api/public/ledger/events${limit}`, { auth: false });
   }
 
@@ -161,7 +161,7 @@ export class MergeOSClient {
 
   publicProtocolTasks(options = {}) {
     const query = queryString({
-      limit: Number(options.limit) > 0 ? Number(options.limit) : '',
+      limit: finitePositiveLimit(options.limit),
       task_id: options.task_id || options.taskID || '',
     });
     return this.request(`/api/public/protocol/tasks${query}`, { auth: false });
@@ -169,7 +169,7 @@ export class MergeOSClient {
 
   publicProtocolAgentQueue(options = {}) {
     const query = queryString({
-      limit: Number(options.limit) > 0 ? Number(options.limit) : '',
+      limit: finitePositiveLimit(options.limit),
     });
     return this.request(`/api/public/protocol/agent-queue${query}`, { auth: false });
   }
@@ -180,12 +180,12 @@ export class MergeOSClient {
   }
 
   publicProtocolAgents(options = {}) {
-    const limit = Number(options.limit) > 0 ? `?limit=${encodeURIComponent(Number(options.limit))}` : '';
+    const limit = publicLimitQuery(options.limit);
     return this.request(`/api/public/protocol/agents${limit}`, { auth: false });
   }
 
   publicProtocolContributors(options = {}) {
-    const limit = Number(options.limit) > 0 ? `?limit=${encodeURIComponent(Number(options.limit))}` : '';
+    const limit = publicLimitQuery(options.limit);
     return this.request(`/api/public/protocol/contributors${limit}`, { auth: false });
   }
 
@@ -1720,9 +1720,20 @@ function queryString(params = {}) {
   return value ? `?${value}` : '';
 }
 
+function finitePositiveLimit(limit) {
+  const value = Number(limit);
+  if (!Number.isFinite(value) || value <= 0) return '';
+  return Math.floor(value);
+}
+
+function publicLimitQuery(limit) {
+  const value = finitePositiveLimit(limit);
+  return value === '' ? '' : `?limit=${encodeURIComponent(value)}`;
+}
+
 function liveFeedQueryString(options = {}) {
   return queryString({
-    limit: Number(options.limit) > 0 ? Number(options.limit) : '',
+    limit: finitePositiveLimit(options.limit),
     after_id: options.after_id || options.afterID || options.cursor || '',
     since: normalizeSinceQueryValue(options.since),
   });

@@ -916,6 +916,10 @@ test('builds and sends typed AI agent action helpers', async () => {
     duration_millis: 0,
     pull_number: 12,
     labels: [],
+    context_urls: [],
+    evidence: [],
+    runbook: [],
+    checks: [],
   });
 
   const fetchImpl = fakeFetch([
@@ -2243,4 +2247,27 @@ test('connects realtime streams from protocol discovery metadata', () => {
 
   assert.equal(sockets[0].url, 'wss://mergeos.shop/api/ws/protocol?scope=public&limit=24&after_id=event%3Alatest');
   assert.deepEqual(sockets[0].protocols, ['mergeos.event.v2']);
+});
+
+test('sanitizes public limit query values for non-finite inputs', async () => {
+  const fetchImpl = fakeFetch([
+    { status: 200, body: { items: [] } },
+    { status: 200, body: { agents: [] } },
+    { status: 200, body: { events: [] } },
+    { status: 200, body: { tasks: [] } },
+    { status: 200, body: { tasks: [] } },
+  ]);
+  const client = new MergeOSClient({ baseURL: 'https://mergeos.shop/', fetchImpl });
+
+  await client.publicLiveFeed({ limit: Infinity });
+  await client.publicProtocolAgents({ limit: 0 });
+  await client.publicProtocolEvents({ limit: '2.9' });
+  await client.publicProtocolTasks({ limit: Infinity });
+  await client.publicProtocolTasks({ limit: '2.9' });
+
+  assert.equal(fetchImpl.calls[0].url, 'https://mergeos.shop/api/public/live-feed');
+  assert.equal(fetchImpl.calls[1].url, 'https://mergeos.shop/api/public/protocol/agents');
+  assert.equal(fetchImpl.calls[2].url, 'https://mergeos.shop/api/public/protocol/events?limit=2');
+  assert.equal(fetchImpl.calls[3].url, 'https://mergeos.shop/api/public/protocol/tasks');
+  assert.equal(fetchImpl.calls[4].url, 'https://mergeos.shop/api/public/protocol/tasks?limit=2');
 });
