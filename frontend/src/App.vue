@@ -973,7 +973,7 @@
             </div>
           </section>
 
-          <section class="wizard-section full" :class="{ invalid: projectFundingFieldError('paymentMethod') }">
+          <section v-if="paymentRailsAreConfigured" class="wizard-section full" :class="{ invalid: projectFundingFieldError('paymentMethod') }">
             <div class="wizard-section-title">
               <strong>2. Payment method</strong>
               <small>Choose your preferred payment method.</small>
@@ -1034,13 +1034,25 @@
               <p>MergeOS will create a PayPal order and return here to capture the approved payment.</p>
             </div>
           </section>
+          <section v-else class="wizard-section full">
+            <div class="wizard-section-title">
+              <strong>2. Payment method</strong>
+              <small>No payment providers are ready yet.</small>
+            </div>
+            <article class="marketplace-empty-state compact">
+              <strong>Payment checkout is unavailable</strong>
+              <p>
+                {{ paymentRailsDisabledReasons.length ? paymentRailsDisabledReasons[0] : 'Configure PayPal, crypto verification, or card checkout before funding.' }}
+              </p>
+            </article>
+          </section>
 
           <footer class="funding-actions">
             <span><Lock :size="14" /> Your payment is secure and encrypted.</span>
             <div>
               <small>Total to pay</small>
               <strong>{{ projectFundingAmountLabel }}</strong>
-              <button class="primary-button compact" :disabled="projectPaymentBusy" type="button" @click="completeProjectFunding">
+              <button class="primary-button compact" :disabled="projectPaymentBusy || !paymentRailsAreConfigured" type="button" @click="completeProjectFunding">
                 {{ projectPaymentButtonLabel }}
                 <LockKeyhole :size="15" />
               </button>
@@ -9014,7 +9026,7 @@
           </ul>
         </section>
 
-        <section class="wizard-section full" :class="{ invalid: repoTaskFundingFieldError('paymentMethod') }">
+        <section v-if="paymentRailsAreConfigured" class="wizard-section full" :class="{ invalid: repoTaskFundingFieldError('paymentMethod') }">
           <div class="wizard-section-title">
             <strong>Payment method</strong>
             <small>Verify funding before the task becomes claimable.</small>
@@ -9036,6 +9048,18 @@
             </button>
           </div>
           <p v-if="repoTaskFundingFieldError('paymentMethod')" class="wizard-field-error">{{ repoTaskFundingFieldError('paymentMethod') }}</p>
+        </section>
+        <section v-else class="wizard-section full">
+          <div class="wizard-section-title">
+            <strong>Payment method</strong>
+            <small>No payment providers are ready yet.</small>
+          </div>
+          <article class="marketplace-empty-state compact">
+            <strong>Repository bounty funding is unavailable</strong>
+            <p>
+              {{ paymentRailsDisabledReasons.length ? paymentRailsDisabledReasons[0] : 'Configure PayPal, crypto verification, or card checkout before funding.' }}
+            </p>
+          </article>
         </section>
 
         <div v-if="repoTaskFundingMethod === 'Credit / Debit card'" class="card-input-grid repo-task-card-grid">
@@ -9074,7 +9098,7 @@
 
         <footer class="repo-task-funding-actions">
           <button class="secondary-button compact" type="button" @click="closeRepositoryTaskFunding">Cancel</button>
-          <button class="primary-button compact" :disabled="repoTaskFundingBusy" type="button" @click="submitRepositorySuggestedTaskFunding">
+          <button class="primary-button compact" :disabled="repoTaskFundingBusy || !paymentRailsAreConfigured" type="button" @click="submitRepositorySuggestedTaskFunding">
             {{ repoTaskFundingButtonLabel }}
             <LockKeyhole :size="15" />
           </button>
@@ -14381,6 +14405,9 @@ const repoTaskFundingValidationErrors = computed(() => repoTaskFundingValidation
 const repoTaskFundingValidationList = computed(() => projectValidationList(repoTaskFundingValidationErrors.value));
 const repoTaskFundingShouldShowErrors = computed(() => Boolean(repoTaskFundingValidationAttempted.value));
 const repoTaskFundingButtonLabel = computed(() => (repoTaskFundingBusy.value ? 'Funding task...' : 'Fund task'));
+const paymentRailsReadyList = computed(() => readyPaymentRails());
+const paymentRailsDisabledReasons = computed(() => paymentRailDisabledReasons());
+const paymentRailsAreConfigured = computed(() => paymentRailsReadyList.value.length > 0);
 const successProjectTitle = computed(() => fundedProject.value?.title || projectTitleLabel.value);
 const successPaymentReference = computed(() => fundedProject.value?.payment_reference || '');
 
@@ -27454,6 +27481,24 @@ function cardCheckoutReady(config = runtimeConfig.value) {
   return Boolean(config?.card_ready || (config?.card_ready === undefined && config?.dev_payment_enabled && config?.dev_payment_code));
 }
 
+function paymentRailOptions(config = runtimeConfig.value) {
+  return Array.isArray(config?.payment_rails) ? config.payment_rails : [];
+}
+
+function readyPaymentRails(config = runtimeConfig.value) {
+  return paymentRailOptions(config).filter((rail) => rail?.ready !== false && rail?.enabled !== false);
+}
+
+function paymentRailDisabledReasons(config = runtimeConfig.value) {
+  return paymentRailOptions(config)
+    .filter((rail) => rail?.ready === false || rail?.enabled === false)
+    .map((rail) => rail?.disabled_reason || `${toTitleLabel(rail?.id || 'Payment rail')} is not configured.`);
+}
+
+function paymentRailsReady(config = runtimeConfig.value) {
+  return readyPaymentRails(config).length > 0;
+}
+
 function projectFundingValidationErrorsForCurrentSelection() {
   const errors = {};
   const amount = Number(projectFundingAmount.value);
@@ -28179,6 +28224,12 @@ async function completeProjectFunding() {
     await loadRuntimeConfig();
   } catch (error) {
     projectPaymentError.value = error.message || 'Could not load payment configuration.';
+    showToast(projectPaymentError.value);
+    return;
+  }
+
+  if (!paymentRailsAreConfigured.value) {
+    projectPaymentError.value = paymentRailsDisabledReasons.value[0] || 'No payment providers are ready yet.';
     showToast(projectPaymentError.value);
     return;
   }
@@ -29066,6 +29117,13 @@ async function submitRepositorySuggestedTaskFunding() {
     showToast(repoTaskFundingError.value);
     return;
   }
+
+  if (!paymentRailsAreConfigured.value) {
+    repoTaskFundingError.value = paymentRailsDisabledReasons.value[0] || 'No payment providers are ready yet.';
+    showToast(repoTaskFundingError.value);
+    return;
+  }
+
   if (repoTaskFundingErrorCount()) {
     showToast(repoTaskFundingErrorCount() === 1 ? 'Fix 1 funding item before continuing.' : `Fix ${repoTaskFundingErrorCount()} funding items before continuing.`);
     return;
