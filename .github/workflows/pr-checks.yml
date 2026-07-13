@@ -113,38 +113,7 @@ jobs:
         working-directory: ${{ matrix.app }}
         run: npm run build
 
-  mergeide:
-    name: MergeIDE task runner
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-        with:
-          persist-credentials: false
-
-      - name: Set up Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: MergeIDE/package-lock.json
-
-      - name: Install dependencies
-        working-directory: MergeIDE
-        run: npm ci
-
-      - name: Audit npm dependencies
-        working-directory: MergeIDE
-        run: npm audit --audit-level=high
-
-      - name: Test MergeIDE
-        working-directory: MergeIDE
-        run: npm test
-
-      - name: Smoke MergeIDE CLI
-        working-directory: MergeIDE
-        run: node ./bin/mergeide.js --help
+  # MergeIDE extracted to mergeos-bounties/MRGMinner (own CI there)
 
   solana-contract:
     name: Solana contract metadata
