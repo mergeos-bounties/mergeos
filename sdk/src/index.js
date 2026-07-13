@@ -1878,6 +1878,32 @@ function normalizeContextURLList(value = []) {
   return items.map((item) => String(item || '').trim()).filter(Boolean);
 }
 
+export function evidenceRequiredFromEvent(source) {
+  if (!source || typeof source !== 'object') return [];
+  const raw = source.evidence_required || source.evidenceRequired || source.evidence || [];
+  const items = Array.isArray(raw) ? raw : String(raw || '').split(',');
+  const seen = new Set();
+  return items.reduce((acc, item) => {
+    const key = normalizeEvidenceKey(item);
+    if (key && !seen.has(key)) {
+      seen.add(key);
+      acc.push(key);
+    }
+    return acc;
+  }, []);
+}
+
+export function hasEvidenceRequirement(source, requirement = '') {
+  if (!source || typeof source !== 'object') return false;
+  const required = evidenceRequiredFromEvent(source);
+  const normalized = normalizeEvidenceKey(requirement);
+  return required.includes(normalized);
+}
+
+function normalizeEvidenceKey(value = '') {
+  return String(value || '').trim().toLowerCase().replace(/-/g, '_').replace(/\s+/g, '_') || '';
+}
+
 function normalizeStringList(value = []) {
   const items = Array.isArray(value) ? value : String(value || '').split(',');
   return items.map((item) => String(item || '').trim()).filter(Boolean);
