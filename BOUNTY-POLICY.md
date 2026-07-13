@@ -6,12 +6,14 @@ This policy defines how MergeOS bounty work is claimed, reviewed, labeled, and p
 
 Contributors must complete these steps before starting bounty work:
 
-1. Star this repository.
-2. Claim the bounty in the linked issue or in the [Claim Token issue #1](https://github.com/mergeos-bounties/mergeos/issues/1).
-3. Wait for maintainer confirmation when the bounty requires approval.
-4. Open a PR that links the exact claim comment or bounty issue.
+1. **Follow** the org https://github.com/mergeos-bounties
+2. **Star** https://github.com/mergeos-bounties/mergeos
+3. **Star** https://github.com/mergeos-bounties/mergeos-contracts
+4. Claim the bounty in the linked issue or in the [Claim Token issue #1](https://github.com/mergeos-bounties/mergeos/issues/1).
+5. Wait for maintainer confirmation when the bounty requires approval.
+6. Open a PR that links the exact claim comment or bounty issue.
 
-Claims and PRs from accounts that have not starred this repository are not ready for bounty review.
+Claims and PRs from accounts that have not **followed** https://github.com/mergeos-bounties and starred **both** `mergeos` + `mergeos-contracts` are not ready for bounty review (starring only a product repo is not enough).
 
 ## Bounty Types
 
@@ -45,7 +47,7 @@ Every bounty PR must include:
 - Test commands and results.
 - Notes for migrations, environment variables, risk, or deployment changes.
 
-Maintainers use these labels while reviewing bounty PRs. The `Gemini PR review` webhook sends new and updated PRs to the MergeOS reviewer service. That service checks repository star status, evidence, tests, bounty context, and code risk, then comments on the PR with the readiness summary:
+Maintainers use these labels while reviewing bounty PRs. The `Gemini PR review` webhook sends new and updated PRs to the MergeOS reviewer service. That service checks org follow + core stars (mergeos + mergeos-contracts), evidence, tests, bounty context, and code risk, then comments on the PR with the readiness summary:
 
 - `evidence: missing`
 - `evidence: provided`
@@ -60,7 +62,7 @@ GitHub Copilot code review can still flag code-quality and readiness issues when
 
 MRG token rewards are only eligible after:
 
-1. The contributor has starred the repository.
+1. The contributor follows https://github.com/mergeos-bounties and has starred both `mergeos-bounties/mergeos` and `mergeos-bounties/mergeos-contracts`.
 2. The PR links the accepted claim or bounty issue.
 3. Evidence is accepted by maintainers.
 4. Required tests pass or maintainers accept the stated test gap.

@@ -6,7 +6,9 @@ This guide is for contributors earning **MRG** on MergeOS and sister repositorie
 
 Before bounty review:
 
-- Star [mergeos-bounties/mergeos](https://github.com/mergeos-bounties/mergeos)  
+- **Follow** [mergeos-bounties](https://github.com/mergeos-bounties)
+- **Star** [mergeos-bounties/mergeos](https://github.com/mergeos-bounties/mergeos)
+- **Star** [mergeos-bounties/mergeos-contracts](https://github.com/mergeos-bounties/mergeos-contracts)
 - Star the product repo you will patch (e.g. NeraJob)  
 
 ## 2. Claim the issue

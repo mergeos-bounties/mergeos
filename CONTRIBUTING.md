@@ -12,11 +12,13 @@ Thanks for helping improve MergeOS. This project accepts regular contributions a
 
 ## Before You Start Bounty Work
 
-1. Star this repository.
-2. Claim the bounty in the linked bounty issue or in [Claim Token issue #1](https://github.com/mergeos-bounties/mergeos/issues/1).
-3. Wait for maintainer confirmation when the issue says approval is required.
-4. Keep the implementation scoped to the accepted claim.
-5. Open a PR that links the exact claim comment or bounty issue.
+1. **Follow** https://github.com/mergeos-bounties
+2. **Star** https://github.com/mergeos-bounties/mergeos
+3. **Star** https://github.com/mergeos-bounties/mergeos-contracts
+4. Claim the bounty in the linked bounty issue or in [Claim Token issue #1](https://github.com/mergeos-bounties/mergeos/issues/1).
+5. Wait for maintainer confirmation when the issue says approval is required.
+6. Keep the implementation scoped to the accepted claim.
+7. Open a PR that links the exact claim comment or bounty issue.
 
 Unclaimed bounty work is not guaranteed to be reviewed for reward.
 
