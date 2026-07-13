@@ -1035,18 +1035,27 @@
               <p>MergeOS will create a PayPal order and return here to capture the approved payment.</p>
             </div>
           </section>
-          <section v-else class="wizard-section full">
-            <div class="wizard-section-title">
-              <strong>2. Payment method</strong>
-              <small>No payment providers are ready yet.</small>
-            </div>
-            <article class="marketplace-empty-state compact">
-              <strong>Payment checkout is unavailable</strong>
-              <p>
-                {{ paymentRailsDisabledReasons.length ? paymentRailsDisabledReasons[0] : 'Configure PayPal, crypto verification, or card checkout before funding.' }}
-              </p>
-            </article>
-          </section>
+           <section v-else class="wizard-section full">
+             <div class="wizard-section-title">
+               <strong>2. Payment method</strong>
+               <small>No payment providers are ready yet.</small>
+             </div>
+             <article v-if="paymentModeNotConfigured" class="marketplace-empty-state compact blocked-funding">
+               <Ban :size="24" />
+               <strong>Payment checkout is not available</strong>
+               <p>Payment providers have not been configured for this MergeOS instance. To enable funding, set up a payment provider in the server configuration or contact the system administrator.</p>
+               <a v-if="hasWindow" class="link-button" :href="'https://github.com/mergeos-bounties/mergeos'" target="_blank" rel="noopener">
+                 <ExternalLink :size="14" />
+                 Payment setup guide
+               </a>
+             </article>
+             <article v-else class="marketplace-empty-state compact">
+               <strong>Payment checkout is unavailable</strong>
+               <p>
+                 {{ paymentRailsDisabledReasons.length ? paymentRailsDisabledReasons[0] : 'Configure PayPal, crypto verification, or card checkout before funding.' }}
+               </p>
+             </article>
+           </section>
 
           <footer class="funding-actions">
             <span><Lock :size="14" /> Your payment is secure and encrypted.</span>
@@ -9104,18 +9113,27 @@
           </div>
           <p v-if="repoTaskFundingFieldError('paymentMethod')" class="wizard-field-error">{{ repoTaskFundingFieldError('paymentMethod') }}</p>
         </section>
-        <section v-else class="wizard-section full">
-          <div class="wizard-section-title">
-            <strong>Payment method</strong>
-            <small>No payment providers are ready yet.</small>
-          </div>
-          <article class="marketplace-empty-state compact">
-            <strong>Repository bounty funding is unavailable</strong>
-            <p>
-              {{ paymentRailsDisabledReasons.length ? paymentRailsDisabledReasons[0] : 'Configure PayPal, crypto verification, or card checkout before funding.' }}
-            </p>
-          </article>
-        </section>
+         <section v-else class="wizard-section full">
+           <div class="wizard-section-title">
+             <strong>Payment method</strong>
+             <small>No payment providers are ready yet.</small>
+           </div>
+           <article v-if="paymentModeNotConfigured" class="marketplace-empty-state compact blocked-funding">
+             <Ban :size="24" />
+             <strong>Repository bounty funding is unavailable</strong>
+             <p>Payment providers have not been configured for this MergeOS instance. To enable funding, set up a payment provider in the server configuration or contact the system administrator.</p>
+             <a v-if="hasWindow" class="link-button" :href="'https://github.com/mergeos-bounties/mergeos'" target="_blank" rel="noopener">
+               <ExternalLink :size="14" />
+               Payment setup guide
+             </a>
+           </article>
+           <article v-else class="marketplace-empty-state compact">
+             <strong>Repository bounty funding is unavailable</strong>
+             <p>
+               {{ paymentRailsDisabledReasons.length ? paymentRailsDisabledReasons[0] : 'Configure PayPal, crypto verification, or card checkout before funding.' }}
+             </p>
+           </article>
+         </section>
 
         <div v-if="repoTaskFundingMethod === 'Credit / Debit card'" class="card-input-grid repo-task-card-grid">
           <label class="wizard-field full" :class="{ invalid: repoTaskFundingFieldError('cardNumber') }">
@@ -9378,6 +9396,7 @@ import { getBlogPost, listBlogPosts, markdownToHtml } from './blog.js';
 import {
   ArrowLeft,
   ArrowRight,
+  Ban,
   BarChart3,
   Bell,
   Bot,
@@ -14480,6 +14499,7 @@ const repoTaskFundingButtonLabel = computed(() => (repoTaskFundingBusy.value ? '
 const paymentRailsReadyList = computed(() => readyPaymentRails());
 const paymentRailsDisabledReasons = computed(() => paymentRailDisabledReasons());
 const paymentRailsAreConfigured = computed(() => paymentRailsReadyList.value.length > 0);
+const paymentModeNotConfigured = computed(() => runtimeConfig.value?.payment_mode === 'not-configured');
 const successProjectTitle = computed(() => fundedProject.value?.title || projectTitleLabel.value);
 const successPaymentReference = computed(() => fundedProject.value?.payment_reference || '');
 
