@@ -1,4 +1,4 @@
-# MergeOS
+﻿# MergeOS
 
 [![Build and deploy](https://github.com/mergeos-bounties/mergeos/actions/workflows/deploy.yml/badge.svg?branch=master)](https://github.com/mergeos-bounties/mergeos/actions/workflows/deploy.yml?query=branch%3Amaster)
 [![GitHub stars](https://img.shields.io/github/stars/mergeos-bounties/mergeos?style=flat&label=stars)](https://github.com/mergeos-bounties/mergeos/stargazers)
@@ -393,3 +393,7 @@ Admin:
 - `PATCH /api/admin/gemini/keys/{id}`
 - `POST /api/admin/gemini/keys/{id}/test`
 - `GET /api/admin/gemini/webhooks`
+
+## MRGMinner (IDE)
+
+Task runner / IDE bridge is **[MRGMinner](https://github.com/mergeos-bounties/MRGMinner)** (extracted from former `MergeIDE/`). See [docs/MRGMINNER.md](docs/MRGMINNER.md).
