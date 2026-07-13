@@ -33820,28 +33820,16 @@ async function submitAuth() {
         }),
       });
       if (response.reset_token) {
-        authMode.value = 'reset-confirm';
-        authForm.reset_token = response.reset_token;
-        authForm.password = '';
-        authForm.confirm_password = '';
-        authNotice.value = 'Local email is not configured, so MergeOS generated a reset token here.';
+        errorMessage.value = 'Password reset is currently unavailable. Our email system is offline. Please try again later or contact support.';
       } else {
         authNotice.value = 'If that email exists, reset instructions are on the way.';
+        showToast('Password reset request received.');
       }
-      showToast('Password reset request received.');
       return;
     }
 
     if (authMode.value === 'reset-confirm') {
-      const auth = await publicApi('/api/auth/password-reset/confirm', {
-        method: 'POST',
-        body: JSON.stringify({
-          token: authForm.reset_token,
-          password: authForm.password,
-        }),
-      });
-      setSession(auth);
-      showToast('Password reset. You are logged in.');
+      errorMessage.value = 'Password reset confirmation is not available. Our email system is offline. Please try again later or contact support.';
       return;
     }
 
