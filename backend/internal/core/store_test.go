@@ -94,7 +94,7 @@ func TestCreateProjectCreatesLocalBountyRepoAndPersistsLedger(t *testing.T) {
 		t.Fatalf("notifications after create = %d", len(store.ListNotifications(auth.User.ID)))
 	}
 
-	accepted, err := store.AcceptTask(project.Tasks[0].ID, AcceptTaskRequest{
+	accepted, _, err := store.AcceptTask(project.Tasks[0].ID, AcceptTaskRequest{
 		WorkerKind: WorkerHuman,
 		WorkerID:   "github:reviewer",
 	})
@@ -680,7 +680,7 @@ func TestGitHubAuthLinksMRGWalletAndRoutesPayouts(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	accepted, err := store.AcceptTask(project.Tasks[0].ID, AcceptTaskRequest{
+	accepted, _, err := store.AcceptTask(project.Tasks[0].ID, AcceptTaskRequest{
 		WorkerKind: WorkerHuman,
 		WorkerID:   "github:octo-builder",
 	})
@@ -2183,7 +2183,7 @@ func TestPublicLedgerEconomyProofAndEventsRoutesReturnLiveProof(t *testing.T) {
 		if task.RequiredWorkerKind != WorkerHuman {
 			continue
 		}
-		if _, err := store.AcceptTask(task.ID, AcceptTaskRequest{
+		if _, _, err := store.AcceptTask(task.ID, AcceptTaskRequest{
 			WorkerKind: WorkerHuman,
 			WorkerID:   "github:ledger-builder",
 		}); err != nil {
@@ -2332,7 +2332,7 @@ func TestPublicMarketplaceRouteReturnsSanitizedLiveData(t *testing.T) {
 	}
 	for _, task := range project.Tasks {
 		if task.RequiredWorkerKind == WorkerHuman {
-			if _, err := store.AcceptTask(task.ID, AcceptTaskRequest{
+			if _, _, err := store.AcceptTask(task.ID, AcceptTaskRequest{
 				WorkerKind: WorkerHuman,
 				WorkerID:   "github:maya-dev",
 			}); err != nil {
@@ -2791,7 +2791,7 @@ func TestPublicLedgerRouteReturnsSanitizedLiveData(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := store.AcceptTask(project.Tasks[0].ID, AcceptTaskRequest{
+	if _, _, err := store.AcceptTask(project.Tasks[0].ID, AcceptTaskRequest{
 		WorkerKind: WorkerHuman,
 		WorkerID:   "github:private-worker",
 	}); err != nil {
@@ -2988,8 +2988,18 @@ func TestPublicLedgerUsesPullReferenceForAdminAcceptedTask(t *testing.T) {
 		t.Fatal(err)
 	}
 	pullReference := buildPullLedgerReference(project.Tasks[0].ID, "https://github.com/mergeos-bounties/mergeos/pull/120", "Fix PR payout reference")
-	if _, err := store.AcceptTaskWithReviewReference(project.Tasks[0].ID, req, 50, "future-medium", pullReference); err != nil {
+	acceptedTask, ledgerEntry, err := store.AcceptTaskWithReviewReference(project.Tasks[0].ID, req, 50, "future-medium", pullReference)
+	if err != nil {
 		t.Fatal(err)
+	}
+	if ledgerEntry.Sequence <= 0 {
+		t.Fatal("expected positive ledger sequence from AcceptTaskWithReviewReference")
+	}
+	if ledgerEntry.EntryHash == "" {
+		t.Fatal("expected non-empty entry_hash from AcceptTaskWithReviewReference")
+	}
+	if ledgerEntry.EntryHash != acceptedTask.ProofHash {
+		t.Fatalf("entry_hash %q should match task proof_hash %q", ledgerEntry.EntryHash, acceptedTask.ProofHash)
 	}
 	account, ok := store.TaskPayoutAccount(project.Tasks[0].ID)
 	if !ok || account != "github:pr-author" {
@@ -3007,6 +3017,9 @@ func TestPublicLedgerUsesPullReferenceForAdminAcceptedTask(t *testing.T) {
 		}
 		if strings.Contains(entry.Reference, project.ID) || strings.Contains(entry.Reference, project.Tasks[0].ID) {
 			t.Fatalf("public task payout reference still exposes project/task id: %s", entry.Reference)
+		}
+		if entry.EntryHash != ledgerEntry.EntryHash {
+			t.Fatalf("public ledger entry_hash %q should match returned entry_hash %q", entry.EntryHash, ledgerEntry.EntryHash)
 		}
 	}
 	if !found {
@@ -3059,7 +3072,7 @@ func TestPublicLiveFeedRouteReturnsSanitizedTimeline(t *testing.T) {
 		t.Fatal(err)
 	}
 	pullReference := buildPullLedgerReference(project.Tasks[0].ID, "https://github.com/mergeos-bounties/mergeos/pull/151", "Live feed proof")
-	if _, err := store.AcceptTaskWithReviewReference(project.Tasks[0].ID, req, 5000, "future-medium", pullReference); err != nil {
+	if _, _, err := store.AcceptTaskWithReviewReference(project.Tasks[0].ID, req, 5000, "future-medium", pullReference); err != nil {
 		t.Fatal(err)
 	}
 	if err := store.AddGeminiWebhookLog(GeminiWebhookLog{
@@ -3319,7 +3332,7 @@ func TestProjectDeploymentRouteReturnsDerivedStatusAndSanitizesData(t *testing.T
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := store.AcceptTask(deployTask.ID, req); err != nil {
+	if _, _, err := store.AcceptTask(deployTask.ID, req); err != nil {
 		t.Fatal(err)
 	}
 	if err := store.AddGeminiWebhookLog(GeminiWebhookLog{
@@ -3704,7 +3717,7 @@ func TestProjectEscrowRouteReturnsReserveReleaseSummary(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := store.AcceptTask(task.ID, req); err != nil {
+	if _, _, err := store.AcceptTask(task.ID, req); err != nil {
 		t.Fatal(err)
 	}
 
@@ -3851,7 +3864,7 @@ func TestProjectPayoutsRouteReturnsSettlementContractAndSanitizesData(t *testing
 		t.Fatal(err)
 	}
 	pullReference := buildPullLedgerReference(task.ID, "https://github.com/mergeos-bounties/mergeos/pull/190", "Payout proof")
-	if _, err := store.AcceptTaskWithReviewReference(task.ID, req, 0, "", pullReference); err != nil {
+	if _, _, err := store.AcceptTaskWithReviewReference(task.ID, req, 0, "", pullReference); err != nil {
 		t.Fatal(err)
 	}
 
@@ -5981,7 +5994,7 @@ func TestWorkerDashboardRouteMatchesGitHubWorkerAndSanitizesData(t *testing.T) {
 	if humanTask == nil {
 		t.Fatal("project did not create a human task")
 	}
-	if _, err := store.AcceptTask(humanTask.ID, AcceptTaskRequest{
+	if _, _, err := store.AcceptTask(humanTask.ID, AcceptTaskRequest{
 		WorkerKind: WorkerHuman,
 		WorkerID:   "github:worker-dev",
 	}); err != nil {
@@ -7037,7 +7050,7 @@ func TestCreateDisputeRouteAddsAdminOpsQueueItem(t *testing.T) {
 	if humanTask == nil {
 		t.Fatal("project did not create a human task")
 	}
-	if _, err := store.AcceptTask(humanTask.ID, AcceptTaskRequest{WorkerKind: WorkerHuman, WorkerID: "github:worker-dispute"}); err != nil {
+	if _, _, err := store.AcceptTask(humanTask.ID, AcceptTaskRequest{WorkerKind: WorkerHuman, WorkerID: "github:worker-dispute"}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -7154,7 +7167,7 @@ func TestAdminTasksRouteIncludesAcceptedTasksForAudit(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := store.AcceptTask(project.Tasks[0].ID, req); err != nil {
+	if _, _, err := store.AcceptTask(project.Tasks[0].ID, req); err != nil {
 		t.Fatal(err)
 	}
 
@@ -7428,7 +7441,7 @@ func TestWorkerReputationAuditSurfacesLinkedWalletRisk(t *testing.T) {
 	if task == nil {
 		t.Fatal("expected at least one human task")
 	}
-	if _, err := store.AcceptTask(task.ID, AcceptTaskRequest{
+	if _, _, err := store.AcceptTask(task.ID, AcceptTaskRequest{
 		WorkerKind: WorkerHuman,
 		WorkerID:   "github:builder",
 	}); err != nil {

@@ -160,7 +160,7 @@ func (s *Server) mergeAdminTaskPullRequest(w http.ResponseWriter, r *http.Reques
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	accepted, err := s.store.AcceptTaskWithReviewReference(task.ID, req, rewardMRG, bountyType, buildPullLedgerReference(task.ID, pull.HTMLURL, pull.Title))
+	accepted, ledgerEntry, err := s.store.AcceptTaskWithReviewReference(task.ID, req, rewardMRG, bountyType, buildPullLedgerReference(task.ID, pull.HTMLURL, pull.Title))
 	if err != nil {
 		writeError(w, http.StatusConflict, err.Error())
 		return
@@ -178,15 +178,17 @@ func (s *Server) mergeAdminTaskPullRequest(w http.ResponseWriter, r *http.Reques
 	}
 	s.broadcastLiveFeedEvent("ledger_task_payment")
 	writeJSON(w, http.StatusOK, AdminMergeTaskPullRequestResponse{
-		Task:         accepted,
-		PullRequest:  pull,
-		WorkerID:     req.WorkerID,
-		RewardMRG:    rewardMRG,
-		BountyType:   bountyType,
-		AdminURL:     adminURL,
-		CreditURL:    creditURL,
-		CommentURL:   commentURL,
-		CommentError: commentError,
+		Task:           accepted,
+		PullRequest:    pull,
+		WorkerID:       req.WorkerID,
+		RewardMRG:      rewardMRG,
+		BountyType:     bountyType,
+		AdminURL:       adminURL,
+		CreditURL:      creditURL,
+		CommentURL:     commentURL,
+		CommentError:   commentError,
+		LedgerSequence: ledgerEntry.Sequence,
+		EntryHash:      ledgerEntry.EntryHash,
 	})
 }
 

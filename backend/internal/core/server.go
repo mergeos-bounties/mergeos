@@ -1894,7 +1894,7 @@ func (s *Server) acceptTask(w http.ResponseWriter, r *http.Request) {
 	if action == "claim" {
 		task, err = s.store.ClaimTask(taskID, req)
 	} else {
-		task, err = s.store.AcceptTask(taskID, req)
+		task, _, err = s.store.AcceptTask(taskID, req)
 	}
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())

@@ -2284,28 +2284,28 @@ func (s *Store) ClaimTask(taskID string, req AcceptTaskRequest) (*Task, error) {
 	return &copyTask, nil
 }
 
-func (s *Store) AcceptTask(taskID string, req AcceptTaskRequest) (*Task, error) {
+func (s *Store) AcceptTask(taskID string, req AcceptTaskRequest) (*Task, LedgerEntry, error) {
 	return s.AcceptTaskWithReview(taskID, req, 0, "")
 }
 
-func (s *Store) AcceptTaskWithReview(taskID string, req AcceptTaskRequest, rewardCents int64, bountyType string) (*Task, error) {
+func (s *Store) AcceptTaskWithReview(taskID string, req AcceptTaskRequest, rewardCents int64, bountyType string) (*Task, LedgerEntry, error) {
 	return s.AcceptTaskWithReviewReference(taskID, req, rewardCents, bountyType, "")
 }
 
-func (s *Store) AcceptTaskWithReviewReference(taskID string, req AcceptTaskRequest, rewardCents int64, bountyType, reference string) (*Task, error) {
+func (s *Store) AcceptTaskWithReviewReference(taskID string, req AcceptTaskRequest, rewardCents int64, bountyType, reference string) (*Task, LedgerEntry, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	task, _, err := s.acceptTaskWithReviewReferenceLocked(taskID, req, rewardCents, bountyType, reference)
+	task, entry, err := s.acceptTaskWithReviewReferenceLocked(taskID, req, rewardCents, bountyType, reference)
 	if err != nil {
-		return nil, err
+		return nil, LedgerEntry{}, err
 	}
 	if err := s.saveLocked(); err != nil {
-		return nil, err
+		return nil, LedgerEntry{}, err
 	}
 
 	copyTask := *task
-	return &copyTask, nil
+	return &copyTask, entry, nil
 }
 
 func (s *Store) claimTaskLocked(taskID string, req AcceptTaskRequest) (*Task, error) {

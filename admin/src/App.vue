@@ -358,6 +358,11 @@
                         <ul v-if="pullReadinessNotes(pull).length" class="task-pr-readiness-notes">
                           <li v-for="note in pullReadinessNotes(pull)" :key="note">{{ note }}</li>
                         </ul>
+                        <ul v-if="pullReadinessSignals(pull).length" class="task-pr-readiness-signals">
+                          <li v-for="signal in pullReadinessSignals(pull)" :key="signal">
+                            <CheckCircle2 :size="12" /> {{ signal }}
+                          </li>
+                        </ul>
                       </div>
                     </div>
                     <div class="bounty-review-controls">
@@ -388,6 +393,22 @@
                 </div>
               </div>
               <p v-if="mergeMessages[task.id]" class="inline-success">{{ mergeMessages[task.id] }}</p>
+              <aside v-if="mergeCreditReceipt" class="credit-receipt">
+                <header class="credit-receipt-header">
+                  <CheckCircle2 :size="16" />
+                  <span>Credit receipt</span>
+                </header>
+                <dl class="credit-receipt-dl">
+                  <div v-if="mergeCreditReceipt.sequence"><dt>Ledger seq</dt><dd>{{ mergeCreditReceipt.sequence }}</dd></div>
+                  <div v-if="mergeCreditReceipt.entryHash"><dt>Proof hash</dt><dd class="hash-cell">{{ shortRef(mergeCreditReceipt.entryHash) }}</dd></div>
+                  <div v-if="mergeCreditReceipt.creditUrl"><dt>Scan</dt><dd><a :href="mergeCreditReceipt.creditUrl" target="_blank" rel="noreferrer">View on scan <ExternalLink :size="12" /></a></dd></div>
+                  <div v-if="mergeCreditReceipt.commentUrl"><dt>Comment</dt><dd><a :href="mergeCreditReceipt.commentUrl" target="_blank" rel="noreferrer">View on PR <ExternalLink :size="12" /></a></dd></div>
+                </dl>
+                <button class="compact-action" type="button" @click="copyText(buildMergeCreditComment(mergeCreditReceipt))">
+                  <ClipboardCopy :size="14" />
+                  Copy comment
+                </button>
+              </aside>
             </section>
           </article>
         </div>
@@ -424,6 +445,21 @@
           </button>
           <p v-if="manualCreditError" class="form-error">{{ manualCreditError }}</p>
           <p v-if="manualCreditMessage" class="form-success">{{ manualCreditMessage }}</p>
+          <aside v-if="manualCreditReceipt" class="credit-receipt">
+            <header class="credit-receipt-header">
+              <CheckCircle2 :size="16" />
+              <span>Credit receipt</span>
+            </header>
+            <dl class="credit-receipt-dl">
+              <div v-if="manualCreditReceipt.sequence"><dt>Ledger seq</dt><dd>{{ manualCreditReceipt.sequence }}</dd></div>
+              <div v-if="manualCreditReceipt.entryHash"><dt>Proof hash</dt><dd class="hash-cell">{{ shortRef(manualCreditReceipt.entryHash) }}</dd></div>
+              <div v-if="manualCreditReceipt.creditUrl"><dt>Scan</dt><dd><a :href="manualCreditReceipt.creditUrl" target="_blank" rel="noreferrer">View on scan <ExternalLink :size="12" /></a></dd></div>
+            </dl>
+            <button class="compact-action" type="button" @click="copyText(buildManualCreditComment(manualCreditReceipt))">
+              <ClipboardCopy :size="14" />
+              Copy comment
+            </button>
+          </aside>
         </form>
         <DataTable :columns="['Seq', 'Type', 'From', 'To', 'Amount', 'Reference']">
           <tr v-for="entry in ledgerEntries.slice().reverse()" :key="entry.sequence">
@@ -915,6 +951,7 @@ import {
   CheckCircle2,
   ChevronDown,
   CircleDollarSign,
+  ClipboardCopy,
   Columns3,
   Eye,
   ExternalLink,
@@ -987,6 +1024,8 @@ const mergeSelections = ref({});
 const manualCreditBusy = ref(false);
 const manualCreditError = ref('');
 const manualCreditMessage = ref('');
+const mergeCreditReceipt = ref(null);
+const manualCreditReceipt = ref(null);
 const taskIssueStates = ref({});
 const expandedTaskPulls = ref({});
 const geminiKeys = ref([]);
@@ -2037,7 +2076,11 @@ function pullReadinessTone(pull = {}) {
 
 function pullReadinessNotes(pull = {}) {
   const readiness = pull.readiness || {};
-  return [...(readiness.blockers || []), ...(readiness.warnings || [])].slice(0, 4);
+  return [...(readiness.blockers || []), ...(readiness.warnings || [])].slice(0, 6);
+}
+
+function pullReadinessSignals(pull = {}) {
+  return (pull.readiness?.signals || []).slice(0, 4);
 }
 
 function canMergeTaskPull(task, pull) {
@@ -2098,6 +2141,18 @@ async function mergeTaskPull(task, pull) {
     }
     const commentStatus = result.comment_error ? ` Comment failed: ${result.comment_error}` : ' Commented on PR.';
     mergeMessages.value = { ...mergeMessages.value, [task.id]: `Paid ${mrg(result.reward_mrg || selection.reward_mrg)} to ${result.worker_id || `github:${pull.author}`}.${commentStatus}` };
+    const proofHash = result.entry_hash || (result.task && result.task.proof_hash) || '';
+    mergeCreditReceipt.value = {
+      sequence: result.ledger_sequence,
+      entryHash: proofHash,
+      creditUrl: result.credit_url,
+      commentUrl: result.comment_url,
+      workerId: result.worker_id || `github:${pull.author}`,
+      rewardMrg: result.reward_mrg || selection.reward_mrg,
+      bountyType: result.bounty_type || selection.bounty_type,
+      mergeUrl: result.pull_request && result.pull_request.merge_url,
+      commentError: result.comment_error,
+    };
     const [summaryData, ledgerData] = await Promise.all([
       api('/api/admin/summary'),
       api('/api/admin/ledger'),
@@ -2133,7 +2188,21 @@ async function createManualCredit() {
     ]);
     summary.value = summaryData || {};
     ledgerEntries.value = Array.isArray(ledgerData) ? ledgerData : [];
-    manualCreditMessage.value = `Credited ${mrg(result.reward_mrg || manualCreditForm.reward_mrg)} to ${result.worker_id || manualCreditForm.worker_id}.`;
+    const paidMrg = result.reward_mrg || manualCreditForm.reward_mrg;
+    const paidWorker = result.worker_id || manualCreditForm.worker_id;
+    manualCreditMessage.value = `Credited ${mrg(paidMrg)} to ${paidWorker}.`;
+    if (result.ledger_entry) {
+      manualCreditReceipt.value = {
+        sequence: result.ledger_entry.sequence,
+        entryHash: result.ledger_entry.entry_hash,
+        creditUrl: result.credit_url,
+        workerId: paidWorker,
+        rewardMrg: paidMrg,
+        bountyType: result.bounty_type || manualCreditForm.bounty_type,
+        prUrl: manualCreditForm.pr_url,
+        prTitle: manualCreditForm.pr_title,
+      };
+    }
     manualCreditForm.worker_id = '';
     manualCreditForm.pr_url = '';
     manualCreditForm.pr_title = '';
@@ -2189,6 +2258,42 @@ function shortRef(value = '') {
   const text = String(value || '');
   if (text.length <= 18) return text || '-';
   return `${text.slice(0, 8)}...${text.slice(-6)}`;
+}
+
+function copyText(text) {
+  if (!hasWindow || !text) return;
+  navigator.clipboard.writeText(text).catch(() => {});
+}
+
+function buildMergeCreditComment(receipt) {
+  if (!receipt) return '';
+  const lines = [
+    'MergeOS approved and merged this PR.',
+    '',
+  ];
+  if (receipt.mergeUrl) lines.push(`- Merge URL: ${receipt.mergeUrl}`);
+  if (receipt.creditUrl) lines.push(`- MRG credit URL: ${receipt.creditUrl}`);
+  lines.push(`- Credited worker: ${receipt.workerId || '-'}`);
+  lines.push(`- Bounty type: ${titleize(receipt.bountyType || '')}`);
+  lines.push(`- MRG credited: ${receipt.rewardMrg || 0} MRG`);
+  if (receipt.entryHash) lines.push(`- Proof hash: ${receipt.entryHash}`);
+  return lines.join('\n');
+}
+
+function buildManualCreditComment(receipt) {
+  if (!receipt) return '';
+  const lines = [
+    'MergeOS manual credit',
+    '',
+  ];
+  if (receipt.prUrl) lines.push(`- PR URL: ${receipt.prUrl}`);
+  if (receipt.prTitle) lines.push(`- PR title: ${receipt.prTitle}`);
+  if (receipt.creditUrl) lines.push(`- MRG credit URL: ${receipt.creditUrl}`);
+  lines.push(`- Credited worker: ${receipt.workerId || '-'}`);
+  lines.push(`- Bounty type: ${titleize(receipt.bountyType || '')}`);
+  lines.push(`- MRG credited: ${receipt.rewardMrg || 0} MRG`);
+  if (receipt.entryHash) lines.push(`- Proof hash: ${receipt.entryHash}`);
+  return lines.join('\n');
 }
 
 function geminiKeyStatusTone(status = '') {
