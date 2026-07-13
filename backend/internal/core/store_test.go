@@ -7644,3 +7644,210 @@ func agentQueueAgentByType(agents []AgentQueueAgent, agentType string) *AgentQue
 	}
 	return nil
 }
+
+func TestCreateBankFundingIntent(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:       defaultTokenSymbol,
+		StatePath:         filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:    1000,
+		DevPaymentEnabled: true,
+		DevPaymentCode:    defaultDevPaymentCode,
+		GitHubOwner:       defaultGitHubOwner,
+		BountyRoot:        filepath.Join(tempDir, "bounties"),
+		SMTPFrom:          "noreply@mergeos.local",
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	auth, err := store.Register(RegisterRequest{
+		Name:     "Bank Client",
+		Email:    "bank-client@example.com",
+		Password: "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	server := NewServer(cfg, store, payments)
+	body := `{"amount_cents":50000,"project_title":"Bank Project","client_name":"Bank Client","client_email":"bank-client@example.com","flow":"project_funding"}`
+	req := httptest.NewRequest(http.MethodPost, "/api/payments/bank/intents", strings.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+auth.Token)
+	req.Header.Set("Content-Type", "application/json")
+	resp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(resp, req)
+	if resp.Code != http.StatusCreated {
+		t.Fatalf("bank intent status = %d, body = %s", resp.Code, resp.Body.String())
+	}
+	var payload CreateBankFundingIntentResponse
+	if err := json.Unmarshal(resp.Body.Bytes(), &payload); err != nil {
+		t.Fatal(err)
+	}
+	if payload.Status != "pending" || payload.Provider != "bank_transfer" || payload.IntentID == "" {
+		t.Fatalf("unexpected bank intent: %#v", payload)
+	}
+}
+
+func TestBankFundingNonAdminCannotVerify(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:       defaultTokenSymbol,
+		StatePath:         filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:    1000,
+		DevPaymentEnabled: true,
+		DevPaymentCode:    defaultDevPaymentCode,
+		GitHubOwner:       defaultGitHubOwner,
+		BountyRoot:        filepath.Join(tempDir, "bounties"),
+		SMTPFrom:          "noreply@mergeos.local",
+		AdminAutoPromote:  true,
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	adminAuth, err := store.Register(RegisterRequest{
+		Name:     "Admin Bank",
+		Email:    "admin-bank@example.com",
+		Password: "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if adminAuth.User.Role != RoleAdmin {
+		t.Fatalf("first user should be admin, got %q", adminAuth.User.Role)
+	}
+	clientAuth, err := store.Register(RegisterRequest{
+		Name:     "Client Bank",
+		Email:    "client-bank@example.com",
+		Password: "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if clientAuth.User.Role == RoleAdmin {
+		t.Fatalf("second user should not be admin")
+	}
+	intent, err := store.RecordBankFundingIntent(clientAuth.User.ID, CreateBankFundingIntentRequest{
+		AmountCents:  50000,
+		ProjectTitle: "Bank Project",
+		ClientName:   "Client Bank",
+		ClientEmail:  "client-bank@example.com",
+		Flow:         "project_funding",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	server := NewServer(cfg, store, payments)
+	verifyBody := fmt.Sprintf(`{"intent_id":"%s"}`, intent.IntentID)
+	// Non-admin client tries to verify
+	req := httptest.NewRequest(http.MethodPost, "/api/admin/payments/bank/verify", strings.NewReader(verifyBody))
+	req.Header.Set("Authorization", "Bearer "+clientAuth.Token)
+	req.Header.Set("Content-Type", "application/json")
+	resp := httptest.NewRecorder()
+	server.Routes().ServeHTTP(resp, req)
+	if resp.Code != http.StatusForbidden {
+		t.Fatalf("non-admin verify status = %d, body = %s", resp.Code, resp.Body.String())
+	}
+}
+
+func TestAdminVerifyBankTransferCreatesProjectAndLedgerEntry(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:       defaultTokenSymbol,
+		StatePath:         filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:    1000,
+		DevPaymentEnabled: true,
+		DevPaymentCode:    defaultDevPaymentCode,
+		GitHubOwner:       defaultGitHubOwner,
+		BountyRoot:        filepath.Join(tempDir, "bounties"),
+		SMTPFrom:          "noreply@mergeos.local",
+		AdminAutoPromote:  true,
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	adminAuth, err := store.Register(RegisterRequest{
+		Name:     "Admin Bank",
+		Email:    "admin-bank-v@example.com",
+		Password: "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	clientAuth, err := store.Register(RegisterRequest{
+		Name:     "Client Bank",
+		Email:    "client-bank-v@example.com",
+		Password: "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	intent, err := store.RecordBankFundingIntent(clientAuth.User.ID, CreateBankFundingIntentRequest{
+		AmountCents:  50000,
+		ProjectTitle: "Verified Bank Project",
+		ClientName:   "Client Bank",
+		ClientEmail:  "client-bank-v@example.com",
+		Flow:         "project_funding",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Admin verifies via store directly for cleaner assertion
+	verifiedIntent, projectID, seq, hash, err := store.VerifyBankFunding(adminAuth.User.ID, intent.IntentID)
+	if err != nil {
+		t.Fatalf("admin verify failed: %v", err)
+	}
+	if verifiedIntent.Status != "verified" {
+		t.Fatalf("intent status = %q, want verified", verifiedIntent.Status)
+	}
+	if projectID == "" {
+		t.Fatal("project id is empty")
+	}
+	if seq == 0 {
+		t.Fatal("ledger sequence is 0")
+	}
+	if hash == "" {
+		t.Fatal("entry hash is empty")
+	}
+	// Check the project exists and is funded
+	project, ok := store.ProjectSnapshot(projectID)
+	if !ok {
+		t.Fatalf("project %s not found", projectID)
+	}
+	if project.Status != ProjectFunded {
+		t.Fatalf("project status = %q, want funded", project.Status)
+	}
+	if project.PaymentMethod != PaymentBank {
+		t.Fatalf("payment method = %q, want bank_transfer", project.PaymentMethod)
+	}
+	if project.BudgetCents != 50000 {
+		t.Fatalf("budget = %d, want 50000", project.BudgetCents)
+	}
+	// Check ledger entry exists
+	entries := store.ListLedger()
+	found := false
+	for _, entry := range entries {
+		if entry.Sequence == seq && entry.EntryHash == hash {
+			found = true
+			if entry.Type != "bank_funding" {
+				t.Fatalf("entry type = %q, want bank_funding", entry.Type)
+			}
+			if entry.AmountCents != 50000 {
+				t.Fatalf("entry amount = %d, want 50000", entry.AmountCents)
+			}
+			break
+		}
+	}
+	if !found {
+		t.Fatal("ledger entry not found")
+	}
+	// Verify duplicate verification fails
+	_, _, _, _, err = store.VerifyBankFunding(adminAuth.User.ID, intent.IntentID)
+	if err == nil {
+		t.Fatal("duplicate verification should fail")
+	}
+}

@@ -77,6 +77,8 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("POST /api/wallets/migrations", s.createWalletMigration)
 	mux.HandleFunc("POST /api/payments/paypal/orders", s.createPayPalOrder)
 	mux.HandleFunc("POST /api/payments/card/intents", s.createCardPaymentIntent)
+	mux.HandleFunc("POST /api/payments/bank/intents", s.createBankFundingIntent)
+	mux.HandleFunc("POST /api/admin/payments/bank/verify", s.verifyBankTransfer)
 	mux.HandleFunc("POST /api/payments/paypal/webhook", s.handlePayPalWebhook)
 	mux.HandleFunc("POST /api/uploads", s.uploadAttachment)
 	mux.HandleFunc("GET /api/uploads/", s.downloadAttachment)
@@ -1843,6 +1845,55 @@ func (s *Server) createCardPaymentIntent(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	writeJSON(w, http.StatusCreated, intent)
+}
+
+func (s *Server) createBankFundingIntent(w http.ResponseWriter, r *http.Request) {
+	user, ok := s.requireUser(w, r)
+	if !ok {
+		return
+	}
+	var req CreateBankFundingIntentRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	intent, err := s.store.RecordBankFundingIntent(user.ID, req)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusCreated, CreateBankFundingIntentResponse{
+		IntentID:    intent.IntentID,
+		Status:      intent.Status,
+		Provider:    "bank_transfer",
+		AmountCents: intent.AmountCents,
+		Reference:   intent.IntentID,
+		CreatedAt:   intent.CreatedAt,
+	})
+}
+
+func (s *Server) verifyBankTransfer(w http.ResponseWriter, r *http.Request) {
+	admin, ok := s.requireAdmin(w, r)
+	if !ok {
+		return
+	}
+	var req VerifyBankTransferRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	intent, projectID, ledgerSeq, entryHash, err := s.store.VerifyBankFunding(admin.ID, req.IntentID)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, VerifyBankTransferResponse{
+		IntentID:  intent.IntentID,
+		Status:    intent.Status,
+		ProjectID: projectID,
+		LedgerSeq: ledgerSeq,
+		EntryHash: entryHash,
+	})
 }
 
 func (s *Server) acceptTask(w http.ResponseWriter, r *http.Request) {

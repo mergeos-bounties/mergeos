@@ -9,6 +9,7 @@ const (
 	PaymentCrypto PaymentMethod = "crypto"
 	PaymentUSDT   PaymentMethod = "usdt"
 	PaymentStripe PaymentMethod = "stripe"
+	PaymentBank   PaymentMethod = "bank_transfer"
 )
 
 type WorkerKind string
@@ -877,6 +878,58 @@ type CreateCardPaymentIntentResponse struct {
 	PublicKey        string `json:"public_key,omitempty"`
 	Brand            string `json:"brand,omitempty"`
 	Last4            string `json:"last4,omitempty"`
+}
+
+type CreateBankFundingIntentRequest struct {
+	AmountCents  int64    `json:"amount_cents"`
+	Description  string   `json:"description"`
+	Flow         string   `json:"flow,omitempty"`
+	ProjectTitle string   `json:"project_title"`
+	ClientName   string   `json:"client_name"`
+	ClientEmail  string   `json:"client_email"`
+	SourceRepoURL string  `json:"source_repo_url,omitempty"`
+	AttachmentIDs []string `json:"attachment_ids,omitempty"`
+}
+
+type CreateBankFundingIntentResponse struct {
+	IntentID       string `json:"intent_id"`
+	Status         string `json:"status"`
+	Provider       string `json:"provider"`
+	AmountCents    int64  `json:"amount_cents"`
+	Reference      string `json:"reference"`
+	BankDetails    string `json:"bank_details,omitempty"`
+	CreatedAt      time.Time `json:"created_at"`
+}
+
+type BankFundingIntent struct {
+	IntentID       string    `json:"intent_id"`
+	UserID         string    `json:"user_id"`
+	AmountCents    int64     `json:"amount_cents"`
+	Currency       string    `json:"currency"`
+	Description    string    `json:"description,omitempty"`
+	Flow           string    `json:"flow,omitempty"`
+	ProjectTitle   string    `json:"project_title"`
+	ClientName     string    `json:"client_name"`
+	ClientEmail    string    `json:"client_email"`
+	SourceRepoURL  string    `json:"source_repo_url,omitempty"`
+	AttachmentIDs  []string  `json:"attachment_ids,omitempty"`
+	Status         string    `json:"status"`
+	CreatedAt      time.Time `json:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at"`
+	VerifiedAt     *time.Time `json:"verified_at,omitempty"`
+	VerifiedByUser string    `json:"verified_by_user,omitempty"`
+}
+
+type VerifyBankTransferRequest struct {
+	IntentID string `json:"intent_id"`
+}
+
+type VerifyBankTransferResponse struct {
+	IntentID   string `json:"intent_id"`
+	Status     string `json:"status"`
+	ProjectID  string `json:"project_id"`
+	LedgerSeq  int    `json:"ledger_sequence"`
+	EntryHash  string `json:"entry_hash"`
 }
 
 type ImportRepoIssuesRequest struct {

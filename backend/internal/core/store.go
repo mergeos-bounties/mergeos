@@ -123,6 +123,7 @@ type Store struct {
 	testSettingsEntries map[string]*TestSettingsEntry
 	adminSettings       AdminSettings
 	paymentOrders       map[string]*PaymentOrderIntent
+	bankFundingIntents  map[string]*BankFundingIntent
 	agentLeases         map[string]*AgentLeaseResponse
 	ledger              []LedgerEntry
 }
@@ -143,7 +144,8 @@ type persistedState struct {
 	TestSettingsConfig  *TestSettingsConfig   `json:"test_settings_config,omitempty"`
 	TestSettingsEntries []*TestSettingsEntry  `json:"test_settings_entries,omitempty"`
 	PaymentOrders       []*PaymentOrderIntent `json:"payment_orders,omitempty"`
-	Ledger              []LedgerEntry         `json:"ledger"`
+	BankFundingIntents  []*BankFundingIntent    `json:"bank_funding_intents,omitempty"`
+	Ledger              []LedgerEntry          `json:"ledger"`
 }
 
 type statePersistence interface {
@@ -173,6 +175,7 @@ func NewStore(cfg Config, payments *PaymentManager, repos RepoFactory, emailer *
 		testSettingsEntries: map[string]*TestSettingsEntry{},
 		adminSettings:       defaultAdminSettings(cfg),
 		paymentOrders:       map[string]*PaymentOrderIntent{},
+		bankFundingIntents:  map[string]*BankFundingIntent{},
 		agentLeases:         map[string]*AgentLeaseResponse{},
 		ledger:              []LedgerEntry{},
 	}
@@ -1113,6 +1116,8 @@ func normalizeFundingPaymentMethod(method PaymentMethod) PaymentMethod {
 		return PaymentUSDT
 	case string(PaymentStripe):
 		return PaymentStripe
+	case string(PaymentBank), "bank", "wire_transfer", "ach":
+		return PaymentBank
 	default:
 		return method
 	}
@@ -2447,6 +2452,174 @@ func (s *Store) AddManualCredit(workerID string, amountCents int64, reference st
 	return entry, nil
 }
 
+func (s *Store) RecordBankFundingIntent(userID string, req CreateBankFundingIntentRequest) (*BankFundingIntent, error) {
+	userID = strings.TrimSpace(userID)
+	if userID == "" {
+		return nil, errors.New("login is required to create a bank funding intent")
+	}
+	if req.AmountCents < 10000 {
+		return nil, errors.New("amount must be at least 100 USD")
+	}
+	if strings.TrimSpace(req.ProjectTitle) == "" {
+		return nil, errors.New("project title is required")
+	}
+	if strings.TrimSpace(req.ClientName) == "" {
+		return nil, errors.New("client name is required")
+	}
+	if _, err := normalizeEmail(req.ClientEmail); err != nil {
+		return nil, errors.New("valid client email is required")
+	}
+	flow, err := validatePaymentOrderFlow(req.Flow)
+	if err != nil {
+		return nil, err
+	}
+	now := time.Now().UTC()
+	intentID := s.newID("bnk")
+	intent := &BankFundingIntent{
+		IntentID:      intentID,
+		UserID:        userID,
+		AmountCents:   req.AmountCents,
+		Currency:      "USD",
+		Description:   strings.TrimSpace(req.Description),
+		Flow:          flow,
+		ProjectTitle:  strings.TrimSpace(req.ProjectTitle),
+		ClientName:    strings.TrimSpace(req.ClientName),
+		ClientEmail:   strings.TrimSpace(req.ClientEmail),
+		SourceRepoURL: strings.TrimSpace(req.SourceRepoURL),
+		AttachmentIDs: req.AttachmentIDs,
+		Status:        "pending",
+		CreatedAt:     now,
+		UpdatedAt:     now,
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.bankFundingIntents == nil {
+		s.bankFundingIntents = map[string]*BankFundingIntent{}
+	}
+	if _, exists := s.bankFundingIntents[intentID]; exists {
+		return nil, fmt.Errorf("bank funding intent %s already exists", intentID)
+	}
+	s.bankFundingIntents[intentID] = intent
+	if err := s.saveLocked(); err != nil {
+		delete(s.bankFundingIntents, intentID)
+		return nil, fmt.Errorf("bank funding intent persistence failed: %w", err)
+	}
+	return cloneBankFundingIntent(intent), nil
+}
+
+func (s *Store) BankFundingIntent(intentID string) (*BankFundingIntent, bool) {
+	intentID = strings.TrimSpace(intentID)
+	if intentID == "" {
+		return nil, false
+	}
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	intent, ok := s.bankFundingIntents[intentID]
+	if !ok || intent == nil {
+		return nil, false
+	}
+	return cloneBankFundingIntent(intent), true
+}
+
+func (s *Store) VerifyBankFunding(adminUserID, intentID string) (*BankFundingIntent, string, int, string, error) {
+	adminUserID = strings.TrimSpace(adminUserID)
+	intentID = strings.TrimSpace(intentID)
+	if adminUserID == "" {
+		return nil, "", 0, "", errors.New("admin user id is required")
+	}
+	if intentID == "" {
+		return nil, "", 0, "", errors.New("intent id is required")
+	}
+	now := time.Now().UTC()
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	intent, ok := s.bankFundingIntents[intentID]
+	if !ok || intent == nil {
+		return nil, "", 0, "", errors.New("bank funding intent not found")
+	}
+	if intent.Status != "pending" {
+		return nil, "", 0, "", fmt.Errorf("bank funding intent is %s, not pending", intent.Status)
+	}
+	user, ok := s.users[adminUserID]
+	if !ok {
+		return nil, "", 0, "", errors.New("admin user not found")
+	}
+	if normalizeRole(user.Role) != RoleAdmin {
+		return nil, "", 0, "", errors.New("only admins can verify bank transfers")
+	}
+	projectID := s.newID("prj")
+	fee := intent.AmountCents * s.cfg.PlatformFeeBps / 10000
+	workPool := intent.AmountCents - fee
+	project := &Project{
+		ID:               projectID,
+		ClientUserID:     intent.UserID,
+		Title:            intent.ProjectTitle,
+		ClientName:       intent.ClientName,
+		ClientEmail:      intent.ClientEmail,
+		PaymentMethod:    PaymentBank,
+		PaymentStatus:    "verified",
+		PaymentProvider:  "bank_transfer",
+		PaymentReference: intentID,
+		RepoVisibility:   "local-bounty-workspace",
+		BudgetCents:      intent.AmountCents,
+		FeeCents:         fee,
+		WorkPoolCents:    workPool,
+		Status:           ProjectFunded,
+		CreatedAt:        now,
+	}
+	if intent.SourceRepoURL != "" {
+		project.Brief = "Source repository: " + intent.SourceRepoURL
+		if fullName, htmlURL := parseGitHubRepoURL(intent.SourceRepoURL); fullName != "" {
+			project.BountyRepoName = fullName
+			project.RepoURL = htmlURL
+			project.RepoProvider = "github"
+			project.RepoVisibility = "source-repository"
+		}
+	}
+	project.Tasks = s.splitProjectTasksWithPolicy(project, true)
+	s.projects[projectID] = project
+	entry := s.addLedger("bank_funding", "external:bank_transfer", taskReserveAccount(), intent.AmountCents, "bank-transfer:"+intentID)
+	intent.Status = "verified"
+	intent.UpdatedAt = now
+	intent.VerifiedAt = &now
+	intent.VerifiedByUser = adminUserID
+	if err := s.saveLocked(); err != nil {
+		delete(s.projects, projectID)
+		s.ledger = s.ledger[:len(s.ledger)-1]
+		intent.Status = "pending"
+		intent.UpdatedAt = intent.CreatedAt
+		intent.VerifiedAt = nil
+		intent.VerifiedByUser = ""
+		return nil, "", 0, "", fmt.Errorf("bank funding verification persistence failed: %w", err)
+	}
+	return cloneBankFundingIntent(intent), projectID, entry.Sequence, entry.EntryHash, nil
+}
+
+func (s *Store) pendingBankFundingIntentsLocked() []*BankFundingIntent {
+	result := make([]*BankFundingIntent, 0, len(s.bankFundingIntents))
+	for _, intent := range s.bankFundingIntents {
+		if intent == nil {
+			continue
+		}
+		if intent.Status == "pending" {
+			result = append(result, cloneBankFundingIntent(intent))
+		}
+	}
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].CreatedAt.Before(result[j].CreatedAt)
+	})
+	return result
+}
+
+func cloneBankFundingIntent(intent *BankFundingIntent) *BankFundingIntent {
+	if intent == nil {
+		return nil
+	}
+	copyIntent := *intent
+	copyIntent.VerifiedAt = cloneTimePtr(intent.VerifiedAt)
+	return &copyIntent
+}
+
 func (s *Store) userByEmailLocked(email string) *User {
 	for _, user := range s.users {
 		if user.Email == email {
@@ -3170,6 +3343,33 @@ func (s *Store) applyState(state persistedState) bool {
 		s.paymentOrders[intentCopy.OrderID] = &intentCopy
 	}
 
+	s.bankFundingIntents = map[string]*BankFundingIntent{}
+	for _, intent := range state.BankFundingIntents {
+		if intent == nil || strings.TrimSpace(intent.IntentID) == "" {
+			continue
+		}
+		intentCopy := *intent
+		intentCopy.IntentID = strings.TrimSpace(intentCopy.IntentID)
+		if strings.TrimSpace(intentCopy.Currency) == "" {
+			intentCopy.Currency = "USD"
+			migrated = true
+		}
+		if intentCopy.Status == "" {
+			intentCopy.Status = "pending"
+			migrated = true
+		}
+		if intentCopy.CreatedAt.IsZero() {
+			intentCopy.CreatedAt = time.Now().UTC()
+			migrated = true
+		}
+		if intentCopy.UpdatedAt.IsZero() {
+			intentCopy.UpdatedAt = intentCopy.CreatedAt
+			migrated = true
+		}
+		intentCopy.VerifiedAt = cloneTimePtr(intent.VerifiedAt)
+		s.bankFundingIntents[intentCopy.IntentID] = &intentCopy
+	}
+
 	// Test settings
 	s.testSettingsConfig = TestSettingsConfig{}
 	if state.TestSettingsConfig != nil {
@@ -3213,6 +3413,7 @@ func (s *Store) snapshotLocked() persistedState {
 		TestSettingsConfig:  &s.testSettingsConfig,
 		TestSettingsEntries: make([]*TestSettingsEntry, 0, len(s.testSettingsEntries)),
 		PaymentOrders:       make([]*PaymentOrderIntent, 0, len(s.paymentOrders)),
+		BankFundingIntents:  make([]*BankFundingIntent, 0, len(s.bankFundingIntents)),
 		Ledger:              s.ledger,
 	}
 	for _, project := range s.projects {
@@ -3270,6 +3471,13 @@ func (s *Store) snapshotLocked() persistedState {
 	}
 	sort.Slice(state.PaymentOrders, func(i, j int) bool {
 		return state.PaymentOrders[i].CreatedAt.Before(state.PaymentOrders[j].CreatedAt)
+	})
+	for _, intent := range s.bankFundingIntents {
+		intentCopy := *intent
+		state.BankFundingIntents = append(state.BankFundingIntents, &intentCopy)
+	}
+	sort.Slice(state.BankFundingIntents, func(i, j int) bool {
+		return state.BankFundingIntents[i].CreatedAt.Before(state.BankFundingIntents[j].CreatedAt)
 	})
 	return state
 }
