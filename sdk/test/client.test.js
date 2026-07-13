@@ -28,6 +28,8 @@ import {
   agentSupportsAction,
   agentWorkPacketOutputContracts,
   aiWorkflowCurrentStage,
+  evidenceRequiredFromEvent,
+  hasEvidenceRequirement,
   aiWorkflowStage,
   aiWorkflowStageActionContract,
   aiWorkflowStageContextURLs,
@@ -2270,4 +2272,43 @@ test('sanitizes public limit query values for non-finite inputs', async () => {
   assert.equal(fetchImpl.calls[2].url, 'https://mergeos.shop/api/public/protocol/events?limit=2');
   assert.equal(fetchImpl.calls[3].url, 'https://mergeos.shop/api/public/protocol/tasks');
   assert.equal(fetchImpl.calls[4].url, 'https://mergeos.shop/api/public/protocol/tasks?limit=2');
+});
+
+test('evidenceRequiredFromEvent extracts and deduplicates requirements', () => {
+  const event = {
+    evidence_required: ['security-review', 'test_output', 'security-review', ''],
+    type: 'task.submitted',
+  };
+  const result = evidenceRequiredFromEvent(event);
+  assert.deepEqual(result, ['security_review', 'test_output']);
+});
+
+test('evidenceRequiredFromEvent handles camelCase evidenceRequired', () => {
+  const event = { evidenceRequired: 'scan_output,deployment_url' };
+  const result = evidenceRequiredFromEvent(event);
+  assert.deepEqual(result, ['scan_output', 'deployment_url']);
+});
+
+test('evidenceRequiredFromEvent handles direct evidence array', () => {
+  const result = evidenceRequiredFromEvent({ evidence: ['SECURITY-REVIEW', ' Test_Output '] });
+  assert.deepEqual(result, ['security_review', 'test_output']);
+});
+
+test('evidenceRequiredFromEvent returns empty array for empty input', () => {
+  assert.deepEqual(evidenceRequiredFromEvent({}), []);
+  assert.deepEqual(evidenceRequiredFromEvent(null), []);
+  assert.deepEqual(evidenceRequiredFromEvent(undefined), []);
+});
+
+test('hasEvidenceRequirement matches normalized requirements', () => {
+  const event = { evidence_required: ['security-review', 'test_output'] };
+  assert.equal(hasEvidenceRequirement(event, 'security-review'), true);
+  assert.equal(hasEvidenceRequirement(event, 'security_review'), true);
+  assert.equal(hasEvidenceRequirement(event, 'Security-Review'), true);
+  assert.equal(hasEvidenceRequirement(event, 'deployment_url'), false);
+});
+
+test('hasEvidenceRequirement returns false for empty source', () => {
+  assert.equal(hasEvidenceRequirement({}, 'anything'), false);
+  assert.equal(hasEvidenceRequirement(null, 'test'), false);
 });

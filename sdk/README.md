@@ -163,6 +163,29 @@ if (isLikelySolanaWallet(wallet)) {
 }
 ```
 
+## Evidence Requirement Helpers
+
+```js
+import { evidenceRequiredFromEvent, hasEvidenceRequirement } from '@mergeos/sdk';
+
+const event = {
+  evidence_required: ['security-review', 'test_output', 'security-review', ''],
+  type: 'task.submitted',
+};
+const requirements = evidenceRequiredFromEvent(event);
+// ['security_review', 'test_output']
+
+if (hasEvidenceRequirement(event, 'security-review')) {
+  console.log('Security review evidence is required for this task.');
+}
+
+// Works with live-feed items, arrays, and comma-separated strings too
+const feedItem = { evidenceRequired: 'scan_output,deployment_url' };
+console.log(evidenceRequiredFromEvent(feedItem)); // ['scan_output', 'deployment_url']
+```
+
+Keys are normalized: `security-review` → `security_review`, blanks and duplicates are ignored.
+
 ## Public APIs
 
 ```js
