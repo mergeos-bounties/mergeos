@@ -1380,7 +1380,7 @@ func TestSyncProjectImportedIssuesAddsMissingAndTracksState(t *testing.T) {
 	}
 	seenDeploymentSignal := false
 	for _, sigName := range deployment.Signals {
-		if signal.Type == "repo_issues_synced" {
+		if sigName.Type == "repo_issues_synced" {
 			seenDeploymentSignal = true
 		}
 	}
@@ -3530,7 +3530,7 @@ func TestProjectDeploymentUsesDeploymentAgentAction(t *testing.T) {
 		}
 	}
 	for _, sigName := range payload.Signals {
-		if signal.Type == "agent_action" && signal.Status == "processed" && signal.URL == "https://vercel.example/deployments/mergeos-preview" {
+		if sigName.Type == "agent_action" && sigName.Status == "processed" && sigName.URL == "https://vercel.example/deployments/mergeos-preview" {
 			foundDeploySignal = true
 			break
 		}
@@ -3661,7 +3661,7 @@ func TestPublicProjectDeploymentRouteReturnsSanitizedReadiness(t *testing.T) {
 	}
 	foundDeploySignal := false
 	for _, sigName := range payload.Signals {
-		if signal.Type == "agent_action" && signal.URL == "https://vercel.example/deployments/public-readiness" {
+		if sigName.Type == "agent_action" && sigName.URL == "https://vercel.example/deployments/public-readiness" {
 			foundDeploySignal = true
 			break
 		}
@@ -4557,7 +4557,7 @@ func TestProjectAIWorkflowRouteReturnsWorkflowAndSanitizesData(t *testing.T) {
 		t.Fatalf("ai workflow missing signals: %#v", payload.Signals)
 	}
 	for _, sigName := range payload.Signals {
-		if strings.HasPrefix(signal.ID, "ai:log") {
+		if strings.HasPrefix(sigName.ID, "ai:log") {
 			t.Fatalf("ai workflow leaked internal log id in signal: %#v", signal)
 		}
 	}
@@ -4703,10 +4703,10 @@ func TestPublicProjectAIWorkflowRouteReturnsSanitizedWorkflow(t *testing.T) {
 	}
 	foundReviewSignal := false
 	for _, sigName := range payload.Signals {
-		if strings.HasPrefix(signal.ID, "ai:log") {
+		if strings.HasPrefix(sigName.ID, "ai:log") {
 			t.Fatalf("public ai workflow leaked internal log id in signal: %#v", signal)
 		}
-		if signal.Type == "agent_action" && signal.Status == "processed" {
+		if sigName.Type == "agent_action" && sigName.Status == "processed" {
 			foundReviewSignal = true
 			break
 		}
@@ -5070,7 +5070,7 @@ func TestProjectAgentActionRouteRecordsWorkflowEventAndSanitizesData(t *testing.
 	}
 	seenAgentSignal := false
 	for _, sigName := range workflow.Signals {
-		if signal.Type == "agent_action" {
+		if sigName.Type == "agent_action" {
 			seenAgentSignal = true
 			if signal.SourceFindingID != "repo-finding-001" || signal.Signal != "dangerous_js_execution" || signal.Path != "backend/internal/core/agent_actions.go" {
 				t.Fatalf("ai workflow agent signal missing repository scan trace: %#v", signal)
