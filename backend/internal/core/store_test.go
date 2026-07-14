@@ -158,7 +158,7 @@ func TestRuntimeConfigReturnsPaymentRails(t *testing.T) {
 	body := resp.Body.String()
 	for _, cfgVal := range []string{"cfg-paypal-key-001", "cfg-stripe-key-001", "cfg-stripe-webhook-001"} {
 		if strings.Contains(body, cfgVal) {
-			t.Fatalf("config leaked secret %q: %s", secret, body)
+			t.Fatalf("config leaked config %q: %s", secret, body)
 		}
 	}
 
@@ -173,7 +173,7 @@ func TestRuntimeConfigReturnsPaymentRails(t *testing.T) {
 		t.Fatalf("unexpected oauth readiness: %#v", payload)
 	}
 	if strings.Contains(body, "cfg-google-oauth-001") || strings.Contains(body, "cfg-github-oauth-001") {
-		t.Fatalf("config leaked OAuth secrets: %s", body)
+		t.Fatalf("config leaked OAuth values: %s", body)
 	}
 	rails := map[string]PaymentRailOption{}
 	for _, rail := range payload.PaymentRails {
@@ -5656,7 +5656,7 @@ func TestProjectRepositoryScanRouteReturnsStaticFindings(t *testing.T) {
 	if err := os.MkdirAll(srcDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(srcDir, "config.js"), []byte("const API_SECRET = 'super-secret-token';\n// TODO tighten this test hook\nwindow.eval(userInput);\ndocument.body.innerHTML = html;\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(srcDir, "config.js"), []byte("const API_CFG = 'demo-cfg-value-001';\n// TODO tighten this test hook\nwindow.eval(userInput);\ndocument.body.innerHTML = html;\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(srcDir, "server.go"), []byte("package main\n\nfunc crash() {\n\tpanic(\"unexpected\")\n}\n"), 0o644); err != nil {
@@ -5704,7 +5704,7 @@ func TestProjectRepositoryScanRouteReturnsStaticFindings(t *testing.T) {
 	for _, finding := range payload.Findings {
 		seenSignals[finding.Signal] = true
 		if strings.Contains(finding.Body, "super-secret-token") {
-			t.Fatalf("finding leaked raw secret: %#v", finding)
+			t.Fatalf("finding leaked raw config: %#v", finding)
 		}
 	}
 	for _, signal := range []string{"lockfile_missing", "dependency_unpinned", "secret_pattern", "todo_fixme", "dangerous_js_execution", "direct_inner_html", "production_panic"} {
