@@ -7270,7 +7270,7 @@ func TestAdminCanUpdateUserAndPassword(t *testing.T) {
 	}
 
 	server := NewServer(cfg, store, payments)
-	body := strings.NewReader(`{"name":"Updated Client","company_name":"New Co","email":"updated@example.com","role":"client","password":testPass()}`)
+	body := strings.NewReader(fmt.Sprintf(`{"name":"Updated Client","company_name":"New Co","email":"updated@example.com","role":"client","password":"%s"}`, testPass()))
 	req := httptest.NewRequest(http.MethodPatch, "/api/admin/users/"+clientAuth.User.ID, body)
 	req.Header.Set("Authorization", "Bearer "+adminAuth.Token)
 	req.Header.Set("Content-Type", "application/json")
