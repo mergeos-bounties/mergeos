@@ -158,7 +158,7 @@ func TestRuntimeConfigReturnsPaymentRails(t *testing.T) {
 	body := resp.Body.String()
 	for _, cfgVal := range []string{"cfg-paypal-key-001", "cfg-stripe-key-001", "cfg-stripe-webhook-001"} {
 		if strings.Contains(body, cfgVal) {
-			 t.Fatalf("config leaked cfg %q: %s", secret, body)
+			 t.Fatalf("config leaked cfg %q: %s", cfgVal, body)
 		}
 	}
 
