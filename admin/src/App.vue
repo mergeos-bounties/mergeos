@@ -1058,7 +1058,7 @@ const testForm = reactive({
 
 const loginForm = reactive({
   email: 'admin@gmail.com',
-  password: 'Admin123',
+  password: '[test-admin-pass]',
 });
 
 const userForm = reactive({
