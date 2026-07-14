@@ -1,4 +1,4 @@
-# MergeOS
+﻿# MergeOS
 
 [![Build and deploy](https://github.com/mergeos-bounties/mergeos/actions/workflows/deploy.yml/badge.svg?branch=master)](https://github.com/mergeos-bounties/mergeos/actions/workflows/deploy.yml?query=branch%3Amaster)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
@@ -8,7 +8,7 @@
 
 **MergeOS** is an **AI-assisted software delivery and bounty operating system**. Fund a project (PayPal, crypto/SPL, or local verifier), mint internal **MRG** credit, split work into claimable tasks for humans, agents, or hybrid lanes, then review evidence and release payouts through a hash-chained proof ledger.
 
-**Product:** [mergeos-bounties/mergeos](https://github.com/mergeos-bounties/mergeos) · Live: [mergeos.shop](https://mergeos.shop/) · Scan: [scan.mergeos.shop](https://scan.mergeos.shop/)
+**Product:** [mergeos-bounties/mergeos](https://github.com/mergeos-bounties/mergeos) Â· Live: [mergeos.shop](https://mergeos.shop/) Â· Scan: [scan.mergeos.shop](https://scan.mergeos.shop/)
 
 ---
 
@@ -47,7 +47,7 @@
 | Area | What ships today |
 | --- | --- |
 | **Funding** | PayPal Orders, Solana SPL verification, Stripe metadata rail, local `LOCAL-PAID` |
-| **Tasks** | Funded projects → bounty tasks, claim/submit/accept, GitHub issue import |
+| **Tasks** | Funded projects â†’ bounty tasks, claim/submit/accept, GitHub issue import |
 | **Agents** | Protocol runbooks, agent action logging, workflow graphs |
 | **Ledger** | Hash-chained proof entries; public verify API + Scan UI |
 | **Realtime** | WebSocket live feed + public marketplace stats |
@@ -60,18 +60,18 @@
 ## Screenshots
 
 <p align="center">
-  <img src="evidence-auth-desktop-1440.png" alt="MergeOS auth modal — desktop" width="100%" />
+  <img src="docs/evidence/evidence-auth-desktop-1440.png" alt="MergeOS auth modal â€” desktop" width="100%" />
 </p>
 <p align="center"><em>Auth modal (desktop)</em></p>
 
 | Desktop | Mobile |
 | :---: | :---: |
-| ![Logged in](evidence-auth-logged-in.png) | ![Mobile auth](evidence-auth-mobile-390.png) |
+| ![Logged in](docs/evidence/evidence-auth-logged-in.png) | ![Mobile auth](docs/evidence/evidence-auth-mobile-390.png) |
 | *Session after login* | *Auth at 390px* |
 
 | Logout flow | Payment evidence |
 | :---: | :---: |
-| ![Logout](evidence-logout-flow.png) | ![USDT/webhook](usdt_webhook_verification.png) |
+| ![Logout](docs/evidence/evidence-logout-flow.png) | ![USDT/webhook](docs/evidence/usdt_webhook_verification.png) |
 | *Logout state reset* | *Crypto / webhook verification evidence* |
 
 ---
@@ -79,11 +79,11 @@
 ## How it works
 
 ```text
-Customer funds project  →  MRG credit + escrow
-        ↓
-Tasks (human / agent / hybrid)  →  claim → PR + evidence
-        ↓
-Review / accept  →  ledger credit + Scan proof
+Customer funds project  â†’  MRG credit + escrow
+        â†“
+Tasks (human / agent / hybrid)  â†’  claim â†’ PR + evidence
+        â†“
+Review / accept  â†’  ledger credit + Scan proof
 ```
 
 1. Register or log in (email, GitHub App, or Google when configured).  
@@ -91,7 +91,7 @@ Review / accept  →  ledger credit + Scan proof
 3. Fund escrow (PayPal, SPL signature, Stripe intent, or `LOCAL-PAID` in local).  
 4. MergeOS allocates tasks, rewards, and acceptance criteria.  
 5. Contributors claim, implement, and submit PR/evidence.  
-6. Owner or admin accepts → MRG credited (ledger + Scan).
+6. Owner or admin accepts â†’ MRG credited (ledger + Scan).
 
 MergeOS does **not** create private `mergeos-prj_*` child repos. Bind work to a public product repo or a local bounty workspace under `BOUNTY_ROOT`.
 
@@ -129,7 +129,7 @@ docker compose up --build
 | Admin | http://127.0.0.1:5174 |
 | Scan | http://127.0.0.1:5175 |
 | API health | http://127.0.0.1:8080/api/health |
-| Postgres | `127.0.0.1:5432` · db `mergeos_local` · user/pass `mergeos` |
+| Postgres | `127.0.0.1:5432` Â· db `mergeos_local` Â· user/pass `mergeos` |
 
 **Local credentials (Compose defaults):**
 
@@ -159,7 +159,7 @@ $env:MERGEOS_POSTGRES_PORT = '15432'
 docker compose up --build
 ```
 
-Optional OAuth for local “Continue with GitHub / Google” — set `MERGEOS_GITHUB_APP_*` / `MERGEOS_GOOGLE_*` before Compose (see `backend/.env.local.example`).
+Optional OAuth for local â€œContinue with GitHub / Googleâ€ â€” set `MERGEOS_GITHUB_APP_*` / `MERGEOS_GOOGLE_*` before Compose (see `backend/.env.local.example`).
 
 ---
 
@@ -232,7 +232,7 @@ npm test
 | --- | --- |
 | [MRGMinner](https://github.com/mergeos-bounties/MRGMinner) | Task runner / IDE bridge (CLI + VS Code) |
 | [mergeos-contracts](https://github.com/mergeos-bounties/mergeos-contracts) | Public Solana contracts package |
-| [BeeAR](https://github.com/mergeos-bounties/BeeAR), [HIRI](https://github.com/mergeos-bounties/HIRI), [Lappa](https://github.com/mergeos-bounties/Lappa), … | Product monorepos under `mergeos-bounties` |
+| [BeeAR](https://github.com/mergeos-bounties/BeeAR), [HIRI](https://github.com/mergeos-bounties/HIRI), [Lappa](https://github.com/mergeos-bounties/Lappa), â€¦ | Product monorepos under `mergeos-bounties` |
 
 See also [README-INDEX.md](README-INDEX.md) for the org map and bounty intake table.
 
@@ -283,8 +283,8 @@ Full route lists evolve with the backend; use `/api/config` and Open protocol do
 
 Copy from:
 
-- `backend/.env.local.example` · `backend/.env.production.example`  
-- `frontend/.env.*.example` · `admin/.env.*.example` · `scan/.env.*.example`  
+- `backend/.env.local.example` Â· `backend/.env.production.example`  
+- `frontend/.env.*.example` Â· `admin/.env.*.example` Â· `scan/.env.*.example`  
 
 Never commit real secrets. Production must set strong `ADMIN_PASSWORD` and disable open local payment rails.
 
@@ -309,12 +309,13 @@ mergeos/
 
 ## MergeOS bounties
 
-Star this repo → claim via [issue #1](https://github.com/mergeos-bounties/mergeos/issues/1) or a labeled bounty issue → PR to **master** with evidence → maintainer merges and credits **MRG 25 / 50 / 100 / 200**.
+Star this repo â†’ claim via [issue #1](https://github.com/mergeos-bounties/mergeos/issues/1) or a labeled bounty issue â†’ PR to **master** with evidence â†’ maintainer merges and credits **MRG 25 / 50 / 100 / 200**.
 
-Policy: [BOUNTY-POLICY.md](BOUNTY-POLICY.md) · Live awards and open intake: [README-INDEX.md](README-INDEX.md).
+Policy: [BOUNTY-POLICY.md](BOUNTY-POLICY.md) Â· Live awards and open intake: [README-INDEX.md](README-INDEX.md).
 
 ---
 
 ## License
 
-[MIT](LICENSE) · MergeOS / ThanhTrucSolutions
+[MIT](LICENSE) Â· MergeOS / ThanhTrucSolutions
+
