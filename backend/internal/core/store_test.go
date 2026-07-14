@@ -36,7 +36,7 @@ func TestCreateProjectCreatesLocalBountyRepoAndPersistsLedger(t *testing.T) {
 		Name:        "Test Client",
 		CompanyName: "Test Co",
 		Email:       "client@example.com",
-		Password:    "test-pass-for-integration",
+		Password:    "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -267,7 +267,7 @@ func TestCreateCardPaymentIntentRouteUsesDevVerifier(t *testing.T) {
 		Name:        "Card Client",
 		CompanyName: "Card Co",
 		Email:       "card-client@example.com",
-		Password:    "test-pass-for-integration",
+		Password:    "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -319,7 +319,7 @@ func TestCreatePayPalOrderRouteRecordsPaymentOrderIntent(t *testing.T) {
 		Name:        "PayPal Client",
 		CompanyName: "PayPal Co",
 		Email:       "paypal-client@example.com",
-		Password:    "test-pass-for-integration",
+		Password:    "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -414,7 +414,7 @@ func TestCreateProjectAcceptsSolanaAliasPaymentMethod(t *testing.T) {
 		Name:        "Solana Client",
 		CompanyName: "Solana Co",
 		Email:       "solana-client@example.com",
-		Password:    "test-pass-for-integration",
+		Password:    "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -458,7 +458,7 @@ func TestCreateProjectAcceptsStripePaymentMethod(t *testing.T) {
 		Name:        "Stripe Client",
 		CompanyName: "Stripe Co",
 		Email:       "stripe-client@example.com",
-		Password:    "test-pass-for-integration",
+		Password:    "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -538,7 +538,7 @@ func TestPasswordResetRequestIsGenericAndNotifiesExistingUser(t *testing.T) {
 	auth, err := store.Register(RegisterRequest{
 		Name:     "Reset Client",
 		Email:    "reset@example.com",
-		Password: "test-pass-for-integration",
+		Password: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -813,7 +813,7 @@ func TestCreateWalletMigrationLinksLegacyTRC20ToSolanaMetadata(t *testing.T) {
 	auth, err := store.Register(RegisterRequest{
 		Name:     "Legacy Tron User",
 		Email:    "legacy-tron@example.com",
-		Password: "test-pass-for-integration",
+		Password: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -1045,7 +1045,7 @@ func TestCreateProjectCanDisableAgentRouting(t *testing.T) {
 	auth, err := store.Register(RegisterRequest{
 		Name:     "Human Only Client",
 		Email:    "human-only@example.com",
-		Password: "test-pass-for-integration",
+		Password: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -1626,7 +1626,7 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 	auth, err := store.Register(RegisterRequest{
 		Name:     "Token Builder",
 		Email:    "token-builder@example.com",
-		Password: "test-pass-for-integration",
+		Password: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -2162,7 +2162,7 @@ func TestPublicLedgerEconomyProofAndEventsRoutesReturnLiveProof(t *testing.T) {
 	auth, err := store.Register(RegisterRequest{
 		Name:     "Ledger Client",
 		Email:    "ledger-client@example.com",
-		Password: "test-pass-for-integration",
+		Password: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -2308,7 +2308,7 @@ func TestPublicMarketplaceRouteReturnsSanitizedLiveData(t *testing.T) {
 		Name:        "Marketplace Client",
 		CompanyName: "Marketplace Co",
 		Email:       "client@example.com",
-		Password:    "test-pass-for-integration",
+		Password:    "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -2772,7 +2772,7 @@ func TestPublicLedgerRouteReturnsSanitizedLiveData(t *testing.T) {
 		Name:        "Ledger Client",
 		CompanyName: "Ledger Co",
 		Email:       "ledger@example.com",
-		Password:    "test-pass-for-integration",
+		Password:    "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -2894,7 +2894,7 @@ func TestPublicLedgerVerifyRouteDetectsTampering(t *testing.T) {
 	auth, err := store.Register(RegisterRequest{
 		Name:     "Verify Client",
 		Email:    "verify-client@example.com",
-		Password: "test-pass-for-integration",
+		Password: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -2966,7 +2966,7 @@ func TestPublicLedgerUsesPullReferenceForAdminAcceptedTask(t *testing.T) {
 		Name:        "PR Ledger Client",
 		CompanyName: "PR Ledger Co",
 		Email:       "pr-ledger@example.com",
-		Password:    "test-pass-for-integration",
+		Password:    "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -3048,7 +3048,7 @@ func TestPublicLiveFeedRouteReturnsSanitizedTimeline(t *testing.T) {
 		Name:        "Feed Client",
 		CompanyName: "Feed Co",
 		Email:       "feed@example.com",
-		Password:    "test-pass-for-integration",
+		Password:    "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -3232,7 +3232,7 @@ func TestPublicLiveFeedSupportsReplayCursor(t *testing.T) {
 	auth, err := store.Register(RegisterRequest{
 		Name:     "Cursor Client",
 		Email:    "cursor@example.com",
-		Password: "test-pass-for-integration",
+		Password: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -3298,7 +3298,7 @@ func TestProjectDeploymentRouteReturnsDerivedStatusAndSanitizesData(t *testing.T
 		Name:        "Deploy Client",
 		CompanyName: "Deploy Co",
 		Email:       "deploy@example.com",
-		Password:    "test-pass-for-integration",
+		Password:    "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -3430,7 +3430,7 @@ func TestProjectDeploymentRouteReturnsDerivedStatusAndSanitizesData(t *testing.T
 	otherAuth, err := store.Register(RegisterRequest{
 		Name:     "Other Client",
 		Email:    "other-client@example.com",
-		Password: "test-pass-for-integration",
+		Password: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -3465,7 +3465,7 @@ func TestProjectDeploymentUsesDeploymentAgentAction(t *testing.T) {
 		Name:        "Deploy Agent Client",
 		CompanyName: "Deploy Agent Co",
 		Email:       "deploy-agent@example.com",
-		Password:    "test-pass-for-integration",
+		Password:    "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -3594,7 +3594,7 @@ func TestPublicProjectDeploymentRouteReturnsSanitizedReadiness(t *testing.T) {
 		Name:        "Public Deploy Client",
 		CompanyName: "Public Deploy Co",
 		Email:       "public-deploy@example.com",
-		Password:    "test-pass-for-integration",
+		Password:    "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -3692,7 +3692,7 @@ func TestProjectEscrowRouteReturnsReserveReleaseSummary(t *testing.T) {
 		Name:        "Escrow Client",
 		CompanyName: "Escrow Co",
 		Email:       "escrow-client@example.com",
-		Password:    "test-pass-for-integration",
+		Password:    "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -3775,7 +3775,7 @@ func TestProjectEscrowRouteReturnsReserveReleaseSummary(t *testing.T) {
 	otherAuth, err := store.Register(RegisterRequest{
 		Name:     "Other Escrow Client",
 		Email:    "other-escrow-client@example.com",
-		Password: "test-pass-for-integration",
+		Password: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -3838,7 +3838,7 @@ func TestProjectPayoutsRouteReturnsSettlementContractAndSanitizesData(t *testing
 		Name:        "Payout Client",
 		CompanyName: "Payout Co",
 		Email:       "payout-client@example.com",
-		Password:    "test-pass-for-integration",
+		Password:    "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -3929,7 +3929,7 @@ func TestProjectPayoutsRouteReturnsSettlementContractAndSanitizesData(t *testing
 	otherAuth, err := store.Register(RegisterRequest{
 		Name:     "Other Payout Client",
 		Email:    "other-payout-client@example.com",
-		Password: "test-pass-for-integration",
+		Password: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -3964,7 +3964,7 @@ func TestProjectAutoReleaseRouteReleasesReadyCandidateAndRecordsPolicy(t *testin
 		Name:        "Auto Release Client",
 		CompanyName: "Auto Co",
 		Email:       "auto-release-client@example.com",
-		Password:    "test-pass-for-integration",
+		Password:    "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -4140,7 +4140,7 @@ func TestProjectAutoReleaseRouteReleasesReadyCandidateAndRecordsPolicy(t *testin
 	otherAuth, err := store.Register(RegisterRequest{
 		Name:     "Other Auto Client",
 		Email:    "other-auto-client@example.com",
-		Password: "test-pass-for-integration",
+		Password: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -4175,7 +4175,7 @@ func TestProjectAutoReleaseRouteRequiresDeploymentValidation(t *testing.T) {
 		Name:        "Deployment Auto Client",
 		CompanyName: "Deploy Auto Co",
 		Email:       "deploy-auto-client@example.com",
-		Password:    "test-pass-for-integration",
+		Password:    "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -4305,7 +4305,7 @@ func TestProjectDashboardRouteAggregatesCustomerWorkflowAndSanitizesData(t *test
 		Name:        "Dashboard Client",
 		CompanyName: "Dashboard Co",
 		Email:       "dashboard-client@example.com",
-		Password:    "test-pass-for-integration",
+		Password:    "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -4382,7 +4382,7 @@ func TestProjectDashboardRouteAggregatesCustomerWorkflowAndSanitizesData(t *test
 	otherAuth, err := store.Register(RegisterRequest{
 		Name:     "Other Dashboard Client",
 		Email:    "other-dashboard-client@example.com",
-		Password: "test-pass-for-integration",
+		Password: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -4417,7 +4417,7 @@ func TestProjectAIWorkflowRouteReturnsWorkflowAndSanitizesData(t *testing.T) {
 		Name:        "AI Client",
 		CompanyName: "AI Co",
 		Email:       "ai-client@example.com",
-		Password:    "test-pass-for-integration",
+		Password:    "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -4565,7 +4565,7 @@ func TestProjectAIWorkflowRouteReturnsWorkflowAndSanitizesData(t *testing.T) {
 	otherAuth, err := store.Register(RegisterRequest{
 		Name:     "Other AI Client",
 		Email:    "other-ai-client@example.com",
-		Password: "test-pass-for-integration",
+		Password: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -4600,7 +4600,7 @@ func TestPublicProjectAIWorkflowRouteReturnsSanitizedWorkflow(t *testing.T) {
 		Name:        "Public AI Client",
 		CompanyName: "Public AI Co",
 		Email:       "public-ai-client@example.com",
-		Password:    "test-pass-for-integration",
+		Password:    "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -4737,7 +4737,7 @@ func TestPublicProjectWorkflowRouteReturnsSanitizedGraph(t *testing.T) {
 		Name:        "Public Graph Client",
 		CompanyName: "Public Graph Co",
 		Email:       "public-graph-client@example.com",
-		Password:    "test-pass-for-integration",
+		Password:    "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -4882,7 +4882,7 @@ func TestProjectAgentActionRouteRecordsWorkflowEventAndSanitizesData(t *testing.
 		Name:        "Agent Client",
 		CompanyName: "Agent Co",
 		Email:       "agent-client@example.com",
-		Password:    "test-pass-for-integration",
+		Password:    "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -5280,7 +5280,7 @@ func TestProjectAgentActionRouteRecordsWorkflowEventAndSanitizesData(t *testing.
 	otherAuth, err := store.Register(RegisterRequest{
 		Name:     "Other Agent Client",
 		Email:    "other-agent-client@example.com",
-		Password: "test-pass-for-integration",
+		Password: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -5315,7 +5315,7 @@ func TestProjectTaskGraphRouteReturnsAcyclicDependencyGraph(t *testing.T) {
 		Name:        "Graph Client",
 		CompanyName: "Graph Co",
 		Email:       "graph-client@example.com",
-		Password:    "test-pass-for-integration",
+		Password:    "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -5570,7 +5570,7 @@ func TestProjectTaskGraphRouteReturnsAcyclicDependencyGraph(t *testing.T) {
 	otherAuth, err := store.Register(RegisterRequest{
 		Name:     "Other Graph Client",
 		Email:    "other-graph-client@example.com",
-		Password: "test-pass-for-integration",
+		Password: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -5621,7 +5621,7 @@ func TestProjectRepositoryScanRouteReturnsStaticFindings(t *testing.T) {
 		Name:        "Scan Client",
 		CompanyName: "Scan Co",
 		Email:       "scan-client@example.com",
-		Password:    "test-pass-for-integration",
+		Password:    "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -5913,7 +5913,7 @@ func TestProjectRepositoryScanRouteReturnsStaticFindings(t *testing.T) {
 	otherAuth, err := store.Register(RegisterRequest{
 		Name:     "Other Scan Client",
 		Email:    "other-scan-client@example.com",
-		Password: "test-pass-for-integration",
+		Password: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -5965,7 +5965,7 @@ func TestWorkerDashboardRouteMatchesGitHubWorkerAndSanitizesData(t *testing.T) {
 		Name:        "Worker Client",
 		CompanyName: "Worker Client Co",
 		Email:       "worker-client@example.com",
-		Password:    "test-pass-for-integration",
+		Password:    "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -6111,7 +6111,7 @@ func TestTaskSubmissionRouteRecordsReviewEvidence(t *testing.T) {
 		Name:        "Submission Client",
 		CompanyName: "Submission Client Co",
 		Email:       "submission-client@example.com",
-		Password:    "test-pass-for-integration",
+		Password:    "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -6317,7 +6317,7 @@ func TestWorkerProposalSubmissionRoutesToCustomerDashboardAndAdminOps(t *testing
 		Name:        "Proposal Client",
 		CompanyName: "Proposal Client Co",
 		Email:       "proposal-client@example.com",
-		Password:    "test-pass-for-integration",
+		Password:    "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -6548,7 +6548,7 @@ func TestWorkerCanSelfClaimProposalRoute(t *testing.T) {
 		Name:        "Self Claim Client",
 		CompanyName: "Self Claim Co",
 		Email:       "self-claim-client@example.com",
-		Password:    "test-pass-for-integration",
+		Password:    "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -6669,7 +6669,7 @@ func TestAdminAutoPromoteAndRoutes(t *testing.T) {
 	adminAuth, err := store.Register(RegisterRequest{
 		Name:     "Admin User",
 		Email:    "admin@example.com",
-		Password: "test-pass-for-integration",
+		Password: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -6680,7 +6680,7 @@ func TestAdminAutoPromoteAndRoutes(t *testing.T) {
 	clientAuth, err := store.Register(RegisterRequest{
 		Name:     "Client User",
 		Email:    "client-two@example.com",
-		Password: "test-pass-for-integration",
+		Password: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -6729,7 +6729,7 @@ func TestAdminCanCreateManualLedgerCredit(t *testing.T) {
 	adminAuth, err := store.Register(RegisterRequest{
 		Name:     "Admin User",
 		Email:    "credit-admin@example.com",
-		Password: "test-pass-for-integration",
+		Password: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -6804,7 +6804,7 @@ func TestAdminOpsQueueReturnsDisputeModerationAndPayoutItems(t *testing.T) {
 	adminAuth, err := store.Register(RegisterRequest{
 		Name:     "Ops Admin",
 		Email:    "ops-admin@example.com",
-		Password: "test-pass-for-integration",
+		Password: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -6812,7 +6812,7 @@ func TestAdminOpsQueueReturnsDisputeModerationAndPayoutItems(t *testing.T) {
 	clientAuth, err := store.Register(RegisterRequest{
 		Name:     "Ops Client",
 		Email:    "ops-client@example.com",
-		Password: "test-pass-for-integration",
+		Password: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -7006,19 +7006,19 @@ func TestCreateDisputeRouteAddsAdminOpsQueueItem(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	adminAuth, err := store.Register(RegisterRequest{Name: "Ops Admin", Email: "ops-admin-dispute@example.com", Password: "test-pass-for-integration"})
+	adminAuth, err := store.Register(RegisterRequest{Name: "Ops Admin", Email: "ops-admin-dispute@example.com", Password: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	clientAuth, err := store.Register(RegisterRequest{Name: "Dispute Client", CompanyName: "Dispute Co", Email: "dispute-client@example.com", Password: "test-pass-for-integration"})
+	clientAuth, err := store.Register(RegisterRequest{Name: "Dispute Client", CompanyName: "Dispute Co", Email: "dispute-client@example.com", Password: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	workerAuth, err := store.Register(RegisterRequest{Name: "Dispute Worker", Email: "dispute-worker@example.com", Password: "test-pass-for-integration"})
+	workerAuth, err := store.Register(RegisterRequest{Name: "Dispute Worker", Email: "dispute-worker@example.com", Password: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	otherAuth, err := store.Register(RegisterRequest{Name: "Other User", Email: "other-dispute@example.com", Password: "test-pass-for-integration"})
+	otherAuth, err := store.Register(RegisterRequest{Name: "Other User", Email: "other-dispute@example.com", Password: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -7146,7 +7146,7 @@ func TestAdminTasksRouteIncludesAcceptedTasksForAudit(t *testing.T) {
 	adminAuth, err := store.Register(RegisterRequest{
 		Name:     "Admin User",
 		Email:    "review-admin@example.com",
-		Password: "test-pass-for-integration",
+		Password: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -7257,7 +7257,7 @@ func TestAdminCanUpdateUserAndPassword(t *testing.T) {
 		Name:        "Client User",
 		CompanyName: "Old Co",
 		Email:       "client@example.com",
-		Password:    "test-pass-for-integration",
+		Password:    "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -7284,7 +7284,7 @@ func TestAdminCanUpdateUserAndPassword(t *testing.T) {
 	if updated.Name != "Updated Client" || updated.Email != "updated@example.com" || updated.CompanyName != "New Co" {
 		t.Fatalf("updated user = %#v", updated)
 	}
-	if _, err := store.Login(LoginRequest{Email: "updated@example.com", Password: "test-pass-for-integration"}); err == nil {
+	if _, err := store.Login(LoginRequest{Email: "updated@example.com", Password: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"}); err == nil {
 		t.Fatal("old password still works")
 	}
 	if _, err := store.Login(LoginRequest{Email: "updated@example.com", Password: "newpass123"}); err != nil {
@@ -7400,7 +7400,7 @@ func TestWorkerReputationAuditSurfacesLinkedWalletRisk(t *testing.T) {
 		Name:        "Risk Client",
 		CompanyName: "Risk Co",
 		Email:       "risk-client@example.com",
-		Password:    "test-pass-for-integration",
+		Password:    "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -7528,7 +7528,7 @@ func TestPostgresPersistenceRoundTrip(t *testing.T) {
 	auth, err := store.Register(RegisterRequest{
 		Name:     "Postgres User",
 		Email:    "postgres@example.com",
-		Password: "test-pass-for-integration",
+		Password: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -7665,7 +7665,7 @@ func TestCreateBankFundingIntent(t *testing.T) {
 	auth, err := store.Register(RegisterRequest{
 		Name:     "Bank Client",
 		Email:    "bank-client@example.com",
-		Password: "test-pass-for-integration",
+		Password: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -7710,7 +7710,7 @@ func TestBankFundingNonAdminCannotVerify(t *testing.T) {
 	adminAuth, err := store.Register(RegisterRequest{
 		Name:     "Admin Bank",
 		Email:    "admin-bank@example.com",
-		Password: "test-pass-for-integration",
+		Password: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -7721,7 +7721,7 @@ func TestBankFundingNonAdminCannotVerify(t *testing.T) {
 	clientAuth, err := store.Register(RegisterRequest{
 		Name:     "Client Bank",
 		Email:    "client-bank@example.com",
-		Password: "test-pass-for-integration",
+		Password: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -7773,7 +7773,7 @@ func TestAdminVerifyBankTransferCreatesProjectAndLedgerEntry(t *testing.T) {
 	adminAuth, err := store.Register(RegisterRequest{
 		Name:     "Admin Bank",
 		Email:    "admin-bank-v@example.com",
-		Password: "test-pass-for-integration",
+		Password: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -7781,7 +7781,7 @@ func TestAdminVerifyBankTransferCreatesProjectAndLedgerEntry(t *testing.T) {
 	clientAuth, err := store.Register(RegisterRequest{
 		Name:     "Client Bank",
 		Email:    "client-bank-v@example.com",
-		Password: "test-pass-for-integration",
+		Password: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
 	})
 	if err != nil {
 		t.Fatal(err)
