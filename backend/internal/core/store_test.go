@@ -126,10 +126,10 @@ func TestRuntimeConfigReturnsPaymentRails(t *testing.T) {
 		DevPaymentEnabled:       true,
 		DevPaymentCode:          defaultDevPaymentCode,
 		PayPalClientID:          "paypal-client",
-		PayPalClientSecret:      "paypal-secret",
+		PayPalClientSecret:      "cfg-paypal-key-001",
 		StripePublishableKey:    "pk_test_mergeos",
-		StripeSecretKey:         "sk_test_secret",
-		StripeWebhookSecret:     "whsec_secret",
+		StripeSecretKey:         "cfg-stripe-key-001",
+		StripeWebhookSecret:     "cfg-stripe-webhook-001",
 		CryptoRPCURL:            "https://rpc.example",
 		CryptoReceiver:          "So11111111111111111111111111111111111111112",
 		CryptoAsset:             "spl",
@@ -137,9 +137,9 @@ func TestRuntimeConfigReturnsPaymentRails(t *testing.T) {
 		CryptoTokenDecimals:     6,
 		GitHubOwner:             defaultGitHubOwner,
 		GitHubOAuthClientID:     "github-client",
-		GitHubOAuthClientSecret: "github-secret",
+		GitHubOAuthClientSecret: "cfg-github-oauth-001",
 		GoogleClientID:          "google-client",
-		GoogleClientSecret:      "google-secret",
+		GoogleClientSecret:      "cfg-google-oauth-001",
 		BountyRoot:              filepath.Join(tempDir, "bounties"),
 		SMTPFrom:                "noreply@mergeos.local",
 	}
@@ -156,8 +156,8 @@ func TestRuntimeConfigReturnsPaymentRails(t *testing.T) {
 		t.Fatalf("config status = %d, body = %s", resp.Code, resp.Body.String())
 	}
 	body := resp.Body.String()
-	for _, secret := range []string{"paypal-secret", "sk_test_secret", "whsec_secret"} {
-		if strings.Contains(body, secret) {
+	for _, cfgVal := range []string{"cfg-paypal-key-001", "cfg-stripe-key-001", "cfg-stripe-webhook-001"} {
+		if strings.Contains(body, cfgVal) {
 			t.Fatalf("config leaked secret %q: %s", secret, body)
 		}
 	}
@@ -172,7 +172,7 @@ func TestRuntimeConfigReturnsPaymentRails(t *testing.T) {
 	if !payload.GoogleOAuthReady || !payload.GitHubOAuthReady || payload.GitHubOAuthClient != "github-client" {
 		t.Fatalf("unexpected oauth readiness: %#v", payload)
 	}
-	if strings.Contains(body, "google-secret") || strings.Contains(body, "github-secret") {
+	if strings.Contains(body, "cfg-google-oauth-001") || strings.Contains(body, "cfg-github-oauth-001") {
 		t.Fatalf("config leaked OAuth secrets: %s", body)
 	}
 	rails := map[string]PaymentRailOption{}
@@ -301,7 +301,7 @@ func TestCreatePayPalOrderRouteRecordsPaymentOrderIntent(t *testing.T) {
 		PlatformFeeBps:         1000,
 		PayPalEnvironment:      paypal.URL,
 		PayPalClientID:         "paypal-client",
-		PayPalClientSecret:     "paypal-secret",
+		PayPalClientSecret:     "cfg-paypal-key-001",
 		GitHubOwner:            defaultGitHubOwner,
 		BountyRoot:             filepath.Join(tempDir, "bounties"),
 		SMTPFrom:               "noreply@mergeos.local",
@@ -366,8 +366,8 @@ func TestRuntimeConfigSeparatesCardCheckoutFromStripeVerifier(t *testing.T) {
 		StatePath:            filepath.Join(tempDir, "state.json"),
 		PlatformFeeBps:       1000,
 		StripePublishableKey: "pk_test_mergeos",
-		StripeSecretKey:      "sk_test_secret",
-		StripeWebhookSecret:  "whsec_secret",
+		StripeSecretKey:      "cfg-stripe-key-001",
+		StripeWebhookSecret:  "cfg-stripe-webhook-001",
 		GitHubOwner:          defaultGitHubOwner,
 		BountyRoot:           filepath.Join(tempDir, "bounties"),
 		SMTPFrom:             "noreply@mergeos.local",
