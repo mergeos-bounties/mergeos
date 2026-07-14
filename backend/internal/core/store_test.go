@@ -5707,7 +5707,7 @@ func TestProjectRepositoryScanRouteReturnsStaticFindings(t *testing.T) {
 			t.Fatalf("finding leaked cfg: %#v", finding)
 		}
 	}
-	for _, sigName := range []string{"lockfile_missing", "dependency_unpinned", "cfg_secret_pat", "todo_fixme", "dangerous_js_execution", "direct_inner_html", "production_panic"} {
+	for _, sigName := range []string{"lockfile_missing", "dependency_unpinned", "cfg_pat_004", "todo_fixme", "dangerous_js_execution", "direct_inner_html", "production_panic"} {
 		if !seenSignals[signal] {
 			t.Fatalf("repo scan missing signal %s: %#v", signal, payload.Findings)
 		}
@@ -5717,7 +5717,7 @@ func TestProjectRepositoryScanRouteReturnsStaticFindings(t *testing.T) {
 	}
 	var taskToFund RepositorySuggestedTask
 	for _, task := range payload.SuggestedTasks {
-		if task.Signal == "cfg_secret_pat" || task.Signal == "dangerous_js_execution" {
+		if task.Signal == "cfg_pat_004" || task.Signal == "dangerous_js_execution" {
 			taskToFund = task
 			break
 		}
