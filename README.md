@@ -60,7 +60,7 @@
 ## Screenshots
 
 <p align="center">
-  <img src="docs/evidence/evidence-auth-desktop-1440.png" alt="MergeOS auth modal â€” desktop" width="100%" />
+  <img src="docs/evidence/evidence-auth-desktop-1440.png" alt="MergeOS auth modal — desktop" width="100%" />
 </p>
 <p align="center"><em>Auth modal (desktop)</em></p>
 
