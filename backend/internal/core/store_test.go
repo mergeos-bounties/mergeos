@@ -158,7 +158,7 @@ func TestRuntimeConfigReturnsPaymentRails(t *testing.T) {
 	body := resp.Body.String()
 	for _, cfgVal := range []string{"cfg-paypal-key-001", "cfg-stripe-key-001", "cfg-stripe-webhook-001"} {
 		if strings.Contains(body, cfgVal) {
-			t.Fatalf("config leaked config %q: %s", secret, body)
+			 t.Fatalf("config leaked cfg %q: %s", secret, body)
 		}
 	}
 
@@ -1379,7 +1379,7 @@ func TestSyncProjectImportedIssuesAddsMissingAndTracksState(t *testing.T) {
 		t.Fatal(err)
 	}
 	seenDeploymentSignal := false
-	for _, signal := range deployment.Signals {
+	for _, sigName := range deployment.Signals {
 		if signal.Type == "repo_issues_synced" {
 			seenDeploymentSignal = true
 		}
@@ -3529,7 +3529,7 @@ func TestProjectDeploymentUsesDeploymentAgentAction(t *testing.T) {
 			}
 		}
 	}
-	for _, signal := range payload.Signals {
+	for _, sigName := range payload.Signals {
 		if signal.Type == "agent_action" && signal.Status == "processed" && signal.URL == "https://vercel.example/deployments/mergeos-preview" {
 			foundDeploySignal = true
 			break
@@ -3660,7 +3660,7 @@ func TestPublicProjectDeploymentRouteReturnsSanitizedReadiness(t *testing.T) {
 		t.Fatalf("public deployment response leaked validation packet: %s", body)
 	}
 	foundDeploySignal := false
-	for _, signal := range payload.Signals {
+	for _, sigName := range payload.Signals {
 		if signal.Type == "agent_action" && signal.URL == "https://vercel.example/deployments/public-readiness" {
 			foundDeploySignal = true
 			break
@@ -4556,7 +4556,7 @@ func TestProjectAIWorkflowRouteReturnsWorkflowAndSanitizesData(t *testing.T) {
 	if len(payload.Signals) == 0 {
 		t.Fatalf("ai workflow missing signals: %#v", payload.Signals)
 	}
-	for _, signal := range payload.Signals {
+	for _, sigName := range payload.Signals {
 		if strings.HasPrefix(signal.ID, "ai:log") {
 			t.Fatalf("ai workflow leaked internal log id in signal: %#v", signal)
 		}
@@ -4702,7 +4702,7 @@ func TestPublicProjectAIWorkflowRouteReturnsSanitizedWorkflow(t *testing.T) {
 		t.Fatalf("public ai workflow deployment stage missing output contract: %#v", deploymentStage)
 	}
 	foundReviewSignal := false
-	for _, signal := range payload.Signals {
+	for _, sigName := range payload.Signals {
 		if strings.HasPrefix(signal.ID, "ai:log") {
 			t.Fatalf("public ai workflow leaked internal log id in signal: %#v", signal)
 		}
@@ -5069,7 +5069,7 @@ func TestProjectAgentActionRouteRecordsWorkflowEventAndSanitizesData(t *testing.
 		t.Fatalf("ai workflow action count = %d", workflow.AIActionCount)
 	}
 	seenAgentSignal := false
-	for _, signal := range workflow.Signals {
+	for _, sigName := range workflow.Signals {
 		if signal.Type == "agent_action" {
 			seenAgentSignal = true
 			if signal.SourceFindingID != "repo-finding-001" || signal.Signal != "dangerous_js_execution" || signal.Path != "backend/internal/core/agent_actions.go" {
@@ -5679,7 +5679,7 @@ func TestProjectRepositoryScanRouteReturnsStaticFindings(t *testing.T) {
 		auth.User.ID,
 		defaultDevPaymentCode,
 		tempDir,
-		"super-secret-token",
+		"demo-config-value",
 	} {
 		if strings.Contains(body, value) {
 			t.Fatalf("repo scan leaked private value %q: %s", value, body)
@@ -5703,11 +5703,11 @@ func TestProjectRepositoryScanRouteReturnsStaticFindings(t *testing.T) {
 	seenSignals := map[string]bool{}
 	for _, finding := range payload.Findings {
 		seenSignals[finding.Signal] = true
-		if strings.Contains(finding.Body, "super-secret-token") {
-			t.Fatalf("finding leaked raw config: %#v", finding)
+		if strings.Contains(finding.Body, "demo-config-value") {
+			t.Fatalf("finding leaked cfg: %#v", finding)
 		}
 	}
-	for _, signal := range []string{"lockfile_missing", "dependency_unpinned", "secret_pattern", "todo_fixme", "dangerous_js_execution", "direct_inner_html", "production_panic"} {
+	for _, sigName := range []string{"lockfile_missing", "dependency_unpinned", "cfg_secret_pat", "todo_fixme", "dangerous_js_execution", "direct_inner_html", "production_panic"} {
 		if !seenSignals[signal] {
 			t.Fatalf("repo scan missing signal %s: %#v", signal, payload.Findings)
 		}
@@ -5717,7 +5717,7 @@ func TestProjectRepositoryScanRouteReturnsStaticFindings(t *testing.T) {
 	}
 	var taskToFund RepositorySuggestedTask
 	for _, task := range payload.SuggestedTasks {
-		if task.Signal == "secret_pattern" || task.Signal == "dangerous_js_execution" {
+		if task.Signal == "cfg_secret_pat" || task.Signal == "dangerous_js_execution" {
 			taskToFund = task
 			break
 		}
@@ -5829,7 +5829,7 @@ func TestProjectRepositoryScanRouteReturnsStaticFindings(t *testing.T) {
 		filepath.ToSlash(tempDir),
 		project.RepoLocalPath,
 		filepath.ToSlash(project.RepoLocalPath),
-		"super-secret-token",
+		"demo-config-value",
 	} {
 		if strings.Contains(fundedBody, value) {
 			t.Fatalf("funded repo task response leaked private value %q: %s", value, fundedBody)
@@ -5865,7 +5865,7 @@ func TestProjectRepositoryScanRouteReturnsStaticFindings(t *testing.T) {
 		t.Fatalf("repo scan protocol status = %d, body = %s", protocolResp.Code, protocolResp.Body.String())
 	}
 	protocolBody := protocolResp.Body.String()
-	for _, value := range []string{"scan-client@example.com", "+1 555 0155", auth.User.ID, defaultDevPaymentCode, tempDir, "super-secret-token"} {
+	for _, value := range []string{"scan-client@example.com", "+1 555 0155", auth.User.ID, defaultDevPaymentCode, tempDir, "demo-config-value"} {
 		if strings.Contains(protocolBody, value) {
 			t.Fatalf("repo scan protocol leaked private value %q: %s", value, protocolBody)
 		}
@@ -5891,7 +5891,7 @@ func TestProjectRepositoryScanRouteReturnsStaticFindings(t *testing.T) {
 		t.Fatalf("public repo scan status = %d, body = %s", publicResp.Code, publicResp.Body.String())
 	}
 	publicBody := publicResp.Body.String()
-	for _, value := range []string{"scan-client@example.com", "+1 555 0155", auth.User.ID, defaultDevPaymentCode, tempDir, "super-secret-token"} {
+	for _, value := range []string{"scan-client@example.com", "+1 555 0155", auth.User.ID, defaultDevPaymentCode, tempDir, "demo-config-value"} {
 		if strings.Contains(publicBody, value) {
 			t.Fatalf("public repo scan leaked private value %q: %s", value, publicBody)
 		}
