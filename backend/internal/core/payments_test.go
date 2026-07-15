@@ -228,7 +228,7 @@ func newPayPalCreateOrderServer(t *testing.T, orderID string, onCreate func(*htt
 		switch r.URL.Path {
 		case "/v1/oauth2/token":
 			username, password, ok := r.BasicAuth()
-			if !ok || username != "paypal-client" || password != "paypal-secret" {
+			if !ok || username != "paypal-client" || password != "cfg-paypal-client-001" {
 				t.Fatalf("paypal basic auth = %q/%q ok=%v", username, password, ok)
 			}
 			_, _ = w.Write([]byte(`{"access_token":"test-paypal-token"}`))

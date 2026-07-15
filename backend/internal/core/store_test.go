@@ -7275,7 +7275,8 @@ func TestAdminCanUpdateUserAndPassword(t *testing.T) {
 	}
 
 	server := NewServer(cfg, store, payments)
-	body := strings.NewReader(fmt.Sprintf(`{"name":"Updated Client","company_name":"New Co","email":"updated@example.com","role":"client","password":"%s"}`, testPass()))
+	newPass := "new-secure-pass-789"
+	body := strings.NewReader(fmt.Sprintf(`{"name":"Updated Client","company_name":"New Co","email":"updated@example.com","role":"client","password":"%s"}`, newPass))
 	req := httptest.NewRequest(http.MethodPatch, "/api/admin/users/"+clientAuth.User.ID, body)
 	req.Header.Set("Authorization", "Bearer "+adminAuth.Token)
 	req.Header.Set("Content-Type", "application/json")
@@ -7294,7 +7295,7 @@ func TestAdminCanUpdateUserAndPassword(t *testing.T) {
 	if _, err := store.Login(LoginRequest{Email: "updated@example.com", Password: testPass()}); err == nil {
 		t.Fatal("old password still works")
 	}
-	if _, err := store.Login(LoginRequest{Email: "updated@example.com", Password: testPass()}); err != nil {
+	if _, err := store.Login(LoginRequest{Email: "updated@example.com", Password: newPass}); err != nil {
 		t.Fatalf("new password login failed: %v", err)
 	}
 }
