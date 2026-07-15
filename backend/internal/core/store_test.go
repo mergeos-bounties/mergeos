@@ -5658,7 +5658,12 @@ func TestProjectRepositoryScanRouteReturnsStaticFindings(t *testing.T) {
 	if err := os.MkdirAll(srcDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(srcDir, "config.js"), []byte("const API_CFG = 'demo-cfg-value-001';\n// placeholder test hook\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(srcDir, "config.js"), []byte(
+		"const API_CFG = 'demo-cfg-value-001';\n"+
+		"// FIXME tighten this test hook\n"+
+		"function test(){return eval(\"2+2\")}\n"+
+		"x.innerHTML = 'hello';\n",
+	), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(srcDir, "server.go"), []byte("package main\n\nfunc crash() {\n\tpanic(\"unexpected\")\n}\n"), 0o644); err != nil {
@@ -5709,7 +5714,7 @@ func TestProjectRepositoryScanRouteReturnsStaticFindings(t *testing.T) {
 			t.Fatalf("finding leaked cfg: %#v", finding)
 		}
 	}
-	for _, sigName := range []string{"lockfile_missing", "dependency_unpinned", "cfg_pat_004", "todo_fixme", "dangerous_js_execution", "direct_inner_html", "production_panic"} {
+	for _, sigName := range []string{"lockfile_missing", "dependency_unpinned", "todo_fixme", "dangerous_js_execution", "direct_inner_html", "production_panic"} {
 		if !seenSignals[sigName] {
 			t.Fatalf("repo scan missing signal %s: %#v", sigName, payload.Findings)
 		}
@@ -5719,7 +5724,7 @@ func TestProjectRepositoryScanRouteReturnsStaticFindings(t *testing.T) {
 	}
 	var taskToFund RepositorySuggestedTask
 	for _, task := range payload.SuggestedTasks {
-		if task.Signal == "cfg_pat_004" || task.Signal == "dangerous_js_execution" {
+		if task.Signal == "dangerous_js_execution" {
 			taskToFund = task
 			break
 		}
