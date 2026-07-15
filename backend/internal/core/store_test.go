@@ -4560,7 +4560,7 @@ func TestProjectAIWorkflowRouteReturnsWorkflowAndSanitizesData(t *testing.T) {
 	}
 	for _, sigName := range payload.Signals {
 		if strings.HasPrefix(sigName.ID, "ai:log") {
-			t.Fatalf("ai workflow leaked internal log id in signal: %#v", signal)
+			t.Fatalf("ai workflow leaked internal log id in signal: %#v", sigName)
 		}
 	}
 
@@ -4706,7 +4706,7 @@ func TestPublicProjectAIWorkflowRouteReturnsSanitizedWorkflow(t *testing.T) {
 	foundReviewSignal := false
 	for _, sigName := range payload.Signals {
 		if strings.HasPrefix(sigName.ID, "ai:log") {
-			t.Fatalf("public ai workflow leaked internal log id in signal: %#v", signal)
+			t.Fatalf("public ai workflow leaked internal log id in signal: %#v", sigName)
 		}
 		if sigName.Type == "agent_action" && sigName.Status == "processed" {
 			foundReviewSignal = true
@@ -5074,8 +5074,8 @@ func TestProjectAgentActionRouteRecordsWorkflowEventAndSanitizesData(t *testing.
 	for _, sigName := range workflow.Signals {
 		if sigName.Type == "agent_action" {
 			seenAgentSignal = true
-			if signal.SourceFindingID != "repo-finding-001" || signal.Signal != "dangerous_js_execution" || signal.Path != "backend/internal/core/agent_actions.go" {
-				t.Fatalf("ai workflow agent signal missing repository scan trace: %#v", signal)
+			if sigName.SourceFindingID != "repo-finding-001" || sigName.Signal != "dangerous_js_execution" || sigName.Path != "backend/internal/core/agent_actions.go" {
+				t.Fatalf("ai workflow agent signal missing repository scan trace: %#v", sigName)
 			}
 		}
 	}
@@ -5710,8 +5710,8 @@ func TestProjectRepositoryScanRouteReturnsStaticFindings(t *testing.T) {
 		}
 	}
 	for _, sigName := range []string{"lockfile_missing", "dependency_unpinned", "cfg_pat_004", "todo_fixme", "dangerous_js_execution", "direct_inner_html", "production_panic"} {
-		if !seenSignals[signal] {
-			t.Fatalf("repo scan missing signal %s: %#v", signal, payload.Findings)
+		if !seenSignals[sigName] {
+			t.Fatalf("repo scan missing signal %s: %#v", sigName, payload.Findings)
 		}
 	}
 	if payload.Stats.SuggestedTaskCount == 0 || len(payload.SuggestedTasks) == 0 {
