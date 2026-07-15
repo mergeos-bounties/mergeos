@@ -133,7 +133,7 @@ func TestRuntimeConfigReturnsPaymentRails(t *testing.T) {
 		StripeSecretKey:         "placeholder-secret",
 		StripeWebhookSecret:     "placeholder-secret",
 		CryptoRPCURL:            "https://rpc.example",
-		CryptoReceiver:          "So00000000000000000000000000000000000000000",
+		CryptoReceiver:          "So11111111111111111111111111111111111111112",
 		CryptoAsset:             "spl",
 		CryptoTokenContract:     "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
 		CryptoTokenDecimals:     6,
