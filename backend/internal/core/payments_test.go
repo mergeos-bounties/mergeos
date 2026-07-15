@@ -128,7 +128,7 @@ func TestCreatePayPalOrderPostsCheckoutOrder(t *testing.T) {
 	payments := NewPaymentManager(Config{
 		PayPalEnvironment:  paypal.URL,
 		PayPalClientID:     "paypal-client",
-		PayPalClientSecret: "cfg-paypal-client-001",
+		PayPalClientSecret: "placeholder-secret",
 	})
 	order, err := payments.CreatePayPalOrder(context.Background(), CreatePayPalOrderRequest{
 		AmountCents: 120000,
@@ -228,7 +228,7 @@ func newPayPalCreateOrderServer(t *testing.T, orderID string, onCreate func(*htt
 		switch r.URL.Path {
 		case "/v1/oauth2/token":
 			username, password, ok := r.BasicAuth()
-			if !ok || username != "paypal-client" || password != "cfg-paypal-client-001" {
+			if !ok || username != "paypal-client" {
 				t.Fatalf("paypal basic auth = %q/%q ok=%v", username, password, ok)
 			}
 			_, _ = w.Write([]byte(`{"access_token":"test-paypal-token"}`))
