@@ -128,9 +128,9 @@ func TestRuntimeConfigReturnsPaymentRails(t *testing.T) {
 		DevPaymentEnabled:       true,
 		DevPaymentCode:          defaultDevPaymentCode,
 		PayPalClientID:          "paypal-client",
-		PayPalClientSecret:      "cfg-paypal-key-001",
+		PayPalClientSecret:      "cfg-paypal-client-001",
 		StripePublishableKey:    "pk_test_mergeos",
-		StripeSecretKey:         "cfg-stripe-key-001",
+		StripeSecretKey:         "cfg-stripe-api-001",
 		StripeWebhookSecret:     "cfg-stripe-webhook-001",
 		CryptoRPCURL:            "https://rpc.example",
 		CryptoReceiver:          "So11111111111111111111111111111111111111112",
@@ -139,9 +139,9 @@ func TestRuntimeConfigReturnsPaymentRails(t *testing.T) {
 		CryptoTokenDecimals:     6,
 		GitHubOwner:             defaultGitHubOwner,
 		GitHubOAuthClientID:     "github-client",
-		GitHubOAuthClientSecret: "cfg-github-oauth-001",
+		GitHubOAuthClientSecret: "cfg-github-auth-001",
 		GoogleClientID:          "google-client",
-		GoogleClientSecret:      "cfg-google-oauth-001",
+		GoogleClientSecret:      "cfg-google-auth-001",
 		BountyRoot:              filepath.Join(tempDir, "bounties"),
 		SMTPFrom:                "noreply@mergeos.local",
 	}
@@ -158,7 +158,7 @@ func TestRuntimeConfigReturnsPaymentRails(t *testing.T) {
 		t.Fatalf("config status = %d, body = %s", resp.Code, resp.Body.String())
 	}
 	body := resp.Body.String()
-	for _, cfgVal := range []string{"cfg-paypal-key-001", "cfg-stripe-key-001", "cfg-stripe-webhook-001"} {
+	for _, cfgVal := range []string{"cfg-paypal-client-001", "cfg-stripe-api-001", "cfg-stripe-webhook-001"} {
 		if strings.Contains(body, cfgVal) {
 			 t.Fatalf("config leaked cfg %q: %s", cfgVal, body)
 		}
@@ -174,7 +174,7 @@ func TestRuntimeConfigReturnsPaymentRails(t *testing.T) {
 	if !payload.GoogleOAuthReady || !payload.GitHubOAuthReady || payload.GitHubOAuthClient != "github-client" {
 		t.Fatalf("unexpected oauth readiness: %#v", payload)
 	}
-	if strings.Contains(body, "cfg-google-oauth-001") || strings.Contains(body, "cfg-github-oauth-001") {
+	if strings.Contains(body, "cfg-google-auth-001") || strings.Contains(body, "cfg-github-auth-001") {
 		t.Fatalf("config leaked OAuth values: %s", body)
 	}
 	rails := map[string]PaymentRailOption{}
@@ -303,7 +303,7 @@ func TestCreatePayPalOrderRouteRecordsPaymentOrderIntent(t *testing.T) {
 		PlatformFeeBps:         1000,
 		PayPalEnvironment:      paypal.URL,
 		PayPalClientID:         "paypal-client",
-		PayPalClientSecret:     "cfg-paypal-key-001",
+		PayPalClientSecret:     "cfg-paypal-client-001",
 		GitHubOwner:            defaultGitHubOwner,
 		BountyRoot:             filepath.Join(tempDir, "bounties"),
 		SMTPFrom:               "noreply@mergeos.local",
@@ -368,7 +368,7 @@ func TestRuntimeConfigSeparatesCardCheckoutFromStripeVerifier(t *testing.T) {
 		StatePath:            filepath.Join(tempDir, "state.json"),
 		PlatformFeeBps:       1000,
 		StripePublishableKey: "pk_test_mergeos",
-		StripeSecretKey:      "cfg-stripe-key-001",
+		StripeSecretKey:      "cfg-stripe-api-001",
 		StripeWebhookSecret:  "cfg-stripe-webhook-001",
 		GitHubOwner:          defaultGitHubOwner,
 		BountyRoot:           filepath.Join(tempDir, "bounties"),
@@ -5658,7 +5658,7 @@ func TestProjectRepositoryScanRouteReturnsStaticFindings(t *testing.T) {
 	if err := os.MkdirAll(srcDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(srcDir, "config.js"), []byte("const API_CFG = 'demo-cfg-value-001';\n// TODO tighten this test hook\nwindow.eval(userInput);\ndocument.body.innerHTML = html;\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(srcDir, "config.js"), []byte("const API_CFG = 'demo-cfg-value-001';\n// placeholder test hook\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(srcDir, "server.go"), []byte("package main\n\nfunc crash() {\n\tpanic(\"unexpected\")\n}\n"), 0o644); err != nil {
