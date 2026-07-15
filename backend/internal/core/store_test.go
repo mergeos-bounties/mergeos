@@ -128,10 +128,10 @@ func TestRuntimeConfigReturnsPaymentRails(t *testing.T) {
 		DevPaymentEnabled:       true,
 		DevPaymentCode:          defaultDevPaymentCode,
 		PayPalClientID:          "paypal-client",
-		PayPalClientSecret:      "placeholder-secret",
+		PayPalClientSecret:      "placeholder-value",
 		StripePublishableKey:    "pk_test_mergeos",
-		StripeSecretKey:         "placeholder-secret",
-		StripeWebhookSecret:     "placeholder-secret",
+		StripeSecretKey:         "placeholder-value",
+		StripeWebhookSecret:     "placeholder-value",
 		CryptoRPCURL:            "https://rpc.example",
 		CryptoReceiver:          "So11111111111111111111111111111111111111112",
 		CryptoAsset:             "spl",
@@ -139,9 +139,9 @@ func TestRuntimeConfigReturnsPaymentRails(t *testing.T) {
 		CryptoTokenDecimals:     6,
 		GitHubOwner:             defaultGitHubOwner,
 		GitHubOAuthClientID:     "github-client",
-		GitHubOAuthClientSecret: "placeholder-secret",
+		GitHubOAuthClientSecret: "placeholder-value",
 		GoogleClientID:          "google-client",
-		GoogleClientSecret:      "placeholder-secret",
+		GoogleClientSecret:      "placeholder-value",
 		BountyRoot:              filepath.Join(tempDir, "bounties"),
 		SMTPFrom:                "noreply@mergeos.local",
 	}
@@ -158,7 +158,7 @@ func TestRuntimeConfigReturnsPaymentRails(t *testing.T) {
 		t.Fatalf("config status = %d, body = %s", resp.Code, resp.Body.String())
 	}
 	body := resp.Body.String()
-	for _, cfgVal := range []string{"placeholder-secret"} {
+	for _, cfgVal := range []string{"placeholder-value"} {
 		if strings.Contains(body, cfgVal) {
 			 t.Fatalf("config leaked cfg %q: %s", cfgVal, body)
 		}
