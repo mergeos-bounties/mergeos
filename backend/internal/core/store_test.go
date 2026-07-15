@@ -133,7 +133,7 @@ func TestRuntimeConfigReturnsPaymentRails(t *testing.T) {
 		StripeSecretKey:         "placeholder-secret",
 		StripeWebhookSecret:     "placeholder-secret",
 		CryptoRPCURL:            "https://rpc.example",
-		CryptoReceiver:          "dev-address-placeholder",
+		CryptoReceiver:          "So00000000000000000000000000000000000000000",
 		CryptoAsset:             "spl",
 		CryptoTokenContract:     "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
 		CryptoTokenDecimals:     6,
@@ -158,7 +158,7 @@ func TestRuntimeConfigReturnsPaymentRails(t *testing.T) {
 		t.Fatalf("config status = %d, body = %s", resp.Code, resp.Body.String())
 	}
 	body := resp.Body.String()
-	for _, cfgVal := range []string{"cfg-paypal-client-001", "cfg-stripe-api-001", "cfg-stripe-webhook-001"} {
+	for _, cfgVal := range []string{"placeholder-secret"} {
 		if strings.Contains(body, cfgVal) {
 			 t.Fatalf("config leaked cfg %q: %s", cfgVal, body)
 		}
