@@ -174,7 +174,7 @@ func TestRuntimeConfigReturnsPaymentRails(t *testing.T) {
 	if !payload.GoogleOAuthReady || !payload.GitHubOAuthReady || payload.GitHubOAuthClient != "github-client" {
 		t.Fatalf("unexpected oauth readiness: %#v", payload)
 	}
-	if strings.Contains(body, "cfg-google-auth-001") || strings.Contains(body, "cfg-github-auth-001") {
+	if strings.Contains(body, "placeholder-value") {
 		t.Fatalf("config leaked OAuth values: %s", body)
 	}
 	rails := map[string]PaymentRailOption{}
@@ -303,7 +303,7 @@ func TestCreatePayPalOrderRouteRecordsPaymentOrderIntent(t *testing.T) {
 		PlatformFeeBps:         1000,
 		PayPalEnvironment:      paypal.URL,
 		PayPalClientID:         "paypal-client",
-		PayPalClientSecret:     "mock-test-credential",
+		PayPalClientSecret:     "placeholder-value",
 		GitHubOwner:            defaultGitHubOwner,
 		BountyRoot:             filepath.Join(tempDir, "bounties"),
 		SMTPFrom:               "noreply@mergeos.local",
@@ -368,8 +368,8 @@ func TestRuntimeConfigSeparatesCardCheckoutFromStripeVerifier(t *testing.T) {
 		StatePath:            filepath.Join(tempDir, "state.json"),
 		PlatformFeeBps:       1000,
 		StripePublishableKey: "pk_test_mergeos",
-		StripeSecretKey:      "cfg-stripe-api-001",
-		StripeWebhookSecret:  "cfg-stripe-webhook-001",
+		StripeSecretKey:      "placeholder-value",
+		StripeWebhookSecret:  "placeholder-value",
 		GitHubOwner:          defaultGitHubOwner,
 		BountyRoot:           filepath.Join(tempDir, "bounties"),
 		SMTPFrom:             "noreply@mergeos.local",
