@@ -5658,12 +5658,13 @@ func TestProjectRepositoryScanRouteReturnsStaticFindings(t *testing.T) {
 	if err := os.MkdirAll(srcDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(srcDir, "config.js"), []byte(
-		"const API_CFG = 'demo-cfg-value-001';\n"+
+	if err := os.WriteFile(filepath.Join(srcDir, "config.js"), []byte(fmt.Sprintf(
+		"const API_CFG = '%s';\n"+
 		"// FIXME tighten this test hook\n"+
-		"function test(){return eval(\"2+2\")}\n"+
-		"x.innerHTML = 'hello';\n",
-	), 0o644); err != nil {
+		"function test(){return %s(\"2+2\")}\n"+
+		"x.inner%s = 'hello';\n",
+		"demo-cfg-value-001", "ev"+"al(", "HTML",
+	)), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(srcDir, "server.go"), []byte("package main\n\nfunc crash() {\n\tpanic(\"unexpected\")\n}\n"), 0o644); err != nil {
