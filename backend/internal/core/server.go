@@ -2,12 +2,15 @@ package core
 
 import (
 	"context"
-	"sort"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -54,6 +57,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/public/projects/{id}/pull-requests", s.publicProjectPullRequests)
 	mux.HandleFunc("POST /api/public/repo/issues", s.importRepoIssues)
 	mux.HandleFunc("POST /api/integrations/github/pr-review", s.geminiReviewWebhook)
+	mux.HandleFunc("POST /api/payments/crypto/webhook", s.cryptoWebhook)
 	mux.HandleFunc("POST /api/payments/usdt/webhook", s.usdtWebhook)
 	mux.HandleFunc("POST /api/auth/register", s.register)
 	mux.HandleFunc("POST /api/auth/login", s.login)
@@ -2297,4 +2301,66 @@ type CryptoWebhookRequest struct {
 func (s *Server) usdtWebhook(w http.ResponseWriter, r *http.Request) {
 	handler := NewUSDTWebhookHandler(s.cfg, s.store)
 	handler.ServeHTTP(w, r)
+}
+
+func (s *Server) cryptoWebhook(w http.ResponseWriter, r *http.Request) {
+	bodyBytes, err := io.ReadAll(r.Body)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "failed to read body")
+		return
+	}
+
+	// 1. Signature validation (HMAC-SHA256)
+	if s.cfg.CryptoWebhookSecret != "" {
+		signatureHex := r.Header.Get("X-MergeOS-Signature")
+		if signatureHex == "" {
+			writeError(w, http.StatusUnauthorized, "missing signature header")
+			return
+		}
+		expectedMac := hmac.New(sha256.New, []byte(s.cfg.CryptoWebhookSecret))
+		expectedMac.Write(bodyBytes)
+		expectedSignature := hex.EncodeToString(expectedMac.Sum(nil))
+		if !hmac.Equal([]byte(signatureHex), []byte(expectedSignature)) {
+			writeError(w, http.StatusUnauthorized, "invalid signature")
+			return
+		}
+	}
+
+	var req CryptoWebhookRequest
+	if err := json.Unmarshal(bodyBytes, &req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON payload")
+		return
+	}
+
+	// 2. Replay attack protection (unique transaction hash)
+	if s.store.IsPaymentReferenceUsed(req.TxHash) {
+		writeError(w, http.StatusConflict, "transaction hash has already been used")
+		return
+	}
+
+	// 3. Assemble and execute Verify and CreateProject
+	projectReq := CreateProjectRequest{
+		Title:            req.Title,
+		ClientName:       req.ClientName,
+		CompanyName:      req.CompanyName,
+		ClientEmail:      req.ClientEmail,
+		Phone:            req.Phone,
+		SiteType:         req.SiteType,
+		PackageTier:      req.PackageTier,
+		Timeline:         req.Timeline,
+		Brief:            req.Brief,
+		PaymentMethod:    PaymentCrypto,
+		PaymentReference: req.TxHash,
+		BudgetCents:      req.BudgetCents,
+		AttachmentIDs:    req.AttachmentIDs,
+		SourceRepoURL:    req.SourceRepoURL,
+	}
+
+	project, err := s.store.CreateProject(r.Context(), req.UserID, projectReq)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusCreated, project)
 }
