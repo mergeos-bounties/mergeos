@@ -81,8 +81,12 @@ func TestHandlePayPalWebhook_InvalidSignature(t *testing.T) {
 		PayPalEnvironment:  "sandbox",
 	}
 
+	payments := NewPaymentManager(cfg)
+	payments.client = mockServer.Client()
+
 	srv := &Server{
 		cfg:           cfg,
+		payments:      payments,
 		paypalBaseURL: mockServer.URL,
 	}
 
@@ -124,11 +128,16 @@ func TestHandlePayPalWebhook_ValidEvent(t *testing.T) {
 	payments := NewPaymentManager(cfg)
 	payments.client = mockServer.Client()
 
+	store, err := NewStore(cfg, payments, nil, nil)
+	if err != nil {
+		t.Fatalf("NewStore() error = %v", err)
+	}
+
 	srv := &Server{
 		cfg:           cfg,
 		payments:      payments,
 		paypalBaseURL: mockServer.URL,
-		store:         newStore(cfg),
+		store:         store,
 	}
 
 	body := map[string]interface{}{
@@ -195,10 +204,18 @@ func TestHandlePayPalWebhook_PaymentDenied(t *testing.T) {
 		PayPalEnvironment:  "sandbox",
 	}
 
+	store, err := NewStore(cfg, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("NewStore() error = %v", err)
+	}
+
+	payments := NewPaymentManager(cfg)
+
 	srv := &Server{
 		cfg:           cfg,
+		payments:      payments,
 		paypalBaseURL: mockServer.URL,
-		store:         newStore(cfg),
+		store:         store,
 	}
 
 	body := map[string]interface{}{
@@ -238,10 +255,18 @@ func TestHandlePayPalWebhook_PaymentDeclined(t *testing.T) {
 		PayPalEnvironment:  "sandbox",
 	}
 
+	store, err := NewStore(cfg, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("NewStore() error = %v", err)
+	}
+
+	payments := NewPaymentManager(cfg)
+
 	srv := &Server{
 		cfg:           cfg,
+		payments:      payments,
 		paypalBaseURL: mockServer.URL,
-		store:         newStore(cfg),
+		store:         store,
 	}
 
 	body := map[string]interface{}{
@@ -281,10 +306,18 @@ func TestHandlePayPalWebhook_PaymentRefunded(t *testing.T) {
 		PayPalEnvironment:  "sandbox",
 	}
 
+	store, err := NewStore(cfg, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("NewStore() error = %v", err)
+	}
+
+	payments := NewPaymentManager(cfg)
+
 	srv := &Server{
 		cfg:           cfg,
+		payments:      payments,
 		paypalBaseURL: mockServer.URL,
-		store:         newStore(cfg),
+		store:         store,
 	}
 
 	body := map[string]interface{}{
