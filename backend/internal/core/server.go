@@ -3,7 +3,6 @@ package core
 import (
 	"context"
 	"crypto/hmac"
-	"sort"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -11,6 +10,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -58,6 +58,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("POST /api/public/repo/issues", s.importRepoIssues)
 	mux.HandleFunc("POST /api/integrations/github/pr-review", s.geminiReviewWebhook)
 	mux.HandleFunc("POST /api/payments/crypto/webhook", s.cryptoWebhook)
+	mux.HandleFunc("POST /api/payments/usdt/webhook", s.usdtWebhook)
 	mux.HandleFunc("POST /api/auth/register", s.register)
 	mux.HandleFunc("POST /api/auth/login", s.login)
 	mux.HandleFunc("POST /api/auth/password-reset", s.requestPasswordReset)
@@ -2295,6 +2296,11 @@ type CryptoWebhookRequest struct {
 	AttachmentIDs []string `json:"attachmentIds"`
 	SourceRepoURL string   `json:"sourceRepoURL"`
 	TxHash        string   `json:"txHash"`
+}
+
+func (s *Server) usdtWebhook(w http.ResponseWriter, r *http.Request) {
+	handler := NewUSDTWebhookHandler(s.cfg, s.store)
+	handler.ServeHTTP(w, r)
 }
 
 func (s *Server) cryptoWebhook(w http.ResponseWriter, r *http.Request) {

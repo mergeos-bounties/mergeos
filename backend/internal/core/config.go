@@ -26,6 +26,7 @@ type Config struct {
 	PlatformFeeBps           int64
 	DevPaymentEnabled        bool
 	DevPaymentCode           string
+	USDTWebhookSecret        string
 	AdminEmail               string
 	AdminPassword            string
 	AdminName                string
@@ -155,6 +156,7 @@ func LoadConfig() Config {
 		PlatformFeeBps:           getenvInt64("PLATFORM_FEE_BPS", 1000),
 		DevPaymentEnabled:        devPaymentEnabled,
 		DevPaymentCode:           getenv("DEV_PAYMENT_CODE", defaultDevPaymentCode),
+		USDTWebhookSecret:        getenv("USDT_WEBHOOK_SECRET", ""),
 		AdminEmail:               adminEmail,
 		AdminPassword:            adminPassword,
 		AdminName:                getenv("ADMIN_NAME", "MergeOS Admin"),
@@ -300,6 +302,10 @@ func loadEnvironmentFiles(env string) {
 
 func (c Config) PayPalReady() bool {
 	return c.PayPalClientID != "" && c.PayPalClientSecret != ""
+}
+
+func (c Config) USDTReady() bool {
+	return c.USDTWebhookSecret != "" || c.DevPaymentCode != ""
 }
 
 func (c Config) CryptoReady() bool {

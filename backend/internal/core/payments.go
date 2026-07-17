@@ -47,10 +47,14 @@ func (p *PaymentManager) Verify(ctx context.Context, req CreateProjectRequest) (
 		}
 		return p.verifyDev(reference, "dev-crypto")
 	case PaymentUSDT:
-		if p.cfg.CryptoReady() && reference != p.cfg.DevPaymentCode {
+		if p.cfg.USDTReady() && reference != p.cfg.DevPaymentCode {
+			// For USDT, verification is handled asynchronously by the webhook.
+			// Return a pending state or use verifyCrypto if they share the same provider endpoint.
 			return p.verifyCrypto(ctx, reference, req.BudgetCents)
+		} else if reference == p.cfg.DevPaymentCode {
+			return PaymentVerification{Provider: "dev-sandbox", Reference: reference}, nil
 		}
-		return p.verifyDev(reference, "dev-solana-spl")
+		return PaymentVerification{}, errors.New("USDT gateway not configured or reference invalid")
 	case PaymentStripe:
 		if p.cfg.StripeReady() && reference != p.cfg.DevPaymentCode {
 			return p.verifyStripe(ctx, reference, req.BudgetCents)

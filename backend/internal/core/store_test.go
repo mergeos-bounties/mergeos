@@ -432,7 +432,7 @@ func TestCreateProjectAcceptsSolanaAliasPaymentMethod(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if project.PaymentMethod != PaymentUSDT || project.PaymentProvider != "dev-solana-spl" || project.PaymentStatus != "verified" {
+	if project.PaymentMethod != PaymentUSDT || project.PaymentProvider != "dev-sandbox" || project.PaymentStatus != "verified" {
 		t.Fatalf("unexpected solana alias project payment fields: %#v", project)
 	}
 }
