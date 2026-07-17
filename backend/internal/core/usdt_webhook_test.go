@@ -14,7 +14,7 @@ import (
 
 func TestUSDTWebhookHandler_ValidSignature(t *testing.T) {
 	cfg := Config{
-		USDTWebhookSecret: "test-secret-key",
+		USDTWebhookSecret: "test-secret-placeholder",
 	}
 	store, err := NewStore(cfg, nil, nil, nil)
 	if err != nil {
@@ -53,7 +53,7 @@ func TestUSDTWebhookHandler_ValidSignature(t *testing.T) {
 
 func TestUSDTWebhookHandler_InvalidSignature(t *testing.T) {
 	cfg := Config{
-		USDTWebhookSecret: "test-secret-key",
+		USDTWebhookSecret: "test-secret-placeholder",
 	}
 	store, err := NewStore(cfg, nil, nil, nil)
 	if err != nil {
@@ -111,7 +111,7 @@ func TestUSDTWebhookHandler_NoSignatureWithDevMode(t *testing.T) {
 
 func TestRecordUSDTWebhookPayment_MatchAndSettleProject(t *testing.T) {
 	cfg := Config{
-		USDTWebhookSecret: "test-secret-key",
+		USDTWebhookSecret: "test-secret-placeholder",
 	}
 	store, err := NewStore(cfg, nil, nil, nil)
 	if err != nil {
@@ -158,7 +158,7 @@ func TestRecordUSDTWebhookPayment_MatchAndSettleProject(t *testing.T) {
 
 func TestRecordUSDTWebhookPayment_DuplicateSafe(t *testing.T) {
 	cfg := Config{
-		USDTWebhookSecret: "test-secret-key",
+		USDTWebhookSecret: "test-secret-placeholder",
 	}
 	store, err := NewStore(cfg, nil, nil, nil)
 	if err != nil {
