@@ -699,25 +699,59 @@ main {
   font-family: "IBM Plex Sans", system-ui, sans-serif;
 }
 
-.table-more {
+.table-pager {
   display: flex;
-  justify-content: center;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
   min-height: 40px;
   padding: 8px 12px;
   border-top: 1px solid var(--line);
+  background: rgba(236, 223, 192, 0.28);
 }
 
-.table-more button {
-  border: 0;
-  background: transparent;
+.table-pager.single {
+  justify-content: center;
+}
+
+.pager-btn {
+  min-height: 30px;
+  min-width: 72px;
+  padding: 0 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 5px;
+  background: var(--paper-elevated);
   color: var(--forest);
   cursor: pointer;
   font-weight: 600;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
 }
 
-.table-more button:hover {
-  text-decoration: underline;
+.pager-btn:hover:not(:disabled) {
+  background: #fff8e6;
+  border-color: rgba(73, 57, 30, 0.65);
+}
+
+.pager-btn:disabled {
+  cursor: default;
+  opacity: 0.4;
+  color: var(--muted);
+}
+
+.pager-meta {
+  color: var(--ink);
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.pager-meta small {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 500;
 }
 
 .link-button {

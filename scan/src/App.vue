@@ -194,10 +194,30 @@
                 @go-block="openBlock"
                 @go-address="openAddress"
               />
-              <div v-if="hasMoreTransactions || showAllTransactions" class="table-more">
-                <button type="button" @click="showAllTransactions = !showAllTransactions">
-                  {{ showAllTransactions ? 'Show fewer' : `View all ${visibleEntries.length} transactions →` }}
+              <div v-if="totalTransactionPages > 1" class="table-pager" aria-label="Transaction pages">
+                <button
+                  type="button"
+                  class="pager-btn"
+                  :disabled="txPage <= 1"
+                  @click="goTxPage(txPage - 1)"
+                >
+                  ← Prev
                 </button>
+                <span class="pager-meta">
+                  {{ pageRangeLabel }}
+                  <small>· page {{ txPage }} / {{ totalTransactionPages }}</small>
+                </span>
+                <button
+                  type="button"
+                  class="pager-btn"
+                  :disabled="txPage >= totalTransactionPages"
+                  @click="goTxPage(txPage + 1)"
+                >
+                  Next →
+                </button>
+              </div>
+              <div v-else-if="visibleEntries.length" class="table-pager single">
+                <span class="pager-meta">{{ pageRangeLabel }}</span>
               </div>
             </div>
 
@@ -276,7 +296,7 @@
 </template>
 
 <script setup>
-import { computed, defineAsyncComponent, defineComponent, h, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, defineAsyncComponent, defineComponent, h, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import {
   AlertTriangle,
   ArrowDownLeft,
@@ -337,7 +357,8 @@ const lastSyncAt = ref(null);
 const searchInput = ref('');
 const queryFilter = ref('');
 const typeFilter = ref('all');
-const showAllTransactions = ref(false);
+const txPage = ref(1);
+const TX_PAGE_SIZE = 15;
 const route = ref(parseRoute());
 const copyToast = ref(null);
 let copyToastTimer = 0;
@@ -364,8 +385,29 @@ const accounts = computed(() => aggregateAccounts(entries.value));
 const stats = computed(() => buildExplorerStats(entries.value, marketplace.value, tokenSymbol.value));
 const ledgerTypes = computed(() => Array.from(new Set(entries.value.map((entry) => entry.type))).sort());
 const visibleEntries = computed(() => filterEntries(newestEntries.value, { query: queryFilter.value, type: typeFilter.value }));
-const displayedEntries = computed(() => (showAllTransactions.value ? visibleEntries.value : visibleEntries.value.slice(0, 15)));
-const hasMoreTransactions = computed(() => visibleEntries.value.length > displayedEntries.value.length);
+const totalTransactionPages = computed(() =>
+  Math.max(1, Math.ceil(visibleEntries.value.length / TX_PAGE_SIZE)),
+);
+const displayedEntries = computed(() => {
+  const page = Math.min(Math.max(1, txPage.value), totalTransactionPages.value);
+  const start = (page - 1) * TX_PAGE_SIZE;
+  return visibleEntries.value.slice(start, start + TX_PAGE_SIZE);
+});
+const pageRangeLabel = computed(() => {
+  const total = visibleEntries.value.length;
+  if (!total) return '0 transactions';
+  const page = Math.min(Math.max(1, txPage.value), totalTransactionPages.value);
+  const start = (page - 1) * TX_PAGE_SIZE + 1;
+  const end = Math.min(page * TX_PAGE_SIZE, total);
+  return `${start}–${end} of ${total}`;
+});
+
+watch([typeFilter, queryFilter], () => {
+  txPage.value = 1;
+});
+watch(totalTransactionPages, (pages) => {
+  if (txPage.value > pages) txPage.value = pages;
+});
 const lastSyncLabel = computed(() => {
   if (!lastSyncAt.value) return 'pending';
   return lastSyncAt.value.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -643,10 +685,15 @@ function normalizeMarketplace(payload = {}) {
   };
 }
 
+function goTxPage(page) {
+  const next = Math.min(Math.max(1, Number(page) || 1), totalTransactionPages.value);
+  txPage.value = next;
+}
+
 function submitSearch() {
   const query = searchInput.value.trim();
   queryFilter.value = query;
-  showAllTransactions.value = false;
+  txPage.value = 1;
   if (!query) {
     goHome();
     return;
@@ -666,7 +713,7 @@ function resetFilters() {
   searchInput.value = '';
   queryFilter.value = '';
   typeFilter.value = 'all';
-  showAllTransactions.value = false;
+  txPage.value = 1;
 }
 
 function openTx(hash) {
