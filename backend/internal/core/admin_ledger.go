@@ -3,7 +3,10 @@ package core
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
+	"net/url"
+	"strconv"
 	"strings"
 )
 
@@ -42,12 +45,41 @@ func (s *Server) createAdminLedgerCredit(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	s.broadcastLiveFeedEvent("ledger_manual_credit")
+
+	creditURL := scanAccountURL(s.cfg, entry.ToAccount)
+	scanURL := scanBaseURL(s.cfg) + "/address/" + url.PathEscape(entry.ToAccount)
+	commentBody := renderManualCreditComment(entry, workerID, rewardMRG, bountyType, creditURL, req.PRURL)
+
+	// Optionally post comment to GitHub PR if a PR URL was provided
+	var commentURL string
+	var commentError string
+	if prURL := strings.TrimSpace(req.PRURL); prURL != "" {
+		if target, err := parseGitHubPullURL(prURL); err == nil {
+			client, ghErr := newAdminGitHubClient(s.cfg, false)
+			if ghErr == nil {
+				pullNumber := target.IssueNumber
+				cURL, cErr := client.commentPullRequest(r.Context(), target, pullNumber, commentBody)
+				if cErr == nil {
+					commentURL = cURL
+				} else {
+					commentError = cErr.Error()
+				}
+			}
+		}
+	}
+
 	writeJSON(w, http.StatusCreated, AdminManualCreditResponse{
-		LedgerEntry: entry,
-		WorkerID:    workerID,
-		RewardMRG:   rewardMRG,
-		BountyType:  bountyType,
-		CreditURL:   scanAccountURL(s.cfg, entry.ToAccount),
+		LedgerEntry:    entry,
+		WorkerID:       workerID,
+		RewardMRG:      rewardMRG,
+		BountyType:     bountyType,
+		CreditURL:      creditURL,
+		LedgerSequence: entry.Sequence,
+		ProofHash:      entry.EntryHash,
+		ScanURL:        scanURL,
+		CommentURL:     commentURL,
+		CommentError:   commentError,
+		CommentBody:    commentBody,
 	})
 }
 
@@ -115,4 +147,48 @@ func isGitHubUsername(value string) bool {
 		return false
 	}
 	return true
+}
+
+// renderManualCreditComment generates a standard bounty credit comment body
+// matching the maintainer comment format used on merged bounty PRs.
+func renderManualCreditComment(entry LedgerEntry, workerID string, rewardMRG int64, bountyType string, creditURL string, prURL string) string {
+	proofHash := strings.TrimSpace(entry.EntryHash)
+	if proofHash == "" {
+		proofHash = entry.ProofHash
+	}
+	return fmt.Sprintf(`MergeOS bounty credit approved.
+
+- Bounty type: %s
+- MRG credited: %d MRG
+- Credited worker: %s
+- MRG credit URL: %s
+- Proof hash: %s
+- Ledger sequence: %d
+- PR: %s
+`, adminBountyTitle(bountyType), rewardMRG, workerID, creditURL, proofHash, entry.Sequence, prURL)
+}
+
+// parseGitHubPullURL parses a GitHub pull request URL into owner, repo, and pull number.
+func parseGitHubPullURL(value string) (githubIssueTarget, error) {
+	raw := strings.TrimSpace(value)
+	if raw == "" {
+		return githubIssueTarget{}, errors.New("pull request URL is required")
+	}
+	parsed, err := url.Parse(raw)
+	if err != nil || !strings.EqualFold(parsed.Hostname(), "github.com") {
+		return githubIssueTarget{}, errors.New("pull request URL must be a GitHub URL")
+	}
+	parts := strings.Split(strings.Trim(parsed.Path, "/"), "/")
+	if len(parts) < 4 || !strings.EqualFold(parts[2], "pull") {
+		return githubIssueTarget{}, errors.New("pull request URL must look like https://github.com/owner/repo/pull/123")
+	}
+	number, err := strconv.Atoi(parts[3])
+	if err != nil || number <= 0 {
+		return githubIssueTarget{}, errors.New("pull request number is invalid")
+	}
+	owner, repo, err := cleanRepoParts(parts[:2])
+	if err != nil {
+		return githubIssueTarget{}, err
+	}
+	return githubIssueTarget{Owner: owner, Repo: repo, IssueNumber: number}, nil
 }

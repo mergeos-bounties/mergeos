@@ -424,6 +424,18 @@
           </button>
           <p v-if="manualCreditError" class="form-error">{{ manualCreditError }}</p>
           <p v-if="manualCreditMessage" class="form-success">{{ manualCreditMessage }}</p>
+          <div v-if="manualCreditResult" class="manual-credit-result">
+            <section class="credit-detail-section">
+              <strong>Ledger Sequence: {{ manualCreditResult.ledger_sequence }}</strong>
+              <small>Proof Hash: <code>{{ manualCreditResult.proof_hash }}</code></small>
+              <a v-if="manualCreditResult.scan_url" :href="manualCreditResult.scan_url" target="_blank" rel="noreferrer" class="inline-link">View on Scan Explorer &rarr;</a>
+            </section>
+            <section class="credit-comment-section" v-if="manualCreditResult.comment_body">
+              <span>Comment Template</span>
+              <textarea readonly rows="8" @click="$event.target.select()">{{ manualCreditResult.comment_body }}</textarea>
+              <small>Click to select, then copy to post on PR.</small>
+            </section>
+          </div>
         </form>
         <DataTable :columns="['Seq', 'Type', 'From', 'To', 'Amount', 'Reference']">
           <tr v-for="entry in ledgerEntries.slice().reverse()" :key="entry.sequence">
@@ -987,6 +999,7 @@ const mergeSelections = ref({});
 const manualCreditBusy = ref(false);
 const manualCreditError = ref('');
 const manualCreditMessage = ref('');
+const manualCreditResult = ref(null);
 const taskIssueStates = ref({});
 const expandedTaskPulls = ref({});
 const geminiKeys = ref([]);
@@ -2116,6 +2129,7 @@ async function createManualCredit() {
   manualCreditBusy.value = true;
   manualCreditError.value = '';
   manualCreditMessage.value = '';
+  manualCreditResult.value = null;
   try {
     const result = await api('/api/admin/ledger/credits', {
       method: 'POST',
@@ -2133,7 +2147,13 @@ async function createManualCredit() {
     ]);
     summary.value = summaryData || {};
     ledgerEntries.value = Array.isArray(ledgerData) ? ledgerData : [];
-    manualCreditMessage.value = `Credited ${mrg(result.reward_mrg || manualCreditForm.reward_mrg)} to ${result.worker_id || manualCreditForm.worker_id}.`;
+    manualCreditResult.value = result;
+    const commentStatus = result.comment_url
+      ? ' Comment posted on PR.'
+      : result.comment_error
+        ? ` Comment failed: ${result.comment_error}`
+        : '';
+    manualCreditMessage.value = `Credited ${mrg(result.reward_mrg || manualCreditForm.reward_mrg)} to ${result.worker_id || manualCreditForm.worker_id}. Sequence: ${result.ledger_sequence}.${commentStatus}`;
     manualCreditForm.worker_id = '';
     manualCreditForm.pr_url = '';
     manualCreditForm.pr_title = '';

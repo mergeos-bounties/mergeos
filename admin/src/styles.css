@@ -1647,6 +1647,67 @@ button:disabled {
   grid-column: 1 / -1;
 }
 
+.manual-credit-result {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 14px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.credit-detail-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.credit-detail-section strong {
+  font-size: 15px;
+}
+
+.credit-detail-section code {
+  background: var(--line);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.credit-comment-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.credit-comment-section span {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.credit-comment-section textarea {
+  width: 100%;
+  font-family: 'SF Mono', 'Fira Code', 'Monaco', monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  resize: vertical;
+  cursor: text;
+}
+
+.credit-comment-section small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .table-wrap {
   overflow: auto;
 }
