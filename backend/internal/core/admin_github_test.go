@@ -114,6 +114,46 @@ func TestRenderMergeOSPullCommentLinksScanCreditAccount(t *testing.T) {
 	}
 }
 
+func TestRenderManualCreditCommentIncludesAllFields(t *testing.T) {
+	comment := renderManualCreditComment(
+		"github:testuser",
+		100,
+		"major-feature",
+		"https://scan.mergeos.shop/address/github:testuser",
+		42,
+		"abc123hash",
+		"https://github.com/org/repo/pull/99",
+	)
+	if !strings.Contains(comment, "Merge URL: https://github.com/org/repo/pull/99") {
+		t.Fatalf("comment missing merge URL: %s", comment)
+	}
+	if !strings.Contains(comment, "MRG credit URL: https://scan.mergeos.shop/address/github:testuser") {
+		t.Fatalf("comment missing credit URL: %s", comment)
+	}
+	if !strings.Contains(comment, "Credited worker: github:testuser") {
+		t.Fatalf("comment missing worker: %s", comment)
+	}
+	if !strings.Contains(comment, "MRG credited: 100 MRG") {
+		t.Fatalf("comment missing reward: %s", comment)
+	}
+	if !strings.Contains(comment, "Ledger sequence: 42") {
+		t.Fatalf("comment missing ledger sequence: %s", comment)
+	}
+	if !strings.Contains(comment, "Proof hash: abc123hash") {
+		t.Fatalf("comment missing proof hash: %s", comment)
+	}
+	if !strings.Contains(comment, "Bounty type: Major feature bounty") {
+		t.Fatalf("comment missing bounty type title: %s", comment)
+	}
+}
+
+func TestRenderManualCreditCommentFallbackPRURL(t *testing.T) {
+	comment := renderManualCreditComment("github:user", 25, "future-small", "https://scan.mergeos.shop", 10, "hash1", "")
+	if !strings.Contains(comment, "Merge URL: manual-credit") {
+		t.Fatalf("comment missing fallback merge URL: %s", comment)
+	}
+}
+
 func TestPullLedgerReferencePublishesPullLinkAndTitle(t *testing.T) {
 	reference := buildPullLedgerReference(
 		"tsk_0041",

@@ -1647,6 +1647,82 @@ button:disabled {
   grid-column: 1 / -1;
 }
 
+.credit-result-card {
+  grid-column: 1 / -1;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-2);
+  padding: 14px 16px;
+  display: grid;
+  gap: 10px;
+}
+
+.credit-result-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.credit-result-details {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 12px;
+  align-items: center;
+  font-size: 13px;
+}
+
+.credit-result-details label {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.credit-result-details strong a {
+  color: var(--blue);
+  text-decoration: none;
+}
+
+.credit-result-details strong a:hover {
+  text-decoration: underline;
+}
+
+.credit-result-details code {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 2px 6px;
+}
+
+.credit-result-comment {
+  display: grid;
+  gap: 6px;
+}
+
+.credit-result-comment label {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.comment-pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin: 0;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
 .table-wrap {
   overflow: auto;
 }

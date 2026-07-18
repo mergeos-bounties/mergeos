@@ -6747,6 +6747,27 @@ func TestAdminCanCreateManualLedgerCredit(t *testing.T) {
 	if !strings.Contains(payload.CreditURL, "/address/github:eliasx45") {
 		t.Fatalf("manual credit URL = %q", payload.CreditURL)
 	}
+	if payload.ScanURL != payload.CreditURL {
+		t.Fatalf("manual credit scan_url should equal credit_url, got scan_url=%q credit_url=%q", payload.ScanURL, payload.CreditURL)
+	}
+	if payload.LedgerSequence != payload.LedgerEntry.Sequence {
+		t.Fatalf("manual credit ledger_sequence = %d, want %d", payload.LedgerSequence, payload.LedgerEntry.Sequence)
+	}
+	if payload.ProofHash != payload.LedgerEntry.EntryHash {
+		t.Fatalf("manual credit proof_hash = %q, want %q", payload.ProofHash, payload.LedgerEntry.EntryHash)
+	}
+	if payload.CommentTemplate == "" {
+		t.Fatal("manual credit comment_template is empty")
+	}
+	if !strings.Contains(payload.CommentTemplate, "github:eliasx45") {
+		t.Fatalf("manual credit comment_template missing worker: %q", payload.CommentTemplate)
+	}
+	if !strings.Contains(payload.CommentTemplate, "50 MRG") {
+		t.Fatalf("manual credit comment_template missing reward: %q", payload.CommentTemplate)
+	}
+	if !strings.Contains(payload.CommentTemplate, "Future bounty - medium") {
+		t.Fatalf("manual credit comment_template missing bounty type title: %q", payload.CommentTemplate)
+	}
 	foundPublicReference := false
 	for _, entry := range store.ListPublicLedger() {
 		if entry.Type == "manual_credit" && entry.Reference == payload.LedgerEntry.Reference {
