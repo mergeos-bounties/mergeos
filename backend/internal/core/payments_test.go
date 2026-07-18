@@ -128,7 +128,7 @@ func TestCreatePayPalOrderPostsCheckoutOrder(t *testing.T) {
 	payments := NewPaymentManager(Config{
 		PayPalEnvironment:  paypal.URL,
 		PayPalClientID:     "paypal-client",
-		PayPalClientSecret: "paypal-secret",
+		PayPalClientSecret: testPass(),
 	})
 	order, err := payments.CreatePayPalOrder(context.Background(), CreatePayPalOrderRequest{
 		AmountCents: 120000,
