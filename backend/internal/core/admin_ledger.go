@@ -74,7 +74,7 @@ func (s *Server) createAdminLedgerCredit(w http.ResponseWriter, r *http.Request)
 		RewardMRG:      rewardMRG,
 		BountyType:     bountyType,
 		CreditURL:      creditURL,
-		LedgerSequence: entry.Sequence,
+		LedgerSequence: int64(entry.Sequence),
 		ProofHash:      entry.EntryHash,
 		ScanURL:        scanURL,
 		CommentURL:     commentURL,
@@ -154,7 +154,7 @@ func isGitHubUsername(value string) bool {
 func renderManualCreditComment(entry LedgerEntry, workerID string, rewardMRG int64, bountyType string, creditURL string, prURL string) string {
 	proofHash := strings.TrimSpace(entry.EntryHash)
 	if proofHash == "" {
-		proofHash = entry.ProofHash
+		proofHash = entry.EntryHash
 	}
 	return fmt.Sprintf(`MergeOS bounty credit approved.
 
