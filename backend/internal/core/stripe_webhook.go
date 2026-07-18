@@ -298,7 +298,7 @@ func (s *Store) RecordStripeSettlement(eventID string, payment stripeWebhookPaym
 		tokenSymbol := normalizedTokenSymbol(s.cfg.TokenSymbol)
 		clientProjectAccount := "client:" + target.ClientUserID + ":project:" + target.ID
 		s.addLedger("stripe_payment_verified", "payment:stripe:"+payment.PaymentIntentID, clientProjectAccount, payment.AmountCents, payment.PaymentIntentID)
-		s.addLedger("token_mint", "issuer:mergeos", clientProjectAccount, target.BudgetCents, "mint:"+target.ID)
+		s.addLedger("token_mint", "issuer:mergeos", clientProjectAccount, payment.AmountCents, "mint:"+target.ID)
 
 		// Update project status and record card brand info.
 		target.PaymentStatus = "verified"
