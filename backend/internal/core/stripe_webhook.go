@@ -12,7 +12,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 )
 
 // stripeWebhookEvent represents a Stripe webhook notification.
@@ -296,7 +295,6 @@ func (s *Store) RecordStripeSettlement(eventID string, payment stripeWebhookPaym
 		}
 
 		// Mint MRG credit + write ledger proof.
-		tokenSymbol := normalizedTokenSymbol(s.cfg.TokenSymbol)
 		clientProjectAccount := "client:" + target.ClientUserID + ":project:" + target.ID
 		s.addLedger("stripe_payment_verified", "payment:stripe:"+payment.PaymentIntentID, clientProjectAccount, payment.AmountCents, payment.PaymentIntentID)
 		s.addLedger("token_mint", "issuer:mergeos", clientProjectAccount, payment.AmountCents, "mint:"+target.ID)
