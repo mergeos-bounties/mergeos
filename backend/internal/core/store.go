@@ -3176,10 +3176,10 @@ func (s *Store) applyState(state persistedState) bool {
 	// Payment settlements (Stripe webhook dedup)
 	s.paymentSettlements = map[string]*stripeSettlementResult{}
 	for _, settlement := range state.PaymentSettlements {
-		if settlement == nil {
+		if settlement == nil || settlement.EventID == "" {
 			continue
 		}
-		// The event ID key is used for dedup; persisted entries have the ID stored.
+		s.paymentSettlements[settlement.EventID] = settlement
 	}
 
 	// Test settings
@@ -3285,7 +3285,11 @@ func (s *Store) snapshotLocked() persistedState {
 		return state.PaymentOrders[i].CreatedAt.Before(state.PaymentOrders[j].CreatedAt)
 	})
 	for _, settlement := range s.paymentSettlements {
-		state.PaymentSettlements = append(state.PaymentSettlements, &stripeSettlementResult{Status: settlement.Status, Duplicate: settlement.Duplicate})
+		state.PaymentSettlements = append(state.PaymentSettlements, &stripeSettlementResult{
+			EventID:   settlement.EventID,
+			Status:    settlement.Status,
+			Duplicate: settlement.Duplicate,
+		})
 	}
 	return state
 }

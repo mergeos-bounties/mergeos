@@ -260,6 +260,7 @@ func stripeWebhookPaymentFromEvent(event stripeWebhookEvent) (stripeWebhookPayme
 
 // stripeSettlementResult is the result of recording a Stripe webhook payment.
 type stripeSettlementResult struct {
+	EventID   string `json:"event_id,omitempty"`
 	Status    string `json:"status"`
 	Duplicate bool   `json:"duplicate"`
 }
@@ -283,7 +284,7 @@ func (s *Store) RecordStripeSettlement(eventID string, payment stripeWebhookPaym
 		s.paymentSettlements = map[string]*stripeSettlementResult{}
 	}
 	if existing, ok := s.paymentSettlements[eventID]; ok {
-		return &stripeSettlementResult{Status: existing.Status, Duplicate: true}, nil
+		return &stripeSettlementResult{EventID: eventID, Status: existing.Status, Duplicate: true}, nil
 	}
 
 	switch payment.Status {
@@ -311,7 +312,7 @@ func (s *Store) RecordStripeSettlement(eventID string, payment stripeWebhookPaym
 			}
 		}
 
-		result := &stripeSettlementResult{Status: "verified"}
+		result := &stripeSettlementResult{EventID: eventID, Status: "verified"}
 		s.paymentSettlements[eventID] = result
 		if err := s.saveLocked(); err != nil {
 			delete(s.paymentSettlements, eventID)
@@ -320,7 +321,7 @@ func (s *Store) RecordStripeSettlement(eventID string, payment stripeWebhookPaym
 		return result, nil
 
 	case "failed":
-		result := &stripeSettlementResult{Status: "failed"}
+		result := &stripeSettlementResult{EventID: eventID, Status: "failed"}
 		s.paymentSettlements[eventID] = result
 		if err := s.saveLocked(); err != nil {
 			delete(s.paymentSettlements, eventID)
@@ -330,7 +331,7 @@ func (s *Store) RecordStripeSettlement(eventID string, payment stripeWebhookPaym
 		return result, nil
 
 	case "refunded":
-		result := &stripeSettlementResult{Status: "refunded"}
+		result := &stripeSettlementResult{EventID: eventID, Status: "refunded"}
 		s.paymentSettlements[eventID] = result
 		if err := s.saveLocked(); err != nil {
 			delete(s.paymentSettlements, eventID)
