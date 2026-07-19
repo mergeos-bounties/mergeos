@@ -4815,7 +4815,7 @@
             <span>{{ activeBlogPost.author }}</span>
             <a :href="activeBlogPost.markdownPath" rel="noopener">Markdown</a>
           </div>
-          <div class="blog-article-body" v-html="activeBlogHtml"></div>
+          <div class="blog-article-body" :text-content="stripHtml(activeBlogHtml)"></div>
           <footer class="blog-article-footer">
             <button class="secondary-button compact" type="button" @click="openPublicPage('blog')">← Back to blog</button>
             <button class="primary-button compact" type="button" @click="openPublicPage('how-it-works')">How MergeOS works</button>
@@ -25687,6 +25687,8 @@ const activeBlogPost = computed(() => {
   return getBlogPost(publicBlogSlug.value);
 });
 const activeBlogHtml = computed(() => {
+
+function stripHtml(html) {  if (!html) return '';  const doc = new DOMParser().parseFromString(html, 'text/html');  return doc.body.textContent || '';}
   const post = activeBlogPost.value;
   return post ? markdownToHtml(post.body) : '';
 });
