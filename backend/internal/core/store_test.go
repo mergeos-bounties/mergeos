@@ -15,7 +15,7 @@ import (
 	"time"
 )
 
-func testPass() string { return "a1b2c3d4-e5f6-7890-abcd-ef1234567890" }
+func testPass() string { return "fake-test-pass-12345" }
 
 func TestCreateProjectCreatesLocalBountyRepoAndPersistsLedger(t *testing.T) {
 	tempDir := t.TempDir()
