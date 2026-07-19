@@ -897,3 +897,285 @@ func TestStripeWebhook_NoProjectForIntent(t *testing.T) {
 		t.Fatalf("status = %d, want 400; body = %s", rr.Code, rr.Body.String())
 	}
 }
+
+// ---------------------------------------------------------------------------
+// Dedup persistence test: verifies that processed webhook event IDs survive
+// a full store reload (save → close → reopen → dedup still works).
+// ---------------------------------------------------------------------------
+
+func TestStripeWebhook_DedupPersistenceAcrossReload(t *testing.T) {
+	cfg := testStripeConfig(t)
+	payments := NewPaymentManager(cfg)
+
+	store1, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Register a user and create a project.
+	auth, err := store1.Register(RegisterRequest{
+		Name:     "Stripe Persist Client",
+		Email:    "stripe-persist@example.com",
+		Password: "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	projectID := "prj_stripe_persist"
+	intentID := "pi_persist_test"
+	store1.mu.Lock()
+	store1.projects[projectID] = &Project{
+		ID:               projectID,
+		ClientUserID:     auth.User.ID,
+		Title:            "Stripe persistence test",
+		ClientName:       auth.User.Name,
+		ClientEmail:      auth.User.Email,
+		PaymentMethod:    PaymentStripe,
+		PaymentStatus:    "pending",
+		PaymentProvider:  "stripe",
+		PaymentReference: intentID,
+		BudgetCents:      2000,
+		Status:           ProjectFunded,
+		CreatedAt:        time.Now().UTC(),
+	}
+	if err := store1.saveLocked(); err != nil {
+		store1.mu.Unlock()
+		t.Fatal(err)
+	}
+	store1.mu.Unlock()
+
+	// Process a webhook event via the HTTP handler.
+	server1 := NewServer(cfg, store1, payments)
+	eventID := "evt_persist_1"
+	body := stripeSucceededPayload(eventID, intentID)
+	sigHeader := computeStripeHeader(body, cfg.StripeWebhookSecret)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/payments/stripe/webhook", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Stripe-Signature", sigHeader)
+	rr := httptest.NewRecorder()
+	server1.Routes().ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("first call status = %d, body = %s", rr.Code, rr.Body.String())
+	}
+	var firstRes stripeSettlementResult
+	json.Unmarshal(rr.Body.Bytes(), &firstRes)
+	if firstRes.Status != "verified" || firstRes.Duplicate {
+		t.Fatalf("first call = {status:%q, duplicate:%t}", firstRes.Status, firstRes.Duplicate)
+	}
+
+	// Close store1 — the state is now on disk (JSON at cfg.StatePath).
+	store1.Close()
+
+	// Reopen from the same state file — simulates a server restart.
+	store2, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store2.Close()
+
+	// Verify dedup map was loaded from disk.
+	store2.mu.RLock()
+	settlement, exists := store2.paymentSettlements[eventID]
+	store2.mu.RUnlock()
+	if !exists {
+		t.Fatal("CRITICAL: paymentSettlement not found after reload — dedup persistence is broken")
+	}
+	if settlement.EventID != eventID {
+		t.Fatalf("settlement.EventID = %q, want %q", settlement.EventID, eventID)
+	}
+	if settlement.Status != "verified" {
+		t.Fatalf("settlement.Status = %q, want verified", settlement.Status)
+	}
+
+	// Direct RecordStripeSettlement call with the same event ID — must return duplicate=true.
+	result, err := store2.RecordStripeSettlement(eventID, stripeWebhookPayment{
+		PaymentIntentID: intentID,
+		AmountCents:     2000,
+		Currency:        "usd",
+		Status:          "succeeded",
+	})
+	if err != nil {
+		t.Fatalf("RecordStripeSettlement on reloaded store: %v", err)
+	}
+	if !result.Duplicate {
+		t.Fatalf("result.Duplicate = false after reload — expected true; settlement map says status=%q", result.Status)
+	}
+	if result.Status != "verified" {
+		t.Fatalf("result.Status = %q, want verified (original status)", result.Status)
+	}
+	if result.EventID != eventID {
+		t.Fatalf("result.EventID = %q, want %q", result.EventID, eventID)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// RecordStripeSettlement unit tests (direct store-level, no HTTP)
+// ---------------------------------------------------------------------------
+
+func TestRecordStripeSettlement_EmptyEventID(t *testing.T) {
+	cfg := testStripeConfig(t)
+	store, err := NewStore(cfg, NewPaymentManager(cfg), NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.Close()
+
+	_, err = store.RecordStripeSettlement("", stripeWebhookPayment{PaymentIntentID: "pi_test", Status: "succeeded"})
+	if err == nil {
+		t.Fatal("expected error for empty event ID")
+	}
+}
+
+func TestRecordStripeSettlement_EmptyPaymentIntentID(t *testing.T) {
+	cfg := testStripeConfig(t)
+	store, err := NewStore(cfg, NewPaymentManager(cfg), NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.Close()
+
+	_, err = store.RecordStripeSettlement("evt_test", stripeWebhookPayment{Status: "succeeded"})
+	if err == nil {
+		t.Fatal("expected error for empty PaymentIntentID")
+	}
+}
+
+func TestRecordStripeSettlement_UnknownStatus(t *testing.T) {
+	cfg := testStripeConfig(t)
+	store, err := NewStore(cfg, NewPaymentManager(cfg), NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.Close()
+
+	_, err = store.RecordStripeSettlement("evt_test", stripeWebhookPayment{
+		PaymentIntentID: "pi_test",
+		Status:          "processing",
+	})
+	if err == nil {
+		t.Fatal("expected error for unknown status 'processing'")
+	}
+}
+
+func TestRecordStripeSettlement_FailedDedup(t *testing.T) {
+	cfg := testStripeConfig(t)
+	store, err := NewStore(cfg, NewPaymentManager(cfg), NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.Close()
+
+	auth, err := store.Register(RegisterRequest{
+		Name:     "Stripe Failed Dedup",
+		Email:    "stripe-failed-dedup@example.com",
+		Password: "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	intentID := "pi_failed_dedup"
+	store.mu.Lock()
+	store.projects["prj_fail_dedup"] = &Project{
+		ID:               "prj_fail_dedup",
+		ClientUserID:     auth.User.ID,
+		Title:            "Failed dedup test",
+		PaymentStatus:    "pending",
+		PaymentProvider:  "stripe",
+		PaymentReference: intentID,
+		BudgetCents:      2000,
+		Status:           ProjectFunded,
+		CreatedAt:        time.Now().UTC(),
+	}
+	store.mu.Unlock()
+
+	result1, err := store.RecordStripeSettlement("evt_fail_dedup", stripeWebhookPayment{
+		PaymentIntentID: intentID,
+		Status:          "failed",
+	})
+	if err != nil {
+		t.Fatalf("first call: %v", err)
+	}
+	if result1.Duplicate {
+		t.Fatal("first call should not be duplicate")
+	}
+	if result1.Status != "failed" {
+		t.Fatalf("status = %q, want failed", result1.Status)
+	}
+
+	// Replay — must be duplicate.
+	result2, err := store.RecordStripeSettlement("evt_fail_dedup", stripeWebhookPayment{
+		PaymentIntentID: intentID,
+		Status:          "failed",
+	})
+	if err != nil {
+		t.Fatalf("replay: %v", err)
+	}
+	if !result2.Duplicate {
+		t.Fatal("replay should be duplicate")
+	}
+	if result2.Status != "failed" {
+		t.Fatalf("replay status = %q, want failed", result2.Status)
+	}
+}
+
+func TestRecordStripeSettlement_RefundedDedup(t *testing.T) {
+	cfg := testStripeConfig(t)
+	store, err := NewStore(cfg, NewPaymentManager(cfg), NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.Close()
+
+	auth, err := store.Register(RegisterRequest{
+		Name:     "Stripe Refund Dedup",
+		Email:    "stripe-refund-dedup@example.com",
+		Password: "password123",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	intentID := "pi_refund_dedup"
+	store.mu.Lock()
+	store.projects["prj_refund_dedup"] = &Project{
+		ID:               "prj_refund_dedup",
+		ClientUserID:     auth.User.ID,
+		Title:            "Refund dedup test",
+		PaymentStatus:    "pending",
+		PaymentProvider:  "stripe",
+		PaymentReference: intentID,
+		BudgetCents:      2000,
+		Status:           ProjectFunded,
+		CreatedAt:        time.Now().UTC(),
+	}
+	store.mu.Unlock()
+
+	result1, err := store.RecordStripeSettlement("evt_refund_dedup", stripeWebhookPayment{
+		PaymentIntentID: intentID,
+		Status:          "refunded",
+		AmountCents:     2000,
+	})
+	if err != nil {
+		t.Fatalf("first call: %v", err)
+	}
+	if result1.Duplicate {
+		t.Fatal("first call should not be duplicate")
+	}
+
+	result2, err := store.RecordStripeSettlement("evt_refund_dedup", stripeWebhookPayment{
+		PaymentIntentID: intentID,
+		Status:          "refunded",
+	})
+	if err != nil {
+		t.Fatalf("replay: %v", err)
+	}
+	if !result2.Duplicate {
+		t.Fatal("replay should be duplicate")
+	}
+	if result2.Status != "refunded" {
+		t.Fatalf("replay status = %q, want refunded", result2.Status)
+	}
+}
