@@ -80,6 +80,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("POST /api/payments/bank/intents", s.createBankFundingIntent)
 	mux.HandleFunc("POST /api/admin/payments/bank/verify", s.verifyBankTransfer)
 	mux.HandleFunc("POST /api/payments/paypal/webhook", s.handlePayPalWebhook)
+	mux.HandleFunc("POST /api/payments/stripe/webhook", s.handleStripeWebhook)
 	mux.HandleFunc("POST /api/uploads", s.uploadAttachment)
 	mux.HandleFunc("GET /api/uploads/", s.downloadAttachment)
 	mux.HandleFunc("GET /api/admin/summary", s.adminSummary)
