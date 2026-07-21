@@ -319,3 +319,6 @@ Policy: [BOUNTY-POLICY.md](BOUNTY-POLICY.md) Â· Live awards and open intake: [
 
 [MIT](LICENSE) Â· MergeOS / ThanhTrucSolutions
 
+
+## Contribution
+This repository welcomes contributions.
