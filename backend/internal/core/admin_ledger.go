@@ -3,6 +3,7 @@ package core
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 )
@@ -42,13 +43,35 @@ func (s *Server) createAdminLedgerCredit(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	s.broadcastLiveFeedEvent("ledger_manual_credit")
+	creditURL := scanAccountURL(s.cfg, entry.ToAccount)
 	writeJSON(w, http.StatusCreated, AdminManualCreditResponse{
-		LedgerEntry: entry,
-		WorkerID:    workerID,
-		RewardMRG:   rewardMRG,
-		BountyType:  bountyType,
-		CreditURL:   scanAccountURL(s.cfg, entry.ToAccount),
+		LedgerEntry:    entry,
+		WorkerID:       workerID,
+		RewardMRG:      rewardMRG,
+		BountyType:     bountyType,
+		CreditURL:      creditURL,
+		ScanURL:        creditURL,
+		LedgerSequence: entry.Sequence,
+		ProofHash:      entry.EntryHash,
+		CommentTemplate: renderManualCreditComment(workerID, rewardMRG, bountyType, creditURL, entry.Sequence, entry.EntryHash, req.PRURL),
 	})
+}
+
+func renderManualCreditComment(workerID string, rewardMRG int64, bountyType string, creditURL string, sequence int, proofHash, prURL string) string {
+	mergeURL := prURL
+	if mergeURL == "" {
+		mergeURL = "manual-credit"
+	}
+	return fmt.Sprintf(`MergeOS manual credit approved.
+
+- Merge URL: %s
+- MRG credit URL: %s
+- Credited worker: %s
+- Bounty type: %s
+- MRG credited: %d MRG
+- Ledger sequence: %d
+- Proof hash: %s
+`, mergeURL, creditURL, workerID, adminBountyTitle(bountyType), rewardMRG, sequence, proofHash)
 }
 
 func selectedManualCreditRewardMRG(req AdminManualCreditRequest) int64 {

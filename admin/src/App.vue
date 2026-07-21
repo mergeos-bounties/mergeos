@@ -424,6 +424,31 @@
           </button>
           <p v-if="manualCreditError" class="form-error">{{ manualCreditError }}</p>
           <p v-if="manualCreditMessage" class="form-success">{{ manualCreditMessage }}</p>
+          <article v-if="manualCreditResult" class="credit-result-card">
+            <div class="credit-result-head">
+              <span class="metric-icon green"><CheckCircle2 :size="18" /></span>
+              <strong>Credit result</strong>
+            </div>
+            <div class="credit-result-details">
+              <label>Worker</label>
+              <strong>{{ manualCreditResult.worker_id }}</strong>
+              <label>MRG</label>
+              <strong>{{ mrg(manualCreditResult.reward_mrg) }}</strong>
+              <label>Ledger sequence</label>
+              <strong><a :href="manualCreditResult.scan_url || manualCreditResult.credit_url" target="_blank" rel="noreferrer">#{{ manualCreditResult.ledger_sequence || manualCreditResult.ledger_entry?.sequence }}</a></strong>
+              <label>Proof hash</label>
+              <strong><code>{{ shortRef(manualCreditResult.proof_hash || manualCreditResult.ledger_entry?.entry_hash) }}</code></strong>
+              <label>Bounty type</label>
+              <strong>{{ titleize(manualCreditResult.bounty_type) }}</strong>
+            </div>
+            <div class="credit-result-comment" v-if="manualCreditResult.comment_template">
+              <label>Comment template</label>
+              <pre class="comment-pre">{{ manualCreditResult.comment_template }}</pre>
+              <button class="compact-action" type="button" @click="copyCreditComment(manualCreditResult.comment_template)">
+                {{ commentCopied ? 'Copied!' : 'Copy comment' }}
+              </button>
+            </div>
+          </article>
         </form>
         <DataTable :columns="['Seq', 'Type', 'From', 'To', 'Amount', 'Reference']">
           <tr v-for="entry in ledgerEntries.slice().reverse()" :key="entry.sequence">
@@ -987,6 +1012,8 @@ const mergeSelections = ref({});
 const manualCreditBusy = ref(false);
 const manualCreditError = ref('');
 const manualCreditMessage = ref('');
+const manualCreditResult = ref(null);
+const commentCopied = ref(false);
 const taskIssueStates = ref({});
 const expandedTaskPulls = ref({});
 const geminiKeys = ref([]);
@@ -2116,6 +2143,7 @@ async function createManualCredit() {
   manualCreditBusy.value = true;
   manualCreditError.value = '';
   manualCreditMessage.value = '';
+  manualCreditResult.value = null;
   try {
     const result = await api('/api/admin/ledger/credits', {
       method: 'POST',
@@ -2133,7 +2161,8 @@ async function createManualCredit() {
     ]);
     summary.value = summaryData || {};
     ledgerEntries.value = Array.isArray(ledgerData) ? ledgerData : [];
-    manualCreditMessage.value = `Credited ${mrg(result.reward_mrg || manualCreditForm.reward_mrg)} to ${result.worker_id || manualCreditForm.worker_id}.`;
+    manualCreditResult.value = result;
+    manualCreditMessage.value = `Credited ${mrg(result.reward_mrg || manualCreditForm.reward_mrg)} to ${result.worker_id || manualCreditForm.worker_id}. Ledger sequence #${result.ledger_sequence || result.ledger_entry?.sequence || '?'} recorded.`;
     manualCreditForm.worker_id = '';
     manualCreditForm.pr_url = '';
     manualCreditForm.pr_title = '';
@@ -2141,6 +2170,17 @@ async function createManualCredit() {
     manualCreditError.value = error.message;
   } finally {
     manualCreditBusy.value = false;
+  }
+}
+
+async function copyCreditComment(text) {
+  if (!hasWindow || !text) return;
+  try {
+    await navigator.clipboard.writeText(text);
+    commentCopied.value = true;
+    setTimeout(() => { commentCopied.value = false; }, 2000);
+  } catch {
+    commentCopied.value = false;
   }
 }
 
