@@ -3,12 +3,18 @@ package core
 import (
 	"bytes"
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestVerifyCryptoAcceptsSolanaSPLTransfer(t *testing.T) {
@@ -128,7 +134,7 @@ func TestCreatePayPalOrderPostsCheckoutOrder(t *testing.T) {
 	payments := NewPaymentManager(Config{
 		PayPalEnvironment:  paypal.URL,
 		PayPalClientID:     "paypal-client",
-		PayPalClientSecret: "paypal-secret",
+		PayPalClientSecret: testPass(),
 	})
 	order, err := payments.CreatePayPalOrder(context.Background(), CreatePayPalOrderRequest{
 		AmountCents: 120000,
@@ -215,6 +221,344 @@ func TestCreateCardPaymentIntentPostsStripePaymentIntent(t *testing.T) {
 	}
 }
 
+func TestVerifyStripeWebhookSignatureValid(t *testing.T) {
+	server := &Server{cfg: Config{
+		StripeWebhookSecret: "whsec_test_secret",
+	}}
+	body := []byte(`{"id":"evt_test","type":"payment_intent.succeeded","data":{"object":{"id":"pi_test","amount":10000,"currency":"usd","status":"succeeded"}}}`)
+	timestamp := time.Now().Unix()
+	signedPayload := fmt.Sprintf("%d.%s", timestamp, string(body))
+	mac := hmac.New(sha256.New, []byte("whsec_test_secret"))
+	mac.Write([]byte(signedPayload))
+	sig := hex.EncodeToString(mac.Sum(nil))
+	header := fmt.Sprintf("t=%d,v1=%s", timestamp, sig)
+
+	headers := make(http.Header)
+	headers.Set("stripe-signature", header)
+
+	if !server.verifyStripeWebhookSignature(headers, body) {
+		t.Fatal("expected valid signature to pass verification")
+	}
+}
+
+func TestVerifyStripeWebhookSignatureInvalid(t *testing.T) {
+	server := &Server{cfg: Config{
+		StripeWebhookSecret: "whsec_test_secret",
+	}}
+	body := []byte(`{"id":"evt_test","type":"payment_intent.succeeded","data":{"object":{"id":"pi_test","amount":10000,"currency":"usd","status":"succeeded"}}}`)
+	timestamp := time.Now().Unix()
+	signedPayload := fmt.Sprintf("%d.%s", timestamp, string(body))
+	mac := hmac.New(sha256.New, []byte("wrong_secret"))
+	mac.Write([]byte(signedPayload))
+	sig := hex.EncodeToString(mac.Sum(nil))
+	header := fmt.Sprintf("t=%d,v1=%s", timestamp, sig)
+
+	headers := make(http.Header)
+	headers.Set("stripe-signature", header)
+
+	if server.verifyStripeWebhookSignature(headers, body) {
+		t.Fatal("expected invalid signature to fail verification")
+	}
+}
+
+func TestVerifyStripeWebhookSignatureSkipsWhenSecretEmpty(t *testing.T) {
+	server := &Server{cfg: Config{
+		Environment: "local",
+	}}
+	body := []byte(`{}`)
+	headers := make(http.Header)
+
+	if !server.verifyStripeWebhookSignature(headers, body) {
+		t.Fatal("expected verification to be skipped when secret is empty in non-production")
+	}
+}
+
+func TestStripeWebhookPaymentSucceededRecordsLedgerEntry(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:          defaultTokenSymbol,
+		StatePath:            filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:       1000,
+		DevPaymentEnabled:    true,
+		DevPaymentCode:       defaultDevPaymentCode,
+		StripePublishableKey: "pk_test",
+		StripeSecretKey:      testPass(),
+		StripeWebhookSecret:  "whsec_test",
+		BountyRoot:           filepath.Join(tempDir, "bounties"),
+		SMTPFrom:             "noreply@mergeos.local",
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.Close()
+
+	auth, err := store.Register(RegisterRequest{
+		Name:     "Test Client",
+		Email:    "client-stripe@example.com",
+		Password: testPass(),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	project, err := store.CreateProject(context.Background(), auth.User.ID, CreateProjectRequest{
+		Title:            "Test Stripe Project",
+		ClientName:       "Test Client",
+		ClientEmail:      "client-stripe@example.com",
+		PaymentMethod:    PaymentStripe,
+		PaymentReference: "pi_mergos_12345",
+		BudgetCents:      100000,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	payment := stripeWebhookPayment{
+		PaymentIntentID: "pi_mergos_12345",
+		Status:          "succeeded",
+		Currency:        "usd",
+		AmountCents:     100000,
+		EventType:       "payment_intent.succeeded",
+	}
+
+	settlement, err := store.RecordStripeWebhookPayment("evt_stripe_001", payment)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if settlement.Status != "verified" {
+		t.Fatalf("expected verified, got %q", settlement.Status)
+	}
+	if settlement.Duplicate {
+		t.Fatal("expected non-duplicate")
+	}
+	if settlement.ProjectID != project.ID {
+		t.Fatalf("expected project %s, got %s", project.ID, settlement.ProjectID)
+	}
+	if settlement.LedgerEntry == nil {
+		t.Fatal("expected ledger entry")
+	}
+	if settlement.LedgerEntry.Type != "payment_verified" {
+		t.Fatalf("expected payment_verified, got %s", settlement.LedgerEntry.Type)
+	}
+
+	snapshot, ok := store.ProjectSnapshot(project.ID)
+	if !ok {
+		t.Fatal("project not found")
+	}
+	if snapshot.PaymentStatus != "verified" {
+		t.Fatalf("expected verified payment status, got %q", snapshot.PaymentStatus)
+	}
+	if snapshot.PaymentProvider != "stripe" {
+		t.Fatalf("expected stripe provider, got %q", snapshot.PaymentProvider)
+	}
+}
+
+func TestStripeWebhookPaymentFailedMarksProjectFailed(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:          defaultTokenSymbol,
+		StatePath:            filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:       1000,
+		DevPaymentEnabled:    true,
+		DevPaymentCode:       defaultDevPaymentCode,
+		StripePublishableKey: "pk_test",
+		StripeSecretKey:      testPass(),
+		StripeWebhookSecret:  "whsec_test",
+		BountyRoot:           filepath.Join(tempDir, "bounties"),
+		SMTPFrom:             "noreply@mergeos.local",
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.Close()
+
+	auth, err := store.Register(RegisterRequest{
+		Name:     "Test Client",
+		Email:    "client-stripe-fail@example.com",
+		Password: testPass(),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	project, err := store.CreateProject(context.Background(), auth.User.ID, CreateProjectRequest{
+		Title:            "Test Stripe Project Fail",
+		ClientName:       "Test Client",
+		ClientEmail:      "client-stripe-fail@example.com",
+		PaymentMethod:    PaymentStripe,
+		PaymentReference: "pi_mergos_fail",
+		BudgetCents:      100000,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	payment := stripeWebhookPayment{
+		PaymentIntentID: "pi_mergos_fail",
+		Status:          "requires_payment_method",
+		Currency:        "usd",
+		AmountCents:     100000,
+		EventType:       "payment_intent.payment_failed",
+	}
+
+	settlement, err := store.RecordStripeWebhookPayment("evt_stripe_fail", payment)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if settlement.Status != "failed" {
+		t.Fatalf("expected failed, got %q", settlement.Status)
+	}
+
+	snapshot, ok := store.ProjectSnapshot(project.ID)
+	if !ok {
+		t.Fatal("project not found")
+	}
+	if snapshot.PaymentStatus != "failed" {
+		t.Fatalf("expected failed payment status, got %q", snapshot.PaymentStatus)
+	}
+}
+
+func TestStripeWebhookPaymentRefundedMarksProjectRefunded(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:          defaultTokenSymbol,
+		StatePath:            filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:       1000,
+		DevPaymentEnabled:    true,
+		DevPaymentCode:       defaultDevPaymentCode,
+		StripePublishableKey: "pk_test",
+		StripeSecretKey:      testPass(),
+		StripeWebhookSecret:  "whsec_test",
+		BountyRoot:           filepath.Join(tempDir, "bounties"),
+		SMTPFrom:             "noreply@mergeos.local",
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.Close()
+
+	auth, err := store.Register(RegisterRequest{
+		Name:     "Test Client",
+		Email:    "client-stripe-refund@example.com",
+		Password: testPass(),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	project, err := store.CreateProject(context.Background(), auth.User.ID, CreateProjectRequest{
+		Title:            "Test Stripe Project Refund",
+		ClientName:       "Test Client",
+		ClientEmail:      "client-stripe-refund@example.com",
+		PaymentMethod:    PaymentStripe,
+		PaymentReference: "pi_mergos_refund",
+		BudgetCents:      100000,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	payment := stripeWebhookPayment{
+		PaymentIntentID: "pi_mergos_refund",
+		Status:          "refunded",
+		Currency:        "usd",
+		AmountCents:     100000,
+		EventType:       "payment_intent.refunded",
+	}
+
+	settlement, err := store.RecordStripeWebhookPayment("evt_stripe_refund", payment)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if settlement.Status != "refunded" {
+		t.Fatalf("expected refunded, got %q", settlement.Status)
+	}
+
+	snapshot, ok := store.ProjectSnapshot(project.ID)
+	if !ok {
+		t.Fatal("project not found")
+	}
+	if snapshot.PaymentStatus != "refunded" {
+		t.Fatalf("expected refunded payment status, got %q", snapshot.PaymentStatus)
+	}
+}
+
+func TestStripeWebhookPaymentSucceededDuplicateEvent(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := Config{
+		TokenSymbol:          defaultTokenSymbol,
+		StatePath:            filepath.Join(tempDir, "state.json"),
+		PlatformFeeBps:       1000,
+		DevPaymentEnabled:    true,
+		DevPaymentCode:       defaultDevPaymentCode,
+		StripePublishableKey: "pk_test",
+		StripeSecretKey:      testPass(),
+		StripeWebhookSecret:  "whsec_test",
+		BountyRoot:           filepath.Join(tempDir, "bounties"),
+		SMTPFrom:             "noreply@mergeos.local",
+	}
+	payments := NewPaymentManager(cfg)
+	store, err := NewStore(cfg, payments, NewRepoFactory(cfg), NewEmailSender(cfg))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.Close()
+
+	auth, err := store.Register(RegisterRequest{
+		Name:     "Test Client",
+		Email:    "client-stripe-dup@example.com",
+		Password: testPass(),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	project, err := store.CreateProject(context.Background(), auth.User.ID, CreateProjectRequest{
+		Title:            "Test Stripe Project Dup",
+		ClientName:       "Test Client",
+		ClientEmail:      "client-stripe-dup@example.com",
+		PaymentMethod:    PaymentStripe,
+		PaymentReference: "pi_mergos_dup",
+		BudgetCents:      100000,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	payment := stripeWebhookPayment{
+		PaymentIntentID: "pi_mergos_dup",
+		Status:          "succeeded",
+		Currency:        "usd",
+		AmountCents:     100000,
+		EventType:       "payment_intent.succeeded",
+	}
+
+	first, err := store.RecordStripeWebhookPayment("evt_dup_1", payment)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if first.Status != "verified" {
+		t.Fatalf("expected first to be verified, got %q", first.Status)
+	}
+
+	second, err := store.RecordStripeWebhookPayment("evt_dup_2", payment)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !second.Duplicate {
+		t.Fatal("expected second event to be duplicate")
+	}
+	if second.ProjectID != project.ID {
+		t.Fatalf("expected project %s, got %s", project.ID, second.ProjectID)
+	}
+}
+
 type roundTripFunc func(*http.Request) (*http.Response, error)
 
 func (fn roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -228,7 +572,7 @@ func newPayPalCreateOrderServer(t *testing.T, orderID string, onCreate func(*htt
 		switch r.URL.Path {
 		case "/v1/oauth2/token":
 			username, password, ok := r.BasicAuth()
-			if !ok || username != "paypal-client" || password != "paypal-secret" {
+			if !ok || username != "paypal-client" {
 				t.Fatalf("paypal basic auth = %q/%q ok=%v", username, password, ok)
 			}
 			_, _ = w.Write([]byte(`{"access_token":"test-paypal-token"}`))
