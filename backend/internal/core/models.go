@@ -722,11 +722,17 @@ type AdminManualCreditRequest struct {
 }
 
 type AdminManualCreditResponse struct {
-	LedgerEntry LedgerEntry `json:"ledger_entry"`
-	WorkerID    string      `json:"worker_id"`
-	RewardMRG   int64       `json:"reward_mrg"`
-	BountyType  string      `json:"bounty_type"`
-	CreditURL   string      `json:"credit_url,omitempty"`
+	LedgerEntry    LedgerEntry `json:"ledger_entry"`
+	WorkerID       string      `json:"worker_id"`
+	RewardMRG      int64       `json:"reward_mrg"`
+	BountyType     string      `json:"bounty_type"`
+	CreditURL      string      `json:"credit_url,omitempty"`
+	LedgerSequence int64       `json:"ledger_sequence,omitempty"`
+	ProofHash      string      `json:"proof_hash,omitempty"`
+	ScanURL        string      `json:"scan_url,omitempty"`
+	CommentURL     string      `json:"comment_url,omitempty"`
+	CommentError   string      `json:"comment_error,omitempty"`
+	CommentBody    string      `json:"comment_body,omitempty"`
 }
 
 type StatusResponse struct {
