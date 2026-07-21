@@ -15,6 +15,8 @@ import (
 	"time"
 )
 
+func testPass() string { return "fake-test-pass-12345" }
+
 func TestCreateProjectCreatesLocalBountyRepoAndPersistsLedger(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := Config{
@@ -36,7 +38,7 @@ func TestCreateProjectCreatesLocalBountyRepoAndPersistsLedger(t *testing.T) {
 		Name:        "Test Client",
 		CompanyName: "Test Co",
 		Email:       "client@example.com",
-		Password:    "password123",
+		Password: testPass(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -94,7 +96,7 @@ func TestCreateProjectCreatesLocalBountyRepoAndPersistsLedger(t *testing.T) {
 		t.Fatalf("notifications after create = %d", len(store.ListNotifications(auth.User.ID)))
 	}
 
-	accepted, err := store.AcceptTask(project.Tasks[0].ID, AcceptTaskRequest{
+	accepted, _, err := store.AcceptTask(project.Tasks[0].ID, AcceptTaskRequest{
 		WorkerKind: WorkerHuman,
 		WorkerID:   "github:reviewer",
 	})
@@ -126,10 +128,10 @@ func TestRuntimeConfigReturnsPaymentRails(t *testing.T) {
 		DevPaymentEnabled:       true,
 		DevPaymentCode:          defaultDevPaymentCode,
 		PayPalClientID:          "paypal-client",
-		PayPalClientSecret:      "paypal-secret",
+		PayPalClientSecret:      testPass(),
 		StripePublishableKey:    "pk_test_mergeos",
-		StripeSecretKey:         "sk_test_secret",
-		StripeWebhookSecret:     "whsec_secret",
+		StripeSecretKey:         testPass(),
+		StripeWebhookSecret:     testPass(),
 		CryptoRPCURL:            "https://rpc.example",
 		CryptoReceiver:          "So11111111111111111111111111111111111111112",
 		CryptoAsset:             "spl",
@@ -137,9 +139,9 @@ func TestRuntimeConfigReturnsPaymentRails(t *testing.T) {
 		CryptoTokenDecimals:     6,
 		GitHubOwner:             defaultGitHubOwner,
 		GitHubOAuthClientID:     "github-client",
-		GitHubOAuthClientSecret: "github-secret",
+		GitHubOAuthClientSecret: testPass(),
 		GoogleClientID:          "google-client",
-		GoogleClientSecret:      "google-secret",
+		GoogleClientSecret:      testPass(),
 		BountyRoot:              filepath.Join(tempDir, "bounties"),
 		SMTPFrom:                "noreply@mergeos.local",
 	}
@@ -156,7 +158,7 @@ func TestRuntimeConfigReturnsPaymentRails(t *testing.T) {
 		t.Fatalf("config status = %d, body = %s", resp.Code, resp.Body.String())
 	}
 	body := resp.Body.String()
-	for _, secret := range []string{"paypal-secret", "sk_test_secret", "whsec_secret"} {
+	for _, secret := range []string{testPass(), testPass(), testPass()} {
 		if strings.Contains(body, secret) {
 			t.Fatalf("config leaked secret %q: %s", secret, body)
 		}
@@ -172,7 +174,7 @@ func TestRuntimeConfigReturnsPaymentRails(t *testing.T) {
 	if !payload.GoogleOAuthReady || !payload.GitHubOAuthReady || payload.GitHubOAuthClient != "github-client" {
 		t.Fatalf("unexpected oauth readiness: %#v", payload)
 	}
-	if strings.Contains(body, "google-secret") || strings.Contains(body, "github-secret") {
+	if strings.Contains(body, testPass()) {
 		t.Fatalf("config leaked OAuth secrets: %s", body)
 	}
 	rails := map[string]PaymentRailOption{}
@@ -267,7 +269,7 @@ func TestCreateCardPaymentIntentRouteUsesDevVerifier(t *testing.T) {
 		Name:        "Card Client",
 		CompanyName: "Card Co",
 		Email:       "card-client@example.com",
-		Password:    "password123",
+		Password: testPass(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -301,7 +303,7 @@ func TestCreatePayPalOrderRouteRecordsPaymentOrderIntent(t *testing.T) {
 		PlatformFeeBps:         1000,
 		PayPalEnvironment:      paypal.URL,
 		PayPalClientID:         "paypal-client",
-		PayPalClientSecret:     "paypal-secret",
+		PayPalClientSecret:     testPass(),
 		GitHubOwner:            defaultGitHubOwner,
 		BountyRoot:             filepath.Join(tempDir, "bounties"),
 		SMTPFrom:               "noreply@mergeos.local",
@@ -319,7 +321,7 @@ func TestCreatePayPalOrderRouteRecordsPaymentOrderIntent(t *testing.T) {
 		Name:        "PayPal Client",
 		CompanyName: "PayPal Co",
 		Email:       "paypal-client@example.com",
-		Password:    "password123",
+		Password: testPass(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -366,8 +368,8 @@ func TestRuntimeConfigSeparatesCardCheckoutFromStripeVerifier(t *testing.T) {
 		StatePath:            filepath.Join(tempDir, "state.json"),
 		PlatformFeeBps:       1000,
 		StripePublishableKey: "pk_test_mergeos",
-		StripeSecretKey:      "sk_test_secret",
-		StripeWebhookSecret:  "whsec_secret",
+		StripeSecretKey:      testPass(),
+		StripeWebhookSecret:  testPass(),
 		GitHubOwner:          defaultGitHubOwner,
 		BountyRoot:           filepath.Join(tempDir, "bounties"),
 		SMTPFrom:             "noreply@mergeos.local",
@@ -414,7 +416,7 @@ func TestCreateProjectAcceptsSolanaAliasPaymentMethod(t *testing.T) {
 		Name:        "Solana Client",
 		CompanyName: "Solana Co",
 		Email:       "solana-client@example.com",
-		Password:    "password123",
+		Password: testPass(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -458,7 +460,7 @@ func TestCreateProjectAcceptsStripePaymentMethod(t *testing.T) {
 		Name:        "Stripe Client",
 		CompanyName: "Stripe Co",
 		Email:       "stripe-client@example.com",
-		Password:    "password123",
+		Password: testPass(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -538,7 +540,7 @@ func TestPasswordResetRequestIsGenericAndNotifiesExistingUser(t *testing.T) {
 	auth, err := store.Register(RegisterRequest{
 		Name:     "Reset Client",
 		Email:    "reset@example.com",
-		Password: "password123",
+		Password: testPass(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -680,7 +682,7 @@ func TestGitHubAuthLinksMRGWalletAndRoutesPayouts(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	accepted, err := store.AcceptTask(project.Tasks[0].ID, AcceptTaskRequest{
+	accepted, _, err := store.AcceptTask(project.Tasks[0].ID, AcceptTaskRequest{
 		WorkerKind: WorkerHuman,
 		WorkerID:   "github:octo-builder",
 	})
@@ -813,7 +815,7 @@ func TestCreateWalletMigrationLinksLegacyTRC20ToSolanaMetadata(t *testing.T) {
 	auth, err := store.Register(RegisterRequest{
 		Name:     "Legacy Tron User",
 		Email:    "legacy-tron@example.com",
-		Password: "password123",
+		Password: testPass(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -1045,7 +1047,7 @@ func TestCreateProjectCanDisableAgentRouting(t *testing.T) {
 	auth, err := store.Register(RegisterRequest{
 		Name:     "Human Only Client",
 		Email:    "human-only@example.com",
-		Password: "password123",
+		Password: testPass(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -1626,7 +1628,7 @@ func TestTokenWorkflowRoutesRequireLoginAndRecordLedgerProof(t *testing.T) {
 	auth, err := store.Register(RegisterRequest{
 		Name:     "Token Builder",
 		Email:    "token-builder@example.com",
-		Password: "password123",
+		Password: testPass(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -2162,7 +2164,7 @@ func TestPublicLedgerEconomyProofAndEventsRoutesReturnLiveProof(t *testing.T) {
 	auth, err := store.Register(RegisterRequest{
 		Name:     "Ledger Client",
 		Email:    "ledger-client@example.com",
-		Password: "password123",
+		Password: testPass(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -2183,7 +2185,7 @@ func TestPublicLedgerEconomyProofAndEventsRoutesReturnLiveProof(t *testing.T) {
 		if task.RequiredWorkerKind != WorkerHuman {
 			continue
 		}
-		if _, err := store.AcceptTask(task.ID, AcceptTaskRequest{
+		if _, _, err := store.AcceptTask(task.ID, AcceptTaskRequest{
 			WorkerKind: WorkerHuman,
 			WorkerID:   "github:ledger-builder",
 		}); err != nil {
@@ -2308,7 +2310,7 @@ func TestPublicMarketplaceRouteReturnsSanitizedLiveData(t *testing.T) {
 		Name:        "Marketplace Client",
 		CompanyName: "Marketplace Co",
 		Email:       "client@example.com",
-		Password:    "password123",
+		Password: testPass(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -2332,7 +2334,7 @@ func TestPublicMarketplaceRouteReturnsSanitizedLiveData(t *testing.T) {
 	}
 	for _, task := range project.Tasks {
 		if task.RequiredWorkerKind == WorkerHuman {
-			if _, err := store.AcceptTask(task.ID, AcceptTaskRequest{
+			if _, _, err := store.AcceptTask(task.ID, AcceptTaskRequest{
 				WorkerKind: WorkerHuman,
 				WorkerID:   "github:maya-dev",
 			}); err != nil {
@@ -2772,7 +2774,7 @@ func TestPublicLedgerRouteReturnsSanitizedLiveData(t *testing.T) {
 		Name:        "Ledger Client",
 		CompanyName: "Ledger Co",
 		Email:       "ledger@example.com",
-		Password:    "password123",
+		Password: testPass(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -2791,7 +2793,7 @@ func TestPublicLedgerRouteReturnsSanitizedLiveData(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := store.AcceptTask(project.Tasks[0].ID, AcceptTaskRequest{
+	if _, _, err := store.AcceptTask(project.Tasks[0].ID, AcceptTaskRequest{
 		WorkerKind: WorkerHuman,
 		WorkerID:   "github:private-worker",
 	}); err != nil {
@@ -2894,7 +2896,7 @@ func TestPublicLedgerVerifyRouteDetectsTampering(t *testing.T) {
 	auth, err := store.Register(RegisterRequest{
 		Name:     "Verify Client",
 		Email:    "verify-client@example.com",
-		Password: "password123",
+		Password: testPass(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -2966,7 +2968,7 @@ func TestPublicLedgerUsesPullReferenceForAdminAcceptedTask(t *testing.T) {
 		Name:        "PR Ledger Client",
 		CompanyName: "PR Ledger Co",
 		Email:       "pr-ledger@example.com",
-		Password:    "password123",
+		Password: testPass(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -2988,8 +2990,18 @@ func TestPublicLedgerUsesPullReferenceForAdminAcceptedTask(t *testing.T) {
 		t.Fatal(err)
 	}
 	pullReference := buildPullLedgerReference(project.Tasks[0].ID, "https://github.com/mergeos-bounties/mergeos/pull/120", "Fix PR payout reference")
-	if _, err := store.AcceptTaskWithReviewReference(project.Tasks[0].ID, req, 50, "future-medium", pullReference); err != nil {
+	acceptedTask, ledgerEntry, err := store.AcceptTaskWithReviewReference(project.Tasks[0].ID, req, 50, "future-medium", pullReference)
+	if err != nil {
 		t.Fatal(err)
+	}
+	if ledgerEntry.Sequence <= 0 {
+		t.Fatal("expected positive ledger sequence from AcceptTaskWithReviewReference")
+	}
+	if ledgerEntry.EntryHash == "" {
+		t.Fatal("expected non-empty entry_hash from AcceptTaskWithReviewReference")
+	}
+	if ledgerEntry.EntryHash != acceptedTask.ProofHash {
+		t.Fatalf("entry_hash %q should match task proof_hash %q", ledgerEntry.EntryHash, acceptedTask.ProofHash)
 	}
 	account, ok := store.TaskPayoutAccount(project.Tasks[0].ID)
 	if !ok || account != "github:pr-author" {
@@ -3007,6 +3019,9 @@ func TestPublicLedgerUsesPullReferenceForAdminAcceptedTask(t *testing.T) {
 		}
 		if strings.Contains(entry.Reference, project.ID) || strings.Contains(entry.Reference, project.Tasks[0].ID) {
 			t.Fatalf("public task payout reference still exposes project/task id: %s", entry.Reference)
+		}
+		if entry.EntryHash != ledgerEntry.EntryHash {
+			t.Fatalf("public ledger entry_hash %q should match returned entry_hash %q", entry.EntryHash, ledgerEntry.EntryHash)
 		}
 	}
 	if !found {
@@ -3035,7 +3050,7 @@ func TestPublicLiveFeedRouteReturnsSanitizedTimeline(t *testing.T) {
 		Name:        "Feed Client",
 		CompanyName: "Feed Co",
 		Email:       "feed@example.com",
-		Password:    "password123",
+		Password: testPass(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -3059,7 +3074,7 @@ func TestPublicLiveFeedRouteReturnsSanitizedTimeline(t *testing.T) {
 		t.Fatal(err)
 	}
 	pullReference := buildPullLedgerReference(project.Tasks[0].ID, "https://github.com/mergeos-bounties/mergeos/pull/151", "Live feed proof")
-	if _, err := store.AcceptTaskWithReviewReference(project.Tasks[0].ID, req, 5000, "future-medium", pullReference); err != nil {
+	if _, _, err := store.AcceptTaskWithReviewReference(project.Tasks[0].ID, req, 5000, "future-medium", pullReference); err != nil {
 		t.Fatal(err)
 	}
 	if err := store.AddGeminiWebhookLog(GeminiWebhookLog{
@@ -3219,7 +3234,7 @@ func TestPublicLiveFeedSupportsReplayCursor(t *testing.T) {
 	auth, err := store.Register(RegisterRequest{
 		Name:     "Cursor Client",
 		Email:    "cursor@example.com",
-		Password: "password123",
+		Password: testPass(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -3285,7 +3300,7 @@ func TestProjectDeploymentRouteReturnsDerivedStatusAndSanitizesData(t *testing.T
 		Name:        "Deploy Client",
 		CompanyName: "Deploy Co",
 		Email:       "deploy@example.com",
-		Password:    "password123",
+		Password: testPass(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -3319,7 +3334,7 @@ func TestProjectDeploymentRouteReturnsDerivedStatusAndSanitizesData(t *testing.T
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := store.AcceptTask(deployTask.ID, req); err != nil {
+	if _, _, err := store.AcceptTask(deployTask.ID, req); err != nil {
 		t.Fatal(err)
 	}
 	if err := store.AddGeminiWebhookLog(GeminiWebhookLog{
@@ -3417,7 +3432,7 @@ func TestProjectDeploymentRouteReturnsDerivedStatusAndSanitizesData(t *testing.T
 	otherAuth, err := store.Register(RegisterRequest{
 		Name:     "Other Client",
 		Email:    "other-client@example.com",
-		Password: "password123",
+		Password: testPass(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -3452,7 +3467,7 @@ func TestProjectDeploymentUsesDeploymentAgentAction(t *testing.T) {
 		Name:        "Deploy Agent Client",
 		CompanyName: "Deploy Agent Co",
 		Email:       "deploy-agent@example.com",
-		Password:    "password123",
+		Password: testPass(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -3581,7 +3596,7 @@ func TestPublicProjectDeploymentRouteReturnsSanitizedReadiness(t *testing.T) {
 		Name:        "Public Deploy Client",
 		CompanyName: "Public Deploy Co",
 		Email:       "public-deploy@example.com",
-		Password:    "password123",
+		Password: testPass(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -3679,7 +3694,7 @@ func TestProjectEscrowRouteReturnsReserveReleaseSummary(t *testing.T) {
 		Name:        "Escrow Client",
 		CompanyName: "Escrow Co",
 		Email:       "escrow-client@example.com",
-		Password:    "password123",
+		Password: testPass(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -3704,7 +3719,7 @@ func TestProjectEscrowRouteReturnsReserveReleaseSummary(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := store.AcceptTask(task.ID, req); err != nil {
+	if _, _, err := store.AcceptTask(task.ID, req); err != nil {
 		t.Fatal(err)
 	}
 
@@ -3762,7 +3777,7 @@ func TestProjectEscrowRouteReturnsReserveReleaseSummary(t *testing.T) {
 	otherAuth, err := store.Register(RegisterRequest{
 		Name:     "Other Escrow Client",
 		Email:    "other-escrow-client@example.com",
-		Password: "password123",
+		Password: testPass(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -3825,7 +3840,7 @@ func TestProjectPayoutsRouteReturnsSettlementContractAndSanitizesData(t *testing
 		Name:        "Payout Client",
 		CompanyName: "Payout Co",
 		Email:       "payout-client@example.com",
-		Password:    "password123",
+		Password: testPass(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -3851,7 +3866,7 @@ func TestProjectPayoutsRouteReturnsSettlementContractAndSanitizesData(t *testing
 		t.Fatal(err)
 	}
 	pullReference := buildPullLedgerReference(task.ID, "https://github.com/mergeos-bounties/mergeos/pull/190", "Payout proof")
-	if _, err := store.AcceptTaskWithReviewReference(task.ID, req, 0, "", pullReference); err != nil {
+	if _, _, err := store.AcceptTaskWithReviewReference(task.ID, req, 0, "", pullReference); err != nil {
 		t.Fatal(err)
 	}
 
@@ -3916,7 +3931,7 @@ func TestProjectPayoutsRouteReturnsSettlementContractAndSanitizesData(t *testing
 	otherAuth, err := store.Register(RegisterRequest{
 		Name:     "Other Payout Client",
 		Email:    "other-payout-client@example.com",
-		Password: "password123",
+		Password: testPass(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -3951,7 +3966,7 @@ func TestProjectAutoReleaseRouteReleasesReadyCandidateAndRecordsPolicy(t *testin
 		Name:        "Auto Release Client",
 		CompanyName: "Auto Co",
 		Email:       "auto-release-client@example.com",
-		Password:    "password123",
+		Password: testPass(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -4127,7 +4142,7 @@ func TestProjectAutoReleaseRouteReleasesReadyCandidateAndRecordsPolicy(t *testin
 	otherAuth, err := store.Register(RegisterRequest{
 		Name:     "Other Auto Client",
 		Email:    "other-auto-client@example.com",
-		Password: "password123",
+		Password: testPass(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -4162,7 +4177,7 @@ func TestProjectAutoReleaseRouteRequiresDeploymentValidation(t *testing.T) {
 		Name:        "Deployment Auto Client",
 		CompanyName: "Deploy Auto Co",
 		Email:       "deploy-auto-client@example.com",
-		Password:    "password123",
+		Password: testPass(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -4292,7 +4307,7 @@ func TestProjectDashboardRouteAggregatesCustomerWorkflowAndSanitizesData(t *test
 		Name:        "Dashboard Client",
 		CompanyName: "Dashboard Co",
 		Email:       "dashboard-client@example.com",
-		Password:    "password123",
+		Password: testPass(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -4369,7 +4384,7 @@ func TestProjectDashboardRouteAggregatesCustomerWorkflowAndSanitizesData(t *test
 	otherAuth, err := store.Register(RegisterRequest{
 		Name:     "Other Dashboard Client",
 		Email:    "other-dashboard-client@example.com",
-		Password: "password123",
+		Password: testPass(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -4404,7 +4419,7 @@ func TestProjectAIWorkflowRouteReturnsWorkflowAndSanitizesData(t *testing.T) {
 		Name:        "AI Client",
 		CompanyName: "AI Co",
 		Email:       "ai-client@example.com",
-		Password:    "password123",
+		Password: testPass(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -4552,7 +4567,7 @@ func TestProjectAIWorkflowRouteReturnsWorkflowAndSanitizesData(t *testing.T) {
 	otherAuth, err := store.Register(RegisterRequest{
 		Name:     "Other AI Client",
 		Email:    "other-ai-client@example.com",
-		Password: "password123",
+		Password: testPass(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -4587,7 +4602,7 @@ func TestPublicProjectAIWorkflowRouteReturnsSanitizedWorkflow(t *testing.T) {
 		Name:        "Public AI Client",
 		CompanyName: "Public AI Co",
 		Email:       "public-ai-client@example.com",
-		Password:    "password123",
+		Password: testPass(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -4724,7 +4739,7 @@ func TestPublicProjectWorkflowRouteReturnsSanitizedGraph(t *testing.T) {
 		Name:        "Public Graph Client",
 		CompanyName: "Public Graph Co",
 		Email:       "public-graph-client@example.com",
-		Password:    "password123",
+		Password: testPass(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -4869,7 +4884,7 @@ func TestProjectAgentActionRouteRecordsWorkflowEventAndSanitizesData(t *testing.
 		Name:        "Agent Client",
 		CompanyName: "Agent Co",
 		Email:       "agent-client@example.com",
-		Password:    "password123",
+		Password: testPass(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -5267,7 +5282,7 @@ func TestProjectAgentActionRouteRecordsWorkflowEventAndSanitizesData(t *testing.
 	otherAuth, err := store.Register(RegisterRequest{
 		Name:     "Other Agent Client",
 		Email:    "other-agent-client@example.com",
-		Password: "password123",
+		Password: testPass(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -5302,7 +5317,7 @@ func TestProjectTaskGraphRouteReturnsAcyclicDependencyGraph(t *testing.T) {
 		Name:        "Graph Client",
 		CompanyName: "Graph Co",
 		Email:       "graph-client@example.com",
-		Password:    "password123",
+		Password: testPass(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -5557,7 +5572,7 @@ func TestProjectTaskGraphRouteReturnsAcyclicDependencyGraph(t *testing.T) {
 	otherAuth, err := store.Register(RegisterRequest{
 		Name:     "Other Graph Client",
 		Email:    "other-graph-client@example.com",
-		Password: "password123",
+		Password: testPass(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -5608,7 +5623,7 @@ func TestProjectRepositoryScanRouteReturnsStaticFindings(t *testing.T) {
 		Name:        "Scan Client",
 		CompanyName: "Scan Co",
 		Email:       "scan-client@example.com",
-		Password:    "password123",
+		Password: testPass(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -5900,7 +5915,7 @@ func TestProjectRepositoryScanRouteReturnsStaticFindings(t *testing.T) {
 	otherAuth, err := store.Register(RegisterRequest{
 		Name:     "Other Scan Client",
 		Email:    "other-scan-client@example.com",
-		Password: "password123",
+		Password: testPass(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -5952,7 +5967,7 @@ func TestWorkerDashboardRouteMatchesGitHubWorkerAndSanitizesData(t *testing.T) {
 		Name:        "Worker Client",
 		CompanyName: "Worker Client Co",
 		Email:       "worker-client@example.com",
-		Password:    "password123",
+		Password: testPass(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -5981,7 +5996,7 @@ func TestWorkerDashboardRouteMatchesGitHubWorkerAndSanitizesData(t *testing.T) {
 	if humanTask == nil {
 		t.Fatal("project did not create a human task")
 	}
-	if _, err := store.AcceptTask(humanTask.ID, AcceptTaskRequest{
+	if _, _, err := store.AcceptTask(humanTask.ID, AcceptTaskRequest{
 		WorkerKind: WorkerHuman,
 		WorkerID:   "github:worker-dev",
 	}); err != nil {
@@ -6098,7 +6113,7 @@ func TestTaskSubmissionRouteRecordsReviewEvidence(t *testing.T) {
 		Name:        "Submission Client",
 		CompanyName: "Submission Client Co",
 		Email:       "submission-client@example.com",
-		Password:    "password123",
+		Password: testPass(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -6304,7 +6319,7 @@ func TestWorkerProposalSubmissionRoutesToCustomerDashboardAndAdminOps(t *testing
 		Name:        "Proposal Client",
 		CompanyName: "Proposal Client Co",
 		Email:       "proposal-client@example.com",
-		Password:    "password123",
+		Password: testPass(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -6535,7 +6550,7 @@ func TestWorkerCanSelfClaimProposalRoute(t *testing.T) {
 		Name:        "Self Claim Client",
 		CompanyName: "Self Claim Co",
 		Email:       "self-claim-client@example.com",
-		Password:    "password123",
+		Password: testPass(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -6656,7 +6671,7 @@ func TestAdminAutoPromoteAndRoutes(t *testing.T) {
 	adminAuth, err := store.Register(RegisterRequest{
 		Name:     "Admin User",
 		Email:    "admin@example.com",
-		Password: "password123",
+		Password: testPass(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -6667,7 +6682,7 @@ func TestAdminAutoPromoteAndRoutes(t *testing.T) {
 	clientAuth, err := store.Register(RegisterRequest{
 		Name:     "Client User",
 		Email:    "client-two@example.com",
-		Password: "password123",
+		Password: testPass(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -6716,7 +6731,7 @@ func TestAdminCanCreateManualLedgerCredit(t *testing.T) {
 	adminAuth, err := store.Register(RegisterRequest{
 		Name:     "Admin User",
 		Email:    "credit-admin@example.com",
-		Password: "password123",
+		Password: testPass(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -6791,7 +6806,7 @@ func TestAdminOpsQueueReturnsDisputeModerationAndPayoutItems(t *testing.T) {
 	adminAuth, err := store.Register(RegisterRequest{
 		Name:     "Ops Admin",
 		Email:    "ops-admin@example.com",
-		Password: "password123",
+		Password: testPass(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -6799,7 +6814,7 @@ func TestAdminOpsQueueReturnsDisputeModerationAndPayoutItems(t *testing.T) {
 	clientAuth, err := store.Register(RegisterRequest{
 		Name:     "Ops Client",
 		Email:    "ops-client@example.com",
-		Password: "password123",
+		Password: testPass(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -6993,19 +7008,19 @@ func TestCreateDisputeRouteAddsAdminOpsQueueItem(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	adminAuth, err := store.Register(RegisterRequest{Name: "Ops Admin", Email: "ops-admin-dispute@example.com", Password: "password123"})
+	adminAuth, err := store.Register(RegisterRequest{Name: "Ops Admin", Email: "ops-admin-dispute@example.com", Password: testPass()})
 	if err != nil {
 		t.Fatal(err)
 	}
-	clientAuth, err := store.Register(RegisterRequest{Name: "Dispute Client", CompanyName: "Dispute Co", Email: "dispute-client@example.com", Password: "password123"})
+	clientAuth, err := store.Register(RegisterRequest{Name: "Dispute Client", CompanyName: "Dispute Co", Email: "dispute-client@example.com", Password: testPass()})
 	if err != nil {
 		t.Fatal(err)
 	}
-	workerAuth, err := store.Register(RegisterRequest{Name: "Dispute Worker", Email: "dispute-worker@example.com", Password: "password123"})
+	workerAuth, err := store.Register(RegisterRequest{Name: "Dispute Worker", Email: "dispute-worker@example.com", Password: testPass()})
 	if err != nil {
 		t.Fatal(err)
 	}
-	otherAuth, err := store.Register(RegisterRequest{Name: "Other User", Email: "other-dispute@example.com", Password: "password123"})
+	otherAuth, err := store.Register(RegisterRequest{Name: "Other User", Email: "other-dispute@example.com", Password: testPass()})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -7037,7 +7052,7 @@ func TestCreateDisputeRouteAddsAdminOpsQueueItem(t *testing.T) {
 	if humanTask == nil {
 		t.Fatal("project did not create a human task")
 	}
-	if _, err := store.AcceptTask(humanTask.ID, AcceptTaskRequest{WorkerKind: WorkerHuman, WorkerID: "github:worker-dispute"}); err != nil {
+	if _, _, err := store.AcceptTask(humanTask.ID, AcceptTaskRequest{WorkerKind: WorkerHuman, WorkerID: "github:worker-dispute"}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -7133,7 +7148,7 @@ func TestAdminTasksRouteIncludesAcceptedTasksForAudit(t *testing.T) {
 	adminAuth, err := store.Register(RegisterRequest{
 		Name:     "Admin User",
 		Email:    "review-admin@example.com",
-		Password: "password123",
+		Password: testPass(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -7154,7 +7169,7 @@ func TestAdminTasksRouteIncludesAcceptedTasksForAudit(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := store.AcceptTask(project.Tasks[0].ID, req); err != nil {
+	if _, _, err := store.AcceptTask(project.Tasks[0].ID, req); err != nil {
 		t.Fatal(err)
 	}
 
@@ -7255,7 +7270,7 @@ func TestAdminCanUpdateUserAndPassword(t *testing.T) {
 	}
 
 	server := NewServer(cfg, store, payments)
-	body := strings.NewReader(`{"name":"Updated Client","company_name":"New Co","email":"updated@example.com","role":"client","password":"newpass123"}`)
+	body := strings.NewReader(`{"name":"Updated Client","company_name":"New Co","email":"updated@example.com","role":"client","password":"newpass456"}`)
 	req := httptest.NewRequest(http.MethodPatch, "/api/admin/users/"+clientAuth.User.ID, body)
 	req.Header.Set("Authorization", "Bearer "+adminAuth.Token)
 	req.Header.Set("Content-Type", "application/json")
@@ -7274,7 +7289,7 @@ func TestAdminCanUpdateUserAndPassword(t *testing.T) {
 	if _, err := store.Login(LoginRequest{Email: "updated@example.com", Password: "password123"}); err == nil {
 		t.Fatal("old password still works")
 	}
-	if _, err := store.Login(LoginRequest{Email: "updated@example.com", Password: "newpass123"}); err != nil {
+	if _, err := store.Login(LoginRequest{Email: "updated@example.com", Password: "newpass456"}); err != nil {
 		t.Fatalf("new password login failed: %v", err)
 	}
 }
@@ -7387,7 +7402,7 @@ func TestWorkerReputationAuditSurfacesLinkedWalletRisk(t *testing.T) {
 		Name:        "Risk Client",
 		CompanyName: "Risk Co",
 		Email:       "risk-client@example.com",
-		Password:    "password123",
+		Password: testPass(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -7428,7 +7443,7 @@ func TestWorkerReputationAuditSurfacesLinkedWalletRisk(t *testing.T) {
 	if task == nil {
 		t.Fatal("expected at least one human task")
 	}
-	if _, err := store.AcceptTask(task.ID, AcceptTaskRequest{
+	if _, _, err := store.AcceptTask(task.ID, AcceptTaskRequest{
 		WorkerKind: WorkerHuman,
 		WorkerID:   "github:builder",
 	}); err != nil {
@@ -7515,7 +7530,7 @@ func TestPostgresPersistenceRoundTrip(t *testing.T) {
 	auth, err := store.Register(RegisterRequest{
 		Name:     "Postgres User",
 		Email:    "postgres@example.com",
-		Password: "password123",
+		Password: testPass(),
 	})
 	if err != nil {
 		t.Fatal(err)

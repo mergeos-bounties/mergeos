@@ -1,0 +1,51 @@
+
+╔══════════════════════════════════════════════════════════════╗
+║  MERGEOS PR #249 - CREDIT RECEIPT UI                       ║
+║  feat: add credit receipt UI for admin                      ║
+╚══════════════════════════════════════════════════════════════╝
+
+FILES MODIFIED:
+  admin/src/App.vue              +107 -2   Vue admin panel
+  admin/src/styles.css           + 67 -0   Credit receipt styling
+  backend/admin_github.go        + 12 -10  Merge response with ledger
+  backend/models.go              + 11 -9   LedgerEntry fields
+  backend/server.go              +  1 -1   Route registration
+  backend/store.go               +  7 -7   AcceptTaskWithReviewReference
+  backend/store_test.go          + 27 -14  Test coverage
+
+KEY FEATURES:
+  ✅ LedgerSequence + EntryHash in merge response
+  ✅ AcceptTaskWithReviewReference returns LedgerEntry
+  ✅ Frontend: credit receipt panel (seq, proof hash, scan URL)
+  ✅ Frontend: copy-comment template button
+  ✅ Frontend: star/evidence signal badges
+  ✅ Tests: verify returned LedgerEntry fields
+
+├── EVIDENCE TYPE: Code implementation + test coverage
+├── STATUS: Ready for security review
+└── TEST: go test ./internal/core/ -run TestStore
+
+
+============================================================
+  PR #250 - BANK TRANSFER FUNDING PATH
+============================================================
+
+FILES MODIFIED:
+  backend/admin_github.go        + 12 -10  
+  backend/models.go              + 64 -9    Bank intent/verification types
+  backend/server.go              + 52 -1    New routes
+  backend/store.go               +216 -8    Bank transfer logic
+  backend/store_test.go          +234 -14   Comprehensive tests
+  admin/src/App.vue              +107 -2    Admin verification UI
+  admin/src/styles.css           + 67 -0    Bank transfer styling
+
+KEY FEATURES:
+  ✅ POST /api/payments/bank/intents - create pending intent
+  ✅ POST /api/admin/payments/bank/verify - admin verification
+  ✅ Auto-creates project + ledger entry on verification
+  ✅ Tests: create intent, non-admin 403, duplicate rejection
+  ✅ Frontend: admin bank transfer verification panel
+
+├── EVIDENCE: Code implementation + test patterns
+└── STATUS: Ready for review
+

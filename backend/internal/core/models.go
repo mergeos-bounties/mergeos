@@ -697,15 +697,17 @@ type AdminMergeTaskPullRequestRequest struct {
 }
 
 type AdminMergeTaskPullRequestResponse struct {
-	Task         *Task                `json:"task"`
-	PullRequest  AdminTaskPullRequest `json:"pull_request"`
-	WorkerID     string               `json:"worker_id"`
-	RewardMRG    int64                `json:"reward_mrg"`
-	BountyType   string               `json:"bounty_type"`
-	AdminURL     string               `json:"admin_url"`
-	CreditURL    string               `json:"credit_url,omitempty"`
-	CommentURL   string               `json:"comment_url,omitempty"`
-	CommentError string               `json:"comment_error,omitempty"`
+	Task           *Task                `json:"task"`
+	PullRequest    AdminTaskPullRequest `json:"pull_request"`
+	WorkerID       string               `json:"worker_id"`
+	RewardMRG      int64                `json:"reward_mrg"`
+	BountyType     string               `json:"bounty_type"`
+	AdminURL       string               `json:"admin_url"`
+	CreditURL      string               `json:"credit_url,omitempty"`
+	CommentURL     string               `json:"comment_url,omitempty"`
+	CommentError   string               `json:"comment_error,omitempty"`
+	LedgerSequence int                  `json:"ledger_sequence,omitempty"`
+	EntryHash      string               `json:"entry_hash,omitempty"`
 }
 
 type AdminManualCreditRequest struct {
