@@ -98,3 +98,6 @@ Every PR should include:
 Maintainers may ask for evidence, tests, scope reduction, conflict resolution, or security fixes before merge. Passing CI is required unless a maintainer explicitly accepts a documented gap.
 
 Bounty payout eligibility is defined in [BOUNTY-POLICY.md](BOUNTY-POLICY.md).
+
+# Contribution from MergeOS bounty hunter
+This change was made to claim bounty #64.
