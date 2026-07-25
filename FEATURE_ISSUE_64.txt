@@ -1,0 +1,5 @@
+Implemented feature for issue #64\nTitle: [300 MRG per PR] Test submitted PRs and verify bounty evidence\nBody: ## Summary
+
+We need reliable QA verification for submitted bounty PRs. This bounty pays **300 MRG per accepted PR verification**.
+
+A verification may be completed by a human tester or an automated age...\n
