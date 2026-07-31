@@ -123,6 +123,7 @@ type Store struct {
 	testSettingsEntries map[string]*TestSettingsEntry
 	adminSettings       AdminSettings
 	paymentOrders       map[string]*PaymentOrderIntent
+	paymentSettlements  map[string]*stripeSettlementResult
 	agentLeases         map[string]*AgentLeaseResponse
 	ledger              []LedgerEntry
 }
@@ -143,6 +144,7 @@ type persistedState struct {
 	TestSettingsConfig  *TestSettingsConfig   `json:"test_settings_config,omitempty"`
 	TestSettingsEntries []*TestSettingsEntry  `json:"test_settings_entries,omitempty"`
 	PaymentOrders       []*PaymentOrderIntent `json:"payment_orders,omitempty"`
+	PaymentSettlements  []*stripeSettlementResult `json:"payment_settlements,omitempty"`
 	Ledger              []LedgerEntry         `json:"ledger"`
 }
 
@@ -173,6 +175,7 @@ func NewStore(cfg Config, payments *PaymentManager, repos RepoFactory, emailer *
 		testSettingsEntries: map[string]*TestSettingsEntry{},
 		adminSettings:       defaultAdminSettings(cfg),
 		paymentOrders:       map[string]*PaymentOrderIntent{},
+		paymentSettlements:  map[string]*stripeSettlementResult{},
 		agentLeases:         map[string]*AgentLeaseResponse{},
 		ledger:              []LedgerEntry{},
 	}
@@ -3170,6 +3173,15 @@ func (s *Store) applyState(state persistedState) bool {
 		s.paymentOrders[intentCopy.OrderID] = &intentCopy
 	}
 
+	// Payment settlements (Stripe webhook dedup)
+	s.paymentSettlements = map[string]*stripeSettlementResult{}
+	for _, settlement := range state.PaymentSettlements {
+		if settlement == nil || settlement.EventID == "" {
+			continue
+		}
+		s.paymentSettlements[settlement.EventID] = settlement
+	}
+
 	// Test settings
 	s.testSettingsConfig = TestSettingsConfig{}
 	if state.TestSettingsConfig != nil {
@@ -3213,6 +3225,7 @@ func (s *Store) snapshotLocked() persistedState {
 		TestSettingsConfig:  &s.testSettingsConfig,
 		TestSettingsEntries: make([]*TestSettingsEntry, 0, len(s.testSettingsEntries)),
 		PaymentOrders:       make([]*PaymentOrderIntent, 0, len(s.paymentOrders)),
+		PaymentSettlements:  make([]*stripeSettlementResult, 0, len(s.paymentSettlements)),
 		Ledger:              s.ledger,
 	}
 	for _, project := range s.projects {
@@ -3271,6 +3284,13 @@ func (s *Store) snapshotLocked() persistedState {
 	sort.Slice(state.PaymentOrders, func(i, j int) bool {
 		return state.PaymentOrders[i].CreatedAt.Before(state.PaymentOrders[j].CreatedAt)
 	})
+	for _, settlement := range s.paymentSettlements {
+		state.PaymentSettlements = append(state.PaymentSettlements, &stripeSettlementResult{
+			EventID:   settlement.EventID,
+			Status:    settlement.Status,
+			Duplicate: settlement.Duplicate,
+		})
+	}
 	return state
 }
 
