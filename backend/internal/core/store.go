@@ -387,6 +387,9 @@ func (s *Store) RequestPasswordReset(req PasswordResetRequest) (PasswordResetRes
 	}
 	s.mu.Unlock()
 
+	// Check SMTP status independently of whether the user exists,
+	// so the response is the same for both cases (security: don't reveal account existence).
+	response.EmailSent = s.cfg.SMTPReady()
 	if recipient != "" {
 		body := strings.Join([]string{
 			fmt.Sprintf("Hi %s,", name),
@@ -396,7 +399,23 @@ func (s *Store) RequestPasswordReset(req PasswordResetRequest) (PasswordResetRes
 			"",
 			"If you did not request this, no action is required.",
 		}, "\n")
-		s.emailer.Send(recipient, "MergeOS password reset requested", body)
+		result := s.emailer.Send(recipient, "MergeOS password reset requested", body)
+		if strings.HasPrefix(result, "logged:") {
+			response.EmailSent = false
+			response.EmailError = "Email system is offline. Please try again later or contact support."
+		} else if strings.HasPrefix(result, "error:") {
+			response.EmailSent = false
+			response.EmailError = "Could not send email. Please try again later or contact support."
+		}
+	} else if !response.EmailSent {
+		// Non-existing user, SMTP not ready — same response as existing user case
+		response.EmailError = "Email system is offline. Please try again later or contact support."
+	}
+
+	// Use the same message regardless of SMTP status when email is not sent,
+	// so the response doesn't reveal whether the account exists.
+	if !response.EmailSent {
+		response.Message = "If that email exists, your request has been recorded. However, our email system is currently offline. Please try again later or contact support."
 	}
 	return response, nil
 }

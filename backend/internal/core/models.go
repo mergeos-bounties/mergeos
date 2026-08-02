@@ -346,8 +346,10 @@ type PasswordResetRequest struct {
 }
 
 type PasswordResetResponse struct {
-	Status  string `json:"status"`
-	Message string `json:"message"`
+	Status      string `json:"status"`
+	Message     string `json:"message"`
+	EmailSent   bool   `json:"email_sent"`
+	EmailError  string `json:"email_error,omitempty"`
 }
 
 type GitHubAuthRequest struct {

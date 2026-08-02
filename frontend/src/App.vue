@@ -33812,15 +33812,14 @@ async function submitAuth() {
   authBusy.value = true;
   try {
     if (authMode.value === 'reset-request') {
-      const response = await publicApi('/api/auth/password-reset/request', {
+      const response = await publicApi('/api/auth/password-reset', {
         method: 'POST',
         body: JSON.stringify({
           email: authForm.email,
-          reset_url: passwordResetReturnURL(),
         }),
       });
-      if (response.reset_token) {
-        errorMessage.value = 'Password reset is currently unavailable. Our email system is offline. Please try again later or contact support.';
+      if (response.email_sent === false) {
+        errorMessage.value = response.email_error || 'Password reset is currently unavailable. Our email system is offline. Please try again later or contact support.';
       } else {
         authNotice.value = 'If that email exists, reset instructions are on the way.';
         showToast('Password reset request received.');
