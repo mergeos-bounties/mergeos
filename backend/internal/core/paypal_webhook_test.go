@@ -257,7 +257,7 @@ func testPayPalWebhookConfig(t *testing.T, paypalURL string) Config {
 		TokenSymbol:        defaultTokenSymbol,
 		PayPalEnvironment:  paypalURL,
 		PayPalClientID:     "paypal-client",
-		PayPalClientSecret: "paypal-secret",
+		PayPalClientSecret: testPass(),
 		PayPalWebhookID:    "WH-MERGEOS",
 	}
 }

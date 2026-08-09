@@ -187,7 +187,7 @@ func TestResolveActiveTestSettingsRequiresTestModeAndFiltersEntries(t *testing.T
 		IntegrationType: "paypal",
 		DisplayName:     "PayPal runtime",
 		SettingKey:      "TASK_PAYPAL_RUNTIME_KEY",
-		SettingValue:    "paypal-secret",
+		SettingValue:    testPass(),
 	})
 	if err != nil {
 		t.Fatal(err)
