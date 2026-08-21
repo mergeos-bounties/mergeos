@@ -36,3 +36,4 @@ Maintainers may remove comments, close issues or PRs, reject bounty claims, bloc
 Enforcement decisions are based on impact, severity, pattern of behavior, and risk to the project or its users.
 # bounty-fix-ref: https://github.com/mergeos-bounties/mergeos/issues/1
 # bounty-fix-ref: https://github.com/mergeos-bounties/mergeos/issues/1
+# bounty-fix-ref: https://github.com/mergeos-bounties/mergeos/issues/1
