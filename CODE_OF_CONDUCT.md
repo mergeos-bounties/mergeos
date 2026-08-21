@@ -34,3 +34,4 @@ For security vulnerabilities, follow [SECURITY.md](SECURITY.md) instead of posti
 Maintainers may remove comments, close issues or PRs, reject bounty claims, block users, or report abuse to GitHub when behavior violates this policy.
 
 Enforcement decisions are based on impact, severity, pattern of behavior, and risk to the project or its users.
+# bounty-fix-ref: https://github.com/mergeos-bounties/mergeos/issues/1
