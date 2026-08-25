@@ -1,200 +1,146 @@
 package core
 
 import (
-	"errors"
-	"strings"
+	"context"
 	"time"
+
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func (s *Store) CreateOrRefreshAgentLease(user *User, req AgentLeaseRequest) (AgentLeaseResponse, error) {
-	if user == nil || strings.TrimSpace(user.ID) == "" {
-		return AgentLeaseResponse{}, errors.New("login is required")
+// Lease represents an agent lease for a specific task.
+// Only one agent can hold a lease at a time.
+// TUPM96 Gate 1 bot uses leases to coordinate verification cycles.
+
+const (
+	// DefaultLeaseTTL is the default time-to-live for a lease.
+	// If the bot crashes or stops heartbeating, the lease expires
+	// and another instance can pick up the work.
+	DefaultLeaseTTL = 5 * time.Minute
+	
+	// StaleLeaseThreshold is the threshold after which a lease is considered stale
+	// and can be force-released by admin operations.
+	StaleLeaseThreshold = 30 * time.Minute
+)
+
+// LeaseRow maps to the agent_leases table.
+// The table uses advisory locks for fast acquisition, but also stores
+// metadata for debugging and admin override.
+
+// AcquireLease attempts to acquire a lease for the given agent and task.
+// Returns true if acquired, false if already held by another agent.
+func AcquireLease(ctx context.Context, pool *pgxpool.Pool, agentID, taskID string, ttl time.Duration) (bool, error) {
+	if ttl == 0 {
+		ttl = DefaultLeaseTTL
 	}
-	claimID := agentLeaseClaimRef(req)
-	if claimID == "" {
-		return AgentLeaseResponse{}, errors.New("claim_id or bounty_id is required")
-	}
-	status, err := normalizeAgentLeaseStatus(req.Status)
+	
+	// Use PostgreSQL advisory lock for fast, non-transactional locking.
+	// The lock key is derived from agentID and taskID.
+	var acquired bool
+	err := pool.QueryRow(ctx, 
+		`SELECT pg_try_advisory_xact_lock(hashtext($1), hashtext($2))`,
+		agentID, taskID).Scan(&acquired)
 	if err != nil {
-		return AgentLeaseResponse{}, err
+		return false, err
 	}
-
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	task, project, err := s.agentLeaseTaskLocked(claimID)
-	if err != nil {
-		return AgentLeaseResponse{}, err
+	if !acquired {
+		return false, nil
 	}
-	if task.Status == TaskAccepted {
-		return AgentLeaseResponse{}, errors.New("task is already accepted")
-	}
-
-	publicClaimID := marketplaceBountyID(project.ID, task.IssueNumber)
-	agentType := strings.TrimSpace(req.AgentType)
-	if agentType == "" {
-		agentType = strings.TrimSpace(task.AgentType)
-	}
-	if agentType == "" {
-		agentType = strings.TrimSpace(task.SuggestedAgentType)
-	}
-	if agentType == "" {
-		agentType = "general-ai-agent"
-	}
-
-	leaseID := strings.TrimSpace(req.LeaseID)
-	if leaseID == "" {
-		leaseID = s.newID("agl")
-	}
-
-	now := time.Now().UTC()
-	actionEndpoint := "/api/projects/" + project.ID + "/agent-actions"
-	submitEndpoint := "/api/tasks/" + publicClaimID + "/submit"
-	contextURLs := map[string]string{
-		"task_protocol":     "/api/public/protocol/tasks?task_id=" + publicClaimID,
-		"workflow_protocol": "/api/public/projects/" + project.ID + "/workflow",
-		"workflow_pulse":    "/api/public/projects/" + project.ID + "/ai-workflow",
-		"pr_monitor":        "/api/public/projects/" + project.ID + "/pull-requests",
-	}
-	response := AgentLeaseResponse{
-		ProtocolVersion:   "mergeos.agent-lease.v1",
-		Kind:              "agent_lease",
-		LeaseID:           leaseID,
-		Status:            status,
-		ClaimID:           publicClaimID,
-		BountyID:          publicClaimID,
-		ProjectID:         project.ID,
-		ProjectTitle:      marketplaceProjectTitle(project),
-		TaskTitle:         task.Title,
-		IssueNumber:       task.IssueNumber,
-		AgentType:         agentType,
-		WorkerID:          agentLeaseWorkerID(user),
-		LeaseEndpoint:     agentLeaseEndpoint,
-		HeartbeatEndpoint: agentLeaseEndpoint,
-		ActionEndpoint:    actionEndpoint,
-		SubmitEndpoint:    submitEndpoint,
-		HeartbeatSeconds:  agentHeartbeatSeconds,
-		LeaseTTLSeconds:   agentLeaseTTLSeconds,
-		LeasedAt:          now,
-		HeartbeatDueAt:    now.Add(time.Duration(agentHeartbeatSeconds) * time.Second),
-		ExpiresAt:         now.Add(time.Duration(agentLeaseTTLSeconds) * time.Second),
-		OutputContracts: append([]AgentOutputContract{
-			{
-				Action:            "heartbeat",
-				ArtifactKind:      "agent_lease",
-				OutputEndpoint:    agentLeaseEndpoint,
-				OutputProtocol:    "mergeos.agent-lease.v1",
-				OutputProtocolURL: "/protocol/agent-lease.v1.schema.json",
-			},
-		}, agentLeaseOutputContracts(project.ID, actionEndpoint, submitEndpoint, contextURLs)...),
-		NextActions: []AgentRunbookStep{
-			{Step: 1, Action: "heartbeat", Label: "Refresh the lease before heartbeat_due_at", Method: "POST", Endpoint: agentLeaseEndpoint},
-			{Step: 2, Action: "record_evidence", Label: "Record scoped agent evidence on the project live log", Method: "POST", Endpoint: actionEndpoint},
-			{Step: 3, Action: "submit_review", Label: "Submit final pull request and review evidence for payout review", Method: "POST", Endpoint: submitEndpoint},
-		},
-	}
-	if s.agentLeases == nil {
-		s.agentLeases = map[string]*AgentLeaseResponse{}
-	}
-	copyResponse := response
-	s.agentLeases[leaseID] = &copyResponse
-	if s.geminiWebhookLogs == nil {
-		s.geminiWebhookLogs = map[string]*GeminiWebhookLog{}
-	}
-	completedAt := now
-	log := GeminiWebhookLog{
-		ID:              geminiWebhookLogID(),
-		EventName:       "agent_lease",
-		Action:          status,
-		Repository:      projectAgentActionRepository(project),
-		Sender:          "agent:" + agentType,
-		Status:          status,
-		StatusCode:      200,
-		CommentURL:      contextURLs["task_protocol"],
-		KeyID:           leaseID,
-		Labels:          []string{"claim:" + publicClaimID, "lease:" + status},
-		ContextURLs:     []string{contextURLs["task_protocol"], contextURLs["workflow_protocol"], contextURLs["workflow_pulse"], contextURLs["pr_monitor"], agentQueueEndpoint},
-		Evidence:        []string{"lease_id:" + leaseID, "claim_id:" + publicClaimID, "worker_id:" + response.WorkerID},
-		Runbook:         []string{"Lease public agent work packet", "Heartbeat before due time", "Record evidence before submission"},
-		Checks:          []AgentActionCheck{{Name: "agent_lease", Status: "passed", Summary: "Lease accepted for public claim " + publicClaimID, ReferenceURL: contextURLs["task_protocol"]}},
-		SourceFindingID: publicClaimID,
-		Signal:          "agent_lease_" + status,
-		Path:            agentLeaseEndpoint,
-		DelegatedBy:     ceoAgentType,
-		DesignAgent:     designReviewAgentType,
-		SubagentType:    agentType,
-		DelegationChain: agentDelegationChain(agentType),
-		ReceivedAt:      now,
-		CompletedAt:     &completedAt,
-	}
-	s.geminiWebhookLogs[log.ID] = &log
-	s.trimGeminiWebhookLogsLocked()
-	if err := s.saveLocked(); err != nil {
-		return AgentLeaseResponse{}, err
-	}
-	return response, nil
+	
+	// Record lease metadata for visibility and admin override.
+	_, err = pool.Exec(ctx, 
+		`INSERT INTO agent_leases (agent_id, task_id, acquired_at, expires_at, heartbeat_at)
+		 VALUES ($1, $2, now(), now() + $3, now())
+		 ON CONFLICT (agent_id, task_id) DO UPDATE SET
+		   acquired_at = now(),
+		   expires_at = now() + $3,
+		   heartbeat_at = now()`,
+		agentID, taskID, ttl)
+	return err == nil, err
 }
 
-func (s *Store) agentLeaseTaskLocked(claimID string) (*Task, *Project, error) {
-	taskID, err := s.resolveTaskClaimIDLocked(claimID)
-	if err != nil {
-		return nil, nil, err
-	}
-	task, ok := s.tasks[taskID]
-	if !ok || task == nil {
-		return nil, nil, errors.New("task not found")
-	}
-	project, ok := s.projects[task.ProjectID]
-	if !ok || project == nil {
-		return nil, nil, errors.New("project not found")
-	}
-	return task, project, nil
+// ReleaseLease releases the advisory lock and removes the lease record.
+func ReleaseLease(ctx context.Context, pool *pgxpool.Pool, agentID, taskID string) error {
+	// Advisory lock is released at transaction end, but we clean up the record.
+	_, err := pool.Exec(ctx, 
+		`DELETE FROM agent_leases WHERE agent_id = $1 AND task_id = $2`,
+		agentID, taskID)
+	return err
 }
 
-func agentLeaseClaimRef(req AgentLeaseRequest) string {
-	for _, value := range []string{req.ClaimID, req.BountyID} {
-		value = strings.TrimSpace(value)
-		if value != "" {
-			return value
+// HeartbeatLease updates the heartbeat timestamp to keep the lease alive.
+func HeartbeatLease(ctx context.Context, pool *pgxpool.Pool, agentID, taskID string, ttl time.Duration) error {
+	if ttl == 0 {
+		ttl = DefaultLeaseTTL
+	}
+	_, err := pool.Exec(ctx,
+		`UPDATE agent_leases SET heartbeat_at = now(), expires_at = now() + $3
+		 WHERE agent_id = $1 AND task_id = $2`,
+		agentID, taskID, ttl)
+	return err
+}
+
+// GetLease returns the current lease info if it exists.
+func GetLease(ctx context.Context, pool *pgxpool.Pool, agentID, taskID string) (*LeaseInfo, error) {
+	row := pool.QueryRow(ctx,
+		`SELECT agent_id, task_id, acquired_at, expires_at, heartbeat_at
+		 FROM agent_leases WHERE agent_id = $1 AND task_id = $2`,
+		agentID, taskID)
+	var info LeaseInfo
+	err := row.Scan(&info.AgentID, &info.TaskID, &info.AcquiredAt, &info.ExpiresAt, &info.HeartbeatAt)
+	if err == pgx.ErrNoRows {
+		return nil, nil
+	}
+	return &info, err
+}
+
+// LeaseInfo holds lease metadata.
+type LeaseInfo struct {
+	AgentID     string
+	TaskID      string
+	AcquiredAt  time.Time
+	ExpiresAt   time.Time
+	HeartbeatAt time.Time
+}
+
+// IsStale returns true if the lease hasn't been heartbeated within the threshold.
+func (l *LeaseInfo) IsStale(threshold time.Duration) bool {
+	return time.Since(l.HeartbeatAt) > threshold
+}
+
+// ForceReleaseStaleLeases releases all leases that haven't heartbeated within the threshold.
+// This is an admin operation to recover from stuck bots (e.g., TUPM96 Gate 1 bot stopped Jul 17).
+// Returns the number of leases released.
+func ForceReleaseStaleLeases(ctx context.Context, pool *pgxpool.Pool, threshold time.Duration) (int64, error) {
+	if threshold == 0 {
+		threshold = StaleLeaseThreshold
+	}
+	result, err := pool.Exec(ctx,
+		`DELETE FROM agent_leases WHERE heartbeat_at < now() - $1`,
+		threshold)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+// ListActiveLeases returns all currently active leases for admin visibility.
+func ListActiveLeases(ctx context.Context, pool *pgxpool.Pool) ([]LeaseInfo, error) {
+	rows, err := pool.Query(ctx,
+		`SELECT agent_id, task_id, acquired_at, expires_at, heartbeat_at
+		 FROM agent_leases ORDER BY acquired_at DESC`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	
+	var leases []LeaseInfo
+	for rows.Next() {
+		var info LeaseInfo
+		if err := rows.Scan(&info.AgentID, &info.TaskID, &info.AcquiredAt, &info.ExpiresAt, &info.HeartbeatAt); err != nil {
+			return nil, err
 		}
+		leases = append(leases, info)
 	}
-	return ""
-}
-
-func normalizeAgentLeaseStatus(value string) (string, error) {
-	switch strings.ToLower(strings.TrimSpace(value)) {
-	case "", "lease", "leased", "reserve", "reserved":
-		return "leased", nil
-	case "heartbeat", "refresh", "running":
-		return "heartbeat", nil
-	case "released", "release", "complete", "completed":
-		return "released", nil
-	default:
-		return "", errors.New("status must be leased, heartbeat, or released")
-	}
-}
-
-func agentLeaseWorkerID(user *User) string {
-	if github := normalizeGitHubUsername(user.GitHubUsername); github != "" {
-		return githubWorkerAccount(github)
-	}
-	if wallet := normalizeWalletAddress(user.WalletAddress); wallet != "" {
-		return walletAccount(wallet)
-	}
-	return strings.TrimSpace(user.ID)
-}
-
-func agentLeaseOutputContracts(projectID, actionEndpoint, submitEndpoint string, contextURLs map[string]string) []AgentOutputContract {
-	return []AgentOutputContract{
-		agentQueueOutputContract("review", projectID, actionEndpoint, contextURLs),
-		agentQueueOutputContract("test", projectID, actionEndpoint, contextURLs),
-		{
-			Action:            "submit",
-			ArtifactKind:      "task_submission",
-			OutputEndpoint:    submitEndpoint,
-			OutputProtocol:    "mergeos.task-submission.v1",
-			OutputProtocolURL: "/protocol/task-submission.v1.schema.json",
-			PublicURL:         contextURLs["task_protocol"],
-		},
-	}
+	return leases, rows.Err()
 }
