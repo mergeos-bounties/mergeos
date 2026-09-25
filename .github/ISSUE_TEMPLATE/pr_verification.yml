@@ -1,0 +1,84 @@
+name: "PR Bounty Verification Report"
+description: "Submit a QA verification report for an open bounty pull request (300 MRG per accepted verification)."
+title: "[PR Verification] "
+labels:
+  - "qa-verification"
+  - "bounty"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping verify a submitted bounty PR! Please fill out this form completely.
+        Verifications must be clear, reproducible, and include evidence (logs, screenshots, or command output).
+        See BOUNTY-POLICY.md for payout rules.
+
+  - type: input
+    id: pr-link
+    attributes:
+      label: Pull Request under review
+      description: Link to the PR being verified (e.g. https://github.com/mergeos-bounties/mergeos/pull/123)
+      placeholder: "https://github.com/mergeos-bounties/mergeos/pull/123"
+    validations:
+      required: true
+
+  - type: input
+    id: bounty-link
+    attributes:
+      label: Related bounty issue
+      description: Link to the bounty issue this PR claims to resolve
+      placeholder: "https://github.com/mergeos-bounties/mergeos/issues/456"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: verdict
+    attributes:
+      label: Verification verdict
+      options:
+        - "Pass - meets bounty requirements"
+        - "Fail - does not meet bounty requirements"
+        - "Partial - some requirements unmet"
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      description: Exact steps you took to test the PR (branch checked out, commands run, environment).
+      placeholder: |
+        1. git fetch origin pull/123/head:pr-123
+        2. git checkout pr-123
+        3. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: build-test-results
+    attributes:
+      label: Build / test results
+      description: Paste the relevant output of build and test commands (CI logs or local run).
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Screenshots, logs, or links proving the PR does (or does not) satisfy the bounty requirements.
+    validations:
+      required: true
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Additional notes
+      description: Any edge cases, regressions, or follow-up items discovered during testing.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: Confirmations
