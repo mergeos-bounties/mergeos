@@ -384,3 +384,29 @@ export function buildExplorerStats(entries = [], marketplace = {}, tokenSymbol =
     tokenSymbol,
   };
 }
+
+export function aggregateGithubWorkerAliases(entries = [], rawAccount = '') {
+  const target = normalizeLedgerAccount(rawAccount);
+  if (!target) return { account: '', receivedCents: 0, sentCents: 0, count: 0 };
+  let receivedCents = 0;
+  let sentCents = 0;
+  let count = 0;
+  for (const raw of entries) {
+    const entry = normalizeEntry(raw);
+    if (entry.to_account === target) {
+      receivedCents += entry.amount_cents;
+      count += 1;
+    }
+    if (entry.from_account === target) {
+      sentCents += entry.amount_cents;
+      count += 1;
+    }
+  }
+  return {
+    account: target,
+    receivedCents,
+    receivedTokens: tokenAmountFromCents(receivedCents),
+    sentCents,
+    count,
+  };
+}
