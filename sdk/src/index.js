@@ -1880,7 +1880,15 @@ function normalizeContextURLList(value = []) {
 
 export function evidenceRequiredFromEvent(source) {
   if (!source || typeof source !== 'object') return [];
-  const raw = source.evidence_required || source.evidenceRequired || source.evidence || [];
+  const nested = source.payload || source.data?.task || source.data || source.task || source.event || {};
+  const raw =
+    source.evidence_required ??
+    source.evidenceRequired ??
+    source.evidence ??
+    nested.evidence_required ??
+    nested.evidenceRequired ??
+    nested.evidence ??
+    [];
   const items = Array.isArray(raw) ? raw : String(raw || '').split(',');
   const seen = new Set();
   return items.reduce((acc, item) => {
